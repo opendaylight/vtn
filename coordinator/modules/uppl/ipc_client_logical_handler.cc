@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -66,32 +66,36 @@ UncRespCode IPCClientLogicalHandler::CheckInUseInLogical(
     }
     return UNC_UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
   }
-  sess.addOutput((uint32_t)UPLL_IS_KEY_TYPE_IN_USE_OP);
-  sess.addOutput(data_type);
-  sess.addOutput((uint32_t)key_type);
+  err |= sess.addOutput((uint32_t)UPLL_IS_KEY_TYPE_IN_USE_OP);
+  err |= sess.addOutput(data_type);
+  err |= sess.addOutput((uint32_t)key_type);
+  if (err != 0) {
+    pfc_log_error("Server session addOutput failed, so return IPC_WRITE_ERROR");
+    return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
+  }
   pfc_log_debug("Key type: %d data_type %d", (uint32_t)key_type, data_type);
   switch (key_type) {
     case UNC_KT_CONTROLLER: {
       key_ctr_t kt_ctr_str;
       kt_ctr_str = *(reinterpret_cast <key_ctr*>(key_str));
       pfc_log_debug("Added controller key to session");
-      sess.addOutput(kt_ctr_str);
+      err = sess.addOutput(kt_ctr_str);
       break;
     }
     case UNC_KT_BOUNDARY: {
       key_boundary_t kt_bdry_str;
       kt_bdry_str = *(reinterpret_cast <key_boundary*>(key_str));
       pfc_log_debug("Added boundary key to session");
-      sess.addOutput(kt_bdry_str);
+      err = sess.addOutput(kt_bdry_str);
       break;
     }
     default :
       pfc_log_error("Unsupported key type");
       err = pfc_ipcclnt_altclose(connp);
-      if (err != 0) {
-        pfc_log_error("Unable to close ipc connection");
-      }
-      return UNC_UPPL_RC_ERR_KEYTYPE_NOT_SUPPORTED;
+  }
+  if (err != 0) {
+    pfc_log_error("Server session addOutput failed while adding keystructure");
+    return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
   }
   uint32_t oper_type;
   uint32_t result_code = UPLL_RC_SUCCESS;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -22,6 +22,7 @@ namespace usess {
 typedef struct {
   // lock timeout.
   pfc_timespec_t lock_timeout;
+  uint32_t auth_retry_count;
 } usess_conf_common_t;
 
 

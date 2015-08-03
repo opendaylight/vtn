@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -16,6 +16,25 @@ namespace upll {
 namespace ipc_util {
 
 const char *IpctSt::kIpcStrStKeyRoot = "key_root";
+const char *IpctSt::kIpcStrStKeyUnifiedNw = "key_unified_nw";
+const char *IpctSt::kIpcStrStValUnifiedNw = "val_unified_nw";
+const char *IpctSt::kIpcStrStKeyUnwLabel = "key_unw_label";
+const char *IpctSt::kIpcStrStValUnwLabel = "val_unw_label";
+const char *IpctSt::kIpcStrStKeyUnwLabelRange = "key_unw_label_range";
+const char *IpctSt::kIpcStrStValUnwLabelRange = "val_unw_label_range";
+const char *IpctSt::kIpcStrStKeyUnwSpineDomain = "key_unw_spine_domain";
+const char *IpctSt::kIpcStrStValUnwSpineDomain = "val_unw_spine_domain";
+const char *IpctSt::kIpcStrStValUnwSpineDomain_Ext = "val_unw_spdom_ext";
+const char *IpctSt::kIpcStrStValSpineAlarmSt = "val_spdom_st";
+const char *IpctSt::kIpcStrStValUnwSpineDomainSt = "val_unw_spine_domain_st";
+const char *IpctSt::kIpcStrStValUnwSpineDomainAssignedLabel =
+                    "val_unw_spine_domain_assigned_label";
+const char *IpctSt::kIpcStrStValUnwSpineDomainFdbentry =
+                    "val_unw_spine_domain_fdbentry";
+const char *IpctSt::kIpcStrStValUnwSpineDomainFdbentryVtn =
+                    "val_unw_spine_domain_fdbentry_vtn";
+const char *IpctSt::kIpcStrStKeyVtnUnified = "key_vtn_unified";
+const char *IpctSt::kIpcStrStValVtnUnified = "val_vtn_unified";
 const char *IpctSt::kIpcStrStValPing = "val_ping";
 const char *IpctSt::kIpcStrStValVtnNeighbor = "val_vtn_neighbor";
 const char *IpctSt::kIpcStrStKeyVtn = "key_vtn";
@@ -39,12 +58,17 @@ const char *IpctSt::kIpcStrStValVbrL2DomainSt = "val_vbr_l2_domain_st";
 const char *IpctSt::kIpcStrStValVbrL2DomainMemberSt =
     "val_vbr_l2_domain_member_st";
 const char *IpctSt::kIpcStrStValVbrMacEntrySt = "val_vbr_mac_entry_st";
+const char *IpctSt::kIpcStrStKeyConvertVbr = "key_convert_vbr";
+const char *IpctSt::kIpcStrStValConvertVbr = "val_convert_vbr";
 const char *IpctSt::kIpcStrStKeyVbrIf = "key_vbr_if";
 const char *IpctSt::kIpcStrStValPortMap = "val_port_map";
 const char *IpctSt::kIpcStrStValVbrIf = "val_vbr_if";
 const char *IpctSt::kIpcStrStValVbrIfSt = "val_vbr_if_st";
 const char *IpctSt::kIpcStrStKeyVlanMap = "key_vlan_map";
 const char *IpctSt::kIpcStrStValVlanMap = "val_vlan_map";
+const char *IpctSt::kIpcStrStKeyVbrPortMap = "key_vbr_portmap";
+const char *IpctSt::kIpcStrStValVbrPortMap = "val_vbr_portmap";
+const char *IpctSt::kIpcStrStValVbrPortMapSt = "val_vbr_portmap_st";
 const char *IpctSt::kIpcStrStKeyVrt = "key_vrt";
 const char *IpctSt::kIpcStrStValVrt = "val_vrt";
 const char *IpctSt::kIpcStrStValRenameVrt = "val_rename_vrt";
@@ -99,6 +123,9 @@ const char *IpctSt::kIpcStrStKeyVlink = "key_vlink";
 const char *IpctSt::kIpcStrStValVlink = "val_vlink";
 const char *IpctSt::kIpcStrStValVlinkSt = "val_vlink_st";
 const char *IpctSt::kIpcStrStValRenameVlink = "val_rename_vlink";
+const char *IpctSt::kIpcStrStKeyConvertVtunnel = "key_convert_vtunnel";
+const char *IpctSt::kIpcStrStValConvertVtunnel = "val_convert_vtunnel";
+const char *IpctSt::kIpcStrStValVtnGatewayPort = "val_vtn_gateway_port";
 const char *IpctSt::kIpcStrStKeyFlowlist = "key_flowlist";
 const char *IpctSt::kIpcStrStValFlowlist = "val_flowlist";
 const char *IpctSt::kIpcStrStValRenameFlowlist = "val_rename_flowlist";
@@ -152,6 +179,13 @@ const char *IpctSt::kIpcStrStKeyVbrifPolicingmapEntry =
     "key_vbrif_policingmap_entry";
 const char *IpctSt::kIpcStrStKeyVtermIfPolicingMapEntry =
     "key_vtermif_policingmap_entry";
+  // Expand structures
+const char *IpctSt::kIpcStrStValVbrExpand = "val_vbr_expand";
+const char *IpctSt::kIpcStrStValVbrPortMapExpand = "val_vbr_portmap_expand";
+const char *IpctSt::kIpcStrStValVbrIfExpand = "val_vbr_if_expand";
+const char *IpctSt::kIpcStrStValVtunnelExpand = "val_vtunnel_expand";
+const char *IpctSt::kIpcStrStValVtunnelIfExpand = "val_vtunnel_if_expand";
+const char *IpctSt::kIpcStrStValVlinkExpand = "val_vlink_expand";
   // Add Driver structures below
 const char *IpctSt::kIpcStrStPfcdrvValVbrIf = "pfcdrv_val_vbr_if";
 const char *IpctSt::kIpcStrStPfcdrvValVbrifVextif = "pfcdrv_val_vbrif_vextif";
@@ -159,14 +193,20 @@ const char *IpctSt::kIpcStrStPfcdrvValFlowfilterEntry =
     "pfcdrv_val_flowfilter_entry";
 const char *IpctSt::kIpcStrStPfcdrvValVbrifPolicingmap =
     "pfcdrv_val_vbrif_policingmap";
+const char *IpctSt::kIpcStrStPfcdrvValVtnController =
+    "pfcdrv_val_vtn_controller";
 /* VlanmapOnBoundary: Added new val struct */
-const char *IpctSt::kIpcStrStPfcdrvValVlanMap = 
+const char *IpctSt::kIpcStrStPfcdrvValVlanMap =
     "pfcdrv_val_vlan_map";
+const char *IpctSt::kIpcStrStPfcdrvValVbrPortMap = "pfcdrv_val_vbr_portmap";
+
   // Add Physical structures below
 const char *IpctSt::kIpcStrStKeyCtr = "key_ctr";
 const char *IpctSt::kIpcStrStValCtr = "val_ctr";
 const char *IpctSt::kIpcStrStValCtrSt = "val_ctr_st";
 const char *IpctSt::kIpcStrStKeyCtrDomain = "key_ctr_domain";
+const char *IpctSt::kIpcStrStValCtrDomain = "val_ctr_domain";
+const char *IpctSt::kIpcStrStValCtrDomainSt = "val_ctr_domain_st";
 const char *IpctSt::kIpcStrStKeyLogicalPort = "key_logical_port";
 const char *IpctSt::kIpcStrStValLogicalPort = "val_logical_port";
 const char *IpctSt::kIpcStrStValLogicalPortSt = "val_logical_port_st";
@@ -197,6 +237,48 @@ void IpctSt::RegisterAll() {
   REGISTER_STDEF(key_root,
                  kIpcStrStKeyRoot,
                  kIpcStKeyRoot);
+  REGISTER_STDEF(key_unified_nw,
+                 kIpcStrStKeyUnifiedNw,
+                 kIpcStKeyUnifiedNw);
+  REGISTER_STDEF(val_unified_nw,
+                kIpcStrStValUnifiedNw,
+                kIpcStValUnifiedNw);
+  REGISTER_STDEF(key_unw_label,
+                 kIpcStrStKeyUnwLabel,
+                 kIpcStKeyUnwLabel);
+  REGISTER_STDEF(val_unw_label,
+                kIpcStrStValUnwLabel,
+                kIpcStValUnwLabel);
+  REGISTER_STDEF(key_unw_label_range,
+                 kIpcStrStKeyUnwLabelRange,
+                 kIpcStKeyUnwLabelRange);
+  REGISTER_STDEF(val_unw_label_range,
+                kIpcStrStValUnwLabelRange,
+                kIpcStValUnwLabelRange);
+  REGISTER_STDEF(key_unw_spine_domain,
+                kIpcStrStKeyUnwSpineDomain,
+                kIpcStKeyUnwSpineDomain);
+  REGISTER_STDEF(val_unw_spine_domain,
+                kIpcStrStValUnwSpineDomain,
+                kIpcStValUnwSpineDomain);
+  REGISTER_STDEF(val_unw_spine_domain_st,
+                kIpcStrStValUnwSpineDomainSt,
+                kIpcStValUnwSpineDomainSt);
+  REGISTER_STDEF(val_unw_spine_domain_assigned_label,
+                kIpcStrStValUnwSpineDomainAssignedLabel,
+                kIpcStValUnwSpineDomainAssignedLabel);
+  REGISTER_STDEF(val_unw_spine_domain_fdbentry,
+                kIpcStrStValUnwSpineDomainFdbentry,
+                kIpcStValUnwSpineDomainFdbentry);
+  REGISTER_STDEF(val_unw_spine_domain_fdbentry_vtn,
+                kIpcStrStValUnwSpineDomainFdbentryVtn,
+                kIpcStValUnwSpineDomainFdbentryVtn);
+  REGISTER_STDEF(key_vtn_unified,
+                kIpcStrStKeyVtnUnified,
+                kIpcStKeyVtnUnified);
+  REGISTER_STDEF(val_vtn_unified,
+                kIpcStrStValVtnUnified,
+                kIpcStValVtnUnified);
   REGISTER_STDEF(val_ping,
                  kIpcStrStValPing,
                  kIpcStValPing);
@@ -236,6 +318,12 @@ void IpctSt::RegisterAll() {
   REGISTER_STDEF(val_vbr,
                  kIpcStrStValVbr,
                  kIpcStValVbr);
+  /*REGISTER_STDEF(key_convert_vbr,
+                 kIpcStrStKeyConvertVbr,
+                 kIpcStKeyConvertVbr);
+  REGISTER_STDEF(val_convert_vbr,
+                 kIpcStrStValConvertVbr,
+                 kIpcStValConvertVbr);*/
   REGISTER_STDEF(val_rename_vbr,
                  kIpcStrStValRenameVbr,
                  kIpcStValRenameVbr);
@@ -251,6 +339,15 @@ void IpctSt::RegisterAll() {
   REGISTER_STDEF(val_vbr_mac_entry_st,
                  kIpcStrStValVbrMacEntrySt,
                  kIpcStValVbrMacEntrySt);
+  REGISTER_STDEF(key_vbr_portmap,
+                 kIpcStrStKeyVbrPortMap,
+                 kIpcStKeyVbrPortMap);
+  REGISTER_STDEF(val_vbr_portmap,
+                 kIpcStrStValVbrPortMap,
+                 kIpcStValVbrPortMap);
+  REGISTER_STDEF(val_vbr_portmap_st,
+                 kIpcStrStValVbrPortMapSt,
+                 kIpcStValVbrPortMapSt);
   REGISTER_STDEF(key_vbr_if,
                  kIpcStrStKeyVbrIf,
                  kIpcStKeyVbrIf);
@@ -559,6 +656,13 @@ void IpctSt::RegisterAll() {
   REGISTER_STDEF(pfcdrv_val_vlan_map,
                  kIpcStrStPfcdrvValVlanMap,
                  kIpcStPfcdrvValVlanMap);
+  REGISTER_STDEF(pfcdrv_val_vbr_portmap,
+                 kIpcStrStPfcdrvValVbrPortMap,
+                 kIpcStPfcdrvValVbrPortMap);
+  REGISTER_STDEF(pfcdrv_val_vtn_controller,
+                 kIpcStrStPfcdrvValVtnController,
+                 kIpcStPfcdrvValVtnController);
+
   // Add Physical structures below
   REGISTER_STDEF(key_ctr,
                  kIpcStrStKeyCtr,
@@ -572,6 +676,12 @@ void IpctSt::RegisterAll() {
   REGISTER_STDEF(key_ctr_domain,
                  kIpcStrStKeyCtrDomain,
                  kIpcStKeyCtrDomain);
+  REGISTER_STDEF(val_ctr_domain,
+                 kIpcStrStValCtrDomain,
+                 kIpcStValCtrDomain);
+  REGISTER_STDEF(val_ctr_domain_st,
+                 kIpcStrStValCtrDomainSt,
+                 kIpcStValCtrDomainSt);
   REGISTER_STDEF(key_logical_port,
                  kIpcStrStKeyLogicalPort,
                  kIpcStKeyLogicalPort);
@@ -600,6 +710,25 @@ void IpctSt::RegisterAll() {
   REGISTER_STDEF(key_vtn_dataflow,
                  kIpcStrStKeyVtnDataflow,
                  kIpcStKeyVtnDataflow);
+  // Expand structures
+  REGISTER_STDEF(val_vbr_expand,
+                 kIpcStrStValVbrExpand,
+                 kIpcStValVbrExpand);
+  REGISTER_STDEF(val_vbr_portmap_expand,
+                 kIpcStrStValVbrPortMapExpand,
+                 kIpcStValVbrPortMapExpand);
+  REGISTER_STDEF(val_vbr_if_expand,
+                 kIpcStrStValVbrIfExpand,
+                 kIpcStValVbrIfExpand);
+  REGISTER_STDEF(val_vtunnel_expand,
+                 kIpcStrStValVtunnelExpand,
+                 kIpcStValVtunnelExpand);
+  REGISTER_STDEF(val_vtunnel_if_expand,
+                 kIpcStrStValVtunnelIfExpand,
+                 kIpcStValVtunnelIfExpand);
+  REGISTER_STDEF(val_vlink_expand,
+                 kIpcStrStValVlinkExpand,
+                 kIpcStValVlinkExpand);
 }
 
 }  // namespace ipc_util

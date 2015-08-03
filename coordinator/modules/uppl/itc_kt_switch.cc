@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -252,7 +252,7 @@ UncRespCode Kt_Switch::DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
   if (delete_db_status != ODBCM_RC_SUCCESS) {
     if (delete_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
-      pfc_log_fatal("DB connection not available or cannot access DB");
+      UPPL_LOG_FATAL("DB connection not available or cannot access DB");
       delete_status = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else {
       // log error to log daemon
@@ -284,7 +284,7 @@ UncRespCode Kt_Switch::ReadInternal(OdbcmConnectionHandler *db_conn,
                                        uint32_t operation_type) {
   if (operation_type != UNC_OP_READ && operation_type != UNC_OP_READ_SIBLING &&
       operation_type != UNC_OP_READ_SIBLING_BEGIN) {
-    pfc_log_trace ("This function not allowed for read next/bulk/count");
+    pfc_log_trace("This function not allowed for read next/bulk/count");
     return UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
   }
   pfc_log_debug("Inside ReadInternal of KT_SWITCH");
@@ -297,10 +297,10 @@ UncRespCode Kt_Switch::ReadInternal(OdbcmConnectionHandler *db_conn,
   memset(&obj_switch_val, '\0', sizeof(val_switch_st_t));
   void *key_struct = key_val[0];
   void *void_val_struct = NULL;
-  if ((!val_struct.empty()) && (val_struct[0] != NULL)) { 
+  if ((!val_struct.empty()) && (val_struct[0] != NULL)) {
     memcpy(&obj_switch_val, (reinterpret_cast <val_switch_st_t*>
                                       (val_struct[0])),
-              sizeof(val_switch_st_t)); 
+              sizeof(val_switch_st_t));
     void_val_struct = reinterpret_cast<void *>(&obj_switch_val);
   }
   UncRespCode read_status = UNC_RC_SUCCESS;
@@ -317,7 +317,8 @@ UncRespCode Kt_Switch::ReadInternal(OdbcmConnectionHandler *db_conn,
                                       vect_val_switch_st,
                                       vect_switch_id);
     if (firsttime) {
-      pfc_log_trace("Clearing key_val and val_struct vectors for the firsttime");
+      pfc_log_trace(
+          "Clearing key_val and val_struct vectors for the first time");
       key_val.clear();
       val_struct.clear();
       firsttime = false;
@@ -338,14 +339,14 @@ UncRespCode Kt_Switch::ReadInternal(OdbcmConnectionHandler *db_conn,
     if ((vect_val_switch_st.size() == UPPL_MAX_REP_CT) &&
                      (operation_type != UNC_OP_READ)) {
       pfc_log_debug("Op:%d, key.size:%" PFC_PFMT_SIZE_T"fetch_next_set",
-                    operation_type,key_val.size());
+                    operation_type, key_val.size());
       key_struct = reinterpret_cast<void *>(key_val[key_val.size() - 1]);
       operation_type = UNC_OP_READ_SIBLING;
       continue;
     } else {
       break;
     }
-  } while(true);
+  } while (true);
   return read_status;
 }
 
@@ -561,7 +562,8 @@ UncRespCode Kt_Switch::ReadBulkInternal(
                              key_struct,
                              val_struct,
                              UNC_OP_READ_BULK, data_type, 0, 0,
-                             vect_key_operations, old_value_struct);
+                             vect_key_operations, old_value_struct,
+                             NOTAPPLIED, false, PFC_FALSE);
   pfc_log_debug("Calling GetBulkRows");
   // Read rows from DB
   read_db_status = physical_layer->get_odbc_manager()-> \
@@ -722,8 +724,7 @@ UncRespCode Kt_Switch::PerformSemanticValidation(
   // In case of create operation, key should not exist
   if (operation == UNC_OP_CREATE) {
     if (key_status == UNC_RC_SUCCESS) {
-      pfc_log_error("Key instance already exists");
-      pfc_log_error("Hence create operation not allowed");
+      pfc_log_error("Key exists-CREATE not allowed");
       status = UNC_UPPL_RC_ERR_INSTANCE_EXISTS;
     } else {
       pfc_log_debug("key instance not exist create operation allowed");
@@ -733,8 +734,7 @@ UncRespCode Kt_Switch::PerformSemanticValidation(
       operation == UNC_OP_READ) {
     // In case of update/delete/read operation, key should exist
     if (key_status != UNC_RC_SUCCESS) {
-      pfc_log_error("Key instance does not exist");
-      pfc_log_error("Hence update/delete/read operation not allowed");
+      pfc_log_error("Key not found,U/D/R opern not allowed");
       status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     } else {
       pfc_log_debug("key instance exist update/del/read operation allowed");
@@ -825,6 +825,16 @@ UncRespCode Kt_Switch::HandleDriverAlarms(OdbcmConnectionHandler *db_conn,
       new_alarm_status = old_alarm_status & 0xFFFD;  // 1111 1111 1111 1101
     }
   }
+  if (alarm_type == UNC_OFS_DISABLED) {
+    if (oper_type == UNC_OP_CREATE) {
+      // Set OFS_DISABLED alarm
+      new_alarm_status = old_alarm_status |
+          ALARM_UPPL_ALARMS_OFS_DISABLED;   // 0000 0100
+    } else if (oper_type == UNC_OP_DELETE) {
+      // Clear OFS_DISABLED alarm
+      new_alarm_status = old_alarm_status & 0xFFFB;  // 1111 1111 1111 1011
+    }
+  }
   if (old_alarm_status == new_alarm_status) {
     pfc_log_info("old and new alarms status are same, so return");
     return UNC_RC_SUCCESS;
@@ -871,7 +881,8 @@ UncRespCode Kt_Switch::HandleDriverAlarms(OdbcmConnectionHandler *db_conn,
       PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
       // Notify operstatus modifications
       status = (UncRespCode) physical_layer
-          ->get_ipc_connection_manager()->SendEvent(&ser_evt);
+          ->get_ipc_connection_manager()->SendEvent(&ser_evt, controller_name,
+                                    UPPL_EVENTS_KT_SWITCH);
       if (status != 0) {
       pfc_log_info("Update alarm send status to NB: %d",
                    status);
@@ -1384,8 +1395,8 @@ UncRespCode Kt_Switch::PerformRead(OdbcmConnectionHandler *db_conn,
       if (ret_code == UNC_RC_SUCCESS && controller_type == UNC_CT_PFC) {
         UncRespCode err_drv = UNC_RC_SUCCESS;
         UncRespCode driver_response = UNC_RC_SUCCESS;
-        IPCClientDriverHandler pfc_drv_handler(UNC_CT_PFC, err_drv);
-        cli_session = pfc_drv_handler.ResetAndGetSession();
+        IPCClientDriverHandler drv_handler(controller_type, err_drv);
+        cli_session = drv_handler.ResetAndGetSession();
         driver_request_header rqh = {(uint32_t)0, (uint32_t)0, controller_name,
           domain_id, operation_type, (uint32_t)0,
           static_cast<uint32_t>(UNC_OPT1_DETAIL),
@@ -1398,7 +1409,7 @@ UncRespCode Kt_Switch::PerformRead(OdbcmConnectionHandler *db_conn,
           err = cli_session->addOutput(*obj_key_switch);
           if (err == 0) {
             driver_response_header rsp;
-            driver_response = pfc_drv_handler.SendReqAndGetResp(rsp);
+            driver_response = drv_handler.SendReqAndGetResp(rsp);
             if (driver_response == UNC_RC_SUCCESS) {
               // Add the response in the session object
               key_switch_t key_switch_drv;
@@ -1469,8 +1480,7 @@ UncRespCode Kt_Switch::PerformRead(OdbcmConnectionHandler *db_conn,
                                     operation_type,
                                     max_rep_ct,
                                     vect_val_switch_st,
-                                    vect_switch_id,
-                                    PFC_FALSE);
+                                    vect_switch_id);
   rsh.result_code = read_status;
   rsh.max_rep_count = max_rep_ct;
   if (read_status == UNC_RC_SUCCESS) {
@@ -1527,8 +1537,7 @@ UncRespCode Kt_Switch::ReadSwitchValFromDB(
     uint32_t operation_type,
     uint32_t &max_rep_ct,
     vector<val_switch_st_t> &vect_val_switch_st,
-    vector<key_switch_t> &vect_switch_id,
-    pfc_bool_t is_state) {
+    vector<key_switch_t> &vect_switch_id) {
   if (operation_type < UNC_OP_READ) {
     // Unsupported operation type for this function
     return UNC_RC_SUCCESS;
@@ -1546,7 +1555,8 @@ UncRespCode Kt_Switch::ReadSwitchValFromDB(
                              key_struct,
                              val_struct,
                              operation_type, data_type, 0, 0,
-                             vect_key_operations, old_value_struct);
+                             vect_key_operations, old_value_struct,
+                             NOTAPPLIED, false, PFC_FALSE);
 
   if (operation_type == UNC_OP_READ) {
     read_db_status = physical_layer->get_odbc_manager()->
@@ -2052,7 +2062,7 @@ UncRespCode Kt_Switch::SetOperStatus(OdbcmConnectionHandler *db_conn,
   ODBCM_RC_STATUS update_db_status =
       physical_layer->get_odbc_manager()->UpdateOneRow(
           (unc_keytype_datatype_t)data_type,
-          kt_switch_dbtableschema, db_conn);
+          kt_switch_dbtableschema, db_conn, true);
   if (update_db_status == ODBCM_RC_ROW_NOT_EXISTS) {
     pfc_log_info("No instance available for update");
   } else if (update_db_status != ODBCM_RC_SUCCESS) {
@@ -2082,7 +2092,8 @@ UncRespCode Kt_Switch::SetOperStatus(OdbcmConnectionHandler *db_conn,
       PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
       // Notify operstatus modifications
       UncRespCode status = (UncRespCode) physical_layer
-          ->get_ipc_connection_manager()->SendEvent(&ser_evt);
+          ->get_ipc_connection_manager()->SendEvent(&ser_evt, controller_name,
+                                                         UPPL_EVENTS_KT_SWITCH);
       pfc_log_debug("Event notification status %d", status);
     } else {
       pfc_log_info("Error creating ServerEvent object");
@@ -2395,7 +2406,8 @@ UncRespCode Kt_Switch::PopulateSchemaForValidFlag(
   // Call ODBCManager and update
   ODBCM_RC_STATUS update_db_status =
       physical_layer->get_odbc_manager()->UpdateOneRow(
-          (unc_keytype_datatype_t)data_type, kt_switch_dbtableschema, db_conn);
+          (unc_keytype_datatype_t)data_type, kt_switch_dbtableschema, db_conn,
+          true);
   if (update_db_status != ODBCM_RC_SUCCESS) {
     // log error
     pfc_log_error("domain id update operation failed");

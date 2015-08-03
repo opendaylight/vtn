@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -45,14 +45,44 @@ static const char* kDefaultDomainId = "(DEFAULT)";
 const uint8_t kMinLenVtnName = 1;
 const uint8_t kMaxLenVtnName = 31;
 
+const uint8_t kMinLenUnifiedNwName = 1;
+const uint8_t kMaxLenUnifiedNwName = 31;
+
+const uint8_t kMinLenUnwLabelName = 1;
+const uint8_t kMaxLenUnwLabelName = 31;
+
+const uint8_t kMinLenUnwSpineID = 1;
+const uint8_t kMaxLenUnwSpineID = 31;
+
+const uint32_t kUnwLabelMaxCountMinValue = 1;
+const uint32_t kUnwLabelMaxCountMaxValue = 4000;
+
+const uint32_t kUnwLabelMinRange = 1;
+const uint32_t kUnwLabelMaxRange = 4000;
+
+const uint32_t kDefFallingThresholdRange = 1;
+const uint32_t kDefRaisingThresholdRange = 4000;
+
 const uint8_t kMinLenVlinkName = 1;
 const uint8_t kMaxLenVlinkName = 31;
 
 const uint8_t kMinLenVnodeName = 1;
 const uint8_t kMaxLenVnodeName = 31;
 
+const uint8_t kMinLenPortMapName = 1;
+const uint8_t kMaxLenPortMapName = 31;
+
+const uint8_t kMinLenUnwName = 1;
+const uint8_t kMaxLenUnwName = 31;
+
+const uint8_t kMinLenSpineName = 1;
+const uint8_t kMaxLenSpineName = 31;
+
 const uint8_t kMinLenInterfaceName = 1;
 const uint8_t kMaxLenInterfaceName = 31;
+
+const uint8_t kMinLenVbrPortMapId = 1;
+const uint8_t kMaxLenVbrPortMapId = 31;
 
 const uint8_t kMinLenDescription = 1;
 const uint8_t kMaxLenDescription = 127;
@@ -163,6 +193,15 @@ const uint8_t kMaxPrecedence = 3;
 
 const uint16_t kMinFlowFilterSeqNum = 1;
 const uint16_t kMaxFlowFilterSeqNum = 65535;
+
+const uint8_t kMinLenConvertVnodeName = 1;
+const uint8_t kMaxLenConvertVnodeName = 39;
+
+const uint8_t kMinGVtnIdRows = 1;
+const uint8_t kMaxGVtnIdRows = 126;
+
+const uint8_t kMinVbidIdRows = 1;
+const uint8_t kMaxVbidIdRows = 125;
 
 // template function to validate the boundary conditions for the input value
 

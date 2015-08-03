@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -40,10 +40,12 @@ VtepGrpMemMoMgr::VtepGrpMemMoMgr() {
       IpctSt::kIpcStValVtepGrpMember,
       uudst::vtep_groupmember::kDbiVtepGrpMemNumCols);
   ntable = MAX_MOMGR_TBLS;
-  table = new Table *[ntable];
+  table = new Table *[ntable]();
   table[MAINTBL] = tbl;
   table[RENAMETBL] = NULL;
   table[CTRLRTBL] = NULL;
+  table[CONVERTTBL] = NULL;
+
   nchild = 0;
   child = NULL;
 #ifdef _STANDALONE_
@@ -54,7 +56,8 @@ VtepGrpMemMoMgr::VtepGrpMemMoMgr() {
 /*
  * Based on the key type the bind info will pass
  *
- bool VtepGrpMemMoMgr::GetRenameKeyBindInfo(unc_key_type_t key_type, BindInfo *&binfo, int &nattr, 
+ bool VtepGrpMemMoMgr::GetRenameKeyBindInfo(unc_key_type_t key_type,
+ BindInfo *&binfo, int &nattr,
  MoMgrTables tbl ) {
  if (MAINTBL == tbl) {
 
@@ -64,7 +67,7 @@ VtepGrpMemMoMgr::VtepGrpMemMoMgr() {
  return PFC_TRUE;
  }*/
 
-bool VtepGrpMemMoMgr::IsValidKey(void *key, uint64_t index) {
+bool VtepGrpMemMoMgr::IsValidKey(void *key, uint64_t index, MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
   key_vtep_grp_member *vtep_grp_mem_key = reinterpret_cast
                                           <key_vtep_grp_member *>(key);
@@ -608,21 +611,25 @@ upll_rc_t VtepGrpMemMoMgr::GetVtepConfigValData(ConfigKeyVal *ikey,
   return result_code;
 }
 /*
-   upll_rc_t VtepGrpMemMoMgr::CopyToConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *ikey) {
+   upll_rc_t VtepGrpMemMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
+   ConfigKeyVal *ikey) {
 
    if ( !ikey || !(ikey->get_key()) )
    return UPLL_RC_ERR_GENERIC;
 
    upll_rc_t result_code = UPLL_RC_SUCCESS;
    key_rename_vnode_info *key_rename = (key_rename_vnode_info *)ikey->get_key();
-   key_vtep_grp_member_t *vtep_key = (key_vtep_grp_member_t *) malloc ( sizeof (key_vtep_grp_member_t));
+   key_vtep_grp_member_t *vtep_key =
+   (key_vtep_grp_member_t *) malloc ( sizeof (key_vtep_grp_member_t));
    if (!vtep_key)
    return UPLL_RC_ERR_GENERIC;
    if (!strlen ((char *)key_rename->old_unc_vtn_name))
    return UPLL_RC_ERR_GENERIC;
-   strcpy ((char *)vtep_key ->vtepgrp_key.vtn_key.vtn_name, (char *)key_rename->old_unc_vtn_name);
+   strcpy ((char *)vtep_key ->vtepgrp_key.vtn_key.vtn_name,
+   (char *)key_rename->old_unc_vtn_name);
 
-   okey = new ConfigKeyVal (UNC_KT_VTEP_GRP_MEMBER, IpctSt::kIpcStKeyVtepGrpMember, vtep_key, NULL);
+   okey = new ConfigKeyVal (UNC_KT_VTEP_GRP_MEMBER,
+   IpctSt::kIpcStKeyVtepGrpMember, vtep_key, NULL);
    if (!okey) {
    free(vtep_key);
    return UPLL_RC_ERR_GENERIC;
@@ -631,6 +638,6 @@ upll_rc_t VtepGrpMemMoMgr::GetVtepConfigValData(ConfigKeyVal *ikey,
    }
    */
 
-}  // namespace vtn
+}  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc

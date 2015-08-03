@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -16,6 +16,7 @@
 #include "phy_util.hh"
 #include "physicallayer.hh"
 #include "odbcm_utils.hh"
+#include "odbcm_db_varbind.hh"
 
 using unc::uppl::PhysicalLayer;
 using unc::uppl::ODBCMUtils;
@@ -487,7 +488,7 @@ int PhyUtil::sessOutNBAlarmHeader(ServerEvent& cli_sess,
   if (err != UNC_RC_SUCCESS) return err;
   err = cli_sess.addOutput(rqh.alarm_type);
   stringstream ss;
-  ss  << "Alarm from UPPL[" 
+  ss  << "Alarm from UPPL["
       << "oper:" << rqh.operation
       << ",dt:" << rqh.data_type
       << ",kt:" << rqh.key_type
@@ -626,6 +627,11 @@ void PhyUtil::FillDbSchema(ODBCMTableColumns attr_name, string attr_value,
       break;
     }
 
+    case DATATYPE_UINT8_ARRAY_1:
+      TABLE_ATTR_SCHEMA_UINT8_SET(table_attr_schema, attr_length, attr_value,
+                                  1 + 1);
+      break;
+
     case DATATYPE_UINT8_ARRAY_2:
       TABLE_ATTR_SCHEMA_UINT8_SET(table_attr_schema, attr_length, attr_value,
                                   2 + 1);
@@ -646,9 +652,9 @@ void PhyUtil::FillDbSchema(ODBCMTableColumns attr_name, string attr_value,
                                   8 + 1);
       break;
 
-    case DATATYPE_UINT8_ARRAY_9:
+    case DATATYPE_UINT8_ARRAY_10:
       TABLE_ATTR_SCHEMA_UINT8_SET(table_attr_schema, attr_length, attr_value,
-                                  9 + 1);
+                                  10 + 1);
       break;
 
     case DATATYPE_UINT8_ARRAY_11:
@@ -966,6 +972,14 @@ void PhyUtil::GetValueFromDbSchemaStr(const TableAttrSchema& table_attr_schema,
                                       uint8_t *attr_value,
                                       AttributeDataType attr_type) {
   switch (attr_type) {
+    case DATATYPE_UINT8_ARRAY_1:
+    {
+      ColumnAttrValue <unsigned char[1+1]> *value =
+          (ColumnAttrValue <unsigned char[1+1]>*)
+          table_attr_schema.p_table_attribute_value;
+      memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
+      break;
+    }
     case DATATYPE_UINT8_ARRAY_2:
     {
       ColumnAttrValue <unsigned char[2+1]> *value =
@@ -999,10 +1013,10 @@ void PhyUtil::GetValueFromDbSchemaStr(const TableAttrSchema& table_attr_schema,
       memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
       break;
     }
-    case DATATYPE_UINT8_ARRAY_9:
+     case DATATYPE_UINT8_ARRAY_10:
     {
-      ColumnAttrValue <unsigned char[9+1]> *value =
-          (ColumnAttrValue <unsigned char[9+1]>*)
+      ColumnAttrValue <unsigned char[10+1]> *value =
+          (ColumnAttrValue <unsigned char[10+1]>*)
           table_attr_schema.p_table_attribute_value;
       memcpy(attr_value, value->value, strlen((const char*)value->value)+1);
       break;
@@ -1110,7 +1124,7 @@ UncRespCode PhyUtil::get_controller_type(
       GetOneRow(datatype, dbtableschema_obj, db_conn);
   if (db_status == ODBCM_RC_CONNECTION_ERROR) {
     // log fatal error to log daemon
-    pfc_log_fatal("DB connection not available or cannot access DB");
+    pfc_log_error("DB connection not available or cannot access DB");
     ret_code = UNC_UPPL_RC_ERR_DB_ACCESS;
     return ret_code;
   } else if (db_status != ODBCM_RC_SUCCESS) {
@@ -1137,6 +1151,101 @@ UncRespCode PhyUtil::get_controller_type(
   pfc_log_debug("Controller Type return: %d, type value %d",
                 ret_code, controller_type);
   return ret_code;
+}
+
+/**ConvertToControllerName
+ * @Description : This function gets the controller name given actual
+ *                controller id by sending the request to odbc manager
+ * @param[in]   : actual_controller_id - actual controller id
+ * @param[out]  : ctr_name
+ * @return    : success/failure is returned
+ **/
+UncRespCode PhyUtil::ConvertToControllerName(OdbcmConnectionHandler *db_conn,
+                                       string actual_controller_id,
+                                       string &ctr_name) {
+  //  if driver receives empty pfc name, driver sends
+  //  connectedcontroller as "N/A" to uppl in kt_port_neighbor event
+  //  if uppl found this string, conversion should fail, so set ctr_name=""
+  std::string nastring("N/A");
+  if (actual_controller_id.compare(nastring) == 0) {
+    pfc_log_debug("actual_controller_id is N/A");
+    ctr_name = "";
+    return UNC_RC_SUCCESS;
+  }
+  // Creating the Physical Layer instance
+  PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+
+  // Creating the object that consists of vectors of Table Atrr Schema
+  vector<TableAttrSchema> vect_table_attr_schema;
+  vector<string> vect_prim_keys;  // Construct Primary key list
+  vector<ODBCMOperator> vect_operators;
+  vect_prim_keys.push_back(CTR_ACTUAL_CONTROLLERID_STR);
+  vect_operators.push_back(unc::uppl::EQUAL);
+  pfc_log_debug("PhyUtil::actual_controller_id is %s",
+      actual_controller_id.c_str());
+  PhyUtil::FillDbSchema(unc::uppl::CTR_ACTUAL_CONTROLLERID,
+                        actual_controller_id,
+                        actual_controller_id.length(), DATATYPE_UINT8_ARRAY_32,
+                        vect_table_attr_schema);
+
+  PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, ctr_name,
+                        ctr_name.length(), DATATYPE_UINT8_ARRAY_32,
+                        vect_table_attr_schema);
+  string ac_valid = "";
+  // valid_actual_Id
+  PhyUtil::FillDbSchema(unc::uppl::CTR_VALID_ACTUAL_CONTROLLERID, ac_valid,
+                        ac_valid.length(), DATATYPE_UINT8_ARRAY_1,
+                        vect_table_attr_schema);
+
+  // Structure used to send request to ODBC
+  DBTableSchema dbtableschema_obj;
+  dbtableschema_obj.set_primary_keys(vect_prim_keys);
+  dbtableschema_obj.set_table_name(unc::uppl::CTR_TABLE);
+  dbtableschema_obj.PushBackToRowList(vect_table_attr_schema);
+  ODBCM_RC_STATUS db_status = physical_layer->get_odbc_manager()-> \
+      GetSiblingRows(UNC_DT_RUNNING, UPPL_MAX_REP_CT, dbtableschema_obj,
+                  vect_operators, UNC_OP_READ_SIBLING, db_conn);
+  if (db_status == ODBCM_RC_CONNECTION_ERROR) {
+    pfc_log_error("DB connection not available or cannot access DB");
+    return UNC_UPPL_RC_ERR_DB_ACCESS;
+  } else if (db_status != ODBCM_RC_SUCCESS) {
+    string log_msg = "Unable to get controller name from the database";
+    pfc_log_error((const char *)log_msg.c_str());
+    return UNC_UPPL_RC_ERR_DB_GET;
+  }
+  uint8_t actual_id_valid[1];
+  memset(actual_id_valid, '\0', ODBCM_SIZE_1);
+  list< vector<TableAttrSchema> >& row_list =
+      dbtableschema_obj.get_row_list();
+  list< vector<TableAttrSchema> >::iterator list_iter =
+      row_list.begin();
+  for ( ; list_iter != row_list.end(); list_iter++) {
+    vector<TableAttrSchema> ::iterator tab_iter = (*list_iter).begin();
+    for ( ; tab_iter != (*list_iter).end(); ++tab_iter) {
+      TableAttrSchema tab_schema = (*tab_iter);
+      ODBCMTableColumns attr_name = tab_schema.table_attribute_name;
+      if (attr_name == unc::uppl::CTR_NAME) {
+        uint8_t db_ctr_name[ODBCM_SIZE_32];
+        memset(db_ctr_name, '\0', ODBCM_SIZE_32);
+        PhyUtil::GetValueFromDbSchemaStr(tab_schema, db_ctr_name,
+                                  DATATYPE_UINT8_ARRAY_32);
+        ctr_name = reinterpret_cast<const char*>(db_ctr_name);
+      } else if (attr_name == unc::uppl::CTR_VALID_ACTUAL_CONTROLLERID) {
+        PhyUtil::GetValueFromDbSchemaStr(tab_schema,
+                                       actual_id_valid,
+                                       DATATYPE_UINT8_ARRAY_1);
+      }
+    }
+    if (static_cast<int>(actual_id_valid[0] - 48) == UNC_VF_VALID) {
+      break;
+    } else {
+      pfc_log_debug("Actual Id is invalid, hence fetching the next record");
+      ctr_name = "";
+    }
+  }
+  pfc_log_info("Controller Name:actualID %s:%s", ctr_name.c_str(),
+                                            actual_controller_id.c_str());
+  return UNC_RC_SUCCESS;
 }
 
 /**reorder_col_attrs
@@ -1215,3 +1324,35 @@ bool PhyUtil::IsFilteringOperation(uint32_t operation_type,
     return false;
   }
 }
+/**getEventDetailsString
+ * @Description : This function to covert the pfc_ipcevtype_t event type
+ *                to string
+ * @param[in]   : pfc_ipcevtype_t 
+ *                
+ * @return      : string of pfc_ipcevtype_t event type 
+ *                
+ * */
+std::string PhyUtil::getEventDetailsString(pfc_ipcevtype_t event_type) {
+  switch (event_type) {
+    case UPPL_EVENTS_KT_LOGICAL_PORT:
+      return "UPPL_EVENTS_KT_LOGICAL_PORT";
+    case UPPL_EVENTS_KT_PORT:
+      return "UPPL_EVENTS_KT_PORT";
+    case UPPL_EVENTS_KT_LINK:
+      return "UPPL_EVENTS_KT_LINK";
+    case UPPL_EVENTS_KT_SWITCH:
+      return "UPPL_EVENTS_KT_SWITCH";
+    case UPPL_EVENTS_KT_CTR_DOMAIN:
+      return "UPPL_EVENTS_KT_CTR_DOMAIN";
+    case UPPL_EVENTS_KT_BOUNDARY:
+      return "UPPL_EVENTS_KT_BOUNDARY";
+    case UPPL_ALARMS_PHYS_PATH_FAULT:
+      return "UPPL_ALARMS_PHYS_PATH_FAULT";
+    case UPPL_EVENTS_KT_CONTROLLER:
+      return "UPPL_EVENTS_KT_CONTROLLER";
+    default:
+      pfc_log_info("no matching event type found return """);
+  }
+  return "";
+}
+

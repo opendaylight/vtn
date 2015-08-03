@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,6 +10,7 @@
 #include "kt_util.hh"
 #include "ipc_client_handler.hh"
 #include "ipc_util.hh"
+#include "unc/odcdriver_include.h"
 
 
 using unc::upll::upll_util::upll_strncpy;
@@ -21,13 +22,38 @@ namespace ipc_util {
 bool IpcClientHandler::SendReqToDriver(const char *ctrlr_name, char *domain_id,
                                        IpcRequest *req ) {
   UPLL_FUNC_TRACE
-  bool ok = SendReqToServer(PFCDRIVER_CHANNEL_NAME,
-                            PFCDRIVER_SERVICE_NAME,
-                            PFCDRIVER_SVID_LOGICAL,
-                            true,
-                            ctrlr_name,
-                            domain_id,
-                            req);
+
+  unc_keytype_ctrtype_t ctrlr_type = UNC_CT_UNKNOWN;
+  const char *channel_name = NULL;
+  const char *service_name = NULL;
+  pfc_ipcid_t service_id;
+
+  if (unc::upll::config_momgr::CtrlrMgr::GetInstance()->GetCtrlrType(
+      ctrlr_name, req->header.datatype, &ctrlr_type) == false) {
+        UPLL_LOG_WARN("Unable to get controller type for %s", ctrlr_name);
+    ipc_resp.header.result_code = UPLL_RC_ERR_GENERIC;
+    return false;
+  }
+  // Currently supported controllers for Dataflow are PFC and ODC
+  switch (ctrlr_type) {
+    case UNC_CT_PFC:
+      channel_name = PFCDRIVER_CHANNEL_NAME;
+      service_name = PFCDRIVER_SERVICE_NAME;
+      service_id = PFCDRIVER_SVID_LOGICAL;
+      break;
+    case UNC_CT_ODC:
+      channel_name = ODCDRIVER_CHANNEL_NAME;
+      service_name = ODCDRIVER_SERVICE_NAME;
+      service_id = ODCDRV_SVID_PLATFORM;
+      break;
+    default:
+      UPLL_LOG_WARN("Unknown controller type %d", ctrlr_type);
+      ipc_resp.header.result_code = UPLL_RC_ERR_GENERIC;
+      return false;
+  }
+
+  bool ok = SendReqToServer(channel_name, service_name, service_id,
+                            true, ctrlr_name, domain_id, req);
   if (ok) {
     ipc_resp.header.result_code = IpcUtil::DriverResultCodeToKtURC(
         req->header.operation , ipc_resp.header.result_code);

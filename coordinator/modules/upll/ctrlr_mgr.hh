@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,6 +13,7 @@
 #include <string>
 #include <list>
 #include <map>
+#include <set>
 
 #include "cxx/pfcxx/synch.hh"
 #include "uncxx/upll_log.hh"
@@ -118,13 +119,14 @@ class CtrlrMgr {
                             const upll_keytype_datatype_t datatype,
                             bool audit_type);
   // Get list of invalid-config ctrlr
-  void GetInvalidConfigList(std::list<std::string> &invalid_config_ctr);
+  void GetInvalidConfigList(std::list<std::string>
+                            &invalid_config_ctr);
   bool UpdatePathFault(const char *ctr_name, const char *domain_name,
                        bool assert_alarm);
   bool IsPathFaultOccured(const char *ctr_name, const char *domain_name);
   void ClearPathfault(const char *ctr_name, const char *domain_name);
 
-  //disconnect port status handling
+  // disconnect port status handling
   bool GetLogicalPortSt(const char *ctr_name, const char *logical_port,
                         uint8_t &state);
   void AddLogicalPort(const char *ctr_name, const char *logical_port,
@@ -132,6 +134,36 @@ class CtrlrMgr {
   bool IsCtrDisconnected(const char *ctr_name);
   void AddCtrToDisconnectList(const char *ctr_name);
   void RemoveCtrFromDisconnectList(const char *ctr_name);
+
+  void AddtoUnknownCtrlrList(const char* ctr_name);
+  bool IsCtrlrInUnknownList(const char* ctr_name) {
+    UPLL_FUNC_TRACE;
+    bool bDisconnect(false);
+
+    if (ctr_name == NULL) {
+      UPLL_LOG_ERROR("Invalid argument ctr_name");
+      return false;
+    }
+    discon_ctrlr_lock_.rdlock();
+    if (discon_ctrlr_list_.end() != discon_ctrlr_list_.find(ctr_name)) {
+      bDisconnect = true;
+    }
+    discon_ctrlr_lock_.unlock();
+    return bDisconnect;
+  }
+  void DeleteFromUnknownCtrlrList(const char *ctr_name);
+  void AddCtrToIgnoreList(const char *ctr_name);
+  bool IsCtrlrInIgnoreList(const char *ctr_name);
+  void RemoveCtrlrFromIgnoreList(const char *ctr_name);
+  bool GetPathFaultDomains(const char *ctr_na,
+                           std::set<std::string> *domain_names);
+
+  // vtn exhaustion alarm APIs
+  bool UpdateVtnExhaustionMap(const char *vtn_na, const char *ctr_na,
+                              const char *domain_na, bool assert_alarm);
+  bool HasVtnExhaustionOccured(const char *vtn_na,
+                     const char *ctr_na, const char *domain_na);
+  void ClearVtnExhaustionMap();
 
  private:
   CtrlrMgr() { }
@@ -147,9 +179,20 @@ class CtrlrMgr {
   std::map<std::string, std::map<std::string, uint32_t> > path_fault_map_;
   pfc::core::ReadWriteLock path_fault_lock_;
 
+  std::map<std::string,
+           std::map<std::string, std::set<std::string> > > vtn_exhaust_map_;
+  pfc::core::ReadWriteLock vtn_exhaust_lock_;
+
   // controller disconnect handling
   std::map<std::string, std::map<std::string, uint8_t> > ctr_discon_map_;
   pfc::core::ReadWriteLock ctr_discon_lock_;
+
+  // controller disconnect handling for DT_STATE READs
+  std::set<std::string> discon_ctrlr_list_;
+  pfc::core::ReadWriteLock discon_ctrlr_lock_;
+
+  // controller disconnect handling for VTN DT_STATE READs
+  std::set<std::string> ctrlr_ignore_list_;
 };
 
 }  // namespace config_momgr

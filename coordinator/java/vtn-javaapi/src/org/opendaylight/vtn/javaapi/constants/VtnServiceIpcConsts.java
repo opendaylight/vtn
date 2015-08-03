@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -151,6 +151,7 @@ public final class VtnServiceIpcConsts {
 	public static final String EXPIRE = "expire";
 	public static final String VTEPNAME = "vtep_name";
 	public static final String CONTROLLERID = "controller_id";
+	public static final String LABEL_TYPE = "label_type";
 	public static final String NMG_NAME = "nwmonitor_gr";
 	public static final String STATIONID = "station_id";
 	public static final String MAPTYPE = "maptype";
@@ -161,6 +162,7 @@ public final class VtnServiceIpcConsts {
 	public static final String MAX_VLANID = "FFFF";
 	public static final String VLINK_NAME = "vlink_name";
 	public static final String VLAN_ID_DEFAULT_VALUE = "0xFFFF";
+	public static final String NO_VLAN_ID = "65535";
 	public static final String BOUNDARY_NAME = "boundary_name";
 	public static final String DOMAIN_NAME = "domain_name";
 	public static final String CTR_KEY = "ctr_key";
@@ -269,10 +271,17 @@ public final class VtnServiceIpcConsts {
 	public static final String REVISION = "revision";
 	public static final String PATCHLEVEL = "patchlevel";
 	public static final String ENABLE_PASSWORD = "enable_passwd";
+	public static final String PORTMAP_ID = "portmap_id";
+	public static final String ROUTING_TYPE = "routing_type";
+	public static final String UNIFIED_NW_ID = "unified_nw_id";
+	public static final String UNW_KEY = "unw_key";	
 
 	public static final String GET_FLOW_LIST_RESPONSE = "getFlowListResponse";
+	public static final String GET_SPINE_DOMAIN_RESPONSE = "getSpineDomainResponse";
 	public static final String GET_FLOW_LIST_ENTRY_RESPONSE = "getFlowListEntryResponse";
 	public static final String GET_VTN_RESPONSE = "getVtnResponse";
+	public static final String GET_VBRIDGE_PORTMAP_RESPONSE = "getVBridgePortMapResponse";
+	public static final String GET_UNIFIED_NETWORK_RESPONSE = "getUnifiedNetworkResponse";
 	public static final String GET_VTN_FLOW_FILETER_ENTRY_RESPONSE = "getVtnFlowFilterEntryResponse";
 	public static final String GET_VBYPASS_INTERFACE_RESPONSE = "getVBypassInterfaceResponse";
 	public static final String GET_VBYPASS_RESPONSE = "getVBypassResponse";
@@ -376,7 +385,13 @@ public final class VtnServiceIpcConsts {
 	public static final String OUT_VIF = "out_vif";
 	public static final String VLINK_FLAG = "vlink_flag";
 	public static final String CONTROLLER_DOMAIN_COUNT = "ctrlr_domain_count";
-
+	public static final String SPINE_DOMAIN_ID = "spine_domain_id";	
+	public static final String UNW_SPINE_ID = "unw_spine_id";
+	public static final String SPINE_ID = "spine_id";	
+	public static final String SPINE_CONTROLLER_ID = "spine_controller_id";
+	public static final String USED_COUNT = "used_count";
+	public static final String SPINE_DOMAIN_ALARM_STATUS = "alarm_status";
+	
 	public static final String PACKETS = "packets";
 	public static final String DURATION = "duration";
 	public static final String RX_PACKETS = "rx_packets";
@@ -437,4 +452,38 @@ public final class VtnServiceIpcConsts {
 	public static final String VNODENAME = "vnode_name";
 	public static final String VNODEIF_STATUS = "vnode_if_status";
 	public static final String VNODETYPE = "vnode_type";
+	public static final String VNODE1_NAME = "vnode1_name";
+	public static final String VNODE1_IFNAME = "vnode1_ifname";
+	public static final String VNODE2_NAME = "vnode2_name";
+	public static final String VNODE2_IFNAME = "vnode2_ifname";
+	public static final String UNIFIED_NW_KEY = "unified_nw_key";
+	public static final String UNW_LABEL_ID = "unw_label_id";
+	public static final String MAX_COUNT = "max_count";
+	public static final String RAISING_THRESHOLD = "raising_threshold";
+	public static final String FALLING_THRESHOLD = "falling_threshold";
+	public static final String UNW_LABEL_KEY = "unw_label_key";
+	public static final String RANGE_MIN = "range_min";
+	public static final String RANGE_MAX = "range_max";
+	public static final String GET_LABEL_RESPONSE = "getLabelResponse";
+	public static final String GET_LABEL_RANGE_RESPONSE = "getLabelRangeResponse";
+	public static final String GET_VTN_UNIFIED_NETWORK_RESPONSE = "getVTNUnifiedNetworkResponse";
+	public static final String CONTROLLER_VTN_NAME = "controller_vtn_name";
+	public static final String CONTROLLER_VTN_LABEL = "controller_vtn_label";
+
+	// spine domain fdbusage
+	public static final String MAX_SW_ID = "max_switch_id";
+	public static final String MIN_SW_ID = "min_switch_id";
+	public static final String MIN_COUNT = "min_count";
+	public static final String AVG_COUNT = "avg_count";
+	public static final String NUM_OF_SW = "num_of_switches";
+	public static final String VTN_COUNT = "vtn_count";
+
+	// usess
+	public static final String CONFIG_MODE = "config_mode";
+	//KT_PORT
+	public static final String CONNECTED_CONTROLLER_ID = "connected_controller_id";
+	//logical port
+	public static final String BOUNDARY_CANDIDATE = "boundary_candidate";
+	public static final String CONNECTED_CONTROLLER = "connected_controller";
+	public static final String CONNECTED_DOMAIN = "connected_domain";
 }

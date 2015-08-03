@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -98,9 +98,29 @@ void AuditParams::HandleDriverAudit(void) {
   tc_audit_oper_.tc_oper_ = TC_OP_DRIVER_AUDIT;
   tc_audit_oper_.driver_id_ = driver_id_;
 
-  if (tc_audit_oper_.Dispatch() != TC_OPER_SUCCESS )
+  TcOperStatus ret = TC_OPER_SUCCESS;
+
+  // If the audit is cancelled, call Dispatch again
+  // The dispatch will wait in GetExclustion() till
+  // the audit request can be processed.
+
+  TcAuditOperations::PushToWaitQueue(&tc_audit_oper_);
+
+  do {
+    ret = tc_audit_oper_.Dispatch();
+    pfc_log_info("%s Driver audit Dispatch ret=%d",
+                 __FUNCTION__, ret);
+  } while (ret == TC_OPER_AUDIT_CANCELLED);
+
+  if (ret == TC_OPER_SUCCESS) {
+    pfc_log_info("%s Driver audit (ctr_id=%s) completed successfully",
+                 __FUNCTION__, tc_audit_oper_.controller_id_.c_str());
+  } else {
      pfc_log_error("Driver Audit from taskq failed controller_id=%s",
                   tc_audit_oper_.controller_id_.c_str());
+  }
+
+  TcAuditOperations::PopWaitQueue();
 }
 
 /**

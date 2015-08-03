@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -79,7 +79,7 @@ UncRespCode ConfigurationRequest::ProcessReq(
   UncRespCode db_ret = UNC_RC_SUCCESS;
   OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteNb, db_ret);
   if (db_ret != UNC_RC_SUCCESS) {
-    pfc_log_fatal("DB Connection failure for operation %d",
+    UPPL_LOG_FATAL("DB Connection failure for operation %d",
                   obj_req_hdr.operation);
     return db_ret;
   }
@@ -218,13 +218,6 @@ UncRespCode ConfigurationRequest::ValidateReq(
       val_struct = NULL;
       break;
     }
-    case UNC_KT_DATAFLOW:
-    { if (obj_req_hdr.operation != UNC_OP_READ) {
-        pfc_log_error("Config operations not allowed for KtDataflow");
-        return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
-      }
-      break;
-    }
 
     case UNC_KT_CONTROLLER:
     {
@@ -289,13 +282,6 @@ UncRespCode ConfigurationRequest::ValidateReq(
       }
       break;
     }
-    case UNC_KT_CTR_DATAFLOW:
-    { if (obj_req_hdr.operation != UNC_OP_READ) {
-        pfc_log_error("Config operations not allowed for KtCtrDataflow");
-        return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
-      }
-      break;
-    }
     case UNC_KT_CTR_DOMAIN:
     {
       resp_code = ValidateDomain(db_conn, session,
@@ -335,8 +321,11 @@ UncRespCode ConfigurationRequest::ValidateReq(
     case UNC_KT_LOGICAL_MEMBER_PORT:
     case UNC_KT_SWITCH:
     case UNC_KT_LINK:
+    case UNC_KT_CTR_DATAFLOW:
+    case UNC_KT_DATAFLOW:
+    case UNC_KT_DATAFLOW_V2:
     {
-      pfc_log_error("Operation not allowed");
+      pfc_log_error("Operation not allowed for %d", key_type);
       return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
     }
     default:

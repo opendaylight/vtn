@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -29,6 +29,7 @@ SQLLEN *p_ipv6_len = NULL;
 SQLLEN *p_alarms_status_len = NULL;
 SQLLEN *p_mac_len = NULL;
 SQLLEN *p_speed_len = NULL;
+SQLLEN *p_connected_switch_id_len = NULL;
 /**
  * @Description : Function to bind input parameter of port_table
  * @param[in]   : column_attr - DBTableSchema->rowlist_entry
@@ -280,6 +281,75 @@ ODBCM_RC_STATUS DBVarbind::bind_port_table_input(
           log_flag = 0;
         }
         break;
+      case PORT_CONNECTED_CONTROLLER_ID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_32) {
+      /**binding structure buffer member for controller name input,
+       * column size is ODBCM_SIZE_32,
+       * Data type CHAR[32],
+       * and buffer size will passed as length of value */
+          odbc_rc = BindInputParameter_SQL_VARCHAR(
+              r_hstmt/**sql statement handler*/,
+              ++col_no/*parameter number (sequential order)*/,
+              ODBCM_SIZE_32/*column size in DB table*/,
+              0/**decimal point */,
+              p_port_table->szconnected_controller_id/*buffer to carry values*/,
+           sizeof(p_port_table->szconnected_controller_id)-1/**buffer length*/,
+              NULL/**strlen or NULL*/);
+          /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
+      case PORT_CONNECTED_SWITCH_ID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_256) {
+      /**binding structure buffer member for switch_id1 input,
+       * column size is ODBCM_SIZE_256,
+       * Data type CHAR[256], this char data will be converted into
+       * binary before store into database table. switch_id may have non
+       * printable characters as well, To allow non printable character
+       * from 0-255, the binary is chose*/
+          *p_connected_switch_id_len = strlen(
+              (const char*)p_port_table->szconnected_switch_id);
+          odbc_rc = BindInputParameter_SQL_BINARY(
+              r_hstmt/**sql statement handler*/,
+              ++col_no/*parameter number (sequential order)*/,
+              ODBCM_SIZE_256/*column size in DB table*/,
+              0/**decimal point */,
+              p_port_table->szconnected_switch_id/*buffer to carry values*/,
+              sizeof(p_port_table->szconnected_switch_id)-1/**buffer length*/,
+              p_connected_switch_id_len/**strlen or NULL*/);
+          /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
+      case PORT_CONNECTED_PORT_ID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_32) {
+          odbc_rc = BindInputParameter_SQL_VARCHAR(
+              r_hstmt,
+              ++col_no,
+              ODBCM_SIZE_32,
+              0,
+              p_port_table->szconnected_port_id,
+              sizeof(p_port_table->szconnected_port_id)-1,
+              NULL);
+      /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
+      case PORT_CONNECTEDNEIGHBOR_VALID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_3) {
+          odbc_rc = BindInputParameter_SQL_CHAR(
+              r_hstmt,
+              ++col_no,
+              ODBCM_SIZE_3,
+              0,
+              p_port_table->szconnectedneighbor_valid,
+              sizeof(p_port_table->szconnectedneighbor_valid)-1,
+              NULL);
+      /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
+
       default:
         break;
     }
@@ -527,6 +597,63 @@ ODBCM_RC_STATUS DBVarbind::bind_port_table_output(
           log_flag = 0;
         }
         break;
+      case PORT_CONNECTED_CONTROLLER_ID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_32) {
+    /**binding structure buffer member for controller name output,
+     * column size is ODBCM_SIZE_32,
+     * Data type CHAR[32],
+     * and buffer size will passed as length of value,
+     * ptr to indicates available no. of bytes return */
+          odbc_rc = BindCol_SQL_VARCHAR(
+              r_hstmt/**sql statement handler*/,
+              ++col_no/*parameter number (sequential order)*/,
+              p_port_table->szconnected_controller_id/*buffer to fetch values*/,
+              ODBCM_SIZE_32+1,
+              (&p_port_table->cbconnctrid)
+              /*buffer to fetch values*/);
+      /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
+      case PORT_CONNECTED_SWITCH_ID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_256) {
+          odbc_rc = BindCol_SQL_BINARY(
+              r_hstmt,
+              ++col_no,
+              p_port_table->szconnected_switch_id,
+              ODBCM_SIZE_256,
+              p_connected_switch_id_len/*buffer to fetch values*/);
+      /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+       break;
+      case PORT_CONNECTED_PORT_ID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_32) {
+          odbc_rc = BindCol_SQL_VARCHAR(
+              r_hstmt,
+              ++col_no,
+              p_port_table->szconnected_port_id,
+              ODBCM_SIZE_32+1,
+              (&p_port_table->cbconnportid)
+              /*buffer to fetch values*/);
+      /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
+      case PORT_CONNECTEDNEIGHBOR_VALID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_3) {
+          odbc_rc = BindCol_SQL_VARCHAR(
+              r_hstmt,
+              ++col_no,
+              p_port_table->szconnectedneighbor_valid,
+              ODBCM_SIZE_3+1,
+              (&p_port_table->cbconnvalid)
+              /*buffer to fetch values*/);
+      /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
+
       default:
         break;
     }
@@ -819,6 +946,89 @@ ODBCM_RC_STATUS DBVarbind::fill_port_table(
               "sValid = %s", p_port_table->svalid);
         }
         break;
+      case PORT_CONNECTED_CONTROLLER_ID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_32) {
+      /**ColumnAttrValue is a template to receive the void* values from
+       * caller and typecast it into appropriate data type,
+       * for controller name CHAR[32]*/
+          ColumnAttrValue <uint8_t[ODBCM_SIZE_32]> nbrcn_value;
+          nbrcn_value  = *((ColumnAttrValue <uint8_t[ODBCM_SIZE_32]>*)
+              ((*i).p_table_attribute_value));
+       /**clear the allocated buffer memory to receive the controller_name
+       * from caller*/
+          ODBCM_MEMSET(p_port_table->szconnected_controller_id,
+              0, ODBCM_SIZE_32+1);
+      /**copying the value from template to binded buffer */
+          ODBCM_MEMCPY(
+              p_port_table->szconnected_controller_id,
+              &nbrcn_value.value,
+              (*i).table_attribute_length);
+          odbcm_debug_info("ODBCM::DBVarbind::fill:PORT_TABLE:"
+              "szconnected_controller_id = %s",
+              p_port_table->szconnected_controller_id);
+        }
+        break;
+      case PORT_CONNECTED_SWITCH_ID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_256) {
+      /**ColumnAttrValue is a template to receive the void* values from
+       * caller and typecast it into appropriate data type,
+       * for switch id CHAR[256]*/
+          ColumnAttrValue <uint8_t[ODBCM_SIZE_256]> nbrswitchid_value;
+          nbrswitchid_value  = *((ColumnAttrValue <uint8_t[ODBCM_SIZE_256]>*)
+              ((*i).p_table_attribute_value));
+       /**clear the allocated buffer memory to receive the controller_name
+       * from caller*/
+          ODBCM_MEMSET(p_port_table->szconnected_switch_id, 0,
+              ODBCM_SIZE_256+1);
+      /**copying the value from template to binded buffer */
+          ODBCM_MEMCPY(
+              p_port_table->szconnected_switch_id,
+              &nbrswitchid_value.value,
+              (*i).table_attribute_length);
+          odbcm_debug_info("ODBCM::DBVarbind::fill:PORT_TABLE:"
+              "szconnectedswitch_id = %s", p_port_table->szconnected_switch_id);
+        }
+        break;
+      case PORT_CONNECTED_PORT_ID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_32) {
+      /**ColumnAttrValue is a template to receive the void* values from
+       * caller and typecast it into appropriate data type,
+       * for port id CHAR[32]*/
+          ColumnAttrValue <uint8_t[ODBCM_SIZE_32]> nbrportid_value;
+          nbrportid_value  = *((ColumnAttrValue <uint8_t[ODBCM_SIZE_32]>*)
+              ((*i).p_table_attribute_value));
+          ODBCM_MEMSET(p_port_table->szconnected_port_id, 0, ODBCM_SIZE_32+1);
+      /**copying the value from template to binded buffer */
+          ODBCM_MEMCPY(
+              p_port_table->szconnected_port_id,
+              &nbrportid_value.value,
+              (*i).table_attribute_length);
+          odbcm_debug_info("ODBCM::DBVarbind::fill:PORT_TABLE:"
+              "szconnected_port_id = %s",  p_port_table->szconnected_port_id);
+        }
+        break;
+      case PORT_CONNECTEDNEIGHBOR_VALID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_3) {
+      /**ColumnAttrValue is a template to receive the void* values from
+       * caller and typecast it into appropriate data type,
+       * for valid CHAR[3]*/
+          ColumnAttrValue <uint8_t[ODBCM_SIZE_3]> valid_val;
+          valid_val =
+            *((ColumnAttrValue <uint8_t[ODBCM_SIZE_3]>*)
+                ((*i).p_table_attribute_value));
+          ODBCM_MEMSET(p_port_table->szconnectedneighbor_valid,
+              0, ODBCM_SIZE_3+1);
+      /**copying the value from template to binded buffer */
+          ODBCM_MEMCPY(
+              p_port_table->szconnectedneighbor_valid,
+              &valid_val.value,
+              (*i).table_attribute_length);
+          odbcm_debug_info("ODBCM::DBVarbind::fill:PORT_TABLE:"
+              "szconnectedneighbor_valid = %s",
+              p_port_table->szconnectedneighbor_valid);
+        }
+        break;
+
       default:
         break;
     }
@@ -1056,6 +1266,72 @@ ODBCM_RC_STATUS DBVarbind::fetch_port_table(
               "svalid = %s", valid_value->value);
         }
         break;
+      case PORT_CONNECTED_CONTROLLER_ID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_32) {
+      /**ColumnAttrValue is a template to send the fetched values to
+        * caller. typecast it into void*, memory will be allocated
+        * for the template to send to caller*/
+          ODBCM_ALLOCATE_COLUMN_ATTRVALUE_T(uint8_t[ODBCM_SIZE_32+1],
+                                val_connected_controller_id);
+          ODBCM_MEMCPY(
+              val_connected_controller_id->value,
+              p_port_table->szconnected_controller_id,
+              sizeof(p_port_table->szconnected_controller_id));
+          odbcm_debug_info("ODBCM::DBVarbind::fetch:PORT_TABLE: "
+              "szconnected_controller_id = %s",
+              val_connected_controller_id->value);
+          (*i).p_table_attribute_value = val_connected_controller_id;
+        }
+        break;
+      case PORT_CONNECTED_SWITCH_ID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_256) {
+      /**ColumnAttrValue is a template to send the fetched values to
+        * caller. typecast it into void*, memory will be allocated
+        * for the template to send to caller*/
+          ODBCM_ALLOCATE_COLUMN_ATTRVALUE_T(uint8_t[ODBCM_SIZE_256+1],
+                                            val_connected_switch_id);
+          ODBCM_MEMCPY(
+              val_connected_switch_id->value,
+              p_port_table->szconnected_switch_id,
+              *p_connected_switch_id_len);
+          odbcm_debug_info("ODBCM::DBVarbind::fetch:PORT_TABLE: "
+              "szconnected_switch_id = %s", val_connected_switch_id->value);
+          (*i).p_table_attribute_value =val_connected_switch_id;
+        }
+        break;
+      case PORT_CONNECTED_PORT_ID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_32) {
+      /**ColumnAttrValue is a template to send the fetched values to
+        * caller. typecast it into void*, memory will be allocated
+        * for the template to send to caller*/
+          ODBCM_ALLOCATE_COLUMN_ATTRVALUE_T(uint8_t[ODBCM_SIZE_32+1],
+                                         val_connected_port_id);
+          ODBCM_MEMCPY(
+              val_connected_port_id->value,
+              p_port_table->szconnected_port_id,
+              sizeof(p_port_table->szconnected_port_id));
+          odbcm_debug_info("ODBCM::DBVarbind::fetch:PORT_TABLE: "
+              "szconnected_port_id = %s", val_connected_port_id->value);
+          (*i).p_table_attribute_value = val_connected_port_id;
+        }
+        break;
+      case PORT_CONNECTEDNEIGHBOR_VALID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_3) {
+      /**ColumnAttrValue is a template to send the fetched values to
+        * caller. typecast it into void*, memory will be allocated
+        * for the template to send to caller*/
+          ODBCM_ALLOCATE_COLUMN_ATTRVALUE_T(uint8_t[ODBCM_SIZE_3+1],
+              connected_valid_value);
+          ODBCM_MEMCPY(
+              connected_valid_value->value,
+              p_port_table->szconnectedneighbor_valid,
+              sizeof(p_port_table->szconnectedneighbor_valid));
+          (*i).p_table_attribute_value = connected_valid_value;
+          odbcm_debug_info("ODBCM::DBVarbind::fetch:PORT_TABLE: "
+              "szconnectedneighbor_valid = %s", connected_valid_value->value);
+        }
+        break;
+
       default:
         break;
     }

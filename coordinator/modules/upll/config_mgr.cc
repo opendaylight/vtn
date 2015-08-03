@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -15,6 +15,7 @@
 #include "pfc/log.h"
 #include "unc/component.h"
 #include "alarm.hh"
+#include "uncxx/lib_unc.hh"
 
 #include "pfcxx/module.hh"
 
@@ -74,8 +75,13 @@
 #include "vterm_if_policingmap_momgr.hh"
 #include "vterm_if_flowfilter_entry_momgr.hh"
 #include "vterm_if_flowfilter_momgr.hh"
-#include "upll_util.hh"
 #include "upll_validation.hh"
+#include "vbr_portmap_momgr.hh"
+#include "unified_nw_momgr.hh"
+#include "unw_label_momgr.hh"
+#include "unw_label_range_momgr.hh"
+#include "vtn_unified_momgr.hh"
+#include "unw_spine_domain_momgr.hh"
 
 namespace {
 const char * const db_conn_conf_blk = "db_conn";
@@ -83,12 +89,17 @@ const uint32_t default_db_max_ro_conns = 64;
 const char * const batch_config_mode_conf_blk = "batch_config_mode";
 const uint32_t default_batch_timeout = 10;  // in seconds
 const uint32_t default_batch_commit_limit = 1000;
+const char * const tx_update_taskq_conf_blk = "concurrent_req_to_ctrlrs";
+const uint32_t default_tx_update_taskqs = 4;
+const char * const oper_status_setting_conf_blk = "oper_status_setting";
+const bool default_map_physical_resource_status = true;
 }
 
 namespace unc {
 namespace upll {
 namespace config_momgr {
 
+using unc::unclib::UncModeUtil;
 using unc::upll::ipc_util::IpctSt;
 using unc::upll::ipc_util::IpcUtil;
 using unc::upll::ipc_util::ConfigKeyVal;
@@ -111,16 +122,16 @@ UpllConfigMgr *UpllConfigMgr::singleton_instance_;
  */
 UpllConfigMgr::UpllConfigMgr()
     : cktt_(UNC_KT_ROOT), iktt_(UNC_KT_ROOT), tclib_impl_(this),
-      batch_timeout_fctr_(), batch_timer_func_(batch_timeout_fctr_) {
+      batch_timeout_fctr_(), batch_timer_func_(batch_timeout_fctr_),
+      import_err_behavior_(UNC_IMPORT_ERROR_MODE) {
       UPLL_LOG_DEBUG("constructor");
       commit_in_progress_ = false;
       audit_in_progress_ = false;
       import_in_progress_ = false;
+      audit_cancelled_ = false;
       shutting_down_ = false;
       node_active_ = false;
       cl_switched_ = false;
-      candidate_dirty_qc_ = false;
-      candidate_dirty_qc_initialized_ = false;
       dbcm_ = NULL;
       alarm_fd = -1;
       audit_ctrlr_affected_state_  = kCtrlrAffectedNoDiff;
@@ -131,9 +142,14 @@ UpllConfigMgr::UpllConfigMgr()
       batch_timeout_ = default_batch_timeout;
       batch_commit_limit_ = default_batch_commit_limit;
       batch_op_cnt_ = 0;
+      cur_batch_cfg_mode_ = TC_CONFIG_INVALID;
+      cur_batch_cfg_mode_vtn_name_.clear();
+      map_phy_resource_status_ = default_map_physical_resource_status;
       import_state_progress = 0;
       current_import_type = UPLL_IMPORT_TYPE_FULL;
       import_type = UPLL_IMPORT_TYPE_FULL;
+      tx_util_ = NULL;
+      fifo_scheduler_ = NULL;
 }
 
 /*
@@ -146,6 +162,7 @@ UpllConfigMgr::~UpllConfigMgr(void) {
   if (alarm_fd != -1) {
     pfc::alarm::pfc_alarm_close(alarm_fd);
   }
+  delete tx_util_;
 }
 
 /*
@@ -164,6 +181,13 @@ bool UpllConfigMgr::Init(void) {
     return false;
   }
 
+  // FIFO scheduler enforces sequential execution of priority tasks in UPLL
+  fifo_scheduler_ = new TaskScheduler();
+  if (!(fifo_scheduler_->Init())) {
+    UPLL_LOG_ERROR("Error creating FIFO task scheduler.");
+    return false;
+  }
+
   if (!BuildKeyTree())
     return false;
 
@@ -177,6 +201,8 @@ bool UpllConfigMgr::Init(void) {
 
   if (!CreateMoManagers())
     return false;
+  if (!InitKtView())
+    return false;
 
   unc::tclib::TcLibModule *tclib = GetTcLibModule();
   PFC_ASSERT(tclib != NULL);
@@ -184,15 +210,14 @@ bool UpllConfigMgr::Init(void) {
     UPLL_LOG_ERROR("Unable to get tclib module");
     return false;
   }
-  TcLibIntfImpl *tlii = new TcLibIntfImpl(this);
-  unc::tclib::TcApiCommonRet tacr = tclib->TcLibRegisterHandler(tlii);
+  unc::tclib::TcApiCommonRet tacr = tclib->TcLibRegisterHandler(&tclib_impl_);
   if (tacr != unc::tclib::TC_API_COMMON_SUCCESS) {
     UPLL_LOG_ERROR("Failed to register handler with tclib");
-    delete tlii;
     return false;
   }
 
-  GetBatchParamsFrmConfFile(); 
+  GetBatchParamsFrmConfFile();
+  GetOperStatusSettingsFromConfFile();
   batch_taskq_= pfc::core::TaskQueue::create(1);
   if (batch_taskq_ == NULL) {
     UPLL_LOG_ERROR("BATCH TaskQ creation failed");
@@ -204,7 +229,19 @@ bool UpllConfigMgr::Init(void) {
     return false;
   }
 
-  pfc_sem_init(&sem_path_fault_, 1);
+  tx_util_ = new TxUpdateUtil(GetTxUpdateTaskqParamsFrmConfFile());
+  tx_util_->Init();
+  pfc_sem_init(&sem_alarm_commit_syc_, 1);
+
+  // Get Import Mode from unclib
+  int ret_code = -1;
+  UncModeUtil uncModeUtil(ret_code);
+  if (0 != ret_code) {
+    UPLL_LOG_ERROR("Fail to access unclib.conf default import-mode taken");
+  } else {
+    import_err_behavior_ = (UncImportMode)uncModeUtil.libunc_get_import_mode();
+  }
+  UPLL_LOG_DEBUG("Import mode is : %d", import_err_behavior_);
 
   return true;
 }
@@ -215,19 +252,30 @@ uint32_t UpllConfigMgr::GetDbROConnLimitFrmConfFile() {
   uint32_t max_ro_conn = default_db_max_ro_conns;
 
   pfc::core::ModuleConfBlock db_conn_block(db_conn_conf_blk);
-  if (db_conn_block.getBlock() != PFC_CFBLK_INVALID)
-  {
+  if (db_conn_block.getBlock() != PFC_CFBLK_INVALID) {
     UPLL_LOG_TRACE("Block handle is valid");
     max_ro_conn = db_conn_block.getUint32("db_conn_ro_limit",
                                           default_db_max_ro_conns);
     UPLL_LOG_INFO("Max. DB RO connections from conf file %d", max_ro_conn);
-  }
-  else
-  {
+  } else {
     UPLL_LOG_INFO("Setting default value to maximum DB RO connections %d",
                   max_ro_conn);
   }
   return max_ro_conn;
+}
+
+void UpllConfigMgr::GetOperStatusSettingsFromConfFile() {
+  UPLL_FUNC_TRACE;
+  pfc::core::ModuleConfBlock oper_status_block(oper_status_setting_conf_blk);
+  if (oper_status_block.getBlock() != PFC_CFBLK_INVALID) {
+    map_phy_resource_status_ = oper_status_block.getBool(
+        "map_physical_resource_status", default_map_physical_resource_status);
+    UPLL_LOG_INFO("map_phy_resource_status_ setting from conf file %d",
+                   map_phy_resource_status_);
+  } else {
+    UPLL_LOG_INFO("Setting default value to operstatus processing %d",
+                  map_phy_resource_status_);
+  }
 }
 
 const unc::capa::CapaIntf *UpllConfigMgr::GetCapaInterface() {
@@ -246,6 +294,28 @@ unc::tclib::TcLibModule *UpllConfigMgr::GetTcLibModule() {
     UPLL_LOG_FATAL("TcLibModule is not found");
   }
   return tclib;
+}
+
+upll_rc_t UpllConfigMgr::GetConfigMode(
+    uint32_t clnt_sess_id, uint32_t config_id,
+    TcConfigMode *cfg_mode, std::string *vtn_name) {
+  UPLL_FUNC_TRACE;
+  unc::tclib::TcLibModule *tclib = GetTcLibModule();
+  if (!tclib) {
+    return UPLL_RC_ERR_GENERIC;
+  }
+  uint32_t tc_err = tclib->TcLibGetConfigMode(clnt_sess_id, config_id,
+                                              *cfg_mode, *vtn_name);
+  switch (tc_err) {
+    case unc::tclib::TC_API_COMMON_SUCCESS:
+      return UPLL_RC_SUCCESS;
+    case unc::tclib::TC_INVALID_SESSION_ID:
+    case unc::tclib::TC_INVALID_CONFIG_ID:
+      return UPLL_RC_ERR_BAD_CONFIG_OR_SESSION_ID;
+    default:
+      UPLL_LOG_ERROR("Unexpected error %d from TcLibGetConfigMode", tc_err);
+      return UPLL_RC_ERR_GENERIC;
+  }
 }
 
 
@@ -309,6 +379,29 @@ pfc_ipcresp_t UpllConfigMgr::KtServiceHandler(upll_service_ids_t service,
     }
   }
 
+  // Create/update/delete are crit. tasks so add a task in prior_taskq_
+  // of FIFO scheduler. ConfigLock should be taken after scheduling the
+  // task to avoid deadlocks between tasks in prior_taskq.
+  TaskScheduler::Task *task = NULL;
+  if (msghdr->operation == UNC_OP_CREATE ||
+      msghdr->operation == UNC_OP_UPDATE ||
+      msghdr->operation == UNC_OP_DELETE) {
+    task = fifo_scheduler_->AllowExecution(kCriticalTaskPriority, __FUNCTION__);
+    if (!task) {
+      UPLL_LOG_FATAL("Failed to schedule priority operation -"
+                     " service=%u\nRequest: %s\n%s",
+                     service, IpcUtil::IpcRequestToStr(*msghdr).c_str(),
+                     first_ckv->ToStrAll().c_str());
+      return UPLL_RC_ERR_GENERIC;
+    }
+  }
+
+  // Rename should not be allowed when start_import or merge or
+  // clear_import is in progress. import_mutex_lock_ should be
+  // taken before taking lock on DT_IMPORT
+  if (msghdr->operation == UNC_OP_RENAME)
+    pfc::core::ScopedMutex lock(import_mutex_lock_);
+
   // Take configuration locks
   if (TakeConfigLock(msghdr->operation, msghdr->datatype) == false) {
     msghdr->result_code = UPLL_RC_ERR_GENERIC;
@@ -371,6 +464,7 @@ pfc_ipcresp_t UpllConfigMgr::KtServiceHandler(upll_service_ids_t service,
       return 0;
     }
   }
+
   switch (msghdr->operation) {
     case UNC_OP_READ:
       urc = momgr->ReadMo(msghdr, first_ckv, dom);
@@ -426,6 +520,14 @@ pfc_ipcresp_t UpllConfigMgr::KtServiceHandler(upll_service_ids_t service,
       urc = UPLL_RC_ERR_NO_SUCH_OPERATION;
   }
 
+  // Completion of critical priority task
+  if (task != NULL) {
+    if (!(fifo_scheduler_->DoneExecution(task))) {
+      UPLL_LOG_FATAL("Failed to complete the priority task");
+      return UPLL_RC_ERR_GENERIC;
+    }
+  }
+
   msghdr->result_code = urc;
 
   if (dom->get_conn_type() == uudal::kDalConnReadWrite) {
@@ -452,7 +554,6 @@ pfc_ipcresp_t UpllConfigMgr::KtServiceHandler(upll_service_ids_t service,
               db_urc = dbcm_->DalTxClose(dom, true);
               batch_op_cnt_ = 0;
             }
-
           }
           break;
         default:
@@ -477,15 +578,6 @@ pfc_ipcresp_t UpllConfigMgr::KtServiceHandler(upll_service_ids_t service,
     // RO Connection processing - Rollback and release the connection
     dbcm_->DalTxClose(dom, false);
     dbcm_->ReleaseRoConn(dom);
-  }
-
-  if ((urc == UPLL_RC_SUCCESS) && (msghdr->datatype == UPLL_DT_CANDIDATE) &&
-      ((msghdr->operation == UNC_OP_CREATE) ||
-       (msghdr->operation == UNC_OP_UPDATE) ||
-       (msghdr->operation == UNC_OP_DELETE))) {
-    candidate_dirty_qc_lock_.lock();
-    candidate_dirty_qc_ = true;
-    candidate_dirty_qc_lock_.unlock();
   }
 
   // Release configuration locks
@@ -515,7 +607,12 @@ pfc_ipcresp_t UpllConfigMgr::KtServiceHandler(upll_service_ids_t service,
 bool UpllConfigMgr::BuildKeyTree() {
   UPLL_FUNC_TRACE;
   // Init Regualr Config KeyType Tree
-  if (cktt_.AddKeyType(UNC_KT_ROOT, UNC_KT_FLOWLIST) &&
+    if (cktt_.AddKeyType(UNC_KT_ROOT, UNC_KT_UNIFIED_NETWORK) &&
+      (
+          cktt_.AddKeyType(UNC_KT_UNIFIED_NETWORK, UNC_KT_UNW_LABEL) &&
+          cktt_.AddKeyType(UNC_KT_UNW_LABEL, UNC_KT_UNW_LABEL_RANGE) &&
+          cktt_.AddKeyType(UNC_KT_UNIFIED_NETWORK, UNC_KT_UNW_SPINE_DOMAIN)) &&
+      cktt_.AddKeyType(UNC_KT_ROOT, UNC_KT_FLOWLIST) &&
       (
           cktt_.AddKeyType(UNC_KT_FLOWLIST, UNC_KT_FLOWLIST_ENTRY)
       ) &&                                                             // NOLINT
@@ -529,9 +626,11 @@ bool UpllConfigMgr::BuildKeyTree() {
       // skip UNC_KT_VTNSTATION_CONTROLLER
       cktt_.AddKeyType(UNC_KT_ROOT, UNC_KT_VTN) &&
       (
+          cktt_.AddKeyType(UNC_KT_VTN, UNC_KT_VTN_UNIFIED) &&
           // skip UNC_KT_VTN_DATAFLOW_CONTROLLER
           cktt_.AddKeyType(UNC_KT_VTN, UNC_KT_VBRIDGE) &&
           (
+              cktt_.AddKeyType(UNC_KT_VBRIDGE, UNC_KT_VBR_PORTMAP) &&
               cktt_.AddKeyType(UNC_KT_VBRIDGE, UNC_KT_VBR_VLANMAP) &&
               cktt_.AddKeyType(UNC_KT_VBRIDGE, UNC_KT_VBR_NWMONITOR) &&
               cktt_.AddKeyType(UNC_KT_VBR_NWMONITOR,
@@ -614,6 +713,10 @@ bool UpllConfigMgr::BuildKeyTree() {
   iktt_.PrepareOrderedList();
 
   kt_name_map_[UNC_KT_ROOT] = "ROOT";
+  kt_name_map_[UNC_KT_UNIFIED_NETWORK] = "UNIFIED_NETWORK";
+  kt_name_map_[UNC_KT_UNW_LABEL] = "UNW_LABEL";
+  kt_name_map_[UNC_KT_UNW_LABEL_RANGE] = "UNW_LABEL_RANGE";
+  kt_name_map_[UNC_KT_UNW_SPINE_DOMAIN] = "UNW_SPINE_DOMAIN";
   kt_name_map_[UNC_KT_FLOWLIST] = "FLOWLIST";
   kt_name_map_[UNC_KT_FLOWLIST_ENTRY] = "FLOWLIST_ENTRY";
   kt_name_map_[UNC_KT_POLICING_PROFILE] = "POLICING_PROFILE";
@@ -622,6 +725,7 @@ bool UpllConfigMgr::BuildKeyTree() {
   kt_name_map_[UNC_KT_PATHMAP_CONTROLLER] = "PATHMAP_CONTROLLER";
   kt_name_map_[UNC_KT_VTNSTATION_CONTROLLER] = "VTNSTATION_CONTROLLER";
   kt_name_map_[UNC_KT_VTN] = "VTN";
+  kt_name_map_[UNC_KT_VTN_UNIFIED] = "VTN_UNIFIED";
   kt_name_map_[UNC_KT_VTN_MAPPING_CONTROLLER] = "VTN_MAPPING_CONTROLLER";
   kt_name_map_[UNC_KT_VTN_DATAFLOW_CONTROLLER] = "VTN_DATAFLOW_CONTROLLER";
   kt_name_map_[UNC_KT_VTN_FLOWFILTER] = "VTN_FLOWFILTER";
@@ -633,6 +737,7 @@ bool UpllConfigMgr::BuildKeyTree() {
   kt_name_map_[UNC_KT_VTN_POLICINGMAP_CONTROLLER] =
       "VTN_POLICINGMAP_CONTROLLER";
   kt_name_map_[UNC_KT_VBRIDGE] = "VBRIDGE";
+  kt_name_map_[UNC_KT_VBR_PORTMAP] = "VBR_PORTMAP";
   kt_name_map_[UNC_KT_VBR_VLANMAP] = "VBR_VLANMAP";
   kt_name_map_[UNC_KT_VBR_NWMONITOR] = "VBR_NWMONITOR";
   kt_name_map_[UNC_KT_VBR_NWMONITOR_HOST] = "VBR_NWMONITOR_HOST";
@@ -708,11 +813,16 @@ bool UpllConfigMgr::CreateMoManagers() {
   UPLL_FUNC_TRACE;
 
   namespace uuk = unc::upll::kt_momgr;
-
+  upll_kt_momgrs_[UNC_KT_UNIFIED_NETWORK] = new uuk::UnifiedNwMoMgr();
+  upll_kt_momgrs_[UNC_KT_UNW_LABEL] = new uuk::UNWLabelMoMgr();
+  upll_kt_momgrs_[UNC_KT_UNW_LABEL_RANGE] = new uuk::UNWLabelRangeMoMgr();
+  upll_kt_momgrs_[UNC_KT_UNW_SPINE_DOMAIN] = new uuk::UNWSpineDomainMoMgr();
   upll_kt_momgrs_[UNC_KT_VTN] =
-      upll_kt_momgrs_[UNC_KT_VTNSTATION_CONTROLLER] =
-      upll_kt_momgrs_[UNC_KT_VTN_MAPPING_CONTROLLER] = new uuk::VtnMoMgr();
+  upll_kt_momgrs_[UNC_KT_VTNSTATION_CONTROLLER] =
+  upll_kt_momgrs_[UNC_KT_VTN_MAPPING_CONTROLLER] = new uuk::VtnMoMgr();
+  upll_kt_momgrs_[UNC_KT_VTN_UNIFIED] = new uuk::VtnUnifiedMoMgr();
   upll_kt_momgrs_[UNC_KT_VBRIDGE] = new uuk::VbrMoMgr();
+  upll_kt_momgrs_[UNC_KT_VBR_PORTMAP] = new uuk::VbrPortMapMoMgr();
   upll_kt_momgrs_[UNC_KT_VBR_VLANMAP] = new uuk::VlanMapMoMgr();
   upll_kt_momgrs_[UNC_KT_VBR_NWMONITOR] = new uuk::NwMonitorMoMgr();
   upll_kt_momgrs_[UNC_KT_VBR_NWMONITOR_HOST] = new uuk::NwMonitorHostMoMgr();
@@ -741,10 +851,10 @@ bool UpllConfigMgr::CreateMoManagers() {
       new uuk::PolicingProfileEntryMoMgr();
   upll_kt_momgrs_[UNC_KT_VTN_FLOWFILTER] = new uuk::VtnFlowFilterMoMgr();
   upll_kt_momgrs_[UNC_KT_VTN_FLOWFILTER_ENTRY] =
-      upll_kt_momgrs_[UNC_KT_VTN_FLOWFILTER_CONTROLLER] =
+  upll_kt_momgrs_[UNC_KT_VTN_FLOWFILTER_CONTROLLER] =
       new uuk::VtnFlowFilterEntryMoMgr();
   upll_kt_momgrs_[UNC_KT_VTN_POLICINGMAP] =
-      upll_kt_momgrs_[UNC_KT_VTN_POLICINGMAP_CONTROLLER] =
+  upll_kt_momgrs_[UNC_KT_VTN_POLICINGMAP_CONTROLLER] =
       new uuk::VtnPolicingMapMoMgr();
   upll_kt_momgrs_[UNC_KT_VBR_POLICINGMAP_ENTRY] =
   upll_kt_momgrs_[UNC_KT_VBR_POLICINGMAP] = new uuk::VbrPolicingMapMoMgr();
@@ -760,26 +870,148 @@ bool UpllConfigMgr::CreateMoManagers() {
   upll_kt_momgrs_[UNC_KT_VRTIF_FLOWFILTER] = new uuk::VrtIfFlowFilterMoMgr();
   upll_kt_momgrs_[UNC_KT_VRTIF_FLOWFILTER_ENTRY] =
       new uuk::VrtIfFlowFilterEntryMoMgr();
-  upll_kt_momgrs_[UNC_KT_VTERMIF_FLOWFILTER] = new uuk::VtermIfFlowFilterMoMgr();
+  upll_kt_momgrs_[UNC_KT_VTERMIF_FLOWFILTER] =
+      new uuk::VtermIfFlowFilterMoMgr();
   upll_kt_momgrs_[UNC_KT_VTERMIF_FLOWFILTER_ENTRY] =
       new uuk::VtermIfFlowFilterEntryMoMgr();
   upll_kt_momgrs_[UNC_KT_VTN_DATAFLOW] = new uuk::VtnDataflowMoMgr();
   upll_kt_momgrs_[UNC_KT_VTERMIF_POLICINGMAP_ENTRY] =
-      upll_kt_momgrs_[UNC_KT_VTERMIF_POLICINGMAP] =
+  upll_kt_momgrs_[UNC_KT_VTERMIF_POLICINGMAP] =
       new uuk::VtermIfPolicingMapMoMgr();
 
   return true;
 }
 
+bool UpllConfigMgr::InitKtView() {
+  /*
+  //TODO(U17) ?????????????? KT_ROOT belongs to which view?
+  */
+  kt_view_[UNC_KT_ROOT] = (UpllKtView) 0xFFFFFFFF;
+
+  for (std::map<unc_key_type_t, MoManager*>::iterator kt_iter
+       = upll_kt_momgrs_.begin();
+       kt_iter != upll_kt_momgrs_.end(); kt_iter++) {
+    unc_key_type_t kt = kt_iter->first;
+    switch (kt) {
+      case UNC_KT_VTN:
+      case UNC_KT_VBRIDGE:
+      case UNC_KT_VBR_PORTMAP:
+      case UNC_KT_VBR_VLANMAP:
+      case UNC_KT_VBR_NWMONITOR:
+      case UNC_KT_VBR_NWMONITOR_HOST:
+      case UNC_KT_VBR_IF:
+      case UNC_KT_VROUTER:
+      case UNC_KT_VRT_IPROUTE:
+      case UNC_KT_DHCPRELAY_SERVER:
+      case UNC_KT_DHCPRELAY_IF:
+      case UNC_KT_VRT_IF:
+      case UNC_KT_VTERMINAL:
+      case UNC_KT_VTERM_IF:
+      case UNC_KT_VUNKNOWN:
+      case UNC_KT_VUNK_IF:
+      case UNC_KT_VTEP:
+      case UNC_KT_VTEP_IF:
+      case UNC_KT_VTEP_GRP:
+      case UNC_KT_VTEP_GRP_MEMBER:
+      case UNC_KT_VTUNNEL:
+      case UNC_KT_VTUNNEL_IF:
+      case UNC_KT_VLINK:
+      case UNC_KT_VTN_FLOWFILTER:
+      case UNC_KT_VTN_FLOWFILTER_ENTRY:
+      case UNC_KT_VTN_FLOWFILTER_CONTROLLER:
+      case UNC_KT_VTN_POLICINGMAP:
+      case UNC_KT_VTN_POLICINGMAP_CONTROLLER:
+      case UNC_KT_VBR_POLICINGMAP_ENTRY:
+      case UNC_KT_VBR_POLICINGMAP:
+      case UNC_KT_VBR_FLOWFILTER:
+      case UNC_KT_VBR_FLOWFILTER_ENTRY:
+      case UNC_KT_VBRIF_FLOWFILTER:
+      case UNC_KT_VBRIF_FLOWFILTER_ENTRY:
+      case UNC_KT_VBRIF_POLICINGMAP_ENTRY:
+      case UNC_KT_VBRIF_POLICINGMAP:
+      case UNC_KT_VRTIF_FLOWFILTER:
+      case UNC_KT_VRTIF_FLOWFILTER_ENTRY:
+      case UNC_KT_VTERMIF_FLOWFILTER:
+      case UNC_KT_VTERMIF_FLOWFILTER_ENTRY:
+      case UNC_KT_VTERMIF_POLICINGMAP_ENTRY:
+      case UNC_KT_VTERMIF_POLICINGMAP:
+      case UNC_KT_VTN_UNIFIED:
+        kt_view_[kt] = kUpllKtViewVtn;
+        break;
+      case UNC_KT_FLOWLIST:
+      case UNC_KT_FLOWLIST_ENTRY:
+      case UNC_KT_POLICING_PROFILE:
+      case UNC_KT_POLICING_PROFILE_ENTRY:
+      case UNC_KT_UNIFIED_NETWORK:
+      case UNC_KT_UNW_LABEL:
+      case UNC_KT_UNW_LABEL_RANGE:
+      case UNC_KT_UNW_SPINE_DOMAIN:
+        kt_view_[kt] = kUpllKtViewVirtual;
+        break;
+      case UNC_KT_VTNSTATION_CONTROLLER:
+      case UNC_KT_VTN_MAPPING_CONTROLLER:
+      case UNC_KT_VTN_DATAFLOW:
+        kt_view_[kt] = kUpllKtViewState;
+        break;
+      default:
+        UPLL_LOG_ERROR("Uknown KT: %d", kt);
+        return false;
+    }
+  }
+  // prepare view lists
+  const std::list<unc_key_type_t> *lst = cktt_.get_preorder_list();
+  for (std::list<unc_key_type_t>::const_iterator it = lst->begin();
+       it != lst->end(); it++) {
+    const unc_key_type_t kt(*it);
+    if (IsKtPartOfConfigMode(kt, UPLL_DT_CANDIDATE, TC_CONFIG_VIRTUAL)) {
+      preorder_virtual_kt_list_.push_back(kt);
+    }
+    if (IsKtPartOfConfigMode(kt, UPLL_DT_CANDIDATE, TC_CONFIG_VTN)) {
+      preorder_vtn_kt_list_.push_back(kt);
+    }
+  }
+
+  return true;
+}
+
+bool UpllConfigMgr::IsKtPartOfConfigMode(unc_key_type_t kt,
+                                         upll_keytype_datatype_t dt,
+                                         TcConfigMode cfg_mode) {
+  if (dt != UPLL_DT_CANDIDATE) {
+    return true;
+  }
+
+  std::map<unc_key_type_t, UpllKtView>::iterator view_it = kt_view_.find(kt);
+  if (view_it == kt_view_.end()) {
+    return false;
+  }
+
+  if (cfg_mode == TC_CONFIG_GLOBAL) {
+    return true;
+  } else {
+    UpllKtView kt_view = view_it->second;
+
+    if ((cfg_mode == TC_CONFIG_VIRTUAL) && (kt_view & kUpllKtViewVirtual))
+     return true;
+    else if ((cfg_mode == TC_CONFIG_VTN) && (kt_view & kUpllKtViewVtn))
+      return true;
+    return false;
+  }
+  return false;
+}
+
 
 upll_rc_t UpllConfigMgr::ValidSession(uint32_t clnt_sess_id,
-                                      uint32_t config_id) {
+                                      uint32_t config_id,
+                                      TcConfigMode config_mode,
+                                      std::string vtn_name) {
   UPLL_FUNC_TRACE;
   unc::tclib::TcLibModule *tclib = GetTcLibModule();
   if (!tclib)
     return UPLL_RC_ERR_GENERIC;
 
-  uint32_t err = tclib->TcLibValidateUpdateMsg(clnt_sess_id, config_id);
+  uint32_t err = tclib->TcLibValidateUpdateMsg(clnt_sess_id, config_id,
+                                               config_mode, vtn_name);
   if (unc::tclib::TC_API_COMMON_SUCCESS == err) {
     return UPLL_RC_SUCCESS;
   }
@@ -900,14 +1132,51 @@ upll_rc_t UpllConfigMgr::ValidateKtRequest(upll_service_ids_t service,
       (service == UPLL_READ_SVC_ID && msghdr.datatype == UPLL_DT_CANDIDATE)) {
     // Validate session id and config id in the case of edit services and
     // read on candidate configuration.
-    urc = ValidSession(msghdr.clnt_sess_id, msghdr.config_id);
-    if (urc != UPLL_RC_SUCCESS) {
-      UPLL_LOG_DEBUG("Invalid session_id %u and/or config_id %u in IPC request."
-                    " Err: %d", msghdr.clnt_sess_id, msghdr.config_id, urc);
-      return urc;
+
+    TcConfigMode config_mode = TC_CONFIG_INVALID;
+    char *vtn_name = NULL;
+
+    // Assume config mode type by the received key types and if the
+    // mode type is VTN mode get the vtn name from the corresponding key
+    // ASSUME_CONFIG_MODE_TYPE(ckv.get_key_type(), config_mode);
+    AssumeConfigModeType(ckv.get_key_type(), config_mode);
+
+    if (config_mode == TC_CONFIG_VTN) {
+      if ((msghdr.operation != UNC_OP_READ_SIBLING_BEGIN) &&
+          (msghdr.operation != UNC_OP_READ_SIBLING_COUNT) &&
+          (msghdr.operation != UNC_OP_READ_BULK)) {
+        urc = GetVtnName(msghdr, ckv, &vtn_name);
+        if (urc != UPLL_RC_SUCCESS) {
+          UPLL_LOG_DEBUG("GetVtnName failed");
+          if (vtn_name) {
+            free(vtn_name);
+          }
+          return urc;
+        }
+      }
+    }
+
+    std::string vtn_id;
+    if (vtn_name) {
+      vtn_id.append(vtn_name);
+      free(vtn_name);
+    }
+    UPLL_LOG_DEBUG("session_id %u and/or config_id %u in",
+                    msghdr.clnt_sess_id, msghdr.config_id);
+
+    if ((msghdr.operation != UNC_OP_READ_SIBLING_BEGIN) &&
+        (msghdr.operation != UNC_OP_READ_SIBLING_COUNT) &&
+        (msghdr.operation != UNC_OP_READ_BULK)) {
+      urc = ValidSession(msghdr.clnt_sess_id, msghdr.config_id,
+                         config_mode, vtn_id);
+      if (urc != UPLL_RC_SUCCESS) {
+        UPLL_LOG_DEBUG("Invalid session_id %u and/or config_id %u in"
+                       "IPC request Err: %d", msghdr.clnt_sess_id,
+                       msghdr.config_id, urc);
+        return urc;
+      }
     }
   }
-
   urc = ValidIpcOperation(service, msghdr.datatype, msghdr.operation);
   if (urc != UPLL_RC_SUCCESS) {
     UPLL_LOG_DEBUG("Invalid operation %u in IPC request for service %u",
@@ -954,7 +1223,8 @@ bool UpllConfigMgr::FindRequiredLocks(unc_keytype_operation_t oper,
                                       upll_keytype_datatype_t *lck_dt_1,
                                       ConfigLock::LockType *lck_type_1,
                                       upll_keytype_datatype_t *lck_dt_2,
-                                      ConfigLock::LockType *lck_type_2) {
+                                      ConfigLock::LockType *lck_type_2,
+                                      TaskPriority *lock_prior) {
   UPLL_FUNC_TRACE;
   *lck_dt_1 = UPLL_DT_INVALID;
   *lck_dt_2 = UPLL_DT_INVALID;
@@ -969,6 +1239,7 @@ bool UpllConfigMgr::FindRequiredLocks(unc_keytype_operation_t oper,
         return false;
       *lck_dt_1 = datatype;
       *lck_type_1 = ConfigLock::CFG_READ_LOCK;
+      *lock_prior = kNormalTaskPriority;
       return true;
       break;
     case UNC_OP_CREATE:
@@ -979,18 +1250,21 @@ bool UpllConfigMgr::FindRequiredLocks(unc_keytype_operation_t oper,
         *lck_type_1 = ConfigLock::CFG_WRITE_LOCK;
         *lck_dt_2 = UPLL_DT_RUNNING;
         *lck_type_2 = ConfigLock::CFG_READ_LOCK;
+        *lock_prior = kCriticalTaskPriority;
         return true;
       } else if (datatype == UPLL_DT_IMPORT) {
         *lck_dt_1 = UPLL_DT_IMPORT;
         *lck_type_1 = ConfigLock::CFG_WRITE_LOCK;
         *lck_dt_2 = UPLL_DT_RUNNING;
         *lck_type_2 = ConfigLock::CFG_READ_LOCK;
+        *lock_prior = kNormalTaskPriority;
         return true;
       } else if (datatype == UPLL_DT_AUDIT) {
         *lck_dt_1 = UPLL_DT_AUDIT;
         *lck_type_1 = ConfigLock::CFG_WRITE_LOCK;
         *lck_dt_2 = UPLL_DT_RUNNING;
         *lck_type_2 = ConfigLock::CFG_READ_LOCK;
+        *lock_prior = kNormalTaskPriority;
         return true;
       }
       return false;
@@ -1001,6 +1275,7 @@ bool UpllConfigMgr::FindRequiredLocks(unc_keytype_operation_t oper,
         *lck_type_1 = ConfigLock::CFG_WRITE_LOCK;
         *lck_dt_2 = UPLL_DT_CANDIDATE;
         *lck_type_2 = ConfigLock::CFG_READ_LOCK;
+        *lock_prior = kNormalTaskPriority;
         return true;
       }
       return false;
@@ -1011,6 +1286,7 @@ bool UpllConfigMgr::FindRequiredLocks(unc_keytype_operation_t oper,
       if (datatype == UPLL_DT_RUNNING) {
         *lck_dt_1 = datatype;
         *lck_type_1 = ConfigLock::CFG_READ_LOCK;
+        *lock_prior = kNormalTaskPriority;
         return true;
       }
       return false;
@@ -1027,17 +1303,20 @@ bool UpllConfigMgr::TakeConfigLock(unc_keytype_operation_t oper,
   upll_keytype_datatype_t lck_dt_1 = UPLL_DT_INVALID;
   upll_keytype_datatype_t lck_dt_2 = UPLL_DT_INVALID;
   ConfigLock::LockType lck_type_1, lck_type_2;
+  TaskPriority task_priorirty;
 
   if (datatype == UPLL_DT_STATE)
     datatype = UPLL_DT_RUNNING;
 
   if (FindRequiredLocks(oper, datatype,
                         &lck_dt_1, &lck_type_1,
-                        &lck_dt_2, &lck_type_2)) {
+                        &lck_dt_2, &lck_type_2,
+                        &task_priorirty)) {
     if (lck_dt_2 == UPLL_DT_INVALID)
-      return cfg_lock_.Lock(lck_dt_1, lck_type_1);
+      return cfg_lock_.Lock(task_priorirty, lck_dt_1, lck_type_1);
     else
-      return cfg_lock_.Lock(lck_dt_1, lck_type_1, lck_dt_2, lck_type_2);
+      return cfg_lock_.Lock(task_priorirty, lck_dt_1, lck_type_1,
+                            lck_dt_2, lck_type_2);
   }
   return false;
 }
@@ -1048,17 +1327,19 @@ bool UpllConfigMgr::ReleaseConfigLock(unc_keytype_operation_t oper,
   upll_keytype_datatype_t lck_dt_1 = UPLL_DT_INVALID;
   upll_keytype_datatype_t lck_dt_2 = UPLL_DT_INVALID;
   ConfigLock::LockType lck_type_1, lck_type_2;
+  TaskPriority task_priorirty;
 
   if (datatype == UPLL_DT_STATE)
     datatype = UPLL_DT_RUNNING;
 
   if (FindRequiredLocks(oper, datatype,
                         &lck_dt_1, &lck_type_1,
-                        &lck_dt_2, &lck_type_2)) {
+                        &lck_dt_2, &lck_type_2,
+                        &task_priorirty)) {
     if (lck_dt_2 == UPLL_DT_INVALID)
-      return cfg_lock_.Unlock(lck_dt_1);
+      return cfg_lock_.Unlock(task_priorirty, lck_dt_1);
     else
-      return cfg_lock_.Unlock(lck_dt_1, lck_dt_2);
+      return cfg_lock_.Unlock(task_priorirty, lck_dt_1, lck_dt_2);
   }
   return false;
 }
@@ -1115,7 +1396,8 @@ upll_rc_t UpllConfigMgr::ValidateImport(uint32_t sess_id, uint32_t config_id,
     return UPLL_RC_ERR_GENERIC;
 
   // Validate user session
-  upll_rc_t urc = ValidSession(sess_id, config_id);
+  string vtn_name = "";
+  upll_rc_t urc = ValidSession(sess_id, config_id, TC_CONFIG_GLOBAL, vtn_name);
   if (urc != UPLL_RC_SUCCESS) {
     UPLL_LOG_INFO("Invalid session_id %u and/or config_id %u in IPC request,"
                   " Err: %d, %s not allowed for controller %s",
@@ -1135,8 +1417,7 @@ upll_rc_t UpllConfigMgr::ValidateImport(uint32_t sess_id, uint32_t config_id,
                   import_operation, ctrlr_id);
     return UPLL_RC_ERR_NO_SUCH_INSTANCE;
   }
-  if (ctrlr_type != UNC_CT_PFC &&
-      ctrlr_type != UNC_CT_ODC) {
+  if ((ctrlr_type != UNC_CT_PFC) && (ctrlr_type != UNC_CT_ODC)) {
     UPLL_LOG_INFO("Import is not allowed for controller type %d."
                   " Cannot do %s for %s ",
                   ctrlr_type, import_operation, ctrlr_id);
@@ -1146,10 +1427,9 @@ upll_rc_t UpllConfigMgr::ValidateImport(uint32_t sess_id, uint32_t config_id,
   if (operation == UPLL_CLEAR_IMPORT_CONFIG_OP)
     return UPLL_RC_SUCCESS;  // the other below checks are not required
   bool is_audit_wait = false;
-  urc = GetControllerSatusFromPhysical((uint8_t *)ctrlr_id,
-                            is_audit_wait,
-                            sess_id,
-                            config_id);
+  urc = GetControllerSatusFromPhysical(
+                      reinterpret_cast<uint8_t *>(const_cast<char *>(ctrlr_id)),
+                      is_audit_wait);
   if (UPLL_RC_SUCCESS == urc) {
     if (!is_audit_wait) {
       UPLL_LOG_INFO("Full / Partial Import is not allowed for controller"
@@ -1177,13 +1457,13 @@ upll_rc_t UpllConfigMgr::ValidateImport(uint32_t sess_id, uint32_t config_id,
                     " %s ",
                      ctrlr_id);
       return UPLL_RC_ERR_NOT_ALLOWED_AT_THIS_TIME;
-
     }
   }
 
   bool candidate_dirty = true;
   // Note: caller supposed to take the lock on the database
-  urc = IsCandidateDirtyNoLock(&candidate_dirty);
+  urc = IsCandidateDirtyNoLock(TC_CONFIG_GLOBAL, vtn_name, &candidate_dirty,
+                               false);
   if (urc != UPLL_RC_SUCCESS) {
     UPLL_LOG_INFO("Failed to find if candidate is dirty. Urc=%d."
                   " Cannot do %s for %s", urc, import_operation, ctrlr_id);
@@ -1202,7 +1482,7 @@ upll_rc_t UpllConfigMgr::ValidateImport(uint32_t sess_id, uint32_t config_id,
   ConfigKeyVal ckv(UNC_KT_CONTROLLER, IpctSt::kIpcStKeyCtr, ctr_key);
   // Note: Partial import need not to check the controller in use.
   if (UPLL_IMPORT_TYPE_PARTIAL != import_type) {
-   // Note: caller supposed to take the lock on the database
+    // Note: caller supposed to take the lock on the database
     urc = IsKeyInUseNoLock(UPLL_DT_RUNNING, &ckv, &ctr_in_use);
     if (urc != UPLL_RC_SUCCESS) {
       UPLL_LOG_INFO("Failed to find if controller is in running config. Urc=%d."
@@ -1223,14 +1503,14 @@ upll_rc_t UpllConfigMgr::ImportCtrlrConfig(const char *ctrlr_id,
   UPLL_FUNC_TRACE;
   upll_rc_t urc = UPLL_RC_SUCCESS;
   DalOdbcMgr *dom = NULL;
-  //This method would be invoked for both Import and audit.
-  //So,the connections should be managed appropriately.
+  // This method would be invoked for both Import and audit.
+  // So, the connections should be managed appropriately.
   if (UPLL_DT_IMPORT == dest_dt) {
     dom = dbcm_->GetConfigRwConn();
   } else if (UPLL_DT_AUDIT == dest_dt) {
     dom = dbcm_->GetAuditRwConn();
   } else {
-    UPLL_LOG_ERROR("It should not be here.");
+    UPLL_LOG_FATAL("It should not be here.");
   }
   if (dom == NULL) { return UPLL_RC_ERR_GENERIC; }
 
@@ -1244,10 +1524,9 @@ upll_rc_t UpllConfigMgr::ImportCtrlrConfig(const char *ctrlr_id,
 
   bool read_bulk_done = false;
 
-  if (UPLL_DT_IMPORT == dest_dt &&
-      UPLL_IMPORT_TYPE_PARTIAL == import_type) {
-    unc_key_type_t rename_key[]= { UNC_KT_VBRIDGE,
-      UNC_KT_VLINK, UNC_KT_FLOWLIST, UNC_KT_POLICING_PROFILE };
+  if (UPLL_IMPORT_TYPE_PARTIAL == import_type) {
+    unc_key_type_t rename_key[]= { UNC_KT_VBRIDGE, UNC_KT_VLINK,
+                                   UNC_KT_FLOWLIST, UNC_KT_POLICING_PROFILE };
 
     for (unsigned int i = 0; i < sizeof(rename_key)/sizeof(rename_key[0]);
          i++) {
@@ -1255,25 +1534,53 @@ upll_rc_t UpllConfigMgr::ImportCtrlrConfig(const char *ctrlr_id,
           upll_kt_momgrs_.find(rename_key[i]);
       if (momgr_it != upll_kt_momgrs_.end()) {
         MoManager *momgr = momgr_it->second;
-        urc = momgr->CopyRenameTables(ctrlr_id, dom);
+        urc = momgr->CopyRenameTables(ctrlr_id, dest_dt, dom);
       }
       if (UPLL_RC_SUCCESS != urc)
         break;
     }
-    /*
-     * Checks wheather CopyRenameTable function is
-     * success or failed
-     */
+     // Checks wheather CopyRenameTable function is success or failed
     if (UPLL_RC_SUCCESS != urc) {
-      UPLL_LOG_DEBUG("CopyRenameTables failed");
+      UPLL_LOG_ERROR("CopyRenameTables failed");
       DELETE_IF_NOT_NULL(bulkreq_ckv);
+      dbcm_->DalTxClose(dom, false);
+      dbcm_->ReleaseRwConn(dom);
       return urc;
     } else {
       // continue
     }
   }
 
+  //  During import operation copy vtn_unified information from candidate
+  //  to import, to apply renamed vtn_name to vtn_unified_tbl
+  if (dest_dt == UPLL_DT_IMPORT) {
+    std::map<unc_key_type_t, MoManager*>::iterator momgr_it =
+        upll_kt_momgrs_.find(UNC_KT_VTN_UNIFIED);
+    if (momgr_it != upll_kt_momgrs_.end()) {
+      MoManager *momgr = momgr_it->second;
+      urc = momgr->CopyVtnUnifiedTable(dest_dt, dom);
+    }
+     // Checks whether CopyVtnUnifiedTable function is success or failed
+    if (UPLL_RC_SUCCESS != urc) {
+      UPLL_LOG_ERROR("CopyVtnUnified failed");
+      DELETE_IF_NOT_NULL(bulkreq_ckv);
+      dbcm_->DalTxClose(dom, false);
+      dbcm_->ReleaseRwConn(dom);
+      return urc;
+    }
+  }
+
   while (!read_bulk_done) {
+    if (dest_dt == UPLL_DT_AUDIT) {
+      urc = ContinueAuditProcess();
+    } else {
+      urc = ContinueActiveProcess();
+    }
+    if (urc != UPLL_RC_SUCCESS) {
+      UPLL_LOG_DEBUG("Import to DT %d aborted, Urc=%d", dest_dt, urc);
+      read_bulk_done = true;
+      break;  // break from inner loop
+    }
     IpcRequest bulk_req;
     IpcResponse bulk_resp;
     bzero(&bulk_req, sizeof(IpcRequest));
@@ -1283,17 +1590,24 @@ upll_rc_t UpllConfigMgr::ImportCtrlrConfig(const char *ctrlr_id,
     // bulk_req.header.config_id = 0;
     bulk_req.header.operation = UNC_OP_READ_BULK;
     bulk_req.header.rep_count = 0xFFFFFFFF;  // Driver might be ignoring this
-    bulk_req.header.option1 = UNC_OPT1_NORMAL;
+    // Inform driver that read_bulk is sent for audit
+    // to perform required processing while cancel audit
+    if (dest_dt == UPLL_DT_AUDIT) {
+      bulk_req.header.option1 = UNC_OPT1_AUDIT;
+    } else {
+      bulk_req.header.option1 = UNC_OPT1_NORMAL;
+    }
     bulk_req.header.option2 = UNC_OPT2_NONE;
     bulk_req.header.datatype = UPLL_DT_RUNNING;
     bulk_req.ckv_data = bulkreq_ckv;
     if (IpcUtil::SendReqToDriver(ctrlr_id, NULL, NULL, 0,
                                  &bulk_req, false, &bulk_resp) == false) {
-      UPLL_LOG_DEBUG("Failed to send request to driver for %s", ctrlr_id);
+      UPLL_LOG_ERROR("Failed to send request to driver for %s", ctrlr_id);
       urc = bulk_resp.header.result_code;
       if (bulk_req.ckv_data) {
         delete bulk_req.ckv_data;
         bulk_req.ckv_data = NULL;
+        bulkreq_ckv = NULL;
       }
       if (bulk_resp.ckv_data) {
         delete bulk_resp.ckv_data;
@@ -1305,6 +1619,7 @@ upll_rc_t UpllConfigMgr::ImportCtrlrConfig(const char *ctrlr_id,
 
     delete bulk_req.ckv_data;
     bulk_req.ckv_data = NULL;
+    bulkreq_ckv = NULL;
 
     if (bulk_resp.header.result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
       // No more elements in the controller configuration.
@@ -1331,8 +1646,15 @@ upll_rc_t UpllConfigMgr::ImportCtrlrConfig(const char *ctrlr_id,
     ConfigKeyVal *one_ckv = NULL;
     // Create each KT instance at a time in the destination DT
     while (bulk_resp.ckv_data) {
-      if ((urc = ContinueActiveProcess()) != UPLL_RC_SUCCESS) {
-        UPLL_LOG_DEBUG("Import aborted, Urc=%d", urc);
+      if (dest_dt == UPLL_DT_AUDIT) {
+        urc = ContinueAuditProcess();
+      } else {
+        urc = ContinueActiveProcess();
+      }
+      if (urc != UPLL_RC_SUCCESS) {
+        UPLL_LOG_ERROR("Import to DT %d aborted, Urc=%d", dest_dt, urc);
+        delete bulk_resp.ckv_data;
+        bulk_resp.ckv_data = NULL;
         read_bulk_done = true;
         break;  // break from inner loop
       }
@@ -1356,12 +1678,42 @@ upll_rc_t UpllConfigMgr::ImportCtrlrConfig(const char *ctrlr_id,
         // as there will be more than one VTN. A VTN will be sent in the
         // response only if a VNODE is present for the VTN. VNODE val structure
         // will have domain id.
-        urc = momgr->CreateImportMo(&one_reqhdr, one_ckv, dom,
-                                    ctrlr_id, NULL, import_type);
+        if (dest_dt == UPLL_DT_AUDIT) {
+          // Rename and autrename is supported only for PFC keytypes.
+          // If controller type is other than PFC, CreateImportMo should be
+          // invoked with UPLL_IMPORT_TYPE_FULL import type.
+          // So normal CreateAuditMoImpl will be invoked.
+          unc_keytype_ctrtype_t ctrlr_type;
+          if (false == CtrlrMgr::GetInstance()->GetCtrlrType(
+                  ctrlr_id, UPLL_DT_RUNNING, &ctrlr_type)) {
+            UPLL_LOG_INFO("Unable to get controller type for %s ",
+                          ctrlr_id);
+            delete one_ckv;
+            one_ckv = NULL;
+            if (bulk_resp.ckv_data) {
+              delete bulk_resp.ckv_data;
+              bulk_resp.ckv_data = NULL;
+            }
+            read_bulk_done = true;
+            urc = UPLL_RC_ERR_GENERIC;
+            break;  // break from inner loop
+          }
+          if ((ctrlr_type != UNC_CT_PFC) && (ctrlr_type != UNC_CT_ODC)) {
+            urc = momgr->CreateImportMo(&one_reqhdr, one_ckv, dom,
+                                        ctrlr_id, NULL, UPLL_IMPORT_TYPE_FULL);
+          } else {
+            urc = momgr->CreateImportMo(&one_reqhdr, one_ckv, dom,
+                                        ctrlr_id, NULL, import_type);
+          }
+        } else {
+          urc = momgr->CreateImportMo(&one_reqhdr, one_ckv, dom,
+                                      ctrlr_id, NULL, import_type);
+        }
+
         delete one_ckv;
         one_ckv = NULL;
         if (urc != UPLL_RC_SUCCESS) {
-          UPLL_LOG_DEBUG("CreateImportMo failed. Error = %d", urc);
+          UPLL_LOG_ERROR("CreateImportMo failed. Error = %d", urc);
           if (bulk_resp.ckv_data) {
             delete bulk_resp.ckv_data;
             bulk_resp.ckv_data = NULL;
@@ -1394,44 +1746,48 @@ upll_rc_t UpllConfigMgr::ImportCtrlrConfig(const char *ctrlr_id,
   }
 
   if (urc == UPLL_RC_SUCCESS &&
-      UPLL_DT_IMPORT == dest_dt &&
+      (UPLL_DT_IMPORT == dest_dt || UPLL_DT_AUDIT == dest_dt)&&
       UPLL_IMPORT_TYPE_PARTIAL == import_type) {
-    unc_key_type_t rename_key[]= { UNC_KT_VBRIDGE,
-      UNC_KT_VLINK, UNC_KT_FLOWLIST, UNC_KT_POLICING_PROFILE };
-    for (unsigned int i = 0; i < sizeof(rename_key)/sizeof(rename_key[0]);
-         i++) {
+    if (dest_dt == UPLL_DT_IMPORT) {
+      unc_key_type_t rename_key[]= { UNC_KT_VBRIDGE,
+        UNC_KT_VLINK, UNC_KT_FLOWLIST, UNC_KT_POLICING_PROFILE };
+      for (unsigned int i = 0; i < sizeof(rename_key)/sizeof(rename_key[0]);
+           i++) {
+        std::map<unc_key_type_t, MoManager*>::iterator momgr_it =
+            upll_kt_momgrs_.find(rename_key[i]);
+        if (momgr_it != upll_kt_momgrs_.end()) {
+          MoManager *momgr = momgr_it->second;
+          urc = momgr->PurgeRenameTable(rename_key[i], ctrlr_id, dom);
+        }
+        if (UPLL_RC_SUCCESS != urc)
+          break;
+      }
+    }
+    /*
+     * The redirect node may be auto renamed during partial import operation
+     * So redirect noeds need to convert PFC to UNC after create operations
+     * of all keytpes
+     */
+    unc_key_type_t redirect_key[]= { UNC_KT_VBR_FLOWFILTER_ENTRY,
+      UNC_KT_VBRIF_FLOWFILTER_ENTRY, UNC_KT_VRTIF_FLOWFILTER_ENTRY,
+      UNC_KT_VTERMIF_FLOWFILTER_ENTRY };
+    for (unsigned int i = 0; i < sizeof(redirect_key)/sizeof(redirect_key[0]);
+        i++) {
       std::map<unc_key_type_t, MoManager*>::iterator momgr_it =
-          upll_kt_momgrs_.find(rename_key[i]);
+        upll_kt_momgrs_.find(redirect_key[i]);
       if (momgr_it != upll_kt_momgrs_.end()) {
         MoManager *momgr = momgr_it->second;
-        urc = momgr->PurgeRenameTable(rename_key[i], ctrlr_id, dom);
+        urc = momgr->GetRenamedUncKeyWithRedirection(redirect_key[i], dest_dt,
+                                                     ctrlr_id, dom);
       }
       if (UPLL_RC_SUCCESS != urc)
         break;
     }
-    /* 
-     * The redirect node may be auto renamed during partial import operation
-     * So redirect noeds need to convert PFC to UNC after create operations of all
-     * keytpes
-     */
-    unc_key_type_t redirect_key[]= { UNC_KT_VBR_FLOWFILTER_ENTRY,
-	    UNC_KT_VBRIF_FLOWFILTER_ENTRY, UNC_KT_VRTIF_FLOWFILTER_ENTRY,
-	    UNC_KT_VTERMIF_FLOWFILTER_ENTRY };
-    for (unsigned int i = 0; i < sizeof(redirect_key)/sizeof(redirect_key[0]);
-		    i++) {
-	    std::map<unc_key_type_t, MoManager*>::iterator momgr_it =
-		    upll_kt_momgrs_.find(redirect_key[i]);
-	    if (momgr_it != upll_kt_momgrs_.end()) {
-		    MoManager *momgr = momgr_it->second;
-		    urc = momgr->GetRenamedUncKeyWithRedirection(redirect_key[i], 
-                                                                 ctrlr_id, dom); 
-	    }
-	    if (UPLL_RC_SUCCESS != urc)
-		    break;
-    }
   }
 
   UPLL_LOG_DEBUG("Import configuration status. Urc=%d", urc);
+  DELETE_IF_NOT_NULL(bulkreq_ckv);
+
   upll_rc_t close_urc = dbcm_->DalTxClose(dom, (urc == UPLL_RC_SUCCESS));
   dbcm_->ReleaseRwConn(dom);
 
@@ -1452,14 +1808,14 @@ upll_rc_t UpllConfigMgr::StartImport(const char *ctrlr_id,
   upll_rc_t urc;
 
   // If in BATCH mode perform DB Commit.
-  urc = DbCommitIfInBatchMode(__FUNCTION__);
+  urc = DbCommitIfInBatchMode(__FUNCTION__, kNormalTaskPriority);
   if (urc != UPLL_RC_SUCCESS) {
     return urc;
   }
- 
+
   pfc::core::ScopedMutex import_lock(import_mutex_lock_);
 
-  //Note: Checks the import type is partial or full
+  // Note: Checks the import type is partial or full
   if (in_import_type != UPLL_IMPORT_TYPE_FULL &&
       in_import_type != UPLL_IMPORT_TYPE_PARTIAL) {
     return UPLL_RC_ERR_BAD_REQUEST;
@@ -1470,9 +1826,9 @@ upll_rc_t UpllConfigMgr::StartImport(const char *ctrlr_id,
     import_type = current_import_type = in_import_type;
     import_state_progress++;
   } else {
-    //Note: if not initial state checks same import type or not
+    // Note: if not initial state checks same import type or not
     if (import_type == current_import_type) {
-      //do nothing
+      // do nothing
     } else {
       return UPLL_RC_ERR_BAD_REQUEST;
     }
@@ -1488,7 +1844,7 @@ upll_rc_t UpllConfigMgr::StartImport(const char *ctrlr_id,
 
   // Take read lock on running for doing IsCandidateDirty and IsKeyInUse check
   // in ValidateImport
-  ScopedConfigLock scfg_lock(cfg_lock_,
+  ScopedConfigLock scfg_lock(cfg_lock_, kNormalTaskPriority,
                              UPLL_DT_IMPORT, ConfigLock::CFG_WRITE_LOCK,
                              UPLL_DT_CANDIDATE, ConfigLock::CFG_READ_LOCK,
                              UPLL_DT_RUNNING, ConfigLock::CFG_READ_LOCK);
@@ -1524,7 +1880,7 @@ upll_rc_t UpllConfigMgr::OnMerge(uint32_t sess_id, uint32_t config_id,
   upll_rc_t urc;
 
   // If in BATCH mode perform DB Commit.
-  urc = DbCommitIfInBatchMode(__FUNCTION__);
+  urc = DbCommitIfInBatchMode(__FUNCTION__, kNormalTaskPriority);
   if (urc != UPLL_RC_SUCCESS) {
     return urc;
   }
@@ -1532,7 +1888,7 @@ upll_rc_t UpllConfigMgr::OnMerge(uint32_t sess_id, uint32_t config_id,
   // Validate if import is in progress
   pfc::core::ScopedMutex lock(import_mutex_lock_);
 
-  //Note: Checks the import type is partial or full
+  // Note: Checks the import type is partial or full
   if (in_import_type != UPLL_IMPORT_TYPE_FULL &&
       in_import_type != UPLL_IMPORT_TYPE_PARTIAL) {
     return UPLL_RC_ERR_BAD_REQUEST;
@@ -1543,9 +1899,9 @@ upll_rc_t UpllConfigMgr::OnMerge(uint32_t sess_id, uint32_t config_id,
     import_type = current_import_type = in_import_type;
     import_state_progress++;
   } else {
-    //Note: if not initial state checks same import type or not
+    // Note: if not initial state checks same import type or not
     if (import_type == current_import_type) {
-      //do nothing
+      // do nothing
     } else {
       return UPLL_RC_ERR_BAD_REQUEST;
     }
@@ -1561,20 +1917,20 @@ upll_rc_t UpllConfigMgr::OnMerge(uint32_t sess_id, uint32_t config_id,
   ScopedConfigLock *scfg_lock = NULL;
 
   if (UPLL_IMPORT_TYPE_FULL == import_type) {
-    scfg_lock = new ScopedConfigLock (cfg_lock_,
-              UPLL_DT_IMPORT, ConfigLock::CFG_READ_LOCK,
-              UPLL_DT_CANDIDATE, ConfigLock::CFG_WRITE_LOCK,
-              UPLL_DT_RUNNING, ConfigLock::CFG_READ_LOCK);
+    scfg_lock = new ScopedConfigLock(cfg_lock_, kNormalTaskPriority,
+                                     UPLL_DT_IMPORT, ConfigLock::CFG_READ_LOCK,
+                                     UPLL_DT_CANDIDATE,
+                                     ConfigLock::CFG_WRITE_LOCK,
+                                     UPLL_DT_RUNNING,
+                                     ConfigLock::CFG_READ_LOCK);
   } else {
-    scfg_lock = new ScopedConfigLock (cfg_lock_,
-                             UPLL_DT_IMPORT, ConfigLock::CFG_WRITE_LOCK,
-                             UPLL_DT_CANDIDATE, ConfigLock::CFG_WRITE_LOCK,
-                             UPLL_DT_RUNNING, ConfigLock::CFG_READ_LOCK);
-
+    scfg_lock = new ScopedConfigLock(cfg_lock_, kNormalTaskPriority,
+                                     UPLL_DT_IMPORT, ConfigLock::CFG_WRITE_LOCK,
+                                     UPLL_DT_CANDIDATE,
+                                     ConfigLock::CFG_WRITE_LOCK,
+                                     UPLL_DT_RUNNING,
+                                     ConfigLock::CFG_READ_LOCK);
   }
-
-  DalOdbcMgr *dom = dbcm_->GetConfigRwConn();
-  if (dom == NULL) { delete scfg_lock; return UPLL_RC_ERR_GENERIC; }
 
   urc = ValidateImport(sess_id, config_id, import_ctrlr_id_.c_str(),
                        UPLL_MERGE_IMPORT_CONFIG_OP, import_type);
@@ -1583,18 +1939,28 @@ upll_rc_t UpllConfigMgr::OnMerge(uint32_t sess_id, uint32_t config_id,
     // VTN is created during merge validate
     // Because should not update the description presents
     // in candidate
-      urc = MergeValidate(import_type);  // validate if merge conflicts with existing config
+    // validate if merge conflicts with existing config
+    urc = MergeValidate(import_type);
   }
 
   // merge import config to candidate config
-  if (urc == UPLL_RC_SUCCESS)
+  if (urc == UPLL_RC_SUCCESS) {
     urc = MergeImportToCandidate(import_type);
+  }
   // During partial import newly created vtn from controller
   // will get deleted  if purgecandidate is called before
   // merge import to candidate function.
+
+  DalOdbcMgr *dom = dbcm_->GetConfigRwConn();
+  if (dom == NULL) {
+    delete scfg_lock;
+    return UPLL_RC_ERR_GENERIC;
+  }
+
   if (UPLL_RC_SUCCESS == urc &&
-      UPLL_IMPORT_TYPE_PARTIAL == import_type)
-    urc = PurgeCandidate();
+      UPLL_IMPORT_TYPE_PARTIAL == import_type) {
+    urc = PurgeCandidate(dom);
+  }
 
   upll_rc_t db_urc = dbcm_->DalTxClose(dom, (urc == UPLL_RC_SUCCESS));
   dbcm_->ReleaseRwConn(dom);
@@ -1602,11 +1968,6 @@ upll_rc_t UpllConfigMgr::OnMerge(uint32_t sess_id, uint32_t config_id,
     urc = db_urc;
   }
 
-  if (urc == UPLL_RC_SUCCESS) {
-    candidate_dirty_qc_lock_.lock();
-    candidate_dirty_qc_ = true;
-    candidate_dirty_qc_lock_.unlock();
-  }
   delete scfg_lock;
   return urc;
 }
@@ -1636,7 +1997,7 @@ upll_rc_t UpllConfigMgr::MergeValidate(upll_import_type import_type) {
                     UNC_KT_VUNKNOWN, UNC_KT_VUNK_IF,
                     UNC_KT_VTEP, UNC_KT_VTEP_IF, UNC_KT_VTEP_GRP,
                     UNC_KT_VTEP_GRP_MEMBER, UNC_KT_VTUNNEL,
-                    UNC_KT_VTUNNEL_IF, UNC_KT_VLINK
+                    UNC_KT_VTUNNEL_IF, UNC_KT_VLINK, UNC_KT_VBR_PORTMAP
        };
        for (unsigned int i = 0; i < sizeof(child_key)/sizeof(child_key[0]);
             i++) {
@@ -1661,11 +2022,12 @@ upll_rc_t UpllConfigMgr::MergeValidate(upll_import_type import_type) {
       urc = momgr->MergeValidate(kt, import_ctrlr_id_.c_str(),
                                  &conflict_ckv, dom, import_type);
       if (urc != UPLL_RC_SUCCESS) {
-        UPLL_LOG_INFO("MergeValidate failed %d", urc);
+        UPLL_LOG_INFO("MergeValidate failed %d %d", urc, kt);
         break;
       }
     }
   }
+  dbcm_->ReleaseRwConn(dom);
   return urc;
 }
 
@@ -1700,49 +2062,39 @@ upll_rc_t UpllConfigMgr::MergeImportToCandidate(upll_import_type import_type) {
 */
     }
   }
-
-#if 0
-  upll_rc_t db_urc = DalClose(dom, (urc == UPLL_RC_SUCCESS), __FUNCTION__);
-
-  candidate_dirty_qc_lock_.lock();
-  candidate_dirty_qc_ = true;
-  candidate_dirty_qc_lock_.unlock();
-  if (urc == UPLL_RC_SUCCESS) {
-    urc = db_urc;
-  }
-#endif
+  dbcm_->ReleaseRwConn(dom);
   return urc;
 }
 
 // This function does shallow check
-upll_rc_t UpllConfigMgr::IsCandidateDirtyShallow(bool *dirty) {
+upll_rc_t UpllConfigMgr::IsCandidateDirtyShallow(TcConfigMode cfg_mode,
+                                                 std::string cfg_vtn_name,
+                                                 bool *dirty) {
   UPLL_FUNC_TRACE;
   if (dirty == NULL) {
     UPLL_LOG_DEBUG("Null argument: dirty");
     return UPLL_RC_ERR_GENERIC;
   }
-  if (candidate_dirty_qc_initialized_ == false) {
-    // Do full check
-    UPLL_LOG_INFO("candidate_dirty_qc_initialized_ is false");
-    return IsCandidateDirty(dirty);
-  }
-  candidate_dirty_qc_lock_.lock();
-  *dirty = candidate_dirty_qc_;
-  candidate_dirty_qc_lock_.unlock();
-
+  return IsCandidateDirty(cfg_mode, cfg_vtn_name, dirty);
   return UPLL_RC_SUCCESS;
 }
 
-upll_rc_t UpllConfigMgr::IsCandidateDirty(bool *dirty) {
+upll_rc_t UpllConfigMgr::IsCandidateDirty(TcConfigMode cfg_mode,
+                                          std::string cfg_vtn_name,
+                                          bool *dirty) {
   UPLL_FUNC_TRACE;
 
-  ScopedConfigLock scfg_lock(cfg_lock_,
+  ScopedConfigLock scfg_lock(cfg_lock_, kNormalTaskPriority,
                              UPLL_DT_CANDIDATE, ConfigLock::CFG_READ_LOCK,
                              UPLL_DT_RUNNING, ConfigLock::CFG_READ_LOCK);
-  return IsCandidateDirtyNoLock(dirty);
+  // For external API always do shallow check.
+  return IsCandidateDirtyNoLock(cfg_mode, cfg_vtn_name, dirty, true);
 }
 
-upll_rc_t UpllConfigMgr::IsCandidateDirtyNoLock(bool *dirty) {
+// For PCM, allways shallow check is done
+upll_rc_t UpllConfigMgr::IsCandidateDirtyNoLock(
+    TcConfigMode cfg_mode, std::string cfg_vtn_name,
+    bool *dirty, bool shallow_check) {
   UPLL_FUNC_TRACE;
   upll_rc_t urc = UPLL_RC_SUCCESS;
   unc_key_type_t kt;
@@ -1750,16 +2102,6 @@ upll_rc_t UpllConfigMgr::IsCandidateDirtyNoLock(bool *dirty) {
     UPLL_LOG_DEBUG("Null argument: dirty");
     return UPLL_RC_ERR_GENERIC;
   }
-
-  candidate_dirty_qc_lock_.lock();
-  *dirty = candidate_dirty_qc_;
-  candidate_dirty_qc_lock_.unlock();
-  if (*dirty == false) {
-    UPLL_LOG_INFO("Candidate Dirty QC is false");
-    return UPLL_RC_SUCCESS;
-  }
-
-  UPLL_LOG_DEBUG("Candidate Dirty QC is true, check DB");
 
   DalOdbcMgr *dom = NULL;
   dom = dbcm_->GetConfigRwConn();
@@ -1776,7 +2118,12 @@ upll_rc_t UpllConfigMgr::IsCandidateDirtyNoLock(bool *dirty) {
       upll_kt_momgrs_.find(kt);
     if (momgr_it != upll_kt_momgrs_.end()) {
       MoManager *momgr = momgr_it->second;
-      urc = momgr->IsCandidateDirty(kt, dirty, dom);
+      if (cfg_mode == TC_CONFIG_GLOBAL) {
+        urc = momgr->IsCandidateDirtyInGlobal(kt, dirty, dom, shallow_check);
+      } else {
+        urc = momgr->IsCandidateDirtyShallowInPcm(kt, cfg_mode, cfg_vtn_name,
+                                                  dirty, dom);
+      }
       if (urc != UPLL_RC_SUCCESS) {
         UPLL_LOG_DEBUG("IsCandidateDirty failed %d", urc);
         break;
@@ -1788,16 +2135,6 @@ upll_rc_t UpllConfigMgr::IsCandidateDirtyNoLock(bool *dirty) {
     }
   }
 
-  if (urc == UPLL_RC_SUCCESS) {
-    candidate_dirty_qc_lock_.lock();
-    if (*dirty == false) {
-      candidate_dirty_qc_ = false;
-    }
-    candidate_dirty_qc_initialized_ = true;
-    candidate_dirty_qc_lock_.unlock();
-  }
-
-
   batch_mutex_lock_.lock();
   if (batch_mode_in_progress_) {
     // Only read is performed.
@@ -1808,17 +2145,19 @@ upll_rc_t UpllConfigMgr::IsCandidateDirtyNoLock(bool *dirty) {
     if (urc == UPLL_RC_SUCCESS) {
       urc = db_urc;
     }
-    dbcm_->ReleaseRoConn(dom);
+    dbcm_->ReleaseRwConn(dom);
   }
   batch_mutex_lock_.unlock();
-  
+
   return urc;
 }
 
 upll_rc_t UpllConfigMgr::IsKeyInUse(upll_keytype_datatype_t datatype,
                                     const ConfigKeyVal *ckv, bool *in_use) {
   UPLL_FUNC_TRACE;
-  ScopedConfigLock scfg_lock(cfg_lock_, datatype, ConfigLock::CFG_READ_LOCK);
+  // IsKeyInUse is considered as critical task
+  ScopedConfigLock scfg_lock(cfg_lock_, kCriticalTaskPriority,
+                             datatype, ConfigLock::CFG_READ_LOCK);
   return IsKeyInUseNoLock(datatype, ckv, in_use);
 }
 
@@ -1840,18 +2179,46 @@ upll_rc_t UpllConfigMgr::IsKeyInUseNoLock(upll_keytype_datatype_t datatype,
   }
 
   upll_rc_t urc;
-  MoManager *momgr = NULL;
   switch (ckv->get_key_type()) {
     case UNC_KT_CONTROLLER:
-      momgr = GetMoManager(UNC_KT_VTN);
+      // set in_use as true if received ctr exists in vtn_ctrlr tbl
+      urc = IsKeyInUseNoLock(datatype, ckv, in_use, UNC_KT_VTN);
+      if ((urc != UPLL_RC_SUCCESS) || (*in_use == true)) {
+        break;
+      }
+
+      // set in_use as true if received ctr exists in vbr_portmap_tbl
+      urc = IsKeyInUseNoLock(datatype, ckv, in_use, UNC_KT_VBR_PORTMAP);
+      if ((urc != UPLL_RC_SUCCESS) || (*in_use == true)) {
+        break;
+      }
+
+      // If ctr does not exist in vtn_ctrlr_tbl, then do same
+      // check in unified_nw_spine_tbl. If exists, set in_use to true
+      urc = IsKeyInUseNoLock(datatype, ckv, in_use,
+                             UNC_KT_UNW_SPINE_DOMAIN);
+
       break;
     case UNC_KT_BOUNDARY:
-      momgr = GetMoManager(UNC_KT_VLINK);
+      urc = IsKeyInUseNoLock(datatype, ckv, in_use, UNC_KT_VLINK);
       break;
     case UNC_KT_PORT:
     default:
       return UPLL_RC_ERR_NO_SUCH_NAME;
   }
+
+  return urc;
+}
+
+upll_rc_t UpllConfigMgr::IsKeyInUseNoLock(upll_keytype_datatype_t datatype,
+                                          const ConfigKeyVal *ckv,
+                                          bool *in_use,
+                                          unc_key_type_t keytype) {
+  UPLL_FUNC_TRACE;
+
+  upll_rc_t urc = UPLL_RC_SUCCESS;
+  MoManager *momgr =  GetMoManager(keytype);
+
   if (momgr) {
     DalOdbcMgr *dom = NULL;
 
@@ -1866,7 +2233,9 @@ upll_rc_t UpllConfigMgr::IsKeyInUseNoLock(upll_keytype_datatype_t datatype,
     }
     batch_mutex_lock_.unlock();
 
-    if (dom == NULL) { return UPLL_RC_ERR_GENERIC; }
+    if (dom == NULL) {
+      return UPLL_RC_ERR_GENERIC;
+    }
 
     urc = momgr->IsKeyInUse(datatype, ckv, in_use, dom);
 
@@ -1892,119 +2261,179 @@ void UpllConfigMgr::OnControllerStatusChange(const char *ctrlr_name,
                                              uint8_t operstatus) {
   UPLL_FUNC_TRACE;
   CtrlrMgr *ctr_mgr = CtrlrMgr::GetInstance();
-  uuk::VtnMoMgr *mgr = reinterpret_cast<uuk::VtnMoMgr *>
-      (GetMoManager(UNC_KT_VTN));
-  if (mgr != NULL) {
-    upll_rc_t urc;
-    UPLL_LOG_INFO("Controller(%s) operstatus start : event(%d)",
-                   ctrlr_name, operstatus);
-    urc = mgr->ControllerStatusHandler(reinterpret_cast<uint8_t*>(
-            const_cast<char*>(ctrlr_name)), operstatus, dbcm_, &cfg_lock_);
-    if (urc != UPLL_RC_SUCCESS) {
-      UPLL_LOG_ERROR("Failed to update ControllerStatus. "
-                     "ctrlr_name=%s operstatus=%d urc=%d",
-                     ctrlr_name, operstatus, urc);
+  if (operstatus == UPPL_CONTROLLER_OPER_EVENTS_START) {
+    ctr_mgr->AddCtrToDisconnectList(ctrlr_name);
+    if (ctr_mgr->IsPathFaultOccured(ctrlr_name, "*")) {
+      ctr_mgr->AddCtrToIgnoreList(ctrlr_name);
+      OnPathFaultAlarm(ctrlr_name, "*", false);
+      ctr_mgr->ClearPathfault(ctrlr_name, "*");
+      SendPathFaultAlarm(ctrlr_name, "*", "*", UPLL_CLEAR_WITH_TRAP);
+      ctr_mgr->RemoveCtrlrFromIgnoreList(ctrlr_name);
     }
-    UPLL_LOG_INFO("Controller(%s) operstatus end : event(%d)",
-                   ctrlr_name, operstatus);
   }
-  if (operstatus == UPPL_CONTROLLER_OPER_EVENTS_MERGED) {
-    ctr_mgr->RemoveCtrFromDisconnectList(ctrlr_name);
-  }
-  // clear path fault alarm if occurred
-  if ((operstatus == UPPL_CONTROLLER_OPER_DOWN) &&
-      (ctr_mgr->IsPathFaultOccured(ctrlr_name, "*"))) {
-    SendPathFaultAlarm(ctrlr_name, "*", "*", UPLL_CLEAR_WITH_TRAP);
-    ctr_mgr->ClearPathfault(ctrlr_name, "*");
+  if (operstatus == UPPL_CONTROLLER_OPER_DOWN ||
+      operstatus == UPPL_CONTROLLER_OPER_EVENTS_MERGED) {
+    uuk::VtnMoMgr *mgr = reinterpret_cast<uuk::VtnMoMgr *>
+      (GetMoManager(UNC_KT_VTN));
+    if (mgr != NULL) {
+      upll_rc_t urc;
+      UPLL_LOG_INFO("Controller(%s) operstatus start : event(%d)",
+                     ctrlr_name, operstatus);
+      urc = mgr->ControllerStatusHandler(reinterpret_cast<uint8_t*>(
+              const_cast<char*>(ctrlr_name)), operstatus, dbcm_, &cfg_lock_);
+      if (urc != UPLL_RC_SUCCESS) {
+        UPLL_LOG_ERROR("Failed to update ControllerStatus. "
+                       "ctrlr_name=%s operstatus=%d urc=%d",
+                       ctrlr_name, operstatus, urc);
+      }
+      UPLL_LOG_INFO("Controller(%s) operstatus end : event(%d)",
+                    ctrlr_name, operstatus);
+    }
+    if (operstatus == UPPL_CONTROLLER_OPER_EVENTS_MERGED) {
+      ctr_mgr->DeleteFromUnknownCtrlrList(ctrlr_name);
+      ctr_mgr->RemoveCtrFromDisconnectList(ctrlr_name);
+    } else if (operstatus == UPPL_CONTROLLER_OPER_DOWN) {
+      ctr_mgr->AddtoUnknownCtrlrList(ctrlr_name);
+      ctr_mgr->AddCtrToDisconnectList(ctrlr_name);
+      // clear path fault alarm if occurred
+      if (ctr_mgr->IsPathFaultOccured(ctrlr_name, "*")) {
+        SendPathFaultAlarm(ctrlr_name, "*", "*", UPLL_CLEAR_WITH_TRAP);
+      }
+    }
   }
 }
 
+// NOTE: The functions invoked by this function, access GetAlarmConn(), and
+// also take ConfigLock::CFG_READ_LOCK on UPLL_DT_RUNNING
 void UpllConfigMgr::OnLogicalPortStatusChange(const char *ctrlr_name,
                                               const char *domain_name,
                                               const char *logical_port_id,
                                               uint8_t oper_status) {
   UPLL_FUNC_TRACE;
+  if (toupper(logical_port_id[0]) == 'S' &&
+      (toupper(logical_port_id[1]) == 'W' ||
+       toupper(logical_port_id[1]) == 'D')) {
+    UPLL_LOG_DEBUG("Port event need not be handled for SW/SD ports");
+    return;
+  }
   CtrlrMgr* ctr_mgr = CtrlrMgr::GetInstance();
   if (ctr_mgr->IsCtrDisconnected(ctrlr_name)) {
     ctr_mgr->AddLogicalPort(ctrlr_name, logical_port_id, oper_status);
     return;
   }
-  ScopedConfigLock lock(cfg_lock_, UPLL_DT_RUNNING, ConfigLock::CFG_READ_LOCK);
-  DalOdbcMgr *dom = dbcm_->GetAlarmRwConn();
-  if (dom == NULL) { return; }
   upll_rc_t   urc = UPLL_RC_SUCCESS;
 
-  uuk::VbrIfMoMgr *vbrif_mgr = reinterpret_cast<uuk::VbrIfMoMgr *>
+  if ((toupper(logical_port_id[0]) == 'T' ||
+       toupper(logical_port_id[0]) == 'P') &&
+       toupper(logical_port_id[1]) == 'P') {
+    uuk::VbrIfMoMgr *vbrif_mgr = reinterpret_cast<uuk::VbrIfMoMgr *>
       (GetMoManager(UNC_KT_VBR_IF));
-  if (vbrif_mgr != NULL) {
-    ConfigKeyVal *vbrif_ckv = NULL;
-    urc = vbrif_mgr->GetChildConfigKey(vbrif_ckv, NULL);
-    if (urc != UPLL_RC_SUCCESS) {
-      dbcm_->DalTxClose(dom, (urc == UPLL_RC_SUCCESS));
-      dbcm_->ReleaseRwConn(dom);
-      return;
-    }
-    urc = vbrif_mgr->PortStatusHandler(vbrif_ckv, ctrlr_name, domain_name,
-                                       logical_port_id, oper_status, dom);
-    if (urc != UPLL_RC_SUCCESS) {
-      UPLL_LOG_ERROR("Failed to update PortStatus. ctrlr_name=%s,"
+    if (vbrif_mgr != NULL) {
+      ConfigKeyVal *vbrif_ckv = NULL;
+      urc = vbrif_mgr->GetChildConfigKey(vbrif_ckv, NULL);
+      if (urc != UPLL_RC_SUCCESS) {
+        return;
+      }
+      urc = vbrif_mgr->PortStatusHandler(vbrif_ckv, ctrlr_name, domain_name,
+                                         logical_port_id, oper_status,
+                                         dbcm_, &cfg_lock_);
+      DELETE_IF_NOT_NULL(vbrif_ckv);
+      if (urc != UPLL_RC_SUCCESS) {
+        UPLL_LOG_ERROR("Failed to update PortStatus. ctrlr_name=%s,"
                      "logical_port_id=%s, oper_status=%d urc=%d",
                      ctrlr_name, logical_port_id, oper_status, urc);
-      dbcm_->DalTxClose(dom, (urc == UPLL_RC_SUCCESS));
-      dbcm_->ReleaseRwConn(dom);
-      return;
+        return;
+      }
+      if (toupper(logical_port_id[0]) == 'T'
+            && toupper(logical_port_id[1]) == 'P') {
+        ConfigKeyVal *conv_vbrif_ckv = NULL;
+        urc = vbrif_mgr->GetChildConvertConfigKey(conv_vbrif_ckv, NULL);
+        if (urc != UPLL_RC_SUCCESS) {
+          return;
+        }
+        urc = vbrif_mgr->PortStatusHandler(conv_vbrif_ckv, ctrlr_name,
+                                           domain_name, logical_port_id,
+                                           oper_status, dbcm_, &cfg_lock_);
+        DELETE_IF_NOT_NULL(conv_vbrif_ckv);
+        if (urc != UPLL_RC_SUCCESS) {
+          UPLL_LOG_ERROR("Failed to update PortStatus. ctrlr_name=%s,"
+                         "logical_port_id=%s, oper_status=%d urc=%d",
+                         ctrlr_name, logical_port_id, oper_status, urc);
+          return;
+        }
+      }
     }
   }
 
-  uuk::VtermIfMoMgr *vtermif_mgr = reinterpret_cast<uuk::VtermIfMoMgr *>
-      (GetMoManager(UNC_KT_VTERM_IF));
-  if (vtermif_mgr != NULL) {
-    ConfigKeyVal *vtermif_ckv = NULL;
-    urc = vtermif_mgr->GetChildConfigKey(vtermif_ckv, NULL);
-    if (urc != UPLL_RC_SUCCESS) {
-      dbcm_->DalTxClose(dom, (urc == UPLL_RC_SUCCESS));
-      dbcm_->ReleaseRwConn(dom);
-      return;
-    }
-    urc = vtermif_mgr->PortStatusHandler(vtermif_ckv, ctrlr_name, domain_name,
-                                         logical_port_id, oper_status, dom);
-    if (urc != UPLL_RC_SUCCESS) {
-      UPLL_LOG_ERROR("Failed to update PortStatus. ctrlr_name=%s,"
-                     "logical_port_id=%s, oper_status=%d urc=%d",
-                     ctrlr_name, logical_port_id, oper_status, urc);
-      dbcm_->DalTxClose(dom, (urc == UPLL_RC_SUCCESS));
-      dbcm_->ReleaseRwConn(dom);
-      return;
+  if (toupper(logical_port_id[0]) == 'M'
+        && toupper(logical_port_id[1]) == 'G') {
+    uuk::VbrPortMapMoMgr *vbrpm_mgr = reinterpret_cast<uuk::VbrPortMapMoMgr *>
+      (GetMoManager(UNC_KT_VBR_PORTMAP));
+    if (vbrpm_mgr != NULL) {
+      ConfigKeyVal *conv_vbrpm_ckv = NULL;
+      urc = vbrpm_mgr->GetChildConfigKey(conv_vbrpm_ckv, NULL);
+      if (urc != UPLL_RC_SUCCESS) {
+        return;
+      }
+      urc = vbrpm_mgr->PortStatusHandler(conv_vbrpm_ckv, ctrlr_name,
+                                         domain_name, logical_port_id,
+                                         oper_status, dbcm_, &cfg_lock_);
+      DELETE_IF_NOT_NULL(conv_vbrpm_ckv);
+      if (urc != UPLL_RC_SUCCESS) {
+        UPLL_LOG_ERROR("Failed to update PortStatus. ctrlr_name=%s,"
+                       "logical_port_id=%s, oper_status=%d urc=%d",
+                       ctrlr_name, logical_port_id, oper_status, urc);
+        return;
+      }
     }
   }
-  dbcm_->DalTxClose(dom, (urc == UPLL_RC_SUCCESS));
-  dbcm_->ReleaseRwConn(dom);
+  if ((toupper(logical_port_id[0]) == 'T' ||
+       toupper(logical_port_id[0]) == 'P') &&
+       toupper(logical_port_id[1]) == 'P') {
+    uuk::VtermIfMoMgr *vtermif_mgr = reinterpret_cast<uuk::VtermIfMoMgr *>
+      (GetMoManager(UNC_KT_VTERM_IF));
+    if (vtermif_mgr != NULL) {
+      ConfigKeyVal *vtermif_ckv = NULL;
+      urc = vtermif_mgr->GetChildConfigKey(vtermif_ckv, NULL);
+      if (urc != UPLL_RC_SUCCESS) {
+        return;
+      }
+      urc = vtermif_mgr->PortStatusHandler(vtermif_ckv, ctrlr_name,
+                                           domain_name, logical_port_id,
+                                           oper_status, dbcm_, &cfg_lock_);
+      DELETE_IF_NOT_NULL(vtermif_ckv);
+      if (urc != UPLL_RC_SUCCESS) {
+        UPLL_LOG_ERROR("Failed to update PortStatus. ctrlr_name=%s,"
+                     "logical_port_id=%s, oper_status=%d urc=%d",
+                     ctrlr_name, logical_port_id, oper_status, urc);
+        return;
+      }
+    }
+  }
 }
 
+// NOTE: The functions invoked by this function, access GetAlarmConn(), and
+// also take ConfigLock::CFG_READ_LOCK on UPLL_DT_RUNNING
 void UpllConfigMgr::OnBoundaryStatusChange(const char *boundary_id,
                                            bool oper_status) {
   UPLL_FUNC_TRACE;
-  ScopedConfigLock lock(cfg_lock_, UPLL_DT_RUNNING, ConfigLock::CFG_READ_LOCK);
 #if 1
   uuk::VlinkMoMgr *mgr = reinterpret_cast<uuk::VlinkMoMgr *>
       (GetMoManager(UNC_KT_VLINK));
   if (mgr != NULL) {
     upll_rc_t urc;
-    DalOdbcMgr *dom = dbcm_->GetAlarmRwConn();
-    if (dom == NULL) { return; }
     urc = mgr->BoundaryStatusHandler(
         reinterpret_cast<uint8_t*>(const_cast<char*>(boundary_id)),
-        oper_status, dom);
+        oper_status, dbcm_, &cfg_lock_);
     if (urc != UPLL_RC_SUCCESS) {
       UPLL_LOG_ERROR("Failed to Update BoundaryStatus. "
                      "boundary_id=%s oper_status=%s urc=%d",
                      boundary_id, (oper_status ? "UP" : "DOWN"), urc);
     }
-    dbcm_->DalTxClose(dom, (urc == UPLL_RC_SUCCESS));
-    dbcm_->ReleaseRwConn(dom);
   }
 #else
-  UPLL_LOG_DEBUG("Recevied boundary %s oper status %d\n",boundary_id,oper_status);
+  UPLL_LOG_DEBUG("Recevied boundary %s oper status %d\n",
+                 boundary_id, oper_status);
 #endif
 }
 
@@ -2013,7 +2442,8 @@ void UpllConfigMgr::OnPolicerFullAlarm(
     const pfcdrv_policier_alarm_data_t &alarm_data, bool alarm_raised) {
   UPLL_FUNC_TRACE;
   namespace uuk = unc::upll::kt_momgr;
-  ScopedConfigLock lock(cfg_lock_, UPLL_DT_RUNNING, ConfigLock::CFG_READ_LOCK);
+  ScopedConfigLock lock(cfg_lock_, kNormalTaskPriority,
+                        UPLL_DT_RUNNING, ConfigLock::CFG_READ_LOCK);
 
   uuk::VbrPolicingMapMoMgr *mgr  = reinterpret_cast<uuk::VbrPolicingMapMoMgr*>
       (GetMoManager(UNC_KT_VBR_POLICINGMAP));
@@ -2041,7 +2471,8 @@ void UpllConfigMgr::OnPolicerFailAlarm(
     const pfcdrv_policier_alarm_data_t &alarm_data, bool alarm_raised) {
   UPLL_FUNC_TRACE;
   namespace uuk = unc::upll::kt_momgr;
-  ScopedConfigLock lock(cfg_lock_, UPLL_DT_RUNNING, ConfigLock::CFG_READ_LOCK);
+  ScopedConfigLock lock(cfg_lock_, kNormalTaskPriority,
+                        UPLL_DT_RUNNING, ConfigLock::CFG_READ_LOCK);
 
   uuk::VbrPolicingMapMoMgr *mgr  = reinterpret_cast<uuk::VbrPolicingMapMoMgr*>
       (GetMoManager(UNC_KT_VBR_POLICINGMAP));
@@ -2069,7 +2500,8 @@ void UpllConfigMgr::OnNwmonFaultAlarm(
     string ctrlr_name, string domain_id, const key_vtn_t &vtn_key,
     const pfcdrv_network_mon_alarm_data_t &alarm_data, bool alarm_raised) {
   UPLL_FUNC_TRACE;
-  ScopedConfigLock lock(cfg_lock_, UPLL_DT_RUNNING, ConfigLock::CFG_READ_LOCK);
+  ScopedConfigLock lock(cfg_lock_, kNormalTaskPriority,
+                        UPLL_DT_RUNNING, ConfigLock::CFG_READ_LOCK);
   uuk::NwMonitorMoMgr *nwm_mgr = reinterpret_cast<uuk::NwMonitorMoMgr*>
          (const_cast<MoManager*>(GetMoManager(UNC_KT_VBR_NWMONITOR)));
   if (nwm_mgr != NULL) {
@@ -2153,15 +2585,14 @@ void UpllConfigMgr::GetBatchParamsFrmConfFile() {
   UPLL_FUNC_TRACE;
 
   pfc::core::ModuleConfBlock batch_conf_block(batch_config_mode_conf_blk);
-  if (batch_conf_block.getBlock() != PFC_CFBLK_INVALID)
-  {
+  if (batch_conf_block.getBlock() != PFC_CFBLK_INVALID) {
     UPLL_LOG_TRACE("Block handle is valid");
     batch_timeout_ = batch_conf_block.getUint32("batch_timeout",
                                                 default_batch_timeout);
     UPLL_LOG_DEBUG("BATCH default timeout from conf file %d", batch_timeout_);
-    
-    batch_commit_limit_ = batch_conf_block.getUint32("batch_commit_limit",
-                                                     default_batch_commit_limit);
+
+    batch_commit_limit_ = batch_conf_block.getUint32(
+        "batch_commit_limit", default_batch_commit_limit);
     UPLL_LOG_DEBUG("BATCH default commit limit value  from conf file %d",
                   batch_commit_limit_);
   }
@@ -2171,12 +2602,46 @@ void UpllConfigMgr::GetBatchParamsFrmConfFile() {
 
 upll_rc_t UpllConfigMgr::ValidateBatchConfigMode(uint32_t session_id,
                                                  uint32_t config_id) {
-  upll_rc_t urc = ValidSession(session_id, config_id);
+#if 0
+  upll_rc_t urc = ValidSession(session_id, config_id, TC_CONFIG_GLOBAL, NULL);
   if (urc != UPLL_RC_SUCCESS) {
     UPLL_LOG_INFO("Invalid session_id %u and/or config_id %u in the IPC request"
                   ". Err: %d", session_id, config_id, urc);
     return urc;
   }
+#endif
+  TcConfigMode cfg_mode = TC_CONFIG_INVALID;
+  std::string vtn_name;
+  upll_rc_t urc = GetConfigMode(session_id, config_id, &cfg_mode, &vtn_name);
+  if (urc == UPLL_RC_SUCCESS) {
+// warn: The locking code is untidy. It could have been made simpler. -- Ravi
+    batch_mutex_lock_.lock();
+    if (batch_mode_in_progress_) {
+      if (((cfg_mode == TC_CONFIG_GLOBAL || cfg_mode == TC_CONFIG_VIRTUAL) &&
+           (cfg_mode == cur_batch_cfg_mode_)) ||
+          ((cfg_mode == TC_CONFIG_VTN) && (cfg_mode == cur_batch_cfg_mode_) &&
+           (vtn_name.compare(cur_batch_cfg_mode_vtn_name_) == 0))) {
+          urc = UPLL_RC_SUCCESS;
+        } else {
+          UPLL_LOG_INFO("Batch is already in progress in mode <%u,%s>,"
+                        "Request from <%u,%u>",
+                        cur_batch_cfg_mode_,
+                        cur_batch_cfg_mode_vtn_name_.c_str(),
+                        session_id, config_id);
+           batch_mutex_lock_.unlock();
+          return UPLL_RC_ERR_NOT_ALLOWED_AT_THIS_TIME;
+        }
+    }
+  } else if (urc == UPLL_RC_ERR_BAD_CONFIG_OR_SESSION_ID) {
+    UPLL_LOG_INFO("Validation failed. Urc=%d", urc);
+    // batch_mutex_lock_.unlock();
+    return urc;
+  } else {
+    UPLL_LOG_INFO("Validation failed. Urc=%d", urc);
+    // batch_mutex_lock_.unlock();
+    return urc;
+  }
+  batch_mutex_lock_.unlock();
   return urc;
 }
 
@@ -2190,7 +2655,7 @@ upll_rc_t UpllConfigMgr::RegisterBatchTimeoutCB(uint32_t session_id,
   int err = batch_timer_->post(&timeout, batch_timer_func_, &batch_timeout_id_);
   if (err != 0) {
     UPLL_LOG_ERROR("BATCH Timer post() operation is failed. Err=%d", err);
-    return UPLL_RC_ERR_GENERIC; 
+    return UPLL_RC_ERR_GENERIC;
   }
   UPLL_LOG_TRACE("BATCH Timer %d is registered.", batch_timeout_id_);
   return UPLL_RC_SUCCESS;
@@ -2203,12 +2668,18 @@ upll_rc_t UpllConfigMgr::OnBatchStart(uint32_t session_id, uint32_t config_id) {
   if (urc != UPLL_RC_SUCCESS) {
     return urc;
   }
-
+  TcConfigMode cfg_mode;
+  std::string cfg_mode_vtn_name;
   bool batch_reentered = false;
   batch_mutex_lock_.lock();
   batch_reentered = batch_mode_in_progress_;
   if (!batch_mode_in_progress_) {
     UPLL_LOG_INFO("Entering BATCH mode");
+    urc = GetConfigMode(session_id, config_id, &cfg_mode, &cfg_mode_vtn_name);
+     if (UPLL_RC_SUCCESS != urc) {
+      batch_mutex_lock_.unlock();
+      return urc;
+    }
     urc = RegisterBatchTimeoutCB(session_id, config_id);
     if (UPLL_RC_SUCCESS != urc) {
       batch_mutex_lock_.unlock();
@@ -2216,12 +2687,14 @@ upll_rc_t UpllConfigMgr::OnBatchStart(uint32_t session_id, uint32_t config_id) {
     }
     batch_mode_in_progress_ = true;
     batch_op_cnt_ = 0;
+    cur_batch_cfg_mode_ = cfg_mode;
+    cur_batch_cfg_mode_vtn_name_ = cfg_mode_vtn_name;
   }
   batch_mutex_lock_.unlock();
 
-  if (batch_reentered) { 
+  if (batch_reentered) {
     UPLL_LOG_DEBUG("BATCH mode is already in progress, performing DB Commit");
-    urc = DbCommitIfInBatchMode(__FUNCTION__);
+    urc = DbCommitIfInBatchMode(__FUNCTION__, kNormalTaskPriority);
   }
 
   return urc;
@@ -2236,7 +2709,7 @@ upll_rc_t UpllConfigMgr::OnBatchAlive(uint32_t session_id, uint32_t config_id) {
 
   batch_mutex_lock_.lock();
   if (batch_mode_in_progress_) {
-    if (batch_timer_ != NULL) { 
+    if (batch_timer_ != NULL) {
       batch_timer_->cancel(batch_timeout_id_);
       UPLL_LOG_TRACE("BATCH Timer is canceled for id %d", batch_timeout_id_);
       batch_timeout_id_ = PFC_TIMER_INVALID_ID;
@@ -2254,23 +2727,23 @@ upll_rc_t UpllConfigMgr::OnBatchAlive(uint32_t session_id, uint32_t config_id) {
   }
   batch_mutex_lock_.unlock();
 
-  return UPLL_RC_SUCCESS;  
+  return UPLL_RC_SUCCESS;
 }
 
 // @param timedout will be false on user request, true from BATCH timeout.
-upll_rc_t UpllConfigMgr::OnBatchEnd(uint32_t session_id,uint32_t config_id,
+upll_rc_t UpllConfigMgr::OnBatchEnd(uint32_t session_id, uint32_t config_id,
                                     bool timedout) {
   UPLL_FUNC_TRACE;
   UPLL_LOG_INFO("*** %s,%d,%d,%d ***", __FUNCTION__,
                 session_id, config_id, timedout);
 
-  ScopedConfigLock scfg_lock(cfg_lock_,
+  ScopedConfigLock scfg_lock(cfg_lock_, kNormalTaskPriority,
                               UPLL_DT_CANDIDATE, ConfigLock::CFG_WRITE_LOCK,
                               UPLL_DT_RUNNING, ConfigLock::CFG_READ_LOCK,
                               UPLL_DT_IMPORT, ConfigLock::CFG_READ_LOCK,
                               // UPLL_DT_AUDIT, ConfigLock::CFG_READ_LOCK,
                               UPLL_DT_STARTUP, ConfigLock::CFG_READ_LOCK);
-  pfc::core::ScopedMutex batch_mutex(batch_mutex_lock_);
+//  pfc::core::ScopedMutex batch_mutex(batch_mutex_lock_);
 
   upll_rc_t urc = UPLL_RC_SUCCESS;
   if (!timedout) {
@@ -2292,6 +2765,8 @@ upll_rc_t UpllConfigMgr::OnBatchEnd(uint32_t session_id,uint32_t config_id,
   } else {
     UPLL_LOG_INFO("Not in BATCH mode. Performing DB Commit");
   }
+  cur_batch_cfg_mode_ = TC_CONFIG_INVALID;
+  cur_batch_cfg_mode_vtn_name_.clear();
 
   DalOdbcMgr *dom = dbcm_->GetConfigRwConn();
   if (dom == NULL) { return UPLL_RC_ERR_GENERIC; }
@@ -2367,8 +2842,16 @@ bool UpllConfigMgr::SendPathFaultAlarm(const char *ctr_na,
 
   data.alarm_category = UPLL_PATHFAULT_ALARM;
 
-  pfc::alarm::alarm_return_code_t ret = pfc::alarm::pfc_alarm_send_with_key(
-      vtn_name, message, message_summary, &data, alarm_fd);
+  pfc::alarm::alarm_return_code_t ret =  pfc::alarm::ALM_OK;
+  int retry_count = 0;
+  while ((ret = pfc::alarm::pfc_alarm_send_with_key(
+      vtn_name, message, message_summary, &data, alarm_fd)) ==
+      pfc::alarm::ALM_EAGAIN && retry_count < 10) {
+    UPLL_LOG_INFO("Alarm failed for vtn : %s. Retrying.....", vtn_name.c_str());
+    usleep(10*1000);
+    ++retry_count;
+  }
+
   if (ret != pfc::alarm::ALM_OK) {
     UPLL_LOG_WARN("Failed to %s path fault alarm, Err=%d",
                   ((alarm_kind == UPLL_ASSERT_WITH_TRAP) ? "assert" : "clear"),
@@ -2380,18 +2863,121 @@ bool UpllConfigMgr::SendPathFaultAlarm(const char *ctr_na,
   return true;
 }
 
+bool UpllConfigMgr::SendSpineThresholdAlarm(
+    const char *unw_name, const char *spine_id, bool assert_alarm) {
+  UPLL_FUNC_TRACE;
+  std::string message;
+  const string vtn_name = "";
+
+  std::string message_summary;
+  pfc::alarm::alarm_info_with_key_t data;
+  if (unw_name == NULL || spine_id == NULL) {
+    UPLL_LOG_ERROR("Invalid argument, unified network name %p, spine id %p",
+                   unw_name, spine_id);
+    return false;
+  }
+  std::string unified_nw_name(unw_name);
+  std::string spine_name(spine_id);
+  if (assert_alarm) {
+    message = "Spine label assignment exceeds threshold for ";
+    message_summary = "Spine label exceeded alarm";
+    data.alarm_class = pfc::alarm::ALM_WARNING;
+    data.alarm_kind = 1;
+  } else {
+    message = "Spine label assignment is not exceeding threshold for ";
+    message_summary = "No spine label exceeded alarm";
+    data.alarm_class = pfc::alarm::ALM_NOTICE;
+    data.alarm_kind = 0;
+  }
+  // Alarm key
+  std::string alarm_key = unified_nw_name + ":" + spine_name;
+  // Add source of the alarm to message
+  message += alarm_key;
+  data.apl_No = UNCCID_LOGICAL;
+  data.alarm_key = const_cast<uint8_t *>(
+      reinterpret_cast<const uint8_t *>(alarm_key.c_str()));
+  data.alarm_key_size = alarm_key.length();
+
+  data.alarm_category = UPLL_SPINE_THRESHOLD_ALARM;
+  pfc::alarm::alarm_return_code_t ret =  pfc::alarm::ALM_OK;
+  // Retry 10 times if alaram sending fails
+  int retry_count = 0;
+  while ((ret = pfc::alarm::pfc_alarm_send_with_key(
+              vtn_name, message, message_summary, &data, alarm_fd)) ==
+      pfc::alarm::ALM_EAGAIN && retry_count < 10) {
+    UPLL_LOG_DEBUG("Threshold alarm (%d) for %s failed", assert_alarm,
+                   alarm_key.c_str());
+    usleep(10*1000);
+    ++retry_count;
+  }
+  if (ret != pfc::alarm::ALM_OK) {
+    UPLL_LOG_WARN("Failed to %s Spine label exceeded alarm, Err=%d",
+                  ((assert_alarm) ? "assert" : "clear"), ret);
+     return false;
+  }
+
+  // Update alarm cache
+  sd_threshold_alarm_lock_.lock();
+  std::pair<std::string, std::string> unw_sd_pair =
+      std::make_pair(unw_name, spine_id);
+  if (assert_alarm) {
+      sd_threshold_alarm_set_.insert(unw_sd_pair);
+  } else {
+    std::set<std::pair<std::string, std::string> >::iterator iter =
+        sd_threshold_alarm_set_.find(unw_sd_pair);
+    if (iter != sd_threshold_alarm_set_.end()) {
+      sd_threshold_alarm_set_.erase(iter);
+    }
+  }
+  sd_threshold_alarm_lock_.unlock();
+
+  UPLL_LOG_DEBUG("msg:%s alarm_kind: %d", message.c_str(), assert_alarm);
+  return true;
+}
+
+void UpllConfigMgr::OnVtnIDExhaustionAlarm(
+                    const char *ctrlr_name, const char *domain_name,
+                    key_vtn vtn_key, bool alarm_asserted) {
+  UPLL_FUNC_TRACE;
+  pfc_sem_wait(&sem_alarm_commit_syc_);  // wait for commit or audit to finish
+  pfc_sem_post(&sem_alarm_commit_syc_);
+
+  if (!ctrlr_name || !domain_name) {
+    UPLL_LOG_ERROR("ctrlr, domain is NULL");
+    return;
+  }
+  uuk::VtnMoMgr *mgr = reinterpret_cast<uuk::VtnMoMgr *>
+      (GetMoManager(UNC_KT_VTN));
+  if (mgr != NULL) {
+    upll_rc_t urc = UPLL_RC_SUCCESS;
+    urc = mgr->VtnExhaustionHandler(
+        reinterpret_cast<uint8_t*>(const_cast<char*>(ctrlr_name)),
+        reinterpret_cast<uint8_t*>(const_cast<char*>(domain_name)),
+        vtn_key, alarm_asserted, dbcm_, &cfg_lock_);
+    if (urc != UPLL_RC_SUCCESS)
+      UPLL_LOG_ERROR("Failed to handle VtnIDExhaustionAlarm. "
+                 "ctrlr_name=%s, alarm %s, Urc=%d", ctrlr_name,
+                 (alarm_asserted ? "asserted" : "recovered"), urc);
+  }
+}
 void UpllConfigMgr::OnPathFaultAlarm(const char *ctrlr_name,
                                      const char *domain_name,
                                      bool alarm_asserted) {
   UPLL_FUNC_TRACE;
-  pfc_sem_wait(&sem_path_fault_);  // wait for commit or audit-commit to finish
-  pfc_sem_post(&sem_path_fault_);
+  pfc_sem_wait(&sem_alarm_commit_syc_);  // wait for commit or audit to finish
+  pfc_sem_post(&sem_alarm_commit_syc_);
+  CtrlrMgr *ctr_mgr = CtrlrMgr::GetInstance();
   bool result(false);
-  if (domain_name != NULL) {
-    result = CtrlrMgr::GetInstance()->UpdatePathFault
+  if (ctrlr_name == NULL || domain_name == NULL) {
+    UPLL_LOG_ERROR("ctrlr_name or domain_name is NULL");
+    return;
+  }
+  string dom_id(domain_name);
+  if (dom_id != "*") {
+    result = ctr_mgr->UpdatePathFault
         (ctrlr_name, domain_name, alarm_asserted);
   } else {
-    //path fault clear on user audit;
+    // path fault clear on user audit;
     UPLL_LOG_DEBUG("Clear path fault on user initiated audit for ctr_name %s",
                    ctrlr_name);
     result = true;
@@ -2408,41 +2994,54 @@ void UpllConfigMgr::OnPathFaultAlarm(const char *ctrlr_name,
   if (mgr != NULL) {
     UPLL_LOG_INFO("Controller(%s), domain(%s) pathfault start : alarm(%d)",
                    ctrlr_name, domain_name, alarm_asserted);
-    upll_rc_t urc;
-    urc = mgr->PathFaultHandler(reinterpret_cast<uint8_t*>(const_cast<char*>(ctrlr_name)),
-                                reinterpret_cast<uint8_t*>(const_cast<char*>(domain_name)),
-                                alarm_asserted, dbcm_, &cfg_lock_);
-    if (urc != UPLL_RC_SUCCESS) {
-      UPLL_LOG_ERROR("Failed to handle PathFaultAlarm. "
+    set<string> dom_list;
+    if (dom_id == "*") {
+      ctr_mgr->GetPathFaultDomains(ctrlr_name, &dom_list);
+    } else {
+      dom_list.insert(domain_name);
+    }
+    set<string>::iterator dom_it = dom_list.begin(), end_it = dom_list.end();
+    for (; dom_it != end_it; ++dom_it) {
+      upll_rc_t urc;
+      urc = mgr->PathFaultHandler(
+        reinterpret_cast<uint8_t*>(const_cast<char*>(ctrlr_name)),
+        reinterpret_cast<uint8_t*>(const_cast<char*>((*dom_it).c_str())),
+        alarm_asserted, dbcm_, &cfg_lock_);
+      if (urc != UPLL_RC_SUCCESS) {
+        UPLL_LOG_ERROR("Failed to handle PathFaultAlarm. "
                      "ctrlr_name=%s, alarm %s, Urc=%d", ctrlr_name,
                      (alarm_asserted ? "asserted" : "recovered"), urc);
+        dom_list.clear();
+        return;
+      }
     }
+    dom_list.clear();
     UPLL_LOG_INFO("Controller(%s), domain(%s) pathfault end: alarm(%d)",
                    ctrlr_name, domain_name, alarm_asserted);
   }
 }
 
-upll_rc_t UpllConfigMgr::InitAllOperStatus() {
+upll_rc_t UpllConfigMgr::PopulateCtrlrInfo() {
   UPLL_FUNC_TRACE;
   UPLL_LOG_INFO("*** %s ***", __FUNCTION__);
   uuk::VtnMoMgr *mgr = reinterpret_cast<uuk::VtnMoMgr *>
       (GetMoManager(UNC_KT_VTN));
   upll_rc_t urc(UPLL_RC_SUCCESS);
   if (mgr != NULL) {
-    DalOdbcMgr *dom = dbcm_->GetConfigRwConn();
-    if (!dom) return UPLL_RC_ERR_GENERIC;
-    urc = mgr->InitAllOperStatus(dom);
+    unc::upll::dal::DalBindInfo dal_bind_info(1);
+    ConfigKeyVal *ck_vtn = NULL;
+    urc = mgr->GetChildConfigKey(ck_vtn, NULL);
     if (urc != UPLL_RC_SUCCESS) {
-      UPLL_LOG_FATAL("Failed to initialize operstatus. Urc=%d", urc);
+      UPLL_LOG_DEBUG("GetChildConfigKey failed");
+      return UPLL_RC_ERR_GENERIC;
     }
-    upll_rc_t db_urc = dbcm_->DalTxClose(dom, (urc == UPLL_RC_SUCCESS));
-    if (db_urc != UPLL_RC_SUCCESS) {
-      UPLL_LOG_FATAL("Failed to commit complete DB transaction. Urc=%d", db_urc);
+    mgr->BindInfoBasedonOperation(&dal_bind_info, ck_vtn, uuk::UNC_START_UP);
+    urc = mgr->PopulateCtrlrInfo(&dal_bind_info, dbcm_, &cfg_lock_,
+                                 ck_vtn, uuk::UNC_START_UP);
+    if (urc != UPLL_RC_SUCCESS) {
+      UPLL_LOG_ERROR("Failed to Populate info. Urc=%d", urc);
     }
-    if (urc == UPLL_RC_SUCCESS) {
-      urc = db_urc;
-    }
-    dbcm_->ReleaseRwConn(dom);
+    DELETE_IF_NOT_NULL(ck_vtn);
   }
   return urc;
 }
@@ -2451,10 +3050,13 @@ void UpllConfigMgr::ClearAllAlarms() {
   UPLL_FUNC_TRACE;
   CtrlrMgr *ctr_mgr = CtrlrMgr::GetInstance();
   // clear all path fault alarm if already asserted
-  if (ctr_mgr->IsPathFaultOccured("*","*")) {
+  if (ctr_mgr->IsPathFaultOccured("*", "*")) {
     SendPathFaultAlarm("*", "*", "*", UPLL_CLEAR_WITH_TRAP);
-    ctr_mgr->ClearPathfault("*","*");
+    ctr_mgr->ClearPathfault("*", "*");
   }
+  ctr_mgr->DeleteFromUnknownCtrlrList("*");
+  ctr_mgr->RemoveCtrlrFromIgnoreList("*");
+  ctr_mgr->ClearVtnExhaustionMap();
 
   // clear all invalid config Alarms
   std::list<string> invalid_config_ctrlr;
@@ -2464,30 +3066,46 @@ void UpllConfigMgr::ClearAllAlarms() {
     SendInvalidConfigAlarm(it->c_str(), false);
     ctr_mgr->UpdateInvalidConfig(it->c_str(), false);
   }
+  // Clear SpineThreshold alarm if already asserted
+  sd_threshold_alarm_lock_.lock();   // LOCK
+  if (sd_threshold_alarm_set_.empty()) {
+      sd_threshold_alarm_lock_.unlock();   // UNLOCK
+  } else {
+      std::set<std::pair<std::string, std::string> > threshold_clone_set;
+      threshold_clone_set.insert(sd_threshold_alarm_set_.begin(),
+                                 sd_threshold_alarm_set_.end());
+      sd_threshold_alarm_lock_.unlock();   // UNLOCK
+      for (std::set<std::pair<std::string, std::string> >::iterator iter
+           = threshold_clone_set.begin();
+           iter != threshold_clone_set.end(); iter++) {
+        SendSpineThresholdAlarm(((*iter).first).c_str(),
+                                ((*iter).second).c_str(), false);
+      }
+      threshold_clone_set.clear();
+    }
 }
 
 void UpllConfigMgr::ClearPathFaultAlarms(const char *ctrlr_name) {
   UPLL_FUNC_TRACE;
   CtrlrMgr *ctr_mgr = CtrlrMgr::GetInstance();
+  OnControllerStatusChange(ctrlr_name, UPPL_CONTROLLER_OPER_DOWN);
   // clear all path fault alarm if already asserted
-  if (!ctr_mgr->IsPathFaultOccured(ctrlr_name,"*")) {
+  if (!ctr_mgr->IsPathFaultOccured(ctrlr_name, "*")) {
     // No path fault already asserted;
     return;
   }
-  OnPathFaultAlarm(ctrlr_name, NULL, false);
   SendPathFaultAlarm(ctrlr_name, "*", "*", UPLL_CLEAR_WITH_TRAP);
-  ctr_mgr->ClearPathfault(ctrlr_name, "*");
 }
 
-upll_rc_t UpllConfigMgr::PurgeCandidate() {
+upll_rc_t UpllConfigMgr::PurgeCandidate(DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
   upll_rc_t urc = UPLL_RC_SUCCESS;
   unc_key_type_t kt;
 
-  DalOdbcMgr *dom = dbcm_->GetConfigRwConn();
-  if (dom == NULL) { return UPLL_RC_ERR_GENERIC; }
+  if (dmi == NULL) { return UPLL_RC_ERR_GENERIC; }
 
-  const std::list<unc_key_type_t> *post_list = cktt_.get_reverse_postorder_list();
+  const std::list<unc_key_type_t> *post_list =
+      cktt_.get_reverse_postorder_list();
   for (std::list<unc_key_type_t>::const_iterator post_it = post_list->begin();
        post_it != post_list->end(); post_it++) {
     kt = *post_it;
@@ -2495,7 +3113,7 @@ upll_rc_t UpllConfigMgr::PurgeCandidate() {
       upll_kt_momgrs_.find(kt);
     if (momgr_it != upll_kt_momgrs_.end()) {
       MoManager *momgr = momgr_it->second;
-      urc = momgr->PurgeCandidate(kt, import_ctrlr_id_.c_str(), dom);
+      urc = momgr->PurgeCandidate(kt, import_ctrlr_id_.c_str(), dmi);
       if (urc != UPLL_RC_SUCCESS) {
         UPLL_LOG_INFO("PurgeCandidate failed %d", urc);
         break;
@@ -2506,9 +3124,7 @@ upll_rc_t UpllConfigMgr::PurgeCandidate() {
 }
 
 upll_rc_t UpllConfigMgr::GetControllerSatusFromPhysical(uint8_t *ctrlr_id,
-                            bool &is_audit_wait,
-                            uint32_t session_id,
-                            uint32_t config_id) {
+                                                        bool &is_audit_wait) {
   UPLL_FUNC_TRACE;
   IpcResponse ipc_resp;
   ConfigKeyVal *ctrlr_ckv = NULL;
@@ -2525,7 +3141,7 @@ upll_rc_t UpllConfigMgr::GetControllerSatusFromPhysical(uint8_t *ctrlr_id,
   memset(&ipc_resp, 0, sizeof(IpcResponse));
   IpcRequest ipc_req;
   memset(&ipc_req, 0, sizeof(ipc_req));
-  ipc_req.header.clnt_sess_id = session_id;
+  ipc_req.header.clnt_sess_id = USESS_ID_UPLL;
   ipc_req.header.operation = UNC_OP_READ;
   ipc_req.header.datatype = UPLL_DT_STATE;
   ipc_req.ckv_data = ctrlr_ckv;
@@ -2581,7 +3197,253 @@ upll_rc_t UpllConfigMgr::GetControllerSatusFromPhysical(uint8_t *ctrlr_id,
   return result_code;
 }
 
+uint32_t UpllConfigMgr::GetTxUpdateTaskqParamsFrmConfFile() {
+  UPLL_FUNC_TRACE;
+
+  pfc::core::ModuleConfBlock taskq_conf_block(batch_config_mode_conf_blk);
+  uint32_t no_of_tx_taskqs = 0;
+  if (taskq_conf_block.getBlock() != PFC_CFBLK_INVALID) {
+    UPLL_LOG_TRACE("Block handle is valid");
+    no_of_tx_taskqs = taskq_conf_block.getUint32("max_task_queues",
+                                                  default_tx_update_taskqs);
+    UPLL_LOG_DEBUG("Txupdate default Taskqs  from conf file %d",
+                   no_of_tx_taskqs);
+  }
+  UPLL_LOG_INFO("TxUpdate taskqs are %d", no_of_tx_taskqs);
+  return no_of_tx_taskqs;
+}
+
+upll_rc_t UpllConfigMgr::GetVtnName(const IpcReqRespHeader &msghdr,
+                                    const ConfigKeyVal &ckv,
+                                    char **vtn_id) {
+  UPLL_FUNC_TRACE;
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  unc_key_type_t key_type = ckv.get_key_type();
+
+  switch (key_type) {
+    case UNC_KT_VTN_MAPPING_CONTROLLER: {
+        key_vtn_controller *vtn_ctr_key =
+               reinterpret_cast<key_vtn_controller *>(ckv.get_key());
+        *vtn_id = strdup(reinterpret_cast<const char*>(
+                       vtn_ctr_key->vtn_key.vtn_name));
+        break;
+    }
+    case UNC_KT_VTN:
+    case UNC_KT_VTN_POLICINGMAP: {
+      key_vtn *vtn_key = static_cast<key_vtn_t *>(ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>(vtn_key->vtn_name));
+      break;
+    }
+    case UNC_KT_VBRIDGE:
+    case UNC_KT_VROUTER:
+    case UNC_KT_VUNKNOWN:
+    case UNC_KT_VTEP:
+    case UNC_KT_VTUNNEL:
+    case UNC_KT_VTERMINAL:
+    case UNC_KT_VBR_POLICINGMAP: {
+      key_vbr *vbr_key = reinterpret_cast<key_vbr_t *>(ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+               (vbr_key->vtn_key.vtn_name));
+      break;
+    }
+    case UNC_KT_VBR_PORTMAP: {
+      key_vbr_portmap_t *vbrpm_key = static_cast<key_vbr_portmap_t*>
+                                     (ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+                      (vbrpm_key->vbr_key.vtn_key.vtn_name));
+      break;
+    }
+    case UNC_KT_VBR_VLANMAP: {
+      key_vlan_map_t *vlanmap_key = reinterpret_cast<key_vlan_map_t *>
+                                   (ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+                      (vlanmap_key->vbr_key.vtn_key.vtn_name));
+      break;
+    }
+    case UNC_KT_VBR_IF:
+    case UNC_KT_VTERM_IF:
+    case UNC_KT_VTEP_IF:
+    case UNC_KT_VRT_IF:
+    case UNC_KT_VTUNNEL_IF:
+    case UNC_KT_VUNK_IF:
+    case UNC_KT_VBRIF_POLICINGMAP:
+    case UNC_KT_VTERMIF_POLICINGMAP: {
+      key_vbr_if_t *vbr_if_key = reinterpret_cast<key_vbr_if_t *>
+                                (ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+                      (vbr_if_key->vbr_key.vtn_key.vtn_name));
+      break;
+    }
+    case UNC_KT_VRT_IPROUTE: {
+      key_static_ip_route *iproute_key = reinterpret_cast<key_static_ip_route *>
+                                         (ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+                      (iproute_key->vrt_key.vtn_key.vtn_name));
+      break;
+    }
+    case UNC_KT_DHCPRELAY_SERVER: {
+      key_dhcp_relay_server *dhcp_rs_key =
+            reinterpret_cast<key_dhcp_relay_server *>(ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+                      (dhcp_rs_key->vrt_key.vtn_key.vtn_name));
+       break;
+    }
+    case UNC_KT_DHCPRELAY_IF: {
+      key_dhcp_relay_if *dhcp_if = reinterpret_cast<key_dhcp_relay_if *>
+                                   (ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+                      (dhcp_if->vrt_key.vtn_key.vtn_name));
+      break;
+    }
+    case UNC_KT_VTEP_GRP: {
+      key_vtep_grp *vtep_grp_key = reinterpret_cast<key_vtep_grp *>
+                                  (ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+                      (vtep_grp_key->vtn_key.vtn_name));
+       break;
+    }
+    case UNC_KT_VTEP_GRP_MEMBER: {
+      key_vtep_grp_member  *vtep_grp_mem_key =
+         reinterpret_cast<key_vtep_grp_member_t *>(ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+         (vtep_grp_mem_key->vtepgrp_key.vtn_key.vtn_name));
+      break;
+    }
+    case UNC_KT_VLINK: {
+      key_vlink *vlink_key = reinterpret_cast<key_vlink_t *>(ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+                      (vlink_key->vtn_key.vtn_name));
+      break;
+    }
+    case UNC_KT_VBR_NWMONITOR: {
+      key_nwm_t *nwm = reinterpret_cast<key_nwm_t *>(ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+                      (nwm->vbr_key.vtn_key.vtn_name));
+      break;
+    }
+    case UNC_KT_VBR_NWMONITOR_HOST: {
+      key_nwm_host *host_key = reinterpret_cast<key_nwm_host *>(ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+                (host_key->nwm_key.vbr_key.vtn_key.vtn_name));
+      break;
+    }
+    case UNC_KT_VTN_FLOWFILTER: {
+      key_vtn_flowfilter *vtn_ff_key = reinterpret_cast<key_vtn_flowfilter_t*>
+                                      (ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+                      (vtn_ff_key->vtn_key.vtn_name));
+       break;
+    }
+    case UNC_KT_VTN_FLOWFILTER_ENTRY: {
+      key_vtn_flowfilter_entry_t *vtn_ffe_key = reinterpret_cast
+         <key_vtn_flowfilter_entry_t *>(ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+               (vtn_ffe_key->flowfilter_key.vtn_key.vtn_name));
+      break;
+    }
+    case UNC_KT_VTN_FLOWFILTER_CONTROLLER: {
+      key_vtn_flowfilter_controller_t *vtn_ff_ctr =
+          reinterpret_cast<key_vtn_flowfilter_controller_t*>(ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+                      (vtn_ff_ctr->vtn_key.vtn_name));
+       break;
+    }
+    case UNC_KT_VBR_FLOWFILTER: {
+      key_vbr_flowfilter_t *vbr_ff_key = reinterpret_cast
+            <key_vbr_flowfilter_t *>(ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+           (vbr_ff_key->vbr_key.vtn_key.vtn_name));
+      break;
+    }
+    case UNC_KT_VBR_FLOWFILTER_ENTRY: {
+      key_vbr_flowfilter_entry_t *vbr_ffe_key =
+        reinterpret_cast<key_vbr_flowfilter_entry_t *> (ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+           (vbr_ffe_key->flowfilter_key.vbr_key.vtn_key.vtn_name));
+      break;
+    }
+    case UNC_KT_VBRIF_FLOWFILTER:
+    case UNC_KT_VRTIF_FLOWFILTER:
+    case UNC_KT_VTERMIF_FLOWFILTER: {
+      key_vbr_if_flowfilter_t *vbr_if_ff_key = reinterpret_cast
+          <key_vbr_if_flowfilter_t *>(ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+          (vbr_if_ff_key->if_key.vbr_key.vtn_key.vtn_name));
+      break;
+    }
+    case UNC_KT_VBRIF_FLOWFILTER_ENTRY:
+    case UNC_KT_VRTIF_FLOWFILTER_ENTRY:
+    case UNC_KT_VTERMIF_FLOWFILTER_ENTRY: {
+      key_vbr_if_flowfilter_entry_t *vbr_if_ffe_key = reinterpret_cast
+         <key_vbr_if_flowfilter_entry_t *>(ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+          (vbr_if_ffe_key->flowfilter_key.if_key.vbr_key.vtn_key.vtn_name));
+      break;
+    }
+    case UNC_KT_VBR_POLICINGMAP_ENTRY: {
+      key_vbr_policingmap_entry *vtn_pme_key =
+         reinterpret_cast<key_vbr_policingmap_entry *>(ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast <const char*>
+                  (vtn_pme_key->vbr_key.vtn_key.vtn_name));
+      break;
+     }
+    case UNC_KT_VBRIF_POLICINGMAP_ENTRY: {
+      key_vbrif_policingmap_entry *vbr_if_pme =
+          reinterpret_cast<key_vbrif_policingmap_entry *>(ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+                  (vbr_if_pme->vbrif_key.vbr_key.vtn_key.vtn_name));
+      break;
+    }
+    case UNC_KT_VTN_DATAFLOW: {
+      key_vtn_dataflow_t *vtn_df_key = reinterpret_cast<key_vtn_dataflow_t *>
+                                  (ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+                     (vtn_df_key->vtn_key.vtn_name));
+      break;
+    }
+    case UNC_KT_VTERMIF_POLICINGMAP_ENTRY: {
+      key_vtermif_policingmap_entry *vterm_if_pme =
+         reinterpret_cast<key_vtermif_policingmap_entry *>(ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+                 (vterm_if_pme->vterm_if_key.vterm_key.vtn_key.vtn_name));
+      break;
+    }
+    case UNC_KT_VTN_UNIFIED: {
+      key_vtn_unified *vtn_unified_key =
+        reinterpret_cast<key_vtn_unified *>(ckv.get_key());
+      *vtn_id = strdup(reinterpret_cast<const char*>
+                 (vtn_unified_key->vtn_key.vtn_name));
+      break;
+    }
+    default:
+      UPLL_LOG_INFO("key type not belongs to VTN config mode and so"
+                    "vtn name not exists");
+      return UPLL_RC_ERR_GENERIC;
+  }
+  return result_code;
+}
+
+upll_rc_t UpllConfigMgr::HandleSpineThresholdAlarm(bool assert_alarm) {
+  UPLL_FUNC_TRACE;
+  upll_rc_t urc = UPLL_RC_SUCCESS;
+  uuk::UNWSpineDomainMoMgr *mgr  = reinterpret_cast<uuk::UNWSpineDomainMoMgr*>
+      (GetMoManager(UNC_KT_UNW_SPINE_DOMAIN));
+  if (mgr != NULL) {
+    DalOdbcMgr *dom = dbcm_->GetAlarmRwConn();
+    if (dom == NULL) {
+      UPLL_LOG_ERROR("Failed to get the alarm connection");
+      return UPLL_RC_ERR_GENERIC;
+    }
+    urc = mgr->HandleSpineThresholdAlarm(assert_alarm, dom);
+    if (urc != UPLL_RC_SUCCESS) {
+      UPLL_LOG_INFO("Failed to process threshold alarms, err %d", urc);
+    }
+    urc = dbcm_->DalTxClose(dom, (urc == UPLL_RC_SUCCESS));
+    dbcm_->ReleaseRwConn(dom);
+  }
+  return urc;
+}
 // NOLINT
-}  // namesapce config_momgr
-}  // namesapce upll
-}  // namesapce unc
+}  // namespace config_momgr
+}  // namespace upll
+}  // namespace unc

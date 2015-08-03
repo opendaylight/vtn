@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -45,6 +45,10 @@ class IpRouteMoMgr : public VnodeChildMoMgr {
       if (val == NULL) return UPLL_RC_ERR_GENERIC;
       if (tbl == MAINTBL) {
         switch (indx) {
+          case uudst::static_ip_route::kDbiNwmName2:
+            valid = &(reinterpret_cast<val_static_ip_route*>
+                      (val))->valid[UPLL_IDX_NWM_NAME_SIR];
+            break;
           case uudst::static_ip_route::kDbiMetric:
             valid = &(reinterpret_cast<val_static_ip_route*>
                       (val))->valid[UPLL_IDX_GROUP_METRIC_SIR];
@@ -69,12 +73,13 @@ class IpRouteMoMgr : public VnodeChildMoMgr {
                           unc_keytype_operation_t op);
     /**
      * @brief  Compares the valid value between two database records.
-     * 	     if both the values are same, update the valid flag for corresponding
-     * 	     attribute as invalid in the first record.
+     * 	     if both the values are same, update the valid flag for
+     * 	     corresponding attribute as invalid in the first record.
      *
      * @param[in/out]  val1   first record value instance.
      * @param[in]      val2   second record value instance.
-     * @param[in]      audit  if true,CompareValidValue is called from audit process.
+     * @param[in]      audit  if true,CompareValidValue is called from
+     *                        audit process.
      *
      **/
     bool CompareValidValue(void *&val1, void *val2, bool audit);
@@ -119,7 +124,7 @@ class IpRouteMoMgr : public VnodeChildMoMgr {
      *         based on the valid flag
      *
      * @param[in]  req               This structure contains IpcReqRespHeader
-     *                               (first 8 fields of input request structure).
+     *                               (first 8 fields of input request structure)
      * @param[in]  ikey              ikey contains key and value structure.
      * @param[in]  ctrlr_name        Controller name associated with ikey.
      *
@@ -166,7 +171,8 @@ class IpRouteMoMgr : public VnodeChildMoMgr {
      * @param[in]  operation       Operation name.
      *
      * @retval  UPLL_RC_SUCCESS                      validation succeeded.
-     * @retval  UPLL_RC_ERR_EXCEEDS_RESOURCE_LIMIT   Instance count resource limit is exceeds.
+     * @retval  UPLL_RC_ERR_EXCEEDS_RESOURCE_LIMIT   Instance count resource
+     *                                               limit is exceeds.
      * @retval  UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR   Attribute NOT_SUPPORTED.
      * @retval  UPLL_RC_ERR_GENERIC                  Generic failure.
      */
@@ -184,7 +190,8 @@ class IpRouteMoMgr : public VnodeChildMoMgr {
      *
      * @param[in]  okey   Output Configkeyval - allocated within the function
      * @param[in]  req    Input ConfigKeyVal to be duplicated.
-     * @param[in]  tbl    specifies if the val structure belongs to the main table/ controller table or rename table.
+     * @param[in]  tbl    specifies if the val structure belongs to the
+     *                    main table/ controller table or rename table.
      *
      * @retval         UPLL_RC_SUCCESS      Successfull completion.
      * @retval         UPLL_RC_ERR_GENERIC  Failure case.
@@ -192,9 +199,11 @@ class IpRouteMoMgr : public VnodeChildMoMgr {
     upll_rc_t DupConfigKeyVal(ConfigKeyVal *&okey, ConfigKeyVal *&req,
                               MoMgrTables tbl = MAINTBL);
     /**
-     * @brief  Allocates for the specified val in the given configuration in the     * specified table.
+     * @brief  Allocates for the specified val in the given configuration in the
+     *         specified table.
      *
-     * @param[in]  ck_val   Reference pointer to configval structure allocated.      * @param[in]  dt_type  specifies the configuration candidate/running/state
+     * @param[in]  ck_val   Reference pointer to configval structure allocated.
+     * @param[in]  dt_type  specifies the configuration candidate/running/state
      * @param[in]  tbl      specifies if the corresponding table is the  main
      *                      table / controller table or rename table.
      *
@@ -204,19 +213,24 @@ class IpRouteMoMgr : public VnodeChildMoMgr {
     upll_rc_t AllocVal(ConfigVal *&ck_val, upll_keytype_datatype_t dt_type,
                        MoMgrTables tbl = MAINTBL);
     /**
-     * @brief      Method to get a configkeyval of a specified keytype from an input configkeyval
+     * @brief      Method to get a configkeyval of a specified keytype from an
+     *             input configkeyval
      *
      * @param[in/out]  okey                 pointer to output ConfigKeyVal
-     * @param[in]      parent_key           pointer to the configkeyval from which the output configkey val is initialized.
+     * @param[in]      parent_key           pointer to the configkeyval from
+     *                                      which the output configkey val is
+     *                                      initialized.
      *
      * @retval         UPLL_RC_SUCCESS      Successfull completion.
      * @retval         UPLL_RC_ERR_GENERIC  Failure case.
      */
     upll_rc_t GetChildConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *parent_key);
     /**
-     * @brief  Allocates for the specified val in the given configuration in the     * specified table.
+     * @brief  Allocates for the specified val in the given configuration in the
+     *         specified table.
      *
-     * @param[in]  ck_val   Reference pointer to configval structure allocated.      * @param[in]  dt_type  specifies the configuration candidate/running/state
+     * @param[in]  ck_val   Reference pointer to configval structure allocated.
+     * @param[in]  dt_type  specifies the configuration candidate/running/state
      * @param[in]  tbl      specifies if the corresponding table is the  main
      *                      table / controller table or rename table.
      *
@@ -251,13 +265,14 @@ class IpRouteMoMgr : public VnodeChildMoMgr {
     /**
      * @brief      Method to check if individual portions of a key are valid
      *
-     * @param[in/out]  ikey                 pointer to ConfigKeyVal referring to a UNC resource
-     * @param[in]      index                db index associated with the variable
+     * @param[in/out]  ikey    pointer to ConfigKeyVal referring to a
+     *                         UNC resource
+     * @param[in]      index   db index associated with the variable
      *
-     * @retval         true                 input key is valid
-     * @retval         false                input key is invalid.
+     * @retval         true    input key is valid
+     * @retval         false   input key is invalid.
      **/
-    bool IsValidKey(void *tkey, uint64_t index);
+    bool IsValidKey(void *tkey, uint64_t index, MoMgrTables tbl = MAINTBL);
 
   /* @brief         READ_SIBLING_BEGIN: Gets the first MO from the sibling group
    *                under the parent
@@ -283,6 +298,19 @@ class IpRouteMoMgr : public VnodeChildMoMgr {
                                   ConfigKeyVal *key,
                                   bool begin,
                                   DalDmlIntf *dal);
+
+  /* @brief         ValidateUpdateMo: Method to validate the valid flags 
+   *                for update operation
+   *
+   * @param[in]     ikey   Pointer to the ConfigKeyVal Structure 
+   * @param[in]     db_ckv Pointer to the ConfigKeyVal Structure
+   *
+   * @retval  UPLL_RC_SUCCESS                    Completed successfully.
+   * @retval  UPLL_RC_ERR_CFG_SYNTAX             Syntax error.
+   * @retval  UPLL_RC_ERR_GENERIC                Generic failure. 
+   * @Note: Overridden from base class MoMgrImpl
+   **/
+  upll_rc_t ValidateUpdateMo(ConfigKeyVal *ikey, ConfigKeyVal *db_ckv);
 };
 
 }  // namespace kt_momgr

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -156,7 +156,7 @@ class VbrIfPolicingMapMoMgr : public MoMgrImpl {
    * @retval    UPLL_RC_ERR_NO_SUCH_INSTANCE  No Record in DB.
    * @retval    UPLL_RC_ERR_INSTANCE_EXISTS   Record exists in DB.
    */
-  upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
+  upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                          DalDmlIntf *dmi);
 
   /**
@@ -194,7 +194,9 @@ class VbrIfPolicingMapMoMgr : public MoMgrImpl {
   upll_rc_t UpdateRefCountInPPCtrlr(ConfigKeyVal *ikey,
                                     upll_keytype_datatype_t dt_type,
                                     DalDmlIntf *dmi,
-                                    unc_keytype_operation_t op);
+                                    unc_keytype_operation_t op,
+                                    TcConfigMode config_mode,
+                                    string vtn_name);
 
   /**
    *  @Brief Method used to get ctrlrid.
@@ -478,14 +480,14 @@ class VbrIfPolicingMapMoMgr : public MoMgrImpl {
     *
     * @retval  UPLL_RC_SUCCESS      Successfull completion.
     * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
-    * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists 
+    * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists
     * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
     */
 
-   upll_rc_t RestorePOMInCtrlTbl(ConfigKeyVal *ikey,
-                                 upll_keytype_datatype_t dt_type,
-                                 MoMgrTables tbl,
-                                 DalDmlIntf* dmi);
+  upll_rc_t RestorePOMInCtrlTbl(ConfigKeyVal *ikey,
+                                upll_keytype_datatype_t dt_type,
+                                MoMgrTables tbl,
+                                DalDmlIntf* dmi);
 
   upll_rc_t ReadDetail(ConfigKeyVal *ikey,
                        ConfigKeyVal *dup_key,
@@ -495,7 +497,7 @@ class VbrIfPolicingMapMoMgr : public MoMgrImpl {
                        DbSubOp dbop,
                        DalDmlIntf *dmi);
 
-  bool IsValidKey(void *tkey, uint64_t index);
+  bool IsValidKey(void *tkey, uint64_t index, MoMgrTables tbl = MAINTBL);
 
   upll_rc_t ReadDTStateNormal(IpcReqRespHeader *req,
                               ConfigKeyVal *ikey,
@@ -535,18 +537,24 @@ class VbrIfPolicingMapMoMgr : public MoMgrImpl {
                                uuc::UpdateCtrlrPhase phase,
                                set<string> *affected_ctrlr_set,
                                DalDmlIntf *dmi,
-                               ConfigKeyVal **err_ckv);
+                               ConfigKeyVal **err_ckv,
+                               TxUpdateUtil *tx_util,
+                               TcConfigMode config_mode,
+                               std::string vtn_name);
   upll_rc_t SetVlinkPortmapConfiguration(ConfigKeyVal *ikey,
                                          upll_keytype_datatype_t dt_type,
                                          DalDmlIntf *dmi,
                                          InterfacePortMapInfo flag,
-                                         unc_keytype_operation_t oper);
+                                         unc_keytype_operation_t oper,
+                                         TcConfigMode config_mode,
+                                         string vtn_name);
 
   upll_rc_t GetVexternalInformation(ConfigKeyVal* ck_main,
                                     upll_keytype_datatype_t dt_type,
                                     pfcdrv_val_vbrif_policingmap_t*& pfc_val,
                                     pfcdrv_val_vbrif_vextif_t*& pfc_val_ext,
-                                    uint8_t db_flag, DalDmlIntf *dmi);
+                                    uint8_t db_flag, const char *ctrlr_id,
+                                    DalDmlIntf *dmi);
 
   upll_rc_t ConstructReadDetailResponse(
       ConfigKeyVal *ikey,
@@ -601,9 +609,12 @@ class VbrIfPolicingMapMoMgr : public MoMgrImpl {
 
   upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
                               upll_keytype_datatype_t dt_type,
-                              DalDmlIntf *dmi);
+                              DalDmlIntf *dmi,
+                              TcConfigMode config_mode,
+                              string vtn_name);
 
   upll_rc_t IsPolicingProfileConfigured(const char* policingprofile_name,
+                                        upll_keytype_datatype_t dt_type,
                                         DalDmlIntf *dmi);
 
   upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
@@ -629,9 +640,15 @@ class VbrIfPolicingMapMoMgr : public MoMgrImpl {
   upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
                           DalDmlIntf *dmi,
                           IpcReqRespHeader *req);
+  upll_rc_t TxUpdateErrorHandler(ConfigKeyVal *req,
+                                  ConfigKeyVal *ck_main,
+                                  DalDmlIntf *dmi,
+                                  upll_keytype_datatype_t dt_type,
+                                  ConfigKeyVal **err_ckv,
+                                  IpcResponse *ipc_resp);
 };
-}  // kt_momgr
-}  // upll
-}  // unc
+}  // namespace kt_momgr
+}  // namespace upll
+}  // namespace unc
 
 #endif  // MODULES_UPLL_VBR_IF_POLICINGMAP_MOMGR_HH_

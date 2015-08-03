@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -14,6 +14,8 @@
 #include <pfcxx/ipc_client.hh>
 #include <pfc/log.h>
 #include <string>
+#include <map>
+#include <pthread.h>
 
 namespace unc {
 namespace tc {
@@ -93,13 +95,17 @@ class TcClientSessionUtils {
                                             std::string channel_name,
                                             uint32_t service_id,
                                             pfc_ipcconn_t &conn,
-                                            pfc_bool_t infinite_timeout = PFC_TRUE);
+                                            pfc_bool_t infinite_timeout = PFC_TRUE,
+                                            pfc_bool_t to_tclib = PFC_TRUE);
 
   static TcUtilRet tc_session_invoke(pfc::core::ipc::ClientSession* csess,
                                      pfc_ipcresp_t& response);
 
   static TcUtilRet tc_session_close(pfc::core::ipc::ClientSession** csess,
                                     pfc_ipcconn_t conn);
+
+  static TcUtilRet tc_session_cancel_all_sessions();
+
   /*methods to retrieve data*/
 
   static TcUtilRet get_uint64(
@@ -121,6 +127,9 @@ class TcClientSessionUtils {
                pfc::core::ipc::ClientSession* csess,
                uint32_t index,
                std::string& data);
+
+  static pfc_bool_t get_sys_stop();
+
   /*methods to set data*/
   static TcUtilRet set_uint64(
                pfc::core::ipc::ClientSession* csess,
@@ -137,6 +146,16 @@ class TcClientSessionUtils {
   static TcUtilRet set_string(
                pfc::core::ipc::ClientSession* csess,
                std::string& data);
+
+  static TcUtilRet set_sys_stop(pfc_bool_t is_sys_stop);
+
+  /* Member variables */  
+  static std::map<pfc_ipcconn_t, pfc::core::ipc::ClientSession*> sess_map_;
+  static pthread_mutex_t sess_map_lock_;
+  
+  static pfc_bool_t sys_stop_;
+  static pthread_mutex_t sys_stop_lock_;
+
 };
 
 }  // namespace tc

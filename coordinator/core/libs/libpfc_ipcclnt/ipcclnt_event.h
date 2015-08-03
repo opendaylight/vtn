@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -203,9 +203,6 @@ struct ipc_etimeout {
  *	- els_eplist must be serialized by the event listener context lock.
  *	- els_tmplink must be serialized by the IPC channel lock.
  */
-struct ipc_elsess;
-typedef struct ipc_elsess	ipc_elsess_t;
-
 struct ipc_elsess {
 	ipc_clchan_t	*els_chan;	/* IPC channel */
 	pfc_sockaddr_t	els_sockaddr;	/* socket address */

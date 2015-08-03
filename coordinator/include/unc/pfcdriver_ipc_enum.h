@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -56,6 +56,30 @@ typedef enum {
   PFCDRV_IDX_CTR_NONE = 0,
   PFCDRV_IDX_CTR_FIVE_ZERO,
   PFCDRV_IDX_CTR_FIVE_ONE,
-  PFCDRV_IDX_CTR_SIX_ZERO
+  PFCDRV_IDX_CTR_SIX_ZERO,
+  PFCDRV_IDX_CTR_SIX_ONE,
+  PFCDRV_IDX_CTR_SIX_TWO
 } pfcdrv_ctr_versions_index_t;
+
+typedef enum {
+  PFCDRV_IDX_VAL_VBR_PORTMAP = 0,
+  PFCDRV_IDX_VBRPM_BDRY_REF_COUNT,
+} pfcdrv_val_vbr_portmap_index_t;
+
+/* enum for pfcdrv_val_vtn_controller structure */
+ typedef enum {
+  PFCDRV_IDX_VTNCTRL_LABEL_TYPE = 0,
+  PFCDRV_IDX_VTNCTRL_LABEL,
+} pfcdrv_val_vtn_controller_index_t;
+
+/* enum for pfcdrv_val_vtn_flooding_path structure */
+ typedef enum {
+   PFCDRV_IDX_VAL_GVTNID = 0
+ } pfcdrv_val_vtn_flooding_path_index_t;
+
+/* enum for import mode */
+typedef enum {
+  UNC_IMPORT_ERROR_MODE = 0,
+  UNC_IMPORT_IGNORE_MODE
+} UncImportMode;
 #endif

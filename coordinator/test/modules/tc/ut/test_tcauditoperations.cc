@@ -1,14 +1,15 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 #include "test_tcauditoperations.hh"
 #include <uncxx/tc/libtc_common.hh>
+#include "tc_operations.hh"
+#include "tcmsg.hh"
 
 extern uint32_t resp_count;
 extern int stub_srv_uint8;
@@ -45,7 +46,6 @@ TEST(TcAuditOperations, TcGetMinArgCount) {
                                            audit_);
   int argcount = tc_auditoperations.TestTcGetMinArgCount();
   EXPECT_EQ(4, argcount);
-  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcAuditOperations, TcCheckOperArgCount) {
@@ -55,14 +55,13 @@ TEST(TcAuditOperations, TcCheckOperArgCount) {
                                            db_handler,
                                            unc_map_,
                                            audit_);
-  uint32_t avail_count = 5;
+  uint32_t avail_count = 1;
   EXPECT_EQ(TC_OPER_INVALID_INPUT,
             tc_auditoperations.TcCheckOperArgCount(avail_count));
 
   avail_count = 4;
   EXPECT_EQ(TC_OPER_SUCCESS,
             tc_auditoperations.TcCheckOperArgCount(avail_count));
-  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcAuditOperations, GetSessionId_Success) {
@@ -75,11 +74,10 @@ TEST(TcAuditOperations, GetSessionId_Success) {
   tc_auditoperations.tc_oper_ = TC_OP_DRIVER_AUDIT;
   stub_srv_uint32 = 100;
   EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.GetSessionId());
-  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcAuditOperations, GetSessionId_Fatal) {
-  SET_AUDIT_OPER_PARAMS();
+    SET_AUDIT_OPER_PARAMS();
   TestTcAuditOperations tc_auditoperations(tc_lock_,
                                            &sess_,
                                            db_handler,
@@ -88,11 +86,10 @@ TEST(TcAuditOperations, GetSessionId_Fatal) {
   tc_auditoperations.tc_oper_ = TC_OP_USER_AUDIT;
   stub_srv_uint32 = -1;
   EXPECT_EQ(TC_OPER_FAILURE, tc_auditoperations.GetSessionId());
-  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcAuditOperations, GetSessionId_Failure) {
-  SET_AUDIT_OPER_PARAMS();
+    SET_AUDIT_OPER_PARAMS();
   TestTcAuditOperations tc_auditoperations(tc_lock_,
                                            &sess_,
                                            db_handler,
@@ -101,7 +98,6 @@ TEST(TcAuditOperations, GetSessionId_Failure) {
   tc_auditoperations.tc_oper_ = TC_OP_USER_AUDIT;
   stub_srv_uint32 = 0;
   EXPECT_EQ(TC_OPER_INVALID_INPUT, tc_auditoperations.GetSessionId());
-  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcAuditOperations, GetSessionId_Session_Invalid) {
@@ -115,11 +111,10 @@ TEST(TcAuditOperations, GetSessionId_Session_Invalid) {
   stub_srv_uint32 = 10;
   tc_auditoperations.session_id_ =0;
   EXPECT_EQ(TC_OPER_INVALID_INPUT, tc_auditoperations.GetSessionId());
-  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcAuditOperations, GetSessionId_Oper_Success) {
-  SET_AUDIT_OPER_PARAMS();
+    SET_AUDIT_OPER_PARAMS();
   TestTcAuditOperations tc_auditoperations(tc_lock_,
                                            &sess_,
                                            db_handler,
@@ -129,7 +124,6 @@ TEST(TcAuditOperations, GetSessionId_Oper_Success) {
   stub_srv_uint32 = 10;
   tc_auditoperations.session_id_ =10;
   EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.GetSessionId());
-  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcAuditOperations, TcValidateOperType) {
@@ -149,10 +143,11 @@ TEST(TcAuditOperations, TcValidateOperType) {
   tc_auditoperations.tc_oper_ = TC_OP_USER_AUDIT;
   stub_srv_uint32 = 0;
   EXPECT_EQ(TC_OPER_FAILURE, tc_auditoperations.TcValidateOperType());
-  DEL_AUDIT_PARAMS();
 }
-TEST(TcAuditOperations, TcValidateOperParams_UserAudit) {
-  SET_AUDIT_OPER_PARAMS();
+
+TEST(TcAuditOperations, TcValidateOperParams) {
+    SET_AUDIT_OPER_PARAMS();
+  //  TcMsg* tc_msg = NULL;
   TestTcAuditOperations tc_auditoperations(tc_lock_,
                                            &sess_,
                                            db_handler,
@@ -160,49 +155,25 @@ TEST(TcAuditOperations, TcValidateOperParams_UserAudit) {
                                            audit_);
   tc_auditoperations.tc_oper_= TC_OP_USER_AUDIT;
   EXPECT_EQ(TC_OPER_INVALID_INPUT, tc_auditoperations.TcValidateOperParams());
-  DEL_AUDIT_PARAMS();
-}
 
-TEST(TcAuditOperations, TcValidateOperParams_Success) {
-  SET_AUDIT_OPER_PARAMS();
-  TestTcAuditOperations tc_auditoperations(tc_lock_,
-                                           &sess_,
-                                           db_handler,
-                                           unc_map_,
-                                           audit_);
-  tc_auditoperations.controller_id_ = "C1";
-  EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.TcValidateOperParams());
-  DEL_AUDIT_PARAMS();
-}
-
-TEST(TcAuditOperations, TcValidateOperParams_Invalid) {
-  SET_AUDIT_OPER_PARAMS();
-  TestTcAuditOperations tc_auditoperations(tc_lock_,
-                                           &sess_,
-                                           db_handler,
-                                           unc_map_,
-                                           audit_);
+  //tc_auditoperations.controller_id_ = "C1";
+  //EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.TcValidateOperParams());
 
   tc_auditoperations.tc_oper_ = TC_OP_DRIVER_AUDIT;
   stub_srv_string = 1;
   EXPECT_EQ(TC_OPER_INVALID_INPUT, tc_auditoperations.TcValidateOperParams());
   stub_srv_string = 0;
-  DEL_AUDIT_PARAMS();
-}
 
-TEST(TcAuditOperations, TcValidateOperParams_Unknown) {
-  SET_AUDIT_OPER_PARAMS();
-  TestTcAuditOperations tc_auditoperations(tc_lock_,
-                                           &sess_,
-                                           db_handler,
-                                           unc_map_,
-                                           audit_);
   tc_auditoperations.driver_id_ = UNC_CT_UNKNOWN;
   tc_auditoperations.controller_id_ = "C1";
-  EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.TcValidateOperParams());
-  DEL_AUDIT_PARAMS();
+  EXPECT_EQ(TC_OPER_INVALID_INPUT, tc_auditoperations.TcValidateOperParams());
+  
+  tc_auditoperations.tc_oper_ = TC_OP_DRIVER_AUDIT;
+  stub_opertype = TC_OP_DRIVER_AUDIT;
+  tc_auditoperations.controller_id_ = "";
+  EXPECT_EQ(TC_OPER_INVALID_INPUT, tc_auditoperations.TcValidateOperParams());
 }
-/*
+
 TEST(TcAuditOperations, TcGetExclusion) {
   TestTcLock* tc_lock_ = new TestTcLock();
   pfc_ipcsrv_t *srv = NULL;
@@ -220,21 +191,17 @@ TEST(TcAuditOperations, TcGetExclusion) {
                                            audit_);
   tc_auditoperations.tc_oper_ = TC_OP_USER_AUDIT;
   tc_auditoperations.tclock_ = tc_lock_;
-  tc_lock_->TcUpdateUncState(TC_ACT);
-  EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.TcGetExclusion());
-  EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.TcReleaseExclusion());
-
-
+  EXPECT_EQ(106, tc_auditoperations.TcGetExclusion());
   tc_auditoperations.tc_oper_ = TC_OP_DRIVER_AUDIT;
-  EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.TcGetExclusion());
-  EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.TcReleaseExclusion());
+  EXPECT_EQ(106, tc_auditoperations.TcGetExclusion());
 
   tc_auditoperations.tc_oper_ = TC_OP_DRIVER_AUDIT;
   tc_auditoperations.api_audit_ = PFC_TRUE;
   EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.TcGetExclusion());
-  DEL_AUDIT_PARAMS();
+  
+  delete tc_lock_;
 }
-*/
+
 TEST(TcAuditOperations, TcReleaseExclusion) {
   TestTcLock*  tc_lock_ = new TestTcLock();
   pfc_ipcsrv_t *srv = NULL;
@@ -242,7 +209,7 @@ TEST(TcAuditOperations, TcReleaseExclusion) {
   std::string dsn_name = "UNC_DB_DSN";
   TcDbHandler* db_handler = new TcDbHandler(dsn_name);
   TcChannelNameMap  unc_map_;
-  // int32_t alarm_id = 1;
+  //int32_t alarm_id = 1;
   TcTaskqUtil* audit_ = new TcTaskqUtil(TC_AUDIT_CONCURRENCY);
 
   TestTcAuditOperations tc_auditoperations(tc_lock_,
@@ -260,11 +227,16 @@ TEST(TcAuditOperations, TcReleaseExclusion) {
   tc_auditoperations.tc_oper_ = TC_OP_DRIVER_AUDIT;
   tc_auditoperations.api_audit_ = PFC_TRUE;
   EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.TcReleaseExclusion());
-  DEL_AUDIT_PARAMS();
+ 
+  TcOperations::SetAuditCancelStatus(AUDIT_CANCEL_INPROGRESS);              // thandava
+  tc_auditoperations.tc_oper_ = TC_OP_DRIVER_AUDIT;
+  tc_auditoperations.api_audit_ = PFC_TRUE;
+  EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.TcReleaseExclusion());
+  
 }
 
 TEST(TcAuditOperations, HandleLockRet) {
-  SET_AUDIT_OPER_PARAMS();
+    SET_AUDIT_OPER_PARAMS();
   TcLockRet ret = TC_LOCK_SUCCESS;
   TestTcAuditOperations tc_auditoperations(tc_lock_,
                                            &sess_,
@@ -285,18 +257,16 @@ TEST(TcAuditOperations, HandleLockRet) {
 
   ret = TC_LOCK_INVALID_PARAMS;
   EXPECT_EQ(TC_OPER_FAILURE, tc_auditoperations.HandleLockRet(ret));
-  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcAuditOperations, TcCreateMsgList) {
-  SET_AUDIT_OPER_PARAMS();
+    SET_AUDIT_OPER_PARAMS();
   TestTcAuditOperations tc_auditoperations(tc_lock_,
                                            &sess_,
                                            db_handler,
                                            unc_map_,
                                            audit_);
   EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.TcCreateMsgList());
-  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcAuditOperations, FillTcMsgData) {
@@ -332,8 +302,23 @@ TEST(TcAuditOperations, FillTcMsgData) {
             tc_auditoperations.FillTcMsgData(tc_msg,  MSG_AUDIT_TRANS_END));
   EXPECT_EQ(TC_OPER_FAILURE,
             tc_auditoperations.FillTcMsgData(tc_msg, MSG_AUDIT_END));
-  DEL_AUDIT_PARAMS();
 }
+
+/*TEST(TcAuditOperations, FillTcMsgData_AuditStart) {
+    SET_AUDIT_OPER_PARAMS();
+  TcMsg* tc_msg = NULL;
+  TcChannelNameMap daemon_names = GetTcChannelNameMap(SET);
+  TestTcAuditOperations tc_auditoperations(tc_lock_,
+                                           &sess_,
+                                           db_handler,
+                                           unc_map_,
+                                           audit_);
+  tc_auditoperations.driver_id_ = UNC_CT_PFC;
+  EXPECT_EQ(TC_OPER_SUCCESS,
+            tc_auditoperations.FillTcMsgData(tc_msg,  MSG_AUDIT_START));
+  }*/
+
+
 
 TEST(TcAuditOperations, SendAdditionalResponse_Success) {
     SET_AUDIT_OPER_PARAMS();
@@ -345,7 +330,6 @@ TEST(TcAuditOperations, SendAdditionalResponse_Success) {
                                            audit_);
   EXPECT_EQ(TC_OPER_FAILURE,
             tc_auditoperations.SendAdditionalResponse(oper_stat));
-  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcAuditOperations, SendAdditionalResponse_UserAudit) {
@@ -362,7 +346,6 @@ TEST(TcAuditOperations, SendAdditionalResponse_UserAudit) {
 
   EXPECT_EQ(TC_OPER_FAILURE,
             tc_auditoperations.SendAdditionalResponse(oper_stat));
-  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcAuditOperations, SendAdditionalResponse_API_audit_true) {
@@ -378,7 +361,6 @@ TEST(TcAuditOperations, SendAdditionalResponse_API_audit_true) {
   tc_auditoperations.api_audit_ = PFC_TRUE;
   EXPECT_EQ(TC_OPER_SUCCESS,
             tc_auditoperations.SendAdditionalResponse(oper_stat));
-  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcAuditOperations, SendAdditionalResponse_SystemFailure) {
@@ -399,7 +381,6 @@ TEST(TcAuditOperations, SendAdditionalResponse_SystemFailure) {
   tc_auditoperations.resp_tc_msg_ =  tc_msg;
   EXPECT_EQ(TC_OPER_SUCCESS,
             tc_auditoperations.SendAdditionalResponse(oper_stat));
-  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcAuditOperations, SetAuditOperationStatus) {
@@ -413,9 +394,8 @@ TEST(TcAuditOperations, SetAuditOperationStatus) {
   stub_srv_uint32 = 1;
   EXPECT_EQ(TC_OPER_SUCCESS,
             tc_auditoperations.SetAuditOperationStatus());
-  DEL_AUDIT_PARAMS();
 }
-/*
+#if 0
 TEST(TcAuditOperations, SendAuditStatusNotification) {
     SET_AUDIT_OPER_PARAMS();
   TcChannelNameMap daemon_names = GetTcChannelNameMap(1);
@@ -426,24 +406,22 @@ TEST(TcAuditOperations, SendAuditStatusNotification) {
                                            audit_);
   stub_srv_uint32 = 1;
   tc_auditoperations.audit_result_ = unc::tclib::TC_AUDIT_SUCCESS;
-  EXPECT_EQ(TC_OPER_SUCCESS,
+  EXPECT_EQ(TC_OPER_FAILURE,
             tc_auditoperations.SendAuditStatusNotification(alarm_id));
-  DEL_AUDIT_PARAMS();
 }
-*/
-
+#endif 
 TEST(TcAuditOperations, GetDriverType) {
   SET_AUDIT_OPER_PARAMS();
   TcChannelNameMap daemon_names = GetTcChannelNameMap(SET);
   TestTcAuditOperations tc_auditoperations(tc_lock_,
                                            &sess_,
                                            db_handler,
-                                           unc_map_,
+                                           daemon_names,
                                            audit_);
   tc_auditoperations.tc_oper_ = TC_OP_USER_AUDIT;
   tc_auditoperations.controller_id_ = "C1";
   EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.GetDriverType());
-  DEL_AUDIT_PARAMS();
+  // DEL_AUDIT_PARAMS();
 }
 
 TEST(TcAuditOperations, AuditStart) {
@@ -452,11 +430,10 @@ TEST(TcAuditOperations, AuditStart) {
   TestTcAuditOperations tc_auditoperations(tc_lock_,
                                            &sess_,
                                            db_handler,
-                                           unc_map_,
+                                           daemon_names,
                                            audit_);
   tc_auditoperations.tc_oper_ = TC_OP_USER_AUDIT;
   EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.AuditStart());
-  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcAuditOperations, AuditTransStart) {
@@ -465,12 +442,11 @@ TEST(TcAuditOperations, AuditTransStart) {
   TestTcAuditOperations tc_auditoperations(tc_lock_,
                                            &sess_,
                                            db_handler,
-                                           unc_map_,
+                                           daemon_names,
                                            audit_);
   tc_auditoperations.tc_oper_ = TC_OP_USER_AUDIT;
   stub_srv_uint32 = 0;
   EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.AuditTransStart());
-  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcAuditOperations, AuditVote) {
@@ -479,11 +455,10 @@ TEST(TcAuditOperations, AuditVote) {
   TestTcAuditOperations tc_auditoperations(tc_lock_,
                                            &sess_,
                                            db_handler,
-                                           unc_map_,
+                                           daemon_names,
                                            audit_);
   tc_auditoperations.tc_oper_ = TC_OP_USER_AUDIT;
   EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.AuditVote());
-  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcAuditOperations, AuditGlobalCommit) {
@@ -492,11 +467,10 @@ TEST(TcAuditOperations, AuditGlobalCommit) {
   TestTcAuditOperations tc_auditoperations(tc_lock_,
                                            &sess_,
                                            db_handler,
-                                           unc_map_,
+                                           daemon_names,
                                            audit_);
   tc_auditoperations.tc_oper_ = TC_OP_USER_AUDIT;
   EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.AuditGlobalCommit());
-  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcAuditOperations, AuditTransEnd) {
@@ -505,11 +479,10 @@ TEST(TcAuditOperations, AuditTransEnd) {
   TestTcAuditOperations tc_auditoperations(tc_lock_,
                                            &sess_,
                                            db_handler,
-                                           unc_map_,
+                                           daemon_names,
                                            audit_);
   tc_auditoperations.tc_oper_ = TC_OP_USER_AUDIT;
   EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.AuditTransEnd());
-  DEL_AUDIT_PARAMS();
 }
 
 TEST(TcAuditOperations, AuditEnd) {
@@ -518,33 +491,19 @@ TEST(TcAuditOperations, AuditEnd) {
   TestTcAuditOperations tc_auditoperations(tc_lock_,
                                            &sess_,
                                            db_handler,
-                                           unc_map_,
+                                           daemon_names,
                                            audit_);
   tc_auditoperations.tc_oper_ = TC_OP_USER_AUDIT;
   EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.AuditEnd());
-  DEL_AUDIT_PARAMS();
 }
 
-TEST(TcAuditOperations, Execute) {
+TEST(TcAuditOperations, Dispatch_InvalidInput){
     SET_AUDIT_OPER_PARAMS();
-  TcChannelNameMap daemon_names = GetTcChannelNameMap(SET);
-
   TestTcAuditOperations tc_auditoperations(tc_lock_,
                                            &sess_,
                                            db_handler,
                                            unc_map_,
                                            audit_);
-  tc_auditoperations.api_audit_ = PFC_TRUE;
-  EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.Execute());
+  EXPECT_EQ(TC_OPER_INVALID_INPUT,tc_auditoperations.Dispatch());
 
-  tc_auditoperations.tc_oper_ = TC_OP_DRIVER_AUDIT;
-  tc_auditoperations.controller_id_ = "C1";
-  EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.Execute());
-
-  tc_auditoperations.api_audit_ = PFC_FALSE;
-  tc_auditoperations.tc_oper_ = TC_OP_DRIVER_AUDIT;
-  tc_auditoperations.controller_id_ = "C1";
-  EXPECT_EQ(TC_SYSTEM_FAILURE, tc_auditoperations.Execute());
-  DEL_AUDIT_PARAMS();
 }
-

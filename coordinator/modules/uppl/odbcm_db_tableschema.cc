@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -242,7 +242,7 @@ void DBTableSchema::PrintDBTableSchema() {
   ColumnAttrValue <uint8_t[3]> *rs_valuea3 = NULL;
   ColumnAttrValue <uint8_t[6]> *rs_valuea6 = NULL;
   ColumnAttrValue <uint8_t[8]> *rs_valuea8 = NULL;
-  ColumnAttrValue <uint8_t[9]> *rs_valuea9 = NULL;
+  ColumnAttrValue <uint8_t[10]> *rs_valuea10 = NULL;
   ColumnAttrValue <uint8_t[11]> *rs_valuea11 = NULL;
   ColumnAttrValue <uint8_t[16]> *rs_valuea16 = NULL;
   ColumnAttrValue <uint8_t[32]> *rs_valuea32 = NULL;
@@ -268,7 +268,6 @@ void DBTableSchema::PrintDBTableSchema() {
       rs_valuea3 = NULL;
       rs_valuea6 = NULL;
       rs_valuea8 = NULL;
-      rs_valuea9 = NULL;
       rs_valuea11 = NULL;
       rs_valuea16 = NULL;
       rs_valuea32 = NULL;
@@ -338,10 +337,10 @@ void DBTableSchema::PrintDBTableSchema() {
           pfc_log_debug("%s", Odbcm_PrintCharBuffer(rs_valuea8->value, 8,
                         attr_name).c_str());
           break;
-        case DATATYPE_UINT8_ARRAY_9:
-          rs_valuea9 = ((ColumnAttrValue<uint8_t[9]>*)
+        case DATATYPE_UINT8_ARRAY_10:
+          rs_valuea10 = ((ColumnAttrValue<uint8_t[10]>*)
             ((*iter_vector).p_table_attribute_value));
-          pfc_log_debug("%s", Odbcm_PrintCharBuffer(rs_valuea9->value, 9,
+          pfc_log_debug("%s", Odbcm_PrintCharBuffer(rs_valuea10->value, 10,
                         attr_name).c_str());
           break;
         case DATATYPE_UINT8_ARRAY_11:

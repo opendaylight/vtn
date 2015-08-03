@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -29,15 +29,15 @@ class VtepMoMgr : public VnodeMoMgr {
   static unc_key_type_t vtep_child[];
   static BindInfo       vtep_bind_info[];
   /**
-   * @brief  Gets the valid array position of the variable in the value 
-   *         structure from the table in the specified configuration  
+   * @brief  Gets the valid array position of the variable in the value
+   *         structure from the table in the specified configuration
    *
-   * @param[in]     val      pointer to the value structure 
+   * @param[in]     val      pointer to the value structure
    * @param[in]     indx     database index for the variable
-   * @param[out]    valid    position of the variable in the valid array - 
+   * @param[out]    valid    position of the variable in the valid array -
    *                          NULL if valid does not exist.
    * @param[in]     dt_type  specifies the configuration
-   * @param[in]     tbl      specifies the table containing the given value 
+   * @param[in]     tbl      specifies the table containing the given value
    *
    **/
   upll_rc_t GetValid(void *val,
@@ -96,7 +96,7 @@ class VtepMoMgr : public VnodeMoMgr {
                                     DalDmlIntf *dmi);
 
   /**
-     * @brief  Duplicates the input configkeyval including the key and val.  
+     * @brief  Duplicates the input configkeyval including the key and val.
      * based on the tbl specified.
      *
      * @param[in]  okey   Output Configkeyval - allocated within the function
@@ -109,13 +109,13 @@ class VtepMoMgr : public VnodeMoMgr {
   upll_rc_t DupConfigKeyVal(ConfigKeyVal *&okey,
                             ConfigKeyVal *&req, MoMgrTables tbl = MAINTBL);
   /**
-     * @brief  Allocates for the specified val in the given configuration in the     * specified table.   
+     * @brief  Allocates for the specified val in the given configuration in the     * specified table.
      *
-     * @param[in/out]  ck_val   Reference pointer to configval structure 
-     *                          allocated.      
+     * @param[in/out]  ck_val   Reference pointer to configval structure
+     *                          allocated.
      * @param[in]      dt_type  specifies the configuration candidate/running/
-     *                          state 
-     * @param[in]      tbl      specifies if the corresponding table is the  
+     *                          state
+     * @param[in]      tbl      specifies if the corresponding table is the
      *                          main table / controller table or rename table.
      *
      * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -126,7 +126,7 @@ class VtepMoMgr : public VnodeMoMgr {
 /**
     * @brief      Method to get a configkeyval of a specified keytype from an input configkeyval
     *
-    * @param[in/out]  okey                 pointer to output ConfigKeyVal 
+    * @param[in/out]  okey                 pointer to output ConfigKeyVal
     * @param[in]      parent_key           pointer to the configkeyval from which the output configkey val is initialized.
     *
     * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -165,7 +165,7 @@ class VtepMoMgr : public VnodeMoMgr {
   /**
    * @brief  Compares the valid value between two database records.
    * 	     if both the values are same, update the valid flag for corresponding
-   * 	     attribute as invalid in the first record. 
+   * 	     attribute as invalid in the first record.
    *
    * @param[in/out]  val1   first record value instance.
    * @param[in]      val2   second record value instance.
@@ -249,8 +249,8 @@ class VtepMoMgr : public VnodeMoMgr {
     return UPLL_RC_ERR_GENERIC;
   }
 
-  upll_rc_t IsReferenced(ConfigKeyVal *ikey,
-           upll_keytype_datatype_t dt_type, DalDmlIntf *dmi);
+  upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
+                         DalDmlIntf *dmi);
 
  public:
   VtepMoMgr();
@@ -262,7 +262,7 @@ class VtepMoMgr : public VnodeMoMgr {
     delete[] table;
   }
   /**
-   * @Brief  compares controller id and domain id before 
+   * @Brief  compares controller id and domain id before
    *         updating the value to DB.
    *
    * @param[in]  ikey  ikey contains key and value structure.
@@ -282,7 +282,7 @@ class VtepMoMgr : public VnodeMoMgr {
     * @retval         true                 input key is valid
     * @retval         false                input key is invalid.
     **/
-  bool IsValidKey(void *tkey, uint64_t index);
+  bool IsValidKey(void *tkey, uint64_t index, MoMgrTables tbl = MAINTBL);
   /**
    * @Brief Validates the syntax for KT_VTEP keytype key structure.
    *
@@ -306,10 +306,10 @@ class VtepMoMgr : public VnodeMoMgr {
   upll_rc_t CreateVnodeConfigKey(ConfigKeyVal *ikey, ConfigKeyVal *&okey);
 
 /**
-    * @brief      Method to get a configkeyval of the parent keytype 
+    * @brief      Method to get a configkeyval of the parent keytype
     *
-    * @param[in/out]  okey           pointer to parent ConfigKeyVal 
-    * @param[in]      ikey           pointer to the child configkeyval from 
+    * @param[in/out]  okey           pointer to parent ConfigKeyVal
+    * @param[in]      ikey           pointer to the child configkeyval from
     * which the parent configkey val is obtained.
     *
     * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -317,49 +317,51 @@ class VtepMoMgr : public VnodeMoMgr {
     **/
   upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *ikey);
 
-  /* @brief           This method invoke when the VTEP Delete operation 
+  /* @brief           This method invoke when the VTEP Delete operation
      *                thie function creates the configkey for vtepgrpmember
-     *                 
-     *              
+     *
+     *
      * @param[in/out] okey           key and value structure
-     * @param[in]     ikey           key and value structure                   
+     * @param[in]     ikey           key and value structure
      *
      * @retval  UPLL_RC_SUCCESS                    Completed successfully.
      * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
      * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource disconnected.
      * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
      * @retval  UPLL_RC_ERR_SEMANTIC               Semantic check error.
-     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist 
+     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist
      *
      **/
   upll_rc_t CreateVtepGrpConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *ikey);
   /* @brief         This method invoke when the VTN merge hapeening between
-     *                Running and DT import. This will checks the vnode name 
-     *                unique or not. 
-     *              
+     *                Running and DT import. This will checks the vnode name
+     *                unique or not.
+     *
      * @param[in]     keytype       UNC KEY TYPE
-     * @param[in/out] ctrlr_id      Controller ID                    
-     * @param[in]     conflict_ckv  key and value structure 
+     * @param[in/out] ctrlr_id      Controller ID
+     * @param[in]     conflict_ckv  key and value structure
      * @param[in]     dal    Pointer to the DalDmlIntf(DB Interface)
-     * 
+     *
      * @retval  UPLL_RC_SUCCESS                    Completed successfully.
      * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
      * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource disconnected.
      * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
      * @retval  UPLL_RC_ERR_MERGE_CONFLICT         Semantic check error.
-     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist 
+     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist
      *
      **/
   upll_rc_t MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
                      ConfigKeyVal *ikey, DalDmlIntf *dmi) {
      return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT;
   }
+  upll_rc_t AdaptValToVtnService(ConfigKeyVal *ikey,
+                                 AdaptType adapt_type);
 };
 
 
 
 
-}  // namespace vtn
+}  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc
 #endif

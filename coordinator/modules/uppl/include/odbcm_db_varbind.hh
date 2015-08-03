@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -22,6 +22,7 @@
 #include <vector>
 #include "odbcm_common.hh"
 #include "odbcm_db_tableschema.hh"
+#include "physicallayer.hh"
 
 namespace unc {
 namespace uppl {
@@ -29,6 +30,7 @@ namespace uppl {
 /*
  * Macros to define the attribute size
  */
+#define ODBCM_SIZE_1            1
 #define ODBCM_SIZE_2            2
 #define ODBCM_SIZE_3            3
 #define ODBCM_SIZE_4            4
@@ -36,7 +38,7 @@ namespace uppl {
 #define ODBCM_SIZE_6            6
 #define ODBCM_SIZE_7            7
 #define ODBCM_SIZE_8            8
-#define ODBCM_SIZE_9            9
+#define ODBCM_SIZE_10           10
 #define ODBCM_SIZE_11           11
 #define ODBCM_SIZE_14           14
 #define ODBCM_SIZE_15           15
@@ -200,11 +202,14 @@ typedef struct {
     SQLVARCHAR    szuser_name[ODBCM_SIZE_32+1];
     SQLVARCHAR    szpassword[ODBCM_SIZE_257+1];
     SQLSMALLINT   senable_audit;
+    SQLINTEGER    sport;
     SQLVARCHAR    szactual_version[ODBCM_SIZE_32+1];
     SQLSMALLINT   soper_status;
-    SQLCHAR       svalid[ODBCM_SIZE_9+1];
+    SQLVARCHAR    szactual_id[ODBCM_SIZE_32+1];
+    SQLVARCHAR    svalid_actual_id[ODBCM_SIZE_1+1];
+    SQLCHAR       svalid[ODBCM_SIZE_10+1];
     SQLSMALLINT   scs_row_status;
-    SQLCHAR       scs_attr[ODBCM_SIZE_9+1];
+    SQLCHAR       scs_attr[ODBCM_SIZE_10+1];
     SQLUBIGINT    scommit_number;
     SQLUBIGINT    scommit_date;
     SQLVARCHAR    szcommit_application[ODBCM_SIZE_256+1];
@@ -226,7 +231,9 @@ typedef struct {
     SQLLEN        cbcommitnumber;
     SQLLEN        cbcommitdate;
     SQLLEN        cbcommitapplication;
+    SQLLEN        cbacname;
     SQLLEN        cbvalid_cv;
+    SQLLEN        cbvalid_ac;
 }controller_table_t;
 
 /** 
@@ -344,6 +351,10 @@ typedef struct {
     SQLUBIGINT    salarms_status;
     SQLCHAR       slogical_port_id[ODBCM_SIZE_320+1];
     SQLCHAR       svalid[ODBCM_SIZE_11+1];
+    SQLCHAR       szconnected_switch_id[ODBCM_SIZE_256+1];
+    SQLVARCHAR    szconnected_port_id[ODBCM_SIZE_32+1];
+    SQLVARCHAR    szconnected_controller_id[ODBCM_SIZE_32+1];
+    SQLCHAR       szconnectedneighbor_valid[ODBCM_SIZE_3+1];
     SQLLEN        cbname;
     SQLLEN        cbportid;
     SQLLEN        cbportnumber;
@@ -354,6 +365,10 @@ typedef struct {
     SQLLEN        cboperstatus;
     SQLLEN        cbduplex;
     SQLLEN        cbvalid;
+    SQLLEN        cbconnswitchid;
+    SQLLEN        cbconnportid;
+    SQLLEN        cbconnctrid;
+    SQLLEN        cbconnvalid;
 }port_table_t;
 
 /** 
@@ -496,6 +511,7 @@ class DBVarbind {
     SQLLEN *p_speed_len;
     SQLLEN *p_commit_number_len;
     SQLLEN *p_commit_date_len;
+    SQLLEN *p_connected_switch_id_len;
 
   private:
     /** Binding methods for controller_table*/

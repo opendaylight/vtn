@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -72,11 +72,11 @@ BindInfo VtermIfFlowFilterEntryMoMgr::vterm_if_flowfilter_entry_bind_info[] = {
   { uudst::vterm_if_flowfilter_entry::kDbiRedirectPort, CFG_VAL,
     offsetof(val_flowfilter_entry_t, redirect_port),
     uud::kDalChar, kMaxLenInterfaceName + 1 },
-//Adding Redirection
+  // Adding Redirection
   { uudst::vterm_if_flowfilter_entry::kDbiRedirectDirection, CFG_VAL,
     offsetof(val_flowfilter_entry_t, redirect_direction),
     uud::kDalUint8,  1 },
-  //end
+  // end
 
   { uudst::vterm_if_flowfilter_entry::kDbiModifyDstMac, CFG_VAL,
     offsetof(val_flowfilter_entry_t, modify_dstmac),
@@ -108,11 +108,9 @@ BindInfo VtermIfFlowFilterEntryMoMgr::vterm_if_flowfilter_entry_bind_info[] = {
   { uudst::vterm_if_flowfilter_entry::kDbiValidRedirectPort, CFG_META_VAL,
     offsetof(val_flowfilter_entry_t, valid[3]),
     uud::kDalUint8, 1 },
-//#if 
   { uudst::vterm_if_flowfilter_entry::kDbiValidRedirectDirection, CFG_META_VAL,
     offsetof(val_flowfilter_entry_t, valid[4]),
     uud::kDalUint8, 1 },
-  //en
 
   { uudst::vterm_if_flowfilter_entry::kDbiValidModifyDstMac, CFG_META_VAL,
     offsetof(val_flowfilter_entry_t, valid[5]),
@@ -144,11 +142,9 @@ BindInfo VtermIfFlowFilterEntryMoMgr::vterm_if_flowfilter_entry_bind_info[] = {
   { uudst::vterm_if_flowfilter_entry::kDbiCsRedirectPort, CS_VAL,
     offsetof(val_flowfilter_entry_t, cs_attr[3]),
     uud::kDalUint8, 1 },
- //#if 
   { uudst::vterm_if_flowfilter_entry::kDbiCsRedirectDirection, CS_VAL,
     offsetof(val_flowfilter_entry_t, cs_attr[4]),
     uud::kDalUint8, 1 },
-  //end
 
   { uudst::vterm_if_flowfilter_entry::kDbiCsModifyDstMac, CS_VAL,
     offsetof(val_flowfilter_entry_t, cs_attr[5]),
@@ -194,13 +190,15 @@ VtermIfFlowFilterEntryMoMgr::VtermIfFlowFilterEntryMoMgr() : MoMgrImpl() {
   // Rename and ctrlr tables not required for this KT
   // setting rename table and controller index to null
   ntable = MAX_MOMGR_TBLS;
-  table = new Table *[ntable];
+  table = new Table *[ntable]();
   table[MAINTBL] = new Table(uudst::kDbiVtermIfFlowFilterEntryTbl,
       UNC_KT_VTERMIF_FLOWFILTER_ENTRY, vterm_if_flowfilter_entry_bind_info,
       IpctSt::kIpcStKeyVtermIfFlowfilterEntry, IpctSt::kIpcStValFlowfilterEntry,
       uudst::vterm_if_flowfilter_entry::kDbiVtermIfFlowFilterEntryNumCols);
   table[RENAMETBL] = NULL;
   table[CTRLRTBL] = NULL;
+  table[CONVERTTBL] = NULL;
+
   nchild = 0;
   child = NULL;
 }
@@ -246,16 +244,16 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::ValidateMessage(IpcReqRespHeader *req,
                    key->get_st_num());
     return UPLL_RC_ERR_BAD_REQUEST;
   }
-  if(req->option2 != UNC_OPT2_NONE) {
+  if (req->option2 != UNC_OPT2_NONE) {
     UPLL_LOG_ERROR(" Error: option2 is not NONE");
     return UPLL_RC_ERR_INVALID_OPTION2;
   }
-  if((req->option1 != UNC_OPT1_NORMAL) 
+  if ((req->option1 != UNC_OPT1_NORMAL)
               &&(req->option1 != UNC_OPT1_DETAIL)) {
      UPLL_LOG_ERROR(" Error: option1 is not NORMAL");
      return UPLL_RC_ERR_INVALID_OPTION1;
   }
-  if((req->option1 != UNC_OPT1_NORMAL) 
+  if ((req->option1 != UNC_OPT1_NORMAL)
              &&(req->operation == UNC_OP_READ_SIBLING_COUNT)) {
     UPLL_LOG_ERROR(" Error: option1 is not NORMAL for ReadSiblingCount");
     return UPLL_RC_ERR_INVALID_OPTION1;
@@ -265,7 +263,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::ValidateMessage(IpcReqRespHeader *req,
       UPLL_LOG_ERROR(" Invalid Datatype(%d)", req->datatype);
       return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT;
   }
-  if ((req->datatype == UPLL_DT_IMPORT) && (req->operation == UNC_OP_READ || 
+  if ((req->datatype == UPLL_DT_IMPORT) && (req->operation == UNC_OP_READ ||
        req->operation == UNC_OP_READ_SIBLING ||
        req->operation == UNC_OP_READ_SIBLING_BEGIN ||
        req->operation == UNC_OP_READ_NEXT ||
@@ -419,7 +417,8 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::ValidateCapability(IpcReqRespHeader *req,
 
   switch (req->operation) {
     case UNC_OP_CREATE: {
-      UPLL_LOG_TRACE("Calling GetCreateCapability Operation  %d ", req->operation);
+      UPLL_LOG_TRACE("Calling GetCreateCapability Operation  %d ",
+                     req->operation);
       ret_code = GetCreateCapability(ctrlr_name, ikey->get_key_type(),
                                         &instance_count, &max_attrs, &attrs);
       break;
@@ -431,11 +430,13 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::ValidateCapability(IpcReqRespHeader *req,
     }
     default: {
       if (req->datatype == UPLL_DT_STATE) {
-        UPLL_LOG_TRACE("Calling GetStateCapability Operation  %d ", req->operation);
+        UPLL_LOG_TRACE("Calling GetStateCapability Operation  %d ",
+                       req->operation);
         ret_code = GetStateCapability(ctrlr_name, ikey->get_key_type(),
                                       &max_attrs, &attrs);
       } else {
-        UPLL_LOG_TRACE("Calling GetReadCapability Operation  %d ", req->operation);
+        UPLL_LOG_TRACE("Calling GetReadCapability Operation  %d ",
+                       req->operation);
         ret_code = GetReadCapability(ctrlr_name, ikey->get_key_type(),
                                       &max_attrs, &attrs);
       }
@@ -469,8 +470,8 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::RestorePOMInCtrlTbl(
   upll_rc_t result_code = UPLL_RC_SUCCESS;
 
   controller_domain ctrlr_dom;
-  FlowListMoMgr *mgr = NULL;
-  uint8_t *ctrlr_id = NULL;
+//  FlowListMoMgr *mgr = NULL;
+// uint8_t *ctrlr_id = NULL;
 
   if (!ikey || !(ikey->get_key())) {
     UPLL_LOG_ERROR("Input Key Not Valid");
@@ -480,7 +481,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::RestorePOMInCtrlTbl(
        ikey->get_key_type() != UNC_KT_VTERMIF_FLOWFILTER_ENTRY) {
     UPLL_LOG_ERROR("Ignoring  ktype/Table kt=%d, tbl=%d",
                     ikey->get_key_type(), tbl);
-    // TODO check with Pynthamil
+    // TODO(pom): check with Pynthamil
     return result_code;
   }
 
@@ -502,20 +503,6 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::RestorePOMInCtrlTbl(
     GET_USER_DATA_CTRLR_DOMAIN(ikey, ctrlr_dom);
     UPLL_LOG_DEBUG("ctrlrid %s, domainid %s",
                  ctrlr_dom.ctrlr, ctrlr_dom.domain);
-    ctrlr_id = ctrlr_dom.ctrlr;
-
-    mgr = reinterpret_cast<FlowListMoMgr *>
-        (const_cast<MoManager *> (GetMoManager(UNC_KT_FLOWLIST)));
-    result_code = mgr->AddFlowListToController(
-              reinterpret_cast<char *>(flowfilter_val->flowlist_name),
-              dmi,
-              reinterpret_cast<char *>(ctrlr_id) ,
-              dt_type,
-              UNC_OP_CREATE);
-    if (result_code != UPLL_RC_SUCCESS) {
-       UPLL_LOG_ERROR("Unable to Update the FlowList at ctrlr Table");
-       return result_code;
-    }
   }
   return result_code;
 }
@@ -590,9 +577,10 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::CreateCandidateMo(IpcReqRespHeader *req,
     UPLL_LOG_ERROR("GetParentConfigKey failed %d", result_code);
     return result_code;
   }
-  result_code = mgrvtermif->GetPortmapInfo(vtermif_ckv, req->datatype, dmi, flags);
+  result_code = mgrvtermif->GetPortmapInfo(vtermif_ckv, req->datatype,
+                                           dmi, flags);
   DELETE_IF_NOT_NULL(vtermif_ckv);
-  if (result_code != UPLL_RC_SUCCESS ) {
+  if (result_code != UPLL_RC_SUCCESS) {
     UPLL_LOG_ERROR("GetPortmapinfo Failed err_code %d", result_code);
     return result_code;
   }
@@ -607,15 +595,31 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::CreateCandidateMo(IpcReqRespHeader *req,
   iflag |= flag_port_map;
   SET_USER_DATA_FLAGS(ikey, iflag);
   UPLL_LOG_DEBUG(" flag_port_map (%d) (%d)", iflag, flag_port_map);
-
+  TcConfigMode config_mode = TC_CONFIG_INVALID;
+  std::string vtn_name = "";
+  result_code = GetConfigModeInfo(req, config_mode, vtn_name);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_DEBUG("GetConfigMode failed");
+    return result_code;
+  }
 
   if (flowfilter_val->valid[UPLL_IDX_FLOWLIST_NAME_FFE] == UNC_VF_VALID) {
     if (flag_port_map & SET_FLAG_PORTMAP) {
       FlowListMoMgr *mgr = reinterpret_cast<FlowListMoMgr *>
         (const_cast<MoManager *> (GetMoManager(UNC_KT_FLOWLIST)));
+      std::string temp_vtn_name;
+      if (TC_CONFIG_VTN == config_mode) {
+        temp_vtn_name = vtn_name;
+      } else {
+        key_vterm_if_flowfilter_entry_t *temp_key = reinterpret_cast<
+            key_vterm_if_flowfilter_entry_t *>(ikey->get_key());
+        temp_vtn_name = reinterpret_cast<const char*>(
+            temp_key->flowfilter_key.if_key.vterm_key.vtn_key.vtn_name);
+      }
       result_code = mgr->AddFlowListToController(
           reinterpret_cast<char *>(flowfilter_val->flowlist_name), dmi,
-          reinterpret_cast<char *> (ctrlr_id), req->datatype, UNC_OP_CREATE);
+          reinterpret_cast<char *> (ctrlr_id), req->datatype, UNC_OP_CREATE,
+          config_mode, temp_vtn_name, false);
       if (result_code != UPLL_RC_SUCCESS) {
         UPLL_LOG_DEBUG("Reference Count Updation Fails %d", result_code);
         return result_code;
@@ -625,7 +629,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::CreateCandidateMo(IpcReqRespHeader *req,
   DbSubOp dbop1 = { kOpNotRead, kOpMatchNone, kOpInOutDomain
     | kOpInOutCtrlr | kOpInOutFlag };
   result_code = UpdateConfigDB(ikey, req->datatype, UNC_OP_CREATE, dmi,
-                               &dbop1, MAINTBL);
+                               &dbop1, config_mode, vtn_name, MAINTBL);
   if (result_code != UPLL_RC_SUCCESS) {
     UPLL_LOG_ERROR("Unable to update CandidateDB %d", result_code);
   }
@@ -637,19 +641,8 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::CreateAuditMoImpl(ConfigKeyVal *ikey,
                                    const char *ctrlr_id) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
+  string vtn_name = "";
   UPLL_LOG_TRACE(" ikey is %s", ikey->ToStrAll().c_str());
-  uint8_t *controller_id = reinterpret_cast<uint8_t *>(
-                                 const_cast<char *>(ctrlr_id));
-
-  /* check if object is renamed in the corresponding Rename Tbl
-   * if "renamed"  create the object by the UNC name.
-   * else - create using the controller name.
-   */
-  result_code = GetRenamedUncKey(ikey, UPLL_DT_RUNNING, dmi, controller_id);
-  if (result_code != UPLL_RC_SUCCESS && result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE) {
-    UPLL_LOG_ERROR("GetRenamedUncKey Failed err_code %d", result_code);
-    return result_code;
-  }
 
   VtermIfMoMgr *mgrvtermif = reinterpret_cast<VtermIfMoMgr *>
         (const_cast<MoManager *>(GetMoManager(UNC_KT_VTERM_IF)));
@@ -669,16 +662,18 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::CreateAuditMoImpl(ConfigKeyVal *ikey,
     UPLL_LOG_ERROR("GetParentConfigKey failed %d", result_code);
     return result_code;
   }
-  result_code = mgrvtermif->GetPortmapInfo(vtermif_ckv, UPLL_DT_AUDIT, dmi, flags);
+  result_code = mgrvtermif->GetPortmapInfo(vtermif_ckv, UPLL_DT_AUDIT,
+                                           dmi, flags);
   DELETE_IF_NOT_NULL(vtermif_ckv);
-  if (result_code != UPLL_RC_SUCCESS ) {
+  if (result_code != UPLL_RC_SUCCESS) {
     UPLL_LOG_ERROR("GetPortmapinfo Failed err_code %d", result_code);
     return result_code;
   }
 
   uint8_t flag_port_map = 0;
+  GET_USER_DATA_FLAGS(ikey, flag_port_map);
   if (flags & kPortMapConfigured) {
-    flag_port_map = SET_FLAG_PORTMAP;
+    flag_port_map |= SET_FLAG_PORTMAP;
   }
 
   SET_USER_DATA_FLAGS(ikey, flag_port_map);
@@ -687,7 +682,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::CreateAuditMoImpl(ConfigKeyVal *ikey,
   memset(&ctrlr_dom, 0, sizeof(ctrlr_dom));
   result_code = GetControllerDomainID(ikey, UPLL_DT_AUDIT, dmi);
   if (result_code != UPLL_RC_SUCCESS) {
-    UPLL_LOG_ERROR("Failed to Get the Controller Domain details,err:%d",
+    UPLL_LOG_ERROR("Failed to Get the Controller Domain details, err:%d",
                    result_code);
     return result_code;
   }
@@ -705,10 +700,11 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::CreateAuditMoImpl(ConfigKeyVal *ikey,
       UPLL_LOG_ERROR("Invalid FlowListMoMgr Instance");
       return UPLL_RC_ERR_GENERIC;
     }
-    result_code = mgr->AddFlowListToController(reinterpret_cast<char *>
-                                              (val_ffe->flowlist_name), dmi,
-                                              reinterpret_cast<char *> (const_cast<char *>(ctrlr_id)),
-                                              UPLL_DT_AUDIT, UNC_OP_CREATE);
+    result_code = mgr->AddFlowListToController(
+        reinterpret_cast<char *>
+        (val_ffe->flowlist_name), dmi,
+        reinterpret_cast<char *> (const_cast<char *>(ctrlr_id)),
+        UPLL_DT_AUDIT, UNC_OP_CREATE, TC_CONFIG_GLOBAL, vtn_name, false);
     if (result_code != UPLL_RC_SUCCESS) {
       UPLL_LOG_ERROR("Reference Count Updation Fails %d", result_code);
       return result_code;
@@ -717,7 +713,9 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::CreateAuditMoImpl(ConfigKeyVal *ikey,
 
   UPLL_LOG_TRACE("ikey After GetRenamedUncKey %s", ikey->ToStrAll().c_str());
   // Create a record in AUDIT DB
-  result_code = UpdateConfigDB(ikey, UPLL_DT_AUDIT, UNC_OP_CREATE, dmi, MAINTBL);
+  result_code = UpdateConfigDB(ikey, UPLL_DT_AUDIT,
+                               UNC_OP_CREATE, dmi, TC_CONFIG_GLOBAL,
+                               vtn_name, MAINTBL);
   if (result_code != UPLL_RC_SUCCESS) {
     UPLL_LOG_ERROR("UpdateConfigDB Failed err_code %d", result_code);
     return result_code;
@@ -725,7 +723,8 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::CreateAuditMoImpl(ConfigKeyVal *ikey,
   return UPLL_RC_SUCCESS;
 }
 
-upll_rc_t VtermIfFlowFilterEntryMoMgr::AuditUpdateController(unc_key_type_t keytype,
+upll_rc_t VtermIfFlowFilterEntryMoMgr::AuditUpdateController(
+    unc_key_type_t keytype,
     const char *ctrlr_id,
     uint32_t session_id,
     uint32_t config_id,
@@ -746,6 +745,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::AuditUpdateController(unc_key_type_t keyt
   ConfigKeyVal  *ckv_audit_dup_db = NULL;
   DalCursor *cursor = NULL;
   uint8_t db_flag = 0;
+  string vtn_name = "";
   uint8_t *ctrlr = reinterpret_cast<uint8_t *>(const_cast<char *>(ctrlr_id));
 
   // Skipping the create phase if it comes as an input.
@@ -771,13 +771,13 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::AuditUpdateController(unc_key_type_t keyt
   for (int i = 0; i < nop; i++) {
     UPLL_LOG_DEBUG("Operation is %d", op[i]);
     cursor = NULL;
-    unc_keytype_operation_t op1 = op[i]; 
+    unc_keytype_operation_t op1 = op[i];
     uuc::UpdateCtrlrPhase phase = (op[i] == UNC_OP_UPDATE)?uuc::kUpllUcpUpdate:
       ((op[i] == UNC_OP_CREATE)?uuc::kUpllUcpCreate:
        ((op[i] == UNC_OP_DELETE)?uuc::kUpllUcpDelete:uuc::kUpllUcpInvalid));
     result_code = DiffConfigDB(UPLL_DT_RUNNING, UPLL_DT_AUDIT, op[i],
         ckv_running_db, ckv_audit_db,
-        &cursor, dmi, ctrlr, MAINTBL, true, true);
+        &cursor, dmi, ctrlr, TC_CONFIG_GLOBAL, vtn_name, MAINTBL, true, true);
     if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
       result_code = UPLL_RC_SUCCESS;
       UPLL_LOG_DEBUG("No more diff found for operation %d", op[i]);
@@ -799,11 +799,12 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::AuditUpdateController(unc_key_type_t keyt
       DELETE_IF_NOT_NULL(ckv_audit_db);
       return UPLL_RC_ERR_GENERIC;
     }
-    while (uud::kDalRcSuccess == (db_result = dmi->GetNextRecord(cursor))) {
+    while (uud::kDalRcSuccess == (db_result = dmi->GetNextRecord(cursor)) &&
+           ((result_code = ContinueAuditProcess()) == UPLL_RC_SUCCESS)) {
       op1 = op[i];
       if (phase != uuc::kUpllUcpDelete) {
         uint8_t *db_ctrlr = NULL;
-        GET_USER_DATA_CTRLR(ckv_running_db,db_ctrlr);
+        GET_USER_DATA_CTRLR(ckv_running_db, db_ctrlr);
         UPLL_LOG_DEBUG("db ctrl_id and audit ctlr_id are  %s %s",
                         db_ctrlr, ctrlr_id);
         // Skipping the controller ID if the controller id in DB and
@@ -818,8 +819,9 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::AuditUpdateController(unc_key_type_t keyt
         case uuc::kUpllUcpDelete:
         case uuc::kUpllUcpCreate:
           UPLL_LOG_TRACE("Created  record is %s ",
-              ckv_running_db->ToStrAll().c_str());
-          result_code = DupConfigKeyVal(ckv_driver_req, ckv_running_db, MAINTBL);
+                         ckv_running_db->ToStrAll().c_str());
+          result_code = DupConfigKeyVal(ckv_driver_req,
+                                        ckv_running_db, MAINTBL);
           if (result_code != UPLL_RC_SUCCESS) {
             UPLL_LOG_ERROR("DupConfigKeyVal failed. err_code & phase %d %d",
                 result_code, phase);
@@ -836,19 +838,21 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::AuditUpdateController(unc_key_type_t keyt
               ckv_running_db->ToStrAll().c_str());
           UPLL_LOG_TRACE("UpdateRecord  record  is %s ",
               ckv_audit_db->ToStrAll().c_str());
-          result_code = DupConfigKeyVal(ckv_driver_req, ckv_running_db, MAINTBL);
+          result_code = DupConfigKeyVal(ckv_driver_req,
+                                        ckv_running_db, MAINTBL);
           if (result_code != UPLL_RC_SUCCESS) {
-            UPLL_LOG_ERROR("DupConfigKeyVal failed for running record. \
-                err_code & phase %d %d", result_code, phase);
+            UPLL_LOG_ERROR("DupConfigKeyVal failed for running record. "
+                           "err_code & phase %d %d", result_code, phase);
             DELETE_IF_NOT_NULL(ckv_running_db);
             DELETE_IF_NOT_NULL(ckv_audit_db);
             dmi->CloseCursor(cursor, true);
             return result_code;
           }
-          result_code = DupConfigKeyVal(ckv_audit_dup_db, ckv_audit_db, MAINTBL);
+          result_code = DupConfigKeyVal(ckv_audit_dup_db,
+                                        ckv_audit_db, MAINTBL);
           if (result_code != UPLL_RC_SUCCESS) {
-            UPLL_LOG_ERROR("DupConfigKeyVal failed for audit record. \
-                err_code & phase %d %d", result_code, phase);
+            UPLL_LOG_ERROR("DupConfigKeyVal failed for audit record. "
+                           "err_code & phase %d %d", result_code, phase);
             DELETE_IF_NOT_NULL(ckv_running_db);
             DELETE_IF_NOT_NULL(ckv_audit_db);
             DELETE_IF_NOT_NULL(ckv_driver_req);
@@ -885,8 +889,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::AuditUpdateController(unc_key_type_t keyt
       // hence sending the delete request to the controller driver
       if (SET_FLAG_PORTMAP & db_flag) {
         // Continue with further operations
-      }
-      else {
+      } else {
         if (UNC_OP_UPDATE == op1) {
           op1 = UNC_OP_DELETE;
         } else {
@@ -907,11 +910,10 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::AuditUpdateController(unc_key_type_t keyt
           DELETE_IF_NOT_NULL(ckv_driver_req);
           DELETE_IF_NOT_NULL(ckv_audit_dup_db);
           // Assuming that the diff found only in ConfigStatus
-          // Setting the   value as OnlyCSDiff in the out parameter ctrlr_affected
+          // Setting the value as OnlyCSDiff in the out parameter ctrlr_affected
           // The value Configdiff should be given more priority than the value
-          // onlycs .
-          // So  If the out parameter ctrlr_affected has already value as configdiff
-          //  then dont change the value
+          // onlycs . So if the out parameter ctrlr_affected has already
+          // value as configdiff then dont change the value
           if (*ctrlr_affected != uuc::kCtrlrAffectedConfigDiff) {
              UPLL_LOG_INFO("Setting the ctrlr_affected to OnlyCSDiff");
              *ctrlr_affected = uuc::kCtrlrAffectedOnlyCSDiff;
@@ -939,7 +941,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::AuditUpdateController(unc_key_type_t keyt
           return result_code;
         }
       }
-      result_code = GetRenamedControllerKey(ckv_driver_req, UPLL_DT_RUNNING,
+      result_code = GetRenamedControllerKey(ckv_driver_req, dt_type,
           dmi, &ctrlr_dom);
 
       if (result_code != UPLL_RC_SUCCESS) {
@@ -966,11 +968,14 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::AuditUpdateController(unc_key_type_t keyt
       ipc_req.header.operation = op1;
       ipc_req.header.datatype = UPLL_DT_CANDIDATE;
       ipc_req.ckv_data = ckv_driver_req;
-      if (!IpcUtil::SendReqToDriver((const char *)ctrlr_dom.ctrlr, reinterpret_cast<char *>
-            (ctrlr_dom.domain), PFCDRIVER_SERVICE_NAME,
-            PFCDRIVER_SVID_LOGICAL, &ipc_req, true, &ipc_response)) {
+      if (!IpcUtil::SendReqToDriver(
+              (const char *)ctrlr_dom.ctrlr,
+              reinterpret_cast<char *> (ctrlr_dom.domain),
+              PFCDRIVER_SERVICE_NAME, PFCDRIVER_SVID_LOGICAL,
+              &ipc_req, true, &ipc_response)) {
         UPLL_LOG_ERROR("Request to driver for Key %d for controller %s failed ",
-            ckv_driver_req->get_key_type(), reinterpret_cast<char *>(ctrlr_dom.ctrlr));
+            ckv_driver_req->get_key_type(),
+            reinterpret_cast<char *>(ctrlr_dom.ctrlr));
         DELETE_IF_NOT_NULL(ckv_driver_req);
         DELETE_IF_NOT_NULL(ckv_running_db);
         DELETE_IF_NOT_NULL(ckv_audit_db);
@@ -978,7 +983,8 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::AuditUpdateController(unc_key_type_t keyt
         return ipc_response.header.result_code;
       }
       if (ipc_response.header.result_code != UPLL_RC_SUCCESS) {
-        UPLL_LOG_DEBUG("driver return failure err_code is %d", ipc_response.header.result_code);
+        UPLL_LOG_DEBUG("driver return failure err_code is %d",
+                       ipc_response.header.result_code);
         *err_ckv = ckv_running_db;
         if (phase != uuc::kUpllUcpDelete) {
           ConfigKeyVal *resp = NULL;
@@ -994,7 +1000,8 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::AuditUpdateController(unc_key_type_t keyt
             return result_code;
           }
 
-          result_code = UpdateAuditConfigStatus(UNC_CS_INVALID, phase, resp, dmi);
+          result_code = UpdateAuditConfigStatus(UNC_CS_INVALID, phase,
+                                                resp, dmi);
           if (result_code != UPLL_RC_SUCCESS) {
             UPLL_LOG_ERROR("Update Audit config status failed %d",
                 result_code);
@@ -1010,9 +1017,10 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::AuditUpdateController(unc_key_type_t keyt
 
           DbSubOp dbop = { kOpNotRead, kOpMatchNone, kOpInOutCs };
           result_code = UpdateConfigDB(resp, dt_type, UNC_OP_UPDATE,
-              dmi, &dbop, MAINTBL);
+              dmi, &dbop, TC_CONFIG_GLOBAL, vtn_name, MAINTBL);
           if (result_code != UPLL_RC_SUCCESS) {
-            UPLL_LOG_ERROR("UpdateConfigDB failed for ipc response ckv err_code %d",
+            UPLL_LOG_ERROR(
+                "UpdateConfigDB failed for ipc response ckv err_code %d",
                 result_code);
             DELETE_IF_NOT_NULL(ckv_driver_req);
             DELETE_IF_NOT_NULL(resp);
@@ -1088,6 +1096,14 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::DeleteMo(IpcReqRespHeader *req,
     DELETE_IF_NOT_NULL(okey);
     return result_code;
   }
+  TcConfigMode config_mode = TC_CONFIG_INVALID;
+  std::string vtn_name = "";
+  result_code = GetConfigModeInfo(req, config_mode, vtn_name);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_DEBUG("GetConfigMode failed");
+    return result_code;
+  }
+
   GET_USER_DATA_CTRLR(okey, ctrlr_id);
   val_flowfilter_entry_t *flowfilter_val =
     reinterpret_cast<val_flowfilter_entry_t *> (GetVal(okey));
@@ -1097,25 +1113,35 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::DeleteMo(IpcReqRespHeader *req,
     if (flag_port_map & SET_FLAG_PORTMAP) {
       FlowListMoMgr *mgr = reinterpret_cast<FlowListMoMgr *>
         (const_cast<MoManager *> (GetMoManager(UNC_KT_FLOWLIST)));
+      std::string temp_vtn_name;
+      if (TC_CONFIG_VTN == config_mode) {
+        temp_vtn_name = vtn_name;
+      } else {
+        key_vterm_if_flowfilter_entry_t *temp_key = reinterpret_cast<
+            key_vterm_if_flowfilter_entry_t *>(ikey->get_key());
+        temp_vtn_name = reinterpret_cast<const char*>(
+            temp_key->flowfilter_key.if_key.vterm_key.vtn_key.vtn_name);
+      }
       result_code = mgr->AddFlowListToController(
           reinterpret_cast<char*>(flowfilter_val->flowlist_name), dmi,
-          reinterpret_cast<char *>(ctrlr_id), req->datatype, UNC_OP_DELETE);
+          reinterpret_cast<char *>(ctrlr_id), req->datatype, UNC_OP_DELETE,
+          config_mode, temp_vtn_name, false);
       if (result_code != UPLL_RC_SUCCESS) {
         UPLL_LOG_ERROR(" Send delete request to flowlist failed. err code(%d)",
             result_code);
-        DELETE_IF_NOT_NULL(okey); 
+        DELETE_IF_NOT_NULL(okey);
         return result_code;
       }
     }
   }
   result_code = UpdateConfigDB(ikey, UPLL_DT_CANDIDATE, UNC_OP_DELETE, dmi,
-                             MAINTBL);
+                             config_mode, vtn_name, MAINTBL);
   if (result_code != UPLL_RC_SUCCESS) {
     UPLL_LOG_ERROR("UpdateConfigDB failed to delete %d", result_code);
-    DELETE_IF_NOT_NULL(okey); 
+    DELETE_IF_NOT_NULL(okey);
     return result_code;
   }
-  DELETE_IF_NOT_NULL(okey); 
+  DELETE_IF_NOT_NULL(okey);
   return UPLL_RC_SUCCESS;
 }
 upll_rc_t VtermIfFlowFilterEntryMoMgr::GetChildConfigKey(
@@ -1314,7 +1340,8 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
   key_vterm_if_flowfilter_entry_t *vterm_if_flowfilter_entry =
       reinterpret_cast<key_vterm_if_flowfilter_entry_t*>
       (ConfigKeyVal::Malloc(sizeof(key_vterm_if_flowfilter_entry_t)));
-  memcpy(vterm_if_flowfilter_entry, ikey, sizeof(key_vterm_if_flowfilter_entry_t));
+  memcpy(vterm_if_flowfilter_entry, ikey,
+         sizeof(key_vterm_if_flowfilter_entry_t));
   okey = new ConfigKeyVal(UNC_KT_VTERMIF_FLOWFILTER_ENTRY,
                           IpctSt::kIpcStKeyVtermIfFlowfilterEntry,
                           vterm_if_flowfilter_entry, tmp1);
@@ -1402,21 +1429,32 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::GetRenamedUncKey(
   }
 
   if (result_code == UPLL_RC_SUCCESS) {
-    key_vterm_if_flowfilter_entry_t *vterm_flowfilter_entry_key = reinterpret_cast
-      <key_vterm_if_flowfilter_entry_t *>(unc_key->get_key());
-    if (strcmp(reinterpret_cast<char *>(ctrlr_key->flowfilter_key.if_key.vterm_key.vtn_key.vtn_name),
-               reinterpret_cast<const char *>(vterm_flowfilter_entry_key->flowfilter_key.if_key.vterm_key.vtn_key.vtn_name))) {
+    key_vterm_if_flowfilter_entry_t *vterm_flowfilter_entry_key =
+        reinterpret_cast <key_vterm_if_flowfilter_entry_t *>
+        (unc_key->get_key());
+    if (strcmp(
+            reinterpret_cast<char *>(ctrlr_key->flowfilter_key.if_key.
+                                     vterm_key.vtn_key.vtn_name),
+            reinterpret_cast<const char *>(vterm_flowfilter_entry_key->
+                                           flowfilter_key.if_key.vterm_key.
+                                           vtn_key.vtn_name))) {
       uuu::upll_strncpy(
       ctrlr_key->flowfilter_key.if_key.vterm_key.vtn_key.vtn_name,
-      vterm_flowfilter_entry_key->flowfilter_key.if_key.vterm_key.vtn_key.vtn_name,
+      vterm_flowfilter_entry_key->flowfilter_key.if_key.
+      vterm_key.vtn_key.vtn_name,
       kMaxLenVtnName + 1);
       rename |= VTN_RENAME_FLAG;
     }
-    if (strcmp(reinterpret_cast<char *>(ctrlr_key->flowfilter_key.if_key.vterm_key.vterminal_name),
-               reinterpret_cast<const char *>(vterm_flowfilter_entry_key->flowfilter_key.if_key.vterm_key.vterminal_name))) {
+    if (strcmp
+        (reinterpret_cast<char *>(ctrlr_key->flowfilter_key.if_key.
+                                  vterm_key.vterminal_name),
+         reinterpret_cast<const char *>(vterm_flowfilter_entry_key->
+                                        flowfilter_key.if_key.
+                                        vterm_key.vterminal_name))) {
       uuu::upll_strncpy(
       ctrlr_key->flowfilter_key.if_key.vterm_key.vterminal_name,
-      vterm_flowfilter_entry_key->flowfilter_key.if_key.vterm_key.vterminal_name,
+      vterm_flowfilter_entry_key->flowfilter_key.if_key.
+      vterm_key.vterminal_name,
       kMaxLenVnodeName + 1);
       rename |= VBR_RENAME_FLAG;
     }
@@ -1531,7 +1569,8 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::GetRenamedUncKey(
       }
       SET_USER_DATA_CTRLR(unc_key, ctrlr_id);
       unc_key->AppendCfgVal(IpctSt::kIpcStValRenameVtn, rename_val);
-      result_code = mgrvbr->ReadConfigDB(unc_key, dt_type, UNC_OP_READ, dbop, dmi,
+      result_code = mgrvbr->ReadConfigDB(unc_key, dt_type,
+                                         UNC_OP_READ, dbop, dmi,
         RENAMETBL);
       if ((UPLL_RC_SUCCESS != result_code) &&
         (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code)) {
@@ -1556,10 +1595,11 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::GetRenamedUncKey(
                           (kMaxLenVnodeName + 1));
         } else if (unc_key->get_key_type() == UNC_KT_VTERMINAL) {
           isRedirectVnodeVbridge = true;
-          key_vterm_t *vterm_key = reinterpret_cast<key_vterm *>(unc_key->get_key());
+          key_vterm_t *vterm_key =
+              reinterpret_cast<key_vterm *>(unc_key->get_key());
           uuu::upll_strncpy(val_flowfilter_entry->redirect_node,
-                           vterm_key->vterminal_name,
-                          (kMaxLenVnodeName + 1));
+                            vterm_key->vterminal_name,
+                            (kMaxLenVnodeName + 1));
         }
       }
       DELETE_IF_NOT_NULL(unc_key);
@@ -1655,7 +1695,8 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::GetRenamedControllerKey(
                 get_val())->redirect_node);
         }
 
-        DbSubOp dbop = { kOpReadSingle, kOpMatchCtrlr | kOpMatchDomain, kOpInOutFlag };
+        DbSubOp dbop = { kOpReadSingle, kOpMatchCtrlr | kOpMatchDomain,
+          kOpInOutFlag };
         result_code = mgrvbr->ReadConfigDB(okey, dt_type, UNC_OP_READ,
             dbop, dmi, RENAMETBL);
         if (result_code != UPLL_RC_SUCCESS) {
@@ -1728,7 +1769,8 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::GetRenamedControllerKey(
       reinterpret_cast <key_vterm_if_flowfilter_entry_t*>
       (ikey->get_key())->flowfilter_key.if_key.vterm_key.vterminal_name);
 
-  DbSubOp dbop = { kOpReadSingle, kOpMatchCtrlr | kOpMatchDomain, kOpInOutFlag };
+  DbSubOp dbop = { kOpReadSingle, kOpMatchCtrlr | kOpMatchDomain,
+    kOpInOutFlag };
   result_code=  VtermMoMgr->ReadConfigDB(okey, dt_type, UNC_OP_READ,
       dbop, dmi, RENAMETBL);
   if (( result_code != UPLL_RC_SUCCESS ) &&
@@ -1853,7 +1895,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::MergeValidate(unc_key_type_t keytype,
     upll_import_type import_type) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
- 
+
   ConfigKeyVal *ckval = NULL;
   if (NULL == ctrlr_id) {
     UPLL_LOG_DEBUG("ctrlr_id NULL");
@@ -1928,8 +1970,8 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::UpdateAuditConfigStatus(
   return result_code;
 }
 
-bool VtermIfFlowFilterEntryMoMgr::IsValidKey(void *key,
-                                           uint64_t index) {
+bool VtermIfFlowFilterEntryMoMgr::IsValidKey(void *key, uint64_t index,
+                                             MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
   upll_rc_t ret_val = UPLL_RC_SUCCESS;
   key_vterm_if_flowfilter_entry_t  *ff_key =
@@ -1952,7 +1994,8 @@ bool VtermIfFlowFilterEntryMoMgr::IsValidKey(void *key,
       break;
     case uudst::vterm_if_flowfilter_entry::kDbiVtermName:
       ret_val = ValidateKey(reinterpret_cast<char *>
-                          (ff_key->flowfilter_key.if_key.vterm_key.vterminal_name),
+                          (ff_key->flowfilter_key.if_key.
+                           vterm_key.vterminal_name),
                           kMinLenVnodeName, kMaxLenVnodeName);
       if (ret_val != UPLL_RC_SUCCESS) {
         UPLL_LOG_DEBUG("VTERM Name is not valid(%d)", ret_val);
@@ -2065,6 +2108,13 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::UpdateMo(IpcReqRespHeader *req,
      UPLL_LOG_ERROR("ValidateCapability failed %d", result_code);
      return result_code;
   }
+  TcConfigMode config_mode = TC_CONFIG_INVALID;
+  std::string vtn_name = "";
+  result_code = GetConfigModeInfo(req, config_mode, vtn_name);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_DEBUG("GetConfigMode failed");
+    return result_code;
+  }
 
   uint8_t dbflag = 0;
   GET_USER_DATA_FLAGS(okey, dbflag);
@@ -2075,18 +2125,28 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::UpdateMo(IpcReqRespHeader *req,
         val_flowfilter_entry_t *temp_ffe_val = reinterpret_cast
         <val_flowfilter_entry_t *>(GetVal(okey));
         UPLL_LOG_DEBUG("flowlist name %s", flowfilter_val->flowlist_name);
+        std::string temp_vtn_name;
+        if (TC_CONFIG_VTN == config_mode) {
+          temp_vtn_name = vtn_name;
+        } else {
+          key_vterm_if_flowfilter_entry_t *temp_key = reinterpret_cast<
+              key_vterm_if_flowfilter_entry_t *>(ikey->get_key());
+          temp_vtn_name = reinterpret_cast<const char*>(
+              temp_key->flowfilter_key.if_key.vterm_key.vtn_key.vtn_name);
+        }
         if ((UNC_VF_VALID == flowfilter_val->valid[UPLL_IDX_FLOWLIST_NAME_VFFE])
             && (UNC_VF_VALID  == temp_ffe_val->
           valid[UPLL_IDX_FLOWLIST_NAME_VFFE])) {
           UPLL_LOG_DEBUG("Update option 1");
 
-         //Skip the record if flowlist is already configured in DB
+         // Skip the record if flowlist is already configured in DB
          if (strncmp(reinterpret_cast<char *>(flowfilter_val->flowlist_name),
               reinterpret_cast<char *>(temp_ffe_val->flowlist_name),
               (kMaxLenFlowListName + 1))) {
             result_code = flowlist_mgr->AddFlowListToController(
             reinterpret_cast<char *>(temp_ffe_val->flowlist_name), dmi,
-            reinterpret_cast<char *>(ctrlr_id), req->datatype, UNC_OP_DELETE);
+            reinterpret_cast<char *>(ctrlr_id), req->datatype, UNC_OP_DELETE,
+            config_mode, temp_vtn_name, false);
             if (result_code != UPLL_RC_SUCCESS) {
               UPLL_LOG_ERROR("AddFlowListToController failed %d", result_code);
               delete okey;
@@ -2094,7 +2154,8 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::UpdateMo(IpcReqRespHeader *req,
             }
             result_code = flowlist_mgr->AddFlowListToController(
               reinterpret_cast<char *>(flowfilter_val->flowlist_name), dmi,
-              reinterpret_cast<char *> (ctrlr_id), req->datatype, UNC_OP_CREATE);
+              reinterpret_cast<char *> (ctrlr_id), req->datatype, UNC_OP_CREATE,
+              config_mode, temp_vtn_name, false);
             if (result_code != UPLL_RC_SUCCESS) {
               UPLL_LOG_ERROR("AddFlowListToController failed %d", result_code);
               delete okey;
@@ -2109,8 +2170,8 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::UpdateMo(IpcReqRespHeader *req,
             UPLL_LOG_DEBUG("Update option 2");
             result_code = flowlist_mgr->AddFlowListToController(
               reinterpret_cast<char *>(flowfilter_val->flowlist_name), dmi,
-              reinterpret_cast<char *>(ctrlr_id),
-                              req->datatype, UNC_OP_CREATE);
+              reinterpret_cast<char *>(ctrlr_id), req->datatype, UNC_OP_CREATE,
+              config_mode, temp_vtn_name, false);
             if (result_code != UPLL_RC_SUCCESS) {
               UPLL_LOG_ERROR("AddFlowListToController failed %d", result_code);
               delete okey;
@@ -2123,8 +2184,8 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::UpdateMo(IpcReqRespHeader *req,
               UPLL_LOG_DEBUG("Update option 3");
               result_code = flowlist_mgr->AddFlowListToController(
               reinterpret_cast<char *>(temp_ffe_val->flowlist_name), dmi,
-              reinterpret_cast<char *>(ctrlr_id) ,
-                              req->datatype, UNC_OP_DELETE);
+              reinterpret_cast<char *>(ctrlr_id), req->datatype, UNC_OP_DELETE,
+              config_mode, temp_vtn_name, false);
               if (result_code != UPLL_RC_SUCCESS) {
                 UPLL_LOG_ERROR("AddFlowListToController failed %d",
                                 result_code);
@@ -2137,7 +2198,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::UpdateMo(IpcReqRespHeader *req,
 
   DbSubOp dbop1 = {kOpNotRead, kOpMatchNone, kOpInOutNone};
   result_code = UpdateConfigDB(ikey, req->datatype, UNC_OP_UPDATE, dmi,
-                               &dbop1, MAINTBL);
+                               &dbop1, config_mode, vtn_name, MAINTBL);
 
   if (result_code != UPLL_RC_SUCCESS) {
     UPLL_LOG_ERROR("DB Error while updating the candidatedb");
@@ -2193,7 +2254,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::VerifyRedirectDestination(
   val_flowfilter_entry_t *val_flowfilter_entry =
     static_cast<val_flowfilter_entry_t *>(
         ikey->get_cfg_val()->get_val());
-  if(val_flowfilter_entry == NULL) {
+  if (val_flowfilter_entry == NULL) {
     UPLL_LOG_DEBUG(" val_flowfilter_entry is null");
     return UPLL_RC_ERR_GENERIC;
   }
@@ -2206,7 +2267,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::VerifyRedirectDestination(
        == UNC_VF_VALUE_NOT_MODIFIED)
       &&
       (val_flowfilter_entry->valid[UPLL_IDX_REDIRECT_PORT_FFE]
-       == UNC_VF_VALUE_NOT_MODIFIED ) &&
+       == UNC_VF_VALUE_NOT_MODIFIED) &&
      (val_flowfilter_entry->valid[UPLL_IDX_REDIRECT_DIRECTION_FFE] ==
       UNC_VF_INVALID)) {
     return UPLL_RC_SUCCESS;
@@ -2215,10 +2276,9 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::VerifyRedirectDestination(
               (val_flowfilter_entry->valid[UPLL_IDX_REDIRECT_NODE_FFE] ==
                UNC_VF_VALUE_NOT_MODIFIED)) &&
              ((val_flowfilter_entry->valid[UPLL_IDX_REDIRECT_PORT_FFE] ==
-               UNC_VF_VALID ) ||
+               UNC_VF_VALID) ||
               (val_flowfilter_entry->valid[UPLL_IDX_REDIRECT_PORT_FFE] ==
-               UNC_VF_VALUE_NOT_MODIFIED ))) {
-
+               UNC_VF_VALUE_NOT_MODIFIED))) {
     DbSubOp dbop_up = { kOpReadExist, kOpMatchCtrlr|kOpMatchDomain,
       kOpInOutNone };
     result_code = GetControllerDomainID(ikey, dt_type, dmi);
@@ -2234,11 +2294,19 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::VerifyRedirectDestination(
     UPLL_LOG_DEBUG("ctrlrid %s, domainid %s",
         ctrlr_dom.ctrlr, ctrlr_dom.domain);
 
+    unc_keytype_ctrtype_t ctrlrtype = UNC_CT_UNKNOWN;
+    uuc::CtrlrMgr *ctrlr_mgr = uuc::CtrlrMgr::GetInstance();
+    if (!ctrlr_mgr->GetCtrlrType(
+            reinterpret_cast<const char*>(ctrlr_dom.ctrlr),
+            dt_type, &ctrlrtype)) {
+      UPLL_LOG_ERROR("Controller name %s not found in datatype %d",
+                    reinterpret_cast<const char*>(ctrlr_dom.ctrlr), dt_type);
+      return UPLL_RC_ERR_GENERIC;
+    }
     // Verify whether the vtnnode and interface are exists in DB
     // 1. Check for the vbridge Node
-   if (val_flowfilter_entry->redirect_direction
-             == UPLL_FLOWFILTER_DIR_OUT ) {
-
+    if (val_flowfilter_entry->redirect_direction
+             == UPLL_FLOWFILTER_DIR_OUT) {
        UPLL_LOG_DEBUG(" Redirect-direction is OUT");
        mgr = reinterpret_cast<MoMgrImpl *>
          (const_cast<MoManager *>(GetMoManager(UNC_KT_VBR_IF)));
@@ -2248,11 +2316,12 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::VerifyRedirectDestination(
         }
         result_code = mgr->GetChildConfigKey(okey, NULL);
         if (result_code != UPLL_RC_SUCCESS) {
-           UPLL_LOG_ERROR("Memory allocation failed for VBRIDGE key struct - %d",
-           result_code);
+           UPLL_LOG_ERROR(
+               "Memory allocation failed for VBRIDGE key struct - %d",
+               result_code);
            return result_code;
         }
-        //flowfilter_key.if_key.vterm_key.vtn_key.vtn_name),
+        // flowfilter_key.if_key.vterm_key.vtn_key.vtn_name),
         key_vbr_if_t *vbrif_key = static_cast<key_vbr_if_t*>(
           okey->get_key());
         uuu::upll_strncpy(vbrif_key->vbr_key.vtn_key.vtn_name,
@@ -2279,26 +2348,31 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::VerifyRedirectDestination(
         // Usage in UNC is PortMapped , configured  And  redirect-direction
         // is OUT.then the validation will get Success And will send the
         // vexternal/vexternal if to Driver.
+        if (ctrlrtype == UNC_CT_ODC) {
+          UPLL_LOG_DEBUG("Cannnot set the vbr if with redirect-direction"
+                         "as OUT for ctrlr %d", ctrlrtype);
+          DELETE_IF_NOT_NULL(okey);
+          return UPLL_RC_ERR_CFG_SEMANTIC;
+        }
         val_drv_vbr_if *val_drv_vbr =
            reinterpret_cast<val_drv_vbr_if *>(GetVal(okey));
         bool port_map_status =
             (val_drv_vbr->vbr_if_val.valid[UPLL_IDX_PM_VBRI] == UNC_VF_VALID)?
                                     true:false;
-        if (dt_type == UPLL_DT_IMPORT ) {
+        if (dt_type == UPLL_DT_IMPORT) {
           DELETE_IF_NOT_NULL(okey);
           UPLL_LOG_DEBUG(" Datatype is Import : MergeValidate");
           if (port_map_status)  {
             UPLL_LOG_DEBUG(" Datatype is Import :Port map configured");
             return UPLL_RC_SUCCESS;
-          }
-          else  {
-            UPLL_LOG_INFO(" Datatype is Import : MergeValidate having Conflict");
+          } else  {
+            UPLL_LOG_INFO("Datatype is Import : MergeValidate Conflict");
             return UPLL_RC_ERR_CFG_SEMANTIC;
           }
         }
         if (port_map_status) {
           UPLL_LOG_DEBUG("redirect node/port As VBR/VBR_IF exists"
-                "in DB And Redirect-direction is OUT");
+                         "in DB And Redirect-direction is OUT");
           if (!strlen(reinterpret_cast<const char *>(val_drv_vbr->vex_name))) {
             DELETE_IF_NOT_NULL(okey);
             return UPLL_RC_ERR_GENERIC;
@@ -2378,7 +2452,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::VerifyRedirectDestination(
        }
       }
       DELETE_IF_NOT_NULL(okey);
-   } else if (val_flowfilter_entry->redirect_direction
+    } else if (val_flowfilter_entry->redirect_direction
                       == UPLL_FLOWFILTER_DIR_IN ) {
       mgr = reinterpret_cast<MoMgrImpl *>
         (const_cast<MoManager *>(GetMoManager(UNC_KT_VBR_IF)));
@@ -2423,6 +2497,12 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::VerifyRedirectDestination(
         DELETE_IF_NOT_NULL(okey);
         return UPLL_RC_SUCCESS;
       } else if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
+        if (ctrlrtype == UNC_CT_ODC) {
+          UPLL_LOG_DEBUG("redirect-direction can be set as IN only"
+                         "for vbr if with ctrlr %d", ctrlrtype);
+          DELETE_IF_NOT_NULL(okey);
+          return UPLL_RC_ERR_CFG_SEMANTIC;
+        }
         DELETE_IF_NOT_NULL(okey);
         mgr = reinterpret_cast<MoMgrImpl *>
          (const_cast<MoManager *>(GetMoManager(UNC_KT_VRT_IF)));
@@ -2475,8 +2555,8 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::VerifyRedirectDestination(
      }
        UPLL_LOG_DEBUG("Related to DB error");
        DELETE_IF_NOT_NULL(okey);
-   }
- }
+    }
+  }
   return result_code;
 }
 
@@ -2531,20 +2611,52 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::ValidateAttribute(ConfigKeyVal *ikey,
                                      UNC_OP_READ, dmi, MAINTBL);
 
   if (UPLL_RC_ERR_INSTANCE_EXISTS != result_code) {
+    if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE)
+      result_code = UPLL_RC_ERR_CFG_SEMANTIC;
     UPLL_LOG_ERROR("Flowlist name in val_flowfilter_entry does not exists"
                    "in FLOWLIST table result code (%d)", result_code);
     delete okey;
     okey = NULL;
-    return UPLL_RC_ERR_CFG_SEMANTIC;
+    return result_code;
   } else {
     result_code = UPLL_RC_SUCCESS;
   }
+  // Get the mode info from tclib
+  if (req->datatype == UPLL_DT_CANDIDATE) {
+    TcConfigMode config_mode = TC_CONFIG_INVALID;
+    std::string vtn_name = "";
+    result_code = GetConfigModeInfo(req, config_mode, vtn_name);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_DEBUG("GetConfigModeInfo failed");
+      delete okey;
+      okey = NULL;
+      return result_code;
+    }
 
+    // mode is vtn mode, verifies flowlist existance in running db
+    if (config_mode == TC_CONFIG_VTN) {
+      result_code = mgr->UpdateConfigDB(okey, UPLL_DT_RUNNING,
+                                       UNC_OP_READ, dmi, MAINTBL);
+
+      if (UPLL_RC_ERR_INSTANCE_EXISTS != result_code) {
+        if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE)
+          result_code = UPLL_RC_ERR_CFG_SEMANTIC;
+        UPLL_LOG_DEBUG("Flowlist name in val_vtn_flowfilter_entry does not"
+                       "exists in running FLOWLIST table");
+        delete okey;
+        okey = NULL;
+        return result_code;
+      } else {
+        result_code = UPLL_RC_SUCCESS;
+      }
+    }
+  }
+  /****************PC End******************/
   delete okey;
   okey = NULL;
   }
 
-  if (req->datatype == UPLL_DT_IMPORT ) {
+  if (req->datatype == UPLL_DT_IMPORT) {
     if (val_flowfilter_entry->valid[UPLL_IDX_NWM_NAME_FFE]
         == UNC_VF_VALID) {
       // validate nwm_name in KT_VBR_NWMONITOR table*/
@@ -2599,15 +2711,16 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::ValidateAttribute(ConfigKeyVal *ikey,
   return result_code;
 }
 
-upll_rc_t VtermIfFlowFilterEntryMoMgr::IsReferenced(ConfigKeyVal *ikey,
-                                           upll_keytype_datatype_t dt_type,
-                                           DalDmlIntf *dmi) {
+upll_rc_t VtermIfFlowFilterEntryMoMgr::IsReferenced(IpcReqRespHeader *req,
+                                                    ConfigKeyVal *ikey,
+                                                    DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   if (NULL == ikey) return UPLL_RC_ERR_GENERIC;
   DbSubOp dbop = { kOpReadExist, kOpMatchNone, kOpInOutNone };
   // Check the  object existence
-  result_code = UpdateConfigDB(ikey, dt_type, UNC_OP_READ, dmi, &dbop, MAINTBL);
+  result_code = UpdateConfigDB(ikey, req->datatype, UNC_OP_READ, dmi,
+                               &dbop, MAINTBL);
   return result_code;
 }
 
@@ -2789,9 +2902,9 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::ReadMo(IpcReqRespHeader *req,
         ConfigKeyVal *okey = NULL;
         result_code = ConstructReadDetailResponse(dup_key,
                                                   ipc_resp.ckv_data,
-					                                    	  ctrlr_dom,
+                                                  ctrlr_dom,
                                                   &okey,
-						                                       dmi);
+                                                   dmi);
 
         DELETE_IF_NOT_NULL(ipc_resp.ckv_data);
         DELETE_IF_NOT_NULL(dup_key);
@@ -2893,7 +3006,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::ReadSiblingMo(IpcReqRespHeader *req,
         if (result_code != UPLL_RC_SUCCESS) {
           delete l_key;
           DELETE_IF_NOT_NULL(tctrl_key);
-          UPLL_LOG_ERROR("GetRenamedControllerKey  failed %d",result_code);
+          UPLL_LOG_ERROR("GetRenamedControllerKey  failed %d", result_code);
           return result_code;
         }
 
@@ -2907,7 +3020,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::ReadSiblingMo(IpcReqRespHeader *req,
         ipc_req.header.operation = UNC_OP_READ;
         ipc_req.header.option1 = req->option1;
         ipc_req.header.datatype = req->datatype;
-       
+
         tmp_key = tctrl_key;
         while (tmp_key != NULL) {
           reinterpret_cast<key_vterm_if_flowfilter_entry_t*>
@@ -2949,9 +3062,9 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::ReadSiblingMo(IpcReqRespHeader *req,
 
           result_code = ConstructReadDetailResponse(tmp_key,
                                                     ipc_resp.ckv_data,
-						    ctrlr_dom,
+                ctrlr_dom,
                                                     &okey,
-						    dmi);
+                dmi);
 
           if (result_code != UPLL_RC_SUCCESS) {
             UPLL_LOG_ERROR("ConstructReadDetailResponse error code (%d)",
@@ -2997,7 +3110,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
 
   if (!strlen(reinterpret_cast<char *> (key_rename->old_unc_vtn_name))) {
     UPLL_LOG_ERROR("old_unc_vtn_name NULL");
-     if(key_vterm_if_ff_entry) free(key_vterm_if_ff_entry);
+     if (key_vterm_if_ff_entry) free(key_vterm_if_ff_entry);
      return UPLL_RC_ERR_GENERIC;
   }
 
@@ -3051,19 +3164,29 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::UpdateVnodeVal(ConfigKeyVal *ikey,
   ctrlr_dom.domain = NULL;
 
   uint8_t rename = 0;
+  string vtn_name = "";
   upll_rc_t result_code = UPLL_RC_SUCCESS;
 
   key_rename_vnode_info_t *key_rename =
              reinterpret_cast<key_rename_vnode_info_t *>(ikey->get_key());
-  
-  //copy the old flowlist name to val_flowfilter_entry
-  val_flowfilter_entry_t *val_ff_entry = reinterpret_cast<val_flowfilter_entry_t *>
-                 (ConfigKeyVal::Malloc(sizeof(val_flowfilter_entry_t)));
+
+  // Allocate ConfigKeyVal to update renamed key in FFE value
+  result_code = GetChildConfigKey(okey, NULL);
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_ERROR("GetChildConfigKey failed");
+    return result_code;
+  }
+  val_flowfilter_entry_t *val_ff_entry =
+      reinterpret_cast<val_flowfilter_entry_t *>
+      (ConfigKeyVal::Malloc(sizeof(val_flowfilter_entry_t)));
+  okey->SetCfgVal(new ConfigVal(IpctSt::kIpcStValFlowfilterEntry,
+                                val_ff_entry));
 
   if (ikey->get_key_type() == UNC_KT_FLOWLIST) {
+    // If flowlist is renamed, update 'match flowlist' in FFE
     if (!strlen(reinterpret_cast<char *>(key_rename->old_flowlist_name))) {
       UPLL_LOG_ERROR("key_rename->old_flowlist_name NULL");
-      if (val_ff_entry) free(val_ff_entry);
+      DELETE_IF_NOT_NULL(okey);
       return UPLL_RC_ERR_GENERIC;
     }
     uuu::upll_strncpy(val_ff_entry->flowlist_name,
@@ -3076,35 +3199,29 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::UpdateVnodeVal(ConfigKeyVal *ikey,
   } else if ((ikey->get_key_type() == UNC_KT_VBRIDGE) ||
              (ikey->get_key_type() == UNC_KT_VROUTER) ||
              (ikey->get_key_type() == UNC_KT_VTERMINAL)) {
+    // If vnode is renamed, update 'redirect destination' in FFE
+    // for the parent vtn
     if (!strlen(reinterpret_cast<char *>(key_rename->old_unc_vnode_name))) {
       UPLL_LOG_ERROR("key_rename->old_unc_vnode_name NULL");
-      if (val_ff_entry) free(val_ff_entry);
+      DELETE_IF_NOT_NULL(okey);
       return UPLL_RC_ERR_GENERIC;
     }
+    key_vterm_if_flowfilter_entry_t *vtermif_ffe_key =
+        reinterpret_cast<key_vterm_if_flowfilter_entry_t*>(okey->get_key());
+    uuu::upll_strncpy(
+        vtermif_ffe_key->flowfilter_key.if_key.vterm_key.vtn_key.vtn_name,
+        key_rename->new_unc_vtn_name, (kMaxLenVtnName + 1));
     uuu::upll_strncpy(val_ff_entry->redirect_node,
       key_rename->old_unc_vnode_name,
-      (kMaxLenVnodeName + 1)); //Addressed coverity OUT_OF_BOUNDS
+      (kMaxLenVnodeName + 1));
     val_ff_entry->valid[UPLL_IDX_REDIRECT_NODE_FFE] = UNC_VF_VALID;
     UPLL_LOG_DEBUG("valid and vbridge name (%d) (%s)",
                    val_ff_entry->valid[UPLL_IDX_REDIRECT_NODE_FFE],
                    val_ff_entry->redirect_node);
   }
 
-  result_code = GetChildConfigKey(okey, NULL);
-  if (UPLL_RC_SUCCESS != result_code) {
-     UPLL_LOG_ERROR("CopyToConfigKey okey  NULL");
-     FREE_IF_NOT_NULL(val_ff_entry);
-     return result_code;
-  }
- 
-  if (!okey) {
-     UPLL_LOG_ERROR("CopyToConfigKey okey  NULL");
-     FREE_IF_NOT_NULL(val_ff_entry);
-     return UPLL_RC_ERR_GENERIC;
-  }
-  okey->SetCfgVal(new ConfigVal(IpctSt::kIpcStValFlowfilterEntry, val_ff_entry));
-
-  DbSubOp dbop = { kOpReadMultiple, kOpMatchNone, kOpInOutCtrlr|kOpInOutDomain|kOpInOutFlag };
+  DbSubOp dbop = { kOpReadMultiple, kOpMatchNone,
+    kOpInOutCtrlr | kOpInOutDomain | kOpInOutFlag };
 
   // Read the record of key structure and old flowlist name in maintbl
   result_code = ReadConfigDB(okey, data_type, UNC_OP_READ, dbop, dmi,
@@ -3129,8 +3246,9 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::UpdateVnodeVal(ConfigKeyVal *ikey,
       return UPLL_RC_ERR_GENERIC;
     }
     // Copy the new flowlist name in val_flowfilter_entry
-    val_flowfilter_entry_t *val_ff_entry_new = reinterpret_cast<val_flowfilter_entry_t *>
-                 (ConfigKeyVal::Malloc(sizeof(val_flowfilter_entry_t)));
+    val_flowfilter_entry_t *val_ff_entry_new =
+        reinterpret_cast<val_flowfilter_entry_t *>
+        (ConfigKeyVal::Malloc(sizeof(val_flowfilter_entry_t)));
     if (!val_ff_entry_new) {
       UPLL_LOG_ERROR("val_ff_entry_new NULL");
       DELETE_IF_NOT_NULL(kval);
@@ -3176,7 +3294,8 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::UpdateVnodeVal(ConfigKeyVal *ikey,
                     val_ff_entry_new->valid[UPLL_IDX_REDIRECT_NODE_FFE],
                     val_ff_entry_new->redirect_node);
     }
-    ConfigVal *cval1 = new ConfigVal(IpctSt::kIpcStValFlowfilterEntry, val_ff_entry_new);
+    ConfigVal *cval1 = new ConfigVal(IpctSt::kIpcStValFlowfilterEntry,
+                                     val_ff_entry_new);
 
     kval->SetCfgVal(cval1);
     memset(&ctrlr_dom, 0, sizeof(controller_domain));
@@ -3204,7 +3323,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::UpdateVnodeVal(ConfigKeyVal *ikey,
 
     // Update the new flowlist name in MAINTBL
     result_code = UpdateConfigDB(kval, data_type, UNC_OP_UPDATE, dmi,
-                  MAINTBL);
+                  TC_CONFIG_GLOBAL, vtn_name, MAINTBL);
     if (UPLL_RC_SUCCESS != result_code) {
       UPLL_LOG_ERROR("Create record Err in CANDIDATE DB(%d)",
         result_code);
@@ -3221,7 +3340,8 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::UpdateVnodeVal(ConfigKeyVal *ikey,
 }
 
 bool VtermIfFlowFilterEntryMoMgr::CompareValidValue(void *&val1,
-                                                  void *val2, bool copy_to_running) {
+                                                    void *val2,
+                                                    bool copy_to_running) {
   UPLL_FUNC_TRACE;
   bool attr = true;
   val_flowfilter_entry_t *val_ff_entry1 =
@@ -3265,7 +3385,6 @@ bool VtermIfFlowFilterEntryMoMgr::CompareValidValue(void *&val1,
 
   if (val_ff_entry1->valid[UPLL_IDX_REDIRECT_DIRECTION_FFE] == UNC_VF_VALID &&
      val_ff_entry2->valid[UPLL_IDX_REDIRECT_DIRECTION_FFE] == UNC_VF_VALID) {
-
     if (val_ff_entry1->redirect_direction == val_ff_entry2->redirect_direction)
       val_ff_entry1->valid[UPLL_IDX_REDIRECT_DIRECTION_FFE] = UNC_VF_INVALID;
   }
@@ -3319,7 +3438,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::AdaptValToDriver(
     upll_keytype_datatype_t dt_type,
     unc_key_type_t keytype,
     DalDmlIntf *dmi,
-    bool *not_send_to_drv, // can be NULL, unused argument
+    bool *not_send_to_drv,  // can be NULL, unused argument
     bool audit_update_phase) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
@@ -3328,7 +3447,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::AdaptValToDriver(
     UPLL_LOG_INFO("input key is null");
     return UPLL_RC_ERR_GENERIC;
   }
-  if (!ckv_new->get_cfg_val() || !ckv_new->get_cfg_val()->get_val()){
+  if (!ckv_new->get_cfg_val() || !ckv_new->get_cfg_val()->get_val()) {
     UPLL_LOG_INFO("Val structure is NULL");
     return UPLL_RC_ERR_GENERIC;
   }
@@ -3353,20 +3472,24 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::AdaptValToDriver(
           dt_type);
     if (result_code != UPLL_RC_SUCCESS) {
         UPLL_LOG_INFO("VerifyRedirectDestination  failed result code - %d",
-            result_code );
+            result_code);
         return result_code;
     }
   }
   return result_code;
 }
 
-upll_rc_t VtermIfFlowFilterEntryMoMgr::TxUpdateController(unc_key_type_t keytype,
-                                        uint32_t session_id,
-                                        uint32_t config_id,
-                                        uuc::UpdateCtrlrPhase phase,
-                                        set<string> *affected_ctrlr_set,
-                                        DalDmlIntf *dmi,
-                                        ConfigKeyVal **err_ckv)  {
+upll_rc_t VtermIfFlowFilterEntryMoMgr::TxUpdateController(
+    unc_key_type_t keytype,
+    uint32_t session_id,
+    uint32_t config_id,
+    uuc::UpdateCtrlrPhase phase,
+    set<string> *affected_ctrlr_set,
+    DalDmlIntf *dmi,
+    ConfigKeyVal **err_ckv,
+    TxUpdateUtil *tx_util,
+    TcConfigMode config_mode,
+    std::string vtn_name)  {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   ConfigKeyVal *req = NULL, *nreq = NULL, *ck_main = NULL;
@@ -3375,10 +3498,14 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::TxUpdateController(unc_key_type_t keytype
   ctrlr_dom.domain = NULL;
   DalCursor *dal_cursor_handle = NULL;
   DalResultCode db_result;
-  // uint8_t flags = 0;
   uint8_t db_flag = 0;
   uint8_t db_flag_running = 0;
-  IpcResponse ipc_resp;
+
+  // TxUpdate skipped if config mode is VIRTUAL
+  if (config_mode == TC_CONFIG_VIRTUAL) {
+    return UPLL_RC_SUCCESS;
+  }
+
   if (affected_ctrlr_set == NULL)
       return UPLL_RC_ERR_GENERIC;
 
@@ -3387,10 +3514,19 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::TxUpdateController(unc_key_type_t keytype
                ((phase == uuc::kUpllUcpDelete)?UNC_OP_DELETE:UNC_OP_INVALID));
 
   result_code = DiffConfigDB(UPLL_DT_CANDIDATE, UPLL_DT_RUNNING,
-                     op, req, nreq, &dal_cursor_handle, dmi, MAINTBL);
+                     op, req, nreq, &dal_cursor_handle, dmi, config_mode,
+                     vtn_name, MAINTBL);
 
   unc_keytype_operation_t op1 = op;
   while (result_code == UPLL_RC_SUCCESS) {
+    if (tx_util->GetErrCount() > 0) {
+      UPLL_LOG_ERROR("TxUpdateUtil says exit the loop.");
+      dmi->CloseCursor(dal_cursor_handle, true);
+      DELETE_IF_NOT_NULL(nreq);
+      DELETE_IF_NOT_NULL(req);
+      return UPLL_RC_ERR_GENERIC;
+    }
+
     ck_main = NULL;
     db_result = dmi->GetNextRecord(dal_cursor_handle);
     result_code = DalToUpllResCode(db_result);
@@ -3423,6 +3559,26 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::TxUpdateController(unc_key_type_t keytype
         DELETE_IF_NOT_NULL(nreq);
         return UPLL_RC_ERR_GENERIC;
     }
+    // Perform mode specific sematic check
+    // check the record existence in running database
+    if (TC_CONFIG_GLOBAL != config_mode) {
+      result_code = PerformModeSpecificSemanticCheck(ck_main, dmi, session_id,
+                                                     config_id, op, keytype,
+                                                     config_mode, vtn_name);
+      if ((result_code != UPLL_RC_SUCCESS) &&
+          (result_code != UPLL_RC_ERR_INSTANCE_EXISTS)) {
+        UPLL_LOG_DEBUG("Mode specific semantic check failed %d\n", result_code);
+        DELETE_IF_NOT_NULL(req);
+        DELETE_IF_NOT_NULL(nreq);
+        dmi->CloseCursor(dal_cursor_handle, true);
+        if (result_code == UPLL_RC_ERR_CFG_SEMANTIC) {
+          *err_ckv = ck_main;
+          return result_code;
+        }
+        DELETE_IF_NOT_NULL(ck_main);
+        return result_code;
+      }
+    }
     GET_USER_DATA_CTRLR_DOMAIN(ck_main, ctrlr_dom);
     if (ctrlr_dom.ctrlr == NULL) {
       UPLL_LOG_ERROR("ctrlr id is null");
@@ -3438,11 +3594,11 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::TxUpdateController(unc_key_type_t keytype
 
     upll_keytype_datatype_t dt_type = (op1 == UNC_OP_DELETE)?
              UPLL_DT_RUNNING:UPLL_DT_CANDIDATE;
-    if (op1 == UNC_OP_CREATE ) {
+    if (op1 == UNC_OP_CREATE) {
       result_code = AdaptValToDriver(ck_main, NULL, op1,
                                        dt_type, keytype, dmi, NULL, false);
       if (result_code != UPLL_RC_SUCCESS) {
-        if(result_code == UPLL_RC_ERR_CFG_SEMANTIC){
+        if (result_code == UPLL_RC_ERR_CFG_SEMANTIC) {
           UPLL_LOG_DEBUG(" Semantic validation "
                          "failed %d", result_code);
           *err_ckv = ck_main;
@@ -3474,7 +3630,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::TxUpdateController(unc_key_type_t keytype
              }
              return result_code;
           }
-          //Call the Filter Attribute for avoiding the duplicate validation of
+          // Call the Filter Attribute for avoiding the duplicate validation of
           // redirect node and redirect port attribute
           void *main = GetVal(tmp_ckv);
           void *val_nrec = (nreq) ? GetVal(nreq) : NULL;
@@ -3489,7 +3645,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::TxUpdateController(unc_key_type_t keytype
                                          dt_type, keytype, dmi, NULL, false);
           DELETE_IF_NOT_NULL(tmp_ckv);
           if (result_code != UPLL_RC_SUCCESS) {
-            if(result_code == UPLL_RC_ERR_CFG_SEMANTIC){
+            if (result_code == UPLL_RC_ERR_CFG_SEMANTIC) {
                UPLL_LOG_DEBUG(" Semantic validation "
                        "failed %d", result_code);
                *err_ckv = ck_main;
@@ -3526,7 +3682,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::TxUpdateController(unc_key_type_t keytype
       result_code = AdaptValToDriver(ck_main, NULL, op1,
                                      dt_type, keytype, dmi, NULL, false);
       if (result_code != UPLL_RC_SUCCESS) {
-        if(result_code == UPLL_RC_ERR_CFG_SEMANTIC){
+        if (result_code == UPLL_RC_ERR_CFG_SEMANTIC) {
           UPLL_LOG_DEBUG(" Semantic validation "
                          "failed %d", result_code);
           *err_ckv = ck_main;
@@ -3535,59 +3691,63 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::TxUpdateController(unc_key_type_t keytype
           DELETE_IF_NOT_NULL(ck_main);
         }
         dmi->CloseCursor(dal_cursor_handle, true);
-        delete req;
-        if (nreq) {
-          delete nreq;
-        }
+        DELETE_IF_NOT_NULL(req);
+        DELETE_IF_NOT_NULL(nreq);
         return result_code;
       }
     }
-    ConfigKeyVal *temp_ck_main = NULL;
-    result_code = DupConfigKeyVal(temp_ck_main, req, MAINTBL);
-    if (UPLL_RC_SUCCESS != result_code) {
-      UPLL_LOG_ERROR("DupConfigKeyVal failed %d", result_code);
+    result_code = GetRenamedControllerKey(ck_main, dt_type,
+                                          dmi, &ctrlr_dom);
+
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_DEBUG(" GetRenamedControllerKey failed err code(%d)",
+                      result_code);
+      DELETE_IF_NOT_NULL(ck_main);
+      break;
+    }
+    ConfigKeyVal *ckv_driver = NULL;
+    result_code = DupConfigKeyVal(ckv_driver, ck_main, MAINTBL);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_TRACE("DupConfigKeyVal failed %d", result_code);
       DELETE_IF_NOT_NULL(ck_main);
       dmi->CloseCursor(dal_cursor_handle, true);
       DELETE_IF_NOT_NULL(req);
       DELETE_IF_NOT_NULL(nreq);
       return result_code;
     }
-    result_code = GetRenamedControllerKey(ck_main, dt_type,
-                                          dmi, &ctrlr_dom);
-
-      if (result_code != UPLL_RC_SUCCESS) {
-        UPLL_LOG_DEBUG(" GetRenamedControllerKey failed err code(%d)",
-                       result_code);
-        DELETE_IF_NOT_NULL(ck_main);
-        DELETE_IF_NOT_NULL(temp_ck_main);
-        break;
-      }
-
     if (op1 == UNC_OP_UPDATE) {
       ConfigVal *old_cval = ((nreq->get_cfg_val())->DupVal());
-      ck_main->AppendCfgVal(old_cval);
+      ckv_driver->AppendCfgVal(old_cval);
     }
 
-   // Inserting the controller to Set
+    // Inserting the controller to Set
     affected_ctrlr_set->insert
       (string(reinterpret_cast<char *>(ctrlr_dom.ctrlr)));
 
-    result_code = SendIpcReq(session_id, config_id, op1, UPLL_DT_CANDIDATE,
-              ck_main, &ctrlr_dom, &ipc_resp);
-    if (result_code == UPLL_RC_ERR_CTR_DISCONNECTED) {
-      UPLL_LOG_DEBUG(" driver result code - %d", ipc_resp.header.result_code);
-      result_code = UPLL_RC_SUCCESS;
-    }
-    if (result_code != UPLL_RC_SUCCESS) {
-      UPLL_LOG_DEBUG("IpcSend failed %d", result_code);
-      *err_ckv = temp_ck_main;
-      DELETE_IF_NOT_NULL(ipc_resp.ckv_data);
-      DELETE_IF_NOT_NULL(ck_main);
-      break;
-    }
-    DELETE_IF_NOT_NULL(ipc_resp.ckv_data);
     DELETE_IF_NOT_NULL(ck_main);
-    DELETE_IF_NOT_NULL(temp_ck_main);
+
+    ConfigKeyVal *ckv_unc = NULL;
+    result_code = DupConfigKeyVal(ckv_unc, req, MAINTBL);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_TRACE("DupConfigKeyVal failed %d", result_code);
+      dmi->CloseCursor(dal_cursor_handle, true);
+      DELETE_IF_NOT_NULL(req);
+      DELETE_IF_NOT_NULL(nreq);
+      DELETE_IF_NOT_NULL(ckv_driver);
+      return result_code;
+    }
+
+    result_code = tx_util->EnqueueRequest(session_id, config_id,
+                                          UPLL_DT_CANDIDATE, op1, dmi,
+                                          ckv_driver, ckv_unc, string());
+    if (result_code != UPLL_RC_SUCCESS) {
+      dmi->CloseCursor(dal_cursor_handle, true);
+      DELETE_IF_NOT_NULL(req);
+      DELETE_IF_NOT_NULL(nreq);
+      DELETE_IF_NOT_NULL(ckv_driver);
+      DELETE_IF_NOT_NULL(ckv_unc);
+      return result_code;
+    }
   }
   dmi->CloseCursor(dal_cursor_handle, true);
   DELETE_IF_NOT_NULL(req);
@@ -3601,7 +3761,9 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::SetPortmapConfiguration(
                                  ConfigKeyVal *ikey,
                                  upll_keytype_datatype_t dt_type,
                                  DalDmlIntf *dmi,
-                                 InterfacePortMapInfo flags) {
+                                 InterfacePortMapInfo flags,
+                                 TcConfigMode config_mode,
+                                 string vtn_name) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_ERR_GENERIC;
   if (NULL == ikey || NULL == ikey->get_key()) {
@@ -3644,11 +3806,12 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::SetPortmapConfiguration(
       flag_port_map &= SET_FLAG_NO_VLINK_PORTMAP;
     }
     SET_USER_DATA_FLAGS(ckv, flag_port_map);
-    
+
     UPLL_LOG_DEBUG("SET_USER_DATA_FLAGS flag_port_map %d", flag_port_map);
     DbSubOp dbop_up = { kOpNotRead, kOpMatchNone, kOpInOutFlag };
     result_code = UpdateConfigDB(ckv, dt_type, UNC_OP_UPDATE,
-                                 dmi, &dbop_up, MAINTBL);
+                                 dmi, &dbop_up, config_mode,
+                                 vtn_name, MAINTBL);
     if (UPLL_RC_SUCCESS != result_code) {
       UPLL_LOG_ERROR("Unable to update portmap for flowfilterentry");
       DELETE_IF_NOT_NULL(ckv_first);
@@ -3675,9 +3838,19 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::SetPortmapConfiguration(
       UPLL_LOG_DEBUG("ctrlrid %s, domainid %s",
                  ctrlr_dom.ctrlr, ctrlr_dom.domain);
       ctrlr_id = ctrlr_dom.ctrlr;
+      std::string temp_vtn_name;
+      if (TC_CONFIG_VTN == config_mode) {
+        temp_vtn_name = vtn_name;
+      } else {
+        key_vterm_if_flowfilter_entry_t *temp_key = reinterpret_cast<
+            key_vterm_if_flowfilter_entry_t *>(ikey->get_key());
+        temp_vtn_name = reinterpret_cast<const char*>(
+            temp_key->flowfilter_key.if_key.vterm_key.vtn_key.vtn_name);
+      }
       result_code = mgr->AddFlowListToController(
            reinterpret_cast<char*>(flowfilter_val->flowlist_name), dmi,
-           reinterpret_cast<char *>(ctrlr_id), dt_type, op);
+           reinterpret_cast<char *>(ctrlr_id), dt_type, op,
+           config_mode, temp_vtn_name, false);
       if (result_code != UPLL_RC_SUCCESS) {
          UPLL_LOG_ERROR(" Send delete request to flowlist failed. err code(%d)",
                       result_code);
@@ -3691,7 +3864,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::SetPortmapConfiguration(
   return UPLL_RC_SUCCESS;
 }
 
-// TODO check whether needs to be removed
+// TODO(pom): check whether needs to be removed
 upll_rc_t VtermIfFlowFilterEntryMoMgr::GetVexternalInformation(
                    ConfigKeyVal* ck_main,
                    upll_keytype_datatype_t dt_type,
@@ -3724,7 +3897,8 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::GetControllerDomainID(ConfigKeyVal *ikey,
   key_vterm_if_flowfilter_entry *temp_key =
       reinterpret_cast<key_vterm_if_flowfilter_entry_t*>(ikey->get_key());
 
-  key_vterm_if_t *vterm_if_key = reinterpret_cast<key_vterm_if_t*>(ckv->get_key());
+  key_vterm_if_t *vterm_if_key =
+      reinterpret_cast<key_vterm_if_t*>(ckv->get_key());
 
   uuu::upll_strncpy(vterm_if_key->vterm_key.vtn_key.vtn_name,
                     temp_key->flowfilter_key.if_key.vterm_key.vtn_key.vtn_name,
@@ -3773,7 +3947,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::GetParentConfigKey(ConfigKeyVal *&okey,
     UPLL_LOG_ERROR(" Input Key is NULL");
     return UPLL_RC_ERR_GENERIC;
   }
-  DELETE_IF_NOT_NULL(okey); 
+  DELETE_IF_NOT_NULL(okey);
   unc_key_type_t ikey_type = ikey->get_key_type();
   if (ikey_type != UNC_KT_VTERMIF_FLOWFILTER_ENTRY) {
     UPLL_LOG_ERROR(" Invalid key type received. Key type - %d", ikey_type);
@@ -3803,7 +3977,8 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::GetParentConfigKey(ConfigKeyVal *&okey,
                     reinterpret_cast<key_vterm_if_flowfilter_entry_t *>
                     (pkey)->flowfilter_key.if_key.if_name,
                     kMaxLenInterfaceName + 1);
-  vterm_if_ff_key->direction = reinterpret_cast<key_vterm_if_flowfilter_entry_t *>
+  vterm_if_ff_key->direction =
+      reinterpret_cast<key_vterm_if_flowfilter_entry_t *>
       (pkey)->flowfilter_key.direction;
   okey = new ConfigKeyVal(UNC_KT_VTERMIF_FLOWFILTER,
                           IpctSt::kIpcStKeyVtermIfFlowfilter,
@@ -3828,28 +4003,28 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::ConstructReadDetailResponse(
     UPLL_LOG_ERROR("GetChildConfigKey failed err code (%d)", result_code);
     return result_code;
   }
-   while (drv_resp_val != NULL) {
+  while (drv_resp_val != NULL) {
     val_flowfilter_entry_t *val_entry = NULL;
     if (IpctSt::kIpcStValFlowfilterEntry ==
-        drv_resp_val->get_st_num()) {
+      drv_resp_val->get_st_num()) {
       UPLL_LOG_TRACE("Get the val struct");
       val_entry = reinterpret_cast< val_flowfilter_entry_t *>
           (drv_resp_val->get_val());
-   result_code =  SetRedirectNodeAndPortForRead(ikey ,
-               ctrlr_dom,
-               val_entry,
-               dmi);
-     if (result_code != UPLL_RC_SUCCESS) {
-        UPLL_LOG_DEBUG("SetRedirectNodeAndPortForRead Fails - %d",
-            result_code);
-        DELETE_IF_NOT_NULL(tmp_okey);
-        return result_code;
-      }
+      result_code =  SetRedirectNodeAndPortForRead(ikey ,
+                                                   ctrlr_dom,
+                                                   val_entry,
+                                                   dmi);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_DEBUG("SetRedirectNodeAndPortForRead Fails - %d",
+          result_code);
+      DELETE_IF_NOT_NULL(tmp_okey);
+      return result_code;
     }
-       drv_resp_val = drv_resp_val->get_next_cfg_val();
-        if (!drv_resp_val)
-          break;
-   }
+  }
+  drv_resp_val = drv_resp_val->get_next_cfg_val();
+  if (!drv_resp_val)
+  break;
+  }
   tmp_okey->AppendCfgVal(drv_resp_ckv->GetCfgValAndUnlink());
   if (*okey == NULL) {
     *okey = tmp_okey;
@@ -3861,19 +4036,167 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::ConstructReadDetailResponse(
 
 upll_rc_t VtermIfFlowFilterEntryMoMgr::DeleteChildrenPOM(
           ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
-          DalDmlIntf *dmi) {
+          DalDmlIntf *dmi,
+          TcConfigMode config_mode,
+          string vtn_name) {
   UPLL_FUNC_TRACE;
-  uint8_t *ctrlr_id = NULL;
   upll_rc_t result_code = UPLL_RC_ERR_GENERIC;
+  int nattr = 0;
+  BindInfo *binfo = NULL;
+  DalCursor *dal_cursor_handle = NULL;
+  string query_string;
+  unc_key_type_t deletedkt;
+
   if (NULL == ikey || NULL == dmi) return result_code;
 
-  ConfigKeyVal *temp_okey = NULL;
-  ConfigKeyVal *okey = NULL;
-  result_code = GetChildConfigKey(temp_okey, ikey);
+  key_vterm_if_flowfilter_entry_t *pkey =
+      reinterpret_cast<key_vterm_if_flowfilter_entry_t*>(ikey->get_key());
+  if (!pkey) {
+    UPLL_LOG_DEBUG(" Input vterm_if flow filter entry key is NULL ");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  if (((pkey->flowfilter_key.if_key.vterm_key.vterminal_name)[0]) == '\0') {
+    deletedkt = UNC_KT_VTN;
+  } else if (((pkey->flowfilter_key.if_key.if_name)[0]) == '\0') {
+    deletedkt = UNC_KT_VTERMINAL;
+  } else if (pkey->flowfilter_key.direction == 0xFE) {
+    deletedkt = UNC_KT_VTERM_IF;
+  } else {
+    deletedkt = UNC_KT_VTERMIF_FLOWFILTER;
+  }
+
+  result_code = GetFLPPCountQuery(ikey, deletedkt, query_string);
   if (UPLL_RC_SUCCESS != result_code) {
-    UPLL_LOG_ERROR("GetChildConfigKey failed %d", result_code);
+    UPLL_LOG_DEBUG("GetFLPPCountQuery failed");
     return result_code;
   }
+
+  const uudst::kDalTableIndex tbl_index = GetTable(MAINTBL, UPLL_DT_CANDIDATE);
+  if (tbl_index >= uudst::kDalNumTables) {
+    UPLL_LOG_DEBUG("Invalid Table Index - %d", tbl_index);
+    return UPLL_RC_ERR_GENERIC;
+  }
+  DalBindInfo dal_bind_info(tbl_index);
+
+  if (!GetBindInfo(MAINTBL, UPLL_DT_CANDIDATE, binfo, nattr)) {
+    UPLL_LOG_DEBUG("GetBindInfo failed");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  ConfigKeyVal *vtermif_ffe_ckv  = NULL;
+  result_code = GetChildConfigKey(vtermif_ffe_ckv, NULL);
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_DEBUG("GetChildConfigKey failed");
+    return result_code;
+  }
+  ConfigVal* vtermif_ffe_cv = NULL;
+  result_code = AllocVal(vtermif_ffe_cv, UPLL_DT_CANDIDATE, MAINTBL);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_DEBUG("Error in AllocVal");
+    DELETE_IF_NOT_NULL(vtermif_ffe_ckv);
+    return result_code;
+  }
+  vtermif_ffe_ckv->SetCfgVal(vtermif_ffe_cv);
+  GET_USER_DATA(vtermif_ffe_ckv);
+  uint32_t count = 0;
+  void *tkey = vtermif_ffe_ckv->get_key();
+  void *p = reinterpret_cast<void *>(reinterpret_cast<char *>(tkey) +
+                                     binfo[0].offset);
+  dal_bind_info.BindOutput(binfo[0].index, binfo[0].app_data_type,
+                           binfo[0].array_size, p);
+  tkey = vtermif_ffe_ckv->get_user_data();
+  p = reinterpret_cast<void *>(reinterpret_cast<char *>(tkey) +
+                               binfo[5].offset);
+  dal_bind_info.BindOutput(binfo[5].index, binfo[5].app_data_type,
+                           binfo[5].array_size, p);
+  tkey = vtermif_ffe_ckv->get_cfg_val()->get_val();
+  p = reinterpret_cast<void *>(reinterpret_cast<char *>(tkey) +
+                               binfo[7].offset);
+  dal_bind_info.BindOutput(binfo[7].index, binfo[7].app_data_type,
+                           binfo[7].array_size, p);
+
+  dal_bind_info.BindOutput(uud::schema::DAL_COL_STD_INTEGER,
+                           uud::kDalUint32, 1, &count);
+
+  result_code = DalToUpllResCode(dmi->ExecuteAppQueryMultipleRecords(
+                 query_string, 0, &dal_bind_info,
+                 &dal_cursor_handle));
+  while (result_code == UPLL_RC_SUCCESS) {
+    result_code = DalToUpllResCode(dmi->GetNextRecord(dal_cursor_handle));
+    if (UPLL_RC_SUCCESS == result_code) {
+      // Call function to update refcount in scratch table
+      key_vterm_if_flowfilter_entry_t *vtermif_ffe_key =
+          reinterpret_cast<key_vterm_if_flowfilter_entry_t *>
+          (vtermif_ffe_ckv->get_key());
+      vtn_name = reinterpret_cast<const char *>
+          (vtermif_ffe_key->flowfilter_key.if_key.vterm_key.vtn_key.vtn_name);
+      uint8_t *ctrlr_id = NULL;
+      GET_USER_DATA_CTRLR(vtermif_ffe_ckv, ctrlr_id);
+      val_flowfilter_entry_t *vtermif_ffe_val =
+          reinterpret_cast<val_flowfilter_entry_t *>(GetVal(vtermif_ffe_ckv));
+
+      FlowListMoMgr *fl_mgr =
+          reinterpret_cast<FlowListMoMgr *>
+          (const_cast<MoManager *>(GetMoManager(UNC_KT_FLOWLIST)));
+      if (NULL == fl_mgr) {
+        UPLL_LOG_DEBUG("fl_mgr is NULL");
+        DELETE_IF_NOT_NULL(vtermif_ffe_ckv);
+        return UPLL_RC_ERR_GENERIC;
+      }
+      ConfigKeyVal *fl_ckv  = NULL;
+      result_code = fl_mgr->GetChildConfigKey(fl_ckv, NULL);
+      if (UPLL_RC_SUCCESS != result_code) {
+        UPLL_LOG_DEBUG("GetChildConfigKey failed");
+        DELETE_IF_NOT_NULL(vtermif_ffe_ckv);
+        return result_code;
+      }
+      key_flowlist_t *fl_key = reinterpret_cast<key_flowlist_t *>
+          (fl_ckv->get_key());
+      uuu::upll_strncpy(fl_key->flowlist_name,
+                        vtermif_ffe_val->flowlist_name,
+                        (kMaxLenFlowListName+1));
+      SET_USER_DATA_CTRLR(fl_ckv, ctrlr_id);
+
+      result_code = fl_mgr->UpdateRefCountInScratchTbl(fl_ckv, dmi,
+                                                       dt_type, UNC_OP_DELETE,
+                                                       config_mode, vtn_name,
+                                                       count);
+      if (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code &&
+          UPLL_RC_SUCCESS != result_code) {
+        UPLL_LOG_DEBUG("UpdateRefCountInScratchTbl returned %d", result_code);
+        DELETE_IF_NOT_NULL(vtermif_ffe_ckv);
+        DELETE_IF_NOT_NULL(fl_ckv);
+        return result_code;
+      } else if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
+        result_code = fl_mgr->InsertRecInScratchTbl(fl_ckv, dmi,
+                                                    dt_type, UNC_OP_DELETE,
+                                                    config_mode, vtn_name,
+                                                    count);
+        if (UPLL_RC_SUCCESS != result_code) {
+          UPLL_LOG_DEBUG("InsertRecInScratchTbl failed %d", result_code);
+          DELETE_IF_NOT_NULL(vtermif_ffe_ckv);
+          DELETE_IF_NOT_NULL(fl_ckv);
+          return result_code;
+        }
+      }
+      DELETE_IF_NOT_NULL(fl_ckv);
+    } else if (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
+      UPLL_LOG_DEBUG("GetNextRecord failed");
+      DELETE_IF_NOT_NULL(vtermif_ffe_ckv);
+      dmi->CloseCursor(dal_cursor_handle, false);
+      return result_code;
+    }
+  }
+  if (result_code != UPLL_RC_SUCCESS &&
+      result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+    UPLL_LOG_DEBUG("ExecuteAppQueryMultipleRecords failed");
+    DELETE_IF_NOT_NULL(vtermif_ffe_ckv);
+    dmi->CloseCursor(dal_cursor_handle, false);
+    return result_code;
+  }
+  DELETE_IF_NOT_NULL(vtermif_ffe_ckv);
+  /*
   DbSubOp dbop = { kOpReadMultiple, kOpMatchNone,
     kOpInOutCtrlr|kOpInOutDomain|kOpInOutFlag };
   result_code = ReadConfigDB(temp_okey, UPLL_DT_CANDIDATE,
@@ -3899,11 +4222,22 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::DeleteChildrenPOM(
       if (flag_port_map & SET_FLAG_PORTMAP) {
         FlowListMoMgr *mgr = reinterpret_cast<FlowListMoMgr *>
           (const_cast<MoManager *> (GetMoManager(UNC_KT_FLOWLIST)));
+        std::string temp_vtn_name;
+        if (TC_CONFIG_VTN == config_mode) {
+          temp_vtn_name = vtn_name;
+        } else {
+          key_vterm_if_flowfilter_entry_t *temp_key = reinterpret_cast<
+              key_vterm_if_flowfilter_entry_t *>(ikey->get_key());
+          temp_vtn_name = reinterpret_cast<const char*>(
+              temp_key->flowfilter_key.if_key.vterm_key.vtn_key.vtn_name);
+        }
         result_code = mgr->AddFlowListToController(
             reinterpret_cast<char*>(flowfilter_val->flowlist_name), dmi,
-            reinterpret_cast<char *>(ctrlr_id), dt_type, UNC_OP_DELETE);
+            reinterpret_cast<char *>(ctrlr_id), dt_type, UNC_OP_DELETE,
+            config_mode, temp_vtn_name);
         if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_ERROR(" Send delete request to flowlist failed. err code(%d)",
+          UPLL_LOG_ERROR(
+              "Send delete request to flowlist failed. err code(%d)",
               result_code);
           DELETE_IF_NOT_NULL(temp_okey);
           return result_code;
@@ -3911,14 +4245,29 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::DeleteChildrenPOM(
       }
     }
     result_code = UpdateConfigDB(okey, dt_type, UNC_OP_DELETE, dmi,
-                               MAINTBL);
+                               config_mode, vtn_name, MAINTBL);
     if (result_code != UPLL_RC_SUCCESS) {
       UPLL_LOG_ERROR("UpdateConfigDB failed %d", result_code);
       DELETE_IF_NOT_NULL(temp_okey);
       return result_code;
     }
     okey = okey->get_next_cfg_key_val();
+  }*/
+  ConfigKeyVal *temp_okey = NULL;
+  result_code = GetChildConfigKey(temp_okey, ikey);
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_ERROR("GetChildConfigKey failed %d", result_code);
+    return result_code;
   }
+  result_code = UpdateConfigDB(temp_okey, dt_type, UNC_OP_DELETE, dmi,
+                             config_mode, vtn_name, MAINTBL);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_ERROR("UpdateConfigDB failed %d", result_code);
+    dmi->CloseCursor(dal_cursor_handle, false);
+    DELETE_IF_NOT_NULL(temp_okey);
+    return result_code;
+  }
+  dmi->CloseCursor(dal_cursor_handle, false);
   DELETE_IF_NOT_NULL(temp_okey);
   return UPLL_RC_SUCCESS;
 }
@@ -3978,13 +4327,13 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
                            result_code);
       return result_code;
     }
-    DbSubOp dbop_maintbl = { kOpReadSingle, kOpMatchNone, 
+    DbSubOp dbop_maintbl = { kOpReadSingle, kOpMatchNone,
                                           kOpInOutFlag |kOpInOutCs };
     result_code = ReadConfigDB(vbr_ffe_run_key, UPLL_DT_RUNNING  ,
                                      UNC_OP_READ, dbop_maintbl, dmi, MAINTBL);
     if (result_code != UPLL_RC_SUCCESS) {
       UPLL_LOG_ERROR("Unable to read configuration from RunningDb");
-      DELETE_IF_NOT_NULL(vbr_ffe_run_key); 
+      DELETE_IF_NOT_NULL(vbr_ffe_run_key);
       return result_code;
     }
     val_main = reinterpret_cast
@@ -4004,8 +4353,8 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
     UPLL_LOG_ERROR("Invalid operation");
     return UPLL_RC_ERR_GENERIC;
   }
-  UPLL_LOG_TRACE("%s",(ikey->ToStrAll()).c_str());
-  val_flowfilter_entry_t *ffe_val2 = 
+  UPLL_LOG_TRACE("%s", (ikey->ToStrAll()).c_str());
+  val_flowfilter_entry_t *ffe_val2 =
      reinterpret_cast<val_flowfilter_entry_t *>(GetVal(upd_key));
   if (UNC_OP_UPDATE == op) {
     UPLL_LOG_TRACE("%s", (upd_key->ToStrAll()).c_str());
@@ -4033,15 +4382,15 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
        (UNC_OP_UPDATE == op)) {
       if (cs_status == UNC_CS_APPLIED) {
         ffe_val->cs_attr[loop] = UNC_CS_APPLIED;
-      }  
-    } 
+      }
+    }
     if ((ffe_val->valid[loop] == UNC_VF_VALID_NO_VALUE)
-       &&(UNC_OP_UPDATE == op)) { 
+       &&(UNC_OP_UPDATE == op)) {
       ffe_val->cs_attr[loop]  = UNC_CS_UNKNOWN;
     }
     UPLL_LOG_TRACE("Value : %d Cs : %d", loop, ffe_val->cs_attr[loop]);
   }
-  DELETE_IF_NOT_NULL(vbr_ffe_run_key); 
+  DELETE_IF_NOT_NULL(vbr_ffe_run_key);
   return result_code;
 }
 
@@ -4145,7 +4494,7 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::SetRenameFlag(ConfigKeyVal *ikey,
         UPLL_LOG_ERROR("fl_mgr is NULL");
         DELETE_IF_NOT_NULL(fl_ckv);
         return UPLL_RC_ERR_GENERIC;
-      } 
+      }
       uint8_t fl_rename = 0;
       result_code = fl_mgr->IsRenamed(fl_ckv, req->datatype, dmi, fl_rename);
       if (UPLL_RC_SUCCESS != result_code) {
@@ -4190,6 +4539,19 @@ upll_rc_t VtermIfFlowFilterEntryMoMgr::GetFlowlistConfigKey(
   uuu::upll_strncpy(okey_key->flowlist_name,
         flowlist_name,
         (kMaxLenFlowListName+1));
+  return UPLL_RC_SUCCESS;
+}
+upll_rc_t VtermIfFlowFilterEntryMoMgr::TxUpdateErrorHandler(
+    ConfigKeyVal *ckv_unc,
+    ConfigKeyVal *ckv_driver,
+    DalDmlIntf *dmi,
+    upll_keytype_datatype_t dt_type,
+    ConfigKeyVal **err_ckv,
+    IpcResponse *ipc_resp) {
+  UPLL_FUNC_TRACE;
+  *err_ckv = ckv_unc;
+  DELETE_IF_NOT_NULL(ckv_driver);
+  DELETE_IF_NOT_NULL(ipc_resp->ckv_data);
   return UPLL_RC_SUCCESS;
 }
 }  // namespace kt_momgr

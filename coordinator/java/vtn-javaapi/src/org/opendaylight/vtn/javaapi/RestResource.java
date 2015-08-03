@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -92,6 +92,15 @@ public class RestResource implements VtnServiceResource {
 			if (VtnServiceUtil.isValidString(this.path)) {
 				this.resource = AnnotationReflect.getResource(this.path,
 						exceptionHandler);
+				//when FDB support in U18, delete the code 
+				String[] uri = this.path.substring(1).split("/");
+				if (uri.length == 5) {
+					if (uri[0].equals("unified_networks")&& uri[2].equals("spine_domains")
+							&& uri[4].equals("fdbusage")) {
+						this.resource = null;
+					} 
+				}
+
 				if (this.resource == null) {
 					resourceFoundStatus = true;
 					LOG.error("Resource not found");

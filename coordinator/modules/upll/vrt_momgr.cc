@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -144,13 +144,13 @@ bool VrtMoMgr::GetRenameKeyBindInfo(unc_key_type_t key_type, BindInfo *&binfo,
     UPLL_LOG_DEBUG("Invalid Table ");
     return PFC_FALSE;
   }
- 
+
   return PFC_TRUE;
 }
 VrtMoMgr::VrtMoMgr() {
   UPLL_FUNC_TRACE;
   ntable = MAX_MOMGR_TBLS;
-  table = new Table *[ntable];
+  table = new Table *[ntable]();
   table[MAINTBL] = new Table(uudst::kDbiVrtTbl, UNC_KT_VROUTER, vrt_bind_info,
                          IpctSt::kIpcStKeyVrt, IpctSt::kIpcStValVrt,
                          (uudst::vrouter::kDbiVrtNumCols+2));
@@ -159,11 +159,13 @@ VrtMoMgr::VrtMoMgr() {
                   IpctSt::kIpcInvalidStNum,
                   uudst::vnode_rename::kDbiVnodeRenameNumCols);
   table[CTRLRTBL] = NULL;
+  table[CONVERTTBL] = NULL;
+
   nchild = sizeof(vrt_child) / sizeof(*vrt_child);
   child = vrt_child;
 }
 
-bool VrtMoMgr::IsValidKey(void *key, uint64_t index) {
+bool VrtMoMgr::IsValidKey(void *key, uint64_t index, MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
   key_vrt *vrt_key = reinterpret_cast<key_vrt *>(key);
   upll_rc_t ret_val = UPLL_RC_SUCCESS;
@@ -200,7 +202,7 @@ upll_rc_t VrtMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   key_vrt *vrt_key = NULL;
   if (okey && (okey->get_key())) {
-    vrt_key = reinterpret_cast<key_vrt_t *> 
+    vrt_key = reinterpret_cast<key_vrt_t *>
                (okey->get_key());
   } else {
     vrt_key = reinterpret_cast<key_vrt_t *>
@@ -212,7 +214,7 @@ upll_rc_t VrtMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
       okey = new ConfigKeyVal(UNC_KT_VROUTER, IpctSt::kIpcStKeyVrt, vrt_key,
                             NULL);
     else if (okey->get_key() != vrt_key)
-      okey->SetKey(IpctSt::kIpcStKeyVrt,vrt_key);
+      okey->SetKey(IpctSt::kIpcStKeyVrt, vrt_key);
     return UPLL_RC_SUCCESS;
   } else {
      pkey = parent_key->get_key();
@@ -245,7 +247,7 @@ upll_rc_t VrtMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
       }
       GET_USER_DATA_FLAGS(parent_key->get_cfg_val(), flags);
       flags &=  VLINK_FLAG_NODE_POS;
-      UPLL_LOG_DEBUG("Vlink flag node position %d",flags);
+      UPLL_LOG_DEBUG("Vlink flag node position %d", flags);
       if (flags == kVlinkVnode2) {
         vnode_name = vlink_val->vnode2_name;
       } else {
@@ -253,10 +255,12 @@ upll_rc_t VrtMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
       }
       uuu::upll_strncpy(vrt_key->vrouter_name, vnode_name,
                           (kMaxLenVnodeName + 1));
-      uuu::upll_strncpy(vrt_key->vtn_key.vtn_name, reinterpret_cast<key_vlink *>(
-                        parent_key->get_key())->vtn_key.vtn_name , (kMaxLenVtnName+1));
+      uuu::upll_strncpy(vrt_key->vtn_key.vtn_name,
+                        reinterpret_cast<key_vlink *>(
+                        parent_key->get_key())->vtn_key.vtn_name,
+                        (kMaxLenVtnName+1));
      }
-     break;       
+     break;
     case UNC_KT_VTN:
     default:
       uuu::upll_strncpy(vrt_key->vtn_key.vtn_name,
@@ -267,7 +271,8 @@ upll_rc_t VrtMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
 //  cout << "GetChildConfigKey " << vrt_key->vtn_key.vtn_name << " ";
 //  cout << vrt_key->vrouter_name << "";
   if (!okey)
-    okey = new ConfigKeyVal(UNC_KT_VROUTER, IpctSt::kIpcStKeyVrt, vrt_key, NULL);
+    okey = new ConfigKeyVal(UNC_KT_VROUTER, IpctSt::kIpcStKeyVrt,
+                            vrt_key, NULL);
   else  if (okey->get_key() != vrt_key)
     okey->SetKey(IpctSt::kIpcStKeyVrt, vrt_key);
   if (okey == NULL)
@@ -422,15 +427,17 @@ upll_rc_t VrtMoMgr::GetRenamedUncKey(ConfigKeyVal *ikey,
   }
 
   DbSubOp dbop = {kOpReadSingle, kOpMatchCtrlr, kOpInOutNone };
-  val_rename_vnode *rename_vnode = reinterpret_cast<val_rename_vnode *>
-                                (ConfigKeyVal::Malloc(sizeof(val_rename_vnode)));
+  val_rename_vnode *rename_vnode =
+      reinterpret_cast<val_rename_vnode *>
+      (ConfigKeyVal::Malloc(sizeof(val_rename_vnode)));
 
   key_vrt *ctrlr_key = reinterpret_cast<key_vrt *>(ikey->get_key());
-  
+
   rename_vnode->valid[UPLL_CTRLR_VTN_NAME_VALID] = UNC_VF_INVALID;
   rename_vnode->valid[UPLL_CTRLR_VNODE_NAME_VALID] = UNC_VF_INVALID;
-  upll_rc_t ret_val = ValidateKey(reinterpret_cast<char *>(ctrlr_key->vtn_key.vtn_name),
-                        kMinLenVtnName, kMaxLenVtnName);
+  upll_rc_t ret_val =
+      ValidateKey(reinterpret_cast<char *>(ctrlr_key->vtn_key.vtn_name),
+      kMinLenVtnName, kMaxLenVtnName);
   if (ret_val == UPLL_RC_SUCCESS)  {
     uuu::upll_strncpy(rename_vnode->ctrlr_vtn_name,
                       ctrlr_key->vtn_key.vtn_name,
@@ -456,7 +463,7 @@ upll_rc_t VrtMoMgr::GetRenamedUncKey(ConfigKeyVal *ikey,
   }
   if (ctrlr_id) {
     SET_USER_DATA_CTRLR(unc_key, ctrlr_id);
-  }else {
+  } else {
     dbop.matchop = kOpMatchNone;
   }
 
@@ -464,7 +471,7 @@ upll_rc_t VrtMoMgr::GetRenamedUncKey(ConfigKeyVal *ikey,
   unc_key->AppendCfgVal(IpctSt::kIpcStValRenameVtn, rename_vnode);
 
   uint8_t rename = 0x00;
-  dbop.inoutop = kOpInOutCtrlr | kOpInOutDomain ;
+  dbop.inoutop = kOpInOutCtrlr | kOpInOutDomain;
   result_code = ReadConfigDB(unc_key, dt_type, UNC_OP_READ, dbop, dmi,
                                        RENAMETBL);
   if (result_code == UPLL_RC_SUCCESS) {
@@ -483,10 +490,10 @@ upll_rc_t VrtMoMgr::GetRenamedUncKey(ConfigKeyVal *ikey,
     }
   SET_USER_DATA(ikey, unc_key);
   } else if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
-
     upll_rc_t res_code = UPLL_RC_SUCCESS;
-    MoMgrImpl *vtn_mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
-                                                       (GetMoManager(UNC_KT_VTN)));
+    MoMgrImpl *vtn_mgr =
+        reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
+        (GetMoManager(UNC_KT_VTN)));
     if (!vtn_mgr) {
       UPLL_LOG_DEBUG("mgr is NULL");
       DELETE_IF_NOT_NULL(unc_key);
@@ -540,13 +547,13 @@ upll_rc_t VrtMoMgr::GetRenamedControllerKey(ConfigKeyVal *ikey,
   } else {
     result_code = GetChildConfigKey(dup_key, ikey);
     if (result_code != UPLL_RC_SUCCESS) {
-      UPLL_LOG_DEBUG("GetChildConfigKey Failed %d",result_code);
+      UPLL_LOG_DEBUG("GetChildConfigKey Failed %d", result_code);
       return result_code;
     }
 #endif
     result_code = IsRenamed(ikey, dt_type, dmi, rename);
     if (result_code != UPLL_RC_SUCCESS) {
-      UPLL_LOG_DEBUG("Returning %d",result_code);
+      UPLL_LOG_DEBUG("Returning %d", result_code);
       return result_code;
     }
     if (!ctrlr_dom->ctrlr ||
@@ -583,13 +590,9 @@ upll_rc_t VrtMoMgr::GetRenamedControllerKey(ConfigKeyVal *ikey,
 #endif
   if (rename == 0) return UPLL_RC_SUCCESS;
 
-  /* Read controller name from running rename table,
-   * since there is no rename table for audit case */
-  if (dt_type == UPLL_DT_AUDIT)
-    dt_type = UPLL_DT_RUNNING;
   result_code = GetChildConfigKey(okey, ikey);
   if (result_code != UPLL_RC_SUCCESS) {
-     UPLL_LOG_DEBUG("Returning error %d",result_code);
+     UPLL_LOG_DEBUG("Returning error %d", result_code);
      return result_code;
   }
 //  GET_USER_DATA_CTRLR_DOMAIN(ikey, *ctrlr_dom);
@@ -623,8 +626,9 @@ upll_rc_t VrtMoMgr::GetRenamedControllerKey(ConfigKeyVal *ikey,
                         rename_val->ctrlr_vnode_name, (kMaxLenVnodeName+1));
     }
   } else if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
-    MoMgrImpl *vtn_mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
-                                                       (GetMoManager(UNC_KT_VTN)));
+    MoMgrImpl *vtn_mgr =
+        reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
+        (GetMoManager(UNC_KT_VTN)));
     if (!vtn_mgr) {
       UPLL_LOG_DEBUG("mgr is NULL");
       DELETE_IF_NOT_NULL(okey);
@@ -684,7 +688,7 @@ upll_rc_t VrtMoMgr::UpdateConfigStatus(ConfigKeyVal *vrt_key,
     vrt_val->cs_row_status = cs_status;
     val_db_vrt_st *val_db_vrtst = reinterpret_cast<val_db_vrt_st *>
                    (ConfigKeyVal::Malloc(sizeof(val_db_vrt_st)));
-    if(driver_result == UPLL_RC_ERR_CTR_DISCONNECTED) {
+    if (driver_result == UPLL_RC_ERR_CTR_DISCONNECTED) {
       val_db_vrtst->vrt_val_st.oper_status = UPLL_OPER_STATUS_UNKNOWN;
     } else {
        val_db_vrtst->vrt_val_st.oper_status = UPLL_OPER_STATUS_UNINIT;
@@ -769,7 +773,7 @@ upll_rc_t VrtMoMgr::GetControllerDomainId(ConfigKeyVal *ikey,
     SET_USER_DATA_DOMAIN(ikey, temp_vrt->domain_id);
     GET_USER_DATA_CTRLR_DOMAIN(ikey, *ctrlr_dom);
   }
-  UPLL_LOG_DEBUG("ctrlr_dom %s %s",ctrlr_dom->ctrlr, ctrlr_dom->domain);
+  UPLL_LOG_DEBUG("ctrlr_dom %s %s", ctrlr_dom->ctrlr, ctrlr_dom->domain);
   return UPLL_RC_SUCCESS;
 }
 
@@ -846,7 +850,7 @@ upll_rc_t VrtMoMgr::SwapKeyVal(ConfigKeyVal *ikey, ConfigKeyVal *&okey,
   MoMgrImpl *mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
                         (GetMoManager(UNC_KT_VTN)));
   result_code = mgr->GetRenamedUncKey(pkey, UPLL_DT_IMPORT, dmi, ctrlr);
-  if (UPLL_RC_SUCCESS != result_code 
+  if (UPLL_RC_SUCCESS != result_code
       && UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
     UPLL_LOG_DEBUG("GetRenamedUncKey failed with result_code %d",
                                                       result_code);
@@ -907,7 +911,7 @@ upll_rc_t VrtMoMgr::MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   DbSubOp dbop = { kOpReadMultiple, kOpMatchNone, kOpInOutNone };
-  if (!ikey || !(ikey->get_key())){
+  if (!ikey || !(ikey->get_key())) {
     UPLL_LOG_DEBUG(" Input is NULL ");
     return UPLL_RC_ERR_GENERIC;
   }
@@ -915,7 +919,7 @@ upll_rc_t VrtMoMgr::MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
   result_code = GetChildConfigKey(dup_key, ikey);
   if (UPLL_RC_SUCCESS != result_code) {
     UPLL_LOG_DEBUG("GetChildConfigKey Failed");
-    if(dup_key) delete dup_key;
+    if (dup_key) delete dup_key;
     return result_code;
   }
   /*
@@ -934,7 +938,7 @@ upll_rc_t VrtMoMgr::MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
   while (travel) {
     if (import_type == UPLL_IMPORT_TYPE_FULL) {
       /* Same Name should not present in the vnodes in running*/
-      result_code = VnodeChecks(travel, UPLL_DT_CANDIDATE, dmi);
+      result_code = VnodeChecks(travel, UPLL_DT_CANDIDATE, dmi, false);
 
     if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code ||
         UPLL_RC_ERR_CFG_SEMANTIC == result_code) {
@@ -949,7 +953,7 @@ upll_rc_t VrtMoMgr::MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
       }
     } else {
       result_code = PartialImport_VnodeChecks(travel,
-                                   UPLL_DT_CANDIDATE, ctrlr_id ,dmi);
+                                   UPLL_DT_CANDIDATE, ctrlr_id , dmi);
      if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code ||
         UPLL_RC_ERR_CFG_SEMANTIC == result_code) {
         result_code = GetChildConfigKey(ikey, travel);
@@ -965,7 +969,7 @@ upll_rc_t VrtMoMgr::MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
     /* Any other DB error */
     if (UPLL_RC_SUCCESS != result_code) {
       UPLL_LOG_DEBUG("Vnode Checks Failed %d", result_code);
-      if(dup_key) delete dup_key;
+      if (dup_key) delete dup_key;
       return result_code;
     }
     travel = travel->get_next_cfg_key_val();
@@ -1002,7 +1006,7 @@ upll_rc_t VrtMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
     }
       uuu::upll_strncpy(key_vrt->vrouter_name,
            key_rename->old_unc_vnode_name, (kMaxLenVnodeName+1));
-    } 
+    }
   okey = new ConfigKeyVal(UNC_KT_VROUTER, IpctSt::kIpcStKeyVrt, key_vrt, NULL);
   if (!okey) {
     free(key_vrt);
@@ -1011,7 +1015,7 @@ upll_rc_t VrtMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
   return result_code;
 }
 
-upll_rc_t VrtMoMgr::GetRenameInfo(ConfigKeyVal *ikey, 
+upll_rc_t VrtMoMgr::GetRenameInfo(ConfigKeyVal *ikey,
                                   ConfigKeyVal *okey,
                                   ConfigKeyVal *&rename_info,
                                   DalDmlIntf *dmi,
@@ -1023,6 +1027,7 @@ upll_rc_t VrtMoMgr::GetRenameInfo(ConfigKeyVal *ikey,
     return UPLL_RC_ERR_GENERIC;
 
   key_vrt_t * vrt_key = NULL;
+  string vtn_id = "";
   key_rename_vnode_info *vrt_rename_info =
     reinterpret_cast<key_rename_vnode_info *>
         (ConfigKeyVal::Malloc(sizeof(key_rename_vnode_info)));
@@ -1140,7 +1145,7 @@ upll_rc_t VrtMoMgr::GetRenameInfo(ConfigKeyVal *ikey,
     okey->SetCfgVal(rename_val_);
     dbop.readop = kOpNotRead;
     result_code = UpdateConfigDB(okey, UPLL_DT_IMPORT, UNC_OP_CREATE, dmi,
-                                 &dbop, RENAMETBL);
+                                 &dbop, TC_CONFIG_GLOBAL, vtn_id, RENAMETBL);
     if (tmp_key)
       delete tmp_key;
   }
@@ -1165,7 +1170,8 @@ bool VrtMoMgr::FilterAttributes(void *&val1, void *val2, bool copy_to_running,
   return false;
 }
 
-bool VrtMoMgr::CompareValidValue(void *&val1, void *val2, bool copy_to_running) {
+bool VrtMoMgr::CompareValidValue(void *&val1, void *val2,
+                                 bool copy_to_running) {
   UPLL_FUNC_TRACE;
   bool invalid_attr = true;
   val_vrt_t *val_vrt1 = reinterpret_cast<val_vrt_t *>(val1);
@@ -1177,7 +1183,7 @@ bool VrtMoMgr::CompareValidValue(void *&val1, void *val2, bool copy_to_running) 
   for (unsigned int loop = 0;
       loop < sizeof(val_vrt1->valid) / sizeof(uint8_t); ++loop) {
     if (UNC_VF_INVALID == val_vrt1->valid[loop]
-        && UNC_VF_VALID == val_vrt2->valid[loop]) 
+        && UNC_VF_VALID == val_vrt2->valid[loop])
       val_vrt1->valid[loop] = UNC_VF_VALID_NO_VALUE;
   }
   if (UNC_VF_INVALID != val_vrt1->valid[UPLL_IDX_DESC_VRT]) {
@@ -1256,7 +1262,7 @@ upll_rc_t VrtMoMgr::CtrlrIdAndDomainIdUpdationCheck(ConfigKeyVal *ikey,
   UPLL_FUNC_TRACE;
   val_vrt *vrt_val = reinterpret_cast<val_vrt *>(GetVal(ikey));
   val_vrt *vrt_val1 = reinterpret_cast<val_vrt *>(GetVal(okey));
-  if (!vrt_val || !vrt_val1 ) {
+  if (!vrt_val || !vrt_val1) {
     UPLL_LOG_DEBUG(" vrt_val / vrt_val1 is NULL");
     return UPLL_RC_ERR_GENERIC;
   }
@@ -1266,8 +1272,8 @@ upll_rc_t VrtMoMgr::CtrlrIdAndDomainIdUpdationCheck(ConfigKeyVal *ikey,
                 kMaxLenCtrlrId+1)) {
       UPLL_LOG_DEBUG("controller id comparision failed");
       return UPLL_RC_ERR_CFG_SYNTAX;
-    } 
-  } 
+    }
+  }
   if (vrt_val->valid[UPLL_IDX_DOMAIN_ID_VRT] == UNC_VF_VALID) {
     if (strncmp(reinterpret_cast<const char *>(vrt_val->domain_id),
                 reinterpret_cast<const char *>(vrt_val1->domain_id),
@@ -1288,12 +1294,12 @@ upll_rc_t VrtMoMgr::ValidateVrtValue(val_vrt *vrt_val,
   // Attribute syntax validation
   for (unsigned int valid_index = 0;
        valid_index < sizeof(vrt_val->valid) / sizeof(vrt_val->valid[0]);
-       valid_index++) { 
+       valid_index++) {
     if (vrt_val->valid[valid_index] == UNC_VF_VALID) {
-      switch(valid_index) {    
+      switch (valid_index) {
         case UPLL_IDX_CONTROLLER_ID_VRT:
           ret_val = ValidateString(vrt_val->controller_id,
-                                   kMinLenCtrlrId, kMaxLenCtrlrId); 
+                                   kMinLenCtrlrId, kMaxLenCtrlrId);
           break;
         case UPLL_IDX_DOMAIN_ID_VRT:
           ret_val = ValidateDefaultStr(vrt_val->domain_id,
@@ -1302,7 +1308,7 @@ upll_rc_t VrtMoMgr::ValidateVrtValue(val_vrt *vrt_val,
         case UPLL_IDX_DESC_VRT:
           ret_val = ValidateDesc(vrt_val->vrt_description,
                                  kMinLenDescription, kMaxLenDescription);
-          break; 
+          break;
         case UPLL_IDX_DHCP_RELAY_ADMIN_STATUS_VRT:
           ret_val = ValidateNumericRange(
                     (uint8_t) vrt_val->dhcp_relay_admin_status,
@@ -1311,7 +1317,7 @@ upll_rc_t VrtMoMgr::ValidateVrtValue(val_vrt *vrt_val,
           break;
       }
       if (!ret_val) {
-        return UPLL_RC_ERR_CFG_SYNTAX; 
+        return UPLL_RC_ERR_CFG_SYNTAX;
       }
     }
   }
@@ -1324,21 +1330,21 @@ upll_rc_t VrtMoMgr::ValidateVrtValue(val_vrt *vrt_val,
     switch (operation) {
       case UNC_OP_CREATE:
         {
-          switch(valid_index) {
+          switch (valid_index) {
             case UPLL_IDX_CONTROLLER_ID_VRT:
             case UPLL_IDX_DOMAIN_ID_VRT:
               if ((flag == UNC_VF_INVALID || flag == UNC_VF_VALID_NO_VALUE)) {
                 UPLL_LOG_INFO("controller_id or domain_id flag is invalid"
                                " or valid_no_value");
-                return UPLL_RC_ERR_CFG_SYNTAX; 
+                return UPLL_RC_ERR_CFG_SYNTAX;
               }
               break;
             case UPLL_IDX_DESC_VRT:
               break;
             case UPLL_IDX_DHCP_RELAY_ADMIN_STATUS_VRT:
-#if 0 //no default value for dhcp_relay_admin status
+#if 0  // no default value for dhcp_relay_admin status
               if ((flag == UNC_VF_INVALID) || (flag == UNC_VF_VALID_NO_VALUE)) {
-                vrt_val->dhcp_relay_admin_status = UPLL_ADMIN_ENABLE; 
+                vrt_val->dhcp_relay_admin_status = UPLL_ADMIN_ENABLE;
               }
 #else
               if (flag == UNC_VF_VALID_NO_VALUE) {
@@ -1349,24 +1355,25 @@ upll_rc_t VrtMoMgr::ValidateVrtValue(val_vrt *vrt_val,
             default:
               break;
           }
-        } 
+        }
         break;
       case UNC_OP_UPDATE:
         {
-          switch(valid_index) {
+          switch (valid_index) {
             case UPLL_IDX_CONTROLLER_ID_VRT:
             case UPLL_IDX_DOMAIN_ID_VRT:
               if (flag == UNC_VF_VALID_NO_VALUE) {
-                UPLL_LOG_INFO("controller_id or domain_id flag is valid_no_value");
+                UPLL_LOG_INFO(
+                    "controller_id or domain_id flag is valid_no_value");
                 return UPLL_RC_ERR_CFG_SYNTAX;
               }
-              break; 
+              break;
             case UPLL_IDX_DESC_VRT:
             case UPLL_IDX_DHCP_RELAY_ADMIN_STATUS_VRT:
             default:
               break;
           }
-        } 
+        }
         break;
     }
   }
@@ -1376,10 +1383,10 @@ upll_rc_t VrtMoMgr::ValidateVrtValue(val_vrt *vrt_val,
        valid_index < sizeof(vrt_val->valid) / sizeof(vrt_val->valid[0]);
        valid_index++) {
     uint8_t flag = vrt_val->valid[valid_index];
-    if (flag != UNC_VF_INVALID && flag != UNC_VF_VALID_NO_VALUE)  
+    if (flag != UNC_VF_INVALID && flag != UNC_VF_VALID_NO_VALUE)
       continue;
-       
-    switch(valid_index) {
+
+    switch (valid_index) {
       case UPLL_IDX_CONTROLLER_ID_VRT:
         StringReset(vrt_val->controller_id);
         break;
@@ -1389,15 +1396,16 @@ upll_rc_t VrtMoMgr::ValidateVrtValue(val_vrt *vrt_val,
       case UPLL_IDX_DESC_VRT:
         StringReset(vrt_val->vrt_description);
         break;
-      case UPLL_IDX_DHCP_RELAY_ADMIN_STATUS_VRT:  // TODO: check admin_status is enable or disable when reset
-        vrt_val->dhcp_relay_admin_status = UPLL_ADMIN_ENABLE; 
+      // TODO(author): check admin_status is enable or disable when reset
+      case UPLL_IDX_DHCP_RELAY_ADMIN_STATUS_VRT:
+        vrt_val->dhcp_relay_admin_status = UPLL_ADMIN_ENABLE;
         break;
       default:
         UPLL_LOG_TRACE("Never here");
         break;
     }
   }
-  return UPLL_RC_SUCCESS; 
+  return UPLL_RC_SUCCESS;
 }
 
 upll_rc_t VrtMoMgr::ValidateVrtPingValue(val_ping *ping_val) {
@@ -1441,7 +1449,8 @@ upll_rc_t VrtMoMgr::ValidateVrtPingValue(val_ping *ping_val) {
                     ping_val->packet_size);
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
-  } else if (ping_val->valid[UPLL_IDX_PACKET_SIZE_PING] == UNC_VF_VALID_NO_VALUE) {
+  } else if (ping_val->valid[UPLL_IDX_PACKET_SIZE_PING] ==
+             UNC_VF_VALID_NO_VALUE) {
     ping_val->packet_size = 0;
   }
 
@@ -1526,7 +1535,7 @@ upll_rc_t VrtMoMgr::ValidateMessage(IpcReqRespHeader *req, ConfigKeyVal *ikey) {
     return UPLL_RC_ERR_BAD_REQUEST;
   }
   key_vrt *vrt_key = reinterpret_cast<key_vrt *>(ikey->get_key());
-  
+
   ret_val = ValidateVrtKey(vrt_key, operation);
   if (ret_val != UPLL_RC_SUCCESS) {
     UPLL_LOG_INFO("syntax check failure for key_vrt struct");
@@ -1539,9 +1548,11 @@ upll_rc_t VrtMoMgr::ValidateMessage(IpcReqRespHeader *req, ConfigKeyVal *ikey) {
       ((ikey->get_cfg_val())->get_st_num() == IpctSt::kIpcStValVrt)) {
     vrt_val =  reinterpret_cast<val_vrt *>(ikey->get_cfg_val()->get_val());
   } else if ((ikey->get_cfg_val()) &&
-             ((ikey->get_cfg_val())->get_st_num() == IpctSt::kIpcStValRenameVrt)) {
-    vrt_rename =  reinterpret_cast<val_rename_vrt *>(ikey->get_cfg_val()->get_val());
-  } 
+             ((ikey->get_cfg_val())->get_st_num() ==
+              IpctSt::kIpcStValRenameVrt)) {
+    vrt_rename =
+        reinterpret_cast<val_rename_vrt *>(ikey->get_cfg_val()->get_val());
+  }
 
   if (((operation == UNC_OP_CREATE) || (operation == UNC_OP_UPDATE))  &&
      ((dt_type == UPLL_DT_CANDIDATE) || (dt_type == UPLL_DT_IMPORT))) {
@@ -1576,8 +1587,8 @@ upll_rc_t VrtMoMgr::ValidateMessage(IpcReqRespHeader *req, ConfigKeyVal *ikey) {
     }
     return UPLL_RC_SUCCESS;
   } else if ((operation == UNC_OP_READ || operation == UNC_OP_READ_SIBLING ||
-              operation == UNC_OP_READ_SIBLING_BEGIN) && 
-        		 (dt_type == UPLL_DT_IMPORT)) {
+              operation == UNC_OP_READ_SIBLING_BEGIN) &&
+             (dt_type == UPLL_DT_IMPORT)) {
     if (option1 != UNC_OPT1_NORMAL) {
       UPLL_LOG_INFO("Error option1 is not NORMAL");
       return UPLL_RC_ERR_INVALID_OPTION1;
@@ -1598,7 +1609,7 @@ upll_rc_t VrtMoMgr::ValidateMessage(IpcReqRespHeader *req, ConfigKeyVal *ikey) {
     return UPLL_RC_SUCCESS;
   } else if ((operation == UNC_OP_READ || operation == UNC_OP_READ_SIBLING ||
               operation == UNC_OP_READ_SIBLING_BEGIN ||
-              operation == UNC_OP_READ_SIBLING_COUNT) && 
+              operation == UNC_OP_READ_SIBLING_COUNT) &&
              (dt_type == UPLL_DT_CANDIDATE || dt_type == UPLL_DT_RUNNING ||
               dt_type == UPLL_DT_STARTUP)) {
     if (option1 != UNC_OPT1_NORMAL) {
@@ -1623,7 +1634,6 @@ upll_rc_t VrtMoMgr::ValidateMessage(IpcReqRespHeader *req, ConfigKeyVal *ikey) {
              operation == UNC_OP_READ_SIBLING_BEGIN ||
              operation == UNC_OP_READ_SIBLING_COUNT)
             && (dt_type == UPLL_DT_STATE)) {
-
     if (option1 == UNC_OPT1_NORMAL) {
       if (option2 == UNC_OPT2_NONE) {
         if (vrt_val == NULL) {
@@ -1721,8 +1731,8 @@ upll_rc_t VrtMoMgr::ValidateCapability(IpcReqRespHeader *req,
                                        const char *ctrlr_name) {
   UPLL_FUNC_TRACE;
   upll_rc_t ret_val = UPLL_RC_ERR_GENERIC;
-  
-  if (!ikey || !req ) {
+
+  if (!ikey || !req) {
     UPLL_LOG_INFO(" ConfigKeyVal / IpcReqRespHeader is NULL");
     return UPLL_RC_ERR_GENERIC;
   }
@@ -1777,19 +1787,22 @@ upll_rc_t VrtMoMgr::ValidateCapability(IpcReqRespHeader *req,
   }
   if (vrt_val) {
     if (max_attrs > 0) {
-      ret_val = ValidateVrtAttributeSupportCheck(vrt_val, attrs, req->operation);
+      ret_val = ValidateVrtAttributeSupportCheck(vrt_val, attrs,
+                                                 req->operation);
       return ret_val;
     } else {
-      UPLL_LOG_DEBUG("Attribute list is empty for operation %d", req->operation);
+      UPLL_LOG_DEBUG("Attribute list is empty for operation %d",
+                     req->operation);
       return UPLL_RC_ERR_GENERIC;
     }
   }
   return UPLL_RC_SUCCESS;
 }
 
-upll_rc_t VrtMoMgr::ValidateVrtAttributeSupportCheck(val_vrt_t *vrt_val,
-					             const uint8_t *attrs,
-                                                     unc_keytype_operation_t operation) {
+upll_rc_t VrtMoMgr::ValidateVrtAttributeSupportCheck(
+    val_vrt_t *vrt_val,
+    const uint8_t *attrs,
+    unc_keytype_operation_t operation) {
   UPLL_FUNC_TRACE;
   if (vrt_val != NULL) {
     if ((vrt_val->valid[UPLL_IDX_DOMAIN_ID_VRT] == UNC_VF_VALID) ||
@@ -1809,7 +1822,7 @@ upll_rc_t VrtMoMgr::ValidateVrtAttributeSupportCheck(val_vrt_t *vrt_val,
         if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
           UPLL_LOG_INFO("Description attr is not supported by pfc ctrlr ");
           return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
-        } 
+        }
       }
     }
     if ((vrt_val->valid[UPLL_IDX_DHCP_RELAY_ADMIN_STATUS_VRT] == UNC_VF_VALID)
@@ -1818,7 +1831,7 @@ upll_rc_t VrtMoMgr::ValidateVrtAttributeSupportCheck(val_vrt_t *vrt_val,
       if (attrs[unc::capa::vrt::kCapDhcpRelayAdminStatus] == 0) {
         vrt_val->valid[UPLL_IDX_DHCP_RELAY_ADMIN_STATUS_VRT] =
             UNC_VF_INVALID;
-        if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {    
+        if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
           UPLL_LOG_INFO("Admin status attr is not supported by pfc ctrlr ");
           return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
         }
@@ -1863,8 +1876,8 @@ upll_rc_t VrtMoMgr::CreateVnodeConfigKey(ConfigKeyVal *ikey,
   return UPLL_RC_SUCCESS;
 }
 
-upll_rc_t VrtMoMgr::IsReferenced(ConfigKeyVal *ikey,
-                                 upll_keytype_datatype_t dt_type,
+upll_rc_t VrtMoMgr::IsReferenced(IpcReqRespHeader *req,
+                                 ConfigKeyVal *ikey,
                                  DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
@@ -1893,9 +1906,9 @@ upll_rc_t VrtMoMgr::IsReferenced(ConfigKeyVal *ikey,
                                vlink_val));
 
   DbSubOp dbop = { kOpReadSingle, kOpMatchNone, kOpInOutNone};
-  /* Verifies Whether the requested vrouter is vnode1 of vlink 
+  /* Verifies Whether the requested vrouter is vnode1 of vlink
    * If it is part of vlink, vrouter delete operation is not allowed */
-  result_code = mgr->UpdateConfigDB(vlink_ckv, dt_type, UNC_OP_READ,
+  result_code = mgr->UpdateConfigDB(vlink_ckv, req->datatype, UNC_OP_READ,
                                     dmi, &dbop, MAINTBL);
   if ((UPLL_RC_ERR_INSTANCE_EXISTS != result_code) &&
       (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code)) {
@@ -1915,8 +1928,8 @@ upll_rc_t VrtMoMgr::IsReferenced(ConfigKeyVal *ikey,
     vlink_val->valid[UPLL_IDX_VNODE2_NAME_VLNK] = UNC_VF_VALID;
     uuu::upll_strncpy(vlink_val->vnode2_name,
                       vrt_key->vrouter_name, (kMaxLenVnodeName+ 1));
-    result_code = mgr->UpdateConfigDB(vlink_ckv, dt_type, UNC_OP_READ, dmi,
-                                      &dbop, MAINTBL);
+    result_code = mgr->UpdateConfigDB(vlink_ckv, req->datatype, UNC_OP_READ,
+                                      dmi, &dbop, MAINTBL);
     DELETE_IF_NOT_NULL(vlink_ckv);
     if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code) {
       UPLL_LOG_DEBUG("Requested vrouter is part of vlink node1."
@@ -1940,21 +1953,19 @@ upll_rc_t VrtMoMgr::AdaptValToVtnService(ConfigKeyVal *ikey,
     UPLL_LOG_DEBUG("Invalid ikey");
     return UPLL_RC_ERR_GENERIC;
   }
+  key_vrt *vrt_key = reinterpret_cast<key_vrt*>(ikey->get_key());
   while (ikey) {
     ConfigVal *cval = ikey->get_cfg_val();
     if (!cval) {
       UPLL_LOG_DEBUG("Config Val is Null");
       return UPLL_RC_ERR_GENERIC;
     }
-    while (cval ) {
+    while (cval) {
       if (IpctSt::kIpcStValVrtSt == cval->get_st_num()) {
-        val_vrt_st *vrt_val_st = reinterpret_cast<val_vrt_st *>
-                         (ConfigKeyVal::Malloc(sizeof(val_vrt_st)));
-        val_db_vrt_st *db_vrt_val_st = reinterpret_cast<val_db_vrt_st *>
-                                     (cval->get_val());
-        memcpy(vrt_val_st, &(db_vrt_val_st->vrt_val_st),
-               sizeof(val_vrt_st));
-        cval->SetVal(IpctSt::kIpcStValVrtSt, vrt_val_st);
+        controller_domain ctrlr_dom = {NULL, NULL};
+        GET_USER_DATA_CTRLR_DOMAIN(ikey, ctrlr_dom);
+        CheckOperStatus<val_vrt_st>(vrt_key->vtn_key.vtn_name,
+                                    cval, UNC_KT_VROUTER, ctrlr_dom);
       }
       cval = cval->get_next_cfg_val();
     }
@@ -1980,36 +1991,39 @@ upll_rc_t VrtMoMgr::EnableAdminStatus(ConfigKeyVal *ikey,
     UPLL_LOG_DEBUG(" vrt_val is NULL");
     return UPLL_RC_ERR_GENERIC;
   }
-  if ((vrt_val->valid[UPLL_IDX_DHCP_RELAY_ADMIN_STATUS_VRT] != UNC_VF_VALID) && 
+  if ((vrt_val->valid[UPLL_IDX_DHCP_RELAY_ADMIN_STATUS_VRT] != UNC_VF_VALID) &&
     (vrt_val->dhcp_relay_admin_status != UPLL_ADMIN_ENABLE)) {
     UPLL_LOG_DEBUG("Semantic check not required!");
     return UPLL_RC_SUCCESS;
-  } 
-   
+  }
+
   UPLL_LOG_DEBUG("Check for dhcp-relay server");
-  key_dhcp_relay_server *dhcp_server_key = (key_dhcp_relay_server *)
-                                      ConfigKeyVal::Malloc(sizeof(key_dhcp_relay_server));
-  
+  key_dhcp_relay_server *dhcp_server_key = reinterpret_cast
+      <key_dhcp_relay_server *>(ConfigKeyVal::Malloc(
+          sizeof(key_dhcp_relay_server)));
+
   memcpy(dhcp_server_key, ikey->get_key(), sizeof(key_vrt_t));
   ConfigKeyVal *ckv_dhcpserver = new ConfigKeyVal(UNC_KT_DHCPRELAY_SERVER,
                              IpctSt::kIpcStKeyDhcpRelayServer,
                              dhcp_server_key);
 
-  MoMgrImpl *dhcpserver_mgr = reinterpret_cast<MoMgrImpl*>(const_cast
-                              <MoManager *>(GetMoManager(UNC_KT_DHCPRELAY_SERVER)));
-  upll_rc_t result_code = dhcpserver_mgr->ReadConfigDB(ckv_dhcpserver, 
+  MoMgrImpl *dhcpserver_mgr =
+      reinterpret_cast<MoMgrImpl*>(const_cast
+      <MoManager *>(GetMoManager(UNC_KT_DHCPRELAY_SERVER)));
+  upll_rc_t result_code = dhcpserver_mgr->ReadConfigDB(ckv_dhcpserver,
                                           UPLL_DT_CANDIDATE, UNC_OP_READ,
                                           dbop, sibling_count, dmi, MAINTBL);
   if (result_code != UPLL_RC_SUCCESS) {
-    UPLL_LOG_DEBUG("dhcp-relay server is not configured!"); 
+    UPLL_LOG_DEBUG("dhcp-relay server is not configured!");
     delete ckv_dhcpserver;
     return UPLL_RC_ERR_CFG_SEMANTIC;
   }
 
   delete ckv_dhcpserver;
   UPLL_LOG_DEBUG("Check for dhcp-relay interface");
-  key_dhcp_relay_if *dhcp_if_key = (key_dhcp_relay_if *)
-                                   malloc(sizeof(key_dhcp_relay_if));
+  key_dhcp_relay_if *dhcp_if_key = reinterpret_cast<key_dhcp_relay_if *>
+                                   (ConfigKeyVal::Malloc
+                                   (sizeof(key_dhcp_relay_if)));
   memset(dhcp_if_key, 0, sizeof(key_dhcp_relay_if));
   memcpy(dhcp_if_key, ikey->get_key(), sizeof(key_vrt_t));
   ConfigKeyVal *ckv_dhcpif = new ConfigKeyVal(UNC_KT_DHCPRELAY_IF,
@@ -2017,20 +2031,23 @@ upll_rc_t VrtMoMgr::EnableAdminStatus(ConfigKeyVal *ikey,
                              dhcp_if_key);
   MoMgrImpl *dhcpif_mgr = reinterpret_cast<MoMgrImpl*>(const_cast<MoManager *>
                           (GetMoManager(UNC_KT_DHCPRELAY_IF)));
-  result_code = dhcpif_mgr->ReadConfigDB(ckv_dhcpif, UPLL_DT_CANDIDATE, UNC_OP_READ,
-                             dbop, sibling_count, dmi, MAINTBL);
+  result_code = dhcpif_mgr->ReadConfigDB(ckv_dhcpif, UPLL_DT_CANDIDATE,
+                                         UNC_OP_READ, dbop, sibling_count,
+                                         dmi, MAINTBL);
   if (result_code != UPLL_RC_SUCCESS || sibling_count == 0) {
     UPLL_LOG_DEBUG("dhcp-relay interface is not configured!");
     delete ckv_dhcpif;
     return UPLL_RC_ERR_CFG_SEMANTIC;
   }
   if (sibling_count > 0) {
-    key_dhcp_relay_if *dhcp_if_key= (key_dhcp_relay_if *)ckv_dhcpif->get_key();
+    key_dhcp_relay_if *dhcp_if_key= reinterpret_cast<key_dhcp_relay_if *>
+        (ckv_dhcpif->get_key());
     dhcpif_name = (const char *)dhcp_if_key->if_name;
-  } 
+  }
 
   UPLL_LOG_DEBUG("Check for vrouter interface");
-  key_vrt_if *vrtifkey = (key_vrt_if *)malloc(sizeof(key_vrt_if));
+  key_vrt_if *vrtifkey = reinterpret_cast<key_vrt_if *>
+      (ConfigKeyVal::Malloc(sizeof(key_vrt_if)));
   memset(vrtifkey, 0, sizeof(key_vrt_if));
   memcpy(&vrtifkey->vrt_key, ikey->get_key(), sizeof(key_vrt_t));
   memcpy(vrtifkey->if_name, dhcpif_name.c_str(), dhcpif_name.length()+1);
@@ -2040,25 +2057,29 @@ upll_rc_t VrtMoMgr::EnableAdminStatus(ConfigKeyVal *ikey,
   DbSubOp dbop2 = {kOpReadSingle, kOpMatchNone, kOpInOutNone};
   MoMgrImpl *vrtif_mgr = reinterpret_cast<MoMgrImpl*>(const_cast<MoManager *>
                          (GetMoManager(UNC_KT_VRT_IF)));
-  result_code = vrtif_mgr->ReadConfigDB(ckv_vrtif, UPLL_DT_CANDIDATE, UNC_OP_READ,
-                             dbop2, dmi, MAINTBL);
+  result_code = vrtif_mgr->ReadConfigDB(ckv_vrtif, UPLL_DT_CANDIDATE,
+                                        UNC_OP_READ, dbop2, dmi, MAINTBL);
   if (result_code != UPLL_RC_SUCCESS) {
     UPLL_LOG_DEBUG("vrouter interface is not configured!");
     return UPLL_RC_ERR_CFG_SEMANTIC;
-  } 
+  }
   DELETE_IF_NOT_NULL(ckv_vrtif);
   UPLL_LOG_DEBUG("Check for vrouter interface on a vlink");
 
-  key_vlink *vlink_key = (key_vlink *)malloc(sizeof(key_vlink));
+  key_vlink *vlink_key = reinterpret_cast<key_vlink *>
+      (ConfigKeyVal::Malloc(sizeof(key_vlink)));
   memset(vlink_key, 0, sizeof(key_vlink));
-  key_vrt *vrt_key = (key_vrt *)ikey->get_key();
+  key_vrt *vrt_key = reinterpret_cast<key_vrt *>(ikey->get_key());
   memcpy(&vlink_key->vtn_key, &vrt_key->vtn_key, sizeof(key_vtn_t));
 
-  val_vlink *vlink_val = (val_vlink *)malloc(sizeof(val_vlink));
+  val_vlink *vlink_val = reinterpret_cast<val_vlink *>
+      (ConfigKeyVal::Malloc(sizeof(val_vlink)));
   memset(vlink_val, 0, sizeof(val_vlink));
-  memcpy(vlink_val->vnode1_name, vrt_key->vrouter_name, sizeof(vrt_key->vrouter_name));
+  memcpy(vlink_val->vnode1_name, vrt_key->vrouter_name,
+         sizeof(vrt_key->vrouter_name));
   memcpy(vlink_val->vnode1_ifname, dhcpif_name.c_str(), dhcpif_name.length()+1);
-  memcpy(vlink_val->vnode2_name, vrt_key->vrouter_name, sizeof(vrt_key->vrouter_name));
+  memcpy(vlink_val->vnode2_name, vrt_key->vrouter_name,
+         sizeof(vrt_key->vrouter_name));
   memcpy(vlink_val->vnode2_ifname, dhcpif_name.c_str(), dhcpif_name.length()+1);
   vlink_val->valid[UPLL_IDX_VNODE1_NAME_VLNK] = UNC_VF_VALID;
   vlink_val->valid[UPLL_IDX_VNODE1_IF_NAME_VLNK] = UNC_VF_VALID;
@@ -2071,8 +2092,8 @@ upll_rc_t VrtMoMgr::EnableAdminStatus(ConfigKeyVal *ikey,
                              new ConfigVal(IpctSt::kIpcStValVlink, vlink_val));
   MoMgrImpl *vlink_mgr = reinterpret_cast<MoMgrImpl*>(const_cast<MoManager *>
                          (GetMoManager(UNC_KT_VLINK)));
-  result_code = vlink_mgr->ReadConfigDB(ckv_vlink, UPLL_DT_CANDIDATE, UNC_OP_READ,
-                             dbop, dmi, MAINTBL);
+  result_code = vlink_mgr->ReadConfigDB(ckv_vlink, UPLL_DT_CANDIDATE,
+                                        UNC_OP_READ, dbop, dmi, MAINTBL);
   if (result_code == UPLL_RC_SUCCESS) {
     delete ckv_vlink;
     UPLL_LOG_DEBUG("vrouter interface is configured on a vlink!");
@@ -2084,7 +2105,7 @@ upll_rc_t VrtMoMgr::EnableAdminStatus(ConfigKeyVal *ikey,
   vlink_val->valid[UPLL_IDX_VNODE2_NAME_VLNK] = UNC_VF_VALID;
   vlink_val->valid[UPLL_IDX_VNODE2_IF_NAME_VLNK] = UNC_VF_VALID;
 
-  result_code = vlink_mgr->ReadConfigDB(ckv_vlink, UPLL_DT_CANDIDATE, 
+  result_code = vlink_mgr->ReadConfigDB(ckv_vlink, UPLL_DT_CANDIDATE,
                           UNC_OP_READ, dbop, dmi, MAINTBL);
   if (result_code != UPLL_RC_SUCCESS) {
     UPLL_LOG_DEBUG("vrouter interface is not configured on a vlink!");

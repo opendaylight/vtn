@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -36,6 +36,7 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
   static BindInfo key_vtnpm_vtn_ctrlrtbl_rename_bind_info[];
   static BindInfo key_vtnpm_Policyname_maintbl_rename_bind_info[];
   static BindInfo key_vtnpm_Policyname_ctrlrtbl_rename_bind_info[];
+
  public:
   /**
    * @Brief VtnPolicingMapMoMgr Class Constructor.
@@ -125,7 +126,7 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
    * @retval    UPLL_RC_ERR_NO_SUCH_INSTANCE  No Record in DB.
    * @retval    UPLL_RC_ERR_INSTANCE_EXISTS   Record exists in DB.
    */
-  upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
+  upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                          DalDmlIntf *dmi);
 
   /**
@@ -163,7 +164,9 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
   upll_rc_t UpdateRefCountInPPCtrlr(ConfigKeyVal *ikey,
                                     upll_keytype_datatype_t dt_type,
                                     DalDmlIntf* dmi,
-                                    unc_keytype_operation_t op);
+                                    unc_keytype_operation_t op,
+                                    TcConfigMode config_mode,
+                                    string vtn_name);
 
   /**
    * @Brief This API is used to get the memory allocated
@@ -198,9 +201,12 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
   upll_rc_t UpdateRecordInVtnPmCtrlr(ConfigKeyVal *ikey,
                                      upll_keytype_datatype_t dt_type,
                                      unc_keytype_operation_t op,
-                                     DalDmlIntf *dmi);
+                                     DalDmlIntf *dmi,
+                                     TcConfigMode config_mode,
+                                     string vtn_name);
   upll_rc_t IsPolicingProfileConfigured(
-      const char* policingprofile_name, DalDmlIntf *dmi);
+      const char* policingprofile_name, upll_keytype_datatype_t dt_type,
+      DalDmlIntf *dmi);
   /**
    * @Brief This API is used to read the configuration and statistics
    *
@@ -332,7 +338,7 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
    */
   upll_rc_t TxCopyCandidateToRunning(
       unc_key_type_t keytype, CtrlrCommitStatusList *ctrlr_commit_status,
-      DalDmlIntf *dmi);
+      DalDmlIntf *dmi, TcConfigMode config_mode, string vtn_name);
 
   /**
    * @Brief This method used to update the configstatus in Db during
@@ -574,7 +580,7 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
    *                     *
    *                          *  @return  true if validation is successful
    *                               **/
-  bool IsValidKey(void *key, uint64_t index);
+  bool IsValidKey(void *key, uint64_t index, MoMgrTables tbl = MAINTBL);
   /**
    * @Brief This API is to update(Add or delete) the controller
    *
@@ -594,7 +600,8 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
       unc_keytype_operation_t op,
       upll_keytype_datatype_t dt_type,
       DalDmlIntf *dmi,
-      uint8_t flag);
+      uint8_t flag,
+      TcConfigMode config_mode);
 
   /**
    * @brief  Method used for Restoring PolicingProfile in the Controller Table
@@ -606,7 +613,7 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
    *
    * @retval  UPLL_RC_SUCCESS      Successfull completion.
    * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
-   * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists 
+   * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists
    * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
    */
 
@@ -621,7 +628,7 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
   upll_rc_t ReadSiblingPolicingMapController(
       IpcReqRespHeader *req,
       ConfigKeyVal *ikey,
-      DalDmlIntf *dmi); 
+      DalDmlIntf *dmi);
   upll_rc_t ReadControllerStateDetail(ConfigKeyVal *&ikey,
                                       ConfigKeyVal *vtn_dup_key,
                                       IpcResponse *ipc_response,
@@ -677,7 +684,7 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
   upll_rc_t  ReadSiblingControllerStateNormal(
       ConfigKeyVal *ikey,
       IpcReqRespHeader *req,
-      DalDmlIntf *dmi); 
+      DalDmlIntf *dmi);
   upll_rc_t  ReadSiblingControllerStateDetail(
       ConfigKeyVal *ikey,
       IpcReqRespHeader *req,
@@ -706,7 +713,9 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
 
   upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
                               upll_keytype_datatype_t dt_type,
-                              DalDmlIntf *dmi);
+                              DalDmlIntf *dmi,
+                              TcConfigMode config_mode,
+                              string vtn_name);
 
   upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
 
@@ -764,11 +773,12 @@ virtual  upll_rc_t GetOperation(uuc::UpdateCtrlrPhase phase,
 
   upll_rc_t UpdateRefCountInPPCtrlrTbl(
     ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type, DalDmlIntf *dmi,
-    const char *ctrlr_id);
+    const char *ctrlr_id, TcConfigMode config_mode, string vtn_name);
 
   upll_rc_t UpdateRecordInVtnPmCtrlrTbl(
     ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
-    unc_keytype_operation_t op, DalDmlIntf *dmi);
+    unc_keytype_operation_t op, DalDmlIntf *dmi,
+    TcConfigMode config_mode, string vtn_name);
 
   upll_rc_t GetDomainsForController(
       ConfigKeyVal *ckv_drvr,
@@ -782,7 +792,7 @@ typedef struct val_vtnpolicingmap_ctrl {
     uint8_t cs_attr[1];
     uint8_t policer_name[33];
 } val_vtnpolicingmap_ctrl_t;
-}  // kt_momgr
-}  // upll
-}  // unc
+}  // namespace kt_momgr
+}  // namespace upll
+}  // namespace unc
 #endif  // MODULES_UPLL_VTN_POLICINGMAP_MOMGR_HH_

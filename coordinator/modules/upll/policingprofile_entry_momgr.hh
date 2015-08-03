@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -443,9 +443,9 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
      * @retval  UPLL_RT_SUCCESS      Successfull completion.
      * @retval  UPLL_RC_ERR_GENERIC  Failure.
      */
-    upll_rc_t IsReferenced(
+    upll_rc_t IsReferenced(IpcReqRespHeader *req,
                     ConfigKeyVal *ikey,
-                    upll_keytype_datatype_t dt_type, DalDmlIntf *dmi);
+                    DalDmlIntf *dmi);
 
     /**
      * @brief  Method used for RenamedControllerkey(PfcName).
@@ -480,7 +480,8 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
 
     upll_rc_t TxCopyCandidateToRunning(unc_key_type_t keytype,
                                     CtrlrCommitStatusList *ctrlr_commit_status,
-                                    DalDmlIntf *dmi);
+                                    DalDmlIntf *dmi, TcConfigMode config_mode,
+                                    std::string vtn_name);
 
     /**
      * @brief      Method used to Update the Values in the specified key type.
@@ -678,7 +679,7 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
      * @return  TRUE   Success
      * @retval  FALSE  Failure
      */
-    bool IsValidKey(void *ikey, uint64_t index);
+    bool IsValidKey(void *ikey, uint64_t index, MoMgrTables tbl = MAINTBL);
 
     /**
      * @brief  Method to Delete record in ctrlrtbl
@@ -693,7 +694,9 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
     upll_rc_t CtrlrTblDelete(ConfigKeyVal *ppe_ckv,
-      DalDmlIntf *dmi, upll_keytype_datatype_t dt_type);
+      DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
+      TcConfigMode config_mode, string vtn_name,
+      bool commit);
 
     /**
      * @brief  Method to Create or Delete record in ctrlrtbl
@@ -712,7 +715,8 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
     upll_rc_t PolicingProfileEntryCtrlrTblOper
       (const char *policingprofile_name, const char *ctrlr_id,
        DalDmlIntf *dmi, unc_keytype_operation_t oper,
-       upll_keytype_datatype_t dt_type);
+       upll_keytype_datatype_t dt_type,
+       TcConfigMode config_mode, string vtn_name, bool commit);
 
     /**
      * @brief  Method to Get Policingprofile ConfigKeyVal
@@ -744,7 +748,9 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
     upll_rc_t CtrlrTblCreate(ConfigKeyVal *ppe_ckv,
-        DalDmlIntf *dmi, upll_keytype_datatype_t dt_type);
+        DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
+        TcConfigMode config_mode, string vtn_name,
+        bool commit);
 
     /**
      * @brief  Method to Set the Consolidated status
@@ -780,6 +786,7 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
       ConfigKeyVal *&ppe_ckv, unc_keytype_option1_t opt1 = UNC_OPT1_NORMAL);
 
     upll_rc_t IsFlowlistConfigured(const char* flowlist_name,
+      upll_keytype_datatype_t dt_type,
       DalDmlIntf *dmi);
 
     upll_rc_t ReadDetailEntry(
@@ -812,7 +819,8 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
 
     upll_rc_t DecrementRefCount(
       ConfigKeyVal *ppe_ckv, DalDmlIntf *dmi,
-      upll_keytype_datatype_t dt_type);
+      upll_keytype_datatype_t dt_type,
+      TcConfigMode config_mode, string vtn_name);
     upll_rc_t UpdateVnodeVal(ConfigKeyVal *ikey,
                              DalDmlIntf *dmi,
                              upll_keytype_datatype_t data_type,
@@ -828,16 +836,16 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
         unc_keytype_configstatus_t current_cs,
         unc_keytype_configstatus_t current_ctrlr_cs);
 
-   upll_rc_t GetFlowListEntryConfigKey(
+    upll_rc_t GetFlowListEntryConfigKey(
         ConfigKeyVal *&okey, ConfigKeyVal *ikey);
 
-   upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
+    upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
                             DalDmlIntf *dmi,
                             IpcReqRespHeader *req);
 
-   upll_rc_t GetFlowlistConfigKey(
+    upll_rc_t GetFlowlistConfigKey(
         const char *flowlist_name, ConfigKeyVal *&okey,
-        DalDmlIntf *dmi); 
+        DalDmlIntf *dmi);
 
     upll_rc_t SetPPEntryConsolidatedStatus(ConfigKeyVal *ikey,
                                            uint8_t *ctrlr_id,
@@ -858,6 +866,21 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
         DalDmlIntf *dmi);
 
     bool IsAttributeUpdated(void *val1, void *val2);
+
+    upll_rc_t IsFlowListMatched(
+        const char* flowlist_name, DalDmlIntf *dmi,
+        TcConfigMode config_mode, string vtn_name);
+
+    upll_rc_t ClearVirtualKtDirtyInGlobal(DalDmlIntf *dmi);
+
+    upll_rc_t UpdateRefCountInFl(
+        const char *policingprofile_name, DalDmlIntf *dmi,
+        upll_keytype_datatype_t dt_type, unc_keytype_operation_t op,
+        TcConfigMode config_mode, string vtn_name);
+
+    upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
+        upll_keytype_datatype_t dt_type, DalDmlIntf *dmi,
+        TcConfigMode config_mode, string vtn_name);
 };
 
 typedef struct val_policingprofile_entry_ctrl {

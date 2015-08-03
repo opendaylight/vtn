@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -214,7 +214,7 @@ bool VterminalMoMgr::FilterAttributes(void *&val1,
   UPLL_FUNC_TRACE;
   val_vterm_t *val_vterm1 = reinterpret_cast<val_vterm_t *>(val1);
   val_vterm_t *val_vterm2 = reinterpret_cast<val_vterm_t *>(val2);
-  /** 
+  /**
    * No need to configure description in controller.
    */
   val_vterm1->valid[UPLL_IDX_DESC_VTERM] = UNC_VF_INVALID;
@@ -246,7 +246,7 @@ bool VterminalMoMgr::CompareValidValue(void *&val1,
   for (unsigned int loop = 0;
       loop < sizeof(val_vterm1->valid) / sizeof(uint8_t); ++loop) {
     /**
-     * Compares the valid value between two database 
+     * Compares the valid value between two database
      * records(CANDIDATE DB, RUNNING DB).
      * if both the values are different, update the valid flag for
      * corresponding attribute as validnovalue in the first record.
@@ -256,7 +256,7 @@ bool VterminalMoMgr::CompareValidValue(void *&val1,
       val_vterm1->valid[loop] = UNC_VF_VALID_NO_VALUE;
   }
   /**
-   * Compares the valid value between two database 
+   * Compares the valid value between two database
    * records(CANDIDATE DB, RUNNING DB).
    * if both the values are same, update the valid flag for
    * corresponding attribute as invalid in the first record.
@@ -417,7 +417,7 @@ upll_rc_t VterminalMoMgr::UpdateConfigStatus(ConfigKeyVal *vterm_key,
     vterm_val->cs_row_status = cs_status;
     val_db_vterm_st *val_vtermst = reinterpret_cast<val_db_vterm_st *>
       (ConfigKeyVal::Malloc(sizeof(val_db_vterm_st)));
-    if(driver_result == UPLL_RC_ERR_CTR_DISCONNECTED) {
+    if (driver_result == UPLL_RC_ERR_CTR_DISCONNECTED) {
       val_vtermst->vterm_val_st.oper_status = UPLL_OPER_STATUS_UNKNOWN;
     } else {
       val_vtermst->vterm_val_st.oper_status = UPLL_OPER_STATUS_UNINIT;
@@ -549,7 +549,7 @@ upll_rc_t VterminalMoMgr::ValidateCapability(IpcReqRespHeader *req,
        * Checks if the specified key type(KT_VTERMINAL) and
        * associated attributes are supported on the given controller
        * based on the valid flag.
-       */ 
+       */
       ret_val = ValVterminalAttributeSupportCheck(vterm_val, attrs,
           req->operation);
       return ret_val;
@@ -610,8 +610,8 @@ upll_rc_t VterminalMoMgr::ValidateMessage(IpcReqRespHeader *req,
   unc_keytype_operation_t operation = req->operation;
   unc_keytype_option1_t option1 = req->option1;
   unc_keytype_option2_t option2 = req->option2;
-  /** 
-   * Validates the syntax of the specified key structure 
+  /**
+   * Validates the syntax of the specified key structure
    */
   ret_val = ValidateVterminalKey(vterm_key, operation);
   if (ret_val != UPLL_RC_SUCCESS) {
@@ -640,7 +640,7 @@ upll_rc_t VterminalMoMgr::ValidateMessage(IpcReqRespHeader *req,
     }
     /**
      * Validates the syntax of the specified value structure
-     */    
+     */
     ret_val = ValidateVterminalValue(vterm_val, operation);
     if (ret_val != UPLL_RC_SUCCESS) {
       UPLL_LOG_DEBUG("syntax check failed for val_vterm structure");
@@ -673,7 +673,7 @@ upll_rc_t VterminalMoMgr::ValidateMessage(IpcReqRespHeader *req,
     }
     /**
      * Validates the syntax of the specified rename value structure
-     */    
+     */
     ret_val = ValidateVterminalRenameValue(vterm_rename);
     if (ret_val != UPLL_RC_SUCCESS) {
       UPLL_LOG_DEBUG("syntax check failed for val_rename_vterm structure");
@@ -707,7 +707,7 @@ upll_rc_t VterminalMoMgr::ValidateMessage(IpcReqRespHeader *req,
     }
     /**
      * Validates the syntax of the specified rename value structure
-     */    
+     */
     ret_val = ValidateVterminalRenameValue(vterm_rename);
     if (ret_val != UPLL_RC_SUCCESS) {
       UPLL_LOG_DEBUG("syntax check failed for val_rename_vterm structure");
@@ -760,7 +760,7 @@ upll_rc_t VterminalMoMgr::ValidateVterminalKey(key_vterm *vterm_key,
   UPLL_FUNC_TRACE;
   upll_rc_t ret_val = UPLL_RC_SUCCESS;
   /**
-   * validating vterm_key->vtn name 
+   * validating vterm_key->vtn name
    */
   ret_val = ValidateKey(reinterpret_cast<char *>(vterm_key->vtn_key.vtn_name),
       kMinLenVtnName,
@@ -1113,10 +1113,6 @@ upll_rc_t VterminalMoMgr::GetRenamedControllerKey(ConfigKeyVal *ikey,
     UPLL_LOG_DEBUG("Returning %d", result_code);
     return result_code;
   }
-  /* Read controller name from running rename table,
-   * since there is no rename table for audit case */
-  if (dt_type == UPLL_DT_AUDIT)
-    dt_type = UPLL_DT_RUNNING;
 
   if (!ctrlr_dom->ctrlr ||
       !strlen(reinterpret_cast<const char *>(ctrlr_dom->ctrlr)) ||
@@ -1166,8 +1162,9 @@ upll_rc_t VterminalMoMgr::GetRenamedControllerKey(ConfigKeyVal *ikey,
                         (kMaxLenVnodeName+1));
     }
   } else if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
-    MoMgrImpl *vtn_mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
-                                                       (GetMoManager(UNC_KT_VTN)));
+    MoMgrImpl *vtn_mgr =
+        reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
+        (GetMoManager(UNC_KT_VTN)));
     if (!vtn_mgr) {
       UPLL_LOG_DEBUG("mgr is NULL");
       DELETE_IF_NOT_NULL(okey);
@@ -1247,7 +1244,7 @@ upll_rc_t VterminalMoMgr::GetRenamedUncKey(ConfigKeyVal *ikey,
   UPLL_LOG_TRACE("Before Read from Rename Table %s",
       (unc_key->ToStrAll()).c_str());
 
-  dbop.inoutop = kOpInOutCtrlr | kOpInOutDomain ;
+  dbop.inoutop = kOpInOutCtrlr | kOpInOutDomain;
   result_code = ReadConfigDB(unc_key, dt_type, UNC_OP_READ, dbop, dmi,
       RENAMETBL);
   if (result_code == UPLL_RC_SUCCESS) {
@@ -1270,8 +1267,9 @@ upll_rc_t VterminalMoMgr::GetRenamedUncKey(ConfigKeyVal *ikey,
   SET_USER_DATA(ikey, unc_key);
   } else if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
     upll_rc_t res_code = UPLL_RC_SUCCESS;
-    MoMgrImpl *vtn_mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
-                                                       (GetMoManager(UNC_KT_VTN)));
+    MoMgrImpl *vtn_mgr =
+        reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
+        (GetMoManager(UNC_KT_VTN)));
     if (!vtn_mgr) {
       UPLL_LOG_DEBUG("mgr is NULL");
       DELETE_IF_NOT_NULL(unc_key);
@@ -1455,8 +1453,9 @@ upll_rc_t VterminalMoMgr::GetRenameInfo(ConfigKeyVal *ikey,
     UPLL_LOG_TRACE("Before Create entry in rename table %s",
         (okey->ToStrAll()).c_str());
     dbop.readop = kOpNotRead;
+    string temp_vtn_name = "";
     result_code = UpdateConfigDB(okey, UPLL_DT_IMPORT, UNC_OP_CREATE, dmi,
-        &dbop, RENAMETBL);
+        &dbop, TC_CONFIG_GLOBAL, temp_vtn_name, RENAMETBL);
     DELETE_IF_NOT_NULL(tmp_key);
     if (result_code != UPLL_RC_SUCCESS)
       DELETE_IF_NOT_NULL(rename_info);
@@ -1526,6 +1525,7 @@ upll_rc_t VterminalMoMgr::AdaptValToVtnService(ConfigKeyVal *ikey,
     UPLL_LOG_DEBUG("Invalid ikey");
     return UPLL_RC_ERR_GENERIC;
   }
+  key_vterm_t *vterm_key = reinterpret_cast<key_vterm_t*>(ikey->get_key());
   while (ikey) {
     ConfigVal *cval = ikey->get_cfg_val();
     if (!cval) {
@@ -1534,16 +1534,10 @@ upll_rc_t VterminalMoMgr::AdaptValToVtnService(ConfigKeyVal *ikey,
     }
     while (cval) {
       if (IpctSt::kIpcStValVterminalSt == cval->get_st_num()) {
-        val_vterm_st *vterm_val_st = reinterpret_cast<val_vterm_st *>
-          (ConfigKeyVal::Malloc(sizeof(val_vterm_st)));
-        val_db_vterm_st *db_vterm_val_st = reinterpret_cast<val_db_vterm_st *>
-          (cval->get_val());
-        /**
-         *  convert the value structure read from DB to VTNService
-         */
-        memcpy(vterm_val_st, &(db_vterm_val_st->vterm_val_st),
-            sizeof(val_vterm_st));
-        cval->SetVal(IpctSt::kIpcStValVterminalSt, vterm_val_st);
+        controller_domain ctrlr_dom = {NULL, NULL};
+        GET_USER_DATA_CTRLR_DOMAIN(ikey, ctrlr_dom);
+        CheckOperStatus<val_vterm_st>(vterm_key->vtn_key.vtn_name,
+                                      cval, UNC_KT_VTERMINAL, ctrlr_dom);
       }
       cval = cval->get_next_cfg_val();
     }
@@ -1557,7 +1551,7 @@ upll_rc_t VterminalMoMgr::AdaptValToVtnService(ConfigKeyVal *ikey,
 VterminalMoMgr::VterminalMoMgr() {
   UPLL_FUNC_TRACE;
   ntable = MAX_MOMGR_TBLS;
-  table = new Table *[ntable];
+  table = new Table *[ntable]();
   table[MAINTBL] = new Table(uudst::kDbiVterminalTbl, UNC_KT_VTERMINAL,
       vterminal_bind_info,
       IpctSt::kIpcStKeyVterminal, IpctSt::kIpcStValVterminal,
@@ -1567,12 +1561,14 @@ VterminalMoMgr::VterminalMoMgr() {
       IpctSt::kIpcInvalidStNum,
       uudst::vnode_rename::kDbiVnodeRenameNumCols);
   table[CTRLRTBL] = NULL;
+  table[CONVERTTBL] = NULL;
+
   nchild = sizeof(vterminal_child) / sizeof(*vterminal_child);
   child = vterminal_child;
 }
 
 bool VterminalMoMgr::IsValidKey(void *key,
-    uint64_t index) {
+    uint64_t index, MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
   key_vterm *vterm_key = reinterpret_cast<key_vterm *>(key);
   upll_rc_t ret_val = UPLL_RC_SUCCESS;
@@ -1615,7 +1611,8 @@ upll_rc_t VterminalMoMgr::MergeValidate(unc_key_type_t keytype,
                                         upll_import_type import_type) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
-  DbSubOp dbop = { kOpReadMultiple, kOpMatchNone, kOpInOutCtrlr | kOpInOutDomain };
+  DbSubOp dbop = { kOpReadMultiple, kOpMatchNone,
+    kOpInOutCtrlr | kOpInOutDomain };
   ConfigKeyVal *tkey = NULL;
 
   if (!ikey || !ikey->get_key() || !(strlen(reinterpret_cast<const char *>
@@ -1633,7 +1630,7 @@ upll_rc_t VterminalMoMgr::MergeValidate(unc_key_type_t keytype,
   /* Getting FULL Key (VTN & VTERMINAL Name) */
   result_code = ReadConfigDB(dup_key, UPLL_DT_IMPORT, UNC_OP_READ, dbop, dmi,
       MAINTBL);
-  if (UPLL_RC_SUCCESS != result_code){
+  if (UPLL_RC_SUCCESS != result_code) {
     DELETE_IF_NOT_NULL(dup_key);
     return result_code;
   }
@@ -1649,26 +1646,28 @@ upll_rc_t VterminalMoMgr::MergeValidate(unc_key_type_t keytype,
     }
     /* Checks the give node is unique or not */
     if (import_type == UPLL_IMPORT_TYPE_FULL) {
-	    result_code = VnodeChecks(tkey, UPLL_DT_CANDIDATE, dmi);
-	    if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code ||
-			    UPLL_RC_ERR_CFG_SEMANTIC == result_code) {
-		    ikey->ResetWith(tkey);
-		    DELETE_IF_NOT_NULL(tkey);
-		    DELETE_IF_NOT_NULL(dup_key);
-		    UPLL_LOG_DEBUG("VTerminal Name Conflict %s", (ikey->ToStrAll()).c_str());
-		    return UPLL_RC_ERR_MERGE_CONFLICT;
-	    }
+      result_code = VnodeChecks(tkey, UPLL_DT_CANDIDATE, dmi, false);
+      if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code ||
+          UPLL_RC_ERR_CFG_SEMANTIC == result_code) {
+        ikey->ResetWith(tkey);
+        DELETE_IF_NOT_NULL(tkey);
+        DELETE_IF_NOT_NULL(dup_key);
+        UPLL_LOG_DEBUG("VTerminal Name Conflict %s",
+                       (ikey->ToStrAll()).c_str());
+        return UPLL_RC_ERR_MERGE_CONFLICT;
+      }
     } else {
-	    result_code = PartialImport_VnodeChecks(tkey,
-			    UPLL_DT_CANDIDATE, ctrlr_id ,dmi);
-	    if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code ||
-			    UPLL_RC_ERR_CFG_SEMANTIC == result_code) {
-		    ikey->ResetWith(tkey);
-		    DELETE_IF_NOT_NULL(tkey);
-		    DELETE_IF_NOT_NULL(dup_key);
-		    UPLL_LOG_DEBUG("VTerminal Name Conflict %s", (ikey->ToStrAll()).c_str());
-		    return UPLL_RC_ERR_MERGE_CONFLICT;
-	    }
+      result_code = PartialImport_VnodeChecks(tkey,
+          UPLL_DT_CANDIDATE, ctrlr_id , dmi);
+      if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code ||
+          UPLL_RC_ERR_CFG_SEMANTIC == result_code) {
+        ikey->ResetWith(tkey);
+        DELETE_IF_NOT_NULL(tkey);
+        DELETE_IF_NOT_NULL(dup_key);
+        UPLL_LOG_DEBUG("VTerminal Name Conflict %s",
+                       (ikey->ToStrAll()).c_str());
+        return UPLL_RC_ERR_MERGE_CONFLICT;
+      }
     }
     /* Any other DB error */
     if (UPLL_RC_SUCCESS != result_code) {
@@ -1684,7 +1683,7 @@ upll_rc_t VterminalMoMgr::MergeValidate(unc_key_type_t keytype,
 
   if (import_type == UPLL_IMPORT_TYPE_PARTIAL) {
     memset((ikey->get_key()), 0, sizeof(key_vtn));
-    result_code = PartialMergeValidate(keytype,ctrlr_id,ikey,dmi);
+    result_code = PartialMergeValidate(keytype, ctrlr_id, ikey, dmi);
   }
   return result_code;
 }
@@ -1762,7 +1761,7 @@ upll_rc_t VterminalMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
   if (!okey)
     /**
      * get a configkeyval of a specified keytype from an input configkeyval
-     */ 
+     */
     okey = new ConfigKeyVal(UNC_KT_VTERMINAL, IpctSt::kIpcStKeyVterminal,
         vterm_key, NULL);
   else if (okey->get_key() != vterm_key)
@@ -1812,8 +1811,8 @@ upll_rc_t VterminalMoMgr::GetControllerDomainId(ConfigKeyVal *ikey,
 
 /* U14 start */
 /*
- * This function checks the vTermianl is part of vbr_if vexternal 
- * in running configuration. 
+ * This function checks the vTermianl is part of vbr_if vexternal
+ * in running configuration.
  * The vTermianl exists then reuturn merge conflict otherwise
  * database error or success
  */
@@ -1848,7 +1847,7 @@ VterminalMoMgr::PartialMergeValidate(unc_key_type_t keytype,
   }
 
   void *tkey = vterm_ckv->get_key();
-  for(int i = 0; i < nattr; i++) {
+  for (int i = 0; i < nattr; i++) {
     uint64_t indx = binfo[i].index;
     void *p = reinterpret_cast<void *>(reinterpret_cast<char *>(tkey)
                                  + binfo[i].offset);
@@ -1856,14 +1855,13 @@ VterminalMoMgr::PartialMergeValidate(unc_key_type_t keytype,
                              binfo[i].array_size, p);
   }
 
-  // TODO Karthi:
-  // Need to get the query string from sankar.
-  string query_string ="select ctrlr_vtn_name as vtn_name, ctrlr_vnode_name as vterminal_name \
-                        from im_vnode_rename_tbl as tmp where exists (select 1 from ru_vbr_if_tbl \
-                        where ru_vbr_if_tbl.vex_name=tmp.ctrlr_vnode_name) UNION \
-                        select ctrlr_vtn_name, ctrlr_vnode_name from im_vnode_rename_tbl \
-                        as tmp where exists (select 1 from ru_vbr_if_tbl where \
-                        ru_vbr_if_tbl.vex_name=tmp.ctrlr_vnode_name);";
+  string query_string =
+     "select ctrlr_vtn_name as vtn_name, ctrlr_vnode_name as vterminal_name "
+     "from im_vnode_rename_tbl as tmp where exists(select 1 from ru_vbr_if_tbl "
+     "where ru_vbr_if_tbl.vex_name = tmp.ctrlr_vnode_name) UNION "
+     "select ctrlr_vtn_name, ctrlr_vnode_name from im_vnode_rename_tbl "
+     "as tmp where exists(select 1 from ru_vbr_if_tbl where "
+     "ru_vbr_if_tbl.vex_name = tmp.ctrlr_vnode_name); ";
   result_code = DalToUpllResCode(dmi->
                                  ExecuteAppQuerySingleRecord(query_string,
                                                              &dal_bind_info));

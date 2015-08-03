@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -78,13 +78,14 @@ unc_key_type_t NwMonitorMoMgr::nwm_child[] = { UNC_KT_VBR_NWMONITOR_HOST };
 NwMonitorMoMgr::NwMonitorMoMgr() {
   UPLL_FUNC_TRACE
   ntable = MAX_MOMGR_TBLS;
-  table = new Table *[ntable];
+  table = new Table *[ntable]();
   table[MAINTBL] = new Table(
       uudst::kDbiVbrNwMonTbl, UNC_KT_VBR_NWMONITOR, nwm_bind_info,
       IpctSt::kIpcStKeyNwm, IpctSt::kIpcStValNwm,
       uudst::vbridge_networkmonitor_group::kDbiVbrNwMonGrpNumCols);
   table[RENAMETBL] = NULL;
   table[CTRLRTBL] = NULL;
+  table[CONVERTTBL] = NULL;
   child = nwm_child;
   nchild = sizeof(nwm_child) / sizeof(*nwm_child);
 }
@@ -104,7 +105,8 @@ bool NwMonitorMoMgr::GetRenameKeyBindInfo(unc_key_type_t key_type,
   return PFC_TRUE;
 }
 
-bool NwMonitorMoMgr::IsValidKey(void *key, uint64_t index) {
+bool NwMonitorMoMgr::IsValidKey(void *key, uint64_t index,
+                                MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
   key_nwm *nwm_key = reinterpret_cast<key_nwm *>(key);
   upll_rc_t ret_val = UPLL_RC_SUCCESS;
@@ -715,11 +717,58 @@ upll_rc_t NwMonitorMoMgr::ValidateCapability(IpcReqRespHeader *req,
 }
 
 
-upll_rc_t NwMonitorMoMgr::IsReferenced(ConfigKeyVal *ikey,
-                                       upll_keytype_datatype_t dt_type,
+upll_rc_t NwMonitorMoMgr::IsReferenced(IpcReqRespHeader *req,
+                                       ConfigKeyVal *ikey,
                                        DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
-  return UPLL_RC_SUCCESS;
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  if (!ikey || !dmi) {
+    UPLL_LOG_ERROR("Input argument is NULL");
+    return UPLL_RC_ERR_GENERIC;
+  }
+  MoMgrImpl *mgr = reinterpret_cast<MoMgrImpl *>
+       (const_cast<MoManager *>(GetMoManager(UNC_KT_VRT_IPROUTE)));
+  if (NULL == mgr) {
+    UPLL_LOG_ERROR("Unable to get KT_VRT_IPROUTE momgr");
+    return UPLL_RC_ERR_GENERIC;
+  }
+  ConfigKeyVal *temp_ckv = NULL;
+  result_code = mgr->GetChildConfigKey(temp_ckv, NULL);
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_ERROR("GetChildConfigKeyFailed %d", result_code);
+    return result_code;
+  }
+  key_static_ip_route *static_ipr_key = NULL;
+  static_ipr_key = reinterpret_cast<key_static_ip_route *>(temp_ckv->get_key());
+  uuu::upll_strncpy(static_ipr_key->vrt_key.vtn_key.vtn_name,
+                    reinterpret_cast<key_nwm *>(ikey->get_key())
+                    ->vbr_key.vtn_key.vtn_name, kMaxLenVtnName+1);
+
+  val_static_ip_route *static_ipr_val =
+                    ConfigKeyVal::Malloc<val_static_ip_route>();
+  uuu::upll_strncpy(static_ipr_val->nwm_name, reinterpret_cast<key_nwm *>(
+                    ikey->get_key())->nwmonitor_name, (kMaxLenNwmName+1));
+  static_ipr_val->valid[UPLL_IDX_NWM_NAME_SIR] = UNC_VF_VALID;
+
+  temp_ckv->AppendCfgVal(IpctSt::kIpcStValStaticIpRoute, static_ipr_val);
+  // Note: controller and domain is not matched because
+  // Creation itself is not allowed in another ctrl domain
+  // so ctrl & domain match is not required here
+  DbSubOp dbop = {kOpReadSingle, kOpMatchNone, kOpInOutNone};
+  result_code = mgr->UpdateConfigDB(temp_ckv, req->datatype, UNC_OP_READ,
+                                        dmi, &dbop, MAINTBL);
+  DELETE_IF_NOT_NULL(temp_ckv);
+  if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code) {
+    UPLL_LOG_ERROR("can't delete nwm which is configured in ip-route in the"
+                   " same vtn controller and domain");
+    return UPLL_RC_ERR_CFG_SEMANTIC;
+  } else if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+    result_code = UPLL_RC_SUCCESS;
+  } else {
+    UPLL_LOG_ERROR("UpdateConfigDB failed %d", result_code);
+    return result_code;
+  }
+  return result_code;
 }
 
 upll_rc_t NwMonitorMoMgr::OnNwmonFault(
@@ -777,9 +826,9 @@ upll_rc_t NwMonitorMoMgr::OnNwmonFault(
       delete ikey;
       return result_code;
     }
-    result_code = UPLL_RC_SUCCESS; 
+    result_code = UPLL_RC_SUCCESS;
   }
-  
+
   vtn_key = reinterpret_cast<key_vtn_t*>(ikey->get_key());
   vtn_name = reinterpret_cast<char*>(vtn_key->vtn_name);
 
@@ -791,7 +840,7 @@ upll_rc_t NwMonitorMoMgr::OnNwmonFault(
 
   UPLL_LOG_INFO("Network Monitor Fault alarm : status - %s, "
                 "network_mon_group_name - %s, "
-                 "controller - %s, domain - %s, vtn - %s", 
+                 "controller - %s, domain - %s, vtn - %s",
                 alarm_status, alarm_data.network_mon_group_name,
                 ctrlr_name.c_str(), domain_id.c_str(),
                 vtn_name);
@@ -845,34 +894,37 @@ upll_rc_t NwMonitorMoMgr::MergeValidate(unc_key_type_t keytype,
       DELETE_IF_NOT_NULL(dup_key);
       return result_code;
     }
-   /* Same Network Monitor Name should not present under parent VTN 
+   /* Same Network Monitor Name should not present under parent VTN
     * in Candidate DB
     */
     key_nwm *key_nwmon =
       reinterpret_cast<key_nwm *>(tkey->get_key());
-    memset(key_nwmon->vbr_key.vbridge_name, 0, 
-	   sizeof(key_nwmon->vbr_key.vbridge_name));
+    memset(key_nwmon->vbr_key.vbridge_name, 0,
+     sizeof(key_nwmon->vbr_key.vbridge_name));
     // Existence check in Candidate DB
     if (import_type == UPLL_IMPORT_TYPE_FULL) {
-      result_code = UpdateConfigDB(tkey, UPLL_DT_CANDIDATE, UNC_OP_READ, dmi, MAINTBL);
+      result_code = UpdateConfigDB(tkey, UPLL_DT_CANDIDATE,
+                                   UNC_OP_READ, dmi, MAINTBL);
       if (result_code == UPLL_RC_ERR_INSTANCE_EXISTS) {
         ikey->ResetWith(tkey);
         DELETE_IF_NOT_NULL(tkey);
         DELETE_IF_NOT_NULL(dup_key);
-        UPLL_LOG_DEBUG("NetworkMonitor Name Conflict %s", (ikey->ToStrAll()).c_str());
+        UPLL_LOG_DEBUG("NetworkMonitor Name Conflict %s",
+                       (ikey->ToStrAll()).c_str());
         return UPLL_RC_ERR_MERGE_CONFLICT;
       }
     } else {
       DbSubOp dbop1 = { kOpReadMultiple, kOpMatchNone, kOpInOutCtrlr};
       uint8_t *ctrlr_name = NULL;
-      result_code = ReadConfigDB(tkey, UPLL_DT_CANDIDATE, UNC_OP_READ, dbop1, dmi, MAINTBL);
+      result_code = ReadConfigDB(tkey, UPLL_DT_CANDIDATE, UNC_OP_READ,
+                                 dbop1, dmi, MAINTBL);
 
       if (UPLL_RC_SUCCESS == result_code) {
-        GET_USER_DATA_CTRLR(tkey,ctrlr_name);
-        if (strcmp(ctrlr_id,(const char *)ctrlr_name)) {
+        GET_USER_DATA_CTRLR(tkey, ctrlr_name);
+        if (strcmp(ctrlr_id, (const char *)ctrlr_name)) {
           DELETE_IF_NOT_NULL(tkey);
           DELETE_IF_NOT_NULL(dup_key);
-          UPLL_LOG_INFO ("Controller names are mismatched");
+          UPLL_LOG_INFO("Controller names are mismatched");
           return UPLL_RC_ERR_MERGE_CONFLICT;
         }
       }
@@ -903,7 +955,7 @@ upll_rc_t NwMonitorMoMgr::ValidateAttribute(ConfigKeyVal *ikey,
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   if (req->operation != UNC_OP_CREATE) {
-   return UPLL_RC_SUCCESS;
+    return UPLL_RC_SUCCESS;
   }
   ConfigKeyVal *temp_ikey = NULL;
   result_code = GetChildConfigKey(temp_ikey, ikey);
@@ -963,7 +1015,7 @@ upll_rc_t NwMonitorMoMgr::AdaptValToDriver(ConfigKeyVal *ck_new,
       result_code  = ValidateNWM(ck_new, UPLL_DT_CANDIDATE, dmi);
       if (result_code != UPLL_RC_SUCCESS) {
         UPLL_LOG_INFO("Cannot delete NWM! Validation failed"
-                      " result code - %d", result_code );
+                      " result code - %d", result_code);
         return result_code;
       }
     }

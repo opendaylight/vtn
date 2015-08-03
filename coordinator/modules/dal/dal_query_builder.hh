@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,7 +11,6 @@
  * DalQueryBuilder.hh
  *
  *  Created on: Jan 6, 2013
- *      Author: guest
  */
 
 #ifndef QUERYBUILDER_H_
@@ -48,18 +47,34 @@ enum DalApiNum {
   kDalCopyMatchingRecQT,
   kDalCheckRecIdenticalQT,
   kDalDirtyTblUpdateRecQT,
+  kDalDirtyTblResetRecQT,
   kDalDirtyTblClearAllQT,
-  kDalCreateCandRecQT,       // Create with c_flag = 1
-  kDalCreateCandRecUpdateQT, // Create with u_flag = 1 if rec exists in RUNN
-  kDalUpdateCandRecQT,       // Update with u_flag = 1
-  kDalClearCandFlagsQT,      // Clear c_flag and u_flag 
-  kDalGetCreatedRecInCandQT, // Get created records where c_flag = 1 from CAND
-  kDalGetModRecConfig1QT,    // Get CAND records where u_flag = 1
-  kDalGetModRecConfig2QT,    // Get RUNN rec which exists in CAND with u_flag=1
+  kDalCreateCandRecQT,        // Create with c_flag = 1
+  kDalCreateCandRecUpdateQT,  // Create with u_flag = 1 if rec exists in RUNN
+  kDalUpdateCandRecQT,        // Update with u_flag = 1
+  kDalClearCandFlagsQT,       // Clear c_flag and u_flag
+  kDalClearCandFlagsInVtnModeQT,  // Clear c_flag and u_flag for a VTN
+  kDalClearCandCrFlagsQT,       // Clear c_flag and u_flag
+  kDalClearCandCrFlagsInVtnModeQT,  // Clear c_flag and u_flag for a VTN
+  kDalClearCandUpFlagsQT,       // Clear c_flag and u_flag
+  kDalClearCandUpFlagsInVtnModeQT,  // Clear c_flag and u_flag for a VTN
+  kDalGetCreatedRecInCandQT,  // Get created records where c_flag = 1 from CAND
+  kDalGetModRecConfig1QT,     // Get CAND records where u_flag = 1
+  kDalGetModRecConfig2QT,     // Get RUNN rec which exists in CAND with u_flag=1
   kDalCopyModRecUpdateAbortQT,  // Copy RUNN to CAND during abort
   kDalCopyModRecCreateImportQT,
   kDalCopyModRecUpdateImportQT,
-  kDalCopyModRecDelImportQT
+  kDalCopyModRecDelImportQT,
+  kDalGetCandDelRecQT,          // Get deleted records
+  kDalGetCandVtnDelRecQT,       // Get deleted records in vtn mode
+  kDalBackupToCandDelQT,        // Backup deleted records during merge
+  kDalVtnDirtyTblInsertRecQT,    // Insert entries in vtn dirty tbl
+  kDalGetCreatedRecInVtnModeQT,  // Get created records in vtn mode
+  kDalGetUpdatedRecInVtnModeQT,  // Get updated records from CAND in vtn mode
+  kDalGetUpdatedRecInVtnMode2QT,  // Get updated records from RUNN in vtn mode
+  kDalCopyModRecDelVtnModeQT,    // Copy mod records for delete op in vtn mode
+  kDalCopyModRecCreateVtnModeQT,  // Copy mod records for create op in vtn mode
+  kDalCopyModRecUpdateAbortVtnModeQT  // Copymodrec abort(update) in vtn mode
 };
 
 /* sql template tokens */
@@ -75,6 +90,7 @@ enum DalQuerytoken {
   kDalMandOutColNames,
   kDalOptOutColNames,
   kDalOptDstOutColUpdTempExpr,
+  kDalMatchAllColEqExpr,
 
   // Enum for Match Related Tokens
   kDalMandMatchColNames,
@@ -85,16 +101,19 @@ enum DalQuerytoken {
   kDalMandMatchColLstGtrExpr,
   kDalMandMatchColEqTempExpr,
   kDalMatchColEqTempExpr,
+  kDalMatchColVtnNameEqExpr,
 
   // Enum for Primary Key Related Tokens
   kDalPkeyColNames,
   kDalMatchPriColEqTempExpr,
+  kDalMatchPriColEqExpr,
 
   // Enum for Table related Tokens
   kDalCfg1TableName,
   kDalCfg2TableName,
   kDalDstTableName,
-  kDalSrcTableName
+  kDalSrcTableName,
+  kDalCaDelTableName
 };
 
 class DalQueryBuilder {
@@ -146,12 +165,18 @@ class DalQueryBuilder {
     static const char * DalCopyMatchingRecQT;
     static const char * DalCheckRecIdenticalQT;
     static const char * DalDirtyTblUpdateRecQT;
+    static const char * DalDirtyTblResetRecQT;
     static const char * DalDirtyTblClearAllQT;
     // New queries with c_flag and u_flag
     static const char * DalCreateCandRecQT;
     static const char * DalCreateCandRecUpdateQT;
     static const char * DalUpdateCandRecQT;
     static const char * DalClearCandFlagsQT;
+    static const char * DalClearCandFlagsInVtnModeQT;
+    static const char * DalClearCandCrFlagsQT;
+    static const char * DalClearCandCrFlagsInVtnModeQT;
+    static const char * DalClearCandUpFlagsQT;
+    static const char * DalClearCandUpFlagsInVtnModeQT;
     static const char * DalGetCreatedRecInCandQT;
     static const char * DalGetModRecConfig1QT;
     static const char * DalGetModRecConfig2QT;
@@ -159,6 +184,16 @@ class DalQueryBuilder {
     static const char * DalCopyModRecCreateImportQT;
     static const char * DalCopyModRecUpdateImportQT;
     static const char * DalCopyModRecDelImportQT;
+    static const char * DalGetCandDelRecQT;
+    static const char * DalGetCandVtnDelRecQT;
+    static const char * DalBackupToCandDelQT;
+    static const char * DalVtnDirtyTblInsertRecQT;
+    static const char * DalGetCreatedRecInVtnModeQT;
+    static const char * DalGetUpdatedRecInVtnModeQT;
+    static const char * DalGetUpdatedRecInVtnMode2QT;
+    static const char * DalCopyModRecDelVtnQT;
+    static const char * DalCopyModRecCreateVtnQT;
+    static const char * DalCopyModRecUpdateAbortVtnQT;
 
     /* replacement tokens */
     // Input Related Tokens
@@ -225,6 +260,13 @@ class DalQueryBuilder {
     // <dst_table>.col1 = temp.col1 AND <dst_table>.col2 = temp.col2 ...
     // For all primary key column names of the table
     static const char * DalMatchPriColEqTempExpr;
+    // {match_dst_primary_key_columns_eq_with_src} - col1, col2, ..
+    // col1 = <dst_table>.col1 AND col2 = <dst_table>.col2 ...
+    // For all primary key column names of the table
+    static const char * DalMatchPriColEqExpr;
+    // {match_column_vtn_name_eq}
+    // AND vtn_name = ?
+    static const char * DalMatchColVtnNameEqExpr;
 
     // Primary Key Related Tokens
     // {primary_key_columns} - col1, col2, ...
@@ -240,6 +282,10 @@ class DalQueryBuilder {
     static const char * DalDstTableName;
     // {dst_config_table_name} - <dst_config>_<table_name>
     static const char * DalSrcTableName;
+    // {ca_del_table_name} - <ca-del>_<table_name>
+    static const char * DalCaDelTableName;
+
+    static const char * DalMatchAllColEqExpr;
 
     /* configuration type */
     static const char * DalStateType;
@@ -248,6 +294,8 @@ class DalQueryBuilder {
     static const char * DalStartupType;
     static const char * DalImportType;
     static const char * DalAuditType;
+    static const char * DalCandidateDelType;
+    static const char * DalSysType;
 
   private:
     /* str_to_num
@@ -259,8 +307,8 @@ class DalQueryBuilder {
      * @return DalQuerytoken  - valid DalQuerytoken enum on success
      */
     DalQuerytoken str_to_num(const std::string &tokenstr,
-			     const size_t start_pos,
-			     const size_t length) const;
+                             const size_t start_pos,
+                             const size_t length) const;
 
     /* get_config_prefix
      *   verifies config type, and adds appropriate config type prefix
@@ -281,8 +329,8 @@ class DalQueryBuilder {
      * @return bool                 - true on success else false
      */
     bool next_token_pos(const std::string &query_template,
-			size_t &start_position,
-			size_t &last_position) const;
+                        size_t &start_position,
+                        size_t &last_position) const;
 
     /* get_bind_str
      *   generate column's or table name string according to token, and it

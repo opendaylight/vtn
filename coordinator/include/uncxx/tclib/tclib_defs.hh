@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -18,6 +18,7 @@
 #include<string>
 #include<stdint.h>
 #include <unc/keytype.h>
+#include <unc/tc/external/tc_services.h>
 
 namespace unc {
 namespace tclib {
@@ -25,7 +26,7 @@ namespace tclib {
 /* default argument count */
 #define IPC_DEFAULT_ARG_COUNT 0
 /* supported tclib services */
-#define TCLIB_IPC_SERVICES    19
+#define TCLIB_IPC_SERVICES    20
 
 /*
  * All Virtual Functions of TcLibInterface returns with 
@@ -34,7 +35,9 @@ namespace tclib {
 typedef enum {
   TC_SUCCESS = 0,
   TC_FAILURE,
-  TC_SIMPLIFIED_AUDIT
+  TC_SIMPLIFIED_AUDIT,
+  TC_CANCELLED_AUDIT,
+  TC_LAST_DB_OPER_FAILURE
 }TcCommonRet;
 
 /*
@@ -42,6 +45,12 @@ typedef enum {
  * This oper types decides the which handle tclib interface
  * function to be invoked.
  */
+/****************************************************
+ *
+ * NOTE: When adding new enum here, add the string in
+ *       tclib_module.cc TcMsgOperTypeString too
+ *
+ ****************************************************/
 typedef enum {
   MSG_NONE = 0,
   MSG_NOTIFY_CONFIGID,
@@ -65,6 +74,7 @@ typedef enum {
   MSG_AUDIT_GLOBAL_DRIVER_RESULT,
   MSG_AUDIT_TRANS_END,
   MSG_AUDIT_END,
+  MSG_AUDIT_CANCEL,
   MSG_SAVE_CONFIG,
   MSG_CLEAR_CONFIG,
   MSG_ABORT_CANDIDATE,
@@ -95,6 +105,7 @@ typedef enum {
   TCLIB_AUDIT_DRV_VOTE_GLOBAL,
   TCLIB_AUDIT_DRV_RESULT,
   TCLIB_AUDIT_GLOBAL_ABORT,
+  TCLIB_AUDIT_CANCEL,
   TCLIB_SAVE_CONFIG,
   TCLIB_CLEAR_STARTUP,
   TCLIB_USER_ABORT,
@@ -147,6 +158,7 @@ typedef enum {
 typedef enum {
   TC_AUDIT_FAILURE = 0,
   TC_AUDIT_SUCCESS,
+  TC_AUDIT_CANCELLED,
   TC_SIMPLIFIED_AUDIT_SUCCESS
 }TcAuditResult;
 
@@ -172,6 +184,7 @@ typedef enum {
   TC_HANDLER_ALREADY_ACTIVE,
   TC_INVALID_SESSION_ID,
   TC_INVALID_CONFIG_ID,
+  TC_INVALID_MODE,
   TC_INVALID_CONTROLLER_ID,
   TC_INVALID_OPER_STATE,
   TC_INVALID_KEY_TYPE,
@@ -229,6 +242,26 @@ typedef std::map<uint32_t, uint32_t>TcKeyTypeIndexMap;
  * based on request to controllerid, keytypeindex map will be retrieved
  */
 typedef std::map<std::string, TcKeyTypeIndexMap> TcControllerKeyTypeMap;
+
+/*
+ * tc config data structure
+ */
+
+struct TcNotifyConfigData {
+  uint32_t session_id_;
+  uint32_t config_id_;
+  TcConfigMode config_mode_;
+  std::string vtn_name_;
+TcNotifyConfigData()
+  : session_id_(0), config_id_(0)
+  {}
+};
+
+/*
+ * session_id and assosciated config data map
+ * based on request to session_id, config data map will be retrieved
+ */
+typedef std::map<uint32_t, TcNotifyConfigData> TcNotifyConfigDataMap;
 }  // tclib
 }  // unc
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -47,6 +47,7 @@ public final class VtnServiceJsonConsts {
 	public static final String CONFIGMODE = "configmode";
 	public static final String CONFIGID = "config_id";
 	public static final String FORCE = "force";
+	public static final String REAL_NETWORK_AUDIT = "real-network_audit";
 	public static final String READLOCK = "readlock";
 	public static final String READLOCKID = "readlock_id";
 	public static final String COMMIT = "commit";
@@ -115,6 +116,12 @@ public final class VtnServiceJsonConsts {
 	public static final String VLINKS = "vlinks";
 	public static final String VLINKNAME = "vlk_name";
 	public static final String VLINK_NAME = "vlink_name";
+	
+	public static final String UNIFIED_NW = "unified_network";
+	public static final String UNIFIED_NW_NAME = "unified_network_name";
+	public static final String UNIFIED_NWS = "unified_networks";
+	public static final String ROUTING_TYPE = "routing_type";
+
 
 	// flow filter types
 	public static final String IN = "in";
@@ -309,6 +316,9 @@ public final class VtnServiceJsonConsts {
 	// Port Map
 	public static final String PORTMAP = "portmap";
 	public static final String VLANTAG = "vlantag";
+	public static final String PORTMAPS = "portmaps";
+	public static final String PORTMAP_NAME = "portmap_name";
+	public static final String ANY_VLAN_ID = "any_vlan_id";
 
 	// vRouter
 	public static final String VROUTER = "vrouter";
@@ -636,6 +646,7 @@ public final class VtnServiceJsonConsts {
 	public static final String FALSE = "false";
 	public static final String CODE = "err_code";
 	public static final String MSG = "err_msg";
+	public static final String INFOS = "err_infos";
 	public static final String ERROR = "error";
 	public static final String MPLS = "mpls";
 	public static final String VNI = "vni";
@@ -665,10 +676,12 @@ public final class VtnServiceJsonConsts {
 	public static final int VAL_63 = 63;
 	public static final int VAL_128 = 128;
 	public static final int VAL_255 = 255;
-
+	public static final int VAL_4000 = 4000;
 	public static final int VAL_4095 = 4095;
 	public static final int VAL_32766 = 32766;
 	public static final int VAL_65535 = 65535;
+	public static final int VAL_FFFF = 0xFFFF;
+	public static final int VAL_FFFE = 0xFFFE;
 	public static final BigInteger BIG_VAL0 = new BigInteger("0");
 	public static final BigInteger BIG_VAL1 = new BigInteger("1");
 	public static final BigInteger BIG_VAL_4294967040 = new BigInteger(
@@ -783,6 +796,7 @@ public final class VtnServiceJsonConsts {
 	public static final String CLEAR = "clear";
 	public static final String RAISE = "raise";
 	public static final String TUNNEL_ENDPOINT = "tunnel_endpoint";
+	public static final String PORT_GROUP = "port_group";
 	public static final String DEFAULT_DOMAIN_ID = "(DEFAULT)";
 	public static final String SWITCHID_NOT_FOUND = "switchIdNotFound";
 	public static final String PORTID_NOT_FOUND = "portIdNotFound";
@@ -970,4 +984,64 @@ public final class VtnServiceJsonConsts {
 	public static final String POLICINGPROFILEENTRY = "policingprofileentry";
 	public static final String VNODETYPE = "vnode_type";
 
+	// spine_domain
+	public static final String UNIFIED_NETWORK_NAME = "unified_network_name";
+	public static final String SPINE_DOMAIN = "spine_domain";
+	public static final String SPINE_DOMAINS = "spine_domains";
+	public static final String ASSIGNED_LABELS = "assigned_labels";
+	public static final String ASSIGNED_LABEL = "assigned_label";
+	public static final String SPINE_DOMAIN_NAME = "spine_domain_name";
+	public static final String USED_COUNT = "used_count";
+	public static final String ALARM_STATUS = "alarm_status";
+	
+	//commit and abort
+	public static final String CANCEL_AUDIT = "cancel_audit";
+
+	public static final String MODE_TYPE = "mode_type";
+	public static final String REAL_MODE = "real";
+	public static final String VIRTUAL_MODE = "virtual";
+	public static final String VTN_MODE = "vtn";
+	public static final String GLOBAL_MODE = "global";
+	public static final String EXPANDING = "expanding";
+	public static final String VNODES = "vnodes";
+	public static final String LABELS = "labels";
+	public static final String LABEL_NAME = "label_name";
+	public static final String MAX_COUNT = "max_count";
+	public static final String RISING_THRESHOLD = "rising_threshold";
+	public static final String FALLING_THRESHOLD = "falling_threshold";
+	public static final String RANGES = "ranges";
+	public static final String RANGE_ID = "range_id";
+	public static final String RANGE_MIN = "min";
+	public static final String RANGE_MAX = "max";
+	public static final String CONNECTED_VNODE_NAME = "connected_vnode_name";
+	public static final String CONNECTED_IF_NAME = "connected_if_name";
+	public static final String CONNECTED_VLK_NAME = "connected_vlk_name";
+	public static final String CONTROLLER_VTN_NAME = "controller_vtn_name";
+	public static final String CONTROLLER_VTN_LABEL = "controller_vtn_label";
+	
+	//domain type
+	public static final String LEAF = "leaf";
+	public static final String SPINE = "spine";
+
+	//spine domain fdbusage
+	public static final String FDBUSAGE = "fdbusage";
+	public static final String TOTAL_MAX_SW_ID = "total_max_switch_id";
+	public static final String TOTAL_MAX_COUNT = "total_max_count";
+	public static final String TOTAL_MIN_SW_ID = "total_min_switch_id";
+	public static final String TOTAL_MIN_COUNT = "total_min_count";
+	public static final String TOTAL_AVG_COUNT = "total_average_count";
+	public static final String NUM_OF_SW = "num_of_switches";
+	public static final String VTN_FDBUSAGES = "vtn_fdbusages";
+	public static final String MAX_SW_ID = "max_switch_id";
+	public static final String MIN_SW_ID = "min_switch_id";
+	public static final String MIN_COUNT = "min_count";
+	public static final String AVG_COUNT = "average_count";
+	//logical port
+	public static final String MAPPING_GROUP = "mapping_group";
+	public static final String BOUNDARY_CANDIDATE = "boundary_candidate";
+	public static final String YES = "yes";
+	public static final String NO = "no";
+	public static final String CONNECTEDSWITCHID = "connected_switch_id";
+	public static final String CONNECTEDPORTNAME = "connected_port_name";
+	public static final String CONNECTEDCONTROLLERID = "connected_controller_id";
 }

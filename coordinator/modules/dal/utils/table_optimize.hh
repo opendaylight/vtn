@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -10,7 +10,7 @@
 /*
  *   table_optimize.hh
  *   Contians optimization schema information for tables
- * 
+ *
  */
 
 #ifndef _TABLE_OPTIMIZE_HH_
@@ -25,7 +25,7 @@ using namespace std;
 
 ofstream upll_optimize_file;
 
-string indexing_storedprocedure = 
+string indexing_storedprocedure =
   "CREATE OR REPLACE function f_create_index_if_not_exists("
   "_tablename varchar(32), _indexname varchar(32), _indexingcolumns varchar) RETURNS void\n"
   "  LANGUAGE plpgsql AS\n"
@@ -55,7 +55,7 @@ struct indexInfo {
   uudal::DalColumnIndex column_id[6];
 };
 
-indexInfo U13U14Indexing[] = 
+indexInfo U13U14Indexing[] =
   {
     { uudstbl::kDbiVbrVlanMapTbl, kCfgIdCandidate, 6, "_index_1",
       { uudstbl::vbridge_vlanmap::kDbiLogicalPortId,

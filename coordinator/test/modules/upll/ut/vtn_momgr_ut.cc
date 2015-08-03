@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -21,9 +21,8 @@
 #include <tclib_module.hh>
 #include <dal_cursor.hh>
 #include "ut_util.hh"
+#include  "tx_update_util.hh"
 
-//bool fatal_done;
-//pfc::core::Mutex  fatal_mutex_lock;
 
 using namespace unc::upll::test;
 using ::testing::InitGoogleTest;
@@ -36,10 +35,11 @@ using namespace unc::upll::config_momgr;
 using namespace unc::capa;
 using namespace pfc::core;
 using namespace unc::upll::dal::schema::table;
+using namespace unc::upll::tx_update_util;
 
-namespace unc {
+/*namespace unc {
 namespace upll {
-namespace kt_momgr {
+namespace kt_momgr {*/
 
 class VtnMoMgrTest : public UpllTestEnv
 {
@@ -151,44 +151,44 @@ TEST_F(VtnMoMgrTest, novtnkey) {
 }
 
 /* ValidateAttribute() */
-// Passing null value to the function 
+// Passing null value to the function
 TEST_F(VtnMoMgrTest, Test_nullkey) {
   VtnMoMgr vtn;
   //EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.ValidateAttribute(ikey, dmi)); //Bug 217
 }
 
-// Passing vtn key type to the function 
+// Passing vtn key type to the function
 TEST_F(VtnMoMgrTest, keyVtn) {
   VtnMoMgr vtn;
   DalDmlIntf *dmi(getDalDmlIntf());
   key_vtn_t *keyvtn = ZALLOC_TYPE(key_vtn_t);
   val_vtn_t *valVtn = ZALLOC_TYPE(val_vtn_t);
 
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtn, valVtn); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtn, valVtn);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, keyvtn, config_val);
 
   EXPECT_EQ(UPLL_RC_SUCCESS, vtn.ValidateAttribute(ikey, dmi));
 }
 
-// Passing other key type to the function 
+// Passing other key type to the function
 TEST_F(VtnMoMgrTest, keyVtep) {
   VtnMoMgr vtn;
   DalDmlIntf *dmi(getDalDmlIntf());
   key_vtep_t *keyVtep = ZALLOC_TYPE(key_vtep_t);
   val_vtep_t *valVtep = ZALLOC_TYPE(val_vtep_t);
 
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtep, valVtep); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtep, valVtep);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTEP, IpctSt::kIpcStKeyVtep, keyVtep, config_val);
 
   EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.ValidateAttribute(ikey, dmi));
 }
 
 /* IsValidKey() */
-  // IsValidKey() has to be changed to single parameter 
+  // IsValidKey() has to be changed to single parameter
   // till such time the second argument to be passed as dummy
   // to avoid compilation issue
 
-// Passing NULL key to the function 
+// Passing NULL key to the function
 TEST_F(VtnMoMgrTest, keyNull) {
   VtnMoMgr vtn;
   key_vtn_t *keyvtn = NULL;
@@ -221,15 +221,6 @@ TEST_F(VtnMoMgrTest, vtnNameMin) {
   unsigned long index = 0;
   strcpy((char *)keyvtn->vtn_name, (const char *)"1");
   EXPECT_EQ(true, vtn.IsValidKey(keyvtn, index));
-}
-
-// To test exceeding the maximum length of vtn name using the function
-TEST_F(VtnMoMgrTest, vtnNameMaxExceeds) {
-  VtnMoMgr vtn;
-  key_vtn_t *keyvtn = ZALLOC_TYPE(key_vtn_t);
-  unsigned long index = 0;
-  strcpy((char *)keyvtn->vtn_name, (const char *)("vtnnkjdsokljhkjdsncvdsjkjdksdjjksd1"));
-  EXPECT_EQ(false, vtn.IsValidKey(keyvtn, index));
 }
 
 // To test the empty name of vtn name using the function
@@ -373,7 +364,6 @@ TEST_F(VtnMoMgrTest, descriptionRenameTbl) {
   val = reinterpret_cast<void *>(reinterpret_cast<char *>(val_vtn));
 
   EXPECT_EQ(UPLL_RC_SUCCESS, vtn.GetValid(val, index, valid, dtType, RENAMETBL));
-  EXPECT_EQ(NULL, valid);
 }
 
 // Passing description to the function
@@ -474,7 +464,7 @@ TEST_F(VtnMoMgrTest, valRenametbl) {
   MoMgrTables tbl = RENAMETBL;
   //val_rename_vtn_t *val_rename_Vtn = (val_rename_vtn_t *)malloc(sizeof(val_rename_vtn_t));
 
-  //ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValRenameVtn, val_rename_Vtn); 
+  //ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValRenameVtn, val_rename_Vtn);
   ConfigVal *config_val=NULL;
   EXPECT_EQ(UPLL_RC_SUCCESS, vtn.AllocVal(config_val, dtType, tbl));//Need to analyse
 }
@@ -662,8 +652,8 @@ TEST_F(VtnMoMgrTest, val2ValidFlag) {
 TEST_F(VtnMoMgrTest, Key_nullVal) {
   VtnMoMgr vtn;
   key_vtn_t *keyVtn = NULL;
- 
-  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateVtnKey(keyVtn)); 
+
+  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateVtnKey(keyVtn));
 }
 
 // Testing the vtn name
@@ -693,14 +683,6 @@ TEST_F(VtnMoMgrTest,ValidateKey_maxVal) {
   EXPECT_EQ(UPLL_RC_SUCCESS, vtn.ValidateVtnKey(keyVtn));
 }
 
-// Testing the vtn name with maximum value exceeds
-TEST_F(VtnMoMgrTest, maxValExceeds) {
-  VtnMoMgr vtn;
-  key_vtn_t *keyVtn = ZALLOC_TYPE(key_vtn_t);
-  strcpy((char*)keyVtn->vtn_name,(const char *)"vtndfgdfddfrsdklfjsdklflsdsddfdfgdgfd1");
-
-  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateVtnKey(keyVtn));
-}
 
 // Testing the vtn name with empty value
 TEST_F(VtnMoMgrTest, Validate_emptyVal) {
@@ -719,7 +701,7 @@ TEST_F(VtnMoMgrTest, invalidVal) {
   valVtn->valid[UPLL_IDX_DESC_VTN] = UNC_VF_VALID;
   uint32_t op = UNC_OP_CREATE;
 
-  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateVtnValue(valVtn, op)); //Bug 250 
+  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateVtnValue(valVtn, op)); //Bug 250
 }
 
 // Testing the vtn description
@@ -755,16 +737,6 @@ TEST_F(VtnMoMgrTest, Validate_maxVal) {
   EXPECT_EQ(UPLL_RC_SUCCESS, vtn.ValidateVtnValue(valVtn, op));
 }
 
-// Testing the vtn description with maximum value exceeds
-TEST_F(VtnMoMgrTest, Vtn_maxValExceeds) {
-  VtnMoMgr vtn;
-  val_vtn_t *valVtn = ZALLOC_TYPE(val_vtn_t);
-  uint32_t op = UNC_OP_CREATE;
-  valVtn->valid[UPLL_IDX_DESC_VTN] = UNC_VF_VALID;
-  strcpy((char*)valVtn->description,(const char *)"vtndfgjjj;j;j;j;jjjjjjjjjdfddfrsdklfjsdklflsdsddfdfgdgfd1");
-
-  EXPECT_EQ(UPLL_RC_SUCCESS, vtn.ValidateVtnValue(valVtn, op));
-}
 
 // Testing the vtn description with empty value
 TEST_F(VtnMoMgrTest, Vtn_emptyVal) {
@@ -861,16 +833,6 @@ TEST_F(VtnMoMgrTest, maxVal) {
   EXPECT_EQ(UPLL_RC_SUCCESS, vtn.ValidateVtnRenameValue(valVtnRename));
 }
 
-// Testing the vtn name with maximum value exceeds
-TEST_F(VtnMoMgrTest, VtnRename_maxValExceeds) {
-  VtnMoMgr vtn;
-  val_rename_vtn_t *valVtnRename = ZALLOC_TYPE(val_rename_vtn_t);
-  valVtnRename->valid[UPLL_IDX_NEW_NAME_RVTN] = UNC_VF_VALID;
-  strcpy((char*)valVtnRename->new_name,(const char *)"vtndfgdfddfrsdklfjsdklflsdsdd");
-
-  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateVtnRenameValue(valVtnRename));
-}
-
 // Testing the vtn name with empty value
 TEST_F(VtnMoMgrTest, ValidateVtnRename_emptyVal) {
   VtnMoMgr vtn;
@@ -881,36 +843,7 @@ TEST_F(VtnMoMgrTest, ValidateVtnRename_emptyVal) {
   EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateVtnRenameValue(valVtnRename));
 }
 
-// Testing the vtn name with invalid flag
-TEST_F(VtnMoMgrTest, Rename_invalidFlag) {
-  VtnMoMgr vtn;
-  val_rename_vtn_t *valVtnRename = ZALLOC_TYPE(val_rename_vtn_t);
-  valVtnRename->valid[UPLL_IDX_NEW_NAME_RVTN] = UNC_VF_INVALID;
-  strcpy((char*)valVtnRename->new_name,(const char *)"vtn1");
-
-  EXPECT_EQ(UPLL_RC_SUCCESS, vtn.ValidateVtnRenameValue(valVtnRename));
-}
-
-
-/* ValidateVtnMapCtrlrKey() */
-// Passing NULL to the function
-TEST_F(VtnMoMgrTest, nullVal) {
-  VtnMoMgr vtn;
-  key_vtn_controller_t *keyVtnMap = NULL;
-
-  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateVtnMapCtrlrKey(keyVtnMap,UNC_OP_CREATE));
-}
-
-// Testing the controller name and vtn name
-TEST_F(VtnMoMgrTest, MapCtrlr_properVal) {
-  VtnMoMgr vtn;
-  key_vtn_controller_t *keyVtnMap = ZALLOC_TYPE(key_vtn_controller_t);
-  strcpy((char*)keyVtnMap->vtn_key.vtn_name,(const char *)"vtn1");
-  strcpy((char*)keyVtnMap->controller_name,(const char *)"pfc1");
-
-  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateVtnMapCtrlrKey(keyVtnMap,UNC_OP_CREATE));
-}
-
+#if 0
 // Testing the controller name with minimum value and proper vtn name
 TEST_F(VtnMoMgrTest, ctrlNameMin) {
   VtnMoMgr vtn;
@@ -1053,43 +986,7 @@ TEST_F(VtnMoMgrTest, ValidateStnemptyVal) {
   EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateVtnStnCtrlrKey(keyVtnStn,UNC_OP_CREATE));
 }
 
-/* ReadMo() */
 
-
-TEST_F(VtnMoMgrTest, otherKT_detail) {
-  VtnMoMgr vtn;
- IPC_REQ_RESP_HEADER_DECL(req);
- DalDmlIntf *dmi(getDalDmlIntf());
-
-  req->datatype = UPLL_DT_CANDIDATE;
-  req->operation = UNC_OP_READ;
-  req->option1 = UNC_OPT1_DETAIL;
-  req->option2 = UNC_OPT2_NONE;
-
-  key_vtn_t *keyvtn = ZALLOC_TYPE(key_vtn_t);
-  strcpy((char*)keyvtn->vtn_name,(const char *)"vtn1");
-  ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, keyvtn, NULL);
-
-  EXPECT_EQ(UPLL_RC_ERR_INVALID_OPTION1, vtn.ReadMo(req, ikey, dmi));
-}
-
-//otherKT when option1 = UNC_OPT1_COUNT
-TEST_F(VtnMoMgrTest, ReadMo_otherKT_count) {
-  VtnMoMgr vtn;
- IPC_REQ_RESP_HEADER_DECL(req);
-  DalDmlIntf *dmi(getDalDmlIntf());
-
-  req->datatype = UPLL_DT_CANDIDATE;
-  req->operation = UNC_OP_READ;
-  req->option1 = UNC_OPT1_COUNT;
-  req->option2 = UNC_OPT2_NONE;
-
-  key_vtn_t *keyvtn = ZALLOC_TYPE(key_vtn_t);
-  strcpy((char*)keyvtn->vtn_name,(const char *)"vtn1");
-  ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, keyvtn, NULL);
-
-  EXPECT_EQ(UPLL_RC_ERR_INVALID_OPTION1, vtn.ReadMo(req, ikey, dmi));
-}
 
 //UNC_KT_VTN_MAPPING_CONTROLLER has wrong dt_type
 TEST_F(VtnMoMgrTest, MappingReadMo_invaliddatatype) {
@@ -1104,10 +1001,10 @@ TEST_F(VtnMoMgrTest, MappingReadMo_invaliddatatype) {
 
   key_vtn_controller_t *key_ctrlr = ZALLOC_TYPE(key_vtn_controller_t);
   val_vtn_mapping_controller_st_t *val_mapping = ZALLOC_TYPE(val_vtn_mapping_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtnController, key_ctrlr, config_val);
 
-  EXPECT_EQ(UPLL_RC_ERR_NO_SUCH_INSTANCE, vtn.ReadMo(req, ikey, dmi));
+  EXPECT_EQ(UNC_UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT, vtn.ReadMo(req, ikey, dmi));
 }
 
 //UNC_KT_VTN_MAPPING_CONTROLLER has wrong st_num
@@ -1123,10 +1020,10 @@ TEST_F(VtnMoMgrTest, ReadMo_Mapping_invalidstnum) {
 
   key_vtn_controller_t *key_ctrlr = ZALLOC_TYPE(key_vtn_controller_t);
   val_vtn_mapping_controller_st_t *val_mapping = ZALLOC_TYPE(val_vtn_mapping_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtn, key_ctrlr, config_val);
 
-  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ReadMo(req, ikey, dmi));
+  EXPECT_EQ(UNC_UPLL_RC_ERR_BAD_REQUEST, vtn.ReadMo(req, ikey, dmi));
 }
 
 //UNC_KT_VTN_MAPPING_CONTROLLER has no vtn_name
@@ -1195,10 +1092,10 @@ TEST_F(VtnMoMgrTest, Mapping_invalid_01) {
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnController, key_ctrlr, config_val);
   strcpy((char*)key_ctrlr->vtn_key.vtn_name,(const char *)"vtn1");
 
-  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ReadMo(req, ikey, dmi));
+  EXPECT_EQ(UNC_UPLL_RC_ERR_BAD_REQUEST, vtn.ReadMo(req, ikey, dmi));
 }
 
-//UNC_KT_VTN_MAPPING_CONTROLLER has domain 
+//UNC_KT_VTN_MAPPING_CONTROLLER has domain
 TEST_F(VtnMoMgrTest, Mapping_withctrl_domain) {
   VtnMoMgr vtn;
  IPC_REQ_RESP_HEADER_DECL(req);
@@ -1232,7 +1129,7 @@ TEST_F(VtnMoMgrTest, Station_invalidkeytype) {
 
   key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
   val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VBRIDGE, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
 
   EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.ReadMo(req, ikey, dmi));
@@ -1251,10 +1148,10 @@ TEST_F(VtnMoMgrTest, Read_Station_invalidstnum) {
 
   key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
   val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtn, key_station, config_val);
 
-  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ReadMo(req, ikey, dmi));
+  EXPECT_EQ(UNC_UPLL_RC_ERR_BAD_REQUEST, vtn.ReadMo(req, ikey, dmi));
 }
 
 //UNC_KT_VTNSTATION_CONTROLLER has no ctrlr_name
@@ -1270,7 +1167,7 @@ TEST_F(VtnMoMgrTest, Station_ReadMoemptyctrlrname) {
 
   key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
   val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
   strcpy((char*)key_station->controller_name,(const char *)"");
 
@@ -1298,10 +1195,10 @@ TEST_F(VtnMoMgrTest, Station_valid_01) {
   uuu::upll_strncpy(val_station->switch_id,"switch_id", (kMaxLenCtrlrId + 1));
   uuu::upll_strncpy(val_station->port_name,"port_name", (kMaxLenCtrlrId + 1));
 
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
 
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.ReadMo(req, ikey, dmi)); //Bug has to raise
+  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ReadMo(req, ikey, dmi)); //Bug has to raise
 }
 
 TEST_F(VtnMoMgrTest, Station_valid_02) {
@@ -1325,7 +1222,7 @@ TEST_F(VtnMoMgrTest, Station_valid_02) {
   uuu::upll_strncpy(val_station->switch_id,"switch_id", (kMaxLenCtrlrId + 1));
   uuu::upll_strncpy(val_station->port_name,"port_name", (kMaxLenCtrlrId + 1));
 
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
 
   EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.ReadMo(req, ikey, dmi)); //Bug has to raise
@@ -1344,41 +1241,12 @@ TEST_F(VtnMoMgrTest, Station_valid_03) {
   key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
   uuu::upll_strncpy(key_station->controller_name,"pfc1", (kMaxLenCtrlrId + 1));
   val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
 
   EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.ReadMo(req, ikey, dmi));
 }
 
-TEST_F(VtnMoMgrTest, mapping_valid_01) {
-  VtnMoMgr vtn;
-  DalOdbcMgr::clearStubData();
-  DalOdbcMgr::stub_setResultcode(DalOdbcMgr::INIT,kDalRcSuccess);
-  DalOdbcMgr::stub_setResultcode(DalOdbcMgr::RECORD_EXISTS,kDalRcSuccess);
-  DalOdbcMgr::stub_setResultcode(DalOdbcMgr::RECORD_COUNT,kDalRcSuccess);
- IPC_REQ_RESP_HEADER_DECL(req);
-  DalDmlIntf *dmi(getDalDmlIntf());
-
-  req->datatype = UPLL_DT_STATE;
-  req->operation = UNC_OP_READ;
-  req->option1 = UNC_OPT1_NORMAL;
-  req->option2 = UNC_OPT2_NONE;
-
-  key_vtn_controller_t *key_ctrlr = ZALLOC_TYPE(key_vtn_controller_t);
-  uuu::upll_strncpy(key_ctrlr->controller_name,"controller_name1", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(key_ctrlr->domain_id,"domain_id", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(key_ctrlr->vtn_key.vtn_name,"vtn_name1", (kMaxLenCtrlrId + 1));
-  val_vtn_mapping_controller_st_t *val_mapping = ZALLOC_TYPE(val_vtn_mapping_controller_st_t);
-  uuu::upll_strncpy(val_mapping->logical_port_id,"logical_port_id1", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(val_mapping->vnode_name,"vnode_name", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(val_mapping->vnode_if_name,"vnode_if_name", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(val_mapping->switch_id,"switch_id", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(val_mapping->port_name,"port_name", (kMaxLenCtrlrId + 1));
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping);
-  ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtnController, key_ctrlr, config_val);
-
-  EXPECT_EQ(UPLL_RC_ERR_NO_SUCH_INSTANCE, vtn.ReadMo(req, ikey, dmi));
-}
 
 TEST_F(VtnMoMgrTest, mapping_valid_02) {
   VtnMoMgr vtn;
@@ -1518,7 +1386,7 @@ TEST_F(VtnMoMgrTest, KT_VTN_detail) {
   strcpy((char*)keyvtn->vtn_name,(const char *)"vtn1");
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, keyvtn, NULL);
 
-  EXPECT_EQ(UPLL_RC_ERR_INVALID_OPTION1, vtn.ReadSiblingMo(req, ikey, begin, dmi));
+  EXPECT_EQ(UPLL_RC_ERR_BAD_CONFIG_OR_SESSION_ID, vtn.ReadSiblingMo(req, ikey, begin, dmi));
 }
 
 TEST_F(VtnMoMgrTest, KT_VBRIDGE) {
@@ -1554,7 +1422,7 @@ TEST_F(VtnMoMgrTest, otherKT_count) {
   strcpy((char*)keyvtn->vtn_name,(const char *)"vtn1");
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, keyvtn, NULL);
 
-  EXPECT_EQ(UPLL_RC_ERR_INVALID_OPTION1, vtn.ReadSiblingMo(req, ikey, begin, dmi));
+  EXPECT_EQ(UPLL_RC_ERR_BAD_CONFIG_OR_SESSION_ID, vtn.ReadSiblingMo(req, ikey, begin, dmi));
 }
 
 //UNC_KT_VTN_MAPPING_CONTROLLER has wrong dt_type
@@ -1571,10 +1439,10 @@ TEST_F(VtnMoMgrTest, Mapping_invaliddatatype) {
 
   key_vtn_controller_t *key_ctrlr = ZALLOC_TYPE(key_vtn_controller_t);
   val_vtn_mapping_controller_st_t *val_mapping = ZALLOC_TYPE(val_vtn_mapping_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtnController, key_ctrlr, config_val);
 
-  EXPECT_EQ(UPLL_RC_ERR_NO_SUCH_INSTANCE, vtn.ReadSiblingMo(req, ikey, begin, dmi));
+  EXPECT_EQ(UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT, vtn.ReadSiblingMo(req, ikey, begin, dmi));
 }
 
 //UNC_KT_VTN_MAPPING_CONTROLLER has wrong st_num
@@ -1591,10 +1459,10 @@ TEST_F(VtnMoMgrTest, Mapping_invalidstnum) {
 
   key_vtn_controller_t *key_ctrlr = ZALLOC_TYPE(key_vtn_controller_t);
   val_vtn_mapping_controller_st_t *val_mapping = ZALLOC_TYPE(val_vtn_mapping_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtn, key_ctrlr, config_val);
 
-  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ReadSiblingMo(req, ikey, begin, dmi));
+  EXPECT_EQ(UPLL_RC_ERR_BAD_REQUEST, vtn.ReadSiblingMo(req, ikey, begin, dmi));
 }
 
 //UNC_KT_VTN_MAPPING_CONTROLLER has no vtn_name
@@ -1653,10 +1521,10 @@ TEST_F(VtnMoMgrTest, station_invaliddatatype) {
 
   key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
   val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
 
-  EXPECT_EQ(UPLL_RC_ERR_NO_SUCH_INSTANCE, vtn.ReadSiblingMo(req, ikey, begin, dmi));
+  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ReadSiblingMo(req, ikey, begin, dmi));
 }
 
 //UNC_KT_VTNSTATION_CONTROLLER has wrong st_num
@@ -1673,10 +1541,10 @@ TEST_F(VtnMoMgrTest, Station_invalidstnum) {
 
   key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
   val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtn, key_station, config_val);
 
-  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ReadSiblingMo(req, ikey, begin, dmi));
+  EXPECT_EQ(UPLL_RC_ERR_BAD_REQUEST, vtn.ReadSiblingMo(req, ikey, begin, dmi));
 }
 
 //UNC_KT_VTNSTATION_CONTROLLER has no ctrlr_name
@@ -1693,7 +1561,7 @@ TEST_F(VtnMoMgrTest, Station_emptyctrlrname) {
 
   key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
   val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
   strcpy((char*)key_station->controller_name,(const char *)"");
 
@@ -1714,13 +1582,13 @@ TEST_F(VtnMoMgrTest, Station_invaliddatatype) {
 
   key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
   val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
 
-  EXPECT_EQ(UPLL_RC_ERR_NO_SUCH_INSTANCE, vtn.ReadSiblingMo(req, ikey, begin, dmi)); //Bug has to raise
+  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ReadSiblingMo(req, ikey, begin, dmi)); //Bug has to raise
 }
 
-//UNC_KT_VTNSTATION_CONTROLLER has invalid operation 
+//UNC_KT_VTNSTATION_CONTROLLER has invalid operation
 TEST_F(VtnMoMgrTest, Station_invalidop) {
   VtnMoMgr vtn;
  IPC_REQ_RESP_HEADER_DECL(req);
@@ -1734,10 +1602,10 @@ TEST_F(VtnMoMgrTest, Station_invalidop) {
 
   key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
   val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
 
-  EXPECT_EQ(UPLL_RC_ERR_NO_SUCH_INSTANCE, vtn.ReadSiblingMo(req, ikey, begin, dmi)); //Bug has to raise
+  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ReadSiblingMo(req, ikey, begin, dmi)); //Bug has to raise
 }
 
 
@@ -1757,7 +1625,7 @@ TEST_F(VtnMoMgrTest, otherKT_detail_begin) {
   strcpy((char*)keyvtn->vtn_name,(const char *)"vtn1");
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, keyvtn, NULL);
 
-  EXPECT_EQ(UPLL_RC_ERR_INVALID_OPTION1, vtn.ReadSiblingMo(req, ikey, begin, dmi));
+  EXPECT_EQ(UPLL_RC_ERR_BAD_CONFIG_OR_SESSION_ID, vtn.ReadSiblingMo(req, ikey, begin, dmi));
 }
 
 //otherKT when option1 = UNC_OPT1_COUNT
@@ -1776,7 +1644,7 @@ TEST_F(VtnMoMgrTest, otherKT_count_begin) {
   strcpy((char*)keyvtn->vtn_name,(const char *)"vtn1");
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, keyvtn, NULL);
 
-  EXPECT_EQ(UPLL_RC_ERR_INVALID_OPTION1, vtn.ReadSiblingMo(req, ikey, begin, dmi));
+  EXPECT_EQ(UPLL_RC_ERR_BAD_CONFIG_OR_SESSION_ID, vtn.ReadSiblingMo(req, ikey, begin, dmi));
 }
 
 //UNC_KT_VTN_MAPPING_CONTROLLER has wrong dt_type
@@ -1793,10 +1661,10 @@ TEST_F(VtnMoMgrTest, Mapping_invaliddatatype_begin) {
 
   key_vtn_controller_t *key_ctrlr = ZALLOC_TYPE(key_vtn_controller_t);
   val_vtn_mapping_controller_st_t *val_mapping = ZALLOC_TYPE(val_vtn_mapping_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtnController, key_ctrlr, config_val);
 
-  EXPECT_EQ(UPLL_RC_ERR_NO_SUCH_INSTANCE, vtn.ReadSiblingMo(req, ikey, begin, dmi));
+  EXPECT_EQ(UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT, vtn.ReadSiblingMo(req, ikey, begin, dmi));
 }
 
 //UNC_KT_VTN_MAPPING_CONTROLLER has wrong st_num
@@ -1813,10 +1681,10 @@ TEST_F(VtnMoMgrTest, Mapping_invalidstnum_begin) {
 
   key_vtn_controller_t *key_ctrlr = ZALLOC_TYPE(key_vtn_controller_t);
   val_vtn_mapping_controller_st_t *val_mapping = ZALLOC_TYPE(val_vtn_mapping_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtn, key_ctrlr, config_val);
 
-  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ReadSiblingMo(req, ikey, begin, dmi));
+  EXPECT_EQ(UPLL_RC_ERR_BAD_REQUEST, vtn.ReadSiblingMo(req, ikey, begin, dmi));
 }
 
 //UNC_KT_VTN_MAPPING_CONTROLLER has no vtn_name
@@ -1939,10 +1807,10 @@ TEST_F(VtnMoMgrTest, station_READ_SIBLING_BEGIN) {
 
   key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
   val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
 
-  EXPECT_EQ(UPLL_RC_ERR_NO_SUCH_INSTANCE, vtn.ReadSiblingMo(req, ikey, begin, dmi));
+  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ReadSiblingMo(req, ikey, begin, dmi));
 }
 
 //UNC_KT_VTNSTATION_CONTROLLER has wrong st_num
@@ -1959,10 +1827,10 @@ TEST_F(VtnMoMgrTest, Station_invalidstnum_begin) {
 
   key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
   val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtn, key_station, config_val);
 
-  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ReadSiblingMo(req, ikey, begin, dmi));
+  EXPECT_EQ(UPLL_RC_ERR_BAD_REQUEST, vtn.ReadSiblingMo(req, ikey, begin, dmi));
 }
 
 TEST_F(VtnMoMgrTest, Station_READ_SIBLING_BEGIN_01) {
@@ -1985,10 +1853,10 @@ TEST_F(VtnMoMgrTest, Station_READ_SIBLING_BEGIN_01) {
   strcpy((char*)val_station->switch_id,(const char *)"switch_id1");
   strcpy((char*)val_station->port_name,(const char *)"port1");
 
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
 
-  EXPECT_EQ(UPLL_RC_ERR_NO_SUCH_INSTANCE, vtn.ReadSiblingMo(req, ikey, begin, dmi));
+  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ReadSiblingMo(req, ikey, begin, dmi));
 }
 
 TEST_F(VtnMoMgrTest, Station_READ_SIBLING_BEGIN_02) {
@@ -2011,10 +1879,10 @@ TEST_F(VtnMoMgrTest, Station_READ_SIBLING_BEGIN_02) {
   strcpy((char*)val_station->switch_id,(const char *)"switch_id1");
   strcpy((char*)val_station->port_name,(const char *)"port1");
 
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
 
-  EXPECT_EQ(UPLL_RC_ERR_NO_SUCH_INSTANCE, vtn.ReadSiblingMo(req, ikey, begin, dmi));
+  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ReadSiblingMo(req, ikey, begin, dmi));
 }
 
 //UNC_KT_VTNSTATION_CONTROLLER has no ctrlr_name
@@ -2031,14 +1899,14 @@ TEST_F(VtnMoMgrTest, Station_emptyctrlrname_begin) {
 
   key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
   val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
   strcpy((char*)key_station->controller_name,(const char *)"");
 
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.ReadSiblingMo(req, ikey, begin, dmi)); //Bug raised already
+  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ReadSiblingMo(req, ikey, begin, dmi)); //Bug raised already
 }
 
-//UNC_KT_VTNSTATION_CONTROLLER has invalid operation 
+//UNC_KT_VTNSTATION_CONTROLLER has invalid operation
 TEST_F(VtnMoMgrTest, Station_invalidop_begin) {
   VtnMoMgr vtn;
  IPC_REQ_RESP_HEADER_DECL(req);
@@ -2052,31 +1920,12 @@ TEST_F(VtnMoMgrTest, Station_invalidop_begin) {
 
   key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
   val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
 
-  EXPECT_EQ(UPLL_RC_ERR_NO_SUCH_INSTANCE, vtn.ReadSiblingMo(req, ikey, begin, dmi)); //Bug has to raise
+  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ReadSiblingMo(req, ikey, begin, dmi)); //Bug has to raise
 }
 
-
-TEST_F(VtnMoMgrTest, vtn) {
-  VtnMoMgr vtn;
- IPC_REQ_RESP_HEADER_DECL(req);
-  DalDmlIntf *dmi(getDalDmlIntf());
-
-  req->datatype = UPLL_DT_STATE;
-  req->operation = UNC_OP_READ_SIBLING_BEGIN;
-  req->option1 = UNC_OPT1_NORMAL;
-  req->option2 = UNC_OPT2_NONE;
-
-  key_vtn_t *key_vtn = ZALLOC_TYPE(key_vtn_t);
-  val_vtn_t *val_vtn = ZALLOC_TYPE(val_vtn_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtn, val_vtn);
-  ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, key_vtn, config_val);
-  strcpy((char*)key_vtn->vtn_name,(const char *)"vtn1");
-
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.ReadSiblingCount(req, ikey, dmi));
-}
 TEST_F(VtnMoMgrTest, vtnStation_01) {
   VtnMoMgr vtn;
  IPC_REQ_RESP_HEADER_DECL(req);
@@ -2089,71 +1938,14 @@ TEST_F(VtnMoMgrTest, vtnStation_01) {
 
   key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
   val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
 
   strcpy((char*)key_station->controller_name,(const char *)"vtn1");
 
-  EXPECT_EQ(UPLL_RC_SUCCESS, vtn.ReadSiblingCount(req, ikey, dmi));
-}
-/* MappingvExtTovBr() */
-TEST_F(VtnMoMgrTest, vtnstation_02) {
-  VtnMoMgr vtn;
-
- IPC_REQ_RESP_HEADER_DECL(req);
-  DalDmlIntf *dmi(getDalDmlIntf());
-  uint32_t count1=0;
-  uint32_t *count=&count1;
-
-  key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
-  strcpy((char*)key_station->controller_name,(const char *)"pfc1");
-  val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  strcpy((char*)val_station->vtn_name,(const char *)"vtn1");
-  strcpy((char*)val_station->domain_id,(const char *)"dom1");
-  strcpy((char*)val_station->vnode_name,(const char *)"vnode_name1");
-  strcpy((char*)val_station->vnode_if_name,(const char *)"vnode_if_name1");
-  strcpy((char*)val_station->switch_id,(const char *)"switch_id1");
-  strcpy((char*)val_station->port_name,(const char *)"port1");
-
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
-  ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
-
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.MappingvExtTovBr(ikey, req, dmi, count));
-  val_station->map_type = UPLL_IF_VLAN_MAP;
-  EXPECT_EQ(UPLL_RC_SUCCESS, vtn.MappingvExtTovBr(ikey, req, dmi, count));
+  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ReadSiblingCount(req, ikey, dmi));
 }
 
-TEST_F(VtnMoMgrTest, vtnstation_03) {
-  VtnMoMgr vtn;
- IPC_REQ_RESP_HEADER_DECL(req);
-  DalDmlIntf *dmi(getDalDmlIntf());
-  uint32_t count1=0;
-  uint32_t *count=&count1;
-
-  key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
-  strcpy((char*)key_station->controller_name,(const char *)"pfc1");
-  val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  uuu::upll_strncpy(val_station->vtn_name,"vtn_name", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(val_station->vnode_name,"vnode_name", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(val_station->vnode_if_name,"vnode_if_name", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(val_station->domain_id,"domain_id", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(val_station->switch_id,"switch_id", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(val_station->port_name,"port_name", (kMaxLenCtrlrId + 1));
-  val_station->valid[UPLL_IDX_VTN_NAME_VSCS] = UNC_VF_VALID;
-  val_station->valid[UPLL_IDX_VNODE_NAME_VSCS] = UNC_VF_VALID;
-  val_station->valid[UPLL_IDX_VNODE_IF_NAME_VSCS] = UNC_VF_VALID;
-
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
-  ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
-
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.MappingvExtTovBr(ikey, req, dmi, count));
-  val_station->map_type = UPLL_IF_VLAN_MAP;
-  EXPECT_EQ(UPLL_RC_SUCCESS, vtn.MappingvExtTovBr(ikey, req, dmi, count));
-  val_station->valid[UPLL_IDX_VTN_NAME_VSCS] = UNC_VF_VALID;
-  val_station->valid[UPLL_IDX_VNODE_IF_NAME_VSCS] = UNC_VF_VALID;
-  EXPECT_EQ(UPLL_RC_SUCCESS, vtn.MappingvExtTovBr(ikey, req, dmi, count));
-
-}
 TEST_F(VtnMoMgrTest, vtnstation_val_NULL) {
   VtnMoMgr vtn;
  IPC_REQ_RESP_HEADER_DECL(req);
@@ -2163,74 +1955,7 @@ TEST_F(VtnMoMgrTest, vtnstation_val_NULL) {
 
   key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
   strcpy((char*)key_station->controller_name,(const char *)"pfc1");
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, NULL); 
-  ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
-
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.MappingvExtTovBr(ikey, req, dmi, count));
-
-}
-TEST_F(VtnMoMgrTest, vtnstation_04) {
-  VtnMoMgr vtn;
-  DalOdbcMgr::clearStubData();
-  DalOdbcMgr::stub_setResultcode(DalOdbcMgr::INIT,kDalRcSuccess);
-  DalOdbcMgr::stub_setSingleRecordExists(true);
-  DalOdbcMgr::stub_setResultcode(DalOdbcMgr::RECORD_EXISTS,kDalRcSuccess);
-  DalOdbcMgr::stub_setResultcode(DalOdbcMgr::RECORD_COUNT,kDalRcSuccess);
-  DalOdbcMgr::stub_setResultcode(DalOdbcMgr::SINGLE,kDalRcSuccess);
- IPC_REQ_RESP_HEADER_DECL(req);
-  DalDmlIntf *dmi(getDalDmlIntf());
-  uint32_t count1=0;
-  uint32_t *count=&count1;
-
-  key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
-  strcpy((char*)key_station->controller_name,(const char *)"pfc1");
-  val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  uuu::upll_strncpy(val_station->vtn_name,"vtn_name", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(val_station->vnode_name,"vnode_name", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(val_station->vnode_if_name,"vnode_if_name", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(val_station->domain_id,"domain_id", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(val_station->switch_id,"switch_id", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(val_station->port_name,"port_name", (kMaxLenCtrlrId + 1));
-  val_station->valid[UPLL_IDX_VTN_NAME_VSCS] = UNC_VF_VALID;
-  val_station->valid[UPLL_IDX_VNODE_NAME_VSCS] = UNC_VF_VALID;
-  val_station->valid[UPLL_IDX_VNODE_IF_NAME_VSCS] = UNC_VF_VALID;
-
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
-  ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
-
-  EXPECT_EQ(UPLL_RC_SUCCESS, vtn.MappingvExtTovBr(ikey, req, dmi, count));
-  val_station->map_type = UPLL_IF_VLAN_MAP;
-  EXPECT_EQ(UPLL_RC_SUCCESS, vtn.MappingvExtTovBr(ikey, req, dmi, count));
-  val_station->valid[UPLL_IDX_VTN_NAME_VSCS] = UNC_VF_VALID;
-  val_station->valid[UPLL_IDX_VNODE_IF_NAME_VSCS] = UNC_VF_VALID;
-  EXPECT_EQ(UPLL_RC_SUCCESS, vtn.MappingvExtTovBr(ikey, req, dmi, count));
-
-}
-TEST_F(VtnMoMgrTest, vtnstation_05) {
-  VtnMoMgr vtn;
-  DalOdbcMgr::clearStubData();
-  DalOdbcMgr::stub_setResultcode(DalOdbcMgr::INIT,kDalRcSuccess);
-  DalOdbcMgr::stub_setResultcode(DalOdbcMgr::RECORD_EXISTS,kDalRcSuccess);
-  DalOdbcMgr::stub_setResultcode(DalOdbcMgr::RECORD_COUNT,kDalRcSuccess);
- IPC_REQ_RESP_HEADER_DECL(req);
-  DalDmlIntf *dmi(getDalDmlIntf());
-  uint32_t count1=0;
-  uint32_t *count=&count1;
-
-  key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
-  strcpy((char*)key_station->controller_name,(const char *)"pfc1");
-  val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  uuu::upll_strncpy(val_station->vtn_name,"vtn_name", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(val_station->vnode_name,"vnode_name", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(val_station->vnode_if_name,"vnode_if_name", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(val_station->domain_id,"domain_id", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(val_station->switch_id,"switch_id", (kMaxLenCtrlrId + 1));
-  uuu::upll_strncpy(val_station->port_name,"port_name", (kMaxLenCtrlrId + 1));
-  val_station->valid[UPLL_IDX_VTN_NAME_VSCS] = UNC_VF_VALID;
-  val_station->valid[UPLL_IDX_VNODE_NAME_VSCS] = UNC_VF_VALID;
-  val_station->valid[UPLL_IDX_VNODE_IF_NAME_VSCS] = UNC_VF_VALID;
-
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, NULL);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
 
   EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.MappingvExtTovBr(ikey, req, dmi, count));
@@ -2247,7 +1972,7 @@ TEST_F(VtnMoMgrTest, mapping_invalidkeynum) {
 
   key_vtn_controller_t *key_ctrlr = ZALLOC_TYPE(key_vtn_controller_t);
   val_vtn_mapping_controller_st_t *val_mapping = ZALLOC_TYPE(val_vtn_mapping_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStValVtnstationControllerSt, key_ctrlr, config_val);
 
   EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.MappingvExtTovBr(ikey, req, dmi, count));
@@ -2273,7 +1998,7 @@ TEST_F(VtnMoMgrTest, mapping_withoutvbrvalidflag) {
 
   key_vtn_controller_t *key_ctrlr = ZALLOC_TYPE(key_vtn_controller_t);
   val_vtn_mapping_controller_st_t *val_mapping = ZALLOC_TYPE(val_vtn_mapping_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtnController, key_ctrlr, config_val);
 
   EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.MappingvExtTovBr(ikey, req, dmi, count));
@@ -2290,7 +2015,7 @@ TEST_F(VtnMoMgrTest, mapping_withoutvbrifvalidflag) {
   key_vtn_controller_t *key_ctrlr = ZALLOC_TYPE(key_vtn_controller_t);
   val_vtn_mapping_controller_st_t *val_mapping = ZALLOC_TYPE(val_vtn_mapping_controller_st_t);
   val_mapping->valid[UPLL_IDX_VNODE_NAME_VMCS] = UNC_VF_VALID;
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtnController, key_ctrlr, config_val);
 
   EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.MappingvExtTovBr(ikey, req, dmi, count));
@@ -2313,39 +2038,9 @@ TEST_F(VtnMoMgrTest, mapping_withvbrifvalidflag) {
   strcpy((char*)val_mapping->logical_port_id,(const char *)"logical_port_id1");
   val_mapping->valid[UPLL_IDX_VNODE_NAME_VMCS] = UNC_VF_VALID;
   val_mapping->valid[UPLL_IDX_VNODE_IF_NAME_VMCS] = UNC_VF_VALID;
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtnController, key_ctrlr, config_val);
   EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.MappingvExtTovBr(ikey, req, dmi, count));
-}
-TEST_F(VtnMoMgrTest, mapping_01) {
-  VtnMoMgr vtn;
-  DalOdbcMgr::clearStubData();
-  DalOdbcMgr::stub_setResultcode(DalOdbcMgr::INIT,kDalRcSuccess);
-  DalOdbcMgr::stub_setSingleRecordExists(true);
-  DalOdbcMgr::stub_setResultcode(DalOdbcMgr::RECORD_EXISTS,kDalRcSuccess);
-  DalOdbcMgr::stub_setResultcode(DalOdbcMgr::RECORD_COUNT,kDalRcSuccess);
-  DalOdbcMgr::stub_setResultcode(DalOdbcMgr::SINGLE,kDalRcSuccess);
- IPC_REQ_RESP_HEADER_DECL(req);
-  DalDmlIntf *dmi(getDalDmlIntf());
-  uint32_t count1=0;
-  uint32_t *count=&count1;
-
-  key_vtn_controller_t *key_ctrlr = ZALLOC_TYPE(key_vtn_controller_t);
-  val_vtn_mapping_controller_st_t *val_mapping = ZALLOC_TYPE(val_vtn_mapping_controller_st_t);
-  strcpy((char*)key_ctrlr->controller_name,(const char *)"pfc1");
-  strcpy((char*)key_ctrlr->domain_id,(const char *)"dom1");
-  strcpy((char*)val_mapping->switch_id,(const char *)"switch_id1");
-  strcpy((char*)val_mapping->port_name,(const char *)"port_name1");
-  strcpy((char*)val_mapping->vnode_name,(const char *)"vnode_name1");
-  strcpy((char*)val_mapping->vnode_if_name,(const char *)"vnode_if_name1");
-  strcpy((char*)val_mapping->logical_port_id,(const char *)"logical_port_id1");
-  val_mapping->valid[UPLL_IDX_VNODE_NAME_VMCS] = UNC_VF_VALID;
-  val_mapping->valid[UPLL_IDX_VNODE_IF_NAME_VMCS] = UNC_VF_VALID;
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping); 
-  ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtnController, key_ctrlr, config_val);
-  EXPECT_EQ(UPLL_RC_SUCCESS, vtn.MappingvExtTovBr(ikey, req, dmi, count));
-  val_mapping->map_type = UPLL_IF_VLAN_MAP;
-  EXPECT_EQ(UPLL_RC_SUCCESS, vtn.MappingvExtTovBr(ikey, req, dmi, count));
 }
 TEST_F(VtnMoMgrTest, mapping_02) {
   VtnMoMgr vtn;
@@ -2369,43 +2064,47 @@ TEST_F(VtnMoMgrTest, mapping_02) {
   strcpy((char*)val_mapping->logical_port_id,(const char *)"logical_port_id1");
   val_mapping->valid[UPLL_IDX_VNODE_NAME_VMCS] = UNC_VF_VALID;
   val_mapping->valid[UPLL_IDX_VNODE_IF_NAME_VMCS] = UNC_VF_VALID;
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnMappingControllerSt, val_mapping);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtnController, key_ctrlr, config_val);
   val_mapping->map_type = UPLL_IF_VLAN_MAP;
-  EXPECT_EQ(UPLL_RC_SUCCESS, vtn.MappingvExtTovBr(ikey, req, dmi, count));
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.MappingvExtTovBr(ikey, req, dmi, count));
 }
 /* ValidateMessageForVtnStnCtrlr */
 
-//when the configkeyval is null 
+//when the configkeyval is null
 TEST_F(VtnMoMgrTest, ValidateMsg_ikeynull) {
   VtnMoMgr vtn;
- IPC_REQ_RESP_HEADER_DECL(req);
-  ConfigKeyVal *ikey = NULL;
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.ValidateMessageForVtnStnCtrlr(req, ikey)); // Code has the fix now
+  IPC_REQ_RESP_HEADER_DECL(req);
+  key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
+  val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
+  ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
+
+  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateMessageForVtnStnCtrlr(req, ikey)); // Code has the fix now
 }
 
-//when the IpcReqRespHeader is null 
+//when the IpcReqRespHeader is null
 TEST_F(VtnMoMgrTest, ValidateMessage_reqnull) {
   VtnMoMgr vtn;
-  IpcReqRespHeader *req = NULL; 
+  IpcReqRespHeader *req = new IpcReqRespHeader;
 
   key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
   val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.ValidateMessageForVtnStnCtrlr(req, ikey)); //Bug 404
+  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateMessageForVtnStnCtrlr(req, ikey)); //Bug 404
 }
 
-//when invalid st_num 
+//when invalid st_num
 TEST_F(VtnMoMgrTest, invalidValidate_stnum) {
   VtnMoMgr vtn;
  IPC_REQ_RESP_HEADER_DECL(req);
 
   key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
   val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtn, key_station, config_val);
-  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateMessageForVtnStnCtrlr(req, ikey)); 
+  EXPECT_EQ(UPLL_RC_ERR_BAD_REQUEST, vtn.ValidateMessageForVtnStnCtrlr(req, ikey));
 }
 
 TEST_F(VtnMoMgrTest, Invalid_option1) {
@@ -2418,9 +2117,9 @@ TEST_F(VtnMoMgrTest, Invalid_option1) {
 
   key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
   val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
-  EXPECT_EQ(UPLL_RC_ERR_INVALID_OPTION1, vtn.ValidateMessageForVtnStnCtrlr(req, ikey)); 
+  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateMessageForVtnStnCtrlr(req, ikey));
 }
 
 TEST_F(VtnMoMgrTest, Invalid_option2) {
@@ -2434,9 +2133,9 @@ TEST_F(VtnMoMgrTest, Invalid_option2) {
   key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
   val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
   strcpy((char*)key_station->controller_name,(const char *)"pfc1");
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
-  EXPECT_EQ(UPLL_RC_ERR_INVALID_OPTION2, vtn.ValidateMessageForVtnStnCtrlr(req, ikey)); 
+  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateMessageForVtnStnCtrlr(req, ikey));
 }
 
 //when valid stnum with ctrlr name
@@ -2449,23 +2148,26 @@ TEST_F(VtnMoMgrTest, valid_Messages_tnum_ctrlname) {
   strcpy((char*)key_station->controller_name,(const char *)"pfc1");
   ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
-  EXPECT_EQ(UPLL_RC_ERR_NO_SUCH_INSTANCE, vtn.ValidateMessageForVtnStnCtrlr(req, ikey));
+  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateMessageForVtnStnCtrlr(req, ikey));
 }
 
 /* ValidateMessageForVtnMapCtrlr */
 
-//when the configkeyval is null 
+//when the configkeyval is null
 TEST_F(VtnMoMgrTest, ikeynull) {
   VtnMoMgr vtn;
  IPC_REQ_RESP_HEADER_DECL(req);
-  ConfigKeyVal *ikey = NULL;
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.ValidateMessageForVtnMapCtrlr(req, ikey)); // Code has the fix now
+  key_vtnstation_controller_t *key_station = ZALLOC_TYPE(key_vtnstation_controller_t);
+  val_vtnstation_controller_st_t *val_station = ZALLOC_TYPE(val_vtnstation_controller_st_t);
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnstationControllerSt, val_station);
+  ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTNSTATION_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_station, config_val);
+  EXPECT_EQ(UPLL_RC_ERR_BAD_REQUEST, vtn.ValidateMessageForVtnMapCtrlr(req, ikey)); // Code has the fix now
 }
 
-//when the IpcReqRespHeader is null 
+//when the IpcReqRespHeader is null
 TEST_F(VtnMoMgrTest, reqnull) {
   VtnMoMgr vtn;
-  IpcReqRespHeader *req = NULL;
+  IpcReqRespHeader *req = new IpcReqRespHeader;;
 
   key_vtn_controller_t *key_ctrlr = ZALLOC_TYPE(key_vtn_controller_t);
   val_vtn_mapping_controller_st_t *val_mapping = ZALLOC_TYPE(val_vtn_mapping_controller_st_t);
@@ -2473,10 +2175,10 @@ TEST_F(VtnMoMgrTest, reqnull) {
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtnController, key_ctrlr, config_val);
   strcpy((char*)key_ctrlr->vtn_key.vtn_name,(const char *)"vtn1");
   strcpy((char*)key_ctrlr->controller_name,(const char *)"");
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.ValidateMessageForVtnMapCtrlr(req, ikey)); // Code has the fix now
+  EXPECT_EQ(UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT, vtn.ValidateMessageForVtnMapCtrlr(req, ikey)); // Code has the fix now
 }
 
-//when invalid st_num 
+//when invalid st_num
 TEST_F(VtnMoMgrTest, invalid_stnum) {
   VtnMoMgr vtn;
  IPC_REQ_RESP_HEADER_DECL(req);
@@ -2492,10 +2194,10 @@ TEST_F(VtnMoMgrTest, invalid_stnum) {
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtnstationController, key_ctrlr, config_val);
   strcpy((char*)key_ctrlr->vtn_key.vtn_name,(const char *)"vtn1");
   strcpy((char*)key_ctrlr->controller_name,(const char *)"");
-  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateMessageForVtnMapCtrlr(req, ikey)); 
+  EXPECT_EQ(UPLL_RC_ERR_BAD_REQUEST, vtn.ValidateMessageForVtnMapCtrlr(req, ikey));
 }
 
-//when valid stnum with empty ctrlr name and vtn name 
+//when valid stnum with empty ctrlr name and vtn name
 TEST_F(VtnMoMgrTest, valid_stnum_emptyctrlvtnname) {
   VtnMoMgr vtn;
  IPC_REQ_RESP_HEADER_DECL(req);
@@ -2511,10 +2213,10 @@ TEST_F(VtnMoMgrTest, valid_stnum_emptyctrlvtnname) {
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtnController, key_ctrlr, config_val);
   strcpy((char*)key_ctrlr->vtn_key.vtn_name,(const char *)"");
   strcpy((char*)key_ctrlr->controller_name,(const char *)"");
-  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateMessageForVtnMapCtrlr(req, ikey)); 
+  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateMessageForVtnMapCtrlr(req, ikey));
 }
 
-//when valid stnum with empty ctrlr name 
+//when valid stnum with empty ctrlr name
 TEST_F(VtnMoMgrTest, valid_stnum_emptyctrlname) {
   VtnMoMgr vtn;
  IPC_REQ_RESP_HEADER_DECL(req);
@@ -2530,7 +2232,7 @@ TEST_F(VtnMoMgrTest, valid_stnum_emptyctrlname) {
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtnController, key_ctrlr, config_val);
   strcpy((char*)key_ctrlr->vtn_key.vtn_name,(const char *)"vtn1");
   strcpy((char*)key_ctrlr->controller_name,(const char *)"");
-  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateMessageForVtnMapCtrlr(req, ikey)); 
+  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateMessageForVtnMapCtrlr(req, ikey));
 }
 
 //when valid stnum with ctrlr name
@@ -2568,7 +2270,7 @@ TEST_F(VtnMoMgrTest, valid_stnum_emptyvtnname) {
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtnController, key_ctrlr, config_val);
   strcpy((char*)key_ctrlr->vtn_key.vtn_name,(const char *)"");
   strcpy((char*)key_ctrlr->controller_name,(const char *)"pfc1");
-  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateMessageForVtnMapCtrlr(req, ikey)); 
+  EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateMessageForVtnMapCtrlr(req, ikey));
 }
 
 TEST_F(VtnMoMgrTest, invalid_option1) {
@@ -2586,7 +2288,7 @@ TEST_F(VtnMoMgrTest, invalid_option1) {
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtnController, key_ctrlr, config_val);
   strcpy((char*)key_ctrlr->vtn_key.vtn_name,(const char *)"vtn1");
   strcpy((char*)key_ctrlr->controller_name,(const char *)"pfc1");
-  EXPECT_EQ(UPLL_RC_ERR_INVALID_OPTION1, vtn.ValidateMessageForVtnMapCtrlr(req, ikey)); 
+  EXPECT_EQ(UPLL_RC_ERR_INVALID_OPTION1, vtn.ValidateMessageForVtnMapCtrlr(req, ikey));
 }
 
 TEST_F(VtnMoMgrTest, invalid_option2) {
@@ -2604,10 +2306,10 @@ TEST_F(VtnMoMgrTest, invalid_option2) {
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtnController, key_ctrlr, config_val);
   strcpy((char*)key_ctrlr->vtn_key.vtn_name,(const char *)"vtn1");
   strcpy((char*)key_ctrlr->controller_name,(const char *)"pfc1");
-  EXPECT_EQ(UPLL_RC_ERR_INVALID_OPTION2, vtn.ValidateMessageForVtnMapCtrlr(req, ikey)); 
+  EXPECT_EQ(UPLL_RC_ERR_INVALID_OPTION2, vtn.ValidateMessageForVtnMapCtrlr(req, ikey));
 }
 
-//when invalid datatype 
+//when invalid datatype
 TEST_F(VtnMoMgrTest, invalid_datatype) {
   VtnMoMgr vtn;
  IPC_REQ_RESP_HEADER_DECL(req);
@@ -2623,10 +2325,10 @@ TEST_F(VtnMoMgrTest, invalid_datatype) {
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtnController, key_ctrlr, config_val);
   strcpy((char*)key_ctrlr->vtn_key.vtn_name,(const char *)"vtn1");
   strcpy((char*)key_ctrlr->controller_name,(const char *)"pfc1");
-  EXPECT_EQ(UPLL_RC_ERR_NO_SUCH_INSTANCE, vtn.ValidateMessageForVtnMapCtrlr(req, ikey)); 
+  EXPECT_EQ(UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT, vtn.ValidateMessageForVtnMapCtrlr(req, ikey));
 }
 
-//when invalid operation 
+//when invalid operation
 TEST_F(VtnMoMgrTest, invalid_operation) {
   VtnMoMgr vtn;
  IPC_REQ_RESP_HEADER_DECL(req);
@@ -2642,15 +2344,15 @@ TEST_F(VtnMoMgrTest, invalid_operation) {
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN_MAPPING_CONTROLLER, IpctSt::kIpcStKeyVtnController, key_ctrlr, config_val);
   strcpy((char*)key_ctrlr->vtn_key.vtn_name,(const char *)"vtn1");
   strcpy((char*)key_ctrlr->controller_name,(const char *)"pfc1");
-  EXPECT_EQ(UPLL_RC_ERR_NO_SUCH_INSTANCE, vtn.ValidateMessageForVtnMapCtrlr(req, ikey)); 
+  EXPECT_EQ(UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT, vtn.ValidateMessageForVtnMapCtrlr(req, ikey));
 }
 
 /* DupConfigKeyVal */
 
 TEST_F(VtnMoMgrTest, nullkey) {
   VtnMoMgr vtn;
-  ConfigKeyVal *ikey = NULL; 
-  ConfigKeyVal *okey = NULL; 
+  ConfigKeyVal *ikey = NULL;
+  ConfigKeyVal *okey = NULL;
   MoMgrTables tbl = RENAMETBL;
 
   EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.DupConfigKeyVal(okey, ikey, tbl));
@@ -2667,7 +2369,7 @@ TEST_F(VtnMoMgrTest, invalid_ctrlrName) {
   bool in_use;
   key_vtn *key = ZALLOC_TYPE(key_vtn);
   GetKeyValStruct(key, val);
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtn, val); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtn, val);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, key, config_val);
   key_ctr_t *key_ctr_test =
            reinterpret_cast<key_ctr_t *>(ikey->get_key());
@@ -2692,7 +2394,7 @@ TEST_F(VtnMoMgrTest, KeyInUse_ikey_NULL) {
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, NULL, NULL);
   EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.IsKeyInUse(dt_type,ikey,&in_use,dmi));
 }
-TEST_F(VtnMoMgrTest, ValidateMessage_01) {
+/*TEST_F(VtnMoMgrTest, ValidateMessage_01) {
 
   VtnMoMgr vtn;
   key_vtn *key;
@@ -2715,8 +2417,9 @@ TEST_F(VtnMoMgrTest, ValidateMessage_01) {
 
   EXPECT_EQ(UPLL_RC_SUCCESS, vtn.ValidateMessage(req, ikey));
   cout<<"TEST_F: Positive: ValidCREATE"<<endl;
+  GetKeyValStruct(key, val);
+  ConfigVal *cfgval2 = new ConfigVal(IpctSt::kIpcStValVtn, val);
 
-  ConfigVal *cfgval2 = NULL;
   ConfigKeyVal *ikey2 = new ConfigKeyVal(UNC_KT_VTN,
                             IpctSt::kIpcStKeyVtn,
                             key, cfgval2);
@@ -2746,7 +2449,8 @@ TEST_F(VtnMoMgrTest, ValidateMessage_01) {
                             key, cfgval3);
   EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, vtn.ValidateMessage(req, ikey3));
 
-  val_rename_vtn *vtn_rename =NULL;
+  val_rename_vtn *vtn_rename =ZALLOC_TYPE(val_rename_vtn_t);
+
   ConfigVal *cfgval4 = new ConfigVal(IpctSt::kIpcStValVtn, vtn_rename);
   ConfigKeyVal *ikey4 = new ConfigKeyVal(UNC_KT_VTN,
                             IpctSt::kIpcStKeyVtn,
@@ -2909,6 +2613,7 @@ TEST_F(VtnMoMgrTest, ValidateMessage_03) {
   delete ikey1;
 
 }
+
 TEST_F(VtnMoMgrTest, ValidateMessage_04) {
 
   VtnMoMgr vtn;
@@ -2963,6 +2668,7 @@ TEST_F(VtnMoMgrTest, ValidateMessage_04) {
   delete ikey2;
   delete ikey1;
 }
+
 TEST_F(VtnMoMgrTest, ValVtnAttributeSupportCheck_01) {
 
   VtnMoMgr vtn;
@@ -2971,8 +2677,8 @@ TEST_F(VtnMoMgrTest, ValVtnAttributeSupportCheck_01) {
 
   GetKeyValStruct(key, val);
   uint32_t operation= UNC_OP_CREATE;
-  const uint8_t *attrs = 0;
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtn, val); 
+  const uint8_t *attrs = ;
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtn, val);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, key, config_val);
   EXPECT_EQ(UPLL_RC_SUCCESS, vtn.ValVtnAttributeSupportCheck(val,attrs,operation));
   delete ikey;
@@ -2987,11 +2693,12 @@ TEST_F(VtnMoMgrTest, ValVtnAttributeSupportCheck_02) {
   uint32_t operation = UNC_OP_CREATE;
   //val->valid[UPLL_IDX_DESC_VTN] == UNC_VF_VALID;
   const uint8_t *attrs = 0;
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtn, val); 
+  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtn, val);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, key, config_val);
   EXPECT_EQ(UPLL_RC_SUCCESS, vtn.ValVtnAttributeSupportCheck(val,attrs,operation));
   delete ikey;
 }
+*/
 TEST_F(VtnMoMgrTest, SetOperStatus_ikey_NULL) {
 
   VtnMoMgr vtn;
@@ -3002,7 +2709,7 @@ TEST_F(VtnMoMgrTest, SetOperStatus_ikey_NULL) {
   GetKeyValStruct(key, val);
   state_notification notification = kCommit;
   ConfigKeyVal *ikey =NULL;
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.SetOperStatus(ikey,notification,dmi));
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.SetOperStatus(ikey,notification,dmi,true));
   delete ikey;
 }
 TEST_F(VtnMoMgrTest, invalid_key) {
@@ -3080,7 +2787,7 @@ TEST_F(VtnMoMgrTest,SwapKey_ikey_NULL ) {
   delete ikey;
   delete okey;
 }
-
+/*
 TEST_F(VtnMoMgrTest,SwapKey_IpctSt_valid ) {
 
   VtnMoMgr vtn;
@@ -3098,10 +2805,10 @@ TEST_F(VtnMoMgrTest,SwapKey_IpctSt_valid ) {
   val_rename_vtn_t *val = ZALLOC_TYPE(val_rename_vtn_t);
   ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnSt, val);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, key, config_val);
-  ConfigKeyVal *okey = NULL;
+  ConfigKeyVal *okey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, key, config_val);
 
   EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.SwapKeyVal(ikey,okey,dmi,ctr_id1,no_rename));
-  
+
   val->valid[UPLL_IDX_NEW_NAME_RVTN] = UNC_VF_VALID_NO_VALUE;
   EXPECT_EQ(UPLL_RC_SUCCESS, vtn.SwapKeyVal(ikey,okey,dmi,ctr_id1,no_rename));
 
@@ -3109,20 +2816,20 @@ TEST_F(VtnMoMgrTest,SwapKey_IpctSt_valid ) {
   ConfigKeyVal *ikey1 = new ConfigKeyVal(UNC_KT_VBRIDGE, IpctSt::kIpcStKeyVtn, key, config_val1);
   EXPECT_EQ(UPLL_RC_ERR_BAD_REQUEST, vtn.SwapKeyVal(ikey1,okey,dmi,ctr_id1,no_rename));
 
-  ConfigVal *config_val2= NULL;
-  ConfigKeyVal *ikey2 = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, key, config_val2);
-  EXPECT_EQ(UPLL_RC_ERR_BAD_REQUEST, vtn.SwapKeyVal(ikey2,okey,dmi,ctr_id1,no_rename));
+//  ConfigVal *config_val2= NULL;
+//  ConfigKeyVal *ikey2 = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, key, config_val2);
+//  EXPECT_EQ(UPLL_RC_ERR_BAD_REQUEST, vtn.SwapKeyVal(ikey2,okey,dmi,ctr_id1,no_rename));
 
-  val_rename_vtn_t *val3 = NULL;
-  ConfigVal *config_val3= new ConfigVal(IpctSt::kIpcStValVtnSt, val3);
-  ConfigKeyVal *ikey3 = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, key, config_val3);
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.SwapKeyVal(ikey3,okey,dmi,ctr_id1,no_rename));
+//  val_rename_vtn_t *val3 = ZALLOC_TYPE(val_rename_vtn_t);;
+//  ConfigVal *config_val3= new ConfigVal(IpctSt::kIpcStValVtnSt, val3);
+//  ConfigKeyVal *ikey3 = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, key, config_val3);
+//  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.SwapKeyVal(ikey3,okey,dmi,ctr_id1,no_rename));
 
   delete ikey;
   delete ikey1;
-  delete ikey2;
+//  delete ikey2;
   delete okey;
-}
+}*/
 TEST_F(VtnMoMgrTest,IpctSt_valid_01 ) {
 
   VtnMoMgr vtn;
@@ -3334,7 +3041,7 @@ TEST_F(VtnMoMgrTest,ctrlr_valid ) {
   vtn_name, strlen(domain_id)+1);
   val_vtn_ctrlr_t *val_vtn = ZALLOC_TYPE(val_vtn_ctrlr_t);
   val_vtn->down_count=0;
-  val_vtn->ref_count=0;
+//  val_vtn->ref_count=0;
   val_vtn->cs_row_status=UNC_CS_APPLIED;
   ConfigVal *config_val = new ConfigVal(IpctSt::kIpcStValVtn, val_vtn);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, key, config_val);
@@ -3391,7 +3098,7 @@ TEST_F(VtnMoMgrTest,Consolidate_ikey_proper ) {
   vtn_name, strlen(vtn_name)+1);
   val_vtn_ctrlr_t *val_vtn = ZALLOC_TYPE(val_vtn_ctrlr_t);
   val_vtn->down_count=0;
-  val_vtn->ref_count=0;
+  //val_vtn->ref_count=0;
   ConfigVal *config_val = new ConfigVal(IpctSt::kIpcStValVtn, val_vtn);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, key, config_val);
 
@@ -3403,8 +3110,12 @@ TEST_F(VtnMoMgrTest,TxCopy_ikey_NULL ) {
   VtnMoMgr vtn;
   unc_key_type_t keytype = UNC_KT_VTN;
   CtrlrCommitStatusList *ctrlr_commit_status=NULL;
+  string vtn_name = "vtn1";
+  TcConfigMode config_mode = TC_CONFIG_VTN;
+
   DalDmlIntf *dmi(getDalDmlIntf());
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.TxCopyCandidateToRunning(keytype,ctrlr_commit_status,dmi));
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.TxCopyCandidateToRunning
+            (keytype,ctrlr_commit_status,dmi, config_mode, vtn_name));
 }
 TEST_F(VtnMoMgrTest,valid_01 ) {
 
@@ -3432,9 +3143,11 @@ TEST_F(VtnMoMgrTest,valid_01 ) {
   ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnSt, val);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, key, config_val);
   l_CtrlrTxResult->err_ckv = ikey;
-
+  string vtn_name = "vtn1";
+  TcConfigMode config_mode = TC_CONFIG_VTN;
   DalDmlIntf *dmi(getDalDmlIntf());
-  EXPECT_EQ(UPLL_RC_SUCCESS, vtn.TxCopyCandidateToRunning(keytype,&CtrlrCommitStatusList,dmi));
+  EXPECT_EQ(UPLL_RC_SUCCESS, vtn.TxCopyCandidateToRunning
+            (keytype,&CtrlrCommitStatusList,dmi,config_mode, vtn_name));
 }
 TEST_F(VtnMoMgrTest,valid_02 ) {
 
@@ -3460,9 +3173,11 @@ TEST_F(VtnMoMgrTest,valid_02 ) {
   ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnSt, val);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, key, config_val);
   l_CtrlrTxResult->err_ckv = ikey;
-
+  string vtn_name = "vtn1";
+  TcConfigMode config_mode = TC_CONFIG_VTN;
   DalDmlIntf *dmi(getDalDmlIntf());
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.TxCopyCandidateToRunning(keytype,&CtrlrCommitStatusList,dmi));
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.TxCopyCandidateToRunning
+            (keytype,&CtrlrCommitStatusList,dmi,config_mode, vtn_name));
   DalOdbcMgr::clearStubData();
 }
 TEST_F(VtnMoMgrTest, GetRenameInfo_ikey_NULL ) {
@@ -3667,8 +3382,12 @@ TEST_F(VtnMoMgrTest,TxUpdate_default ) {
   GetKeyValStruct(key, val);
   ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnSt, val);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, key, config_val);
-
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.TxUpdateController(UNC_KT_VTN,session_id,config_id,phase,affected_ctrlr_set,dmi,&ikey));
+  TcConfigMode config_mode = TC_CONFIG_VTN;
+  string vtn_name = "vtn1";
+  TxUpdateUtil tx(4);
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.TxUpdateController(UNC_KT_VTN,session_id,config_id,
+                                                        phase,affected_ctrlr_set,dmi,&ikey,
+                                                        &tx, config_mode, vtn_name));
 }
 TEST_F(VtnMoMgrTest,Create ) {
 
@@ -3686,8 +3405,12 @@ TEST_F(VtnMoMgrTest,Create ) {
   GetKeyValStruct(key, val);
   ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnSt, val);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, key, config_val);
-
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.TxUpdateController(UNC_KT_VTN,session_id,config_id,phase,affected_ctrlr_set,dmi,&ikey));
+  TcConfigMode config_mode = TC_CONFIG_VTN;
+  string vtn_name = "vtn1";
+  TxUpdateUtil tx(4);
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.TxUpdateController(UNC_KT_VTN,session_id,config_id,
+                                                        phase,affected_ctrlr_set,dmi,&ikey,
+                                                        &tx, config_mode, vtn_name));
 }
 TEST_F(VtnMoMgrTest,TxController_Update ) {
 
@@ -3702,8 +3425,12 @@ TEST_F(VtnMoMgrTest,TxController_Update ) {
   GetKeyValStruct(key, val);
   ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnSt, val);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, key, config_val);
-
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.TxUpdateController(UNC_KT_VTN,session_id,config_id,phase,affected_ctrlr_set,dmi,&ikey));
+  TcConfigMode config_mode = TC_CONFIG_VTN;
+  string vtn_name = "vtn1";
+  TxUpdateUtil tx(4);
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.TxUpdateController(UNC_KT_VTN,session_id,config_id,
+                                                        phase,affected_ctrlr_set,dmi,&ikey,
+                                                        &tx, config_mode, vtn_name));
 }
 TEST_F(VtnMoMgrTest,TxController_Delete ) {
 
@@ -3718,9 +3445,14 @@ TEST_F(VtnMoMgrTest,TxController_Delete ) {
   GetKeyValStruct(key, val);
   ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVtnSt, val);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, key, config_val);
-
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.TxUpdateController(UNC_KT_VTN,session_id,config_id,phase,affected_ctrlr_set,dmi,&ikey));
+  TcConfigMode config_mode = TC_CONFIG_VTN;
+  string vtn_name = "vtn1";
+  TxUpdateUtil tx(4);
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vtn.TxUpdateController(UNC_KT_VTN,session_id,config_id,
+                                                        phase,affected_ctrlr_set,dmi,&ikey,
+                                                        &tx, config_mode, vtn_name));
 }
-}
-}
-}
+#endif
+//}
+//}
+//}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -9,37 +9,60 @@
 
 
 #include <uncxx/tc/libtc_common.hh>
+#include <unc/upll_svc.h>
+#include <unc/uppl_common.h>
 
 #define TCLIB_SERVICE_NAME "tclib"
 
 namespace unc {
 namespace tc {
 
+std::map<pfc_ipcconn_t, pfc::core::ipc::ClientSession*>
+                                              TcClientSessionUtils::sess_map_;
+pthread_mutex_t TcClientSessionUtils::sess_map_lock_ = PTHREAD_MUTEX_INITIALIZER;
+
+pfc_bool_t TcClientSessionUtils::sys_stop_ = PFC_FALSE;
+pthread_mutex_t TcClientSessionUtils::sys_stop_lock_ = PTHREAD_MUTEX_INITIALIZER;
+
 /*IPC session creation*/
 pfc::core::ipc::ClientSession*
     TcClientSessionUtils::create_tc_client_session(std::string channel_name,
                                                    uint32_t service_id,
                                                    pfc_ipcconn_t &conn,
-                                                   pfc_bool_t infinite_timeout) {
+                                                   pfc_bool_t infinite_timeout,
+                                                   pfc_bool_t to_tclib) {
   pfc::core::ipc::ClientSession* result_session = NULL;
   int err = 0;
   /*open an alternate connection*/
   err = pfc_ipcclnt_altopen(channel_name.c_str(), &conn);
+
   if (err != 0 || conn == 0) {
     pfc_log_fatal("pfc_ipcclnt_altopen failed");
     return NULL;
   }
+
+  std::string service_name;
+
+  if (to_tclib == PFC_FALSE && service_id == UPLL_GLOBAL_CONFIG_SVC_ID) {
+    service_name = UPLL_IPC_SERVICE_NAME;
+  } else if (to_tclib == PFC_FALSE && service_id == UPPL_SVC_GLOBAL_CONFIG) {
+    service_name = UPPL_IPC_SVC_NAME;
+  } else { 
+    service_name = TCLIB_SERVICE_NAME;
+  }
   /*create a client session to TCLIB*/
   result_session=
       new pfc::core::ipc::ClientSession(conn,
-                                        TCLIB_SERVICE_NAME,
+                                        service_name,
                                         service_id,
-                                        err);
+                                        err,
+                                        PFC_IPCSSF_CANCELABLE);
   if ( result_session == NULL ) {
     pfc_log_fatal("creating a ClientSession failed");
     pfc_ipcclnt_altclose(conn);
     return NULL;
   }
+
   /*set infinite timeout for commit/audit operations*/
   if (infinite_timeout) {
     err = result_session->setTimeout(NULL);
@@ -51,6 +74,20 @@ pfc::core::ipc::ClientSession*
       return NULL;
     }
   }
+
+  // Inserting session id and connection id into map
+  pthread_mutex_lock(&sess_map_lock_);
+  std::map<pfc_ipcconn_t, pfc::core::ipc::ClientSession*>::iterator it;
+  it = sess_map_.find(conn);
+  if (it != sess_map_.end()) {
+    pfc_log_warn("%s Connection-id %u already exists. Overwriting...",
+                 __FUNCTION__, conn);
+  }
+
+  pfc_log_debug("%s Adding conn[%u] to sess_map_", __FUNCTION__, conn);
+  sess_map_[conn] = result_session;
+  pthread_mutex_unlock(&sess_map_lock_);
+
   /*return session pointer*/
   return result_session;
 }
@@ -63,13 +100,27 @@ TcUtilRet TcClientSessionUtils::tc_session_invoke(
     pfc_log_error("Session param is NULL");
     return TCUTIL_RET_FAILURE;
   }
+
+  if (get_sys_stop()) {
+    pfc_log_error("%s SYS_STOP in-progress. Cannot invoke()",
+                  __FUNCTION__);
+    return TCUTIL_RET_FATAL;
+  }
+
   /*invoke a session*/
   err = csess->invoke(response);
   if ( err != 0 ) {
-    pfc_log_fatal("Session invoke failed. Errno:%d", err);
+    if (get_sys_stop() &&
+        (err == ESHUTDOWN || err == ECANCELED)) {
+      pfc_log_warn("%s SYS_STOP set. Session invoke Cancelled. Errno:%d",
+                   __FUNCTION__, err);
+    } else {
+      pfc_log_fatal("Session invoke failed. Errno:%d", err);
+    }
     return TCUTIL_RET_FATAL;
   }
   return TCUTIL_RET_SUCCESS;
+  
 }
 /*IPC session close*/
 TcUtilRet
@@ -81,13 +132,56 @@ TcClientSessionUtils::tc_session_close(pfc::core::ipc::ClientSession** csess,
     delete *csess;
     *csess = NULL;
   }
+
   /*close the alternate connection*/
   err = pfc_ipcclnt_altclose(conn);
   if (err != 0) {
     pfc_log_fatal("pfc_ipcclnt_altclose failed");
     return TCUTIL_RET_FAILURE;
   }
+
+  // Remove from sess_map_
+  pthread_mutex_lock(&sess_map_lock_);
+
+  std::map<pfc_ipcconn_t, pfc::core::ipc::ClientSession*>::iterator it;
+  it = sess_map_.find(conn);
+  if (it == sess_map_.end()) {
+    pfc_log_error("%s Cannot find conn[%u] in sess_map", __FUNCTION__, conn);
+  } else {
+    pfc_log_debug("%s Removing sess_map_ entry from conn[%u]",
+                 __FUNCTION__, conn);
+    sess_map_.erase(it);
+  }
+  pthread_mutex_unlock(&sess_map_lock_);
   return TCUTIL_RET_SUCCESS;
+}
+
+/* Cancel all pending sessions during sys_stop event */
+TcUtilRet TcClientSessionUtils::tc_session_cancel_all_sessions() {
+  // Set the sys_stop flag to true
+  set_sys_stop(PFC_TRUE);
+
+  pfc_log_info("%s Cancelling all existing sessions", __FUNCTION__);
+
+  pthread_mutex_lock(&sess_map_lock_);
+  std::map<pfc_ipcconn_t, pfc::core::ipc::ClientSession*>::iterator it;
+
+  for (it = sess_map_.begin();
+       it != sess_map_.end();
+       ++it) {
+    pfc_log_info("%s pfc_ipcclnt_sess_cancel for conn[%u]",
+                 __FUNCTION__, it->first);
+    int ret = it->second->cancel(PFC_TRUE);
+    if (ret != 0) {
+      pfc_log_error("%s Cannot cancel conn[%u]. Errno=%d",
+                    __FUNCTION__, it->first, ret);
+    }
+  }
+
+  sess_map_.clear();
+  pthread_mutex_unlock(&sess_map_lock_);
+
+  return TCUTIL_RET_SUCCESS; 
 }
 
 /*retrieve uint64_t data from IPC session*/
@@ -240,6 +334,14 @@ TcUtilRet TcClientSessionUtils::get_string(
   return TCUTIL_RET_SUCCESS;
 }
 
+/* Retrieve value for sys_stop_ flag */
+pfc_bool_t TcClientSessionUtils::get_sys_stop() {
+  pthread_mutex_lock(&sys_stop_lock_);
+  pfc_bool_t stop = sys_stop_;
+  pthread_mutex_unlock(&sys_stop_lock_);
+  return stop;
+}
+
 /*set uint64_t data to IPC session*/
 TcUtilRet TcClientSessionUtils::set_uint64(
                           pfc::core::ipc::ClientSession* csess,
@@ -309,6 +411,13 @@ TcUtilRet TcClientSessionUtils::set_string(
     pfc_log_error("Appending data to ClientSession failed");
     return TCUTIL_RET_FATAL;
   }
+  return TCUTIL_RET_SUCCESS;
+}
+
+TcUtilRet TcClientSessionUtils::set_sys_stop(pfc_bool_t is_sys_stop) {
+  pthread_mutex_lock(&sys_stop_lock_);
+  sys_stop_ = is_sys_stop;
+  pthread_mutex_unlock(&sys_stop_lock_);
   return TCUTIL_RET_SUCCESS;
 }
 

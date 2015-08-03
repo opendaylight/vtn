@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -148,9 +148,9 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 					&& VtnServiceConsts.GET.equals(method)) {
 				isValid = validateGet(requestBody, isListOpFlag());
 				updateOpParameterForList(requestBody);
-				// } else if (isValid && requestBody != null
-				// && VtnServiceConsts.PUT.equals(method)) {
-				// isValid = validatePut(requestBody);
+			} else if (isValid && requestBody != null
+					&& VtnServiceConsts.PUT.equals(method)) {
+				isValid = validatePut(requestBody);
 			} else if (isValid && requestBody != null
 					&& VtnServiceConsts.POST.equals(method)) {
 				isValid = validatePost(requestBody);
@@ -276,21 +276,18 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 					isValid = false;
 				}
 			}
-			// validation for key: nmg_name(mandatory)
-			// if (isValid) {
-			// setInvalidParameter(VtnServiceJsonConsts.NMGNAME);
-			// if (staticIp.has(VtnServiceJsonConsts.NMGNAME)
-			// && staticIp.getAsJsonPrimitive(
-			// VtnServiceJsonConsts.NMGNAME).getAsString() != null
-			// && !staticIp
-			// .getAsJsonPrimitive(
-			// VtnServiceJsonConsts.NMGNAME)
-			// .getAsString().isEmpty()) {
-			// isValid = validator.isValidMaxLengthAlphaNum(staticIp
-			// .getAsJsonPrimitive(VtnServiceJsonConsts.NMGNAME)
-			// .getAsString(), VtnServiceJsonConsts.LEN_31);
-			// }
-			// }
+			// validation for key: nexthopaddress (mandatory)
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.NEXTHOPADDR);
+				if (staticIp.has(VtnServiceJsonConsts.NEXTHOPADDR)
+						&& staticIp.getAsJsonPrimitive(
+								VtnServiceJsonConsts.NEXTHOPADDR).getAsString() != null) {
+					isValid = validator.isValidIpV4(staticIp.getAsJsonPrimitive(
+							VtnServiceJsonConsts.NEXTHOPADDR).getAsString());
+				} else {
+					isValid = false;
+				}
+			}
 			if (isValid) {
 				isValid = validatePut(requestBody);
 			}
@@ -321,13 +318,30 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 						.isJsonObject()) {
 			final JsonObject staticIp = requestBody
 					.getAsJsonObject(VtnServiceJsonConsts.STATIC_IPROUTE);
-			// validation for key: nexthopaddress (mandatory)
-			setInvalidParameter(VtnServiceJsonConsts.NEXTHOPADDR);
-			if (staticIp.has(VtnServiceJsonConsts.NEXTHOPADDR)
-					&& staticIp.getAsJsonPrimitive(
-							VtnServiceJsonConsts.NEXTHOPADDR).getAsString() != null) {
-				isValid = validator.isValidIpV4(staticIp.getAsJsonPrimitive(
-						VtnServiceJsonConsts.NEXTHOPADDR).getAsString());
+
+			isValid = true;
+			//validation for key: nmg_name(option)
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.NMGNAME);
+				if (staticIp.has(VtnServiceJsonConsts.NMGNAME)
+						&& staticIp.getAsJsonPrimitive(
+								VtnServiceJsonConsts.NMGNAME).getAsString() != null) {
+					isValid = validator.isValidMaxLengthAlphaNum(staticIp
+									.getAsJsonPrimitive(VtnServiceJsonConsts.NMGNAME)
+									.getAsString(), VtnServiceJsonConsts.LEN_31);
+				}
+			}
+			//validation for key: groupmetric(option)
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.GROUPMETRIC);
+				if (staticIp.has(VtnServiceJsonConsts.GROUPMETRIC)
+						&& staticIp.getAsJsonPrimitive(
+								VtnServiceJsonConsts.GROUPMETRIC).getAsString() != null) {
+					isValid = validator.isValidRange(staticIp.getAsJsonPrimitive(
+									VtnServiceJsonConsts.GROUPMETRIC).getAsString(),
+									VtnServiceJsonConsts.VAL_1,
+									VtnServiceJsonConsts.VAL_65535);
+				}
 			}
 		}
 		LOG.trace("Complete StaticIpRouteResourceValidator#validatePut()");

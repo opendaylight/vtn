@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -74,7 +74,10 @@ public class AlarmResource extends AbstractResource {
 					.getAsJsonPrimitive(VtnServiceJsonConsts.ALARMNO)
 					.getAsString()));
 			LOG.info("Request packet created successfully");
+			long start = System.currentTimeMillis();
 			status = session.invoke();
+			LOG.debug("The treatment of under layer cost the following time: "
+					+ (System.currentTimeMillis() - start) + "(ms)");
 			LOG.info("Request packet processed with status:" + status);
 			if (status != UncSYSMGEnums.NodeIpcErrorT.NOMG_E_OK.ordinal()) {
 				LOG.info("Error occurred while performing operation");
@@ -129,7 +132,10 @@ public class AlarmResource extends AbstractResource {
 					UncSYSMGEnums.NOMG_IPC_SERVICE_NAME,
 					UncSYSMGEnums.NodeMgrServiceID.kAlarmStatusListGet
 							.ordinal(), getExceptionHandler());
+			long start = System.currentTimeMillis();
 			status = session.invoke();
+			LOG.debug("The treatment of under layer cost the following time: "
+					+ (System.currentTimeMillis() - start) + "(ms)");
 			LOG.info("Request packet processed with status:" + status);
 			if (status != UncSYSMGEnums.NodeIpcErrorT.NOMG_E_OK.ordinal()) {
 				LOG.info("Error occurred while performing operation");

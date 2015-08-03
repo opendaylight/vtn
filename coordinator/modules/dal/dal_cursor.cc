@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -75,6 +75,7 @@ DalCursor::CloseCursor(bool delete_bind) {
       delete bind_info_2_;
     if (stmt_handle_2_ != SQL_NULL_HANDLE) {
       dal_rc_2 = CloseStmtHandle(const_cast<SQLHANDLE>(stmt_handle_2_));
+      stmt_handle_2_ = SQL_NULL_HANDLE;
       if (dal_rc_2 != kDalRcSuccess) {
         UPLL_LOG_DEBUG("Stmt Handle 2 not released");
         if (dal_rc_2 == kDalRcConnNotAvailable) {
@@ -94,6 +95,7 @@ DalCursor::CloseCursor(bool delete_bind) {
   }
 
   dal_rc_1 = CloseStmtHandle(const_cast<SQLHANDLE>(stmt_handle_1_));
+  stmt_handle_1_ = SQL_NULL_HANDLE;
   if (dal_rc_1 != kDalRcSuccess) {
     UPLL_LOG_DEBUG("Stmt Handle 1 not released");
     return dal_rc_1;
@@ -183,7 +185,7 @@ DalCursor::CloseStmtHandle(SQLHANDLE stmt_handle) {
     if (free_dal_rc != kDalRcSuccess) {
       UPLL_LOG_TRACE("Err - %d. Failed to Free Handle %p",
                      free_dal_rc, stmt_handle);
-      return ((dal_rc == kDalRcSuccess) ? free_dal_rc : dal_rc); 
+      return ((dal_rc == kDalRcSuccess) ? free_dal_rc : dal_rc);
     }
   }
   stmt_handle = NULL;

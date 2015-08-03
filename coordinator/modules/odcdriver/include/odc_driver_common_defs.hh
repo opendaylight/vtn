@@ -66,6 +66,7 @@ const std::string SW_PREFIX             = "SW-";
 const std::string PP_PREFIX             = "PP-";
 const std::string PP_OF_PREFIX          = "PP-OF:";
 const std::string UNTAGGED_VLANID       = "65535";
+const std::string DEFAULT_IP            = "0.0.0.0";
 const std::string SWITCH_BASE           = "openflow:";
 const std::string SWITCH_HEX            = "0000000000000000";
 
@@ -159,6 +160,15 @@ typedef enum {
 typedef enum {
   VAL_DESCRPTION_ATTR = 0
 } LinkValFlag;
+
+typedef enum {
+  CTRLINFO_NO_CHANGE = 0, /* No changes */
+  CTRLINFO_IP_ADDED, /* IP Address added   */
+  CTRLINFO_IP_REMOVED, /* IP Address removed */
+  CTRLINFO_IP_CHANGED, /* IP Address changed */
+  CTRLINFO_OTHER_UPDATE
+      /* Other changes      */
+} ctrl_info_update_type_t;
 
 }  //  namespace odcdriver
 }  //  namespace unc

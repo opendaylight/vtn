@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -222,7 +222,7 @@ public class VtnServiceWebUtil {
 	 * @throws VtnServiceWebAPIException
 	 *             the vtn service web api exception
 	 */
-	public static JsonObject prepareAquireConfigJSON()
+	public static JsonObject prepareAquireConfigJSON(final JsonObject configObject)
 			throws VtnServiceWebAPIException {
 		LOG.trace("Start VtnServiceWebUtil#prepareAquireConfigJSON()");
 		final JsonObject configJson = new JsonObject();
@@ -232,24 +232,13 @@ public class VtnServiceWebUtil {
 			configJson.addProperty(ApplicationConstants.OP, opForce);
 		}
 
-		/* Set timeout. */
-		String timeout = ConfigurationManager.getInstance()
-				.getConfProperty(ApplicationConstants.CFG_MODE_TIMEOUT);
-		if (timeout != null && !timeout.isEmpty()) {
-			CommonValidator validator = new CommonValidator();
-			long min = Integer.MIN_VALUE;
-			long max = Integer.MAX_VALUE;
-			try {
-				if (!validator.isValidRange(timeout, min, max)) {
-					timeout = ApplicationConstants.CFG_TIMEOUT_DEFAULT;
-				}
-			} catch (Exception e) {
-				timeout = ApplicationConstants.CFG_TIMEOUT_DEFAULT;
-			}
+
+		if (configObject.getAsJsonPrimitive(ApplicationConstants.MODE)
+				.getAsString().equals(ApplicationConstants.GLOBAL_MODE)) {
+			prepareGlobalConfigJSON(configJson);
 		} else {
-			timeout = ApplicationConstants.CFG_TIMEOUT_DEFAULT;
+			preparePartialConfigJSON(configJson, configObject);
 		}
-		configJson.addProperty(ApplicationConstants.TIMEOUT, timeout);
 		LOG.trace("Complete VtnServiceWebUtil#prepareAquireConfigJSON()");
 		return configJson;
 	}
@@ -283,10 +272,60 @@ public class VtnServiceWebUtil {
 	 * @return the json object
 	 */
 	public static JsonObject prepareConfigCommitOrSaveJSON(
-			final String operation) {
+			final String operation) throws VtnServiceWebAPIException {
 		LOG.trace("Start VtnServiceWebUtil#prepareConfigCommitOrSaveJSON()");
 		final JsonObject commitConfigJson = new JsonObject();
 		final JsonObject commitConfigObj = new JsonObject();
+
+		if (operation.equals(ApplicationConstants.OPERATION_COMMIT)) {
+			/* Set timeout. */
+			String timeout = ConfigurationManager.getInstance()
+					.getConfProperty(ApplicationConstants.COMMIT_TIMEOUT);
+			if (timeout != null && !timeout.isEmpty()) {
+				CommonValidator validator = new CommonValidator();
+				long min = Integer.MIN_VALUE;
+				long max = Integer.MAX_VALUE;
+				try {
+					if (!validator.isValidRange(timeout, min, max)) {
+						LOG.warning("prepareConfigCommitOrSaveJSON():timeout("
+								+ timeout + ") is out of range.use default value.");
+						timeout = ApplicationConstants.COMMIT_TIMEOUT_DEFAULT;
+					}
+				} catch (Exception e) {
+					LOG.warning("prepareConfigCommitOrSaveJSON():timeout("
+							+ timeout + ") can not convert to integer. use default value.");
+					timeout = ApplicationConstants.COMMIT_TIMEOUT_DEFAULT;
+				}
+			} else {
+				LOG.warning("prepareConfigCommitOrSaveJSON():timeout is null or empty.");
+				timeout = ApplicationConstants.COMMIT_TIMEOUT_DEFAULT;
+			}
+
+			/* Set cancel_audit. */
+			String cancelAudit = ConfigurationManager.getInstance()
+					.getConfProperty(ApplicationConstants.CANCEL_AUDIT);
+			if (cancelAudit != null && !cancelAudit.isEmpty()) {
+				try {
+					if (Integer.parseInt(cancelAudit) != 0
+							&& Integer.parseInt(cancelAudit) != 1) {
+						LOG.warning("prepareConfigCommitOrSaveJSON():cancelAudit("
+									+ cancelAudit + ") is invalid.use default value.");
+						cancelAudit = ApplicationConstants.CANCEL_AUDIT_DEFAULT;
+					}
+				} catch (NumberFormatException e) {
+					LOG.warning("prepareConfigCommitOrSaveJSON():cancelAudit("
+								+ cancelAudit + ") can not convert to integer.use default value.");
+					cancelAudit = ApplicationConstants.CANCEL_AUDIT_DEFAULT;
+				}
+			} else {
+				LOG.warning("prepareConfigCommitOrSaveJSON():cancelAudit is null or empty.");
+				cancelAudit = ApplicationConstants.CANCEL_AUDIT_DEFAULT;
+			}
+
+			commitConfigJson.addProperty(ApplicationConstants.TIMEOUT, timeout);
+			commitConfigJson.addProperty(ApplicationConstants.CANCEL_AUDIT, cancelAudit);
+		}
+
 		commitConfigJson.addProperty(ApplicationConstants.OPERATION, operation);
 		commitConfigObj.add(ApplicationConstants.CONFIGURATION_STRING,
 				commitConfigJson);
@@ -301,10 +340,58 @@ public class VtnServiceWebUtil {
 	 *            the operation
 	 * @return the json object
 	 */
-	public static JsonObject prepareCandidateAbortJSON(final String operation) {
+	public static JsonObject prepareCandidateAbortJSON(final String operation)
+			 					throws VtnServiceWebAPIException {
 		LOG.trace("Start VtnServiceWebUtil#prepareCandidateAbortJSON()");
 		final JsonObject abortConfigJson = new JsonObject();
 		final JsonObject abortConfigObj = new JsonObject();
+
+		/* Set timeout. */
+		String timeout = ConfigurationManager.getInstance()
+				.getConfProperty(ApplicationConstants.ABORT_TIMEOUT);
+		if (timeout != null && !timeout.isEmpty()) {
+			CommonValidator validator = new CommonValidator();
+			long min = Integer.MIN_VALUE;
+			long max = Integer.MAX_VALUE;
+			try {
+				if (!validator.isValidRange(timeout, min, max)) {
+					LOG.warning("prepareCandidateAbortJSON():timeout("
+							+ timeout + ") is out of range.use default value.");
+					timeout = ApplicationConstants.ABORT_TIMEOUT_DEFAULT;
+				}
+			} catch (Exception e) {
+				LOG.warning("prepareCandidateAbortJSON():timeout("
+						+ timeout + ") can not convert to integer. use default value.");
+				timeout = ApplicationConstants.ABORT_TIMEOUT_DEFAULT;
+			}
+		} else {
+			LOG.warning("prepareCandidateAbortJSON():timeout is null or mepty.");
+			timeout = ApplicationConstants.ABORT_TIMEOUT_DEFAULT;
+		}
+
+		/* Set cancel_audit. */
+		String cancelAudit = ConfigurationManager.getInstance()
+				.getConfProperty(ApplicationConstants.CANCEL_AUDIT);
+		if (cancelAudit != null && !cancelAudit.isEmpty()) {
+			try {
+				if (Integer.parseInt(cancelAudit) != 0
+						&& Integer.parseInt(cancelAudit) != 1) {
+					LOG.warning("prepareCandidateAbortJSON():cancelAudit("
+							+ cancelAudit + ") is invalid.use default value.");
+					cancelAudit = ApplicationConstants.CANCEL_AUDIT_DEFAULT;
+				}
+			} catch (NumberFormatException e) {
+				LOG.warning("prepareCandidateAbortJSON():cancelAudit("
+						+ cancelAudit + ") can not convert to integer.use default value.");
+				cancelAudit = ApplicationConstants.CANCEL_AUDIT_DEFAULT;
+			}
+		} else {
+			LOG.warning("prepareCandidateAbortJSON():cancelAudit is null or empty.");
+			cancelAudit = ApplicationConstants.CANCEL_AUDIT_DEFAULT;
+		}
+
+		abortConfigJson.addProperty(ApplicationConstants.TIMEOUT, timeout);
+		abortConfigJson.addProperty(ApplicationConstants.CANCEL_AUDIT, cancelAudit);
 		abortConfigJson.addProperty(ApplicationConstants.OPERATION, operation);
 		abortConfigObj.add(ApplicationConstants.CANDIDATE, abortConfigJson);
 		LOG.trace("Complete VtnServiceWebUtil#prepareCandidateAbortJSON()");
@@ -355,5 +442,173 @@ public class VtnServiceWebUtil {
 		}
 		LOG.trace("Complete VtnServiceWebUtil#checkStringForNullOrEmpty()");
 		return status;
+	}
+
+	/**
+	 * prepare partial config mode Json.
+	 * 
+	 * @param configJson
+	 *            the prepare config object
+	 *  
+	 * @param configObject
+	 *            the partial config info object
+	 * @return 
+	 * 
+	 */
+	public static void preparePartialConfigJSON(
+			JsonObject configJson, JsonObject configObject) {
+		/*set config mode*/
+		String configMode = configObject.getAsJsonPrimitive(
+				ApplicationConstants.MODE).getAsString();
+		if (configMode.equals(ApplicationConstants.VTN_MODE)) {
+			if (configObject.has(ApplicationConstants.VTNNAME)) {
+				final String vtnNmae = configObject.getAsJsonPrimitive(
+						ApplicationConstants.VTNNAME).getAsString();
+				configJson.addProperty(ApplicationConstants.VTNNAME, vtnNmae);
+			}
+		}
+		configJson.addProperty(ApplicationConstants.MODE, configMode);
+	}
+
+	/**
+	 * prepare global config mode Json.
+	 * 
+	 * @param reqObject
+	 *            the request object
+	 * @return 
+	 * 
+	 */
+	public static void prepareGlobalConfigJSON(JsonObject configJson)
+			throws VtnServiceWebAPIException {
+		/*set timeout*/
+		String timeout = ConfigurationManager.getInstance()
+				.getConfProperty(ApplicationConstants.CFG_MODE_TIMEOUT);
+		if (timeout != null && !timeout.isEmpty()) {
+			CommonValidator validator = new CommonValidator();
+			long min = Integer.MIN_VALUE;
+			long max = Integer.MAX_VALUE;
+			try {
+				if (!validator.isValidRange(timeout, min, max)) {
+					timeout = ApplicationConstants.CFG_TIMEOUT_DEFAULT;
+				}
+			} catch (Exception e) {
+				timeout = ApplicationConstants.CFG_TIMEOUT_DEFAULT;
+			}
+		} else {
+			timeout = ApplicationConstants.CFG_TIMEOUT_DEFAULT;
+		}
+		configJson.addProperty(ApplicationConstants.TIMEOUT, timeout);
+		configJson.addProperty(ApplicationConstants.MODE, ApplicationConstants.GLOBAL_MODE);
+	}
+
+	/**
+	 * Check config mode from URI.
+	 * 
+	 * @param reqObject
+	 *            the request object
+	 * @param resourcePath
+	 *            the resource path
+	 * @return the json object
+	 * 
+	 */
+	public static JsonObject checkConfigModeJSON(
+				final JsonObject reqObject, final String resourcePath) {
+		LOG.trace("Start VtnServiceWebUtil#checkConfigModeJSON()");
+
+		final JsonObject configModeJson = new JsonObject();
+		String[] uri = resourcePath.substring(1).split(ApplicationConstants.SLASH_STRING);
+		if (uri[0].equals(ApplicationConstants.VTNS_STRING)
+				|| uri[0].equals(ApplicationConstants.TENANT_STRING)) {
+			configModeJson.addProperty(ApplicationConstants
+					.MODE, ApplicationConstants.VTN_MODE);
+			prepareVtnConfigJSON(configModeJson, reqObject, uri);
+		} else if (uri[0].equals(ApplicationConstants.UNIFIED_NETWORKS_STRING)) {
+			configModeJson.addProperty(ApplicationConstants
+					.MODE, ApplicationConstants.VIRTUAL_MODE);
+		} else if (uri[0].equals(ApplicationConstants.CONTROLLERS_STRING)
+					|| uri[0].equals(ApplicationConstants.BOUNDARIES_STRING)) {
+			configModeJson.addProperty(ApplicationConstants
+					.MODE, ApplicationConstants.REAL_MODE);
+		} else if (uri[0].equals(ApplicationConstants.FILTERS_STRING)
+					|| uri[0].equals(ApplicationConstants.FLOWLISTS_STRING)) {
+			configModeJson.addProperty(ApplicationConstants
+					.MODE, ApplicationConstants.GLOBAL_MODE);
+		}
+
+		LOG.trace("Complete VtnServiceWebUtil#checkConfigModeJSON()");
+		return configModeJson;
+	}
+
+	/**
+	 * set vtn name to vtn config json.
+	 * 
+	 @param configModeJson
+	 *            the config json
+	 *
+	 * @param reqObject
+	 *            the request object
+	 * @param uri
+	 *            the resource path
+	 * @return the json object
+	 * 
+	 */
+	public static void prepareVtnConfigJSON(JsonObject configModeJson,
+			final JsonObject reqObject, final String[] uri) {
+		String vtnName = null;
+		if (uri.length > 1) {/*get vtn name from uri*/
+			configModeJson.addProperty(ApplicationConstants.VTNNAME, uri[1]);
+		} else if(uri[0].equals(ApplicationConstants.VTNS_STRING)) {
+			//get vtn_name from vtn's requestBody
+			if (reqObject.has(ApplicationConstants.VTN)
+					&& reqObject.get(ApplicationConstants.VTN).isJsonObject()) {
+				final JsonObject vtn = reqObject
+						.getAsJsonObject(ApplicationConstants.VTN);
+				if (vtn.has(ApplicationConstants.VTNNAME)) {
+					vtnName = vtn.getAsJsonPrimitive(
+									ApplicationConstants.VTNNAME).getAsString();
+					configModeJson.addProperty(ApplicationConstants.VTNNAME,
+												vtnName);
+				}
+			}
+		} else {/*get vtn name from tenant's requestBody*/
+			vtnName = reqObject.getAsJsonPrimitive(ApplicationConstants.ID).getAsString();
+			configModeJson.addProperty(ApplicationConstants.VTNNAME, vtnName);
+		}
+	}
+
+	/**
+	 * Check uri for no need to config , abort , commit.
+	 * 
+	 * @param resourcePath
+	 *            the uri
+	 * @return true, if the uri no need to config , abort , commit.
+	 */
+	public static boolean checkUriForNoConfig(final String resourcePath) {
+		if (resourcePath == null
+				|| resourcePath.isEmpty()) {
+			return false;
+		}
+		if (resourcePath.equals("/configuration/startup")
+				|| resourcePath.equals("/unc/alarms")
+				|| resourcePath.equals("/configuration/autosave")
+				|| resourcePath.equals("/configuration")
+				|| resourcePath.equals("/destination_controller")) {
+			return true;
+		}
+
+		String[] uri = resourcePath.substring(1).split(ApplicationConstants.SLASH_STRING);
+		if (uri.length == 3) {
+			if (uri[0].equals("users")
+					&& uri[2].equals("password")) {
+				return true;
+			}
+
+			if (uri[0].equals("controllers")
+					&& uri[2].equals("audit")) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

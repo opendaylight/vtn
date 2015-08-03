@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -25,22 +25,23 @@ class VrtIfMoMgr : public VnodeChildMoMgr {
     static BindInfo vrt_if_bind_info[];
     static BindInfo key_vrt_if_maintbl_update_bind_info[];
 
-   /* @brief      Returns admin and portmap information if portmap is 
-    *             valid. Else returns NULL for portmap 
-    *              
+   /* @brief      Returns admin and portmap information if portmap is
+    *             valid. Else returns NULL for portmap
+    *
     * @param[in]   ikey     Pointer to ConfigKeyVal
-    * @param[out]  valid_pm portmap is valid 
+    * @param[out]  valid_pm portmap is valid
     * @param[out]  pm       pointer to portmap informtation if valid_pm
     *
     * @retval  UPLL_RC_SUCCESS      Completed successfully.
     * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
-    * 
-    **/ 
-    virtual upll_rc_t GetPortMap(ConfigKeyVal *ikey, uint8_t &valid_pm,
+    *
+    **/
+    virtual upll_rc_t GetPortMap(ConfigKeyVal *ikey,
+                                 uint8_t &valid_pm,
                                  val_port_map_t *&pm, uint8_t &valid_admin,
                                  uint8_t &admin_status) {
       UPLL_FUNC_TRACE;
-      if (ikey == NULL) return UPLL_RC_ERR_GENERIC; 
+      if (ikey == NULL) return UPLL_RC_ERR_GENERIC;
       val_vrt_if *ifval = reinterpret_cast<val_vrt_if *>
                                                  (GetVal(ikey));
       if (!ifval) {
@@ -49,21 +50,21 @@ class VrtIfMoMgr : public VnodeChildMoMgr {
       }
       valid_pm = UNC_VF_INVALID;
       pm = NULL;
-      valid_admin = ifval->valid[UPLL_IDX_ADMIN_ST_VI]; 
+      valid_admin = ifval->valid[UPLL_IDX_ADMIN_ST_VI];
       admin_status = ifval->admin_status;
       return UPLL_RC_SUCCESS;
     }
- 
+
     /**
-     * @brief  Gets the valid array position of the variable in the value 
-     *         structure from the table in the specified configuration  
+     * @brief  Gets the valid array position of the variable in the value
+     *         structure from the table in the specified configuration
      *
-     * @param[in]     val      pointer to the value structure 
+     * @param[in]     val      pointer to the value structure
      * @param[in]     indx     database index for the variable
-     * @param[out]    valid    position of the variable in the valid array - 
+     * @param[out]    valid    position of the variable in the valid array -
      *                          NULL if valid does not exist.
      * @param[in]     dt_type  specifies the configuration
-     * @param[in]     tbl      specifies the table containing the given value 
+     * @param[in]     tbl      specifies the table containing the given value
      *
      **/
     upll_rc_t GetValid(void *val, uint64_t indx, uint8_t *&valid,
@@ -120,7 +121,7 @@ class VrtIfMoMgr : public VnodeChildMoMgr {
     /**
      * @brief  Compares the valid value between two database records.
      * 	   if both the values are same, update the valid flag for corresponding
-     * 	     attribute as invalid in the first record. 
+     * 	     attribute as invalid in the first record.
      *
      * @param[in/out]  val1  first record value instance.
      * @param[in]      val2  second record value instance.
@@ -210,11 +211,11 @@ class VrtIfMoMgr : public VnodeChildMoMgr {
      *
      * @retval  UPLL_RC_SUCCESS                      validation succeeded.
      * @retval  UPLL_RC_ERR_EXCEEDS_RESOURCE_LIMIT  Instance count resource
-     *                                              limit is exceeds. 
+     *                                              limit is exceeds.
      * @retval  UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR   Attribute NOT_SUPPORTED.
      * @retval  UPLL_RC_ERR_GENERIC                  Generic failure.
      */
-    upll_rc_t ValVrtIfAttributeSupportCheck(val_vrt_if *vrt_if_val, 
+    upll_rc_t ValVrtIfAttributeSupportCheck(val_vrt_if *vrt_if_val,
                                             const uint8_t *attrs,
                                             unc_keytype_operation_t operation);
 
@@ -232,11 +233,11 @@ class VrtIfMoMgr : public VnodeChildMoMgr {
       unc_keytype_operation_t operation);
 
 
-    upll_rc_t ValidateAttribute(ConfigKeyVal *kval, 
+    upll_rc_t ValidateAttribute(ConfigKeyVal *kval,
                                 DalDmlIntf *dmi,
                                 IpcReqRespHeader *req = NULL);
     /**
-     * @brief  Duplicates the input configkeyval including the key and val.  
+     * @brief  Duplicates the input configkeyval including the key and val.
      * based on the tbl specified.
      *
      * @param[in]  okey   Output Configkeyval - allocated within the function
@@ -253,13 +254,13 @@ class VrtIfMoMgr : public VnodeChildMoMgr {
 
     /**
      * @brief  Allocates for the specified val in the given configuration in the
-     *       specified table.   
+     *       specified table.
      *
-     * @param[in/out]  ck_val   Reference pointer to configval structure 
-     *                          allocated.      
+     * @param[in/out]  ck_val   Reference pointer to configval structure
+     *                          allocated.
      * @param[in]      dt_type  specifies the configuration candidate/running/
-     *                          state 
-     * @param[in]      tbl      specifies if the corresponding table is the  
+     *                          state
+     * @param[in]      tbl      specifies if the corresponding table is the
      *                          main table / controller table or rename table.
      *
      * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -269,22 +270,22 @@ class VrtIfMoMgr : public VnodeChildMoMgr {
                        upll_keytype_datatype_t dt_type,
                        MoMgrTables tbl = MAINTBL);
 
-  /* @brief     To convert the value structure read from DB to 
+  /* @brief     To convert the value structure read from DB to
    *            VTNService during READ operations
-   * @param[in/out] ikey      Pointer to the ConfigKeyVal Structure             
-   * 
+   * @param[in/out] ikey      Pointer to the ConfigKeyVal Structure
+   *
    * @retval  UPLL_RC_SUCCESS                    Completed successfully.
    * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
    *
    **/
   upll_rc_t AdaptValToVtnService(ConfigKeyVal *ikey, AdaptType adapt_type);
 
-    
+
     /**
-     * @brief      Method to get a configkeyval of the parent keytype 
+     * @brief      Method to get a configkeyval of the parent keytype
      *
-     * @param[in/out]  okey           pointer to parent ConfigKeyVal 
-     * @param[in]      ikey           pointer to the child configkeyval from 
+     * @param[in/out]  okey           pointer to parent ConfigKeyVal
+     * @param[in]      ikey           pointer to the child configkeyval from
      * which the parent configkey val is obtained.
      *
      * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -300,8 +301,8 @@ class VrtIfMoMgr : public VnodeChildMoMgr {
                               BindInfo *&binfo,
                               int &nattr,
                               MoMgrTables tbl);
-    /** 
-     * @brief     Perform validation on key type specific, 
+    /**
+     * @brief     Perform validation on key type specific,
      *            before sending to driver
      *
      * @param[in]  ck_new                   Pointer to the ConfigKeyVal Structure
@@ -311,7 +312,7 @@ class VrtIfMoMgr : public VnodeChildMoMgr {
      * @param[in]  keytype                  Specifies the keytype
      * @param[in]  dmi                      Pointer to the DalDmlIntf(DB Interface)
      * @param[out] not_send_to_drv          Decides whether the configuration needs
-     *                                      to be sent to controller or not 
+     *                                      to be sent to controller or not
      * @param[in]  audit_update_phase       Specifies whether the phase is commit or audit
      *
      * @retval  UPLL_RC_SUCCESS             Completed successfully.
@@ -350,7 +351,7 @@ class VrtIfMoMgr : public VnodeChildMoMgr {
      * @retval         false               input key is invalid.
      **/
     bool IsValidKey(void *tkey,
-                    uint64_t index);
+                    uint64_t index, MoMgrTables tbl = MAINTBL);
     /**
      * @Brief  Validates the syntax for KT_VRT_IF Keytype key structure.
      *
@@ -362,8 +363,7 @@ class VrtIfMoMgr : public VnodeChildMoMgr {
      **/
     upll_rc_t ValidateVrtIfKey(key_vrt_if *vrt_if_key,
                 unc_keytype_operation_t operation = UNC_OP_INVALID);
-    upll_rc_t IsReferenced(ConfigKeyVal *ikey,
-                           upll_keytype_datatype_t dt_type,
+    upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                            DalDmlIntf *dmi);
 
     upll_rc_t MergeValidate(unc_key_type_t keytype,
@@ -372,7 +372,7 @@ class VrtIfMoMgr : public VnodeChildMoMgr {
                             DalDmlIntf *dmi,
                             upll_import_type import_type);
 
-    upll_rc_t GetVexternal(ConfigKeyVal *ikey, 
+    upll_rc_t GetVexternal(ConfigKeyVal *ikey,
                            upll_keytype_datatype_t data_type,
                            DalDmlIntf *dmi,
                            uint8_t *vexternal, uint8_t *vex_if,
@@ -381,7 +381,7 @@ class VrtIfMoMgr : public VnodeChildMoMgr {
      * @brief      Method to get a configkeyval of a specified keytype from an
      *                       input configkeyval
      *
-     * @param[in/out]  okey                 pointer to output ConfigKeyVal 
+     * @param[in/out]  okey                 pointer to output ConfigKeyVal
      * @param[in]      parent_key           pointer to the configkeyval from
      *               which the output configkey val is initialized.
      *

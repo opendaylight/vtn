@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -15,6 +15,7 @@ public class VtnBean {
 
 	private int vtnId;
 	private String vtnName;
+	private int vtnStatus;
 
 	public int getVtnId() {
 		return vtnId;
@@ -30,5 +31,13 @@ public class VtnBean {
 
 	public void setVtnName(String vtnName) {
 		this.vtnName = vtnName;
+	}
+
+	public int getVtnStatus() {
+		return vtnStatus;
+	}
+
+	public void setVtnStatus(int vtnStatus) {
+		this.vtnStatus = vtnStatus;
 	}
 }

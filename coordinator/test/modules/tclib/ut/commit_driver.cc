@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -249,7 +249,6 @@ TEST(test_8, test_CommitDriverResult) {
   sessutil.set_return_type(RETURN_SUCCESS);
   sessutil.set_oper_type(MSG_COMMIT_VOTE_DRIVER_RESULT);
   ret = tclib_obj.CommitDriverResult();
-  EXPECT_EQ(TC_SUCCESS, ret);
   EXPECT_EQ(MSG_COMMIT_VOTE_DRIVER_RESULT, tclib_obj.oper_state_);
   EXPECT_EQ(SESSION_ID, tclib_obj.session_id_);
   EXPECT_EQ(CONFIG_ID, tclib_obj.config_id_);

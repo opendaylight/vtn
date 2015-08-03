@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -208,6 +208,14 @@ class VtnDrvIntf :public pfc::core::Module {
   void link_event(oper_type operation, key_link_t &key_struct,
                   val_link_st_t &new_val_struct,
                   val_link_st_t &old_val_struct);
+
+  /**
+   * @brief     : Method to post EVENT START to UPPL
+   * @param[in] : controller name
+   * @retval    : None
+   **/
+  void event_start(std::string ctr_name);
+
 
   /**
    * @brief     : Method to create Kt handler

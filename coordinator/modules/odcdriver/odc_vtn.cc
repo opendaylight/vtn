@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -74,7 +74,7 @@ UncRespCode OdcVtnCommand::create_cmd(key_vtn_t& key_vtn,
 // Creates Request Body
 json_object* OdcVtnCommand::create_request_body(const val_vtn_t& val_vtn) {
   ODC_FUNC_TRACE;
-  // unc::restjson::JsonBuildParse json_obj;
+  //unc::restjson::JsonBuildParse json_obj;
   const char* description = reinterpret_cast<const char*>(val_vtn.description);
   json_object *jobj = unc::restjson::JsonBuildParse::create_json_obj();
   int ret_val = 1;

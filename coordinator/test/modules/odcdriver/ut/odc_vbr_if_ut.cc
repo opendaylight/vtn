@@ -1270,7 +1270,6 @@ TEST(odcdriver,  update_cmd_port_map_invalid) {
   strncpy(reinterpret_cast<char*>(vbrif_key.if_name),
           intfname.c_str(),  sizeof(vbrif_key.if_name)-1);
   std::string descp =  "desc";
-  vbrif_val1.valid[PFCDRV_IDX_VAL_VBRIF] = UNC_VF_VALID;
   vbrif_val1.val_vbrif.valid[UPLL_IDX_PM_VBRI] = UNC_VF_VALID;
   vbrif_val1.val_vbrif.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] = UNC_VF_VALID;
   vbrif_val1.val_vbrif.portmap.valid[UPLL_IDX_VLAN_ID_PM] = UNC_VF_VALID;

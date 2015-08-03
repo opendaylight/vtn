@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2013 NEC Corporation
+# Copyright (c) 2012-2015 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -117,4 +117,6 @@ ipc_struct usess_ipc_res_sess_info {
     IPV4                ipaddr;             # [OUT] remote IP address.
     usess_ipc_timespec  login_time;         # [OUT] user session start time.
     UINT8               info[64];           # [OUT] option information.
+    INT32               config_mode;        # [OUT] Config mode which is being acquired.
+    UINT8               vtn_name[32];       # [OUT] VTN name which has acquired config mode.
 };

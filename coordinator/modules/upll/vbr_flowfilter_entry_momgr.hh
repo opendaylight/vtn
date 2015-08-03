@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,6 +10,7 @@
 #ifndef MODULES_UPLL_VBR_FLOWFILTER_ENTRY_MOMGR_HH_
 #define MODULES_UPLL_VBR_FLOWFILTER_ENTRY_MOMGR_HH_
 
+#include <string>
 #include "momgr_impl.hh"
 
 #define FLOWLIST  1
@@ -108,8 +109,7 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_CFG_SYNTAX  validation failed.
      */
     static upll_rc_t ValidateFlowfilterEntryValue(
-          val_flowfilter_entry_t *val_flowfilter_entry, uint32_t operation
-          );
+          val_flowfilter_entry_t *val_flowfilter_entry, uint32_t operation);
 
     /**
      * @Brief  Validates the syntax for redirect_port, redirect_node fields of
@@ -233,7 +233,7 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
      * @retval    UPLL_RC_ERR_NO_SUCH_INSTANCE  No Record in DB.
      * @retval    UPLL_RC_ERR_INSTANCE_EXISTS   Record exists in DB.
      */
-    upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
+    upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                            DalDmlIntf *dmi);
 
     /**
@@ -521,7 +521,7 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
      *
      * @retval  UPLL_RC_SUCCESS      Successfull completion.
      * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
-     * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists 
+     * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists
      * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
      */
 
@@ -548,23 +548,25 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
      * @return  TRUE   Success
      * @retval  FALSE  Failure
      **/
-    bool IsValidKey(void *key, uint64_t index);
+    bool IsValidKey(void *key, uint64_t index, MoMgrTables tbl = MAINTBL);
     upll_rc_t ConstructReadDetailResponse(ConfigKeyVal *ikey,
                                           ConfigKeyVal *drv_resp_ckv,
                                           controller_domain ctrlr_dom,
-                                          DalDmlIntf *dmi , 
+                                          DalDmlIntf *dmi ,
                                           ConfigKeyVal **okey);
 
     upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
                                 upll_keytype_datatype_t dt_type,
-                                DalDmlIntf *dmi);
+                                DalDmlIntf *dmi,
+                                TcConfigMode config_mode,
+                                string vtn_name);
 
     upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
     upll_rc_t SetRedirectDestination(
-                        ConfigKeyVal *okey , 
+                        ConfigKeyVal *okey ,
                         upll_keytype_datatype_t dt_type,
-                        DalDmlIntf *dmi, 
-          val_flowfilter_entry_t* val_flowfilter_entry); 
+                        DalDmlIntf *dmi,
+          val_flowfilter_entry_t* val_flowfilter_entry);
     upll_rc_t UpdateVnodeVal(ConfigKeyVal *ikey, DalDmlIntf *dmi,
                              upll_keytype_datatype_t data_type,
                              bool &no_rename);
@@ -583,9 +585,9 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
           IpcReqRespHeader *req);
 
     static bool IsAllAttrInvalid(val_flowfilter_entry_t *val);
-    
-    /** 
-     * @brief     Perform validation on key type specific, 
+
+    /**
+     * @brief     Perform validation on key type specific,
      *            before sending to driver
      *
      * @param[in]  ck_new                   Pointer to the ConfigKeyVal Structure
@@ -595,7 +597,7 @@ class VbrFlowFilterEntryMoMgr : public MoMgrImpl {
      * @param[in]  keytype                  Specifies the keytype
      * @param[in]  dmi                      Pointer to the DalDmlIntf(DB Interface)
      * @param[out] not_send_to_drv          Decides whether the configuration needs
-     *                                      to be sent to controller or not 
+     *                                      to be sent to controller or not
      * @param[in]  audit_update_phase       Specifies whether the phase is commit or audit
      *
      * @retval  UPLL_RC_SUCCESS             Completed successfully.

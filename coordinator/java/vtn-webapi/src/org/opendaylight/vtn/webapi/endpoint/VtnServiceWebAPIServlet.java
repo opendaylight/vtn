@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -24,6 +24,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
+import org.opendaylight.vtn.javaapi.openstack.constants.VtnServiceOpenStackConsts;
 import org.opendaylight.vtn.webapi.constants.ApplicationConstants;
 import org.opendaylight.vtn.webapi.enums.ContentTypeEnum;
 import org.opendaylight.vtn.webapi.enums.HttpErrorCodeEnum;
@@ -156,7 +157,7 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 			final JSONObject responseJson = vtnServiceWebAPIHandler.get(request);
 			response.setStatus(HttpServletResponse.SC_OK);
 			setResponseHeader(request, response, responseJson,
-					VtnServiceCommonUtil.getContentType(request));
+					VtnServiceCommonUtil.getResponseBodyContentType(request));
 		} catch (final IOException e) {
 			serviceErrorJSON = VtnServiceWebUtil
 					.prepareErrResponseJson(HttpErrorCodeEnum.UNC_BAD_REQUEST
@@ -216,9 +217,13 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 		try {
 			vtnServiceWebAPIHandler = new VtnServiceWebAPIHandler();
 			final JSONObject responseJson = vtnServiceWebAPIHandler.post(request);
-			response.setStatus(HttpServletResponse.SC_CREATED);
+			if (ApplicationConstants.ACCEPTED == vtnServiceWebAPIHandler.getCommitStatus()) {
+				response.setStatus(HttpServletResponse.SC_ACCEPTED);
+			} else {
+				response.setStatus(HttpServletResponse.SC_CREATED);
+			}
 			setResponseHeader(request, response, responseJson,
-					VtnServiceCommonUtil.getContentType(request));
+					VtnServiceCommonUtil.getResponseBodyContentType(request));
 		} catch (final IOException e) {
 			serviceErrorJSON = VtnServiceWebUtil
 					.prepareErrResponseJson(HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR
@@ -272,9 +277,13 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 		try {
 			vtnServiceWebAPIHandler = new VtnServiceWebAPIHandler();
 			final JSONObject responseJson = vtnServiceWebAPIHandler.put(request);
-			response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+			if (ApplicationConstants.ACCEPTED == vtnServiceWebAPIHandler.getCommitStatus()) {
+				response.setStatus(HttpServletResponse.SC_ACCEPTED);
+			} else {
+				response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+			}
 			setResponseHeader(request, response, responseJson,
-					VtnServiceCommonUtil.getContentType(request));
+					VtnServiceCommonUtil.getResponseBodyContentType(request));
 		} catch (final IOException e) {
 			serviceErrorJSON = VtnServiceWebUtil
 					.prepareErrResponseJson(HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR
@@ -329,9 +338,13 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 			vtnServiceWebAPIHandler = new VtnServiceWebAPIHandler();
 			final JSONObject responseJson = vtnServiceWebAPIHandler
 					.delete(request);
-			response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+			if (ApplicationConstants.ACCEPTED == vtnServiceWebAPIHandler.getCommitStatus()) {
+				response.setStatus(HttpServletResponse.SC_ACCEPTED);
+			} else {
+				response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+			}
 			setResponseHeader(request, response, responseJson,
-					VtnServiceCommonUtil.getContentType(request));
+					VtnServiceCommonUtil.getResponseBodyContentType(request));
 		} catch (final IOException e) {
 			serviceErrorJSON = VtnServiceWebUtil
 					.prepareErrResponseJson(HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR
@@ -411,6 +424,9 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 				int errorCode = Integer.parseInt(actualErrorCode
 						.substring(0, 3));
 
+				String actualErrorMsg = responseJson
+						.get(ApplicationConstants.ERROR).getAsJsonObject()
+						.get(ApplicationConstants.ERR_DESCRIPTION).getAsString();
 				/*
 				 * Set specific response header as per response codes
 				 * 503 : retry-after 
@@ -432,10 +448,17 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 
 				LOG.debug("Set HTTP response status : " + errorCode);
 				response.setStatus(errorCode);
-				if (actualErrorCode.equalsIgnoreCase(String
-						.valueOf(HttpErrorCodeEnum.UNC_CUSTOM_NOT_FOUND.getCode()))
-						|| VtnServiceCommonUtil.isOpenStackResurce(request)) {
 
+				boolean isOpenStackResurce = false;
+				try {
+					isOpenStackResurce = VtnServiceCommonUtil.isOpenStackResurce(request);
+				} catch (VtnServiceWebAPIException e) {
+					// Not found resource,
+				}
+
+				if (isOpenStackResurce
+					|| request.getRequestURI().startsWith(VtnServiceOpenStackConsts.OS_TENANTS)
+					|| request.getRequestURI().startsWith(VtnServiceOpenStackConsts.OS_FILTERS)) {
 					errorCode = responseJson.get(ApplicationConstants.ERROR)
 							.getAsJsonObject()
 							.get(ApplicationConstants.ERR_CODE).getAsInt();
@@ -484,7 +507,33 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 					responseJson.remove(ApplicationConstants.ERROR);
 
 					response.getWriter().write(responseJson.toString());
+				} else {
+					JSONObject serviceErrorJSON = responseJSON;
+					if (actualErrorCode.equalsIgnoreCase(String
+							.valueOf(HttpErrorCodeEnum.UNC_CUSTOM_NOT_FOUND
+									.getCode()))) {
+						serviceErrorJSON = VtnServiceWebUtil.prepareErrResponseJson(HttpErrorCodeEnum.UNC_NOT_FOUND.getCode());
+					}
+					final String responseError = DataConverter.getConvertedResponse(serviceErrorJSON,
+													contentType);
+					response.getWriter().write(responseError);
 				}
+
+				String errorMsgName = null;
+				try {
+					errorMsgName = ConfigurationManager.getInstance()
+						.getConfProperty(ApplicationConstants.RES_ERR_MSG);
+				} catch (Exception e) {
+					LOG.warning("Read parameter(RES_ERR_MSG) from the config file failed, use default value.");
+					errorMsgName = ApplicationConstants.RES_ERR_MSG_DEF_NAME;
+				}
+				if (null == errorMsgName || errorMsgName.isEmpty()) {
+					errorMsgName = ApplicationConstants.RES_ERR_MSG_DEF_NAME;
+				}
+
+				request.setAttribute(errorMsgName,
+					"\"" + actualErrorCode + " " + actualErrorMsg + "\"" );
+
 			} else {
 				final String responseString = DataConverter.getConvertedResponse(responseJSON,
 												contentType);
@@ -507,7 +556,7 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 	private void createErrorResponse(final HttpServletRequest request,
 			final HttpServletResponse response, JSONObject serviceErrorJSON)
 			throws VtnServiceWebAPIException, IOException {
-		String contentType = VtnServiceCommonUtil.getContentType(request);
+		String contentType = VtnServiceCommonUtil.getResponseBodyContentType(request);
 		if (contentType == null
 				||(!contentType
 						.equalsIgnoreCase(ContentTypeEnum.APPLICATION_JSON

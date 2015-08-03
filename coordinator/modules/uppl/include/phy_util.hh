@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -121,6 +121,8 @@ class PhyUtil {
         string controller_name,
         unc_keytype_ctrtype_t& controller_type,
         unc_keytype_datatype_t datatype);
+    static UncRespCode ConvertToControllerName(OdbcmConnectionHandler *db_conn,
+                                  string actual_controller_id, string &ctr_name);
     static void reorder_col_attrs(
         vector<string> vect_prim_keys,
         vector<TableAttrSchema> &vect_table_attr_schema);
@@ -130,6 +132,7 @@ class PhyUtil {
 
     static bool IsFilteringOperation(uint32_t operation_type,
                               unsigned int valid);
+    static std::string getEventDetailsString(pfc_ipcevtype_t);
 };
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -208,65 +208,64 @@ public class StaticIpRouteResource extends AbstractResource {
 		return status;
 	}
 
-	// /**
-	// * Implementation of put method of Static Ip Routes
-	// *
-	// * @param requestBody
-	// * the request Json object
-	// *
-	// * @return Error code
-	// * @throws VtnServiceException
-	// */
-	// @Override
-	// public int put(final JsonObject requestBody) throws VtnServiceException {
-	// LOG.trace("Start StaticIpRouteResource#put()");
-	// ClientSession session = null;
-	// IpcRequestProcessor requestProcessor = null;
-	// int status = ClientSession.RESP_FATAL;
-	// try {
-	// LOG.debug("Start Ipc framework call");
-	// session = getConnPool().getSession(
-	// UncUPLLEnums.UPLL_IPC_CHANNEL_NAME,
-	// UncUPLLEnums.UPLL_IPC_SERVICE_NAME,
-	// UncUPLLEnums.ServiceID.UPLL_EDIT_SVC_ID.ordinal(),
-	// getExceptionHandler());
-	// LOG.debug("Session created successfully");
-	// requestProcessor = new IpcRequestProcessor(session, getSessionID(),
-	// getConfigID(), getExceptionHandler());
-	// requestProcessor.createIpcRequestPacket(
-	// IpcRequestPacketEnum.KT_VRT_IPROUTE_UPDATE, requestBody,
-	// getUriParameters());
-	// LOG.debug("Request Packet created successfully");
-	// status = requestProcessor.processIpcRequest();
-	// LOG.debug("Request packet processed with status" + status);
-	// LOG.debug("Complete Ipc framework call");
-	// } catch (final VtnServiceException e) {
-	// getExceptionHandler()
-	// .raise(Thread.currentThread().getStackTrace()[1]
-	// .getClassName()
-	// + VtnServiceConsts.HYPHEN
-	// + Thread.currentThread().getStackTrace()[1]
-	// .getMethodName(),
-	// UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
-	// UncJavaAPIErrorCode.IPC_SERVER_ERROR
-	// .getErrorMessage(), e);
-	// throw e;
-	// } finally {
-	// if (status == ClientSession.RESP_FATAL) {
-	// if (null != requestProcessor.getErrorJson()) {
-	// setInfo(requestProcessor.getErrorJson());
-	// } else {
-	// createErrorInfo(UncCommonEnum.UncResultCode.UNC_SERVER_ERROR
-	// .getValue());
-	// }
-	// status = UncResultCode.UNC_SERVER_ERROR.getValue();
-	// }
-	// getConnPool().destroySession(session);
-	// }
-	//
-	// LOG.trace("Complete StaticIpRouteResource#put()");
-	// return status;
-	// }
+	/**
+	 * Implementation of put method of Static Ip Routes
+	 *
+	 * @param requestBody
+	 * the request Json object
+	 *
+	 * @return Error code
+	 * @throws VtnServiceException
+	 */
+	 @Override
+	public int put(final JsonObject requestBody) throws VtnServiceException {
+		LOG.trace("Start StaticIpRouteResource#put()");
+		ClientSession session = null;
+		IpcRequestProcessor requestProcessor = null;
+		int status = ClientSession.RESP_FATAL;
+		try {
+			LOG.debug("Start Ipc framework call");
+			session = getConnPool().getSession(
+					UncUPLLEnums.UPLL_IPC_CHANNEL_NAME,
+					UncUPLLEnums.UPLL_IPC_SERVICE_NAME,
+					UncUPLLEnums.ServiceID.UPLL_EDIT_SVC_ID.ordinal(),
+					getExceptionHandler());
+			LOG.debug("Session created successfully");
+			requestProcessor = new IpcRequestProcessor(session, getSessionID(),
+					getConfigID(), getExceptionHandler());
+			requestProcessor.createIpcRequestPacket(
+					IpcRequestPacketEnum.KT_VRT_IPROUTE_UPDATE, requestBody,
+					getUriParameters());
+			LOG.debug("Request Packet created successfully");
+			status = requestProcessor.processIpcRequest();
+			LOG.debug("Request packet processed with status" + status);
+			LOG.debug("Complete Ipc framework call");
+		} catch (final VtnServiceException e) {
+			getExceptionHandler()
+					.raise(Thread.currentThread().getStackTrace()[1]
+							.getClassName()
+							+ VtnServiceConsts.HYPHEN
+							+ Thread.currentThread().getStackTrace()[1]
+									.getMethodName(),
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR.getErrorCode(),
+							UncJavaAPIErrorCode.IPC_SERVER_ERROR
+									.getErrorMessage(), e);
+			throw e;
+		} finally {
+			if (status == ClientSession.RESP_FATAL) {
+				if (null != requestProcessor.getErrorJson()) {
+					setInfo(requestProcessor.getErrorJson());
+				} else {
+					createErrorInfo(UncCommonEnum.UncResultCode.UNC_SERVER_ERROR
+							.getValue());
+				}
+				status = UncResultCode.UNC_SERVER_ERROR.getValue();
+			}
+			getConnPool().destroySession(session);
+		}
+		LOG.trace("Complete StaticIpRouteResource#put()");
+		return status;
+	}
 
 	/**
 	 * Add URI parameters to list

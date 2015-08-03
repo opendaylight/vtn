@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -15,6 +15,7 @@ import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
 import org.opendaylight.vtn.javaapi.resources.AbstractResource;
+import org.opendaylight.vtn.javaapi.resources.logical.VBridgeExpandingResource;
 import org.opendaylight.vtn.javaapi.resources.logical.VBridgeResource;
 import org.opendaylight.vtn.javaapi.resources.logical.VBridgesResource;
 import org.opendaylight.vtn.javaapi.validation.CommonValidator;
@@ -72,6 +73,25 @@ public class VBridgeResourceValidator extends VtnServiceValidator {
 						&& !((VBridgeResource) resource).getVbrName().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
 							((VBridgeResource) resource).getVbrName(),
+							VtnServiceJsonConsts.LEN_31);
+				} else {
+					isValid = false;
+				}
+			}
+			setListOpFlag(false);
+		} else if (resource instanceof VBridgeExpandingResource
+				&& ((VBridgeExpandingResource) resource).getVtnName() != null
+				&& !((VBridgeExpandingResource) resource).getVtnName().isEmpty()) {
+			isValid = validator.isValidMaxLengthAlphaNum(
+					((VBridgeExpandingResource) resource).getVtnName(),
+					VtnServiceJsonConsts.LEN_31);
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.URI
+						+ VtnServiceJsonConsts.VBRNAME);
+				if (((VBridgeExpandingResource) resource).getVbrName() != null
+						&& !((VBridgeExpandingResource) resource).getVbrName().isEmpty()) {
+					isValid = validator.isValidMaxLengthAlphaNum(
+							((VBridgeExpandingResource) resource).getVbrName(),
 							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -211,8 +231,6 @@ public class VBridgeResourceValidator extends VtnServiceValidator {
 											VtnServiceJsonConsts.CONTROLLERID)
 											.getAsString(),
 									VtnServiceJsonConsts.LEN_31);
-				} else {
-					isValid = false;
 				}
 			}
 			// validation for key: description
@@ -241,10 +259,20 @@ public class VBridgeResourceValidator extends VtnServiceValidator {
 					isValid = validator.isValidDomainId(vbridge
 							.getAsJsonPrimitive(VtnServiceJsonConsts.DOMAINID)
 							.getAsString(), VtnServiceJsonConsts.LEN_31);
-				} else {
-					isValid = false;
 				}
 			}
+
+			setInvalidParameter(VtnServiceJsonConsts.CONTROLLERID
+					+ VtnServiceJsonConsts.SLASH
+					+ VtnServiceJsonConsts.DOMAINID);
+			// spcefity controller_id
+			if (vbridge.has(VtnServiceJsonConsts.CONTROLLERID)) {
+				isValid = vbridge.has(VtnServiceJsonConsts.DOMAINID);
+			// not spcefity controller_id
+			} else {
+				isValid = !vbridge.has(VtnServiceJsonConsts.DOMAINID);
+			}
+
 		}
 		LOG.trace("Complete VBridgeResourceValidator#validatePost()");
 		return isValid;

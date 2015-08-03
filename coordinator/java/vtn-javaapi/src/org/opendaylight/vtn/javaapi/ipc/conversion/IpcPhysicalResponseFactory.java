@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -22,6 +22,7 @@ import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceIpcConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
+import org.opendaylight.vtn.javaapi.ipc.conversion.IpcDataUnitWrapper;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncPhysicalStructIndexEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncStructIndexEnum;
@@ -250,6 +251,22 @@ public class IpcPhysicalResponseFactory {
 									.getValue())) {
 				setValueToJsonObject(validBit, domain,
 						VtnServiceJsonConsts.TYPE, VtnServiceJsonConsts.NORMAL);
+			} else if(IpcDataUnitWrapper
+					.getIpcStructUint8Value(valCtrDomainStruct,
+							VtnServiceIpcConsts.TYPE)
+					.equalsIgnoreCase(
+							UncPhysicalStructIndexEnum.UpplDomainType.UPPL_DOMAIN_TYPE_PF_LEAF
+									.getValue())) {
+				setValueToJsonObject(validBit, domain,
+						VtnServiceJsonConsts.TYPE, VtnServiceJsonConsts.LEAF);
+			} else if (IpcDataUnitWrapper
+					.getIpcStructUint8Value(valCtrDomainStruct,
+							VtnServiceIpcConsts.TYPE)
+					.equalsIgnoreCase(
+							UncPhysicalStructIndexEnum.UpplDomainType.UPPL_DOMAIN_TYPE_PF_SPINE
+									.getValue())) {
+				setValueToJsonObject(validBit, domain,
+						VtnServiceJsonConsts.TYPE, VtnServiceJsonConsts.SPINE);
 			} else {
 				LOG.debug("Type : invalid");
 			}
@@ -839,19 +856,32 @@ public class IpcPhysicalResponseFactory {
 			} else if (IpcDataUnitWrapper.getIpcStructUint8Value(
 					valControllerStruct, VtnServiceIpcConsts.TYPE)
 					.equalsIgnoreCase(
-							UncPhysicalStructIndexEnum.UpplTypeIndex.UNC_CT_ODC
-									.getValue())) {
-				setValueToJsonObject(validBit, controller,
-						VtnServiceJsonConsts.TYPE, VtnServiceJsonConsts.ODC);
-			} else if (IpcDataUnitWrapper.getIpcStructUint8Value(
-					valControllerStruct, VtnServiceIpcConsts.TYPE)
-					.equalsIgnoreCase(
 							UncPhysicalStructIndexEnum.UpplTypeIndex.UNC_CT_POLC
 									.getValue())) {
 				String polc = VtnServiceInitManager.getConfigurationMap()
 						.getCommonConfigValue(VtnServiceConsts.CONF_FILE_FIELD_POLC);
 				setValueToJsonObject(validBit, controller,
 						VtnServiceJsonConsts.TYPE, polc);
+			} else if (IpcDataUnitWrapper.getIpcStructUint8Value(
+					valControllerStruct, VtnServiceIpcConsts.TYPE)
+					.equalsIgnoreCase(
+							UncPhysicalStructIndexEnum.UpplTypeIndex.UNC_CT_HPVANC
+									.getValue())) {
+				String hpctr = VtnServiceInitManager.getConfigurationMap()
+						.getCommonConfigValue(VtnServiceConsts.CONF_FILE_FIELD_HPVANC);
+				setValueToJsonObject(validBit, controller,
+						VtnServiceJsonConsts.TYPE, hpctr);
+				
+			} else if (IpcDataUnitWrapper.getIpcStructUint8Value(
+					valControllerStruct, VtnServiceIpcConsts.TYPE)
+					.equalsIgnoreCase(
+							UncPhysicalStructIndexEnum.UpplTypeIndex.UNC_CT_ODC
+									.getValue())) {
+				String odc = VtnServiceInitManager.getConfigurationMap()
+						.getCommonConfigValue(VtnServiceConsts.CONF_FILE_FIELD_ODC);
+				setValueToJsonObject(validBit, controller,
+						VtnServiceJsonConsts.TYPE, odc);
+				
 			} else {
 				LOG.info("Type : invalid");
 			}
@@ -926,6 +956,18 @@ public class IpcPhysicalResponseFactory {
 					VtnServiceJsonConsts.VERSION,
 					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
 							valControllerStruct, VtnServiceJsonConsts.VERSION));
+		}
+		validBit = valControllerStruct.getByte(VtnServiceIpcConsts.VALID,
+				UncPhysicalStructIndexEnum.UpplValCtrIndex.kIdxPort
+						.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, controller,
+					VtnServiceJsonConsts.PORT,
+					IpcDataUnitWrapper.getIpcStructUint16Value(
+							valControllerStruct, VtnServiceJsonConsts.PORT));
 		}
 		LOG.trace("Complete getValControllerStruct");
 	}
@@ -1613,6 +1655,18 @@ public class IpcPhysicalResponseFactory {
 						IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
 								valPortStNeighbourStruct,
 								VtnServiceIpcConsts.CONNECTED_PORT_ID));
+			}
+			validBit = valPortStNeighbourStruct.getByte(VtnServiceIpcConsts.VALID,
+							UncPhysicalStructIndexEnum.UpplValPortNeighborIndex.kIdxPortConnectedControllerId
+									.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				setValueToJsonObject(validBit, switchPortNeighbour,
+						VtnServiceJsonConsts.CONTROLLERID,
+						IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+								valPortStNeighbourStruct,
+								VtnServiceIpcConsts.CONNECTED_CONTROLLER_ID));
 			}
 		}
 		if (getType.equals(VtnServiceJsonConsts.SHOW)) {
@@ -2437,6 +2491,26 @@ public class IpcPhysicalResponseFactory {
 								setValueToJsonObject(validBit, logicalPort,
 										VtnServiceJsonConsts.TYPE,
 										VtnServiceJsonConsts.TUNNEL_ENDPOINT);
+							} else if (IpcDataUnitWrapper
+                                    .getIpcStructUint8Value(
+                                                    valLogicalPortStruct,
+                                                    VtnServiceIpcConsts.PORTTYPE)
+                                    .equalsIgnoreCase(
+											UncPhysicalStructIndexEnum.UpplLogicalPortType.UPPL_LP_PORT_GROUP
+													.getValue())) {
+								setValueToJsonObject(validBit, logicalPort,
+                                            VtnServiceJsonConsts.TYPE,
+                                            VtnServiceJsonConsts.PORT_GROUP);
+							} else if (IpcDataUnitWrapper
+									.getIpcStructUint8Value(
+											valLogicalPortStruct,
+											VtnServiceIpcConsts.PORTTYPE)
+									.equalsIgnoreCase(
+										UncPhysicalStructIndexEnum.UpplLogicalPortType.UPPL_LP_MAPPING_GROUP
+										.getValue())) {
+								setValueToJsonObject(validBit, logicalPort,
+										VtnServiceJsonConsts.TYPE,
+										VtnServiceJsonConsts.MAPPING_GROUP);
 							} else {
 								LOG.debug("PortType : invalid");
 							}
@@ -2624,6 +2698,242 @@ public class IpcPhysicalResponseFactory {
 		LOG.debug("Member Json: " + membersArray.toString());
 		LOG.trace("Complete getDomainLogicalPortMemberResponse");
 		return membersArray;
+	}
+
+	/**
+	 * Gets the domain logical port Neighbor response.
+	 * 
+	 * @param responsePacket
+	 *            the response packet
+	 * @return the domain logical port Neighbor response
+	 */
+	public JsonObject getDomainLogicalPortNeighborResponse(
+			final IpcDataUnit[] responsePacket) {
+		LOG.trace("Start getDomainLogicalPortNeighborResponse");
+		int index = 0;
+		byte validBit;
+		boolean isHasNeighbor = false;
+		final JsonObject Neighbor = new JsonObject();
+
+		if (responsePacket != null && responsePacket.length > 0) {
+			// skipping key type
+			LOG.debug("Skip key type and key structure: no use");
+			index = index + 2;
+
+			final IpcStruct ValLmPortStNeighborStruct = (IpcStruct) responsePacket[index++];
+			validBit = ValLmPortStNeighborStruct.getByte(
+							VtnServiceIpcConsts.VALID,
+							UncPhysicalStructIndexEnum.UpplValLmPortNeighborIndex.kIdxLmPort
+									.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				IpcStruct valPortStruct = IpcDataUnitWrapper
+						.getInnerIpcStruct(ValLmPortStNeighborStruct,
+								VtnServiceJsonConsts.PORT);
+				validBit = valPortStruct.getByte(
+								VtnServiceIpcConsts.VALID,
+								UncPhysicalStructIndexEnum.UpplValPortIndex.kIdxPortDescription
+										.ordinal());
+				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID.ordinal()
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+								.ordinal()) {
+					isHasNeighbor = true;
+					setValueToJsonObject(validBit, Neighbor,
+							VtnServiceJsonConsts.DESCRIPTION,
+							IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+									valPortStruct,
+									VtnServiceIpcConsts.DESCRIPTION));
+				}
+				validBit = valPortStruct.getByte(
+								VtnServiceIpcConsts.VALID,
+								UncPhysicalStructIndexEnum.UpplValPortIndex.kIdxPortNumber
+										.ordinal());
+				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID.ordinal()
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+								.ordinal()) {
+					isHasNeighbor = true;
+					setValueToJsonObject(validBit, Neighbor,
+							VtnServiceJsonConsts.PORT_ID,
+							IpcDataUnitWrapper.getIpcStructUint32Value(
+									valPortStruct,
+									VtnServiceIpcConsts.PORT_NUMBER));
+				}
+				validBit = valPortStruct.getByte(
+								VtnServiceIpcConsts.VALID,
+								UncPhysicalStructIndexEnum.UpplValPortIndex.kIdxPortAdminStatus
+										.ordinal());
+				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID.ordinal()
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+								.ordinal()) {
+					if (IpcDataUnitWrapper.getIpcStructUint8Value(
+								valPortStruct, VtnServiceJsonConsts.ADMIN_STATUS)
+								.equalsIgnoreCase(UncPhysicalStructIndexEnum.UpplPortAdminStatus
+								.UPPL_PORT_ADMIN_UP.getValue())) {
+						isHasNeighbor = true;
+						setValueToJsonObject(validBit, Neighbor,
+								VtnServiceJsonConsts.ADMINSTATUS, VtnServiceJsonConsts.UP);
+					} else if (IpcDataUnitWrapper.getIpcStructUint8Value(
+									valPortStruct, VtnServiceJsonConsts.ADMIN_STATUS)
+									.equalsIgnoreCase(UncPhysicalStructIndexEnum.UpplPortAdminStatus
+									.UPPL_PORT_ADMIN_DOWN.getValue())) {
+						isHasNeighbor = true;
+						setValueToJsonObject(validBit, Neighbor,
+								VtnServiceJsonConsts.ADMINSTATUS, VtnServiceJsonConsts.DOWN);
+					} else {
+						LOG.debug("Adminstatus : invalid");
+					}
+				}
+				validBit = valPortStruct.getByte(
+								VtnServiceIpcConsts.VALID,
+								UncPhysicalStructIndexEnum.UpplValPortIndex.kIdxPortTrunkAllowedVlan
+										.ordinal());
+				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID.ordinal()
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+								.ordinal()) {
+					isHasNeighbor = true;
+					setValueToJsonObject(validBit, Neighbor,
+							VtnServiceJsonConsts.TRUNK_ALLOWED_VLAN,
+							IpcDataUnitWrapper.getIpcStructUint16Value(
+									valPortStruct,
+									VtnServiceIpcConsts.TRUNK_ALLOWED_VLAN));
+				}
+			}
+			validBit = ValLmPortStNeighborStruct.getByte(
+							VtnServiceIpcConsts.VALID,
+							UncPhysicalStructIndexEnum.UpplValLmPortNeighborIndex
+							.kIdxLmPortConnectedSwitchId.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				isHasNeighbor = true;
+				setValueToJsonObject(validBit, Neighbor,
+						VtnServiceJsonConsts.CONNECTEDSWITCHID,
+						IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+								ValLmPortStNeighborStruct,
+								VtnServiceIpcConsts.CONNECTED_SWITCH_ID));
+			}
+			validBit = ValLmPortStNeighborStruct.getByte(
+							VtnServiceIpcConsts.VALID,
+							UncPhysicalStructIndexEnum.UpplValLmPortNeighborIndex
+							.kIdxLmPortConnectedPortId.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				isHasNeighbor = true;
+				setValueToJsonObject(validBit, Neighbor,
+						VtnServiceJsonConsts.CONNECTEDPORTNAME,
+						IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+								ValLmPortStNeighborStruct,
+								VtnServiceIpcConsts.CONNECTED_PORT_ID));
+			}
+			validBit = ValLmPortStNeighborStruct.getByte(
+							VtnServiceIpcConsts.VALID,
+							UncPhysicalStructIndexEnum.UpplValLmPortNeighborIndex
+							.kIdxLmPortConnectedControllerId.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				isHasNeighbor = true;
+				setValueToJsonObject(validBit, Neighbor,
+						VtnServiceJsonConsts.CONNECTEDCONTROLLERID,
+						IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+								ValLmPortStNeighborStruct,
+								VtnServiceIpcConsts.CONNECTED_CONTROLLER_ID));
+			}
+		}
+		LOG.debug("neighbor Json: " + Neighbor.toString());
+		LOG.trace("Complete getDomainLogicalPortNeighborResponse");
+		if (!isHasNeighbor) {
+			return null;
+		}
+		return Neighbor;
+	}
+
+	/**
+	 * Gets the domain logical port boundary response.
+	 * 
+	 * @param responsePacket
+	 *            the response packet
+	 * @return the domain logical port boundary response
+	 */
+	public JsonObject getDomainLogicalPortBoundaryResponse(
+			final IpcDataUnit[] responsePacket) {
+		LOG.trace("Start getDomainLogicalPortBoundaryResponse");
+		final JsonObject logicalPortBoudary = new JsonObject();
+		int index = 0;
+		byte validBit;
+		boolean isHasBoundary = false;
+		if (responsePacket != null && responsePacket.length > 0) {
+			// skipping key type
+			LOG.debug("Skip key type and key structure: no use");
+			index = index + 2;
+
+			final IpcStruct valLogicalPortBoundaryStruct = (IpcStruct) responsePacket[index++];
+			validBit = valLogicalPortBoundaryStruct.getByte(
+							VtnServiceIpcConsts.VALID,
+							UncPhysicalStructIndexEnum.UpplValLogicalPortBoundaryStIndex
+							.kIdxLogicalPortBoundaryCandidate.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				if (IpcDataUnitWrapper.getIpcStructUint8Value(
+						valLogicalPortBoundaryStruct,
+						VtnServiceIpcConsts.BOUNDARY_CANDIDATE)
+						.equalsIgnoreCase(UncPhysicalStructIndexEnum
+						.UpplLogicalPortBoundaryCandidate.UPPL_LP_BDRY_CANDIDATE_YES.getValue())) {
+					isHasBoundary = true;
+					setValueToJsonObject(validBit, logicalPortBoudary,
+							VtnServiceJsonConsts.BOUNDARY_CANDIDATE,
+							VtnServiceJsonConsts.YES);
+				} else if (IpcDataUnitWrapper.getIpcStructUint8Value(
+						valLogicalPortBoundaryStruct,
+						VtnServiceIpcConsts.BOUNDARY_CANDIDATE)
+						.equalsIgnoreCase(UncPhysicalStructIndexEnum
+						.UpplLogicalPortBoundaryCandidate.UPPL_LP_BDRY_CANDIDATE_NO.getValue())) {
+					isHasBoundary = true;
+					setValueToJsonObject(validBit, logicalPortBoudary,
+							VtnServiceJsonConsts.BOUNDARY_CANDIDATE,
+							VtnServiceJsonConsts.NO);
+				} else {
+					LOG.debug("boundary_candidate : invalid");
+				}
+			}
+			validBit = valLogicalPortBoundaryStruct.getByte(
+							VtnServiceIpcConsts.VALID,
+							UncPhysicalStructIndexEnum.UpplValLogicalPortBoundaryStIndex
+							.kIdxLogicalPortBoundaryConnectedDomain.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				isHasBoundary = true;
+				setValueToJsonObject(validBit, logicalPortBoudary,
+						VtnServiceJsonConsts.DOMAINID,
+						IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+								valLogicalPortBoundaryStruct,
+								VtnServiceIpcConsts.CONNECTED_DOMAIN));
+			}
+			validBit = valLogicalPortBoundaryStruct.getByte(
+							VtnServiceIpcConsts.VALID,
+							UncPhysicalStructIndexEnum.UpplValLogicalPortBoundaryStIndex
+							.kIdxLogicalPortBoundaryConnectedController.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				isHasBoundary = true;
+				setValueToJsonObject(validBit, logicalPortBoudary,
+						VtnServiceJsonConsts.CONTROLLERID,
+						IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+								valLogicalPortBoundaryStruct,
+								VtnServiceIpcConsts.CONNECTED_CONTROLLER));
+			}
+		}
+		LOG.debug("Response Json: " + logicalPortBoudary.toString());
+		LOG.trace("Complete getDomainLogicalPortBoundaryResponse");
+		if (!isHasBoundary) {
+			return null;
+		}
+		return logicalPortBoudary;
 	}
 
 	/**
@@ -2898,11 +3208,6 @@ public class IpcPhysicalResponseFactory {
 				setValueToJsonObject(validBit, controlerFlow,
 						VtnServiceJsonConsts.CONTROLER_TYPE,
 						VtnServiceJsonConsts.PFC);
-			} else if (controllerType == UncPhysicalStructIndexEnum.UpplTypeIndex.UNC_CT_ODC
-					.ordinal()) {
-				setValueToJsonObject(validBit, controlerFlow,
-						VtnServiceJsonConsts.CONTROLER_TYPE,
-						VtnServiceJsonConsts.ODC);
 			} else if (controllerType == UncPhysicalStructIndexEnum.UpplTypeIndex.UNC_CT_POLC
 					.ordinal()) {
 				String polc = VtnServiceInitManager.getConfigurationMap()
@@ -2910,6 +3215,20 @@ public class IpcPhysicalResponseFactory {
 				setValueToJsonObject(validBit, controlerFlow,
 						VtnServiceJsonConsts.CONTROLER_TYPE,
 						polc);
+			} else if (controllerType == UncPhysicalStructIndexEnum.UpplTypeIndex.UNC_CT_HPVANC
+					.ordinal()) {
+				String hpctr = VtnServiceInitManager.getConfigurationMap()
+						.getCommonConfigValue(VtnServiceConsts.CONF_FILE_FIELD_HPVANC);
+				setValueToJsonObject(validBit, controlerFlow,
+						VtnServiceJsonConsts.CONTROLER_TYPE,
+						hpctr);
+			} else if (controllerType == UncPhysicalStructIndexEnum.UpplTypeIndex.UNC_CT_ODC
+					.ordinal()) {
+				String odc = VtnServiceInitManager.getConfigurationMap()
+						.getCommonConfigValue(VtnServiceConsts.CONF_FILE_FIELD_ODC);
+				setValueToJsonObject(validBit, controlerFlow,
+						VtnServiceJsonConsts.CONTROLER_TYPE,
+						odc);
 			} else {
 				LOG.info("Controller Type invalid");
 			}

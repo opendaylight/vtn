@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,12 +11,10 @@
  * DalQueryBuilder.cc
  *
  *  Created on: Jan 6, 2013
- *      Author: guest
  */
 
 #include "uncxx/upll_log.hh"
 #include "dal_query_builder.hh"
-// #include "/home/guest/BuildEnv/src/core/include/cxx/pfcxx/synch.hh"
 
 namespace unc {
 namespace upll {
@@ -79,7 +77,7 @@ const char * DalQueryBuilder::DalGetCreatedRecQT =
 
 const char * DalQueryBuilder::DalGetModRecQT     =
   "SELECT {mand_out_columns} FROM {config1_table_name}"
-    " WHERE EXISTS" 
+    " WHERE EXISTS"
       " ( SELECT {primary_key_columns} FROM"
         " ( SELECT {opt_match_columns} FROM {config2_table_name} EXCEPT"
           " SELECT {opt_match_columns} FROM {config1_table_name}"
@@ -157,11 +155,15 @@ const char * DalQueryBuilder::DalCheckRecIdenticalQT =
 
 // Set specified record in dirty table to dirty
 const char * DalQueryBuilder::DalDirtyTblUpdateRecQT =
-   "UPDATE {config1_table_name} SET dirty=1 {mand_WHERE_match_columns_eq}";
+  "UPDATE {config1_table_name} SET dirty=1 {mand_WHERE_match_columns_eq}";
+
+// Set specified record in dirty table to dirty
+const char * DalQueryBuilder::DalDirtyTblResetRecQT =
+  "UPDATE {config1_table_name} SET dirty=0 {mand_WHERE_match_columns_eq}";
 
 // Clear dirty flags for all tables
-const char * DalQueryBuilder::DalDirtyTblClearAllQT = 
-   "UPDATE {config1_table_name} SET dirty=0 WHERE dirty=1";
+const char * DalQueryBuilder::DalDirtyTblClearAllQT =
+  "UPDATE {config1_table_name} SET dirty=0 WHERE dirty=1";
 
 // Create with c_flag = 1 in CAND
 const char * DalQueryBuilder::DalCreateCandRecQT    =
@@ -184,6 +186,25 @@ const char * DalQueryBuilder::DalClearCandFlagsQT =
   "UPDATE {config1_table_name} SET c_flag=0, u_flag=0 WHERE"
     " c_flag = 1 OR u_flag = 1";
 
+const char * DalQueryBuilder::DalClearCandFlagsInVtnModeQT =
+  "UPDATE {config1_table_name} SET c_flag=0, u_flag=0 WHERE"
+    " ((c_flag = 1 OR u_flag = 1) AND vtn_name = ?)";
+
+const char * DalQueryBuilder::DalClearCandCrFlagsQT =
+  "UPDATE {config1_table_name} SET c_flag=0 WHERE"
+    " c_flag = 1";
+
+const char * DalQueryBuilder::DalClearCandCrFlagsInVtnModeQT =
+  "UPDATE {config1_table_name} SET c_flag=0 WHERE"
+    " ((c_flag = 1) AND vtn_name = ?)";
+
+const char * DalQueryBuilder::DalClearCandUpFlagsQT =
+  "UPDATE {config1_table_name} SET u_flag=0 WHERE"
+    " u_flag = 1";
+
+const char * DalQueryBuilder::DalClearCandUpFlagsInVtnModeQT =
+  "UPDATE {config1_table_name} SET u_flag=0 WHERE"
+    " ((u_flag = 1) AND vtn_name = ?)";
 // Get created records where c_flag = 1 from CAND
 const char * DalQueryBuilder::DalGetCreatedRecInCandQT =
   "SELECT {mand_out_columns} FROM {config1_table_name} WHERE"
@@ -202,6 +223,100 @@ const char * DalQueryBuilder::DalGetModRecConfig2QT     =
         " WHERE u_flag = 1 AND {match_dst_primary_key_columns_eq_with_temp}"
       " ) ORDER BY ({primary_key_columns})";
 
+// Get all deleted records from CAND
+const char * DalQueryBuilder::DalGetCandDelRecQT =
+  "SELECT {mand_out_columns} FROM {config1_table_name}";
+
+// Get all deleted records from CAND
+const char * DalQueryBuilder::DalGetCandVtnDelRecQT =
+  "SELECT {mand_out_columns} FROM {config1_table_name}"
+    " WHERE vtn_name = ?";
+
+// Backup deleted records from CAND during merge
+const char * DalQueryBuilder::DalBackupToCandDelQT =
+  "INSERT INTO {ca_del_table_name} ({opt_out_columns})"
+    " ( SELECT {opt_out_columns} FROM {config1_table_name}"
+      " WHERE NOT EXISTS ( SELECT {primary_key_columns}"
+        " FROM {config2_table_name} AS temp"
+          " WHERE {match_dst_primary_key_columns_eq_with_temp} AND"
+            " {dst_table_name}.ctrlr_name = temp.ctrlr_name) AND"
+            " ctrlr_name = ?)";
+
+const char * DalQueryBuilder::DalVtnDirtyTblInsertRecQT    =
+  "INSERT INTO {config1_table_name} ({mand_in_columns})"
+    " VALUES ({mand_insert_?})";
+
+// Get Records which exists in CAND with c_flag = 1 and given vtn_name
+const char * DalQueryBuilder::DalGetCreatedRecInVtnModeQT =
+  "SELECT {mand_out_columns} FROM {config1_table_name} WHERE"
+    " c_flag = 1 {match_column_vtn_name_eq}";
+
+// Get Records which exists in CAND with u_flag = 1 and given vtn_name
+const char * DalQueryBuilder::DalGetUpdatedRecInVtnModeQT =
+  "SELECT {mand_out_columns} FROM {config1_table_name} WHERE"
+    " u_flag = 1 {match_column_vtn_name_eq}"
+    " ORDER BY ({primary_key_columns})";
+
+// Get RUNN records which exists in CAND with u_flag=1 and given vtn_name
+const char * DalQueryBuilder::DalGetUpdatedRecInVtnMode2QT     =
+  "SELECT {mand_out_columns} FROM {config2_table_name} as temp"
+    " WHERE EXISTS"
+      " ( SELECT {primary_key_columns} FROM {config1_table_name}"
+        " WHERE u_flag = 1 AND {match_dst_primary_key_columns_eq_with_temp}"
+        " {match_column_vtn_name_eq}"
+        " ) ORDER BY ({primary_key_columns})";
+
+#if 0
+const char * DalQueryBuilder::DalCopyModRecDelVtnQT =
+  "DELETE FROM {config1_table_name} WHERE EXISTS"
+    " SELECT {primary_key_columns} from {config1_table_name} WHERE "
+    "{match_dst_primary_key_columns_eq_with_src}  AND "
+    "{config1_table_name}.vtn_name = ?";
+
+const char * DalQueryBuilder::DalCopyModRecDelVtnQT =
+  "DELETE FROM {config1_table_name} WHERE EXISTS"
+    " (SELECT {primary_key_columns} from {config2_table_name} WHERE"
+    " {match_dst_primary_key_columns_eq_with_src}  AND"
+    " {config1_table_name}.vtn_name = ?)";
+#endif
+
+const char * DalQueryBuilder::DalCopyModRecDelVtnQT =
+  " DELETE FROM {dst_table_name} WHERE NOT EXISTS"
+    " ( SELECT {primary_key_columns} FROM {src_table_name} AS temp"
+      "  WHERE {match_dst_primary_key_columns_eq_with_temp}) AND"
+        " ({dst_table_name}.vtn_name = ?)";
+
+const char * DalQueryBuilder::DalCopyModRecCreateVtnQT =
+  " INSERT INTO {dst_table_name} ({opt_out_columns})"
+    " (SELECT {opt_out_columns} FROM {src_table_name} AS temp"
+      " WHERE NOT EXISTS"
+        " ( SELECT {primary_key_columns} FROM {dst_table_name}"
+          " WHERE {match_dst_primary_key_columns_eq_with_temp})"
+            " AND temp.vtn_name = ?)";
+
+#if 0
+const char * DalQueryBuilder::DalCopyModRecUpdateAbortVtnQT =
+  "UPDATE {dst_table_name} SET {opt_dst_out_columns_with_temp}, c_flag = 0,"
+    " u_flag = 0 FROM ( SELECT {opt_match_columns} FROM {src_table_name}"
+      " ) AS temp WHERE {match_dst_primary_key_columns_eq_with_temp} AND"
+        " (({dst_table_name}.c_flag = 1 OR {dst_table_name}.u_flag = 1)"
+          " AND ({src_table_name}.vtn_name = ? AND"
+            " {dst_table_name}.vtn_name = ?))";
+
+const char * DalQueryBuilder::DalCopyModRecUpdateAbortVtnQT =
+  "UPDATE {dst_table_name} SET {opt_dst_out_columns_with_temp}, c_flag = 0,"
+    " u_flag = 0 FROM ( SELECT {opt_match_columns} FROM {src_table_name}"
+      " ) AS temp WHERE {match_dst_primary_key_columns_eq_with_temp} AND"
+        " ({dst_table_name}.c_flag = 1 OR {dst_table_name}.u_flag = 1) AND"
+          " {dst_table_name}.vtn_name = ?)";
+#endif
+
+const char * DalQueryBuilder::DalCopyModRecUpdateAbortVtnQT =
+  "UPDATE {dst_table_name} SET {opt_dst_out_columns_with_temp}, c_flag = 0,"
+    " u_flag = 0 FROM ( SELECT {match_all_columns} FROM {src_table_name}"
+      " ) AS temp WHERE {match_dst_primary_key_columns_eq_with_temp} AND"
+        " ({dst_table_name}.c_flag = 1 OR {dst_table_name}.u_flag = 1) AND"
+          " {dst_table_name}.vtn_name = ?";
 /* sql templates mapping with enum constants */
 static const struct SqlTemplates {
   const DalApiNum api_num;
@@ -228,19 +343,53 @@ static const struct SqlTemplates {
   { kDalCopyMatchingRecQT, DalQueryBuilder::DalCopyMatchingRecQT },
   { kDalCheckRecIdenticalQT, DalQueryBuilder::DalCheckRecIdenticalQT },
   { kDalDirtyTblUpdateRecQT, DalQueryBuilder::DalDirtyTblUpdateRecQT },
+  { kDalDirtyTblResetRecQT, DalQueryBuilder::DalDirtyTblResetRecQT },
   { kDalDirtyTblClearAllQT, DalQueryBuilder::DalDirtyTblClearAllQT },
   // New queries with c_flag and u_flag
   { kDalCreateCandRecQT, DalQueryBuilder::DalCreateCandRecQT },
   { kDalCreateCandRecUpdateQT, DalQueryBuilder::DalCreateCandRecUpdateQT},
   { kDalUpdateCandRecQT, DalQueryBuilder::DalUpdateCandRecQT },
   { kDalClearCandFlagsQT, DalQueryBuilder::DalClearCandFlagsQT },
+  // In vtn mode, clear c_flag and u_flag for a VTN
+  { kDalClearCandFlagsInVtnModeQT,
+    DalQueryBuilder::DalClearCandFlagsInVtnModeQT },
+  { kDalClearCandCrFlagsQT, DalQueryBuilder::DalClearCandCrFlagsQT },
+  // In vtn mode, clear c_flag and u_flag for a VTN
+  { kDalClearCandCrFlagsInVtnModeQT,
+    DalQueryBuilder::DalClearCandCrFlagsInVtnModeQT },
+  { kDalClearCandUpFlagsQT, DalQueryBuilder::DalClearCandUpFlagsQT },
+  // In vtn mode, clear c_flag and u_flag for a VTN
+  { kDalClearCandUpFlagsInVtnModeQT,
+    DalQueryBuilder::DalClearCandUpFlagsInVtnModeQT },
   { kDalGetCreatedRecInCandQT, DalQueryBuilder::DalGetCreatedRecInCandQT },
   { kDalGetModRecConfig1QT, DalQueryBuilder::DalGetModRecConfig1QT },
   { kDalGetModRecConfig2QT, DalQueryBuilder::DalGetModRecConfig2QT },
   { kDalCopyModRecUpdateAbortQT, DalQueryBuilder::DalCopyModRecUpdateAbortQT },
   { kDalCopyModRecCreateImportQT, DalQueryBuilder::DalCopyModRecCreateImportQT},
   { kDalCopyModRecUpdateImportQT, DalQueryBuilder::DalCopyModRecUpdateImportQT},
-  { kDalCopyModRecDelImportQT, DalQueryBuilder::DalCopyModRecDelImportQT}
+  { kDalCopyModRecDelImportQT, DalQueryBuilder::DalCopyModRecDelImportQT},
+  // Get deleted records from CAND_DEL during commit
+  { kDalGetCandDelRecQT, DalQueryBuilder::DalGetCandDelRecQT},
+  // Get deleted records in vtn mode from CAND_DEL during commit
+  { kDalGetCandVtnDelRecQT, DalQueryBuilder::DalGetCandVtnDelRecQT},
+  // Backup deleted records from CAND during merge
+  { kDalBackupToCandDelQT, DalQueryBuilder::DalBackupToCandDelQT},
+  // In vtn mode, insert records vtn dirty tbl
+  { kDalVtnDirtyTblInsertRecQT, DalQueryBuilder::DalVtnDirtyTblInsertRecQT },
+  // In vtn mode, get created records during commit
+  { kDalGetCreatedRecInVtnModeQT, DalQueryBuilder::DalGetCreatedRecInVtnModeQT},
+  // In vtn mode, get updated records from CAND during commit
+  { kDalGetUpdatedRecInVtnModeQT, DalQueryBuilder::DalGetUpdatedRecInVtnModeQT},
+  // In vtn mode, get updated records from RUNN during commit
+  { kDalGetUpdatedRecInVtnMode2QT,
+    DalQueryBuilder::DalGetUpdatedRecInVtnMode2QT},
+  // In vtn mode, copy deleted records during abort
+  { kDalCopyModRecDelVtnModeQT, DalQueryBuilder::DalCopyModRecDelVtnQT},
+  // In vtn mode, copy created records during abort
+  { kDalCopyModRecCreateVtnModeQT, DalQueryBuilder::DalCopyModRecCreateVtnQT},
+  // In vtn mode, copy updated records during abort
+  { kDalCopyModRecUpdateAbortVtnModeQT,
+    DalQueryBuilder::DalCopyModRecUpdateAbortVtnQT},
 };
 
 /* replacement token definitions*/
@@ -270,26 +419,34 @@ const char * DalQueryBuilder::DalMandMatchColEqTempExpr =
   "{mand_match_columns_eq_with_temp}";
 const char * DalQueryBuilder::DalMatchColEqTempExpr =
   "{match_columns_eq_with_temp}";
+const char * DalQueryBuilder::DalMatchColVtnNameEqExpr =
+  "{match_column_vtn_name_eq}";
 
 // Primary Key related tokens
 const char * DalQueryBuilder::DalPkeyColNames = "{primary_key_columns}";
 const char * DalQueryBuilder::DalMatchPriColEqTempExpr =
   "{match_dst_primary_key_columns_eq_with_temp}";
+const char * DalQueryBuilder::DalMatchPriColEqExpr =
+  "{match_dst_primary_key_columns_eq_with_src}";
+const char * DalQueryBuilder::DalMatchAllColEqExpr =
+  "{match_all_columns}";
 
 // Table related tokens
 const char * DalQueryBuilder::DalCfg1TableName  = "{config1_table_name}";
 const char * DalQueryBuilder::DalCfg2TableName  = "{config2_table_name}";
 const char * DalQueryBuilder::DalDstTableName   = "{dst_table_name}";
 const char * DalQueryBuilder::DalSrcTableName   = "{src_table_name}";
+const char * DalQueryBuilder::DalCaDelTableName = "{ca_del_table_name}";
 
-/* configuration type definitions*/
+// configuration type definitions
 const char * DalQueryBuilder::DalStateType     = "st_";
 const char * DalQueryBuilder::DalCandidateType = "ca_";
 const char * DalQueryBuilder::DalRunningType   = "ru_";
 const char * DalQueryBuilder::DalStartupType   = "su_";
 const char * DalQueryBuilder::DalImportType    = "im_";
 const char * DalQueryBuilder::DalAuditType     = "au_";
-
+const char * DalQueryBuilder::DalCandidateDelType      = "ca_del_";
+const char * DalQueryBuilder::DalSysType       = "sy_";
 DalQueryBuilder::DalQueryBuilder() {
   // Auto-generated constructor stub
 }  // DalQueryBuilder::DalQueryBuilder
@@ -337,8 +494,8 @@ bool DalQueryBuilder::get_sql_statement(
     return false;
   }
 
-  query_str = sql_templates[dal_api_num].query_tmpl;  
-  
+  query_str = sql_templates[dal_api_num].query_tmpl;
+
   /* replace all tokens in query template to get statement */
   while (next_token_pos(query_str, start_pos, last_pos)) {
     size_t length = last_pos - start_pos + 1;
@@ -359,8 +516,8 @@ bool DalQueryBuilder::get_sql_statement(
 
 /* keep finding tokens from given query template until end of templates */
 bool DalQueryBuilder::next_token_pos(const std::string &query_template,
-				     size_t &start_position,
-				     size_t &last_position) const {
+                                     size_t &start_position,
+                                     size_t &last_position) const {
   if (query_template.empty()) {
     UPLL_LOG_DEBUG("Empty Query Template String");
     return false;
@@ -390,8 +547,8 @@ bool DalQueryBuilder::next_token_pos(const std::string &query_template,
 
 /* converts token string to enum constants */
 DalQuerytoken DalQueryBuilder::str_to_num(const std::string &tokenstr,
-					  const size_t start_pos,
-					  const size_t length) const {
+                                          const size_t start_pos,
+                                          const size_t length) const {
   if (tokenstr.empty()) {
     UPLL_LOG_DEBUG("Empty Token String");
     return kDalInvalidToken;
@@ -409,7 +566,8 @@ DalQuerytoken DalQueryBuilder::str_to_num(const std::string &tokenstr,
     return kDalMandOutColNames;
   } else if (tokenstr.compare(start_pos, length, DalOptOutColNames) == 0) {
     return kDalOptOutColNames;
-  } else if (tokenstr.compare(start_pos, length, DalOptDstOutColUpdTempExpr) == 0) {
+  } else if (tokenstr.compare(start_pos, length,
+                              DalOptDstOutColUpdTempExpr) == 0) {
     return kDalOptDstOutColUpdTempExpr;
 
   // Match Related tokens
@@ -421,17 +579,24 @@ DalQuerytoken DalQueryBuilder::str_to_num(const std::string &tokenstr,
     return kDalMandMatchColEqExpr;
   } else if (tokenstr.compare(start_pos, length, DalOptMatchColEqExpr) == 0) {
     return kDalOptMatchColEqExpr;
-  } else if (tokenstr.compare(start_pos, length, DalOptMatchColEqNotLastExpr) == 0) {
+  } else if (tokenstr.compare(start_pos, length,
+                              DalOptMatchColEqNotLastExpr) == 0) {
     return kDalOptMatchColEqNotLastExpr;
-  } else if (tokenstr.compare(start_pos, length, DalMandMatchColLstGtrExpr) == 0) {
+  } else if (tokenstr.compare(start_pos, length,
+                              DalMandMatchColLstGtrExpr) == 0) {
     return kDalMandMatchColLstGtrExpr;
-  } else if (tokenstr.compare(start_pos, length, DalMandMatchColEqTempExpr) == 0) {
+  } else if (tokenstr.compare(start_pos, length,
+                              DalMandMatchColEqTempExpr) == 0) {
     return kDalMandMatchColEqTempExpr;
+  } else if (tokenstr.compare(start_pos, length,
+                              DalMatchColVtnNameEqExpr) == 0) {
+    return kDalMatchColVtnNameEqExpr;
 
   // Primary Key Related tokens
   } else if (tokenstr.compare(start_pos, length, DalPkeyColNames) == 0) {
     return kDalPkeyColNames;
-  } else if (tokenstr.compare(start_pos, length, DalMatchPriColEqTempExpr) == 0) {
+  } else if (tokenstr.compare(start_pos, length,
+                              DalMatchPriColEqTempExpr) == 0) {
     return kDalMatchPriColEqTempExpr;
   } else if (tokenstr.compare(start_pos, length, DalMatchColEqTempExpr) == 0) {
     return kDalMatchColEqTempExpr;
@@ -445,6 +610,12 @@ DalQuerytoken DalQueryBuilder::str_to_num(const std::string &tokenstr,
     return kDalDstTableName;
   } else if (tokenstr.compare(start_pos, length, DalSrcTableName) == 0) {
     return kDalSrcTableName;
+  } else if (tokenstr.compare(start_pos, length, DalCaDelTableName) == 0) {
+    return kDalCaDelTableName;
+  } else if (tokenstr.compare(start_pos, length, DalMatchPriColEqExpr) == 0) {
+    return kDalMatchPriColEqExpr;
+  } else if (tokenstr.compare(start_pos, length, DalMatchAllColEqExpr) == 0) {
+    return kDalMatchAllColEqExpr;
   } else {
     UPLL_LOG_DEBUG("Invalid token(%s) from Query template", tokenstr.c_str());
     return kDalInvalidToken;
@@ -475,6 +646,12 @@ bool DalQueryBuilder::get_config_prefix(const UpllCfgType type,
       return true;
     case UPLL_DT_AUDIT:
       config_type += DalAuditType;
+      return true;
+    case UPLL_DT_CANDIDATE_DEL:
+      config_type += DalCandidateDelType;
+      return true;
+    case UPLL_DT_SYSTEM:
+      config_type += DalSysType;
       return true;
     default:
       UPLL_LOG_DEBUG("Unknown Config type(%d)", type);
@@ -574,8 +751,8 @@ bool DalQueryBuilder::find_last_pkey_pos_for_match(
     col_info = *bl_it;
     if ((col_info->get_io_type() == kDalIoMatchOnly ||
         col_info->get_io_type() == kDalIoInputAndMatch ||
-        col_info->get_io_type() == kDalIoOutputAndMatch) && 
-        (schema::ColumnIsPKeyIndex(dbi->get_table_index(), 
+        col_info->get_io_type() == kDalIoOutputAndMatch) &&
+        (schema::ColumnIsPKeyIndex(dbi->get_table_index(),
                             col_info->get_column_index()) &&
         col_info->get_column_index() >= last_pkey_col_index)) {
       *last_pkey_pos = index;
@@ -704,7 +881,8 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
           if (first)
             first = false;
 
-          replc_str += schema::ColumnName(table_index, col_info->get_column_index());
+          replc_str += schema::ColumnName(table_index,
+                                          col_info->get_column_index());
           replc_str += "= ?";
         }  // if
       }  // for
@@ -801,8 +979,6 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
             if (first)
               first = false;
             col_index = col_info->get_column_index();
-            replc_str += table_name;
-            replc_str += ".";
             replc_str += schema::ColumnName(table_index, col_index);
             replc_str += "= temp.";
             replc_str += schema::ColumnName(table_index, col_index);
@@ -891,7 +1067,8 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
           if (first)
             first = false;
 
-          replc_str += schema::ColumnName(table_index, col_info->get_column_index());
+          replc_str += schema::ColumnName(table_index,
+                                          col_info->get_column_index());
           replc_str += " = ?";
         }  // if
       }  // for
@@ -927,7 +1104,8 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
             if (first)
               first = false;
 
-            replc_str += schema::ColumnName(table_index, col_info->get_column_index());
+            replc_str += schema::ColumnName(table_index,
+                                            col_info->get_column_index());
             replc_str += "= ?";
           }
           col_count++;
@@ -973,7 +1151,8 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
           if (first)
             first = false;
 
-          replc_str += schema::ColumnName(table_index, col_info->get_column_index());
+          replc_str += schema::ColumnName(table_index,
+                                          col_info->get_column_index());
           if (col_count == last_pkey_pos)
             replc_str += "> ?";
           else
@@ -1030,12 +1209,40 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
           if (first)
             first = false;
 
-          replc_str += schema::ColumnName(table_index, col_info->get_column_index());
+          replc_str += schema::ColumnName(table_index,
+                                          col_info->get_column_index());
           replc_str += " = temp.";
-          replc_str += schema::ColumnName(table_index, col_info->get_column_index());
-
+          replc_str += schema::ColumnName(table_index,
+                                          col_info->get_column_index());
         }  // if
         col_count++;
+      }  // for
+      break;
+
+    // {match_col_vtn_name_eq}
+    // AND vtn_name = ?
+    case kDalMatchColVtnNameEqExpr:
+      if (dbi == NULL || dbi->get_match_bind_count() == 0) {
+        UPLL_LOG_DEBUG("No columns bound for Optional Match");
+        return true;
+      }
+      bind_list = dbi->get_bind_list();
+      for (bl_it = bind_list.begin(); bl_it != bind_list.end(); ++bl_it) {
+        col_info = *bl_it;
+        io_type = col_info->get_io_type();
+        if (io_type == kDalIoMatchOnly ||
+            io_type == kDalIoInputAndMatch ||
+            io_type == kDalIoOutputAndMatch) {
+          if (!strncmp(schema::ColumnName(table_index,
+                                          col_info->get_column_index()),
+                       "vtn_name", 9)) {
+            replc_str += " AND ";
+            replc_str += schema::ColumnName(table_index,
+                                            col_info->get_column_index());
+            replc_str += " = ? ";
+            break;
+          }
+        }  // if
       }  // for
       break;
 
@@ -1054,8 +1261,8 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
       }
 
       // Building string for attributes bound for match
-      //if (dbi->get_match_bind_count() > 0)
-      //  replc_str += "WHERE ";
+      // if (dbi->get_match_bind_count() > 0)
+      // replc_str += "WHERE ";
 
       bind_list = dbi->get_bind_list();
       for (bl_it = bind_list.begin(); bl_it != bind_list.end(); ++bl_it) {
@@ -1070,10 +1277,11 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
           if (first)
             first = false;
 
-          replc_str += schema::ColumnName(table_index, col_info->get_column_index());
+          replc_str += schema::ColumnName(table_index,
+                                          col_info->get_column_index());
           replc_str += " = temp.";
-          replc_str += schema::ColumnName(table_index, col_info->get_column_index());
-
+          replc_str += schema::ColumnName(table_index,
+                                          col_info->get_column_index());
         }  // if
         col_count++;
       }  // for
@@ -1127,6 +1335,55 @@ bool DalQueryBuilder::get_bind_str(const DalQuerytoken token,
       }
 
       replc_str += schema::TableName(table_index);
+      break;
+
+    case kDalCaDelTableName:
+      if (get_config_prefix(UPLL_DT_CANDIDATE_DEL, replc_str) != true) {
+         UPLL_LOG_DEBUG("get_config_prefix fialed.");
+         return false;
+      }
+      replc_str += schema::TableName(table_index);
+      break;
+
+    // {match_dst_primary_key_columns_eq_with_src} - col1, col2, ...
+    // col1 != <src_table>.col1 AND col2 = <src_table>.col2 ...
+    // For all primary key column names of the table
+    case kDalMatchPriColEqExpr:
+      table_name = "";
+      col_count = schema::TableNumPkCols(table_index);
+      for (col_index = 0; col_index < col_count; col_index++) {
+        if (first != true)
+          replc_str += " AND ";
+
+        if (first)
+          first = false;
+
+        if (get_bind_str(kDalDstTableName, dbi, table_name,
+                         table_index, first_config, second_config) != true) {
+          return false;
+        }
+        replc_str += schema::ColumnName(table_index, col_index);
+        replc_str += "!=";
+        replc_str += table_name;
+        replc_str += ".";
+        replc_str += schema::ColumnName(table_index, col_index);
+      }
+      break;
+
+    // {match_all_columns}
+    case kDalMatchAllColEqExpr:
+      // PFC_ASSERT(dbi);
+      UPLL_LOG_DEBUG("All columns bound for Optional match");
+      col_count = schema::TableNumCols(table_index);
+      for (col_index = 0; col_index < col_count; col_index++) {
+        if (first != true)
+          replc_str += ", ";
+
+        if (first)
+          first = false;
+
+        replc_str += schema::ColumnName(table_index, col_index);
+      }
       break;
 
     /* Invalid token */

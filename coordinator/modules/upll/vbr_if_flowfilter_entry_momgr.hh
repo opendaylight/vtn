@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -85,7 +85,7 @@ class VbrIfFlowFilterEntryMoMgr : public MoMgrImpl {
      * @retval    UPLL_RC_ERR_NO_SUCH_INSTANCE  No Record in DB.
      * @retval    UPLL_RC_ERR_INSTANCE_EXISTS   Record exists in DB.
      */
-    upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
+    upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                            DalDmlIntf *dmi);
 
     /**
@@ -398,7 +398,7 @@ class VbrIfFlowFilterEntryMoMgr : public MoMgrImpl {
      * @retval  FALSE  Failure
      **/
     bool IsValidKey(void *key,
-                    uint64_t index);
+                    uint64_t index, MoMgrTables tbl = MAINTBL);
 
      /**
      * @brief  Method used for GetParentConfigKey Operation.
@@ -433,7 +433,7 @@ class VbrIfFlowFilterEntryMoMgr : public MoMgrImpl {
      *
      * @retval  UPLL_RC_SUCCESS      Successfull completion.
      * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
-     * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists 
+     * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists
      * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
      */
      upll_rc_t RestorePOMInCtrlTbl(ConfigKeyVal *ikey,
@@ -454,24 +454,29 @@ class VbrIfFlowFilterEntryMoMgr : public MoMgrImpl {
                                         uuc::UpdateCtrlrPhase phase,
                                         set<string> *affected_ctrlr_set,
                                         DalDmlIntf *dmi,
-                                        ConfigKeyVal **err_ckv);
+                                        ConfigKeyVal **err_ckv,
+                                        TxUpdateUtil *tx_util,
+                                        TcConfigMode config_mode,
+                                        std::string  vtn_name);
 
     upll_rc_t ConstructReadDetailResponse(ConfigKeyVal *ikey,
                                           ConfigKeyVal *drv_resp_ckv,
                                           controller_domain ctrlr_dom,
                                           ConfigKeyVal **okey,
- 					  DalDmlIntf *dmi);
+                                          DalDmlIntf *dmi);
 
     upll_rc_t GetVexternalInformation(ConfigKeyVal* ck_main,
         upll_keytype_datatype_t dt_type,
         pfcdrv_val_flowfilter_entry_t*& pfc_val,
-       uint8_t db_flag, DalDmlIntf *dmi);
+       uint8_t db_flag, const char *ctrlr_id, DalDmlIntf *dmi);
 
     upll_rc_t SetVlinkPortmapConfiguration(ConfigKeyVal *ikey,
                                            upll_keytype_datatype_t dt_type,
                                            DalDmlIntf *dmi,
                                            InterfacePortMapInfo flag,
-                                           unc_keytype_operation_t oper);
+                                           unc_keytype_operation_t oper,
+                                           TcConfigMode config_mode,
+                                           string vtn_name);
 
     upll_rc_t GetControllerDomainID(ConfigKeyVal *ikey,
                                     upll_keytype_datatype_t dt_type,
@@ -492,7 +497,9 @@ class VbrIfFlowFilterEntryMoMgr : public MoMgrImpl {
 
     upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
                                 upll_keytype_datatype_t dt_type,
-                                DalDmlIntf *dmi);
+                                DalDmlIntf *dmi,
+                                TcConfigMode config_mode,
+                                string vtn_name);
 
     upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
 
@@ -510,11 +517,11 @@ class VbrIfFlowFilterEntryMoMgr : public MoMgrImpl {
     upll_rc_t GetFlowlistConfigKey(
           const char *flowlist_name, ConfigKeyVal *&okey,
           DalDmlIntf *dmi);
-   upll_rc_t VerifyRedirectDestination(
-    ConfigKeyVal *ikey,
-    DalDmlIntf *dmi,
-    upll_keytype_datatype_t dt_type); 
-    upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
+    upll_rc_t VerifyRedirectDestination(
+          ConfigKeyVal *ikey,
+          DalDmlIntf *dmi,
+          upll_keytype_datatype_t dt_type);
+          upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
           DalDmlIntf *dmi,
           IpcReqRespHeader *req);
   /**
@@ -540,7 +547,7 @@ class VbrIfFlowFilterEntryMoMgr : public MoMgrImpl {
    * @retval  UPLL_RC_ERR_DB_ACCESS       DB Read/Write error.
    *
    */
-   upll_rc_t AdaptValToDriver(ConfigKeyVal *ck_new,
+    upll_rc_t AdaptValToDriver(ConfigKeyVal *ck_new,
       ConfigKeyVal *ck_old,
       unc_keytype_operation_t op,
       upll_keytype_datatype_t dt_type,
@@ -548,6 +555,12 @@ class VbrIfFlowFilterEntryMoMgr : public MoMgrImpl {
       DalDmlIntf *dmi,
       bool *not_send_to_drv,
       bool audit_update_phase);
+    upll_rc_t TxUpdateErrorHandler(ConfigKeyVal *ckv_unc,
+       ConfigKeyVal *ckv_driver,
+       DalDmlIntf *dmi,
+       upll_keytype_datatype_t dt_type,
+       ConfigKeyVal **err_ckv,
+       IpcResponse *ipc_resp);
 
     VbrIfFlowFilterEntryMoMgr();
     ~VbrIfFlowFilterEntryMoMgr() {
@@ -560,17 +573,19 @@ class VbrIfFlowFilterEntryMoMgr : public MoMgrImpl {
     }
 #if 0
   upll_rc_t SendInterfaceRequestToDriver(ConfigKeyVal *ck_main,
-    ConfigKeyVal *nreq, unc_keytype_operation_t op, controller_domain_t ctrlr_dom,
+    ConfigKeyVal *nreq, unc_keytype_operation_t op,
+    controller_domain_t ctrlr_dom,
     upll_keytype_datatype_t vext_datatype, DalDmlIntf *dmi,
     uint32_t session_id, uint32_t config_id,
     uint8_t db_flag, set<string> *affected_ctrlr_set, bool &ipc_result);
 #endif
   upll_rc_t SendInterfaceRequestToDriver(
-      ConfigKeyVal *ckv_cand, ConfigKeyVal *ckv_running,
+      ConfigKeyVal *ckv_driver, ConfigKeyVal *ckv_running,
       unc_keytype_operation_t op, upll_keytype_datatype_t vext_datatype,
       controller_domain_t ctrlr_dom, DalDmlIntf *dmi,
       uint32_t session_id, uint32_t config_id,
-      uint8_t db_flag, set<string> *affected_ctrlr_set, bool &ipc_result);
+      uint8_t db_flag, set<string> *affected_ctrlr_set,
+      ConfigKeyVal *ckv_unc, TxUpdateUtil *tx_util);
 
 #if 0
   upll_rc_t SendInterfaceAuditRequestToDriver(

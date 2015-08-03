@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -88,6 +88,8 @@ public class ConfigResource extends AbstractResource {
 		ClientSession session = null;
 		int status = ClientSession.RESP_FATAL;
 		int operationStatus = VtnServiceIpcConsts.INVALID_OPEARTION_STATUS;
+		String timeout = null;
+		String cancelAudit = null;
 		try {
 			LOG.debug("Start Ipc framework call");
 			if (requestBody != null) {
@@ -108,13 +110,28 @@ public class ConfigResource extends AbstractResource {
 					LOG.info("Session created successfully");
 					// set session timeout as infinity for commit operation
 					session.setTimeout(null);
-					session.addOutput(new IpcUint32(
-							UncTCEnums.ServiceType.TC_OP_CANDIDATE_COMMIT
-									.ordinal()));
+					final JsonObject configuration = requestBody.getAsJsonObject(
+											VtnServiceJsonConsts.CONFIGURATION);
+					if (configuration.has(VtnServiceJsonConsts.TIMEOUT)) {
+						timeout = configuration.getAsJsonPrimitive(
+								VtnServiceJsonConsts.TIMEOUT).getAsString();
+					}
+
+					if (configuration.has(VtnServiceJsonConsts.CANCEL_AUDIT)) {
+						cancelAudit = configuration.getAsJsonPrimitive(
+								VtnServiceJsonConsts.CANCEL_AUDIT).getAsString();
+					}
+
+					session.addOutput(new IpcUint32(UncTCEnums.ServiceType
+									.TC_OP_CANDIDATE_COMMIT_TIMED.ordinal()));
 					session.addOutput(IpcDataUnitWrapper
 							.setIpcUint32Value(getSessionID()));
 					session.addOutput(IpcDataUnitWrapper
 							.setIpcUint32Value(getConfigID()));
+					session.addOutput(IpcDataUnitWrapper.setIpcInt32Value(
+							Integer.parseInt(timeout)));
+					session.addOutput(IpcDataUnitWrapper
+							.setIpcUint8Value(cancelAudit));
 				} else if (requestBody.has(VtnServiceJsonConsts.CONFIGURATION)
 						&& requestBody
 								.getAsJsonObject(
@@ -142,7 +159,10 @@ public class ConfigResource extends AbstractResource {
 			} else {
 				LOG.warning("Request body is not correct");
 			}
+			long start = System.currentTimeMillis();
 			status = session.invoke();
+			LOG.debug("The treatment of under layer cost the following time: "
+					+ (System.currentTimeMillis() - start) + "(ms)");
 			LOG.info("Request packet processed with status:" + status);
 			final int operationType = Integer.parseInt(IpcDataUnitWrapper
 					.getIpcDataUnitValue(session
@@ -151,7 +171,7 @@ public class ConfigResource extends AbstractResource {
 					.getIpcDataUnitValue(session
 							.getResponse(VtnServiceJsonConsts.VAL_1));
 			String configId = null;
-			if (operationType == UncTCEnums.ServiceType.TC_OP_CANDIDATE_COMMIT
+			if (operationType == UncTCEnums.ServiceType.TC_OP_CANDIDATE_COMMIT_TIMED
 					.ordinal()) {
 				configId = IpcDataUnitWrapper.getIpcDataUnitValue(session
 						.getResponse(VtnServiceJsonConsts.VAL_2));
@@ -169,7 +189,7 @@ public class ConfigResource extends AbstractResource {
 			LOG.info("SessionId=" + sessionId);
 			LOG.info("ConfigId=" + configId);
 			LOG.info("OperationStatus=" + operationStatus);
-			if (operationType == UncTCEnums.ServiceType.TC_OP_CANDIDATE_COMMIT
+			if (operationType == UncTCEnums.ServiceType.TC_OP_CANDIDATE_COMMIT_TIMED
 					.ordinal()) {
 				status = setCommitHttpResponse(session, operationStatus);
 			} else {
@@ -307,8 +327,18 @@ public class ConfigResource extends AbstractResource {
 		}
 		LOG.info("Final OperationStatus: " + finalOperationStatus);
 
-		if (finalOperationStatus != UncTCEnums.OperationStatus.TC_OPER_SUCCESS
-				.getCode()) {
+		if (UncTCEnums.OperationStatus.TC_OPER_SUCCESS.getCode() == finalOperationStatus) {
+			LOG.info("Request processed successfully");
+			status = UncTCEnums.OperationStatus.TC_OPER_SUCCESS.getErrorCode();
+		} else if (UncTCEnums.OperationStatus.TC_OPER_SUCCESS_CTR_DISCONNECTED.getCode() == finalOperationStatus ||
+				   UncTCEnums.OperationStatus.TC_OPER_SUCCESS_CTRLAPI_FAILURE.getCode() == finalOperationStatus ||
+				   UncTCEnums.OperationStatus.TC_OPER_SUCCESS_CTR_CONFIG_STATUS_ERR.getCode() == finalOperationStatus ||
+				   UncTCEnums.OperationStatus.TC_OPER_SUCCESS_OTHER_ERROR.getCode() == finalOperationStatus) {
+			UncTCEnums.OperationStatus errorEnum =
+					UncIpcErrorCode.getTcCodes(finalOperationStatus);
+			status = errorEnum.getErrorCode() / 100;
+			LOG.info("Request processed, but resources not yet ready");
+		} else {
 			UncTCEnums.OperationStatus errorEnum =
 					UncIpcErrorCode.getTcCodes(finalOperationStatus);
 			if (null == errorEnum) {
@@ -324,9 +354,6 @@ public class ConfigResource extends AbstractResource {
 			}
 			LOG.info("Request not processed successfully");
 			status = errorEnum.getErrorCode() / 100;
-		} else {
-			LOG.info("Request processed successfully");
-			status = UncTCEnums.OperationStatus.TC_OPER_SUCCESS.getErrorCode();
 		}
 
 		LOG.trace("Completed ConfigResource#setCommitHttpResponse()");

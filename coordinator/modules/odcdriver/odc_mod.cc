@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -86,8 +86,18 @@ pfc_bool_t ODCModule::update_controller(const key_ctr_t& key_ctr,
   ODC_FUNC_TRACE;
   PFC_ASSERT(ctr_ptr != NULL);
   pfc_bool_t old_audit_status = ctr_ptr->get_audit_status();
-  ctr_ptr->update_ctr(key_ctr, val_ctr);
+  ctrl_info_update_type_t change_type = compare_ctr_info(ctr_ptr,
+                                                         val_ctr);
+  pfc_log_debug(" change type, %d" , change_type);
 
+  ctr_ptr->update_ctr(key_ctr, val_ctr);
+ // If audit status is disable and IP address Added or updated,
+ // then set audit result to PFC_FALSE
+  if ((change_type == CTRLINFO_IP_ADDED || CTRLINFO_IP_CHANGED) &&
+      (!val_ctr.enable_audit)) {
+     pfc_log_debug(" %s IP added/changed set audit result" , PFC_FUNCNAME);
+     ctr_ptr->set_audit_result(PFC_FALSE);
+  }
   // If previous audit status is disable and current audit status is enable,
   // then trigger sudit
   if ((!old_audit_status) && (val_ctr.enable_audit)) {
@@ -227,6 +237,17 @@ unc::driver::vtn_driver_read_command* ODCModule::create_driver_read_command(
       break;
     }
 
+    case UNC_KT_CTR_DATAFLOW: {
+      pfc_log_debug("Read for Dataflow");
+      driver_cmd_ptr = new OdcCtrDataFlowCommand(conf_file_values_);
+      break;
+    }
+
+    case UNC_KT_VTN_DATAFLOW: {
+      pfc_log_debug("Read for vtn Dataflow");
+      driver_cmd_ptr = new OdcVtnDataFlowCommand(conf_file_values_);
+      break;
+    }
     case UNC_KT_PORT: {
       pfc_log_info("UNC_KT_PORT type received");
       driver_cmd_ptr = new OdcPort(conf_file_values_);
@@ -380,6 +401,30 @@ pfc_bool_t ODCModule::get_physical_port_details(
   }
 
   return PFC_TRUE;
+}
+ctrl_info_update_type_t ODCModule::compare_ctr_info(unc::driver::controller* ctr_ptr,
+                                                    const val_ctr_t& val_ctr) {
+
+  ODC_FUNC_TRACE;
+  ctrl_info_update_type_t  change_type = CTRLINFO_OTHER_UPDATE;
+  std::string new_ip = (inet_ntoa(val_ctr.ip_address));
+  std::string old_ip = ctr_ptr->get_host_address();
+
+  pfc_log_debug("%s:newIP ..%s", PFC_FUNCNAME,new_ip.c_str());
+  pfc_log_debug("%s:OdlIP ..%s", PFC_FUNCNAME,old_ip.c_str());
+  if(new_ip.compare(DEFAULT_IP) != 0) {
+    if(old_ip.compare(DEFAULT_IP) == 0) {
+      pfc_log_debug("%s:IP is ADDED..%s", PFC_FUNCNAME,new_ip.c_str());
+      change_type = CTRLINFO_IP_ADDED;
+    } else if(new_ip.compare(old_ip) != 0) {
+      pfc_log_debug("%s:IP is CHANGED..%s", PFC_FUNCNAME,new_ip.c_str());
+      change_type = CTRLINFO_IP_CHANGED;
+    }
+  } else if (old_ip.compare(DEFAULT_IP) != 0) {
+    pfc_log_debug("%s:IP is removed..%s", PFC_FUNCNAME,old_ip.c_str());
+    change_type = CTRLINFO_IP_REMOVED;
+  }
+  return change_type;
 }
 
 unc::tclib::TcCommonRet ODCModule::HandleVote(unc::driver::controller*) {

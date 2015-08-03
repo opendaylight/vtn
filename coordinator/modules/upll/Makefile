@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2014 NEC Corporation
+# Copyright (c) 2012-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -22,16 +22,20 @@ EXTRA_INCDIRS	= .. ../dal
 CXX_SOURCES	= ipct_st.cc kt_util.cc ipc_util.cc key_tree.cc dbconn_mgr.cc \
 	ipc_client_handler.cc \
 	ipc_event_queue.cc \
+	task_sched.cc \
+	config_yield.cc \
 	momgr_intf.cc \
 	ctrlr_mgr.cc \
 	config_svc.cc \
-	config_lock.cc config_mgr.cc read_bulk.cc tx_mgr.cc tclib_intf_impl.cc \
+	config_lock.cc config_mgr.cc read_bulk.cc tx_mgr.cc tclib_intf_impl.cc tx_update_util.cc \
   $(VTN_SOURCES) \
   $(POM_SOURCES)
 
 VTN_SOURCES	= momgr_util.cc momgr_impl.cc \
   vtn_momgr.cc \
 	vnode_momgr.cc vnode_child_momgr.cc \
+  vbr_portmap_util.cc \
+	vbr_portmap_momgr.cc \
   vbr_momgr.cc vbr_if_momgr.cc \
 	vrt_momgr.cc vrt_if_momgr.cc \
   vlink_momgr.cc vlanmap_momgr.cc iproute_momgr.cc \
@@ -41,8 +45,9 @@ VTN_SOURCES	= momgr_util.cc momgr_impl.cc \
         vtep_momgr.cc vtep_if_momgr.cc \
         vtep_grp_momgr.cc vtepgrp_mem_momgr.cc \
         vtunnel_momgr.cc vtunnel_if_momgr.cc \
-				vtn_dataflow_momgr.cc vterminal_momgr.cc vterm_if_momgr.cc
-       
+				vtn_dataflow_momgr.cc vterminal_momgr.cc vterm_if_momgr.cc \
+        unified_nw_momgr.cc unw_label_momgr.cc unw_label_range_momgr.cc vtn_unified_momgr.cc \
+       unw_spine_domain_momgr.cc domain_check_util.cc
 POM_SOURCES	= policingprofile_momgr.cc policingprofile_entry_momgr.cc \
               flowlist_momgr.cc flowlist_entry_momgr.cc \
 							vbr_flowfilter_momgr.cc vbr_flowfilter_entry_momgr.cc \

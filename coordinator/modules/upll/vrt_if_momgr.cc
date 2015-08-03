@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -118,12 +118,14 @@ unc_key_type_t VrtIfMoMgr::vrt_if_child[] = { UNC_KT_VRTIF_FLOWFILTER };
 VrtIfMoMgr::VrtIfMoMgr() {
   UPLL_FUNC_TRACE;
   ntable = MAX_MOMGR_TBLS;
-  table = new Table *[ntable];
+  table = new Table *[ntable]();
   table[MAINTBL] = new Table(uudst::kDbiVrtIfTbl, UNC_KT_VRT_IF,
       vrt_if_bind_info, IpctSt::kIpcStKeyVrtIf, IpctSt::kIpcStValVrtIf,
       uudst::vrouter_interface::kDbiVrtIfNumCols);
   table[RENAMETBL] = NULL;
   table[CTRLRTBL] = NULL;
+  table[CONVERTTBL] = NULL;
+
   nchild = sizeof(vrt_if_child) / sizeof(*vrt_if_child);
   child = vrt_if_child;
 }
@@ -148,7 +150,7 @@ upll_rc_t VrtIfMoMgr::ValidateAttribute(ConfigKeyVal *ikey,
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   if (req->operation != UNC_OP_CREATE && req->operation != UNC_OP_UPDATE) {
-   return UPLL_RC_SUCCESS;
+    return UPLL_RC_SUCCESS;
   }
 
   result_code = ValidateIpAddress(ikey, req->datatype, dmi);
@@ -156,10 +158,15 @@ upll_rc_t VrtIfMoMgr::ValidateAttribute(ConfigKeyVal *ikey,
   if (ikey->get_key_type() != UNC_KT_VRT_IF) result_code =
       UPLL_RC_ERR_CFG_SYNTAX;
 #endif
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_DEBUG("ValidateIpAddress failed");
+    return result_code;
+  }
   return result_code;
 }
 
-bool VrtIfMoMgr::IsValidKey(void *key, uint64_t index) {
+bool VrtIfMoMgr::IsValidKey(void *key, uint64_t index,
+                            MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
   key_vrt_if *vrtif_key = reinterpret_cast<key_vrt_if *>(key);
   upll_rc_t ret_val = UPLL_RC_SUCCESS;
@@ -207,7 +214,7 @@ upll_rc_t VrtIfMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
   if (parent_key == NULL) {
     vrt_key_if = reinterpret_cast<key_vrt_if *>
         (ConfigKeyVal::Malloc(sizeof(key_vrt_if)));
-    if (okey) delete okey; 
+    if (okey) delete okey;
     okey = new ConfigKeyVal(UNC_KT_VRT_IF, IpctSt::kIpcStKeyVrtIf, vrt_key_if,
                             NULL);
     return UPLL_RC_SUCCESS;
@@ -253,8 +260,9 @@ upll_rc_t VrtIfMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
       break;
     case UNC_KT_DHCPRELAY_IF:
       uuu::upll_strncpy(vrt_key_if->vrt_key.vtn_key.vtn_name,
-             reinterpret_cast<key_dhcp_relay_if *>(pkey)->vrt_key.vtn_key.vtn_name,
-              (kMaxLenVtnName+1));
+             reinterpret_cast<key_dhcp_relay_if *>
+             (pkey)->vrt_key.vtn_key.vtn_name,
+             (kMaxLenVtnName+1));
       uuu::upll_strncpy(vrt_key_if->vrt_key.vrouter_name,
              reinterpret_cast<key_dhcp_relay_if *>(pkey)->vrt_key.vrouter_name,
               (kMaxLenVnodeName+1));
@@ -395,12 +403,13 @@ upll_rc_t VrtIfMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey, ConfigKeyVal *&req,
   };
   if (tmp) {
     if (tbl == MAINTBL) {
-      val_db_vrt_if_st *ival = reinterpret_cast<val_db_vrt_if_st *>(tmp->get_val());
+      val_db_vrt_if_st *ival =
+          reinterpret_cast<val_db_vrt_if_st *>(tmp->get_val());
       val_db_vrt_if_st *val_vrt_if = reinterpret_cast<val_db_vrt_if_st *>
           (ConfigKeyVal::Malloc(sizeof(val_db_vrt_if_st)));
       memcpy(val_vrt_if, ival, sizeof(val_db_vrt_if_st));
       ConfigVal *tmp2 = new ConfigVal(IpctSt::kIpcStValVrtIfSt, val_vrt_if);
-      if (tmp1) 
+      if (tmp1)
         tmp1->AppendCfgVal(tmp2);
     }
   };
@@ -412,9 +421,9 @@ upll_rc_t VrtIfMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey, ConfigKeyVal *&req,
   okey = new ConfigKeyVal(UNC_KT_VRT_IF, IpctSt::kIpcStKeyVrtIf, vrt_if_key,
                           tmp1);
   if (okey) {
-   SET_USER_DATA(okey, req);
+    SET_USER_DATA(okey, req);
   } else {
-    DELETE_IF_NOT_NULL(tmp1); 
+    DELETE_IF_NOT_NULL(tmp1);
     FREE_IF_NOT_NULL(vrt_if_key);
   }
   return UPLL_RC_SUCCESS;
@@ -427,13 +436,14 @@ upll_rc_t VrtIfMoMgr::AdaptValToVtnService(ConfigKeyVal *ikey,
     UPLL_LOG_DEBUG("Invalid ikey");
     return UPLL_RC_ERR_GENERIC;
   }
+  key_vrt_if *vrtif_key = reinterpret_cast<key_vrt_if*>(ikey->get_key());
   while (ikey) {
     ConfigVal *cval = ikey->get_cfg_val();
     if (!cval) {
       UPLL_LOG_DEBUG("Config Val is Null");
       return UPLL_RC_ERR_GENERIC;
     }
-    while (cval ) {
+    while (cval) {
       if (IpctSt::kIpcStValVrtIf == cval->get_st_num()) {
          // set admin status to valid no value
          val_vrt_if *vrt_if_val = reinterpret_cast<val_vrt_if *>GetVal(ikey);
@@ -441,13 +451,10 @@ upll_rc_t VrtIfMoMgr::AdaptValToVtnService(ConfigKeyVal *ikey,
            vrt_if_val->valid[UPLL_IDX_ADMIN_ST_VI] = UNC_VF_VALID_NO_VALUE;
       }
       if (IpctSt::kIpcStValVrtIfSt == cval->get_st_num()) {
-        val_vrt_if_st *vrt_if_val_st = reinterpret_cast<val_vrt_if_st *>
-                         (ConfigKeyVal::Malloc(sizeof(val_vrt_if_st)));
-        val_db_vrt_if_st *db_vrt_if_val_st = reinterpret_cast<val_db_vrt_if_st *>
-                                     (cval->get_val());
-        memcpy(vrt_if_val_st,&(db_vrt_if_val_st->vrt_if_val_st),
-               sizeof(val_vrt_if_st));
-        cval->SetVal(IpctSt::kIpcStValVrtIfSt, vrt_if_val_st);
+        controller_domain ctrlr_dom = {NULL, NULL};
+        GET_USER_DATA_CTRLR_DOMAIN(ikey, ctrlr_dom);
+        CheckOperStatus<val_vrt_if_st>(vrtif_key->vrt_key.vtn_key.vtn_name,
+                                       cval, UNC_KT_VRT_IF, ctrlr_dom);
       }
       cval = cval->get_next_cfg_val();
     }
@@ -473,18 +480,18 @@ upll_rc_t VrtIfMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
 
   if (vrt_if_val == NULL) return UPLL_RC_ERR_GENERIC;
   switch (op) {
-  case UNC_OP_UPDATE: 
+  case UNC_OP_UPDATE:
   {
     void *val = reinterpret_cast<void *>(vrt_if_val);
     CompareValidValue(val, GetVal(upd_key), true);
-    uint8_t cand_flag = 0,run_flag = 0;
-    GET_USER_DATA_FLAGS(ikey,cand_flag);
-    GET_USER_DATA_FLAGS(upd_key,run_flag);
+    uint8_t cand_flag = 0, run_flag = 0;
+    GET_USER_DATA_FLAGS(ikey, cand_flag);
+    GET_USER_DATA_FLAGS(upd_key, run_flag);
     if ((cand_flag & VIF_TYPE) == (run_flag & VIF_TYPE))
       oper_status_change = false;
   }
   /* fall through intended */
-  case UNC_OP_CREATE: 
+  case UNC_OP_CREATE:
   {
     propagate = false;
     if (op == UNC_OP_CREATE)
@@ -502,7 +509,7 @@ upll_rc_t VrtIfMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
              (GetStateVal(ikey));
     vnif_st->vrt_if_val_st.valid[UPLL_IDX_OPER_STATUS_VRTS] = UNC_VF_VALID;
     if (op == UNC_OP_CREATE) {
-       if(driver_result == UPLL_RC_ERR_CTR_DISCONNECTED) {
+       if (driver_result == UPLL_RC_ERR_CTR_DISCONNECTED) {
           vnif_st->vrt_if_val_st.oper_status = UPLL_OPER_STATUS_UNKNOWN;
           vnif_st->down_count = PORT_UNKNOWN;
         } else {
@@ -512,19 +519,20 @@ upll_rc_t VrtIfMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
       } else {
         val_db_vrt_if_st *run_vrtifst = reinterpret_cast<val_db_vrt_if_st *>
                                  (GetStateVal(upd_key));
-        vnif_st->vrt_if_val_st.oper_status = run_vrtifst->vrt_if_val_st.oper_status;
+        vnif_st->vrt_if_val_st.oper_status =
+            run_vrtifst->vrt_if_val_st.oper_status;
         vnif_st->down_count = run_vrtifst->down_count;
       }
   }
-  UPLL_LOG_TRACE("%s",(ikey->ToStrAll()).c_str());
+  UPLL_LOG_TRACE("%s", (ikey->ToStrAll()).c_str());
   val_vrt_if *vrt_if_val2 = reinterpret_cast<val_vrt_if *>(GetVal(upd_key));
   if (UNC_OP_UPDATE == op) {
-    UPLL_LOG_TRACE("%s",(upd_key->ToStrAll()).c_str());
+    UPLL_LOG_TRACE("%s", (upd_key->ToStrAll()).c_str());
     vrt_if_val->cs_row_status = vrt_if_val2->cs_row_status;
   }
-  for (unsigned int loop = 0; loop < 
+  for (unsigned int loop = 0; loop <
        sizeof(vrt_if_val->valid) / sizeof(vrt_if_val->valid[0]); ++loop) {
-    if ((UNC_VF_VALID == (uint8_t) vrt_if_val->valid[loop]) 
+    if ((UNC_VF_VALID == (uint8_t) vrt_if_val->valid[loop])
         || (UNC_VF_VALID_NO_VALUE == (uint8_t) vrt_if_val->valid[loop])) {
       if (loop == UPLL_IDX_DESC_VI)
         vrt_if_val->cs_attr[loop] = UNC_CS_APPLIED;
@@ -537,7 +545,6 @@ upll_rc_t VrtIfMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
                (UNC_OP_UPDATE == op)) {
        vrt_if_val->cs_attr[loop] = vrt_if_val2->cs_attr[loop];
     }
-
   }
   return (SetInterfaceOperStatus(ikey, dmi, op, propagate, driver_result));
 }
@@ -775,7 +782,7 @@ upll_rc_t VrtIfMoMgr::ValidateMessage(IpcReqRespHeader *req,
         " operation - %d", op);
       return UPLL_RC_SUCCESS;
   }
-  UPLL_LOG_DEBUG("Unsupported operation %d or datatype %d", op,dt_type);
+  UPLL_LOG_DEBUG("Unsupported operation %d or datatype %d", op, dt_type);
   return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT;
 }
 
@@ -838,14 +845,15 @@ upll_rc_t VrtIfMoMgr::ValidateVrtIfValue(val_vrt_if *vrt_if_val,
 
   /* Ip address can't be configured without prefix length / mask value
    * and both attributes must have same valid flag values during
-   * CREATE or UPDATE operation. 
+   * CREATE or UPDATE operation.
    * so, we skip the validation for both ip address and prefixlength attributes
    * when the valid flag value is not as VALID value.
    */
   if (vrt_if_val->valid[UPLL_IDX_PREFIXLEN_VI] == UNC_VF_VALID &&
       vrt_if_val->valid[UPLL_IDX_IP_ADDR_VI] == UNC_VF_VALID) {
     if (ValidateNumericRange((uint8_t) vrt_if_val->prefixlen,
-                             kMinVnodeIpv4Prefix, kMaxVnodeIpv4Prefix, true, true)) {
+                             kMinVnodeIpv4Prefix, kMaxVnodeIpv4Prefix,
+                             true, true)) {
       if (!ValidateIpv4Addr(vrt_if_val->ip_addr.s_addr,
                             vrt_if_val->prefixlen)) {
         UPLL_LOG_ERROR("IP address Validation failed");
@@ -861,15 +869,15 @@ upll_rc_t VrtIfMoMgr::ValidateVrtIfValue(val_vrt_if *vrt_if_val,
          vrt_if_val->valid[UPLL_IDX_IP_ADDR_VI]) &&
         (op == UNC_OP_UPDATE || op == UNC_OP_CREATE)) {
       vrt_if_val->ip_addr.s_addr = 0;
-      vrt_if_val->prefixlen = 0; 
-    } else {   
+      vrt_if_val->prefixlen = 0;
+    } else {
       UPLL_LOG_DEBUG("IP address and prefix length both do not have "
                      "same valid flags: %d, %d",
                      vrt_if_val->valid[UPLL_IDX_PREFIXLEN_VI],
                      vrt_if_val->valid[UPLL_IDX_IP_ADDR_VI]);
       return UPLL_RC_ERR_CFG_SYNTAX;
-    } 
-  } 
+    }
+  }
 
   if (vrt_if_val->valid[UPLL_IDX_MAC_ADDR_VI] == UNC_VF_VALID) {
     if (!ValidateMacAddr(vrt_if_val->macaddr)) {
@@ -900,8 +908,9 @@ upll_rc_t VrtIfMoMgr::ValidateVrtIfValue(val_vrt_if *vrt_if_val,
 }
 
 
-upll_rc_t VrtIfMoMgr::ValidateVtnNeighborValue(val_vtn_neighbor *vtn_neighbor,
-                                               unc_keytype_operation_t operation) {
+upll_rc_t VrtIfMoMgr::ValidateVtnNeighborValue(
+    val_vtn_neighbor *vtn_neighbor,
+    unc_keytype_operation_t operation) {
   UPLL_FUNC_TRACE;
   upll_rc_t ret_val = UPLL_RC_SUCCESS;
 
@@ -961,8 +970,8 @@ upll_rc_t VrtIfMoMgr::ValidateCapability(IpcReqRespHeader *req,
                                          const char *ctrlr_name) {
   UPLL_FUNC_TRACE;
   upll_rc_t ret_val = UPLL_RC_ERR_GENERIC;
-  
-  if (!req || !ikey ) {
+
+  if (!req || !ikey) {
     UPLL_LOG_DEBUG("ConfigKeyVal / IpcReqRespHeader is NULL");
     return UPLL_RC_ERR_GENERIC;
   }
@@ -1016,19 +1025,22 @@ upll_rc_t VrtIfMoMgr::ValidateCapability(IpcReqRespHeader *req,
   }
   if (vrt_if_val) {
     if (max_attrs > 0) {
-      ret_val = ValVrtIfAttributeSupportCheck(vrt_if_val, attrs, req->operation);
+      ret_val = ValVrtIfAttributeSupportCheck(vrt_if_val,
+                                              attrs, req->operation);
       return ret_val;
     } else {
-      UPLL_LOG_DEBUG("Attribute list is empty for operation %d", req->operation);
+      UPLL_LOG_DEBUG("Attribute list is empty for operation %d",
+                     req->operation);
       return UPLL_RC_ERR_GENERIC;
     }
   }
   return UPLL_RC_SUCCESS;
 }
 
-upll_rc_t VrtIfMoMgr::ValVrtIfAttributeSupportCheck(val_vrt_if *vrt_if_val,
-                                                    const uint8_t *attrs,
-                                                    unc_keytype_operation_t operation) {
+upll_rc_t VrtIfMoMgr::ValVrtIfAttributeSupportCheck(
+    val_vrt_if *vrt_if_val,
+    const uint8_t *attrs,
+    unc_keytype_operation_t operation) {
   UPLL_FUNC_TRACE;
 
   if (vrt_if_val != NULL) {
@@ -1135,13 +1147,13 @@ bool VrtIfMoMgr::FilterAttributes(void *&val1, void *val2, bool copy_to_running,
                                   unc_keytype_operation_t op) {
   val_vrt_if_t *val_vrt_if1 = reinterpret_cast<val_vrt_if_t *>(val1);
   val_vrt_if1->valid[UPLL_IDX_DESC_VI] = UNC_VF_INVALID;
-  if (op != UNC_OP_CREATE) 
+  if (op != UNC_OP_CREATE)
     return CompareValidValue(val1, val2, copy_to_running);
   return false;
-
 }
 
-bool VrtIfMoMgr::CompareValidValue(void *&val1, void *val2, bool copy_to_running) {
+bool VrtIfMoMgr::CompareValidValue(void *&val1, void *val2,
+                                   bool copy_to_running) {
   UPLL_FUNC_TRACE;
   bool invalid_attr = true;
   val_vrt_if_t *val_vrt_if1 = reinterpret_cast<val_vrt_if_t *>(val1);
@@ -1199,23 +1211,24 @@ bool VrtIfMoMgr::CompareValidValue(void *&val1, void *val2, bool copy_to_running
 }
 
 
-upll_rc_t VrtIfMoMgr::IsReferenced(ConfigKeyVal *ikey,
-                                   upll_keytype_datatype_t dt_type,
+upll_rc_t VrtIfMoMgr::IsReferenced(IpcReqRespHeader *req,
+                                   ConfigKeyVal *ikey,
                                    DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
-  ConfigKeyVal *okey = NULL,*ckv_dhcp = NULL;
+  ConfigKeyVal *okey = NULL, *ckv_dhcp = NULL;
   if (!ikey || !ikey->get_key()) return UPLL_RC_ERR_GENERIC;
 
   result_code = GetChildConfigKey(okey, ikey);
   if (result_code != UPLL_RC_SUCCESS || okey == NULL) {
-    UPLL_LOG_DEBUG("Create key returning error %d",result_code);
+    UPLL_LOG_DEBUG("Create key returning error %d", result_code);
     return result_code;
   }
   /* Getting the Full key information with help of read operation */
 
   DbSubOp dbop = { kOpReadMultiple, kOpMatchNone, kOpInOutFlag };
-  result_code = ReadConfigDB(okey, dt_type, UNC_OP_READ, dbop, dmi, MAINTBL);
+  result_code = ReadConfigDB(okey, req->datatype, UNC_OP_READ,
+                             dbop, dmi, MAINTBL);
   if (result_code != UPLL_RC_SUCCESS) {
     result_code = (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE)?
                    UPLL_RC_SUCCESS:result_code;
@@ -1228,7 +1241,7 @@ upll_rc_t VrtIfMoMgr::IsReferenced(ConfigKeyVal *ikey,
     ckv_dhcp = NULL;
 
     // Is interface part of vlink?
-    GET_USER_DATA_FLAGS(temkey,vlink_flag);
+    GET_USER_DATA_FLAGS(temkey, vlink_flag);
     if (vlink_flag & VIF_TYPE) {
       delete okey;
       return UPLL_RC_ERR_CFG_SEMANTIC;
@@ -1240,7 +1253,7 @@ upll_rc_t VrtIfMoMgr::IsReferenced(ConfigKeyVal *ikey,
                                    (GetMoManager(UNC_KT_DHCPRELAY_IF)));
       result_code = mgr->GetChildConfigKey(ckv_dhcp, temkey);
       if (result_code != UPLL_RC_SUCCESS) {
-        UPLL_LOG_DEBUG("Create key returning error %d",result_code);
+        UPLL_LOG_DEBUG("Create key returning error %d", result_code);
         delete okey;
         return result_code;
       }
@@ -1249,14 +1262,14 @@ upll_rc_t VrtIfMoMgr::IsReferenced(ConfigKeyVal *ikey,
                          UNC_OP_READ, dmi, &dbop1, MAINTBL);
       if (result_code == UPLL_RC_ERR_INSTANCE_EXISTS) {
         uint8_t *if_name = reinterpret_cast<key_dhcp_relay_if *>
-                       (ckv_dhcp->get_key())->if_name; 
+                       (ckv_dhcp->get_key())->if_name;
         UPLL_LOG_DEBUG("Cannot delete dhcp relay enabled interface %s",
                          if_name);
         delete ckv_dhcp;
         delete okey;
         return UPLL_RC_ERR_CFG_SEMANTIC;
       } else if (result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE) {
-        UPLL_LOG_DEBUG(" Returning error %d",result_code);
+        UPLL_LOG_DEBUG(" Returning error %d", result_code);
         delete ckv_dhcp;
         delete okey;
         return result_code;
@@ -1280,14 +1293,14 @@ upll_rc_t VrtIfMoMgr::MergeValidate(unc_key_type_t keytype,
   if (!ikey || !(ikey->get_key())) {
      UPLL_LOG_DEBUG("Input is NULL");
      return UPLL_RC_ERR_GENERIC;
-   }
-   ConfigKeyVal *dup_key = NULL;
-   result_code = GetChildConfigKey(dup_key, ikey);
-   if (UPLL_RC_SUCCESS != result_code) {
-     UPLL_LOG_DEBUG("GetChildConfigKey Failed");
-     if (dup_key) delete dup_key;
-     return result_code;
-   }
+  }
+  ConfigKeyVal *dup_key = NULL;
+  result_code = GetChildConfigKey(dup_key, ikey);
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_DEBUG("GetChildConfigKey Failed");
+    if (dup_key) delete dup_key;
+    return result_code;
+  }
   /*
    * Here getting FULL Key (VTN & VRT Name )
    */
@@ -1458,7 +1471,8 @@ upll_rc_t VrtIfMoMgr::ValidateVtnRename(ConfigKeyVal *org_vtn_ckv,
     result_code = MergeValidateIpAddress(travel, UPLL_DT_IMPORT, dmi, NULL,
                                          UPLL_IMPORT_TYPE_FULL);
     if (result_code != UPLL_RC_SUCCESS) {
-      UPLL_LOG_DEBUG("Vrouter IP Address validation failed during VTN stiching");
+      UPLL_LOG_DEBUG(
+          "Vrouter IP Address validation failed during VTN stiching");
       DELETE_IF_NOT_NULL(vrtif_ckv);
       return result_code;
     }

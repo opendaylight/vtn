@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -24,12 +24,15 @@ const std::string tc_conf_block="tc_db_params";
 const std::string tc_conf_db_dsn_name_param="tc_db_dsn_name";
 const std::string tc_def_db_dsn_name_value="UNC_DB_DSN";
 
+const std::string tc_conf_sby_dsn_name_param="tc_sby_dsn_name";
+const std::string tc_def_sby_dsn_name_value="UNC_DB_LC1_DSN";
+
 const std::string max_failover_instance_param="max_failover_instance";
 const uint32_t max_failover_instance_value = 4;
 
-const std::string
-       simultaneous_read_write_allowed_param="simultaneous_read_write_allowed";
-const pfc_bool_t simultaneous_read_write_allowed_value = PFC_TRUE;
+const std::string secondary_wait_time_for_cancelled_audit_param =
+                            "secondary_wait_time_for_cancelled_audit";
+const uint32_t secondary_wait_time_for_cancelled_audit_value = 30;
 
 const uint32_t TC_READ_CONCURRENCY = 1;
 const uint32_t TC_AUDIT_CONCURRENCY = 1;
@@ -130,26 +133,12 @@ class TcReadWriteLock  {
   // rw_owner keeps RW_OWNER_WRLOCKED if write lock is held.
   uint32_t             rw_owner;
 
-  // For simultaneous read and write lock, separate locks are maintained
-  // for read and write.
-  uint32_t             r_owner;
-  pfc_bool_t           r_db_mgmt_session;
-  pfc_bool_t           r_launcher_session;
-  uint32_t             w_owner;
-
   uint32_t             r_waiter;      // Number of threads blocked on read lock.
 
   uint32_t             w_session_id;  // Owner of write lock.
   uint32_t             w_waiter;    // Number of threads blocked on write lock.
   TcWriteOperation     w_operation;   // Write lock operation.
-
-  // SessionID of DB_MGMT and LAUNCHER for whose READ request
-  // will be allowed only if there is no WRITE lock
-  uint32_t             db_mgmt_session_id_;
-  uint32_t             launcher_session_id_;
-
-  // tc.conf param: simultaneous_read_write_allowed is set or not?
-  pfc_bool_t           is_simultaneous_read_write_allowed_;
+  TcWriteOperation     last_write_op; // Last operation which held write lock
 
   // Maximum number of read lock owners.
   static const uint32_t R_READERS_MAX = UINT32_MAX - 1;
@@ -158,34 +147,9 @@ class TcReadWriteLock  {
   static const uint32_t RW_OWNER_WRLOCKED = UINT32_MAX;
 
   TcReadWriteLock()
-      : rw_owner(0), r_owner(0), r_db_mgmt_session(PFC_FALSE),
-        r_launcher_session(PFC_FALSE), w_owner(0), r_waiter(0),
-        w_session_id(0), w_waiter(0), w_operation(TC_WRITE_NONE),
-        db_mgmt_session_id_(0), launcher_session_id_(0),
-        is_simultaneous_read_write_allowed_(PFC_TRUE)
+      : rw_owner(0), r_waiter(0), w_session_id(0), w_waiter(0),
+      w_operation(TC_WRITE_NONE), last_write_op(TC_WRITE_NONE)
   {}
-
-  inline void
-      init(uint32_t db_mgmt_sess_id,
-           uint32_t launcher_sess_id,
-           pfc_bool_t is_allowed) {
-        db_mgmt_session_id_ = db_mgmt_sess_id;
-        launcher_session_id_ = launcher_sess_id;
-        is_simultaneous_read_write_allowed_ = is_allowed;
-      }
-
-  inline bool
-      isReadAlwaysSucess(uint32_t session_id) {
-        // If request from user session and
-        // Simultaneous read/write lock allowed?
-        if (session_id != db_mgmt_session_id_ &&
-            session_id != launcher_session_id_ &&
-            is_simultaneous_read_write_allowed_ != PFC_FALSE) {
-          return PFC_TRUE;
-        }
-        return PFC_FALSE;
-      }
-
   /**
    * @brief  Determine whether at least one thread is blocked on this lock.
    * @return true  At least one thread is blocked on this lock.
@@ -231,41 +195,18 @@ class TcReadWriteLock  {
    * @return false The read lock can not be held.
    */
   inline bool
-      canReadLock(uint32_t session_id)  {
-        if (is_simultaneous_read_write_allowed_) {
-          if (session_id == db_mgmt_session_id_ ||
-              session_id == launcher_session_id_) {
-            // If Read request from mgmt_db or launcher,
-            // if write is in-progress or waiting dont allow
-            return (w_owner != RW_OWNER_WRLOCKED && w_waiter == 0);
-          } else {
-            // Always return true for user sessions
-            return PFC_TRUE;
-          }
-        } else {
-          return (rw_owner != RW_OWNER_WRLOCKED && w_waiter == 0);
-        }
+      canReadLock(void)  {
+        return (rw_owner != RW_OWNER_WRLOCKED && w_waiter == 0);
       }
 
   /**
    * @brief  Set read lock to the lock.
    */
   inline void
-      setReader(uint32_t session_id)  {
-        PFC_ASSERT(canReadLock(session_id));
-        if (is_simultaneous_read_write_allowed_) {
-          r_owner++;
-          // If read req from db_mgmt or launcher, store it.
-          if (session_id == db_mgmt_session_id_) {
-            r_db_mgmt_session = PFC_TRUE;
-          } else if (session_id == launcher_session_id_) {
-            r_launcher_session = PFC_TRUE;
-          }
-          PFC_ASSERT(r_owner > 0 && r_owner <= R_READERS_MAX);
-        } else {
-          rw_owner++;
-          PFC_ASSERT(rw_owner > 0 && rw_owner <= R_READERS_MAX);
-        }
+      setReader(void)  {
+        PFC_ASSERT(canReadLock());
+        rw_owner++;
+        PFC_ASSERT(rw_owner > 0 && rw_owner <= R_READERS_MAX);
       }
 
   /**
@@ -275,13 +216,7 @@ class TcReadWriteLock  {
    */
   inline bool
       canWriteLock(void)  {
-        if (is_simultaneous_read_write_allowed_) {
-          return (r_db_mgmt_session == PFC_FALSE &&
-                  r_launcher_session == PFC_FALSE &&
-                  w_owner == 0);
-        } else {
-          return (rw_owner == 0);
-        }
+        return (rw_owner == 0);
       }
 
   /**
@@ -301,11 +236,7 @@ class TcReadWriteLock  {
   inline void
       setWriter(uint32_t session_id, TcWriteOperation operation)  {
         PFC_ASSERT(canWriteLock());
-        if (is_simultaneous_read_write_allowed_) {
-          w_owner = RW_OWNER_WRLOCKED;
-        } else {
-          rw_owner = RW_OWNER_WRLOCKED;
-        }
+        rw_owner = RW_OWNER_WRLOCKED;
         w_session_id = session_id;
         w_operation = operation;
       }
@@ -317,11 +248,7 @@ class TcReadWriteLock  {
    */
   inline bool
       isWriteHeld(void)  {
-        if (is_simultaneous_read_write_allowed_) {
-          return (w_owner == RW_OWNER_WRLOCKED);
-        } else {
-          return (rw_owner == RW_OWNER_WRLOCKED);
-        }
+        return (rw_owner == RW_OWNER_WRLOCKED);
       }
 
   /**
@@ -340,10 +267,10 @@ class TcReadWriteLock  {
    * @return   false  The write lock is held by another thread.
    */
   inline bool
-      tryLock(uint32_t session_id)  {
-        bool ret(canReadLock(session_id));
+      tryLock(void)  {
+        bool ret(canReadLock());
         if (ret) {
-          setReader(session_id);
+          setReader();
         }
 
         return ret;
@@ -370,29 +297,13 @@ class TcReadWriteLock  {
    * @brief  Release the read lock.
    */
   inline void
-      unlock(uint32_t session_id) {
-        if (is_simultaneous_read_write_allowed_) {
-          PFC_ASSERT(r_owner > 0 && r_owner <= R_READERS_MAX);
+      unlock(void) {
+        PFC_ASSERT(rw_owner > 0 && rw_owner <= R_READERS_MAX);
 
-          if (session_id == db_mgmt_session_id_) {
-            r_db_mgmt_session = PFC_FALSE;
-          } else if (session_id == launcher_session_id_) {
-            r_launcher_session = PFC_FALSE;
-          }
-
-          r_owner--;
-          if (r_owner == 0) {
-            // Wake up all blocked threads.
-            wakeUp();
-          }
-        } else {
-          PFC_ASSERT(rw_owner > 0 && rw_owner <= R_READERS_MAX);
-
-          rw_owner--;
-          if (rw_owner == 0) {
-            // Wake up all blocked threads.
-            wakeUp();
-          }
+        rw_owner--;
+        if (rw_owner == 0) {
+          // Wake up all blocked threads.
+          wakeUp();
         }
       }
 
@@ -409,10 +320,9 @@ class TcReadWriteLock  {
                              w_operation != operation)) {
           return false;
         }
-
+        last_write_op = w_operation;
         clearWriter();
         rw_owner = 0;
-        w_owner = 0;
 
         // Wake up all blocked threads.
         wakeUp();
@@ -443,13 +353,14 @@ class TcReadWriteLock  {
     TC_UPPL,
     TC_DRV_OPENFLOW,
     TC_DRV_OVERLAY,
+    //TC_DRV_LEGACY,
     TC_DRV_POLC,
-    TC_DRV_ODL
-    //TC_DRV_LEGACY
+    TC_DRV_VAN,
+    TC_DRV_ODC
   };
 
   typedef std::map<TcDaemonName, std::string> TcChannelNameMap;
-
+  typedef std::map<std::string, TcConfigLock> TcConfigNameMap;
 }
 } /* unc */
 

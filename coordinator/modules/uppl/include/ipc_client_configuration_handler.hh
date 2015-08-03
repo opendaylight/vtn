@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -24,9 +24,6 @@
 #include <string>
 #include "unc/uppl_common.h"
 #include "unc/keytype.h"
-#include "unc/pfcdriver_include.h"
-#include "unc/vnpdriver_include.h"
-#include <unc/odcdriver_include.h>
 #include "phy_util.hh"
 
 using pfc::core::ipc::ClientSession;

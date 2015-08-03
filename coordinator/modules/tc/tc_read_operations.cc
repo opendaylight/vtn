@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -171,6 +171,11 @@ TcOperStatus TcReadOperations::TcGetExclusion() {
  * @brief Release Exclusion after operation
  */
 TcOperStatus TcReadOperations::TcReleaseExclusion() {
+  if (tc_oper_ == TC_OP_READ_RELEASE) {
+    if (tclock_->CanWriteLock()) {
+      TcCandidateOperations::HandleCandidateRelease();
+    }
+  }
   return TC_OPER_SUCCESS;
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -35,7 +35,7 @@ class TcLibModule : public pfc::core::Module {
         IS_READ_KEY,
         IS_WRITE_KEY,
         KEY_INDEX,
-
+        GET_CONFIG_MODE
       };
 
       enum TCCommonRet {
@@ -116,6 +116,11 @@ class TcLibModule : public pfc::core::Module {
     return PFC_TRUE;
   }
 
+  TcApiCommonRet TcLibGetConfigMode(uint32_t sessionid,
+                                    uint32_t configid,
+                                    TcConfigMode& config_mode,
+                                    std::string& vtn_name);
+
   /**
    * @brief      Register TclibInterface handler
    *             TcLibInterface handlers of UPLL/UPPL/driver modules are
@@ -144,7 +149,9 @@ class TcLibModule : public pfc::core::Module {
    * @retval     TC_INVALID_SESSION_ID if session id is invalid 
    * @retval     TC_INVALID_CONFIG_id if config id is invalid 
    */
-  TcApiCommonRet TcLibValidateUpdateMsg(uint32_t sessionid, uint32_t configid);
+  TcApiCommonRet TcLibValidateUpdateMsg(uint32_t sessionid, uint32_t configid,
+                                        TcConfigMode config_mode,
+                                        std::string vtn_name);
 
   /**
    * @brief       Gives current session_id and config_id to upll,upll,pfcdriver

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -76,7 +76,7 @@ ODBCM_RC_STATUS ODBCManager::ODBCM_Initialize() {
       "db_conf_info is updated");
   /* Establish the database connection */
   if (ODBCM_RC_SUCCESS != InitializeConnectionEnv()) {
-    pfc_log_fatal("ODBCM::ODBCManager::Initialize: "
+    UPPL_LOG_FATAL("ODBCM::ODBCManager::Initialize: "
         "Could not allocate connection environment !!");
     return ODBCM_RC_CONNECTION_ERROR;
   }
@@ -631,7 +631,7 @@ ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
       if ((*iter).size() >= pkey_size) {
         uint32_t index = 0;
         for (iter_vector = (*iter).begin();
-            iter_vector != (*iter).end(), index < pkey_size;
+            (iter_vector != (*iter).end()) && (index < pkey_size);
             ++index) {
           if ((*iter_vector).p_table_attribute_value != NULL) {
             ::operator delete((*iter_vector).p_table_attribute_value);
@@ -1180,7 +1180,7 @@ ODBCM_RC_STATUS ODBCManager::IsRowExists(
                        query_processor);
     return status;
   }
-  PHY_SQLEXEC_LOCK(); 
+  PHY_SQLEXEC_LOCK();
   /** Execute the prepared statement using query
    * string from queryfactory */
   status  = query_processor->ExecuteGroupOperationQuery(ISROWEXISTS,
@@ -1382,7 +1382,7 @@ ODBCM_RC_STATUS ODBCManager::GetBulkRows(
                        query_processor);
     return status;
   }
-  PHY_SQLEXEC_LOCK(); 
+  PHY_SQLEXEC_LOCK();
   /** Execute the ReadDBQuery with the above statement */
   status = query_processor->ExecuteReadDBQuery(GETBULKROWS, read_stmt);
   ODBCM_ROLLBACK_TRANSACTION(ro_conn_handle);
@@ -1632,7 +1632,7 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingCount(
       return status;
     }
 
-    PHY_SQLEXEC_LOCK(); 
+    PHY_SQLEXEC_LOCK();
     status = query_processor->ExecuteReadDBQuery(
               GETSIBLINGCOUNT, stmt);
     ODBCM_ROLLBACK_TRANSACTION(ro_conn_handle);
@@ -1732,7 +1732,7 @@ ODBCM_RC_STATUS ODBCManager::GetRowCount(
                            query_processor);
     return status;
   }
-  PHY_SQLEXEC_LOCK(); 
+  PHY_SQLEXEC_LOCK();
   /** Execute the query */
   status = query_processor->ExecuteQueryDirect(
             GETROWCOUNT, query, stmt);
@@ -1889,7 +1889,7 @@ ODBCM_RC_STATUS ODBCManager::GetModifiedRows(
                        query_processor);
     return status;
   }
-  PHY_SQLEXEC_LOCK(); 
+  PHY_SQLEXEC_LOCK();
   status = query_processor->ExecuteReadDBQuery(
                                                GETMODIFIEDROWS, get_stmt);
   ODBCM_ROLLBACK_TRANSACTION(ro_conn_handle);
@@ -2141,7 +2141,7 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingCount(
                              query_processor);
       return status;
     }
-    PHY_SQLEXEC_LOCK(); 
+    PHY_SQLEXEC_LOCK();
     status = query_processor->ExecuteReadDBQuery(
               GETSIBLINGCOUNT_FILTER, stmt);
     ODBCM_ROLLBACK_TRANSACTION(ro_conn_handle);
@@ -2357,7 +2357,7 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingRows(
                        query_processor);
     return status;
   }
-  PHY_SQLEXEC_LOCK(); 
+  PHY_SQLEXEC_LOCK();
   /** Execute the ReadDBQuery with the above statement */
   status = query_processor->ExecuteReadDBQuery(
                                                GETSIBLINGROWS, get_stmt);

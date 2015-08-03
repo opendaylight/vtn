@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -26,7 +26,8 @@ TcStartUpOperations::TcStartUpOperations(TcLock* tclock,
                                          TcChannelNameMap& unc_map_,
                                          pfc_bool_t is_switch)
   : TcOperations(tclock, sess, tc_db_, unc_map_), is_switch_(is_switch),
-    fail_oper_(TC_OP_INVALID), database_type_(UNC_DT_INVALID) {}
+    fail_oper_(TC_OP_INVALID), version_(0), database_type_(UNC_DT_INVALID),
+    config_mode_(TC_CONFIG_INVALID) {}
 
 
 /*
@@ -41,16 +42,17 @@ uint32_t TcStartUpOperations::TcGetMinArgCount() {
  */
 TcOperStatus
 TcStartUpOperations::HandleArgs() {
-  if ( is_switch_ == PFC_FALSE ) {
-    return TC_OPER_SUCCESS;
-  }
   uint32_t failover_instance = 0;
   TcOperRet ret = db_hdlr_->GetRecoveryTable(&database_type_,
                                             &fail_oper_,
+                                            &config_mode_,
+                                            &vtn_name_,
                                             &failover_instance);
+
   if ( ret != TCOPER_RET_SUCCESS ) {
     return TC_OPER_FAILURE;
   }
+
   return TC_OPER_SUCCESS;
 }
 
@@ -109,10 +111,38 @@ TcOperStatus
   TcStartUpOperations::TcCreateMsgList() {
   if (TcOperMessageList.empty()) {
     if (is_switch_ == PFC_FALSE) {
+      // Cold-start
+      pfc_bool_t autosave_enabled = PFC_FALSE;
+      TcOperRet ret = db_hdlr_->GetConfTable(&autosave_enabled);
+      if ( ret == TCOPER_RET_FAILURE ) {
+        pfc_log_error("Database Read Failed for getting autosave");
+        return TC_OPER_FAILURE;
+      }
+
+      pfc_log_info("%s COLD-START; AutosaveEnabled? %d db=%d, failoper=%d"
+                   "configmode=%d, vtn_name=%s",
+                   __FUNCTION__, autosave_enabled, database_type_, fail_oper_,
+                   config_mode_, vtn_name_.c_str());
+
+      if(autosave_enabled == PFC_TRUE && database_type_ != UNC_DT_INVALID &&
+                                         fail_oper_ == TC_OP_CANDIDATE_COMMIT) {
+        TcOperMessageList.push_back(unc::tclib::MSG_AUDITDB);
+      } else if (autosave_enabled == PFC_FALSE &&
+                 database_type_ != UNC_DT_INVALID && 
+                 (fail_oper_ == TC_OP_RUNNING_SAVE ||
+                  fail_oper_ == TC_OP_CLEAR_STARTUP)) {
+        TcOperMessageList.push_back(unc::tclib::MSG_AUDITDB);
+      }
+                
       TcOperMessageList.push_back(unc::tclib::MSG_SETUP);
     } else {
+      // Switchover / Failover
+      pfc_log_info("%s Switch/Failover; db=%d, failoper=%d, "
+                   "configmode=%d, vtn_name=%s",
+                   __FUNCTION__, database_type_, fail_oper_,
+                   config_mode_, vtn_name_.c_str());
       if (database_type_ != UNC_DT_INVALID &&
-         fail_oper_ != TC_OP_INVALID) {
+          fail_oper_ != TC_OP_INVALID) {
         TcOperMessageList.push_back(unc::tclib::MSG_AUDITDB);
       }
     }
@@ -142,11 +172,143 @@ TcOperStatus
     return TC_OPER_FAILURE;
   }
   tc_msg->SetData(autosave_enabled);
-
+  
   if (oper_type == unc::tclib::MSG_AUDITDB) {
+    tc_msg->SetData(database_type_, fail_oper_, version_);
     tc_msg->SetData(database_type_, fail_oper_);
+    tc_msg->SetData(0, config_mode_, vtn_name_);
   }
 
+  return TC_OPER_SUCCESS;
+}
+
+/*
+ * @brief Execute the operation
+ */
+
+TcOperStatus 
+  TcStartUpOperations::Execute() {
+  TcOperRet MsgRet = TCOPER_RET_SUCCESS;
+
+  if ( TcOperMessageList.size() == 0 )
+    return TC_OPER_FAILURE;
+
+  std::list<TcMsgOperType>::iterator MsgIter = TcOperMessageList.begin();
+  while ( MsgIter != TcOperMessageList.end() ) {
+    TcMsg *tcmsg_=
+        TcMsg::CreateInstance(session_id_,
+                              (TcMsgOperType)*MsgIter,
+                              unc_oper_channel_map_);
+    if ( tcmsg_ == NULL ) {
+      return TC_SYSTEM_FAILURE;
+    }
+
+    version_ = 0;
+    if (*MsgIter == unc::tclib::MSG_AUDITDB) {
+      if ( fail_oper_ == TC_OP_CANDIDATE_ABORT ) {
+        if (db_hdlr_->GetRecoveryTableAbortVersion(version_)
+                          != TCOPER_RET_SUCCESS) {
+          pfc_log_warn("AuditDB: Getting abort version from db failed");
+        } else {
+          pfc_log_info("AuditDB: Retrieved abort version:%"PFC_PFMT_u64,
+                       version_);
+        }
+      } else if (fail_oper_ == TC_OP_RUNNING_SAVE) {
+        if (db_hdlr_->GetRecoveryTableSaveVersion(version_)
+                          != TCOPER_RET_SUCCESS) {
+          pfc_log_warn("AuditDB: Getting save version from db failed");
+        } else {
+          pfc_log_info("AuditDB: Retrieved save version:%"PFC_PFMT_u64,
+                       version_);
+        }
+      }
+    }
+
+    if (FillTcMsgData(tcmsg_, *MsgIter) != TC_OPER_SUCCESS) {
+      delete tcmsg_;
+      tcmsg_ = NULL;
+      return TC_SYSTEM_FAILURE;
+    }
+
+    if (*MsgIter == unc::tclib::MSG_AUDITDB) {
+      if (database_type_ == UNC_DT_RUNNING) {
+          TcReadStatusOperations::SetRunningStatus();
+          MsgRet = tcmsg_->Execute();
+          TcReadStatusOperations::SetRunningStatusIncr();
+      } else if (database_type_ == UNC_DT_STARTUP)  {
+          TcReadStatusOperations::SetStartupStatus();
+          MsgRet = tcmsg_->Execute();
+          TcReadStatusOperations::SetStartupStatusIncr();
+      } else {
+        MsgRet = tcmsg_->Execute();
+      }
+    } else {
+      MsgRet = tcmsg_->Execute();
+    }
+   
+    if ( MsgRet != TCOPER_RET_SUCCESS ) {
+      delete tcmsg_;
+      tcmsg_ = NULL;
+      if (*MsgIter == unc::tclib::MSG_AUDITDB) {
+        if (MsgRet == TCOPER_RET_LAST_DB_OP_FAILED) {
+          pfc_log_warn("AuditDB last DB operation failed. Continue...");    
+          MsgIter++;
+          continue;
+        } else {
+          /*set when Audit DB fails in startup phase*/
+          pfc_log_error("AuditDB failed");
+          audit_db_fail_ = PFC_TRUE;
+        }
+      }
+      return HandleMsgRet(MsgRet);
+    } else  {
+      if (*MsgIter == unc::tclib::MSG_AUDITDB) {
+        ++version_;
+        if (fail_oper_ == TC_OP_CANDIDATE_ABORT) {
+          if (db_hdlr_->UpdateRecoveryTableAbortVersion(version_)
+                            != TCOPER_RET_SUCCESS) {
+            pfc_log_warn("AuditDB: Setting abort version to db failed");
+          } else {
+            pfc_log_info("AuditDB: Set abort version:%"PFC_PFMT_u64,
+                         version_);
+          }
+        } else if (fail_oper_ == TC_OP_RUNNING_SAVE) {
+          if (db_hdlr_->UpdateRecoveryTableSaveVersion(version_)
+                            != TCOPER_RET_SUCCESS) {
+            pfc_log_warn("AuditDB: Setting save version from db failed");
+          } else {
+            pfc_log_info("AuditDB: Set save version:%"PFC_PFMT_u64,
+                         version_);
+          }
+        }
+      }
+
+      // SETUP message is sent only during cold startup.
+      // In case of switchover/faileover, AUDITDB is sent.
+      // Initialize the abort/save versions in RECOVERY_DB during cold startup
+      if (*MsgIter == unc::tclib::MSG_SETUP) {
+        pfc_log_info("Initializing the abort and save versions in RECOVERY DB");
+        version_ = 0;
+        if (db_hdlr_->UpdateRecoveryTableAbortVersion(version_)
+                            != TCOPER_RET_SUCCESS) {
+          pfc_log_warn("SETUP: Init of abort version to db failed");
+        }
+        if (db_hdlr_->UpdateRecoveryTableSaveVersion(version_)
+                            != TCOPER_RET_SUCCESS) {
+          pfc_log_warn("SETUP: Init of save version to db failed");
+        }
+      }
+    }
+    
+    if (*MsgIter == unc::tclib::MSG_SETUP_COMPLETE) {
+      tclock_->TcSetSetupComplete(PFC_TRUE);
+      /* Init generation number and status of Running and Startup config*/
+      TcReadStatusOperations::Init();
+      pfc_log_info("MSG_SETUP_COMPLETE completed");
+    }
+    MsgIter++;
+    delete tcmsg_;
+  }  // while 
   return TC_OPER_SUCCESS;
 }
 
@@ -155,11 +317,38 @@ TcOperStatus
  */
 TcOperStatus
   TcStartUpOperations::SendResponse(TcOperStatus ret_) {
+  TcOperRet ret = TCOPER_RET_SUCCESS;
+
+  pfc_log_info("send_oper_status value=%d", ret_);
   if (ret_ == TC_OPER_SUCCESS) {
-    TcOperRet ret= db_hdlr_->UpdateRecoveryTable(UNC_DT_INVALID,
-                                                 TC_OP_INVALID);
-    if ( ret != TCOPER_RET_SUCCESS )
+    ret= db_hdlr_->UpdateRecoveryTable(UNC_DT_INVALID,
+                                       TC_OP_INVALID,
+                                       TC_CONFIG_INVALID,
+                                       "", 0);
+    if ( ret != TCOPER_RET_SUCCESS ) {
+      pfc_log_error("%s failed to update recovery table", __FUNCTION__);
       return TC_SYSTEM_FAILURE;
+    }
+
+    pfc_bool_t global_mode_dirty = PFC_FALSE;
+
+    if (db_hdlr_->GetRecoveryTableGlobalModeDirty(global_mode_dirty)
+                                               != TCOPER_RET_SUCCESS) {
+      pfc_log_error("%s failed to fetch Global Mode Dirty", __FUNCTION__);
+      return TC_SYSTEM_FAILURE;
+    }
+
+    if (global_mode_dirty == PFC_TRUE) {
+      if (IsCandidateDirty(USESS_ID_TC, 0) == PFC_FALSE) {
+        // If Candidate is not dirty in both upll and uppl,
+        // reset the global_mode_dirty
+        ret = db_hdlr_->UpdateRecoveryTableGlobalModeDirty(PFC_FALSE);
+        if (ret != TCOPER_RET_SUCCESS) {
+          pfc_log_error("%s failed to update Global Mode Dirty", __FUNCTION__);
+          return TC_SYSTEM_FAILURE;
+        }
+      }
+    }
   }
   return ret_;
 }

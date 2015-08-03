@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -36,7 +36,9 @@ public:
                               flowfilterlist *read_value):
     url_(url),
     filter_(value),
-    filter_list_(read_value) {}
+    filter_list_(read_value) {
+      check_portmap_ = PFC_FALSE;
+    }
 
   // Is multiple requests need to be sent to handle the request?
   pfc_bool_t is_multiple_requests(unc::odcdriver::OdcDriverOps Op) {
@@ -95,6 +97,12 @@ public:
                                      std::string &request_indicator,
                                      int resp_code) {
     pfc_log_info("Response Code Received %d",resp_code);
+    if ((check_portmap_ == PFC_TRUE) &&
+        (HTTP_204_NO_CONTENT == resp_code)) {
+      set_flag(PFC_FALSE);
+      return UNC_RC_UNSUPPORTED_CTRL_CONFIG;
+    }
+
     if (HTTP_200_RESP_OK != resp_code &&
         HTTP_201_RESP_CREATED != resp_code &&
         HTTP_204_NO_CONTENT != resp_code) {
@@ -123,10 +131,16 @@ public:
     return UNC_RC_SUCCESS;
   }
 
+  // method to validate portmap request
+  void set_flag(pfc_bool_t check_portmap) {
+    check_portmap_ = check_portmap;
+  }
+
 private:
   std::string url_;
   flowfilter* filter_;
   flowfilterlist* filter_list_;
+  pfc_bool_t check_portmap_;
 };
 
 template <typename key,typename value>
@@ -150,7 +164,7 @@ public:
 
   // Copy from FlowFilter List and send to platform
   virtual UncRespCode r_copy(flowfilterlist* in,
-               std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) =0;
+                             std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) =0;
 
 
   // Method to CREATE/DELETE
@@ -161,7 +175,6 @@ public:
     ODC_FUNC_TRACE;
     flowfilter command_;
     //Copy Contents from key and val
-    pfc_log_error("CREATE FLOWFILTER ENTRY ENTERED!!");
     copy(&command_,key_in,val_in);
 
     std::string url = "";
@@ -172,7 +185,9 @@ public:
     url.append(get_url_tail(key_in,val_in));
     odl_flowfilter_http_request flow_filter_request(&command_,
         url,NULL);
+
     odl_http_request odl_fc_create;
+
     return odl_fc_create.handle_request(ctr,
                                         Op,
                                         &flow_filter_request,
@@ -205,6 +220,7 @@ public:
                                         &flow_filter_request,
                                         conf_values_);
   }
+
   //Method to read all for AUDIT
   UncRespCode odl_flow_filter_read_all( unc::driver::controller *ctr,
                        std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector,
@@ -224,6 +240,23 @@ public:
       return ret;
 
     return r_copy(&read_all_,cfgnode_vector);
+  }
+
+  UncRespCode check_portmap(unc::driver::controller *ctr,std::string url) {
+    ODC_FUNC_TRACE;
+    flowfilterlist read_all_;
+    pfc_log_info("The PORTMAP URL: %s",url.c_str());
+    odl_flowfilter_http_request flow_filter_request(NULL,
+        url,&read_all_);
+    flow_filter_request.set_flag(PFC_TRUE);
+    odl_http_request odl_fc_create;
+    UncRespCode ret (odl_fc_create.handle_request(ctr,
+                     unc::odcdriver::CONFIG_READ,
+                     &flow_filter_request,
+                     conf_values_));
+    if ( ret != UNC_RC_SUCCESS )
+      return ret;
+   return UNC_RC_SUCCESS;
   }
 
 };

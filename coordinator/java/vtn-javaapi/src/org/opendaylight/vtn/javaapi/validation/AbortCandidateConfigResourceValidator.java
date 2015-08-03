@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -15,6 +15,7 @@ import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
 import org.opendaylight.vtn.javaapi.resources.AbstractResource;
+import org.opendaylight.vtn.javaapi.validation.CommonValidator;
 
 /**
  * The Class AbortCandidateConfigResourceValidator validates request Json object
@@ -27,6 +28,9 @@ public class AbortCandidateConfigResourceValidator extends VtnServiceValidator {
 
 	/** The instance of AbstractResource. */
 	private final AbstractResource resource;
+
+	/** The validator. */
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new config resource validator.
@@ -90,6 +94,55 @@ public class AbortCandidateConfigResourceValidator extends VtnServiceValidator {
 						VtnServiceJsonConsts.OPERATION).getAsString();
 				isValid = operation
 						.equalsIgnoreCase(VtnServiceJsonConsts.ABORT);
+			}
+
+			if (isValid) {//check mandatory param:timeout
+				setInvalidParameter(VtnServiceJsonConsts.TIMEOUT);
+				if (candidate.has(VtnServiceJsonConsts.TIMEOUT)) {
+					String timeout = candidate.getAsJsonPrimitive(
+							VtnServiceJsonConsts.TIMEOUT).getAsString();
+					if (timeout != null && !timeout.isEmpty()) {
+						try {
+							long min = Integer.MIN_VALUE;
+							long max = Integer.MAX_VALUE;
+							isValid = validator.isValidRange(timeout, min, max);
+						} catch (NumberFormatException e) {
+							LOG.warning("AbortCandidateConfigResourceValidator#validatePut()"
+									+ ":timeout is invalid." + timeout);
+							isValid = false;
+						}
+					} else {
+						isValid = false;
+					}
+				} else {
+					isValid = false;
+				}
+			}
+
+			if (isValid) {//check mandatory param:cancel_audit
+				setInvalidParameter(VtnServiceJsonConsts.CANCEL_AUDIT);
+				if (candidate.has(VtnServiceJsonConsts.CANCEL_AUDIT)) {
+					String cancelAudit = candidate.getAsJsonPrimitive(
+							VtnServiceJsonConsts.CANCEL_AUDIT).getAsString();
+					if (cancelAudit != null && !cancelAudit.isEmpty()) {
+						try {
+							if (Integer.parseInt(cancelAudit) == 0 
+									|| Integer.parseInt(cancelAudit) == 1) {
+								isValid = true;
+							} else {
+								isValid = false;
+							}
+						} catch (NumberFormatException e) {
+							LOG.warning("AbortCandidateConfigResourceValidator#validatePut()"
+										+ ":cancelAudit is invalid." + cancelAudit);
+							isValid = false;
+						}
+					} else {
+						isValid = false;
+					}
+				} else {
+					isValid = false;
+				}
 			}
 		}
 		LOG.trace("Complete AbortCandidateConfigResourceValidator#validatePut()");

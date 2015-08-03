@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014 NEC Corporation
+ * Copyright (c) 2011-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -36,6 +36,12 @@ typedef struct ipc_chmon	ipc_chmon_t;
 
 struct ipc_evchan;
 typedef struct ipc_evchan	ipc_evchan_t;
+
+/*
+ * Forward declaration of IPC event listener session structure.
+ */
+struct ipc_elsess;
+typedef struct ipc_elsess	ipc_elsess_t;
 
 /*
  * Separator of IPC channel name and address part in the IPC channel address.
@@ -460,6 +466,50 @@ struct __pfc_ipcsess {
 #define	IPC_CLSESS_ACCEPT_GLOBCANCEL(sess)			\
 	(((sess)->icss_cflags & IPC_CLSESS_CF_CANCEL_FLAGS) ==	\
 	 PFC_IPCSSF_CANCELABLE)
+
+/*
+ * A set of parameters used for cancellation of client sessions associated
+ * with a connection.
+ */
+typedef struct {
+	/*
+	 * A pointer to IPC event listener session used for auto-cancellation.
+	 * If a non-NULL value is specified, IPC client sessions will be
+	 * canceled only if the target server matches the specified event
+	 * listener session.
+	 */
+	ipc_elsess_t	*icln_elsess;
+
+	/*
+	 * If PFC_TRUE is specified, IPC client sessions are discarded just
+	 * after cancellation.
+	 */
+	pfc_bool_t	icln_discard;
+} ipc_clnotify_t;
+
+/*
+ * A pointer to pseudo event listener session that indicates all client
+ * sessions should be canceled.
+ */
+#define	IPC_CLNOTIFY_FORCE	((ipc_elsess_t *)(uintptr_t)-1)
+
+/*
+ * Macros to initialize ipc_clnotify_t.
+ */
+
+#define	IPC_CLNOTIFY_INIT(clnp, elsess, discard)	\
+	do {						\
+		(clnp)->icln_elsess = (elsess);		\
+		(clnp)->icln_discard = (discard);	\
+	} while (0)
+
+/* Indicate global cancellation. */
+#define	IPC_CLNOTIFY_INIT_GLOBAL(clnp, discard)	\
+	IPC_CLNOTIFY_INIT(clnp, NULL, discard)
+
+/* Indicate that all sessions should be canceled by force. */
+#define	IPC_CLNOTIFY_INIT_FORCE(clnp, discard)			\
+	IPC_CLNOTIFY_INIT(clnp, IPC_CLNOTIFY_FORCE, discard)
 
 #ifdef	_PFC_LIBPFC_IPCCLNT_BUILD
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -20,6 +20,8 @@
 #include "physical_common_def.hh"
 #include "physical_itc_req.hh"
 #include "odbcm_connection.hh"
+#include <uncxx/tclib/tclib_defs.hh>
+
 using unc::uppl::OdbcmConnectionHandler;
 
 namespace unc {
@@ -32,7 +34,8 @@ class DBConfigurationRequest : public ITCReq {
   UncRespCode LoadAndCommitStartup(OdbcmConnectionHandler *db_conn);
   UncRespCode CopyRunningtoCandidate(OdbcmConnectionHandler *db_conn);
   UncRespCode ClearStartUpDb(OdbcmConnectionHandler *db_conn);
-  UncRespCode AbortCandidateDb(OdbcmConnectionHandler *db_conn);
+  UncRespCode AbortCandidateDb(OdbcmConnectionHandler *db_conn,
+                               TcConfigMode config_mode);
   UncRespCode  SaveRunningToStartUp(OdbcmConnectionHandler *db_conn);
   UncRespCode SendDeletedControllerToLogical(
       OdbcmConnectionHandler *db_conn);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -31,7 +31,7 @@ namespace usess {
 { \
   RTN = USESS_E_OK; \
   int E_CODE = lock_.timedrdlock(conf_.data().lock_timeout); \
-  GOTO_CODESET_DETAIL_IF((E_CODE != 0), LABEL, RTN, USESS_E_NG, \
+  GOTO_CODESET_DETAIL_IF2((E_CODE != 0), LABEL, RTN, USESS_E_NG, \
       E_CODE, "%s", "Failed to read lock.") \
 }
 
@@ -40,7 +40,7 @@ namespace usess {
 { \
   RTN = USESS_E_OK; \
   int E_CODE = lock_.timedwrlock(conf_.data().lock_timeout); \
-  GOTO_CODESET_DETAIL_IF((E_CODE != 0), LABEL, RTN, USESS_E_NG, \
+  GOTO_CODESET_DETAIL_IF2((E_CODE != 0), LABEL, RTN, USESS_E_NG, \
       E_CODE, "%s", "Failed to write lock."); \
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -74,7 +74,25 @@ typedef enum {
   /* Controller disconnected error */
   UPLL_RC_ERR_CTR_DISCONNECTED = UNC_RC_CTR_DISCONNECTED,
   /* Driver not present */
-  UPLL_RC_ERR_DRIVER_NOT_PRESENT = UNC_RC_ERR_DRIVER_NOT_PRESENT
+  UPLL_RC_ERR_DRIVER_NOT_PRESENT = UNC_RC_ERR_DRIVER_NOT_PRESENT,
+  /* Audit is cancelled */
+  UPLL_RC_ERR_AUDIT_CANCELLED = UNC_RC_REQUEST_CANCELLED,
+  /* Unified-network/boundary configuration is incomplete */
+  UPLL_RC_ERR_EXPAND = UNC_UPLL_RC_ERR_EXPAND,
+  /* Specified logical port and VLAN ID is already in use */
+  UPLL_RC_ERR_VLAN_IN_USE = UNC_UPLL_RC_ERR_VLAN_IN_USE,
+  /* Mismatch in VLAN type */
+  UPLL_RC_ERR_VLAN_TYPE_MISMATCH = UNC_UPLL_RC_ERR_VLAN_TYPE_MISMATCH,
+  /* User configured name conflicts with internally created name */
+  UPLL_RC_ERR_NAME_CONFLICT = UNC_UPLL_RC_ERR_NAME_CONFLICT,
+  /* Specified domain is invalid */
+  UPLL_RC_ERR_INVALID_DOMAIN = UNC_UPLL_RC_ERR_INVALID_DOMAIN,
+  /* Specified destination address is invalid */
+  UPLL_RC_ERR_INVALID_DEST_ADDR = UNC_UPLL_RC_ERR_INVALID_DEST_ADDR,
+  /* Specified next-hop address is invalid */
+  UPLL_RC_ERR_INVALID_NEXTHOP_ADDR = UNC_UPLL_RC_ERR_INVALID_NEXTHOP_ADDR,
+  /* Specified network-group name does not exist */
+  UPLL_RC_ERR_INVALID_NWMONGRP = UNC_UPLL_RC_ERR_INVALID_NWMONGRP
 } upll_rc_t;
 
 UNC_C_END_DECL

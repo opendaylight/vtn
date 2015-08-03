@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -72,7 +72,10 @@ public class CoordinatorVersionResource extends AbstractResource {
 					UncSYSMGEnums.NodeMgrServiceID.kNomgSoftVersionGet
 							.ordinal(), getExceptionHandler());
 			LOG.info("Session created successfully");
+			long start = System.currentTimeMillis();
 			status = session.invoke();
+			LOG.debug("The treatment of under layer cost the following time: "
+					+ (System.currentTimeMillis() - start) + "(ms)");
 			LOG.info("Request packet processed with status:" + status);
 			if (status != UncSYSMGEnums.NodeIpcErrorT.NOMG_E_OK.ordinal()) {
 				LOG.info("error occurred while performing operation");

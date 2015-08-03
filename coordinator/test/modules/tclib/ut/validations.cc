@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -358,11 +358,6 @@ TEST(test_24, test_ValidateUpllUpplAuditSequence) {
   tclib_obj.oper_state_ = MSG_AUDIT_START;
   ret = tclib_obj.ValidateUpllUpplAuditSequence(MSG_AUDIT_END);
   EXPECT_EQ(TC_SUCCESS, ret);
-  // failure
-  tclib_obj.oper_state_ = MSG_AUDIT_VOTE;
-  ret = tclib_obj.ValidateUpllUpplAuditSequence(MSG_AUDIT_END);
-  EXPECT_EQ(TC_FAILURE, ret);
-
   // success
   tclib_obj.oper_state_ = MSG_AUDIT_VOTE;
   ret = tclib_obj.ValidateUpllUpplAuditSequence(MSG_AUDIT_ABORT);

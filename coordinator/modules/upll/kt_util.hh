@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -20,12 +20,18 @@
 namespace unc {
 namespace upll {
 namespace ipc_util {
-
 using std::string;
+
+typedef struct controller_domain {
+  uint8_t *ctrlr;
+  uint8_t *domain;
+} controller_domain_t;
 
 class KtUtil {
  public:
   static const uint32_t kCtrlrNameLenWith0 = 32;
+  static const uint32_t kDrvDomainNameLenWith0 = 41;
+
 
   struct KtMsgTemplate {
     // kt_cfg_msg: CANDIDATE, RUNNING, STARTUP
@@ -50,6 +56,25 @@ class KtUtil {
   static std::string KtStructToStr(IpctSt::IpcStructNum stnum, void *data);
 
   // prototype_declaration
+  static string IpcStructToStr(const key_unified_nw &key_unified_nw);
+  static string IpcStructToStr(const val_unified_nw &val_unified_nw);
+  static string IpcStructToStr(const key_unw_label &key_unw_label);
+  static string IpcStructToStr(const val_unw_label &val_unw_label);
+  static string IpcStructToStr(const key_unw_label_range &key_unw_label_range);
+  static string IpcStructToStr(const val_unw_label_range &val_unw_label_range);
+  static string IpcStructToStr(const key_unw_spine_domain &key_spine_domain);
+  static string IpcStructToStr(const val_unw_spine_domain &val_spine_domain);
+  static string IpcStructToStr(const val_unw_spdom_ext &val_spdom_ext);
+  static string IpcStructToStr(const val_spdom_st &val_spdom_st);
+  static string IpcStructToStr(const val_unw_spine_domain_st &val_spine_st);
+  static string IpcStructToStr(const val_unw_spine_domain_assigned_label
+                                        &val_unw_spine_domain_assigned_label);
+  static string IpcStructToStr(const val_unw_spine_domain_fdbentry
+                                        &val_unw_spine_domain_fdbentry);
+  static string IpcStructToStr(const val_unw_spine_domain_fdbentry_vtn
+                                        &val_unw_spine_domain_fdbentry_vtn);
+  static string IpcStructToStr(const key_vtn_unified &key_vtn_unified);
+  static string IpcStructToStr(const val_vtn_unified &val_vtn_unified);
   static string IpcStructToStr(const val_ping &val_ping_t);
   static string IpcStructToStr(const val_vtn_neighbor &val_vtn_neighbor_t);
   static string IpcStructToStr(const key_vtn &key_vtn);
@@ -74,6 +99,9 @@ class KtUtil {
   static string IpcStructToStr(const val_vbr_if_st &val_vbr_if_st);
   static string IpcStructToStr(const key_vlan_map &key_vlan_map);
   static string IpcStructToStr(const val_vlan_map &val_vlan_map);
+  static string IpcStructToStr(const key_vbr_portmap &key_vbr_portmap);
+  static string IpcStructToStr(const val_vbr_portmap &val_vbr_portmap);
+  static string IpcStructToStr(const val_vbr_portmap_st &val_vbr_portmap_st);
   static string IpcStructToStr(const key_vrt &key_vrt);
   static string IpcStructToStr(const val_vrt &val_vrt);
   static string IpcStructToStr(const val_rename_vrt &val_rename_vrt);
@@ -165,11 +193,21 @@ class KtUtil {
   static string IpcStructToStr(const key_vbrif_policingmap_entry &key_entry);
   static string IpcStructToStr(const val_policingmap_controller &key_entry);
   static string IpcStructToStr(const key_vtermif_policingmap_entry &key_entry);
+  static string IpcStructToStr(const val_vbr_expand &val_vbr_expand);
+  static string IpcStructToStr(const val_vbr_if_expand &val_vbr_if_expand);
+  static string IpcStructToStr(const val_vbr_portmap_expand
+                                                    &val_vbr_portmap_expand);
+  static string IpcStructToStr(const val_vtunnel_expand &val_vtunnel_expand);
+  static string IpcStructToStr(const val_vtunnel_if_expand
+                                                 &val_vtunnel_if_expand);
+  static string IpcStructToStr(const val_vlink_expand &val_vlink_expand);
 
   static string IpcStructToStr(const key_ctr &data);
   static string IpcStructToStr(const val_ctr &data);
   static string IpcStructToStr(const val_ctr_st &data);
   static string IpcStructToStr(const key_ctr_domain &data);
+  static string IpcStructToStr(const val_ctr_domain &data);
+  static string IpcStructToStr(const val_ctr_domain_st &data);
   static string IpcStructToStr(const key_logical_port &data);
   static string IpcStructToStr(const val_logical_port &data);
   static string IpcStructToStr(const val_logical_port_st &data);
@@ -182,6 +220,8 @@ class KtUtil {
   static string IpcStructToStr(const pfcdrv_val_vbrif_vextif &data);
   static string IpcStructToStr(const pfcdrv_val_flowfilter_entry &data);
   static string IpcStructToStr(const pfcdrv_val_vbrif_policingmap &data);
+  static string IpcStructToStr(const pfcdrv_val_vbr_portmap &data);
+  static string IpcStructToStr(const pfcdrv_val_vtn_controller &data);
 
   /* VlanmapOnBoundary: New val struct */
   static string IpcStructToStr(const pfcdrv_val_vlan_map &data);
@@ -196,13 +236,31 @@ class KtUtil {
   static string IpcStructToStr(const vnpdrv_val_vtunnel &data);
   static string IpcStructToStr(const vnpdrv_val_vtunnel_if &data);
   static string IpcStructToStr(const key_vtn_dataflow &key_vtn_df);
+  // convert functions
+  static string IpcStructToStr(const key_convert_vbr&);
+  static string IpcStructToStr(const val_convert_vbr&);
+  static string IpcStructToStr(const key_convert_vbr_if&);
+  static string IpcStructToStr(const val_convert_vbr_if&);
+  static string IpcStructToStr(const key_convert_vtunnel&);
+  static string IpcStructToStr(const val_convert_vtunnel&);
+  static string IpcStructToStr(const key_convert_vtunnel_if&);
+  static string IpcStructToStr(const val_convert_vtunnel_if&);
+  static string IpcStructToStr(const key_convert_vlink&);
+  static string IpcStructToStr(const val_convert_vlink&);
+  static string IpcStructToStr(const val_vtn_gateway_port&);
+  // label allocation functions
+  static string IpcStructToStr(const key_gvtnid_label&);
+  static string IpcStructToStr(const val_gvtnid_label&);
+  static string IpcStructToStr(const key_vbid_label&);
+  static string IpcStructToStr(const val_vbid_label&);
 
- private:
+  private:
   KtUtil() {}
   void Init();
   static std::map<unc_key_type_t, KtMsgTemplate*> kt_msg_templates_;
   static KtUtil *singleton_instance_;
 };
+
 
 }  // namespace ipc_util
 }  // namespace upll

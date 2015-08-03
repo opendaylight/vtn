@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -105,6 +105,7 @@ class ConfigVal {
     }
     next_cfg_val_ = NULL;
   }
+
   // user_data is not freed on deleting this object or resetting its value
   inline void *get_user_data() const { return user_data_; }
   inline void set_user_data(void *user_data) { user_data_ = user_data; }
@@ -218,6 +219,7 @@ class ConfigKeyVal {
       delete ckv;
       ckv = tmp_ckv;
     }
+    next_ckv_ = NULL;
   }
 
   // user_data is not freed on deleting this object or on resetting its value
@@ -293,6 +295,10 @@ class ConfigKeyVal {
     }
     memset(ptr, 0, size);
     return ptr;
+  }
+  template<class T>
+  static T* Malloc() {
+    return reinterpret_cast<T *>(ConfigKeyVal::Malloc(sizeof(T)));
   }
   inline static void Free(void *ptr) { free(ptr); }
 

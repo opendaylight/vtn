@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -8,6 +8,7 @@
  */
 
 #include "tcmsg_audit.hh"
+#include "tc_operations.hh"
 
 namespace unc {
 namespace tc {
@@ -17,7 +18,9 @@ namespace tc {
  *@param[in] oper - operation type
  **/
 TcMsgAudit::TcMsgAudit(uint32_t sess_id, tclib::TcMsgOperType oper)
-    :TcMsg(sess_id, oper), controller_id_(""), driver_id_(UNC_CT_UNKNOWN) {}
+    :TcMsg(sess_id, oper),
+     controller_id_(""), driver_id_(UNC_CT_UNKNOWN),
+     audit_type_(TC_AUDIT_NORMAL) { }
 
 /*!\brief setter function for data members.
  *@param[in] controller_id - controller identifier.
@@ -28,6 +31,12 @@ void TcMsgAudit::SetData(uint32_t config_id,
                          unc_keytype_ctrtype_t driver_id) {
   controller_id_ = controller_id;
   driver_id_ = driver_id;
+}
+
+/*!\brief method to set audit_type option
+ * @param[in] audit_type - option to perforn audit based on TcAuditType */
+void TcMsgAudit::SetAuditType(TcAuditType audit_type) {
+  audit_type_ = audit_type; 
 }
 
 /*!\brief method to send transaction abort requests to recipient modules.
@@ -152,6 +161,12 @@ TcMsgAudit::SendAuditTransEndRequest(AbortOnFailVector abort_on_fail_,
     return TCOPER_RET_FAILURE;
   }
 
+  if (oper == tclib::MSG_AUDIT_TRANS_END) {
+    TcOperations::SetAuditPhase(AUDIT_TRANSACTION_END);
+  } else if (oper == tclib::MSG_AUDIT_END) {
+    TcOperations::SetAuditPhase(AUDIT_END);
+  }
+
   for ( it = abort_on_fail_.rbegin(); it != abort_on_fail_.rend(); it++ ) {
     channel_name = GetChannelName(*it);
     if (PFC_EXPECT_TRUE(channel_name.empty())) {
@@ -168,7 +183,7 @@ TcMsgAudit::SendAuditTransEndRequest(AbortOnFailVector abort_on_fail_,
       return TCOPER_RET_FATAL;
     }
     /*append data to channel */
-    pfc_log_info("notify AuditTxEnd to %s", channel_name.c_str());
+    pfc_log_info("notify Audit(Tx)End to %s", channel_name.c_str());
     util_resp = tc::TcClientSessionUtils::set_uint8(end_sess, oper);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
       TcClientSessionUtils::tc_session_close(&end_sess, conn);
@@ -296,11 +311,10 @@ unc_keytype_ctrtype_t GetDriverId::GetResult() {
  **/
 AuditTransaction::AuditTransaction(uint32_t sess_id, tclib::TcMsgOperType oper)
     :TcMsgAudit(sess_id , oper), reconnect_controller_(PFC_FALSE) {
-  simplified_audit_   = PFC_FALSE;
-  user_audit_         = PFC_FALSE;
   commit_number_      = 0;
   commit_date_        = 0;
   commit_application_ = "";
+  user_audit_         = PFC_FALSE;
 }
 
 /*!\brief method to set user audit
@@ -328,13 +342,6 @@ void AuditTransaction::SetCommitInfo(uint64_t commit_number,
   commit_number_ = commit_number;
   commit_date_ = commit_date;
   commit_application_ = commit_application;
-}
-/*!\brief method to set simplified audit option
- * @param[in] simplified_audit - option to perform simplified audit
- *                               for PFC driver inovked Audit process
- * */
-void AuditTransaction::SetSimplifiedAudit(pfc_bool_t simplified_audit) {
-  simplified_audit_ = simplified_audit;
 }
 
 /*!\brief this method sends send Audit/Transaction START/END
@@ -388,12 +395,14 @@ AuditTransaction::SendRequest(std::string channel_name) {
       pfc_log_error("SendRequest: Setting reconnect_controller_ failed");
       return ReturnUtilResp(util_resp);
     }
+     
     util_resp = tc::TcClientSessionUtils::
-        set_uint8(sess_, (uint8_t)simplified_audit_);
+        set_uint8(sess_, (uint8_t)audit_type_);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
-      pfc_log_error("SendRequest: Setting simplified_audit_ failed");
+      pfc_log_error("SendRequest: Setting audit_type_ failed");
       return ReturnUtilResp(util_resp);
     }
+
     /* Updates controller commit details */
     util_resp = tc::TcClientSessionUtils::set_uint64(sess_, commit_number_);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
@@ -482,16 +491,45 @@ AuditTransaction::SendRequest(std::string channel_name) {
              PFC_EXPECT_TRUE(opertype_ == tclib::MSG_AUDIT_START)) {
     pfc_log_info("Simplified Audit response from %s", channel_name.c_str());
     if (user_audit_ != PFC_TRUE) {
-      pfc_log_info("Audit from Driver,Simplified Audit takes place");
-      SetSimplifiedAudit(PFC_TRUE);
+      pfc_log_info("Audit from Driver; Simplified Audit takes place");
+      SetAuditType(TC_AUDIT_SIMPLIFIED);
       ret_val = TCOPER_RET_SUCCESS;
     }
     else {
       pfc_log_info("Audit from User, No Simplified Audit takes place");
       ret_val = TCOPER_RET_SUCCESS;
     }
+  } else if (resp == tclib::TC_CANCELLED_AUDIT &&
+             opertype_ == tclib::MSG_AUDIT_START) {
+    TcOperations::SetAuditPhase(AUDIT_END);
+    pfc_log_info("%s Received TC_CANCELLED_AUDIT response from %s",
+                 __FUNCTION__, channel_name.c_str());
+    TcDaemonName daemon = GetDaemonName(channel_name);
+    if (daemon == TC_NONE) {
+      pfc_log_fatal("%s Error getting Daemon name for channel:%s",
+                    __FUNCTION__, channel_name.c_str());
+      return TCOPER_RET_AUDIT_CANCELLED;
+    }
+    pfc_log_info("%s Adding current Daemon %d (channel:%s) to send AuditEnd",
+                 __FUNCTION__, daemon, channel_name.c_str());
+    abort_on_fail_.push_back(daemon);
+    audit_result_ = tclib::TC_AUDIT_CANCELLED;
+    if (PFC_EXPECT_TRUE(abort_on_fail_.empty())) {
+      ret_val = TCOPER_RET_AUDIT_CANCELLED;
+    } else {
+      ret_val = SendAuditTransEndRequest(abort_on_fail_, tclib::MSG_AUDIT_END);
+      if (ret_val == TCOPER_RET_SUCCESS) {
+        ret_val = TCOPER_RET_AUDIT_CANCELLED;
+      } else if (ret_val == TCOPER_RET_FAILURE) {
+        pfc_log_error("%s Sending AuditEnd(abort) during AuditStart err failed",
+                      __FUNCTION__);
+        ret_val = TCOPER_RET_FATAL;
+      }
+      abort_on_fail_.clear();
+    }
   } else if (PFC_EXPECT_TRUE(resp == tclib::TC_FAILURE) &&
             PFC_EXPECT_TRUE(opertype_ == tclib::MSG_AUDIT_START)) {
+    TcOperations::SetAuditPhase(AUDIT_END);
     pfc_log_info("Failure response from %s", channel_name.c_str());
     audit_result_ = tclib::TC_AUDIT_FAILURE;
     /* Audit start failed in driver itself*/
@@ -506,8 +544,44 @@ AuditTransaction::SendRequest(std::string channel_name) {
       }
       abort_on_fail_.clear();
     }
+  } else if (resp == tclib::TC_CANCELLED_AUDIT &&
+             opertype_ == tclib::MSG_AUDIT_TRANS_START) {
+    TcOperations::SetAuditPhase(AUDIT_TRANSACTION_END);
+    pfc_log_info("%s Received TC_CANCELLED_AUDIT resp from %s",
+                 __FUNCTION__, channel_name.c_str());
+    // AuditEnd sending is handled in TcAuditOperations::Execute
+    ret_val = TCOPER_RET_AUDIT_CANCELLED;
+  
+    pfc_log_info("%s AuditTxStart received TC_CANCELLED_AUDIT response from %s",
+                 __FUNCTION__, channel_name.c_str());
+    TcDaemonName daemon = GetDaemonName(channel_name);
+    if (daemon == TC_NONE) {
+      pfc_log_fatal("%s Error getting Daemon name for channel:%s",
+                    __FUNCTION__, channel_name.c_str());
+      return TCOPER_RET_AUDIT_CANCELLED;
+    }
+    pfc_log_info("%s Adding current Daemon %d (channel:%s) to send AuditTxEnd",
+                 __FUNCTION__, daemon, channel_name.c_str());
+    abort_on_fail_.push_back(daemon);
+    trans_result_ = tclib::TRANS_END_SUCCESS;
+    audit_result_ = tclib::TC_AUDIT_CANCELLED;
+    if (PFC_EXPECT_TRUE(abort_on_fail_.empty())) {
+      ret_val = TCOPER_RET_AUDIT_CANCELLED;
+    } else {
+      ret_val = SendAuditTransEndRequest(abort_on_fail_,
+                                         tclib::MSG_AUDIT_TRANS_END);
+      if (ret_val == TCOPER_RET_SUCCESS) {
+        ret_val = TCOPER_RET_AUDIT_CANCELLED;
+      } else if (ret_val == TCOPER_RET_FAILURE) {
+        pfc_log_error("%s Sending AuditTxEnd(abort) during AuditTxStart failed",
+                      __FUNCTION__);
+        ret_val = TCOPER_RET_FATAL;
+      }
+      abort_on_fail_.clear();
+    }
   } else if (PFC_EXPECT_TRUE(resp == tclib::TC_FAILURE) &&
              PFC_EXPECT_TRUE(opertype_ == tclib::MSG_AUDIT_TRANS_START)) {
+    TcOperations::SetAuditPhase(AUDIT_TRANSACTION_END);
     pfc_log_info("Failure response from %s", channel_name.c_str());
     /*append end result in audit end notification*/
     audit_result_ = tclib::TC_AUDIT_FAILURE;
@@ -586,9 +660,11 @@ TcOperRet AuditTransaction::Execute() {
     }
     case tclib::MSG_AUDIT_TRANS_START: {
       pfc_log_info("*** AUDIT TxSTART ***");
-      notifyorder_.push_back(TC_DRV_ODL);
-      //notifyorder_.push_back(TC_DRV_OVERLAY);
+      notifyorder_.push_back(TC_DRV_OPENFLOW);
+      notifyorder_.push_back(TC_DRV_OVERLAY);
       notifyorder_.push_back(TC_DRV_POLC);
+      notifyorder_.push_back(TC_DRV_VAN);
+      notifyorder_.push_back(TC_DRV_ODC);
       // notifyorder_.push_back(TC_DRV_LEGACY);
       notifyorder_.push_back(TC_UPLL);
       notifyorder_.push_back(TC_UPPL);
@@ -599,10 +675,11 @@ TcOperRet AuditTransaction::Execute() {
       notifyorder_.push_back(TC_UPPL);
       notifyorder_.push_back(TC_UPLL);
       // notifyorder_.push_back(TC_DRV_LEGACY);
+      notifyorder_.push_back(TC_DRV_ODC);
+      notifyorder_.push_back(TC_DRV_VAN);
       notifyorder_.push_back(TC_DRV_POLC);
       notifyorder_.push_back(TC_DRV_OVERLAY);
       notifyorder_.push_back(TC_DRV_OPENFLOW);
-      notifyorder_.push_back(TC_DRV_ODL);
       break;
     }
     default: {
@@ -627,17 +704,62 @@ TcOperRet AuditTransaction::Execute() {
       continue;
     }
 
+    if ( TcMsg::GetAuditCancelFlag() == PFC_TRUE &&
+             audit_type_ != TC_AUDIT_REALNETWORK &&
+         (opertype_ == tclib::MSG_AUDIT_START ||
+          opertype_ == tclib::MSG_AUDIT_TRANS_START) ) {
+      pfc_log_warn("%s AuditCancel flag is set. Stopping Audit process",
+                   __FUNCTION__);
+
+      if (!abort_on_fail_.empty()) {
+        if (opertype_ == tclib::MSG_AUDIT_START) {
+          pfc_log_info("%s Sending AuditEnd for AuditStart completed modules",
+                       __FUNCTION__);
+          audit_result_ = tclib::TC_AUDIT_CANCELLED;
+          ret_val = SendAuditTransEndRequest(abort_on_fail_,
+                                             tclib::MSG_AUDIT_END);
+          if (ret_val != TCOPER_RET_SUCCESS) {
+            pfc_log_error("%s Sending AuditEnd during AuditStart failed",
+                          __FUNCTION__);
+          }
+        } else if (opertype_ == tclib::MSG_AUDIT_TRANS_START) {
+          pfc_log_info("%s Sending AuditTxEnd for AuditTxStart comp modules",
+                       __FUNCTION__);
+          audit_result_ = tclib::TC_AUDIT_CANCELLED;
+          trans_result_ = tclib::TRANS_END_SUCCESS;
+          ret_val = SendAuditTransEndRequest(abort_on_fail_,
+                                             tclib::MSG_AUDIT_TRANS_END);
+          if (ret_val != TCOPER_RET_SUCCESS) {
+            pfc_log_error("%s Sending AuditTxEnd during AuditTxStart failed",
+                          __FUNCTION__);
+          }
+        }
+      }
+      ret_val = TCOPER_RET_AUDIT_CANCELLED;
+      break;
+    }
+
+    // Save the modules for which AUDIT_START has been sent
+    // In case of audit-cancel, all the modules which received
+    // AUDIT_START needs to be notified
+    if (opertype_ == tclib::MSG_AUDIT_START) {
+      pfc::core::ScopedMutex m(TcOperations::audit_cancel_notify_lock_);
+      TcOperations::audit_cancel_notify_.push_back(*list_iter);
+    }
+
     ret_val = SendRequest(channel_name);
+
     if (PFC_EXPECT_TRUE(ret_val != TCOPER_RET_SUCCESS)) {
       return ret_val;
-    } else if (PFC_EXPECT_TRUE(ret_val == TCOPER_RET_SUCCESS )) {
-      if (simplified_audit_ == PFC_TRUE) {
+    } else if (PFC_EXPECT_TRUE(ret_val == TCOPER_RET_SUCCESS) ) {
+      if (audit_type_ == TC_AUDIT_SIMPLIFIED) {
         ret_val = TCOPER_RET_SIMPLIFIED_AUDIT;
       }
       /*append channel info to handle failure scenario*/
       abort_on_fail_.push_back(*list_iter);
     }
   }
+
   /*clear map*/
   abort_on_fail_.clear();
   notifyorder_.clear();
@@ -701,6 +823,9 @@ TwoPhaseAudit::SetSessionToForwardDriverResult(pfc::core::ipc::ClientSession*
     pfc_log_error("SetSessionToForwardDriverResult: Setting ctrl_id failed");
     return ReturnUtilResp(util_resp);
   }
+
+  SetNotifyControllerId(controller_id_);
+
   util_resp = TcClientSessionUtils::set_uint8(tmpsess, phase);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
     pfc_log_error("SetSessionToForwardDriverResult: Setting phase failed");
@@ -921,6 +1046,13 @@ TwoPhaseAudit::SendRequestToDriver() {
     oper = tclib::MSG_AUDIT_DRIVER_GLOBAL;
   }
 
+  if (TcMsg::GetAuditCancelFlag() == PFC_TRUE &&
+      opertype_ == tclib::MSG_AUDIT_VOTE &&
+      audit_type_ != TC_AUDIT_REALNETWORK) {
+    pfc_log_warn("%s Audit Cancelled during vote", __FUNCTION__);
+    return TCOPER_RET_AUDIT_CANCELLED;
+  }
+
   /*create UPLL/UPPL clientsessions to forward driver result*/
   ret_val = CreateSessionsToForwardDriverResult();
   if (PFC_EXPECT_TRUE(ret_val != TCOPER_RET_SUCCESS)) {
@@ -980,6 +1112,15 @@ TwoPhaseAudit::SendRequestToDriver() {
         return ReturnUtilResp(util_resp);
       }
     }
+
+    // Check if audit is cancelled at this time
+    if (TcMsg::GetAuditCancelFlag() == PFC_TRUE &&
+            audit_type_ != TC_AUDIT_REALNETWORK &&
+        opertype_ == tclib::MSG_AUDIT_VOTE) {
+      pfc_log_warn("%s Audit Cancelled during invoke", __FUNCTION__);
+      return TCOPER_RET_AUDIT_CANCELLED;
+    }
+
     pfc_log_info("notify %s - controller_count:%d",
                  channel_name.c_str(), controller_count);
     /*Invoke the session */
@@ -1032,8 +1173,22 @@ TwoPhaseAudit::SendRequestToDriver() {
       /*append channelname to handle failure*/
       abort_on_fail_.push_back(tc_driverid);
       ret_val = TCOPER_RET_SUCCESS;
+    } else if (resp == tclib::TC_CANCELLED_AUDIT &&
+               opertype_ ==  tclib::MSG_AUDIT_VOTE) {
+      TcOperations::SetAuditPhase(AUDIT_TRANSACTION_END);
+      pfc_log_info("%s TC_CANCELLED_AUDIT resp received from %s",
+                   __FUNCTION__, channel_name.c_str());
+      trans_result_ = tclib::TRANS_END_FAILURE;
+      audit_result_ = tclib::TC_AUDIT_CANCELLED;
+
+      abort_on_fail_.clear();
+      driverinfo_map_.clear();
+
+      ret_val = TCOPER_RET_AUDIT_CANCELLED;
+  
     } else if (PFC_EXPECT_TRUE(tclib::TC_FAILURE == resp) &&
                PFC_EXPECT_TRUE(opertype_ ==  tclib::MSG_AUDIT_VOTE)) {
+      TcOperations::SetAuditPhase(AUDIT_TRANSACTION_END);
       pfc_log_info("Failure response from %s", channel_name.c_str());
       trans_result_ = tclib::TRANS_END_FAILURE;
       audit_result_ = tclib::TC_AUDIT_FAILURE;
@@ -1063,6 +1218,15 @@ TwoPhaseAudit::SendRequestToDriver() {
       return ret_val;
     }
   }
+
+  // Check if audit is cancelled at this time
+  if (TcMsg::GetAuditCancelFlag() == PFC_TRUE &&
+          audit_type_ != TC_AUDIT_REALNETWORK &&
+      opertype_ == tclib::MSG_AUDIT_VOTE) {
+    pfc_log_warn("%s Audit Cancelled after invoke", __FUNCTION__);
+    return TCOPER_RET_AUDIT_CANCELLED;
+  }
+
   /*forward driver result to UPLL and UPPL*/
   pfc_log_info("Forwarding DRIVER RESULT to UPLL");
   ret_val = HandleDriverResultResponse(upll_sess_);
@@ -1153,8 +1317,21 @@ TwoPhaseAudit::SendRequest(std::string channel_name) {
       return TCOPER_RET_FAILURE;
     }
     ret_val = TCOPER_RET_SUCCESS;
+  } else if (resp == tclib::TC_CANCELLED_AUDIT &&
+             opertype_ == tclib::MSG_AUDIT_VOTE) {
+    TcOperations::SetAuditPhase(AUDIT_TRANSACTION_END);
+    pfc_log_info("%s Recived TC_CANCELLED_AUDIT from %s",
+                 __FUNCTION__, channel_name.c_str());
+    trans_result_ = tclib::TRANS_END_FAILURE;
+    audit_result_ = tclib::TC_AUDIT_CANCELLED;
+
+    abort_on_fail_.clear();
+
+    ret_val = TCOPER_RET_AUDIT_CANCELLED;
+
   } else if (PFC_EXPECT_TRUE(resp == tclib::TC_FAILURE) &&
              PFC_EXPECT_TRUE(opertype_ == tclib::MSG_AUDIT_VOTE)) {
+    TcOperations::SetAuditPhase(AUDIT_TRANSACTION_END);
     pfc_log_info("Failure response from %s",
                  channel_name.c_str() );
     /*transamit transaction end result in trans-end notification*/
@@ -1226,6 +1403,16 @@ TcOperRet TwoPhaseAudit::Execute() {
       pfc_log_error("channel_name is empty");
       return TCOPER_RET_FAILURE;
     }
+
+    if (TcMsg::GetAuditCancelFlag() == PFC_TRUE &&
+            audit_type_ != TC_AUDIT_REALNETWORK &&
+        opertype_ == tclib::MSG_AUDIT_VOTE) {
+      pfc_log_warn("%s AuditCancel flag is set. Stopping Audit process",
+                   __FUNCTION__);
+      ret_val = TCOPER_RET_AUDIT_CANCELLED;
+      break;
+    }
+
     ret_val = SendRequest(channel_name);
     if (PFC_EXPECT_TRUE(ret_val != TCOPER_RET_SUCCESS)) {
       abort_on_fail_.clear();
@@ -1241,6 +1428,13 @@ TcOperRet TwoPhaseAudit::Execute() {
       }
     }
   }
+
+  if (TcMsg::GetAuditCancelFlag() == PFC_TRUE &&
+          audit_type_ != TC_AUDIT_REALNETWORK &&
+      opertype_ == tclib::MSG_AUDIT_VOTE) {
+    return TCOPER_RET_AUDIT_CANCELLED;
+  }
+
   /*user might have given 'commit' without any config changes - ignore*/
   if (PFC_EXPECT_TRUE(ret_val == TCOPER_RET_SUCCESS) &&
       PFC_EXPECT_TRUE(driverinfo_map_.empty())) {

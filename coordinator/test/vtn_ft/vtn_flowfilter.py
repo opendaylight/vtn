@@ -302,9 +302,14 @@ def negative_vtn_flowfilter():
     exit(1)
 
   retval=flowfilter.update_flowfilter_entry('VtnOne', 'VTNFlowfilterOne', 'NegativeVTNFlowfilter')
-  if retval == 0:
+  if retval != 0:
     print "VTNFlowFilterEntry Negative test case  Failed at priority and dscp "
     print "Because at priority range up to 63 and dscp range up to 7 its more than its showing bad request so test has faild"
+    exit(1)
+
+  retval=flowfilter.validate_flowfilter_entry('VtnOne', 'VTNFlowfilterOne|NegativeVTNFlowfilter', presence='yes', position=0)
+  if retval != 0:
+    print "VTNFlowFilterEntry Updatation Validate Failed at Co-ordinator"
     exit(1)
 
   retval=flowfilter.delete_flowfilter_entry('VtnOne', 'VTNFlowfilterOne')
@@ -350,12 +355,15 @@ def negative_vtn_flowfilter():
   print "VTN->UPDATE FLOWFILTER TEST SUCCESS"
 
 
+
+
+
 # Main Block
 if __name__ == '__main__':
     print '*****VTN FLOWFILTER TESTS******'
-#    test_vtn_flowfilter()
+    test_vtn_flowfilter()
     print '*****UPDATE FLOWFILTER TESTS****'
-#    update_vtn_flowfilter()
+    update_vtn_flowfilter()
     print '*******NEGATIVE FLOWFILTER TESTS****'
     negative_vtn_flowfilter()
 else:

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -9,7 +9,7 @@
 
 #include <pfcxx/module.hh>
 #include <pfcxx/synch.hh>
-#include <../../stub/tclib_module/libtc_common.hh>
+#include "tclib_module/libtc_common.hh"
 #include <unc/tc/external/tc_services.h>
 
 int pfc_ipcsrv_getargtype(pfc_ipcsrv_t *PFC_RESTRICT srv,
@@ -61,21 +61,20 @@ int getArgType(uint32_t index, pfc_ipctype_t &type) {
 }
 
 TcUtilRet
-TcServerSessionUtils::update_key_list_handler(uint32_t index,
-                                              uint32_t* data) {
-  pfc_log_info("the index=%d", index);
+TcServerSessionUtils::update_key_list_handler_uint64(uint32_t index,
+                                              uint64_t& data) {
   if (return_type_ == RETURN_SUCCESS) {
     if (( index == 5) || (index == 8))
-      *data = 0;  // resp_code
+      data = 0;  // resp_code
     if (index == 6)
-      *data = num_of_errors_;
+      data = num_of_errors_;
     if (index == 9)
-      *data = 1;
+      data = 1;
 
     if (index == 7)
-      *data = 20;
+      data = 20;
     if (index == 10)
-      *data = 21;
+      data = 21;
     return TCUTIL_RET_SUCCESS;
   }
 
@@ -92,24 +91,55 @@ TcServerSessionUtils::update_key_list_handler(uint32_t index,
   }
 
   if ((return_type_ == RETURN_FAILURE_3) && (index == 10)) {
-    *data = 21;
+    data = 21;
     return TCUTIL_RET_FAILURE;
   }
   return TCUTIL_RET_SUCCESS;
 }
 
-TcUtilRet TcServerSessionUtils::get_uint64(
-        pfc::core::ipc::ServerSession* ssess,
-        uint32_t index,
-        uint64_t* data) {
-return TCUTIL_RET_SUCCESS;
+TcUtilRet
+TcServerSessionUtils::update_key_list_handler_uint32(uint32_t index,
+                                              uint32_t& data) {
+  if (return_type_ == RETURN_SUCCESS) {
+    if (( index == 5) || (index == 8))
+      data = 0;  // resp_code
+    if (index == 6)
+      data = num_of_errors_;
+    if (index == 9)
+      data = 1;
+
+    if (index == 7)
+      data = 20;
+    if (index == 10)
+      data = 21;
+    return TCUTIL_RET_SUCCESS;
+  }
+
+  if ((return_type_ == RETURN_FAILURE_1) && (index == 5)) {
+    return TCUTIL_RET_FAILURE;
+  }
+
+  if ((return_type_ == RETURN_FAILURE_2) && (index == 6)) {
+    return TCUTIL_RET_FAILURE;
+  }
+
+  if ((return_type_ == RETURN_FAILURE_3) && (index == 7)) {
+    return TCUTIL_RET_FAILURE;
+  }
+
+  if ((return_type_ == RETURN_FAILURE_3) && (index == 10)) {
+    data = 21;
+    return TCUTIL_RET_FAILURE;
+  }
+  return TCUTIL_RET_SUCCESS;
 }
 
 TcUtilRet TcServerSessionUtils::get_uint32(
     pfc::core::ipc::ServerSession* ssess,
     uint32_t index,
     uint32_t* data) {
-
+  TcUtilRet ret = TCUTIL_RET_SUCCESS; 
+  uint32_t temp_data = 0;
   switch (read_type_) {
     case LIB_NOTIFY_SESSION:
     case LIB_ABORT_CANDIDATE:
@@ -173,8 +203,9 @@ TcUtilRet TcServerSessionUtils::get_uint32(
         return TCUTIL_RET_FAILURE;
 
     case LIB_UPDATE_KEY_LIST:
-      pfc_log_info("About to call ...");
-      return update_key_list_handler(index, data);
+      ret = update_key_list_handler_uint32(index, temp_data);
+      *data = temp_data;
+      return ret;
 
     case LIB_AUDIT_DRIVER_VOTE_GLOBAL:
       if (return_type_ == RETURN_FAILURE_1 ||
@@ -186,6 +217,92 @@ TcUtilRet TcServerSessionUtils::get_uint32(
       return TCUTIL_RET_SUCCESS;
   }
 }
+
+TcUtilRet TcServerSessionUtils::get_uint64(
+    pfc::core::ipc::ServerSession* ssess,
+    uint32_t index,
+    uint64_t* data) {
+
+  uint64_t temp_data = 0;
+  TcUtilRet ret = TCUTIL_RET_SUCCESS; 
+  switch (read_type_) {
+    case LIB_NOTIFY_SESSION:
+    case LIB_ABORT_CANDIDATE:
+      if (return_type_ == RETURN_SUCCESS) {
+        if (index == 0)
+          *data = SESSION_ID;
+        if (index == 1)
+          *data = CONFIG_ID;
+        return TCUTIL_RET_SUCCESS;
+      }
+      if ((return_type_ == RETURN_FAILURE_1) && (index == 0))
+        return TCUTIL_RET_FAILURE;
+
+      if ((return_type_ == RETURN_FAILURE_2) && (index == 1))
+        return TCUTIL_RET_FAILURE;
+      return TCUTIL_RET_SUCCESS;
+
+    case LIB_COMMIT_TRANS_START:
+    case LIB_COMMIT_DRIVER_VOTE_GLOBAL:
+    case LIB_COMMIT_GLOBAL_ABORT:
+    case LIB_COMMIT_DRIVER_RESULT:
+      if (return_type_ == RETURN_SUCCESS) {
+        if (index == 1)
+          *data = SESSION_ID;
+        if (index == 2)
+          *data = CONFIG_ID;
+        /* below two fields are for driver result alone */
+        if (index == 5)
+          *data = 0;  // resp_code
+        if (index == 6)
+          *data = 0;  // num of errors
+        return TCUTIL_RET_SUCCESS;
+      }
+      if ((return_type_ == RETURN_FAILURE_1) && (index == 1))
+        return TCUTIL_RET_FAILURE;
+
+      if ((return_type_ == RETURN_FAILURE_2) && (index == 2))
+        return TCUTIL_RET_FAILURE;
+
+      if ((return_type_ == RETURN_FAILURE_4) && (index == 5))
+        return TCUTIL_RET_FAILURE;
+      return TCUTIL_RET_SUCCESS;
+
+    case LIB_AUDIT_START:
+    case LIB_AUDIT_GLOBAL_ABORT:
+    case LIB_AUDIT_DRIVER_RESULT:
+      if (return_type_ == RETURN_SUCCESS) {
+        if (index == 1)
+          *data = SESSION_ID;
+        return TCUTIL_RET_SUCCESS;
+      }
+      if ((return_type_ == RETURN_FAILURE_1) && (index == 1))
+        return TCUTIL_RET_FAILURE;
+      return TCUTIL_RET_SUCCESS;
+
+    case LIB_COMMON:
+      if (return_type_ == RETURN_SUCCESS) {
+        return TCUTIL_RET_SUCCESS;
+      }
+      if (return_type_ == RETURN_FAILURE)
+        return TCUTIL_RET_FAILURE;
+
+    case LIB_UPDATE_KEY_LIST:
+      ret = update_key_list_handler_uint64(index, temp_data);
+      *data = temp_data;
+      return ret;
+
+    case LIB_AUDIT_DRIVER_VOTE_GLOBAL:
+      if (return_type_ == RETURN_FAILURE_1 ||
+          return_type_ == RETURN_FAILURE_3)
+        return TCUTIL_RET_FAILURE;
+
+      return TCUTIL_RET_SUCCESS;
+    default:
+      return TCUTIL_RET_SUCCESS;
+  }
+}
+
 
 
 TcUtilRet TcServerSessionUtils::get_uint8(
@@ -476,7 +593,6 @@ TcUtilRet TcServerSessionUtils::set_uint64(
 
   return TCUTIL_RET_SUCCESS;
 }
-
 
 
 TcUtilRet TcServerSessionUtils::set_struct(

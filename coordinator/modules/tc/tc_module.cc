@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -26,7 +26,7 @@ TcModule::TcModule(const pfc_modattr_t *mattr)
                      read_q_(NULL),
                      audit_q_(NULL) {
   max_failover_instance_ = 0;
-  simultaneous_read_write_allowed_ = PFC_TRUE;
+  secondary_wait_time_for_cancelled_audit_ = 30;
 }
 
 /**
@@ -41,16 +41,22 @@ TcModule::~TcModule() {}
 void TcModule::collect_db_params() {
   pfc::core::ModuleConfBlock tc_db_block(tc_conf_block);
 
-  dsn_name =
+  act_dsn_name =
       tc_db_block.getString(tc_conf_db_dsn_name_param,
                             tc_def_db_dsn_name_value.c_str());
+  dsn_name = act_dsn_name;
+  sby_dsn_name =
+      tc_db_block.getString(tc_conf_sby_dsn_name_param,
+                            tc_def_sby_dsn_name_value.c_str());
 
   max_failover_instance_ = tc_db_block.getUint32(max_failover_instance_param,
                                                 max_failover_instance_value);
+  secondary_wait_time_for_cancelled_audit_ = tc_db_block.getUint32(
+                               secondary_wait_time_for_cancelled_audit_param,
+                               secondary_wait_time_for_cancelled_audit_value);
 
-  simultaneous_read_write_allowed_ = tc_db_block.getBool(
-                                         simultaneous_read_write_allowed_param,
-                                         simultaneous_read_write_allowed_value);
+  TcAuditOperations::SetSecondaryWaitTime(
+                                    secondary_wait_time_for_cancelled_audit_);
 }
 
 /**
@@ -115,11 +121,9 @@ pfc_bool_t TcModule::init() {
   collect_db_params();
   TcDbHandler tc_db_hdlr_(dsn_name);
   if (validate_tc_db(&tc_db_hdlr_) == PFC_FALSE) {
+    pfc_log_error("%s validate_tc_db failed", __FUNCTION__);
     return PFC_FALSE;
   }
-
-  tc_lock_.TcInitWRLock(simultaneous_read_write_allowed_);
-
   return PFC_TRUE;
 }
 
@@ -131,7 +135,7 @@ pfc_bool_t TcModule::HandleStart() {
   TcLockRet ret=
     tc_lock_.GetLock(0,
                     TC_ACQUIRE_READ_LOCK_FOR_STATE_TRANSITION,
-                    TC_WRITE_NONE);
+                    TC_WRITE_NONE); 
   if (PFC_EXPECT_FALSE(ret != TC_LOCK_SUCCESS)) {
     pfc_log_error("start:Failed to Acquire State Transition Lock");
     return PFC_FALSE;
@@ -155,6 +159,14 @@ pfc_bool_t TcModule::HandleStart() {
 pfc_bool_t TcModule::HandleStop() {
   pfc_log_info("%s Stop TC", __FUNCTION__);
   tc_lock_.TcUpdateUncState(TC_STOP);
+  // stopping running session 
+  TcClientSessionUtils::tc_session_cancel_all_sessions();
+  // Stop any cond_wait audit threads
+  TcAuditOperations::SignalPrimaryWaitingAudit();
+  TcAuditOperations::SignalSecondaryWaitingAudit();
+  // Release any config or candidate requests waiting in queue
+  TcConfigOperations::ClearConfigAcquisitionQueue();
+  TcCandidateOperations::ClearCandidateQueue();
   tc_lock_.ResetTcGlobalDataOnStateTransition();
   pfc_log_info("%s TC Stop completed", __FUNCTION__);
   return PFC_TRUE;
@@ -174,6 +186,10 @@ pfc_bool_t TcModule::HandleAct(pfc_bool_t is_switch) {
     pfc_log_fatal("act: Unable to Acquire Lock");
     return PFC_FALSE;
   }
+
+  // Set DSN name with act_dsn_name in case of ACT
+  dsn_name = act_dsn_name;
+
   tc_lock_.ResetTcGlobalDataOnStateTransition();
   /*clear alarms in transition*/
   pfc::alarm::pfc_alarm_clear(UNCCID_TC);
@@ -195,10 +211,14 @@ pfc_bool_t TcModule::HandleAct(pfc_bool_t is_switch) {
       if (PFC_EXPECT_TRUE(TCOPER_RET_SUCCESS == tc_db_hdlr_->GetRecoveryTable(
                   &startup_.database_type_,
                   &startup_.fail_oper_,
+                  &startup_.config_mode_,
+                  &startup_.vtn_name_,
                   &failover_instance))) {
         /*increment and update failover instance*/
         tc_db_hdlr_->UpdateRecoveryTable(startup_.database_type_,
                                          startup_.fail_oper_,
+                                         startup_.config_mode_,
+                                         startup_.vtn_name_,
                                          ++failover_instance);
         startup_.audit_db_fail_ = PFC_FALSE;
 
@@ -231,14 +251,14 @@ pfc_bool_t TcModule::HandleAct(pfc_bool_t is_switch) {
                                TC_RELEASE_READ_LOCK_FOR_STATE_TRANSITION,
                                TC_WRITE_NONE);
     if (PFC_EXPECT_FALSE(ret != TC_LOCK_SUCCESS)) {
-      pfc_log_fatal("Cannot Release Lock Instance");
+      pfc_log_error("Cannot Release Lock Instance");
       return PFC_FALSE;
     }
     return PFC_FALSE;
   }
 
   // Set back the state to ACT
-  TcConfigOperations::SetStateChangedToSby(PFC_FALSE);
+  TcOperations::SetStateChangedToSby(PFC_FALSE);
 
   ret = tc_lock_.ReleaseLock(0,
                              0,
@@ -248,6 +268,12 @@ pfc_bool_t TcModule::HandleAct(pfc_bool_t is_switch) {
     pfc_log_fatal("Cannot Release Lock Instance");
     return PFC_FALSE;
   }
+
+  // Startup op completed successfully. Release any waiting lock...
+  if (tc_lock_.CanWriteLock()) {
+    TcCandidateOperations::HandleCandidateRelease();
+  }
+
   return PFC_TRUE;
 }
 
@@ -257,9 +283,14 @@ pfc_bool_t TcModule::HandleAct(pfc_bool_t is_switch) {
  */
 TcOperStatus TcModule::HandleConfigRequests(pfc::core::ipc::ServerSession*
                                             oper_sess) {
+  TcDbHandler* tc_db_hdlr_ = new TcDbHandler(dsn_name);
+  if (tc_db_hdlr_ == NULL) {
+    pfc_log_fatal("%s allocating DB handler failed", __FUNCTION__);
+    return TC_OPER_FAILURE;
+  }
   TcConfigOperations tc_config_oper(&tc_lock_,
                                     oper_sess,
-                                    NULL,
+                                    tc_db_hdlr_,
                                     tc_channels_);
   return tc_config_oper.Dispatch();
 }
@@ -295,7 +326,19 @@ TcOperStatus TcModule::HandleReadRequests(pfc::core::ipc::ServerSession*
                                 read_q_);
   return tc_read_oper.Dispatch();
 }
+/**
+ *  @brief HandleReadStatusRequests to handle incoming read requests
+ *  @param[in]  sess Session invoking the service.
+ */  
+TcOperStatus TcModule::HandleReadStatusRequests(pfc::core::ipc::ServerSession*
+                                                 oper_sess) {
+  TcReadStatusOperations tc_read_status_oper(&tc_lock_,
+                                             oper_sess,
+                                             NULL,
+                                             tc_channels_);
 
+  return tc_read_status_oper.Dispatch();
+}
 /**
  * @brief HandleAutoSaveRequests to handle incoming Auto Save requests
  * @param[in]  sess Session invoking the service.
@@ -362,21 +405,84 @@ TcOperStatus TcModule::HandleAuditRequests(pfc::core::ipc::ServerSession*
 }
 
 /**
- * @brief Check if Config Sessin Exists and release the same.
+ * @brief release all config session.
  */
 TcOperStatus TcModule::ReleaseConfigSession() {
-  uint32_t config_id, session_id;
-  TcApiRet ret(TcGetConfigSession(&session_id, &config_id));
+  TcOperStatus    ret = TC_OPER_SUCCESS;
+  TcConfigNameMap::const_iterator cit;
+
+  TcConfigNameMap tc_config_name_map;
+  tc_config_name_map = tc_lock_.GetConfigMap();
+
+  cit = tc_config_name_map.begin();
+  for(; cit != tc_config_name_map.end(); cit++) {
+    if ((cit->second).is_taken) {
+      TcDbHandler* tc_db_hdlr_ = new TcDbHandler(dsn_name);
+      if (tc_db_hdlr_ == NULL) {
+        pfc_log_fatal("%s allocating DB handler failed", __FUNCTION__);
+        return TC_OPER_FAILURE;
+      }
+      TcConfigOperations tc_config_oper(&tc_lock_,
+                                        NULL,
+                                        tc_db_hdlr_,
+                                        tc_channels_);
+
+      tc_config_oper.session_id_  = (cit->second).session_id;
+      tc_config_oper.config_id_   = (cit->second).config_id;
+
+      if (cit->first == "global-mode")  {
+        tc_config_oper.tc_mode_ = TC_CONFIG_GLOBAL;
+      } else if (cit->first == "real-mode") {
+          tc_config_oper.tc_mode_ = TC_CONFIG_REAL;
+      } else if (cit->first == "virtual-mode")  {
+          tc_config_oper.tc_mode_ = TC_CONFIG_VIRTUAL;
+      } else  {
+          tc_config_oper.tc_mode_ = TC_CONFIG_VTN;
+          tc_config_oper.vtn_name_ = cit->first;
+      }
+
+      tc_config_oper.tc_oper_ = TC_OP_CONFIG_RELEASE;
+      ret = tc_config_oper.Dispatch();
+
+      pfc_log_info("%s (All) config_id[%u] sess_id[%u], config_mode[%s],"
+                   "vtn-name[%s] return %d", __FUNCTION__,
+                   tc_config_oper.config_id_, tc_config_oper.session_id_,
+                   (cit->first).c_str(), (cit->first).c_str(), ret);
+    }
+  }
+  return ret;
+}
+
+/**
+ * @brief Check if Config Session Exists and release the same.
+ */
+TcOperStatus TcModule::ReleaseConfigSession(uint32_t session_id) {
+  uint32_t      config_id;
+  TcConfigMode  config_mode;
+  std::string   vtn_name;
+  TcApiRet ret(TcGetConfigSession(session_id, config_id, 
+                                  config_mode, vtn_name));
   if ( ret != TC_API_COMMON_SUCCESS ) {
   // Config Session Not Present Not needed to release
+    pfc_log_warn("%s Session[%u] does not exist", __FUNCTION__, session_id);
        return TC_OPER_SUCCESS;
   }
+  TcDbHandler* tc_db_hdlr_ = new TcDbHandler(dsn_name);
+  if (tc_db_hdlr_ == NULL) {
+    pfc_log_fatal("%s allocating DB handler failed", __FUNCTION__);
+    return TC_OPER_FAILURE;
+  }
+
   TcConfigOperations tc_config_oper(&tc_lock_,
                                     NULL,
-                                    NULL,
+                                    tc_db_hdlr_,
                                     tc_channels_);
   tc_config_oper.session_id_ = session_id;
   tc_config_oper.config_id_ = config_id;
+  tc_config_oper.tc_mode_ = config_mode;
+  if (config_mode == TC_CONFIG_VTN) {
+    tc_config_oper.vtn_name_ = vtn_name;
+  }
   tc_config_oper.tc_oper_ = TC_OP_CONFIG_RELEASE;
   return tc_config_oper.Dispatch();
 }
@@ -403,6 +509,10 @@ pfc_ipcresp_t TcModule::ipcService(pfc::core::ipc::ServerSession& sess,
   case TC_READ_ACCESS_SERVICES:
   {
     return HandleReadRequests(oper_sess);
+  }
+  case TC_READ_STATUS_SERVICES:
+  {
+    return HandleReadStatusRequests(oper_sess);
   }
   case TC_AUTO_SAVE_SERVICES:
   {
@@ -433,6 +543,7 @@ pfc_bool_t TcModule::fini() {
   read_q_ = NULL;
   delete audit_q_;
   audit_q_ = NULL;
+  pfc_log_info("TC fini completed");
   return PFC_TRUE;
 }
 
@@ -441,23 +552,24 @@ pfc_bool_t TcModule::fini() {
  * @param[out] session_id of config session.
  * @param[out] config_id of the config session.
  */
-TcApiRet TcModule::TcGetConfigSession(uint32_t* session_id,
-                                      uint32_t* config_id ) {
-  switch (tc_lock_.GetConfigIdSessionId(session_id, config_id)) {
+TcApiRet TcModule::TcGetConfigSession(uint32_t session_id,
+                                      uint32_t& config_id,
+                                      TcConfigMode& tc_mode,
+                                      std::string& vtn_name) {
+  switch (tc_lock_.GetConfigData(session_id, config_id, tc_mode, vtn_name)) {
   case TC_LOCK_INVALID_PARAMS:
     return TC_INVALID_PARAM;
 
   case TC_LOCK_INVALID_UNC_STATE:
     return TC_INVALID_UNC_STATE;
 
-  case TC_LOCK_NO_CONFIG_SESSION_EXIST:
-    return TC_NO_CONFIG_SESSION;
-
   case TC_LOCK_SUCCESS:
     return TC_API_COMMON_SUCCESS;
 
+  case TC_LOCK_INVALID_SESSION_ID:
+  case TC_LOCK_NO_CONFIG_SESSION_EXIST:
   default:
-    return TC_API_COMMON_FAILURE;
+    return TC_NO_CONFIG_SESSION;
   }
 }
 
@@ -502,7 +614,7 @@ TcApiRet TcModule::TcReleaseSession(uint32_t session_id) {
   // Release the Config Session and notify UPLL/UPPL
   case TC_CONFIG_NO_NOTIFY_PROGRESS:
   {
-    if ( ReleaseConfigSession() == TC_OPER_SUCCESS ) {
+    if ( ReleaseConfigSession(session_id) == TC_OPER_SUCCESS ) {
       return TC_API_COMMON_SUCCESS;
     }
     return TC_INVALID_PARAM;

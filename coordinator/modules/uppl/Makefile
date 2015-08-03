@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2014 NEC Corporation
+# Copyright (c) 2012-2015 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -29,12 +29,14 @@ CXX_SOURCES	= physicallayer.cc \
 		itc_kt_root.cc \
 		itc_kt_controller.cc \
 		itc_kt_dataflow.cc \
+		itc_kt_dataflow_v2.cc \
 		itc_kt_ctr_dataflow.cc \
 		itc_kt_ctr_domain.cc \
 		itc_kt_logicalport.cc \
 		itc_kt_logical_member_port.cc \
 		itc_kt_switch.cc \
 		itc_kt_port.cc \
+		itc_kt_port_neighbor.cc \
 		itc_kt_link.cc \
 		itc_kt_boundary.cc \
 		itc_transaction_request.cc  \

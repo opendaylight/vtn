@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -527,7 +527,7 @@ TEST_F(VlanMapTest, vlanmapVal_validflag_novalue_opcreate) {
 
   uint32_t op = UNC_OP_CREATE;
   vlanmap_val->valid[UPLL_IDX_VLAN_ID_VM] = UNC_VF_VALID_NO_VALUE;
-  EXPECT_EQ(UPLL_RC_SUCCESS, obj.ValidateVlanmapValue(vlanmap_val, op));
+  EXPECT_EQ(UNC_UPLL_RC_ERR_CFG_SYNTAX, obj.ValidateVlanmapValue(vlanmap_val, op));
 }
 TEST_F(VlanMapTest, vlanmapVal_validflag_novalue_opupdate) {
 /* Retrun success if vlanmapvalue valid flag is UNC_VF_VALID_NO_VALUE
@@ -537,7 +537,7 @@ TEST_F(VlanMapTest, vlanmapVal_validflag_novalue_opupdate) {
 
   uint32_t op = UNC_OP_UPDATE;
   vlanmap_val->valid[UPLL_IDX_VLAN_ID_VM] = UNC_VF_VALID_NO_VALUE;
-  EXPECT_EQ(UPLL_RC_SUCCESS, obj.ValidateVlanmapValue(vlanmap_val, op));
+  EXPECT_EQ(UNC_UPLL_RC_ERR_CFG_SYNTAX, obj.ValidateVlanmapValue(vlanmap_val, op));
 }
 TEST_F(VlanMapTest, vlanmapVal_validflag_Invalid) {
 /* Retrun success if vlanmapvalue valid flag is other than
@@ -705,7 +705,7 @@ TEST_F(VlanMapTest, valSt_Notnull_op_create_dt_candidate) {
   req->datatype = UPLL_DT_CANDIDATE;
   vlanmap_val->valid[UPLL_IDX_VLAN_ID_VM] = UNC_VF_VALID_NO_VALUE;  /*validate
                                                                 vlanmap value */
-  EXPECT_EQ(UPLL_RC_SUCCESS, obj.ValidateMessage(req, ikey));
+  EXPECT_EQ(UNC_UPLL_RC_ERR_CFG_SYNTAX, obj.ValidateMessage(req, ikey));
 }
 TEST_F(VlanMapTest, valSt_Notnull_op_update_dt_candidate) {
 /*Returning success if vlammapvalue is valid for op update and dt candidate*/
@@ -728,7 +728,7 @@ TEST_F(VlanMapTest, valSt_Notnull_op_update_dt_candidate) {
   req->datatype = UPLL_DT_CANDIDATE;
   vlanmap_val->valid[UPLL_IDX_VLAN_ID_VM] = UNC_VF_VALID_NO_VALUE;  /* validate
                                                                 vlanmap value */
-  EXPECT_EQ(UPLL_RC_SUCCESS, obj.ValidateMessage(req, ikey));
+  EXPECT_EQ(UNC_UPLL_RC_ERR_CFG_SYNTAX, obj.ValidateMessage(req, ikey));
 }
 TEST_F(VlanMapTest, valSt_Notnull_op_update_dt_others) {
 /*Returning error no such instance if vlammapvalue is valid for op
@@ -1810,7 +1810,7 @@ TEST_F(VlanMapTest, ikey_NotNULL_vbrkey_valid) {
   key_vbr *vbr_key = reinterpret_cast<key_vbr *>(ikey->get_key());
   EXPECT_STREQ("VTN", reinterpret_cast<char *>(vbr_key->vtn_key.vtn_name));
   EXPECT_STREQ("VBRIDGE", reinterpret_cast<char *>(vbr_key->vbridge_name));
-  EXPECT_EQ(11, okey->get_key_type());  //parent key is 18-UNC_KT_VBRIDGE
+  EXPECT_EQ(16, okey->get_key_type());  //parent key is 18-UNC_KT_VBRIDGE
 }
 /*=========================*DupConfigKeyVal*==================================*/
 TEST_F(VlanMapTest, req_Null) {
@@ -1918,8 +1918,7 @@ TEST_F(VlanMapTest, ikey_getkeyNull ){
 TEST_F(VlanMapTest, ikeyNotNull_Novtnname) {
 /* Return error when there is no vtn name */
   VlanMapMoMgr obj;
-  key_rename_vnode_info_t *key_rename = ZALLOC_TYPE(key_rename_vnode_info_t); 
-  
+  key_rename_vnode_info_t *key_rename = ZALLOC_TYPE(key_rename_vnode_info_t);
   memcpy(&(key_rename->old_unc_vtn_name), "", kMaxLenVtnName);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VBR_VLANMAP,
                                       IpctSt::kIpcStKeyVlanMap, key_rename);
@@ -1929,10 +1928,9 @@ TEST_F(VlanMapTest, ikeyNotNull_Novtnname) {
 
 
 /*TEST_F(VlanMapTest, ikeyNotNull_copyvtnname) {
- Return success after copytoconfig key is done 
+ Return success after copytoconfig key is done
   VlanMapMoMgr obj;
   key_rename_vnode_info_t *key_rename = ZALLOC_TYPE(key_rename_vnode_info_t );
-  
   memcpy(&(key_rename->old_unc_vtn_name), "VTN", kMaxLenVtnName);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VBR_VLANMAP,
                                        IpctSt::kIpcStKeyVlanMap, key_rename);
@@ -1990,6 +1988,7 @@ TEST_F(VlanMapTest, Keytype_Notvalid) {
   EXPECT_STREQ(NULL, reinterpret_cast<char *>
                                     (obj.GetControllerId(ck_vbr, dt_type, dmi)));
 }
+/*
 TEST_F(VlanMapTest, Keytype_valid_ReadDb_error) {
 // Return Null when keytype is valid but ReadConfigDb returns error
   VlanmapStub obj;
@@ -2001,6 +2000,7 @@ TEST_F(VlanMapTest, Keytype_valid_ReadDb_error) {
   EXPECT_STREQ(NULL, reinterpret_cast<char *>
                                     (obj.GetControllerId(ck_vbr, dt_type, dmi)));
 }
+
 TEST_F(VlanMapTest, Keytype_valid_ReadDb_Success_valNull) {
 // Return Null when keytype is valid, ReadConfigDb returns Success
 // but val is Null
@@ -2014,8 +2014,8 @@ TEST_F(VlanMapTest, Keytype_valid_ReadDb_Success_valNull) {
                                     (obj.GetControllerId(ck_vbr, dt_type, dmi)));
 }
 TEST_F(VlanMapTest, Keytype_valid_ReadDb_Success_valNotNull) {
-/* Return controllerid when keytype is valid, ReadconfigDb returns success
-                                                       when val is ot null */
+// Return controllerid when keytype is valid, ReadconfigDb returns success
+                                                      // when val is ot null 
   VlanmapStub obj;
   val_vbr *vbr_val = ZALLOC_TYPE(val_vbr );
   ConfigVal *cfg_val = new ConfigVal(IpctSt::kIpcStValVbr, vbr_val);
@@ -2029,6 +2029,7 @@ TEST_F(VlanMapTest, Keytype_valid_ReadDb_Success_valNotNull) {
   EXPECT_STREQ(NULL, reinterpret_cast<char *>
                                     (obj.GetControllerId(ck_vbr, dt_type, dmi)));
 }
+*/
 /*====================*ValidateAttribute*=================================== */
 TEST_F(VlanMapTest, iKey_NULL) {
 /* Return error when ikey is null */
@@ -2728,8 +2729,9 @@ TEST_F(VlanMapTest, val_vlan_NULL) {
 TEST_F(VlanMapTest, return_success) {
   VlanMapMoMgr obj;
   ConfigKeyVal *ikey = NULL;
-  upll_keytype_datatype_t dt_type = UPLL_DT_CANDIDATE;
+  //upll_keytype_datatype_t dt_type = UPLL_DT_CANDIDATE;
   DalDmlIntf *dmi = NULL;
-EXPECT_EQ(UPLL_RC_SUCCESS, obj.IsReferenced(ikey, dt_type, dmi));
+  IpcReqRespHeader *req = NULL;
+EXPECT_EQ(UPLL_RC_SUCCESS, obj.IsReferenced(req, ikey, dmi));
 }
 

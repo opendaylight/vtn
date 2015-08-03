@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -71,9 +71,8 @@ class VtnFlowFilterEntryMoMgr: public MoMgrImpl {
     * @retval  UPLL_RC_SUCCESS  Successful completion.
     * @retval  UPLL_RC_ERR      Specific Error code.
     * */
-    upll_rc_t IsReferenced(ConfigKeyVal *ikey,
-                        upll_keytype_datatype_t dt_type,
-                        DalDmlIntf *dmi);
+    upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
+                           DalDmlIntf *dmi);
     /**
      * @brief  Method to compare to keys
      *
@@ -109,7 +108,7 @@ class VtnFlowFilterEntryMoMgr: public MoMgrImpl {
      * @retval  FALSE  Failure
      **/
     bool IsValidKey(void *key,
-                    uint64_t index);
+                    uint64_t index, MoMgrTables tbl = MAINTBL);
     /**
     * @Brief Validates the syntax of the specified key and value structure
     *        for KT_VTN_FLOWFILTER_ENTRY keytype
@@ -420,7 +419,8 @@ class VtnFlowFilterEntryMoMgr: public MoMgrImpl {
     * * */
     upll_rc_t TxCopyCandidateToRunning(unc_key_type_t keytype,
                                   CtrlrCommitStatusList *ctrlr_commit_status,
-                                  DalDmlIntf *dmi);
+                                  DalDmlIntf *dmi, TcConfigMode config_mode,
+                                  string vtn_name);
 
     /**
     * @brief  This method used to update the configstatus in Db during
@@ -536,7 +536,8 @@ class VtnFlowFilterEntryMoMgr: public MoMgrImpl {
                                         unc_keytype_operation_t op,
                                         upll_keytype_datatype_t dt_type,
                                         DalDmlIntf *dmi,
-                                        uint8_t flag);
+                                        uint8_t flag,
+                                        TcConfigMode config_mode);
      /**
      * @brief  Method used for GetParentConfigKey Operation.
      *
@@ -558,7 +559,7 @@ class VtnFlowFilterEntryMoMgr: public MoMgrImpl {
      *
      * @retval  UPLL_RC_SUCCESS      Successfull completion.
      * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
-     * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists 
+     * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists
      * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
      */
 
@@ -569,7 +570,9 @@ class VtnFlowFilterEntryMoMgr: public MoMgrImpl {
   upll_rc_t UpdateFlowListInCtrl(ConfigKeyVal *ikey,
                                  upll_keytype_datatype_t dt_type,
                                  unc_keytype_operation_t op,
-                                 DalDmlIntf* dmi);
+                                 DalDmlIntf* dmi,
+                                 TcConfigMode config_mode,
+                                 string name);
   upll_rc_t IsNWMReferenced(ConfigKeyVal *ikey,
                          DalDmlIntf *dmi);
 
@@ -651,28 +654,33 @@ upll_rc_t UpdateControllerTable(
     ConfigKeyVal *ikey, unc_keytype_operation_t op,
     upll_keytype_datatype_t dt_type,
     DalDmlIntf *dmi,
-    std::list<controller_domain_t> list_ctrlr_dom);
+    std::list<controller_domain_t> list_ctrlr_dom,
+    TcConfigMode config_mode,
+    string vtn_name);
 
 upll_rc_t UpdateMainTbl(ConfigKeyVal *vtn_ffe_key,
       unc_keytype_operation_t op, uint32_t driver_result,
       ConfigKeyVal *nreq, DalDmlIntf *dmi);
 
-  upll_rc_t DeleteChildMo(IpcReqRespHeader *req,
+/*  upll_rc_t DeleteChildMo(IpcReqRespHeader *req,
                         ConfigKeyVal *ikey,
-                        DalDmlIntf *dmi);
+                        DalDmlIntf *dmi);*/
 
   upll_rc_t IsFlowListConfigured(
-      const char* flowlist_name, DalDmlIntf *dmi);
+      const char* flowlist_name, upll_keytype_datatype_t dt_type,
+      DalDmlIntf *dmi);
 
   upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
                               upll_keytype_datatype_t dt_type,
-                              DalDmlIntf *dmi);
+                              DalDmlIntf *dmi,
+                              TcConfigMode config_mode,
+                              string vtn_name);
 
   upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
   upll_rc_t UpdateVnodeVal(ConfigKeyVal *ikey,
                            DalDmlIntf *dmi,
                            upll_keytype_datatype_t data_type,
-                            bool &no_rename);
+                           bool &no_rename);
 
   bool FilterAttributes(void *&val1,
                         void *val2,
@@ -685,42 +693,43 @@ upll_rc_t UpdateMainTbl(ConfigKeyVal *vtn_ffe_key,
       unc_keytype_configstatus_t current_cs,
       unc_keytype_configstatus_t current_ctrlr_cs);
 
-   upll_rc_t IsRenamed(ConfigKeyVal *ikey,
+  upll_rc_t IsRenamed(ConfigKeyVal *ikey,
                      upll_keytype_datatype_t dt_type,
                      DalDmlIntf *dmi,
                      uint8_t &rename);
-   upll_rc_t
-   SetVtnFFEntryConsolidatedStatus(ConfigKeyVal *ikey,
-                                   uint8_t *ctrlr_id,
-                                   DalDmlIntf *dmi);  
+  upll_rc_t
+  SetVtnFFEntryConsolidatedStatus(ConfigKeyVal *ikey,
+                                  uint8_t *ctrlr_id,
+                                  DalDmlIntf *dmi);
 
-    upll_rc_t GetFlowlistConfigKey(
+  upll_rc_t GetFlowlistConfigKey(
           const char *flowlist_name, ConfigKeyVal *&okey,
           DalDmlIntf *dmi);
 
-    upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
+  upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
           DalDmlIntf *dmi,
           IpcReqRespHeader *req);
 
-   bool CompareValidVal(void *&val1, void *val2,
-                        void *val3, bool audit);
-   upll_rc_t DecRefCountInFLCtrlTbl(ConfigKeyVal *ffe_imkey, DalDmlIntf *dmi);
+  bool CompareValidVal(void *&val1, void *val2,
+                       void *val3, bool audit);
+  upll_rc_t DecRefCountInFLCtrlTbl(ConfigKeyVal *ffe_imkey, DalDmlIntf *dmi,
+                                   TcConfigMode config_mode, string vtn_name);
 
-   bool IsAllAttrInvalid(val_vtn_flowfilter_entry_t *val);  
+  bool IsAllAttrInvalid(val_vtn_flowfilter_entry_t *val);
 
-   upll_rc_t GetOperation(uuc::UpdateCtrlrPhase phase,
-                          unc_keytype_operation_t &op);
+  upll_rc_t GetOperation(uuc::UpdateCtrlrPhase phase,
+                         unc_keytype_operation_t &op);
 
-   upll_rc_t AdaptValToDriver(ConfigKeyVal *ck_new, ConfigKeyVal *ck_old,
-                              unc_keytype_operation_t op,
-                              upll_keytype_datatype_t dt_type,
-                              unc_key_type_t keytype, DalDmlIntf *dmi,
-                              bool &not_send_to_drv, bool audit_update_phase);
+  upll_rc_t AdaptValToDriver(ConfigKeyVal *ck_new, ConfigKeyVal *ck_old,
+                             unc_keytype_operation_t op,
+                             upll_keytype_datatype_t dt_type,
+                             unc_key_type_t keytype, DalDmlIntf *dmi,
+                             bool &not_send_to_drv, bool audit_update_phase);
 
-   upll_rc_t CreatePIForVtnPom(IpcReqRespHeader *req,
-                               ConfigKeyVal *ikey,
-                               DalDmlIntf *dmi,
-                               const char *ctrlr_id);
+  upll_rc_t CreatePIForVtnPom(IpcReqRespHeader *req,
+                              ConfigKeyVal *ikey,
+                              DalDmlIntf *dmi,
+                              const char *ctrlr_id);
 
   upll_rc_t CompareValueStructure(ConfigKeyVal *tmp_ckv,
                                   upll_keytype_datatype_t datatype,
@@ -731,7 +740,9 @@ upll_rc_t UpdateMainTbl(ConfigKeyVal *vtn_ffe_key,
   upll_rc_t UpdateFlowListInCtrlTbl(ConfigKeyVal *ikey,
                                    upll_keytype_datatype_t dt_type,
                                    const char *ctrlr_id,
-                                   DalDmlIntf* dmi);
+                                   DalDmlIntf* dmi,
+                                   TcConfigMode config_mode,
+                                   string vtn_name);
   upll_rc_t GetDomainsForController(
       ConfigKeyVal *ckv_drvr,
       ConfigKeyVal *&ctrlr_ckv,

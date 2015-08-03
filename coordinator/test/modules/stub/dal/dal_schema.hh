@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -28,12 +28,22 @@ typedef uint16_t DalColumnIndex;
 typedef uint16_t DalTableIndex;
 
 namespace schema {
+// column flags
+static const int kDcsPrimaryKey = 0x01;
+static const int kDcsSecondaryKey = 0x02;
+static const int kDcsCtrlrName = 0x04;
+static const int kDcsDomainId = 0x08;
+// Constatnt Column index number to bind temporary
+// variables resturned from read
+static const uint16_t DAL_COL_STD_INTEGER = 0xFFFE;
+
 /* Type Definition of Schema structure */
 struct DalColumnSchema {
   const char *column_name;       // Column Name
   SQLSMALLINT db_data_type_id;   // DB Data type Identifier from unixodbc
   SQLSMALLINT dal_data_type_id;  // DAL C Data type Identifier from unixodbc
   size_t db_array_size;          // size used in DB
+  int column_info;               // column specific flags
 };
 
 struct DalRelnSchema {
@@ -74,7 +84,7 @@ enum kVtnIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vtn
 
 namespace vtn_controller {
 static const uint8_t kVtnCtrlrNumPks = 3;
@@ -85,7 +95,8 @@ enum kVtnCtrlrIndex {
   kDbiOperStatus,
   kDbiAlarmStatus,
   kDbiDownCount,
-  kDbiRefCount,
+  kDbiVnodeRefCnt,
+  kDbiRefCnt2,
   kDbiVtnCtrlrFlags,
   kDbiValidOperStatus,
   kDbiValidAlarmStatus,
@@ -96,7 +107,7 @@ enum kVtnCtrlrIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vtn_controller
 
 namespace vtn_rename {
 static const uint8_t kVtnRenameNumPks = 3;
@@ -109,7 +120,7 @@ enum kVtnRenameIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vtn_rename
 
 namespace vbridge {
 static const uint8_t kVbrNumPks = 2;
@@ -141,7 +152,7 @@ enum kVbrIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vbridge
 
 namespace vbridge_vlanmap {
 static const uint8_t kVbrVlanMapNumPks = 4;
@@ -163,7 +174,7 @@ enum kVbrVlanMapIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vbridge_vlanmap
 
 namespace vbridge_interface {
 static const uint8_t kVbrIfNumPks = 3;
@@ -205,7 +216,7 @@ enum kVbrIfIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vbridge_interface
 
 namespace vrouter {
 static const uint8_t kVrtNumPks = 2;
@@ -233,7 +244,7 @@ enum kVrtIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vrouter
 
 namespace vrouter_interface {
 static const uint8_t kVrtIfNumPks = 3;
@@ -267,7 +278,7 @@ enum kVrtIfIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vrouter_interface
 
 namespace vterminal {
 static const uint8_t kVterminalNumPks = 2;
@@ -293,7 +304,7 @@ enum kVterminalIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vterminal
 
 namespace vterminal_interface {
 static const uint8_t kVtermIfNumPks = 3;
@@ -329,7 +340,7 @@ enum kVtermIfIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vterminal_interface
 
 namespace vnode_rename {
 static const uint8_t kVnodeRenameNumPks = 4;
@@ -344,7 +355,7 @@ enum kVnodeRenameIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vnode_rename
 
 namespace vlink {
 static const uint8_t kVlinkNumPks = 2;
@@ -357,7 +368,8 @@ enum kVlinkIndex {
   kDbiVnode2Name,
   kDbiVnode2Ifname,
   kDbiBoundaryName,
-  kDbiVlanid,
+  kDbiLabelType,
+  kDbiLabel,
   kDbiDesc,
   kDbiOperStatus,
   kDbiDownCount,
@@ -373,7 +385,8 @@ enum kVlinkIndex {
   kDbiValidVnode2Name,
   kDbiValidVnode2Ifname,
   kDbiValidBoundaryName,
-  kDbiValidVlanid,
+  kDbiValidLabelType,
+  kDbiValidLabel,
   kDbiValidDesc,
   kDbiValidOperStatus,
   kDbiCsRowstatus,
@@ -383,13 +396,14 @@ enum kVlinkIndex {
   kDbiCsVnode2Name,
   kDbiCsVnode2Ifname,
   kDbiCsBoundaryName,
-  kDbiCsVlanid,
+  kDbiCsLabelType,
+  kDbiCsLabel,
   kDbiCsDesc,
   kDbiVlinkNumCols,
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vlink
 
 namespace vlink_rename {
 static const uint8_t kVlinkRenameNumPks = 4;
@@ -404,7 +418,7 @@ enum kVlinkRenameIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vlink_rename
 
 namespace static_ip_route {
 static const uint8_t kStaticIpRouteNumPks = 6;
@@ -426,7 +440,7 @@ enum kStaticIpRouteIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace static_ip_route
 
 namespace dhcprelay_server {
 static const uint8_t kDhcpRelayServerNumPks = 3;
@@ -442,7 +456,7 @@ enum kDhcpRelayServerIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace dhcprelay_server
 
 namespace dhcprelay_interface {
 static const uint8_t kDhcpRelayIfNumPks = 3;
@@ -458,7 +472,7 @@ enum kDhcpRelayIfIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace dhcprelay_interface
 
 namespace vbridge_networkmonitor_group {
 static const uint8_t kVbrNwMonGrpNumPks = 3;
@@ -479,7 +493,7 @@ enum kVbrNwMonGrpIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vbridge_networkmonitor_group
 
 namespace vbridge_networkmonitor_host {
 static const uint8_t kVbrNwMonHostNumPks = 4;
@@ -511,7 +525,7 @@ enum kVbrNwMonHostIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vbridge_networkmonitor_host
 
 namespace vunknown {
 static const uint8_t kVunknownNumPks = 2;
@@ -533,7 +547,7 @@ enum kVunknownIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vunknown
 
 namespace vunknown_interface {
 static const uint8_t kVunknownIfNumPks = 3;
@@ -554,7 +568,7 @@ enum kVunknownIfIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vunknown_interface
 
 namespace vtep {
 static const uint8_t kVtepNumPks = 2;
@@ -579,7 +593,7 @@ enum kVtepIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vtep
 
 namespace vtep_interface {
 static const uint8_t kVtepIfNumPks = 3;
@@ -615,7 +629,7 @@ enum kVtepIfIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vtep_interface
 
 namespace vtep_group {
 static const uint8_t kVtepGrpNumPks = 2;
@@ -634,7 +648,7 @@ enum kVtepGrpIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vtep_group
 
 namespace vtep_groupmember {
 static const uint8_t kVtepGrpMemNumPks = 3;
@@ -650,7 +664,7 @@ enum kVtepGrpMemIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vtep_groupmember
 
 namespace vtunnel {
 static const uint8_t kVtunnelNumPks = 2;
@@ -684,7 +698,7 @@ enum kVtunnelIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
-}
+}  // namespace vtunnel
 
 namespace vtunnel_interface {
 static const uint8_t kVtunnelIfNumPks = 3;
@@ -720,7 +734,324 @@ enum kVtunnelIfIndex {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };
+}  // namespace vtunnel_interface
+
+namespace convert_vbridge {
+static const uint8_t kConvertVbrNumPks = 3;
+enum kConvertVbrIndex {
+  kDbiVtnName = 0,
+  kDbiVbrName,
+  kDbiConvertVbrName,
+  kDbiCtrlrName,
+  kDbiDomainId,
+  kDbiLabel,
+  kDbiOperStatus,
+  kDbiDownCount,
+  kDbiUnknownCount,
+  kDbiValidLabel,
+  kDbiValidOperStatus,
+  kDbiCsRowStatus,
+  kDbiCsLabel,
+  kDbiFlags,
+  kDbiConvertVbrNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
+};
+}  // namespace vbridge
+
+namespace convert_vbridge_interface {
+static const uint8_t kConvertVbrIfNumPks = 4;
+enum kConvertVbrIfIndex {
+  kDbiVtnName = 0,
+  kDbiVbrName,
+  kDbiConvertVbrName,
+  kDbiConvertIfName,
+  kDbiCtrlrName,
+  kDbiDomainId,
+  kDbiOperStatus,
+  kDbiDownCount,
+  kDbiValidOperStatus,
+  kDbiCsRowStatus,
+  kDbiFlags,
+  kDbiConvertVbrIfNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
+};
+}  // namespace vbridge
+
+namespace convert_vlink {
+static const uint8_t kConvertVlinkNumPks = 3;
+enum kConvertVlinkIndex {
+  kDbiVtnName = 0,
+  kDbiVbrName,
+  kDbiVlinkName,
+  kDbiVnode1Name,
+  kDbiVnode1Ifname,
+  kDbiVnode2Name,
+  kDbiVnode2Ifname,
+  kDbiBoundaryName,
+  kDbiLabelType,
+  kDbiLabel,
+  kDbiCtrlr1Name,
+  kDbiCtrlr2Name,
+  kDbiDomain1Id,
+  kDbiDomain2Id,
+  kDbiOperStatus,
+  kDbiDownCount,
+  kDbiKeyFlags,
+  kDbiValFlags,
+  kDbiValidVnode1Name,
+  kDbiValidVnode1Ifname,
+  kDbiValidVnode2Name,
+  kDbiValidVnode2Ifname,
+  kDbiValidBoundaryName,
+  kDbiValidLabelType,
+  kDbiValidLabel,
+  kDbiValidOperStatus,
+  kDbiCsRowstatus,
+  kDbiCsVnode1Name,
+  kDbiCsVnode1Ifname,
+  kDbiCsVnode2Name,
+  kDbiCsVnode2Ifname,
+  kDbiCsBoundaryName,
+  kDbiCsLabelType,
+  kDbiCsLabel,
+  kDbiConvertVlinkNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
+};
+}  // namespace vlink
+
+namespace vbridge_portmap {
+static const uint8_t kVbrPortmapNumPks = 3;
+enum kVbrPortMapIndex {
+  kDbiVtnName = 0,
+  kDbiVbrName,
+  kDbiPortMapId,
+  kDbiCtrlrName,
+  kDbiDomainId,
+  kDbiLogicalPortId,
+  kDbiLabelType,
+  kDbiLabel,
+  kDbiBdryRefCount,
+  kDbiOperStatus,
+  kDbiDownCount,
+  kDbiVbrPortMapFlags,
+  kDbiValidCtrlrName,
+  kDbiValidDomainId,
+  kDbiValidLogicalPortId,
+  kDbiValidLabelType,
+  kDbiValidLabel,
+  kDbiValidBdryRefCount,
+  kDbiValidOperStatus,
+  kDbiCsRowstatus,
+  kDbiCsCtrlrName,
+  kDbiCsDomainId,
+  kDbiCsLogicalPortId,
+  kDbiCsLabelType,
+  kDbiCsLabel,
+  kDbiVbrPortmapNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
+};
 }
+
+namespace unified_nw {
+static const uint8_t kUnifiedNwNumPks = 1;
+enum kUnifiedNwIndex {
+  kDbiUnifiedNwName = 0,
+  kDbiRoutingType,
+  kDbiIsDefault,
+  kDbiValidRoutingType,
+  kDbiValidIsDefault,
+  kDbiCsRowStatus,
+  kDbiCsRoutingType,
+  kDbiCsIsDefault,
+  kDbiUnifiedNwNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
+};
+}
+
+namespace unw_label {
+static const uint8_t kUnwLabelNumPks = 2;
+enum kUnwLabelIndex {
+  kDbiUnifiedNwName = 0,
+  kDbiUnwLabelName,
+  kDbiMaxCount,
+  kDbiRaisingThreshold,
+  kDbiFallingThreshold,
+  kDbiValidMaxCount,
+  kDbiValidRaisingThreshold,
+  kDbiValidFallingThreshold,
+  kDbiCsRowStatus,
+  kDbiCsMaxCount,
+  kDbiCsRaisingThreshold,
+  kDbiCsFallingThreshold,
+  kDbiUnwLabelNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
+};
+}
+
+namespace unw_label_range {
+static const uint8_t kUnwLabelRangeNumPks = 4;
+enum kUnwLabelRangeIndex {
+  kDbiUnifiedNwName = 0,
+  kDbiUnwLabelName,
+  kDbiMinRange,
+  kDbiMaxRange,
+  kDbiCsRowStatus,
+  kDbiUnwLabelRangeNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
+};
+}
+
+namespace unw_spine_domain {
+static const uint8_t kUnwSpineDomainNumPks = 2;
+enum kUnwSpineDomainIndex {
+  kDbiUnifiedNwName = 0,
+  kDbiUnwSpineDomainName,
+  kDbiCtrlrName,
+  kDbiDomainId,
+  kDbiUnwLabelName,
+  kDbiUsedLabelCount,
+  kDbiAlarmRaised,
+  kDbiValidCtrlrName,
+  kDbiValidDomainId,
+  kDbiValidUnwLabelName,
+  kDbiValidUsedLabelCount,
+  kDbiValidAlarmRaised,
+  kDbiCsRowStatus,
+  kDbiCsCtrlrName,
+  kDbiCsDomainId,
+  kDbiCsUnwLabelName,
+  kDbiUnwSpineNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
+};
+}
+
+namespace vtn_unified {
+static const uint8_t kVtnUnifiedNumPks = 2;
+enum kVtnUnifiedIndex {
+  kDbiVtnName = 0,
+  kDbiUnifiedNwName,
+  kDbiUnwSpineDomainName,
+  kDbiValidUnwSpineDomainName,
+  kDbiCsRowStatus,
+  kDbiCsUnwSpineDomainName,
+  kDbiFlags,
+  kDbiVtnUnifiedNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
+};
+}
+
+namespace vbid_label {
+static const uint8_t kVBIdTblNumPkCols = 2;
+enum VBidTblSchema {
+  kDbiVtnName = 0,
+  kDbiSNo,
+  kDbiVBIdLabel,
+  kDbiFlags,
+  kDbiVBIdNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
+};  // vBidTblSchema
+}  // namespace vbid_label
+
+namespace gvtnid_label {
+static const uint8_t kGVtnIdTblNumPkCols = 3;
+enum GVtnIdTblSchema {
+  kDbiCtrlrName = 0,
+  kDbiDomainId,
+  kDbiSNo,
+  kDbiGVtnIdLabel,
+  kDbiGVtnIdNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
+};  // GVtnIdTblSchema
+}  // namespace gvtnid_label
+
+namespace convert_vtunnel {
+static const uint8_t kConvertVtunnelNumPks = 2;
+enum kVtunnelIndex {
+  kDbiVtnName = 0,
+  kDbiVtunnelName,
+  kDbiCtrlrName,
+  kDbiDomainId,
+  kDbiRefCount,
+  kDbiLabel,
+  kDbiOperStatus,
+  kDbiDownCount,
+  kDbiFlags,
+  kDbiValidRefCount,
+  kDbiValidLabel,
+  kDbiValidOperStatus,
+  kDbiCsRowstatus,
+  kDbiCsRefCount,
+  kDbiCsLabel,
+  kDbiConvertVtunnelNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
+};
+}  // namespace convert vtunnel
+
+namespace convert_vtunnel_interface {
+static const uint8_t kConvertVtunnelIfNumPks = 3;
+enum kVtunnelIfIndex {
+  kDbiVtnName = 0,
+  kDbiVtunnelName,
+  kDbiIfName,
+  kDbiRemoteCtrlrName,
+  kDbiRemoteDomainId,
+  kDbiUnVbrName,
+  kDbiOperStatus,
+  kDbiDownCount,
+  kDbiFlags,
+  kDbiValidRemoteCtrlrName,
+  kDbiValidRemoteDomainId,
+  kDbiValidUnVbrName,
+  kDbiValidOperStatus,
+  kDbiCsRowstatus,
+  kDbiCsRemoteCtrlrName,
+  kDbiCsRemoteDomainId,
+  kDbiCsUnVbrName,
+  kDbiConvertVtunnelIfNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
+};
+}  // namespace convert_vtunnel_interface
+
+namespace vtn_gateway_port {
+static const uint8_t kVtnGatewayPortNumPks = 3;
+enum kVtnGatewayPortIndex {
+  kDbiVtnName = 0,
+  kDbiCtrlrName,
+  kDbiDomainId,
+  kDbiLogicalPortId,
+  kDbiLabel,
+  kDbiRefCount,
+  kDbiOperStatus,
+  kDbiDownCount,
+  kDbiFlags,
+  kDbiValidLogicalPortId,
+  kDbiValidLabel,
+  kDbiValidRefCount,
+  kDbiValidOperStatus,
+  kDbiCsRowstatus,
+  kDbiCsLogicalPortId,
+  kDbiCsLabel,
+  kDbiCsRefCount,
+  kDbiVtnGatewayPortNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
+};
+}  // namespace vtn gateway port
+
+
 // L2/L3 MoMgr Enum End
 
 // POM MoMgr Enum Start
@@ -909,7 +1240,7 @@ enum FlowListEntryCtrlrSchema {
   kDbiCreateFlag,
   kDbiUpdateFlag
 };  // FlowFilterEntryCtrlrSchema
-}  // namespace flowlist_entry_Ctrlr
+}  // namespace flowlist_entry_ctrlr
 
 // Enum definition for index in global policing profile table Schema
 namespace policingprofile {
@@ -1380,7 +1711,8 @@ enum VtermIfFlowFilterSchema {
 };  // VtermIfFlowFilterSchema
 }  // namespace vterm_if_flowfilter
 
-// Enum definition for index in vTerminal interface flow filter entry table Schema
+// Enum definition for index in vTerminal interface flow filter entry
+// table Schema
 namespace vterm_if_flowfilter_entry {
 static const uint8_t kVtermIfFlowFilterEntryNumPks = 5;
 enum VtermIfFlowFilterEntrySchema {
@@ -1544,12 +1876,64 @@ namespace cfg_tbl_dirty {
 static const int max_cfg_tbl_name_len = 32;
 static const uint8_t kCfgTblDirtyNumPkCols = 2;
 enum CfgTblDirtySchema {
-   kDbiTblName=0,
-   kDbiOperation,
-   kDbiDirty,
-   kCfgTblDirtyNumCols
+  kDbiTblName = 0,
+  kDbiOperation,
+  kDbiDirty,
+  kCfgTblDirtyNumCols
 };  // CfgTblDirtySchema
-}  // namespace cfg_tbl_dirty
+}   // namespace cfg_tbl_dirty
+
+namespace upll_system_tbl {
+static const uint8_t kUpllSystemTblNumPkCols = 1;
+enum UpllSystemTblSchema {
+  kDbiProperty = 0,
+  kDbiValue,
+  kUpllSystemTblNumCols
+};  // UpllSystemTblSchema
+}
+
+namespace vtn_cfg_tbl_dirty {
+static const uint8_t kVtnCfgTblDirtyNumPkCols = 3;
+enum VtnCfgTblDirtySchema {
+  kDbiTblIndex = 0,
+  kDbiOperation,
+  kDbiVtnName,
+  kVtnCfgTblDirtyNumCols
+};  // VtnCfgTblDirtySchema
+}  // namespace vtn_cfg_tbl_dirty
+
+namespace pp_scratch {
+static const uint8_t kPpScratchNumPkCols = 3;
+enum PpScratchSchema {
+  kDbiPolicingProfileName = 0,
+  kDbiCtrlrName,
+  kDbiVtnName,
+  kDbiRefCount,
+  kPpScratchTblNumCols
+};  // PpScratchSchema
+}  // namespace pp_scratch
+
+namespace fl_scratch {
+static const uint8_t kFlScratchNumPkCols = 3;
+enum FlScratchSchema {
+  kDbiFlowListName = 0,
+  kDbiCtrlrName,
+  kDbiVtnName,
+  kDbiRefCount,
+  kFlScratchTblNumCols
+};  // FlScratchSchema
+}  // namespace fl_scratch
+
+namespace spd_scratch {
+static const uint8_t kSpdScratchNumPkCols = 3;
+enum SpdScratchSchema {
+  kDbiUnwName = 0,
+  kDbiUnwSpineDomainName,
+  kDbiVtnName,
+  kDbiUsedCount,
+  kSpdScratchTblNumCols
+};  // SpdScratchSchema
+}  // namespace spd_scratch
 
 enum kDalTableIndex {
   // L2/L3 MoMgr Table Enum Start
@@ -1579,6 +1963,24 @@ enum kDalTableIndex {
   kDbiVtepGrpMemTbl,
   kDbiVtunnelTbl,
   kDbiVtunnelIfTbl,
+  kDbiConvertVbrTbl,
+  kDbiConvertVbrIfTbl,
+  kDbiConvertVlinkTbl,
+  kDbiVbrPortMapTbl,
+  // Newly Added for U17
+  kDbiUnifiedNwTbl,
+  kDbiUnwLabelTbl,
+  kDbiUnwLabelRangeTbl,
+  kDbiUnwSpineDomainTbl,
+  kDbiVtnUnifiedTbl,
+
+  // vbrid and gvtnid label tbls
+  kDbiVBIdTbl,
+  kDbiGVtnIdTbl,
+  kDbiConvertVtunnelTbl,
+  kDbiConvertVtunnelIfTbl,
+  kDbiVtnGatewayPortTbl,
+
   // L2/L3 MoMgr Table Enum End
   // POM MoMgr Table Enum Start
   kDbiFlowListTbl,
@@ -1611,7 +2013,12 @@ enum kDalTableIndex {
   // POM MoMgr Table Enum End
 
   kDbiCfgTblDirtyTbl,
+  kDbiUpllSystemTbl,  // upll_system_tbl
   kDbiCtrlrTbl,
+  kDbiVtnCfgTblDirtyTbl,
+  kDbiPpScratchTbl,
+  kDbiFlScratchTbl,
+  kDbiSpdScratchTbl,
   kDalNumTables
 };  // enum kDalTableIndex
 
@@ -1652,6 +2059,9 @@ TableNumFkCols(uint16_t table_index) {
 /* Inline Functions for Column Schema */
 inline const char *
 ColumnName(uint16_t table_index, uint16_t column_index) {
+  if (column_index == DAL_COL_STD_INTEGER) {
+    return "count(*)";
+  }
   return ((table_index < table::kDalNumTables) ?
            ((column_index < table::table_schema[table_index].num_columns) ?
              table::table_schema[table_index].
@@ -1659,10 +2069,14 @@ ColumnName(uint16_t table_index, uint16_t column_index) {
              NULL) :
            NULL);
 }
-// To add c_flag and u_flag in candidate table, 
+// To add c_flag and u_flag in candidate table,
 // num_colunms + 2 is added
 inline const char *
 CandColumnName(uint16_t table_index, uint16_t column_index) {
+  if (column_index == DAL_COL_STD_INTEGER) {
+    return "count(*)";
+  }
+
   return ((table_index < table::kDalNumTables) ?
            ((column_index < (table::table_schema[table_index].num_columns)+2) ?
              table::table_schema[table_index].
@@ -1673,6 +2087,10 @@ CandColumnName(uint16_t table_index, uint16_t column_index) {
 
 inline SQLSMALLINT
 ColumnDbDataTypeId(uint16_t table_index, uint16_t column_index) {
+  if (column_index == DAL_COL_STD_INTEGER) {
+    // Value bound to this column index is of type integer
+    return SQL_BIGINT;
+  }
   return ((table_index < table::kDalNumTables) ?
            ((column_index < table::table_schema[table_index].num_columns) ?
              table::table_schema[table_index].
@@ -1681,12 +2099,17 @@ ColumnDbDataTypeId(uint16_t table_index, uint16_t column_index) {
            SQL_UNKNOWN_TYPE);
 }
 
-// To add c_flag and u_flag in candidate table, 
+// To add c_flag and u_flag in candidate table,
 // num_colunms + 2 is added
 inline SQLSMALLINT
 CandColumnDbDataTypeId(uint16_t table_index, uint16_t column_index) {
+  if (column_index == DAL_COL_STD_INTEGER) {
+    // Value bound to this column index is of type integer
+    return SQL_BIGINT;
+  }
   return ((table_index < table::kDalNumTables) ?
-           ((column_index < (table::table_schema[table_index].num_columns) + 2) ?
+           ((column_index <
+             (table::table_schema[table_index].num_columns) + 2) ?
              table::table_schema[table_index].
              column_schema[column_index].db_data_type_id :
              SQL_UNKNOWN_TYPE) :
@@ -1695,6 +2118,11 @@ CandColumnDbDataTypeId(uint16_t table_index, uint16_t column_index) {
 
 inline SQLSMALLINT
 ColumnDalDataTypeId(uint16_t table_index, uint16_t column_index) {
+  if (column_index == DAL_COL_STD_INTEGER) {
+    // Value bound to this column index is of type integer
+    return SQL_C_UBIGINT;
+  }
+
   return ((table_index < table::kDalNumTables) ?
            ((column_index < table::table_schema[table_index].num_columns) ?
              table::table_schema[table_index].
@@ -1705,6 +2133,9 @@ ColumnDalDataTypeId(uint16_t table_index, uint16_t column_index) {
 
 inline size_t
 ColumnDbArraySize(uint16_t table_index, uint16_t column_index) {
+  if (column_index == DAL_COL_STD_INTEGER) {
+    return 1;
+  }
   return ((table_index < table::kDalNumTables) ?
            ((column_index < table::table_schema[table_index].num_columns) ?
              table::table_schema[table_index].
@@ -1713,12 +2144,16 @@ ColumnDbArraySize(uint16_t table_index, uint16_t column_index) {
            0);
 }
 
-// To add c_flag and u_flag in candidate table, 
+// To add c_flag and u_flag in candidate table,
 // num_colunms + 2 is added
 inline size_t
 CandColumnDbArraySize(uint16_t table_index, uint16_t column_index) {
+  if (column_index == DAL_COL_STD_INTEGER) {
+    return 1;
+  }
   return ((table_index < table::kDalNumTables) ?
-           ((column_index < (table::table_schema[table_index].num_columns) + 2) ?
+           ((column_index <
+             (table::table_schema[table_index].num_columns) + 2) ?
              table::table_schema[table_index].
              column_schema[column_index].db_array_size :
              0) :
@@ -1727,48 +2162,25 @@ CandColumnDbArraySize(uint16_t table_index, uint16_t column_index) {
 
 inline bool
 ColumnIsPKeyIndex(uint16_t table_index, uint16_t column_index) {
+  if (column_index == DAL_COL_STD_INTEGER) {
+    return false;
+  }
   return (column_index < TableNumPkCols(table_index));
 }
 
 inline bool
-IsVnodeTable(DalTableIndex table_index) {
-  return (table_index == table::kDbiVbrTbl ||
-          table_index == table::kDbiVrtTbl ||
-          table_index == table::kDbiVterminalTbl ||
-          table_index == table::kDbiVtepTbl ||
-          table_index == table::kDbiVtunnelTbl);
-}
-
-inline bool
-IsVnodeCtrlrIndex(DalTableIndex table_index, DalColumnIndex col_index) {
-  return ((table_index == table::kDbiVbrTbl &&
-           col_index == table::vbridge::kDbiCtrlrName) ||
-          (table_index == table::kDbiVrtTbl &&
-           col_index == table::vrouter::kDbiCtrlrName) ||
-          (table_index == table::kDbiVterminalTbl &&
-           col_index == table::vterminal::kDbiCtrlrName) ||
-          (table_index == table::kDbiVtepTbl &&
-           col_index == table::vtep::kDbiCtrlrName) ||
-          (table_index == table::kDbiVtunnelTbl &&
-           col_index == table::vtunnel::kDbiCtrlrName));
-}
-
-inline bool
-IsVnodeDomainIndex(DalTableIndex table_index, DalColumnIndex col_index) {
-  return ((table_index == table::kDbiVbrTbl &&
-           col_index == table::vbridge::kDbiDomainId) ||
-          (table_index == table::kDbiVrtTbl &&
-           col_index == table::vrouter::kDbiDomainId) ||
-          (table_index == table::kDbiVterminalTbl &&
-           col_index == table::vterminal::kDbiDomainId) ||
-          (table_index == table::kDbiVtepTbl &&
-           col_index == table::vtep::kDbiDomainId) ||
-          (table_index == table::kDbiVtunnelTbl &&
-           col_index == table::vtunnel::kDbiDomainId));
+AddtlBindForInstanceExistsCheck(const DalTableIndex table_index,
+                                const DalColumnIndex col_index) {
+  if (col_index == DAL_COL_STD_INTEGER) {
+    return false;
+  }
+    return(((table::table_schema[table_index].column_schema[col_index].
+             column_info & kDcsCtrlrName) ||
+            (table::table_schema[table_index].column_schema[col_index].
+             column_info & kDcsDomainId)) ? true : false);
 }
 
 };  // namespace schema
-
 }  // namespace dal
 }  // namespace upll
 }  // namespace unc

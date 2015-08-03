@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -10,19 +10,19 @@
 /*
  *   table_optimize.cc
  *   Generates optimization sql schema
- * 
+ *
  */
 
 #include "table_optimize.hh"
 #include "table_defines.hh"
 #include "table_common.cc"
 
-//Writes Copyrights information
+// Writes Copyrights information
 void copyrights() {
   upll_optimize_file << copyrights_header_2014.c_str();
 }
 
-//Writes header information
+// Writes header information
 void header(char *version) {
   char upll_filename[80];
   sprintf(upll_filename,"\n/**\n *  %s0000_upll_opt.sql\n",version);
@@ -32,16 +32,17 @@ void header(char *version) {
   upll_optimize_file << " */\n";
 }
 
-//Indexing columns
-void create_index(indexInfo indexing_tbl[], uint16_t table_size, UpllDbCfgId cfgID) {
+// Indexing columns
+void create_index(indexInfo indexing_tbl[], uint16_t table_size,
+                  UpllDbCfgId cfgID) {
   uint16_t tbl_idx;
   uint16_t col_idx;
   bool comma_flag = false;
   string line, tbl_name;
 
   upll_optimize_file << "\n\n/* COLUMN INDEXING */\n\n";
-  upll_optimize_file << indexing_storedprocedure.c_str();   
-   
+  upll_optimize_file << indexing_storedprocedure.c_str();
+
   for (uint16_t idx = 0; idx < table_size/24; idx++) {
     tbl_idx = indexing_tbl[idx].table_id;
     tbl_name.clear();
@@ -74,7 +75,7 @@ void create_index(indexInfo indexing_tbl[], uint16_t table_size, UpllDbCfgId cfg
   upll_optimize_file << drop_indexing_function.c_str() << endl;
 }
 
-int main ( int argc, char *argv[] ) 
+int main(int argc, char *argv[])
 {
   string filename;
 
@@ -86,16 +87,13 @@ int main ( int argc, char *argv[] )
   filename += argv[1];
   filename += "0000_upll_opt.sql";
 
-  if((strcmp(argv[1],"U14")==0) || (strcmp(argv[1],"u14")==0))
-  { 
+  if((strcmp(argv[1],"U14")==0) || (strcmp(argv[1],"u14")==0)) {
     upll_optimize_file.open(filename.c_str());
 
     copyrights();
     header(argv[1]);
     create_index(U13U14Indexing,sizeof(U13U14Indexing),kCfgIdCandidate);
-  }
-  else
-  {
+  } else {
     printf("\nOptimization script not available for this version\n");
   }
 

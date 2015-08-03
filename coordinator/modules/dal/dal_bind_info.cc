@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -59,31 +59,9 @@ DalBindInfo::BindInput(const DalColumnIndex column_index,
                        const DalCDataType app_data_type,
                        const size_t array_size,
                        const void *bind_addr) {
-  if (column_index >= schema::TableNumCols(table_index_)) {
-    UPLL_LOG_DEBUG("Invalid Column Index(%d) for Table(%s)",
-                   column_index, schema::TableName(table_index_));
-    return false;
-  }
-
-  if (app_data_type == kDalAppTypeInvalid) {
-    UPLL_LOG_DEBUG("Invalid App data type for Column(%s) in Table(%s)",
-                   schema::ColumnName(table_index_, column_index),
-                   schema::TableName(table_index_));
-    return false;
-  }
-
-  if (array_size == 0) {
-    UPLL_LOG_DEBUG("Zero Array Size for Column(%s) in Table(%s)",
-                   schema::ColumnName(table_index_, column_index),
-                   schema::TableName(table_index_));
-    return false;
-  }
-
-  // PFC_ASSERT(bind_addr);
-  if (bind_addr == NULL) {
-    UPLL_LOG_DEBUG("Null Bind Address for Column(%s) in Table(%s)",
-                   schema::ColumnName(table_index_, column_index),
-                   schema::TableName(table_index_));
+  if (ValidateInputParams(column_index, app_data_type,
+                          array_size, bind_addr) != true) {
+    UPLL_LOG_DEBUG("Input parameter not valid");
     return false;
   }
 
@@ -108,31 +86,9 @@ DalBindInfo::BindOutput(const DalColumnIndex column_index,
                         const DalCDataType app_data_type,
                         const size_t array_size,
                         const void *bind_addr) {
-  if (column_index >= schema::TableNumCols(table_index_)) {
-    UPLL_LOG_DEBUG("Invalid Column Index(%d) for Table(%s)",
-                   column_index, schema::TableName(table_index_));
-    return false;
-  }
-
-  if (app_data_type == kDalAppTypeInvalid) {
-    UPLL_LOG_DEBUG("Invalid App data type for Column(%s) in Table(%s)",
-                   schema::ColumnName(table_index_, column_index),
-                   schema::TableName(table_index_));
-    return false;
-  }
-
-  if (array_size == 0) {
-    UPLL_LOG_DEBUG("Zero Array Size for Column(%s) in Table(%s)",
-                   schema::ColumnName(table_index_, column_index),
-                   schema::TableName(table_index_));
-    return false;
-  }
-
-  // PFC_ASSERT(bind_addr)
-  if (bind_addr == NULL) {
-    UPLL_LOG_DEBUG("Null Bind Address for Column(%s) in Table(%s)",
-                   schema::ColumnName(table_index_, column_index),
-                   schema::TableName(table_index_));
+  if (ValidateInputParams(column_index, app_data_type,
+                          array_size, bind_addr) != true) {
+    UPLL_LOG_DEBUG("Input parameter not valid");
     return false;
   }
 
@@ -156,31 +112,9 @@ DalBindInfo::BindMatch(const DalColumnIndex column_index,
                        const DalCDataType app_data_type,
                        const size_t array_size,
                        const void *bind_addr) {
-  if (column_index >= schema::TableNumCols(table_index_)) {
-    UPLL_LOG_DEBUG("Invalid Column Index(%d) for Table(%s)",
-                   column_index, schema::TableName(table_index_));
-    return false;
-  }
-
-  if (app_data_type == kDalAppTypeInvalid) {
-    UPLL_LOG_DEBUG("Invalid App data type for Column(%s) in Table(%s)",
-                   schema::ColumnName(table_index_, column_index),
-                   schema::TableName(table_index_));
-    return false;
-  }
-
-  if (array_size == 0) {
-    UPLL_LOG_DEBUG("Zero Array Size for Column(%s) in Table(%s)",
-                   schema::ColumnName(table_index_, column_index),
-                   schema::TableName(table_index_));
-    return false;
-  }
-
-  // PFC_ASSERT(bind_addr)
-  if (bind_addr == NULL) {
-    UPLL_LOG_DEBUG("Null Bind Address for Column(%s) in Table(%s)",
-                   schema::ColumnName(table_index_, column_index),
-                   schema::TableName(table_index_));
+  if (ValidateInputParams(column_index, app_data_type,
+                          array_size, bind_addr) != true) {
+    UPLL_LOG_DEBUG("Input parameter not valid");
     return false;
   }
 
@@ -254,9 +188,9 @@ DalBindInfo::ResetDalOutBuffer(void) {
         col_info->get_io_type() == kDalIoOutputAndMatch) {
       if (col_info->ResetDalOutputBuffer(table_index_) != true) {
         UPLL_LOG_DEBUG("Failed Restting DAL output buffer for Column(%s) "
-                       "in Table(%s)", 
+                       "in Table(%s)",
                        schema::ColumnName(table_index_,
-                         col_info->get_column_index()),
+                       col_info->get_column_index()),
                        schema::TableName(table_index_));
         return false;
       }
@@ -295,32 +229,6 @@ DalBindInfo::BindAttribute(const DalIoCode io_code,
   DalBindList::iterator iter;
   bool avail = false;
 
-  if (io_code == kDalIoCodeInvalid) {
-    UPLL_LOG_DEBUG("Invalid IO Code for Column(%s) in Table(%s)",
-                   schema::ColumnName(table_index_, column_index),
-                   schema::TableName(table_index_));
-  }
-
-  if (column_index >= schema::TableNumCols(table_index_)) {
-    UPLL_LOG_DEBUG("Column Index Out of Range for Column(%s) in Table(%s)",
-                   schema::ColumnName(table_index_, column_index),
-                   schema::TableName(table_index_));
-    return false;
-  }
-
-  if (app_data_type == kDalAppTypeInvalid) {
-    UPLL_LOG_DEBUG("Invalid App data type for Column(%s) in Table(%s)",
-                   schema::ColumnName(table_index_, column_index),
-                   schema::TableName(table_index_));
-    return false;
-  }
-
-  if (array_size == 0) {
-    UPLL_LOG_DEBUG("Zero Array Size for Column(%s) in Table(%s)",
-                   schema::ColumnName(table_index_, column_index),
-                   schema::TableName(table_index_));
-  }
-
   if (bind_addr == NULL) {
     UPLL_LOG_DEBUG("Null Bind Address reference for Column(%s) in Table(%s)",
                    schema::ColumnName(table_index_, column_index),
@@ -328,17 +236,21 @@ DalBindInfo::BindAttribute(const DalIoCode io_code,
     return false;
   }
 
-  if (*bind_addr == NULL) {
-    UPLL_LOG_DEBUG("Null Bind Address for Column(%s) in Table(%s)",
+  if (io_code == kDalIoCodeInvalid) {
+    UPLL_LOG_DEBUG("Invalid IO Code for Column(%s) in Table(%s)",
                    schema::ColumnName(table_index_, column_index),
                    schema::TableName(table_index_));
+  }
+
+  if (ValidateInputParams(column_index, app_data_type,
+                          array_size, *bind_addr) != true) {
+    UPLL_LOG_DEBUG("Input parameter not valid");
     return false;
   }
 
-
   // Create new DalBindColumnInfo instance if
   //   1. there is no instance available
-  //   2. there is an instance and binding is already done. 
+  //   2. there is an instance and binding is already done.
   // Update the exisiting instance if binding is not done before.
   for (iter = bind_list_.begin(); iter != bind_list_.end(); ++iter) {
     col_info = *iter;
@@ -469,6 +381,41 @@ DalBindInfo::BindListResultToStr(void) {
   UPLL_LOG_VERBOSE("\n%s", ss.str().c_str());
   return (ss.str());
 }  // DalBindInfo::BindListResultToStr
+
+bool
+DalBindInfo::ValidateInputParams(const DalColumnIndex column_index,
+                                 const DalCDataType app_data_type,
+                                 const size_t array_size,
+                                 const void *bind_addr) {
+  if (column_index >= schema::TableNumCols(table_index_) &&
+      column_index != schema::DAL_COL_STD_INTEGER) {
+    UPLL_LOG_DEBUG("Invalid Column Index(%d) for Table(%s)",
+                   column_index, schema::TableName(table_index_));
+    return false;
+  }
+
+  if (app_data_type == kDalAppTypeInvalid) {
+    UPLL_LOG_DEBUG("Invalid App data type for Column(%s) in Table(%s)",
+                   schema::ColumnName(table_index_, column_index),
+                   schema::TableName(table_index_));
+    return false;
+  }
+
+  if (array_size == 0) {
+    UPLL_LOG_DEBUG("Zero Array Size for Column(%s) in Table(%s)",
+                   schema::ColumnName(table_index_, column_index),
+                   schema::TableName(table_index_));
+    return false;
+  }
+
+  if (bind_addr == NULL) {
+    UPLL_LOG_DEBUG("Null Bind Address for Column(%s) in Table(%s)",
+                   schema::ColumnName(table_index_, column_index),
+                   schema::TableName(table_index_));
+    return false;
+  }
+  return true;
+}  // DalBindInfo::ValidateInputParams
 
 }  // namespace dal
 }  // namespace upll

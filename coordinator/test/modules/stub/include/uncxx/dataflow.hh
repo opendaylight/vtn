@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -18,7 +18,7 @@
 #include <sstream>
 #include <cxx/pfcxx/ipc_client.hh>
 #include <unc/keytype.h>
-
+#include <set>
 using std::vector;
 using std::map;
 using std::stack;
@@ -128,6 +128,8 @@ class DataflowCmn {
   uint32_t total_flow_count;
   bool is_vlan_src_mac_changed_;
   DataflowCmn *parent_node;
+  bool action_applied;
+  uint8_t pfc_vtn_name[32];
 
   std::string ToStr() {
     return "aa";
@@ -185,7 +187,8 @@ class DataflowCmn {
   static string get_string(const val_df_flow_action_set_ip_tos_t &val_obj){ return "dummy"; }
   static string get_string(const val_df_flow_action_set_tp_port_t &val_obj) { return "dummy"; }
   static string get_string(const val_df_flow_action_set_ipv6_t &val_obj) { return "dummy"; }
-
+  static string get_string(key_dataflow_v2_t& key_obj) {return "dummy";}
+  static string get_string(val_dataflow_v2_t &val_obj) { return "dummy"; }
   static string get_string(const val_df_data_flow_path_info_t &val_obj) { return "dummy"; }
   static bool Compare(const key_dataflow_t& lhs, const key_dataflow_t& rhs) { return true; }
   void deep_copy() {}
@@ -264,6 +267,10 @@ class DataflowUtil {
   std::map<key_dataflow_t, vector<DataflowDetail *>, KeyDataflowCmp > pfc_flows;
   std::map<key_vtn_ctrlr_dataflow, vector<DataflowDetail *>, KeyVtnDataflowCmp  > upll_pfc_flows;
   std::map<std::string, uint32_t> ctrlr_dom_count_map;
+  std::set<std::string> bypass_dom_set;
+  std::map<std::string, void* > vext_info_map;
+  std::map<std::string, std::string> vnode_rename_map;
+
  private:
   vector<DataflowCmn* > firstCtrlrFlows;
 };

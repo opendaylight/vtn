@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -56,7 +56,7 @@ usess_ipc_err_e UsessSession::TransitMode(const usess_mode_e sess_mode)
   L_FUNCTION_START();
 
   // check session mode of session data.
-  RETURN_IF((sess_.sess_mode != USESS_MODE_OPER &&
+  RETURN_IF2((sess_.sess_mode != USESS_MODE_OPER &&
                 sess_.sess_mode != USESS_MODE_ENABLE), USESS_E_NG,
               "Invalid session mode. mode = %d", sess_mode);
 
@@ -65,7 +65,7 @@ usess_ipc_err_e UsessSession::TransitMode(const usess_mode_e sess_mode)
 
     // Get TC module instance.
     tc_instance = (tc::TcModule *)pfc::core::Module::getInstance("tc");
-    RETURN_IF((tc_instance == NULL), USESS_E_NG,
+    RETURN_IF2((tc_instance == NULL), USESS_E_NG,
         "%s", "Failure TC module getinstance.");
 
     // release configuration mode session.

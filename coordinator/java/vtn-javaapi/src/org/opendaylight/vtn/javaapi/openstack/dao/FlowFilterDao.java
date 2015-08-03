@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -16,6 +16,7 @@ import java.sql.SQLException;
 import java.sql.SQLTimeoutException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.List;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -432,5 +433,85 @@ public class FlowFilterDao {
 		}
 
 		return portList.size() > 0 ? portList : null;
+	}
+
+	/**
+	 * Retrieve flow filter on interface of port from database.
+	 * 
+	 * @param connection
+	 *            - DB Connection instance
+	 * @param flowFilterVbrBean
+	 *            - FlowFilterVbrBean.
+	 * @param isLinked
+	 *            - if has related vroute is true, otherwise false.
+	 * @return - List of flow filter id.
+	 * @throws SQLException
+	 */
+	public List<String> getFlowFiltersByPort(Connection connection,
+			FlowFilterVbrBean flowFilterVbrBean,
+			boolean isLinked) throws SQLException {
+		List<String> filteIds = new ArrayList<String>();
+		String sql = VtnOpenStackSQLFactory.SEL_FF_VBR_LIST_FILTER_ID_SQL;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
+
+		if (isLinked) {
+			sql = VtnOpenStackSQLFactory.SEL_FF_VRT_LIST_FILTER_ID_SQL;
+		}
+
+		try {
+			statement = connection.prepareStatement(sql);
+			statement.setString(1, flowFilterVbrBean.getVtnName());
+			statement.setString(2, flowFilterVbrBean.getVbrName());
+			statement.setString(3, flowFilterVbrBean.getVbrIfName());
+			resultSet = statement.executeQuery();
+			while (resultSet.next()) {
+				filteIds.add(resultSet.getString(1));
+			}
+		} finally {
+			if (resultSet != null) {
+				resultSet.close();
+			}
+			if (statement != null) {
+				statement.close();
+			}
+		}
+		return filteIds;
+	}
+
+	/**
+	 * Check whether the port link with router.
+	 * 
+	 * @param connection
+	 *            - DB Connection instance
+	 * @param flowFilterVrtBean
+	 *            - Bean corresponding to os_ff_vrt_tbl
+	 * @return - vrouter name, if resource found, otherwise false.
+	 * @throws SQLException
+	 */
+	public String isLinkedWithRouter(Connection connection,
+			FlowFilterVrtBean flowFilterVrtBean) throws SQLException {
+		String sql = VtnOpenStackSQLFactory.GET_FF_VRT_BY_VBR_SQL;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
+		String vrouter = null;
+		try {
+			statement = connection.prepareStatement(sql);
+			statement.setString(1, flowFilterVrtBean.getVtnName());
+			statement.setString(2, flowFilterVrtBean.getVbrName());
+			statement.setString(3, flowFilterVrtBean.getVrtIfName());
+			resultSet = statement.executeQuery();
+			if (resultSet.next()) {
+				vrouter = resultSet.getString(1);
+			}
+		} finally {
+			if (resultSet != null) {
+				resultSet.close();
+			}
+			if (statement != null) {
+				statement.close();
+			}
+		}
+		return vrouter;
 	}
 }

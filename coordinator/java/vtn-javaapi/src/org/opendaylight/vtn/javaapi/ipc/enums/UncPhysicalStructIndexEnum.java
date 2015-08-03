@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -18,7 +18,8 @@ public class UncPhysicalStructIndexEnum {
 	};
 
 	public enum UpplDomainType {
-		UPPL_DOMAIN_TYPE_DEFAULT("0"), UPPL_DOMAIN_TYPE_NORMAL("1");
+		UPPL_DOMAIN_TYPE_DEFAULT("0"), UPPL_DOMAIN_TYPE_NORMAL("1"),
+		UPPL_DOMAIN_TYPE_PF_LEAF("2"), UPPL_DOMAIN_TYPE_PF_SPINE("3");
 		private final String value;
 
 		private UpplDomainType(final String value) {
@@ -119,7 +120,7 @@ public class UncPhysicalStructIndexEnum {
 	};
 
 	public enum UpplValPortNeighborIndex {
-		kIdxPort, kIdxPortConnectedSwitchId, kIdxPortConnectedPortId;
+		kIdxPort, kIdxPortConnectedSwitchId, kIdxPortConnectedPortId, kIdxPortConnectedControllerId;
 
 	}
 
@@ -206,7 +207,8 @@ public class UncPhysicalStructIndexEnum {
 	// Not mapped with updated header file- Poorvi
 
 	public enum UpplTypeIndex {
-		UNC_CT_UNKNOWN("0"), UNC_CT_PFC("1"), UNC_CT_VNP("2"), UNC_CT_POLC("3"), UNC_CT_VAN("4"), UNC_CT_ODC("5");
+		UNC_CT_UNKNOWN("0"), UNC_CT_PFC("1"), UNC_CT_VNP("2"), UNC_CT_POLC("3"),
+		UNC_CT_HPVANC("4"), UNC_CT_ODC("5");
 
 		private final String value;
 
@@ -313,7 +315,8 @@ public class UncPhysicalStructIndexEnum {
 
 	public enum UpplLogicalPortType {
 		UPPL_LP_SWITCH("1"), UPPL_LP_PHYSICAL_PORT("2"), UPPL_LP_TRUNK_PORT(
-				"11"), UPPL_LP_SUBDOMAIN("12"), UPPL_LP_TUNNEL_ENDPOINT("13");
+				"11"), UPPL_LP_SUBDOMAIN("12"), UPPL_LP_TUNNEL_ENDPOINT("13"),
+				UPPL_LP_PORT_GROUP("14"), UPPL_LP_MAPPING_GROUP("15");
 		private final String value;
 
 		private UpplLogicalPortType(final String value) {
@@ -427,5 +430,32 @@ public class UncPhysicalStructIndexEnum {
 	public enum UpplValCtrPpolicyLinkWeightIndex{
 		kIdxLinkWeight
 	}
+
+	public enum UpplValLmPortNeighborIndex {
+		kIdxLmPort,
+		kIdxLmPortConnectedSwitchId,
+		kIdxLmPortConnectedPortId,
+		kIdxLmPortConnectedControllerId
+	};
+
+	public enum UpplValLogicalPortBoundaryStIndex {
+		kIdxLogicalPortBSt,
+		kIdxLogicalPortBoundaryCandidate,
+		kIdxLogicalPortBoundaryConnectedController,
+		kIdxLogicalPortBoundaryConnectedDomain
+	};
+
+	public enum UpplLogicalPortBoundaryCandidate {
+		UPPL_LP_BDRY_CANDIDATE_NO("0"), UPPL_LP_BDRY_CANDIDATE_YES("1");
+		private final String value;
+
+		private UpplLogicalPortBoundaryCandidate(final String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return value;
+		}
+	};
 
 }

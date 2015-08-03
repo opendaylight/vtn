@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -942,7 +942,7 @@ TEST_F(BoundaryTest, ReadBoundaryValFromDB_01) {
     unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_RECORD_NOT_FOUND);
   int ret = KtboundaryObj.ReadBoundaryValFromDB(
     db_conn, &k, &v, UNC_DT_STATE, UNC_OP_READ, max_rep_ct,
-    vect_key_boundary, vect_val_boundary, false);
+    vect_key_boundary, vect_val_boundary);
   EXPECT_EQ(UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE, ret);
 }
 
@@ -963,7 +963,7 @@ TEST_F(BoundaryTest, ReadBoundaryValFromDB_02) {
     unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_CONNECTION_ERROR);
   int ret = KtboundaryObj.ReadBoundaryValFromDB(
     db_conn, &k, &v, UNC_DT_STATE, UNC_OP_READ, max_rep_ct,
-    vect_key_boundary, vect_val_boundary, false);
+    vect_key_boundary, vect_val_boundary);
   EXPECT_EQ(UNC_UPPL_RC_ERR_DB_ACCESS, ret);
 }
 
@@ -984,7 +984,7 @@ TEST_F(BoundaryTest, ReadBoundaryValFromDB_03) {
     unc::uppl::ODBCManager::GETONEROW, ODBCM_RC_FAILED);
   int ret = KtboundaryObj.ReadBoundaryValFromDB(
     db_conn, &k, &v, UNC_DT_STATE, UNC_OP_READ, max_rep_ct,
-    vect_key_boundary, vect_val_boundary, false);
+    vect_key_boundary, vect_val_boundary);
   EXPECT_EQ(UNC_UPPL_RC_ERR_DB_GET, ret);
 }
 
@@ -1005,7 +1005,7 @@ TEST_F(BoundaryTest, ReadBoundaryValFromDB_04) {
     unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_RECORD_NOT_FOUND);
   int ret = KtboundaryObj.ReadBoundaryValFromDB(
     db_conn, &k, &v, UNC_DT_STATE, UNC_OP_READ_NEXT, max_rep_ct,
-    vect_key_boundary, vect_val_boundary, false);
+    vect_key_boundary, vect_val_boundary);
   EXPECT_EQ(UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE, ret);
 }
 
@@ -1026,7 +1026,7 @@ TEST_F(BoundaryTest, ReadBoundaryValFromDB_05) {
     unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_CONNECTION_ERROR);
   int ret = KtboundaryObj.ReadBoundaryValFromDB(
     db_conn, &k, &v, UNC_DT_STATE, UNC_OP_READ_NEXT, max_rep_ct,
-    vect_key_boundary, vect_val_boundary, false);
+    vect_key_boundary, vect_val_boundary);
   EXPECT_EQ(UNC_UPPL_RC_ERR_DB_ACCESS, ret);
 }
 
@@ -1047,7 +1047,7 @@ TEST_F(BoundaryTest, ReadBoundaryValFromDB_06) {
     unc::uppl::ODBCManager::GETBULKROWS, ODBCM_RC_FAILED);
   int ret = KtboundaryObj.ReadBoundaryValFromDB(
     db_conn, &k, &v, UNC_DT_STATE, UNC_OP_READ_NEXT, max_rep_ct,
-    vect_key_boundary, vect_val_boundary, false);
+    vect_key_boundary, vect_val_boundary);
   EXPECT_EQ(UNC_UPPL_RC_ERR_DB_GET, ret);
 }
 
@@ -1066,7 +1066,7 @@ TEST_F(BoundaryTest, ReadBoundaryValFromDB_07) {
   OdbcmConnectionHandler *db_conn  = NULL;
   int ret = KtboundaryObj.ReadBoundaryValFromDB(
     db_conn, &k, &v, UNC_DT_STATE, UNC_OP_CREATE, max_rep_ct,
-    vect_key_boundary, vect_val_boundary, false);
+    vect_key_boundary, vect_val_boundary);
   EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -23,8 +23,10 @@
 
 #define KT_SWITCH_CHILD_COUNT 1
 
-#define ALARM_UPPL_ALARMS_FLOW_ENT_FULL 0x01
-#define ALARM_UPPL_ALARMS_OFS_LACK_FEATURES 0x02
+#define ALARM_UPPL_ALARMS_FLOW_ENT_FULL 0x01  // Bit 0 UPPL_ALARMS_FLOW_ENT_FULL
+#define ALARM_UPPL_ALARMS_OFS_LACK_FEATURES 0x02  // Bit 1
+                                               // UPPL_ALARMS_OFS_LACK_FEATURES
+#define ALARM_UPPL_ALARMS_OFS_DISABLED 0x04  // Bit 2 UPPL_ALARMS_OFS_DISABLED
 using unc::uppl::ODBCMOperator;
 
 typedef enum {
@@ -199,9 +201,9 @@ class Kt_Switch : public Kt_State_Base {
       uint32_t option2,
       vector<ODBCMOperator> &vect_key_operations,
       void* &old_value_struct,
-      CsRowStatus row_status= NOTAPPLIED,
-      pfc_bool_t is_filtering= false,
-      pfc_bool_t is_state= PFC_FALSE);
+      CsRowStatus row_status,
+      pfc_bool_t is_filtering,
+      pfc_bool_t is_state);
 
   void FillSwitchValueStructure(OdbcmConnectionHandler *db_conn,
       DBTableSchema &kt_switch_dbtableschema,
@@ -229,8 +231,7 @@ class Kt_Switch : public Kt_State_Base {
       uint32_t operation_type,
       uint32_t &max_rep_ct,
       vector<val_switch_st_t> &vect_val_switch_st,
-      vector<key_switch_t> &vect_switch_id,
-      pfc_bool_t is_state = PFC_FALSE);
+      vector<key_switch_t> &vect_switch_id);
 
   UncRespCode ReadBulkInternal(OdbcmConnectionHandler *db_conn,
                                   void* key_struct,

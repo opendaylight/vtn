@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -94,10 +94,12 @@ namespace kt_momgr {
         IpctSt::kIpcStKeyVtepIf, IpctSt::kIpcStValVtepIf,
         uudst::vtep_interface::kDbiVtepIfNumCols);
     ntable = MAX_MOMGR_TBLS;
-    table = new Table *[ntable];
+    table = new Table *[ntable]();
     table[MAINTBL] = tbl;
     table[RENAMETBL] = NULL;
     table[CTRLRTBL] = NULL;
+    table[CONVERTTBL] = NULL;
+
     nchild = 0;
     child = NULL;
 #ifdef _STANDALONE_
@@ -108,7 +110,8 @@ namespace kt_momgr {
   /*
    *  * Based on the key type the bind info will pass
    *   *
-   bool VtepIfMoMgr::GetRenameKeyBindInfo(unc_key_type_t key_type, BindInfo *&binfo, int &nattr,
+   bool VtepIfMoMgr::GetRenameKeyBindInfo(unc_key_type_t key_type,
+   BindInfo *&binfo, int &nattr,
    MoMgrTables tbl ) {
    if (MAINTBL == tbl) {
    nattr = NUM_KEY_MAIN_TBL_;
@@ -220,7 +223,7 @@ namespace kt_momgr {
     return result_code;
   }
 #endif
-  bool VtepIfMoMgr::IsValidKey(void *key, uint64_t index) {
+  bool VtepIfMoMgr::IsValidKey(void *key, uint64_t index, MoMgrTables tbl) {
     UPLL_FUNC_TRACE;
     key_vtep_if *if_key = reinterpret_cast<key_vtep_if *>(key);
     upll_rc_t ret_val = UPLL_RC_SUCCESS;
@@ -602,6 +605,7 @@ namespace kt_momgr {
       UPLL_LOG_DEBUG("Invalid ikey");
       return UPLL_RC_ERR_GENERIC;
     }
+  key_vtep_if *vtepif_key = reinterpret_cast<key_vtep_if*>(ikey->get_key());
     while (ikey) {
       ConfigVal *cval = ikey->get_cfg_val();
       if (!cval) {
@@ -623,14 +627,10 @@ namespace kt_momgr {
             vtepif_val->valid[UPLL_IDX_PORT_MAP_VTEPI] = UNC_VF_INVALID;
         }
         if (IpctSt::kIpcStValVtepIfSt == cval->get_st_num()) {
-          val_vtep_if_st *vtepif_stval = reinterpret_cast<val_vtep_if_st *>
-                            (ConfigKeyVal::Malloc(sizeof(val_vtep_if_st)));
-          val_db_vtep_if_st *db_vtepif_stval =
-                             reinterpret_cast<val_db_vtep_if_st *>(
-                                 cval->get_val());
-          memcpy(vtepif_stval, &db_vtepif_stval->vtep_if_val_st,
-                                   sizeof(val_vtep_if_st));
-          cval->SetVal(IpctSt::kIpcStValVtepIfSt, vtepif_stval);
+          controller_domain ctrlr_dom = {NULL, NULL};
+          GET_USER_DATA_CTRLR_DOMAIN(ikey, ctrlr_dom);
+          CheckOperStatus<val_vtep_if_st>(vtepif_key->vtep_key.vtn_key.vtn_name,
+                                          cval, UNC_KT_VTEP_IF, ctrlr_dom);
         }
         cval = cval->get_next_cfg_val();
       }
@@ -1070,6 +1070,15 @@ namespace kt_momgr {
           && (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE)) {
         uuu::upll_strncpy(val_vtep_if->portmap.logical_port_id, " ",
             kMaxLenLogicalPortId+1);
+        val_vtep_if->portmap.vlan_id = 0;
+        val_vtep_if->portmap.tagged = 0;
+        val_vtep_if->portmap.valid[UPLL_IDX_VLAN_ID_PM] =
+                                                  UNC_VF_VALID_NO_VALUE;
+        val_vtep_if->portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_VALID_NO_VALUE;
+      } else if ((val_vtep_if->portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] ==
+                 UNC_VF_INVALID) && (operation == UNC_OP_CREATE)) {
+        val_vtep_if->portmap.valid[UPLL_IDX_VLAN_ID_PM] = UNC_VF_INVALID;
+        val_vtep_if->valid[UPLL_IDX_PORT_MAP_VTEPI] = UNC_VF_INVALID;
       }
       if (val_vtep_if->portmap.valid[UPLL_IDX_VLAN_ID_PM] == UNC_VF_VALID) {
         if ((val_vtep_if->portmap.vlan_id != 0xFFFF) &&
@@ -1084,7 +1093,13 @@ namespace kt_momgr {
       } else if (val_vtep_if->portmap.valid[UPLL_IDX_VLAN_ID_PM]
           == UNC_VF_VALID_NO_VALUE
           && (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE)) {
+        /* If VLAN_ID is erased, Tagged attribute also needs to be erased */
         val_vtep_if->portmap.vlan_id = 0;
+        val_vtep_if->portmap.tagged = 0;
+        val_vtep_if->portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_VALID_NO_VALUE;
+      } else if ((val_vtep_if->portmap.valid[UPLL_IDX_VLAN_ID_PM] ==
+                  UNC_VF_INVALID) && (operation == UNC_OP_CREATE)) {
+         val_vtep_if->portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_INVALID;
       }
       if (val_vtep_if->portmap.valid[UPLL_IDX_TAGGED_PM] == UNC_VF_VALID) {
         if (!ValidateNumericRange((uint8_t) val_vtep_if->portmap.tagged,
@@ -1095,16 +1110,14 @@ namespace kt_momgr {
               val_vtep_if->portmap.tagged);
           return UPLL_RC_ERR_CFG_SYNTAX;
         }
-      } else if (((val_vtep_if->portmap.valid[UPLL_IDX_TAGGED_PM]
-          == UNC_VF_VALID_NO_VALUE) ||
-                (val_vtep_if->portmap.valid[UPLL_IDX_TAGGED_PM]
-          == UNC_VF_INVALID))
-          && (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE)) {
-        if (val_vtep_if->portmap.valid[UPLL_IDX_VLAN_ID_PM] == UNC_VF_VALID)
+      } else if (((val_vtep_if->portmap.valid[UPLL_IDX_TAGGED_PM] ==
+           UNC_VF_VALID_NO_VALUE) ||
+           (val_vtep_if->portmap.valid[UPLL_IDX_TAGGED_PM] == UNC_VF_INVALID))
+            && (operation == UNC_OP_CREATE)) {
+        if (val_vtep_if->portmap.valid[UPLL_IDX_VLAN_ID_PM] == UNC_VF_VALID) {
           val_vtep_if->portmap.tagged = UPLL_VLAN_TAGGED;
-        else
-          val_vtep_if->portmap.tagged = UPLL_VLAN_UNTAGGED;
-        val_vtep_if->portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_VALID;
+          val_vtep_if->portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_VALID;
+        }
       }
     } else if ((val_vtep_if->valid[UPLL_IDX_PORT_MAP_VTEPI] ==
                 UNC_VF_VALID_NO_VALUE)
@@ -1335,22 +1348,27 @@ namespace kt_momgr {
   }
 
   /*
-     upll_rc_t VtepIfMoMgr::CopyToConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *ikey) {
+     upll_rc_t VtepIfMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
+     ConfigKeyVal *ikey) {
 
      if ( !ikey || !(ikey->get_key()) )
      return UPLL_RC_ERR_GENERIC;
 
      upll_rc_t result_code = UPLL_RC_SUCCESS;
 
-     key_rename_vnode_info *key_rename = (key_rename_vnode_info *)ikey->get_key();
-     key_vtep_if_t *vtep_key = (key_vtep_if_t *) malloc ( sizeof (key_vtep_if_t));
+     key_rename_vnode_info *key_rename =
+     (key_rename_vnode_info *)ikey->get_key();
+     key_vtep_if_t *vtep_key =
+     (key_vtep_if_t *) malloc ( sizeof (key_vtep_if_t));
      if (!vtep_key)
      return UPLL_RC_ERR_GENERIC;
      if (!strlen ((char *)key_rename->old_unc_vtn_name))
      return UPLL_RC_ERR_GENERIC;
-     strcpy ((char *)vtep_key->vtep_key.vtn_key.vtn_name, (char *)key_rename->old_unc_vtn_name);
+     strcpy ((char *)vtep_key->vtep_key.vtn_key.vtn_name,
+     (char *)key_rename->old_unc_vtn_name);
 
-     okey = new ConfigKeyVal (UNC_KT_VTEP_IF, IpctSt::kIpcStKeyVtepIf, vtep_key, NULL);
+     okey = new ConfigKeyVal (UNC_KT_VTEP_IF, IpctSt::kIpcStKeyVtepIf, vtep_key,
+     NULL);
      if (!okey) {
      FREE_IF_NOT_NULL(vtep_key);
      return UPLL_RC_ERR_GENERIC;
@@ -1359,15 +1377,15 @@ namespace kt_momgr {
      }
      */
 
-  upll_rc_t VtepIfMoMgr::IsReferenced(ConfigKeyVal *ikey,
-      upll_keytype_datatype_t dt_type, DalDmlIntf *dmi) {
+  upll_rc_t VtepIfMoMgr::IsReferenced(IpcReqRespHeader *req,
+    ConfigKeyVal *ikey, DalDmlIntf *dmi) {
     upll_rc_t result_code = UPLL_RC_SUCCESS;
     ConfigKeyVal *okey = NULL;
     if (!ikey || !(ikey->get_key()) ||!dmi )
       return UPLL_RC_ERR_GENERIC;
     GetChildConfigKey(okey, ikey);
     DbSubOp dbop = {kOpReadMultiple, kOpMatchNone, kOpInOutFlag};
-    result_code = ReadConfigDB(okey, dt_type, UNC_OP_READ,
+    result_code = ReadConfigDB(okey, req->datatype, UNC_OP_READ,
         dbop, dmi, MAINTBL);
     if (result_code != UPLL_RC_SUCCESS) {
       DELETE_IF_NOT_NULL(okey);
@@ -1387,6 +1405,6 @@ namespace kt_momgr {
     return result_code;
   }
 
-}  // namespace vtn
+}  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc

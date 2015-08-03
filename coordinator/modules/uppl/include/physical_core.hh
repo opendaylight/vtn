@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -133,6 +133,20 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
     UncRespCode ValidateStandbyRequests(uint32_t operation_type);
 
     /**
+     * @Description : This function gets the config mode from TC by sending
+     *                IPC msg to TC library
+     * @param[in] : session_id - Session ID from the request
+     * @param[in] : config_id - Configuration ID
+     * @param[out] : config_mode - config modes which are TC_CONFIG_GLOBAL or
+     *              TC_CONFIG_REAL or TC_CONFIG_VIRTUAL or TC_CONFIG_VTN
+     * @param[out] : vtn_name - VTN Name
+     * */
+    UncRespCode GetConfigMode(uint32_t session_id,
+                                        uint32_t config_id,
+                                        TcConfigMode &config_mode,
+                                        std::string vtn_name);
+
+    /**
      * @Description : This inline function gives the instance of
      *                InternalTransactionCoordinator class
      * @param[in] :
@@ -190,6 +204,10 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      **/
     UncRespCode SendEventHandlingFailureAlarm(string controller_id,
                                                 string event_details);
+    UncRespCode SendEventPostFailureNotice(string controller_id,
+                                               string event_details);
+    UncRespCode SendDuplicateControllerIdAlarm(string dup_ctr_id,
+                         string actual_id, string orig_controller_id);
 
     UncRespCode SendControllerAuditFailureAlarm(string controller_id);
 
@@ -213,7 +231,9 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      */
 
     TcCommonRet HandleCommitTransactionStart(uint32_t session_id,
-                                             uint32_t config_id);
+                                             uint32_t config_id,
+                                             TcConfigMode config_mode,
+                                             std::string vtn_name);
 
     /**
      * @Description : This function will be called back when TC sends user
@@ -223,6 +243,8 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
 
     TcCommonRet HandleCommitTransactionEnd(uint32_t session_id,
                                            uint32_t config_id,
+                                           TcConfigMode config_mode,
+                                           std::string vtn_name,
                                            TcTransEndResult);
 
     /**
@@ -233,6 +255,8 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
 
     TcCommonRet HandleCommitVoteRequest(uint32_t session_id,
                                         uint32_t config_id,
+                                        TcConfigMode config_mode,
+                                        std::string vtn_name,
                                         TcDriverInfoMap& driver_info);
 
     /**
@@ -255,6 +279,8 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
 
     TcCommonRet HandleCommitGlobalCommit(uint32_t session_id,
                                          uint32_t config_id,
+                                         TcConfigMode config_mode,
+                                         std::string vtn_name,
                                          TcDriverInfoMap& driver_info);
 
     /**
@@ -277,6 +303,8 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
 
     TcCommonRet HandleCommitDriverResult(uint32_t session_id,
                                          uint32_t config_id,
+                                         TcConfigMode config_mode,
+                                         std::string vtn_name,
                                          TcCommitPhaseType commitphase,
                                          TcCommitPhaseResult driver_result);
     /**
@@ -286,6 +314,8 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      */
 
     TcCommonRet HandleCommitGlobalAbort(uint32_t session_id, uint32_t config_id,
+                                        TcConfigMode config_mode,
+                                        std::string vtn_name,
                                         TcCommitOpAbortPhase fail_phase);
 
     /**
@@ -297,7 +327,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
     TcCommonRet HandleAuditStart(uint32_t session_id,
                                  unc_keytype_ctrtype_t driver_id,
                                  string controller_id,
-                                 pfc_bool_t simplified_audit,
+                                 TcAuditType audit_type,
                                  uint64_t  commit_number,
                                  uint64_t  commit_date,
                                  std::string commit_application);
@@ -307,9 +337,10 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      *                avoid runtime conflicts
      */
     TcCommonRet HandleAuditStart(uint32_t session_id,
-                                 unc_keytype_ctrtype_t driver_id,
+                                 unc_keytype_ctrtype_t ctr_type,
                                  string controller_id,
-                                 pfc_bool_t force_reconnect) {
+                                 pfc_bool_t force_reconnect,
+                                 TcAuditType audit_type) {
       /*this should not called by UPPL*/
       return unc::tclib::TC_FAILURE;
     }
@@ -412,20 +443,35 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
                                        unc_keytype_ctrtype_t driver_id,
                                        string controller_id,
                                        TcAuditOpAbortPhase operation_phase);
+
+    /**
+     * @Description : This function will be called back when TC sends
+     *                cancel audit when commit/abort request arrives 
+     *                with cancel flag enable
+     *                This is a virtual function in TCLib
+     */
+
+    TcCommonRet HandleAuditCancel(uint32_t session_id,
+                                  unc_keytype_ctrtype_t driver_id,
+                                  string controller_id);
     /**
      * @Description : This function will be called back when TC sends user
      *                save configuration request to UPPL
      *                This is a virtual function in TCLib
      */
 
-    TcCommonRet HandleSaveConfiguration(uint32_t session_id);
+    TcCommonRet HandleSaveConfiguration(uint32_t session_id,
+                                        uint64_t save_version);
     /**
      * @Description : This function will be called back when TC sends user
      *                Abort Candidate request to UPPL
      *                This is a virtual function in TCLib
      */
 
-    TcCommonRet HandleAbortCandidate(uint32_t session_id, uint32_t config_id);
+    TcCommonRet HandleAbortCandidate(uint32_t session_id, uint32_t config_id,
+                                     TcConfigMode config_mode,
+                                     std::string vtn_name,
+                                     uint64_t abort_version);
 
     /**
      * @Description : This function will be called back when TC sends user
@@ -445,7 +491,9 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      */
 
     TcCommonRet HandleAuditConfig(unc_keytype_datatype_t db_target,
-                                  TcServiceType fail_oper);
+                                  TcServiceType fail_oper,
+                                  TcConfigMode config_mode,
+                                  std::string vtn_name, uint64_t version);
 
     /**
      * @Description : This function will be called back when TC sends

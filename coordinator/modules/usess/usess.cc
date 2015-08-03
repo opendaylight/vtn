@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -8,12 +8,15 @@
  */
 
 #include <boost/bind.hpp>
+#include <crypt.h>
 #include "usess.hh"
 
 namespace unc {
 namespace usess {
 
 #define CLASS_NAME "Usess"
+
+extern struct crypt_data usess_crypt_data;
 
 // IPC handler function table.
 usess_ipc_err_e (Usess::*Usess::IpcHandler[])(pfc::core::ipc::ServerSession&) =
@@ -64,6 +67,7 @@ Usess::~Usess(void)
  */
 pfc_bool_t Usess::init(void)
 {
+  usess_crypt_data.initialized = 0;
   // event mask value.
   pfc::core::EventMask reload_mask(PFC_MODEVENT_TYPE_RELOAD);
   // event handler.
@@ -79,7 +83,7 @@ pfc_bool_t Usess::init(void)
   // Data load of configuration file.
   // -------------------------------------------------------------
   rtn = conf_.LoadConf();
-  GOTO_IF((rtn != USESS_E_OK), unlock_end,
+  GOTO_IF2((rtn != USESS_E_OK), unlock_end,
       "Failed to data load of configuration file. err=%d", rtn);
 
   // write lock.
@@ -88,13 +92,13 @@ pfc_bool_t Usess::init(void)
   // -------------------------------------------------------------
   // Initialization of the data management class.
   // -------------------------------------------------------------
-  GOTO_IF((database_.Init() != true), unlock_end,
+  GOTO_IF2((database_.Init() != true), unlock_end,
       "%s", "Failed to database class initialization.");
-  GOTO_IF((sessions_.Init() != true), unlock_end,
+  GOTO_IF2((sessions_.Init() != true), unlock_end,
       "%s", "Failed to sessions class initialization.");
-  GOTO_IF((users_.Init() != true), unlock_end,
+  GOTO_IF2((users_.Init() != true), unlock_end,
       "%s", "Failed to users class initialization.");
-  GOTO_IF((enable_.Init() != true), unlock_end,
+  GOTO_IF2((enable_.Init() != true), unlock_end,
       "%s", "Failed to enable class initialization.");
 
   // -------------------------------------------------------------
@@ -105,7 +109,7 @@ pfc_bool_t Usess::init(void)
     event_handler = boost::bind(&Usess::ReloadConfEventHandler, this, _1);
     add_handler_rtn = addEventHandler(event_id_conf_reload_,
                                       event_handler, reload_mask);
-    GOTO_CODESET_DETAIL_IF((add_handler_rtn != 0), unlock_end,
+    GOTO_CODESET_DETAIL_IF2((add_handler_rtn != 0), unlock_end,
         event_id_conf_reload_, EVHANDLER_ID_INVALID, add_handler_rtn,
         "%s", "Failed to add reload event handler.")
   }
@@ -204,12 +208,12 @@ pfc_ipcresp_t Usess::ipcService(pfc::core::ipc::ServerSession &ipcsess,
   L_FUNCTION_START();
 
   // check service ID.
-  GOTO_CODESET_IF((service >= kUsessIpcNipcs), proc_end, rtn, USESS_E_NG,
+  GOTO_CODESET_IF2((service >= kUsessIpcNipcs), proc_end, rtn, USESS_E_NG,
       "Invalid service ID. Service ID=%d", service);
 
   // service ID process execution.
   rtn = (this->*IpcHandler[service])(ipcsess);
-  GOTO_IF((rtn != USESS_E_OK), proc_end,
+  GOTO_IF2((rtn != USESS_E_OK), proc_end,
       "Failed to IPC handler process. Service ID=%d", service);
 
   // Process success.
@@ -240,14 +244,14 @@ void Usess::ReloadConfEventHandler(pfc::core::Event* event)
 
   // Check event type.
   event_type = event->getType();
-  GOTO_IF((event_type != PFC_MODEVENT_TYPE_RELOAD), proc_end,
+  GOTO_IF2((event_type != PFC_MODEVENT_TYPE_RELOAD), proc_end,
       "Invalid event type. event type=%hu", event_type);
 
   // -------------------------------------------------------------
   // Configuration file reload.
   // -------------------------------------------------------------
   int_rtn = reloadConf();
-  GOTO_IF((int_rtn != 0), proc_end, 
+  GOTO_IF2((int_rtn != 0), proc_end, 
       "Failed reload configuration. err=%d (%s)",
       int_rtn, strerror(int_rtn));
 
@@ -291,6 +295,7 @@ proc_end:
 usess_ipc_err_e Usess::UsessSessAddHandler(
       pfc::core::ipc::ServerSession& ipcsess)
 {
+  uint32_t try_cnt = 0;
   // area of IPC send/receive data.
   usess_ipc_req_sess_add_t receive_data;
   usess_ipc_sess_id_t send_data;
@@ -312,9 +317,11 @@ usess_ipc_err_e Usess::UsessSessAddHandler(
 
   // receive ipc client send data.
   ipc_rtn = ipcsess.getArgument(0, receive_data);
-  GOTO_CODESET_DETAIL_IF((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
+  GOTO_CODESET_DETAIL_IF2((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
       ipc_rtn, "%s", "Failed ipc receive.");
 
+retry:
+  try_cnt++;
   // write lock.
   USESS_WLOCK(proc_end, err_code);
 
@@ -324,7 +331,7 @@ usess_ipc_err_e Usess::UsessSessAddHandler(
   // get user information.
   uname = CAST_IPC_STRING(receive_data.sess_uname);
   err_code = users_.GetUser(uname, user);
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), disconnect_end,
       "Failed get user information. user=%s err=%d", uname.c_str(), err_code);
 
   // database disconnect.
@@ -337,7 +344,9 @@ usess_ipc_err_e Usess::UsessSessAddHandler(
   strncpy(passwd, (char*)receive_data.sess_passwd, sizeof(passwd) - 1);
   err_code = user.Authenticate(kAuthenticateSessAdd,
             static_cast<usess_type_e>(receive_data.sess_type), passwd);
-  GOTO_IF((err_code != USESS_E_OK), proc_end,
+  GOTO_IF2(((err_code == USESS_E_INVALID_PASSWD) && (try_cnt <= conf_.data().auth_retry_count)),
+    retry, "Failed check user password authenticate. err=%d", err_code);
+  GOTO_IF2((err_code != USESS_E_OK), proc_end,
       "Failed check user password authenticate. err=%d", err_code);
 
   // write lock.
@@ -345,7 +354,7 @@ usess_ipc_err_e Usess::UsessSessAddHandler(
 
   // add session.
   err_code = sessions_.Add(receive_data, user, send_data);
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed add session. err=%d", err_code);
 
   // send ipc data.
@@ -353,7 +362,7 @@ usess_ipc_err_e Usess::UsessSessAddHandler(
   if (ipc_rtn != 0) {
     sessions_.Del(send_data);
   }
-  GOTO_CODESET_DETAIL_IF((ipc_rtn != 0), unlock_end, err_code, USESS_E_NG,
+  GOTO_CODESET_DETAIL_IF2((ipc_rtn != 0), unlock_end, err_code, USESS_E_NG,
       ipc_rtn, "%s", "Failed ipc data send.");
 
   // erase of password data area.
@@ -365,8 +374,9 @@ usess_ipc_err_e Usess::UsessSessAddHandler(
   L_FUNCTION_COMPLETE();
   return USESS_E_OK;
 
-unlock_end:
+disconnect_end:
   database_.Disconnect();
+unlock_end:
   USESS_UNLOCK();
 
 proc_end:
@@ -397,7 +407,7 @@ usess_ipc_err_e Usess::UsessSessDelHandler(
 
   // receive ipc client send data.
   ipc_rtn = ipcsess.getArgument(0, receive_data);
-  GOTO_CODESET_DETAIL_IF((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
+  GOTO_CODESET_DETAIL_IF2((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
       ipc_rtn, "%s", "Failed ipc receive.");
 
   // write lock.
@@ -406,12 +416,12 @@ usess_ipc_err_e Usess::UsessSessDelHandler(
   // check privilege of delete session.
   err_code = sessions_.Privilege(kPrivilegeSessDel,
                 receive_data.current, receive_data.delsess);
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed privilege. err=%d", err_code);
 
   // del session.
   err_code = sessions_.Del(receive_data.delsess);
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed del session. err=%d", err_code);
 
   // Process success.
@@ -447,7 +457,7 @@ usess_ipc_err_e Usess::UsessSessTypeDelHandler(
 
   // receive ipc client send data.
   ipc_rtn = ipcsess.getArgument(0, receive_data);
-  GOTO_CODESET_DETAIL_IF((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
+  GOTO_CODESET_DETAIL_IF2((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
       ipc_rtn, "%s", "Failed ipc receive.");
 
   // write lock.
@@ -455,7 +465,7 @@ usess_ipc_err_e Usess::UsessSessTypeDelHandler(
 
   // del session.
   err_code = sessions_.Del(static_cast<usess_type_e>(receive_data.sess_type));
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed del session. err=%d", err_code);
 
   // Process success.
@@ -479,6 +489,7 @@ proc_end:
 usess_ipc_err_e Usess::UsessEnableHandler(
     pfc::core::ipc::ServerSession& ipcsess)
 {
+  uint32_t try_cnt = 0;
   usess_ipc_req_sess_enable_t receive_data;
   UsessSession *sess = NULL;
   char passwd[73] = {'\0'};
@@ -491,34 +502,41 @@ usess_ipc_err_e Usess::UsessEnableHandler(
 
   // receive ipc client send data.
   ipc_rtn = ipcsess.getArgument(0, receive_data);
-  GOTO_CODESET_DETAIL_IF((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
+  GOTO_CODESET_DETAIL_IF2((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
       ipc_rtn, "%s", "Failed ipc receive.");
 
   // write lock.
   USESS_WLOCK(proc_end, err_code);
 
+retry:
+  try_cnt++;
   // database connect.
   CONNECT(unlock_end, err_code);
 
   // get session.
   err_code = sessions_.GetSession(receive_data.current, &sess);
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed get session information. err=%d", err_code);
 
   // check privilege of enable.
   err_code = enable_.Privilege(kPrivilegeEnable, sess->sess());
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed check enable privilege. err=%d", err_code);
 
   // check enable authenticate.
   strncpy(passwd, (char*)receive_data.enable_passwd, sizeof(passwd) - 1);
   err_code = enable_.Authenticate(kAuthenticateEnable, sess->sess(), passwd);
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  if ((err_code == USESS_E_INVALID_PASSWD) && (try_cnt <= conf_.data().auth_retry_count)) {
+    pfc_log_error("Failed check enable authenticate. err=%d", err_code);
+    DISCONNECT(unlock_end, err_code);
+    goto retry;
+  }
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed check enable authenticate. err=%d", err_code);
 
   // session enable.
   err_code = sess->TransitMode(USESS_MODE_ENABLE);
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed change enable mode. err=%d", err_code);
 
   // database disconnect.
@@ -565,7 +583,7 @@ usess_ipc_err_e Usess::UsessDisableHandler(
 
   // receive ipc client send data.
   ipc_rtn = ipcsess.getArgument(0, receive_data);
-  GOTO_CODESET_DETAIL_IF((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
+  GOTO_CODESET_DETAIL_IF2((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
       ipc_rtn, "%s", "Failed ipc receive.");
 
   // write lock.
@@ -573,17 +591,17 @@ usess_ipc_err_e Usess::UsessDisableHandler(
 
   // get session.
   err_code = sessions_.GetSession(receive_data, &sess);
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed get session information. err=%d", err_code);
 
   // check privilege of disable.
   err_code = enable_.Privilege(kPrivilegeDisable, sess->sess());
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed check disable privilege. err=%d", err_code);
 
   // session disable.
   err_code = sess->TransitMode(USESS_MODE_OPER);
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed change enable mode. err=%d", err_code);
 
   // Process success.
@@ -619,7 +637,7 @@ usess_ipc_err_e Usess::UsessSessCountHandler(
 
   // receive ipc client send data.
   ipc_rtn = ipcsess.getArgument(0, receive_data);
-  GOTO_CODESET_DETAIL_IF((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
+  GOTO_CODESET_DETAIL_IF2((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
       ipc_rtn, "%s", "Failed ipc receive.");
 
   // read lock.
@@ -628,7 +646,7 @@ usess_ipc_err_e Usess::UsessSessCountHandler(
   // check privilege of get session count.
   err_code = sessions_.Privilege(kPrivilegeSessCount,
                 receive_data, receive_data);
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed privilege. err=%d", err_code);
 
   // get session count.
@@ -636,7 +654,7 @@ usess_ipc_err_e Usess::UsessSessCountHandler(
 
   // send ipc data.
   ipc_rtn = ipcsess.addOutput(send_data);
-  GOTO_CODESET_DETAIL_IF((ipc_rtn != 0), unlock_end, err_code, USESS_E_NG,
+  GOTO_CODESET_DETAIL_IF2((ipc_rtn != 0), unlock_end, err_code, USESS_E_NG,
       ipc_rtn, "%s", "Failed ipc data send.");
 
   // Process success.
@@ -672,7 +690,7 @@ usess_ipc_err_e Usess::UsessSessListHandler(
 
   // receive ipc client send data.
   ipc_rtn = ipcsess.getArgument(0, receive_data);
-  GOTO_CODESET_DETAIL_IF((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
+  GOTO_CODESET_DETAIL_IF2((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
       ipc_rtn, "%s", "Failed ipc receive.");
 
   // read lock.
@@ -681,18 +699,18 @@ usess_ipc_err_e Usess::UsessSessListHandler(
   // check privilege of session list.
   err_code = sessions_.Privilege(kPrivilegeSessList,
                 receive_data, receive_data);
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed privilege. err=%d", err_code);
 
   // get session list.
   err_code = sessions_.GetList(info_list);
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed get session list. err=%d", err_code);
 
   // send ipc data.
   for (unsigned int loop = 0; loop < info_list.size(); ++loop) {
     ipc_rtn = ipcsess.addOutput(info_list[loop]);
-    GOTO_CODESET_DETAIL_IF((ipc_rtn != 0), unlock_end, err_code, USESS_E_NG,
+    GOTO_CODESET_DETAIL_IF2((ipc_rtn != 0), unlock_end, err_code, USESS_E_NG,
         ipc_rtn, "Failed ipc data send. count=%d", loop+1);
   }
 
@@ -729,7 +747,7 @@ usess_ipc_err_e Usess::UsessSessDetailHandler(
 
   // receive ipc client send data.
   ipc_rtn = ipcsess.getArgument(0, receive_data);
-  GOTO_CODESET_DETAIL_IF((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
+  GOTO_CODESET_DETAIL_IF2((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
       ipc_rtn, "%s", "Failed ipc receive.");
 
   // read lock.
@@ -738,17 +756,17 @@ usess_ipc_err_e Usess::UsessSessDetailHandler(
   // check privilege of session detail.
   err_code = sessions_.Privilege(kPrivilegeSessDetail,
                 receive_data.current, receive_data.detail);
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed privilege. err=%d", err_code);
 
   // get session Detail.
   err_code = sessions_.GetList(receive_data.detail, info_list);
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed get session list. err=%d", err_code);
 
   // send ipc data.
   ipc_rtn = ipcsess.addOutput(info_list[0]);
-  GOTO_CODESET_DETAIL_IF((ipc_rtn != 0), unlock_end, err_code, USESS_E_NG,
+  GOTO_CODESET_DETAIL_IF2((ipc_rtn != 0), unlock_end, err_code, USESS_E_NG,
       ipc_rtn, "%s", "Failed ipc data send.");
 
   // Process success.
@@ -788,7 +806,7 @@ usess_ipc_err_e Usess::UserUserPasswdHandler(
 
   // receive ipc client send data.
   ipc_rtn = ipcsess.getArgument(0, receive_data);
-  GOTO_CODESET_DETAIL_IF((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
+  GOTO_CODESET_DETAIL_IF2((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
       ipc_rtn, "%s", "Failed ipc receive.");
 
   // write lock.
@@ -799,24 +817,24 @@ usess_ipc_err_e Usess::UserUserPasswdHandler(
 
   // get current session.
   err_code = sessions_.GetSession(receive_data.current, &sess);
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
         "Failed get session information. err=%d", err_code);
 
   // get target user.
   uname = CAST_IPC_STRING(receive_data.sess_uname);
   err_code = users_.GetUser(uname, user);
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed get user. user=%s err=%d", uname.c_str(), err_code);
 
   // check privilege of change user password.
   strncpy(passwd, (char*)receive_data.sess_passwd, sizeof(passwd) - 1);
   err_code = user.Privilege(kPrivilegeUserPasswd, sess->sess());
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed check change user password privilege. err=%d", err_code);
 
   // change user password.
   err_code = user.ChangePassword(passwd);
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed change user password. user=%s err=%d", uname.c_str(), err_code);
 
   // database disconnect.
@@ -865,7 +883,7 @@ usess_ipc_err_e Usess::UserEnablePasswdHandler(
 
   // receive ipc client send data.
   ipc_rtn = ipcsess.getArgument(0, receive_data);
-  GOTO_CODESET_DETAIL_IF((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
+  GOTO_CODESET_DETAIL_IF2((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
       ipc_rtn, "%s", "Failed ipc receive.");
 
   // write lock.
@@ -876,18 +894,18 @@ usess_ipc_err_e Usess::UserEnablePasswdHandler(
 
   // get session.
   err_code = sessions_.GetSession(receive_data.current, &sess);
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed get session information. err=%d", err_code);
 
   // check privilege of enable password change.
   err_code = enable_.Privilege(kPrivilegeEnablePasswd, sess->sess());
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed check privilege of enable password change. err=%d", err_code);
 
   // change enable password.
   strncpy(passwd, (char*)receive_data.enable_passwd, sizeof(passwd) - 1);
   err_code = enable_.ChangePassword(passwd);
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF2((err_code != USESS_E_OK), unlock_end,
       "Failed change enable password. err=%d", err_code);
 
   // database disconnect.

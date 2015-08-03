@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -50,9 +50,12 @@ InternalTransactionCoordinator::InternalTransactionCoordinator()
  */
 InternalTransactionCoordinator* InternalTransactionCoordinator::
 get_internaltransactioncoordinator() {
+  PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+  physical_layer->phyitc_mutex_.lock();
   if (internal_transaction_coordinator_ == NULL) {
     internal_transaction_coordinator_ =  new InternalTransactionCoordinator();
   }
+  physical_layer->phyitc_mutex_.unlock();
   return internal_transaction_coordinator_;
 }
 
@@ -337,6 +340,9 @@ UncRespCode InternalTransactionCoordinator::ProcessConfigRequest(
     if (validate_status == UNC_UPPL_RC_ERR_INVALID_SESSIONID) {
       pfc_log_error("ITC::Process Req:: Session id validation failed");
     }
+    if (validate_status == UNC_UPPL_RC_FAILURE) {
+      pfc_log_error("ITC::Process Req:: Config mode validation failed");
+    }
     rsh.result_code = validate_status;
     int err = PhyUtil::sessOutRespHeader(session, rsh);
     if (err != 0) {
@@ -388,17 +394,21 @@ UncRespCode InternalTransactionCoordinator::ProcessReadRequest(
     }
     return UNC_RC_SUCCESS;
   }
-  if (obj_req_hdr.data_type == UNC_DT_CANDIDATE) {
-    UncRespCode validate_status = PerformConfigIdValidation(
-        session,
-        obj_req_hdr.client_sess_id,
-        obj_req_hdr.config_id);
+  //  skip the config id validation if logical's fixed session_id
+  if (obj_req_hdr.data_type == UNC_DT_CANDIDATE &&
+                        USESS_ID_UPLL != obj_req_hdr.client_sess_id) {
+      UncRespCode validate_status = PerformConfigIdValidation(
+          session, obj_req_hdr.client_sess_id,
+          obj_req_hdr.config_id);
     if (validate_status != UNC_RC_SUCCESS) {
       if (validate_status == UNC_UPPL_RC_ERR_INVALID_CONFIGID) {
         pfc_log_error("ITC::Process Req:: Config id validation failed");
       }
       if (validate_status == UNC_UPPL_RC_ERR_INVALID_SESSIONID) {
         pfc_log_error("ITC::Process Req:: Session id validation failed");
+      }
+      if (validate_status == UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED) {
+        pfc_log_error("ITC::Process Req:: Config mode validation failed");
       }
       rsh.result_code = validate_status;
       int err = PhyUtil::sessOutRespHeader(session, rsh);
@@ -437,17 +447,36 @@ UncRespCode InternalTransactionCoordinator::ProcessImportRequest(
   UncRespCode ret_code = UNC_RC_SUCCESS;
   key_ctr_t obj_key_ctr;
   memset(&obj_key_ctr, 0, sizeof(key_ctr_t));
+  uint32_t session_id, config_id;
   if (operation == UNC_OP_IMPORT_CONTROLLER_CONFIG) {
     // get controller name from ipc structure
     const char* ctr_name;
     int err = session.getArgument(1, ctr_name);
+    err |= session.getArgument(2, session_id);
+    err |= session.getArgument(3, config_id);
     if (err != 0) {
       pfc_log_info(
-          "ctr_name is not present in UNC_OP_IMPORT_CONTROLLER_CONFIG");
+          "Attributes are missing in UNC_OP_IMPORT_CONTROLLER_CONFIG");
       return UNC_UPPL_RC_ERR_BAD_REQUEST;
     }
     pfc_log_debug("Controller name received %s", ctr_name);
     memcpy(obj_key_ctr.controller_name, ctr_name, strlen(ctr_name)+1);
+  } else if (operation == UNC_OP_MERGE_CONTROLLER_CONFIG) {
+    int err = session.getArgument(1, session_id);
+    err |= session.getArgument(2, config_id);
+    if (err != 0) {
+      pfc_log_info(
+          "Attributes are missing in UNC_OP_MERGE_CONTROLLER_CONFIG");
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
+    }
+  } else if (operation == UNC_OP_CLEAR_IMPORT_CONFIG) {
+    int err = session.getArgument(1, session_id);
+    err |= session.getArgument(2, config_id);
+    if (err != 0) {
+      pfc_log_info(
+          "Attributes are missing in UNC_OP_CLEAR_IMPORT_CONFIG");
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
+    }
   }
   if (config_request_status() == true) {
     ret_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
@@ -456,14 +485,14 @@ UncRespCode InternalTransactionCoordinator::ProcessImportRequest(
     UncRespCode db_ret = UNC_RC_SUCCESS;
     OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteNb, db_ret);
     if (db_ret != UNC_RC_SUCCESS) {
-      pfc_log_fatal("DB Connection failure for operation %d",
+      UPPL_LOG_FATAL("DB Connection failure for operation %d",
                     operation);
       return db_ret;
     }
     // create import request object to invoke processreq
     ImportRequest import_req;
     ret_code = import_req.ProcessRequest(&db_conn, operation,
-                                         obj_key_ctr);
+                                         obj_key_ctr, session_id, config_id);
     if (ret_code == UNC_RC_SUCCESS) {
       if (operation == UNC_OP_IMPORT_CONTROLLER_CONFIG) {
         controller_in_import_ = (const char*) obj_key_ctr.controller_name;
@@ -492,22 +521,49 @@ UncRespCode InternalTransactionCoordinator::ProcessIsCandidateDirty(
     ServerSession &session,
     uint32_t operation) {
   UncRespCode db_ret = UNC_RC_SUCCESS, resp_code = UNC_RC_SUCCESS;
-  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteNb, db_ret);
-  if (db_ret != UNC_RC_SUCCESS) {
-    pfc_log_fatal("DB Connection failure for operation %d",
-                  operation);
-    return db_ret;
+  // Checking the mode if it is global
+  uint32_t session_id, config_id;
+  int err = 0;
+  err |= session.getArgument(1, session_id);
+  err |= session.getArgument(2, config_id);
+  if (err != 0) {
+    pfc_log_info(
+          "Attributes are missing in ISCandidateDirtry");
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
+  }
+  PhysicalCore *physical_core = PhysicalLayer::get_instance()->
+      get_physical_core();
+  if (session_id != USESS_ID_TC) {
+    TcConfigMode config_mode =  TC_CONFIG_REAL;
+    string vtn_name= "";
+    resp_code = physical_core->GetConfigMode(session_id,
+                      config_id, config_mode, vtn_name);
+    if (resp_code == UNC_RC_SUCCESS) {
+      if (config_mode != TC_CONFIG_GLOBAL &&
+                config_mode != TC_CONFIG_REAL) {
+        resp_code = UNC_UPPL_RC_ERR_INVALID_CONFIGID;
+        pfc_log_error("IsCandidateDirty failed,Mode is not Global/REAL");
+      }
+    }
   }
   uint8_t dirty_status  = 0;
-  ODBCM_RC_STATUS db_status =
+  if (resp_code == UNC_RC_SUCCESS) {
+    OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteNb, db_ret);
+    if (db_ret != UNC_RC_SUCCESS) {
+      UPPL_LOG_FATAL("DB Connection failure for operation %d",
+                operation);
+      return db_ret;
+    }
+    ODBCM_RC_STATUS db_status =
       PhysicalLayer::get_instance()->get_odbc_manager()->
       IsCandidateDirty(&db_conn);
-  if (db_status == ODBCM_RC_CANDIDATE_DIRTY) {
-    dirty_status = 1;
-  } else if (db_status != ODBCM_RC_SUCCESS) {
-    resp_code = UNC_UPPL_RC_ERR_DB_GET;
+    if (db_status == ODBCM_RC_CANDIDATE_DIRTY) {
+      dirty_status = 1;
+    } else if (db_status != ODBCM_RC_SUCCESS) {
+      resp_code = UNC_UPPL_RC_ERR_DB_GET;
+    }
   }
-  int err = session.addOutput(operation);
+  err = session.addOutput(operation);
   err |= session.addOutput((uint32_t)resp_code);
   err |= session.addOutput(dirty_status);
   if (err != 0) {

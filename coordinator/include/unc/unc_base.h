@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -45,6 +45,7 @@ typedef enum {
                                            operation is in progress */
   UNC_TC_SYSTEM_FAILURE,                /* Internal errors in any of the modules */
   UNC_TC_FORBIDDEN_OPERATION,          /* Operation forbidden in current setup*/
+  UNC_TC_AUDIT_CANCELLED,              /* User Audit cancelled due to CancellableAudit */
   
   /*Common error codes*/
   UNC_RC_ERR_DRIVER_NOT_PRESENT = 200,
@@ -88,6 +89,20 @@ typedef enum {
                                             in the candidate configuration */
   UNC_UPLL_RC_ERR_SHUTTING_DOWN,              /* UPLL daemon is shutting down and
                                             cannot process the request */
+  UNC_UPLL_RC_ERR_EXPAND,                    /* Unified-network/boundary
+                                                configuration is incomplete */
+  UNC_UPLL_RC_ERR_VLAN_IN_USE,               /* Specified logical port and VLAN
+                                                ID is already in use */
+  UNC_UPLL_RC_ERR_VLAN_TYPE_MISMATCH,        /* Mismatch in VLAN type */
+  UNC_UPLL_RC_ERR_NAME_CONFLICT,             /* User configured name conflicts
+                                                with internally created name */
+  UNC_UPLL_RC_ERR_INVALID_DOMAIN,            /* Specified domain is invalid */
+  
+  UNC_UPLL_RC_ERR_INVALID_DEST_ADDR,        /* Specified destination address is invalid */
+  
+  UNC_UPLL_RC_ERR_INVALID_NEXTHOP_ADDR,     /* Specified next-hop address is invalid */
+  
+  UNC_UPLL_RC_ERR_INVALID_NWMONGRP,         /* Specified network-group name does not exist */
   /*UPPL Service*/
   UNC_UPPL_RC_ERR_BAD_REQUEST = 2000,       /* The request message format is bad */
   UNC_UPPL_RC_FAILURE,                  /* REMOVE THIS */
@@ -186,7 +201,8 @@ typedef enum {
   UNC_RC_CTR_DISCONNECTED,         /* controller disconnected/down  */
   UNC_RC_REQ_NOT_SENT_TO_CTR,      /* request not sent to controller   */
   UNC_RC_NO_SUCH_INSTANCE,         /* request for unknown attribute */
-  UNC_RC_UNSUPPORTED_CTRL_CONFIG   /* unsupported controller configuration */
+  UNC_RC_UNSUPPORTED_CTRL_CONFIG,  /* unsupported controller configuration */
+  UNC_RC_REQUEST_CANCELLED
 }UncRespCode;
 
 #ifdef __cplusplus

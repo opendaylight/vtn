@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014 NEC Corporation
+ * Copyright (c) 2011-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -17,15 +17,10 @@
 #include "ipcclnt_impl.h"
 
 /*
- * Connection identifier for the default handle.
- */
-#define	IPC_CONN_DEFAULT_ID		((pfc_ipcconn_t)1)
-
-/*
  * Determine whether the default connection is initialized or not.
  * `cnp' must be a pointer to ipcconn_default.
  */
-#define	IPC_CONN_DEFAULT_IS_VALID(cnp)	((cnp)->icn_id == IPC_CONN_DEFAULT_ID)
+#define	IPC_CONN_DEFAULT_IS_VALID(cnp)	((cnp)->icn_id == PFC_IPCCONN_DEFAULT)
 
 /*
  * Ping request timeout in seconds.
@@ -49,7 +44,7 @@ static ipc_conn_t	ipcconn_default = {
 /*
  * The minimum connection ID for dynamic allocation.
  */
-#define	IPC_CONN_ID_MIN		(IPC_CONN_DEFAULT_ID + 1)
+#define	IPC_CONN_ID_MIN		(PFC_IPCCONN_DEFAULT + 1)
 
 /*
  * Global client lock.
@@ -912,6 +907,78 @@ pfc_ipcclnt_cpool_reap(pfc_bool_t forced)
 
 	/* Close reaped connections. */
 	ipcconn_altclose_list(&reaped);
+}
+
+/*
+ * int
+ * pfc_ipcclnt_conn_cancel(pfc_ipcconn_t conn, pfc_bool_t discard)
+ *	Cancel all cancelable client sessions associated with the given
+ *	connection.
+ *
+ *	This function is equivalent to calling pfc_ipcclnt_sess_cancel()
+ *	for each client sessions associated with the given connection.
+ *
+ *	`conn' is the target connection handle.
+ *	If PFC_IPCCONN_DEFAULT is specified, this function will cancel
+ *	sessions associated with the default connection.
+ *
+ *	If PFC_TRUE is passed to `discard', the state of the canceled client
+ *	session will be changed to DISCARD. In this case further IPC service
+ *	request on the canceled client session will get ESHUTDOWN error.
+ *
+ *	Note that this function never affects client sessions without
+ *	PFC_IPCSSF_CANCELABLE flag.
+ *
+ * Calling/Exit State:
+ *	Upon successful completion, zero is returned.
+ *	Note that zero is returned if no client session is present on the
+ *	given connection.
+ *
+ *	EBADF is returned if the given connection handle is invalid.
+ */
+int
+pfc_ipcclnt_conn_cancel(pfc_ipcconn_t conn, pfc_bool_t discard)
+{
+	pfc_rbtree_t	*alttree = &ipcconn_alttree;
+	ipc_conn_t	*cnp;
+	ipc_clnotify_t	clnotify;
+	int		err;
+
+	IPC_CLIENT_RDLOCK();
+
+	/* Determine the connection handle specified by the caller. */
+	if (conn == PFC_IPCCONN_DEFAULT) {
+		cnp = &ipcconn_default;
+		if (PFC_EXPECT_FALSE(!IPC_CONN_DEFAULT_IS_VALID(cnp))) {
+			/*
+			 * The default connection is not yet initialized.
+			 * So no client session is present on the default
+			 * connection.
+			 */
+			err = 0;
+			goto out;
+		}
+	}
+	else {
+		pfc_rbnode_t	*node;
+
+		node = pfc_rbtree_get(alttree, IPC_CONN_KEY(conn));
+		if (PFC_EXPECT_FALSE(node == NULL)) {
+			err = EBADF;
+			goto out;
+		}
+		cnp = IPC_CONN_NODE2PTR(node);
+	}
+
+	/* Cancel sessions associated with the given connection. */
+	IPC_CLNOTIFY_INIT_FORCE(&clnotify, discard);
+	pfc_ipcclnt_canceller_conn_notify(cnp, &clnotify);
+	err = 0;
+
+out:
+	IPC_CLIENT_UNLOCK();
+
+	return err;
 }
 
 /*
@@ -1836,7 +1903,7 @@ ipcconn_init_default(ipc_conn_t *cnp)
 		return err;
 	}
 
-	cnp->icn_id = IPC_CONN_DEFAULT_ID;
+	cnp->icn_id = PFC_IPCCONN_DEFAULT;
 
 	/*
 	 * Initialize reference counter with (IPC_CONN_DEFAULT_REFCNT + 1)

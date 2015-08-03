@@ -1,5 +1,5 @@
 --
--- Copyright (c) 2013-2014 NEC Corporation
+-- Copyright (c) 2013-2015 NEC Corporation
 -- All rights reserved.
 -- 
 -- This program and the accompanying materials are made available under the
@@ -27,6 +27,7 @@ CREATE TABLE os_vtn_tbl
 (
   os_vtn_id integer NOT NULL,
   os_vtn_name character varying(31) NOT NULL,
+  os_vtn_status integer NOT NULL,
   CONSTRAINT pk_os_vtn PRIMARY KEY (os_vtn_name),
   CONSTRAINT max_val CHECK (os_vtn_id >= 0)
 );
@@ -36,6 +37,7 @@ CREATE TABLE os_vbr_tbl
   os_vbr_id integer NOT NULL,
   os_vtn_name character varying(31) NOT NULL,
   os_vbr_name character varying(31) NOT NULL,
+  os_vbr_status integer NOT NULL,
   CONSTRAINT pk_os_vbr PRIMARY KEY (os_vtn_name, os_vbr_name),
   CONSTRAINT fk_os_vbr FOREIGN KEY (os_vtn_name)
       REFERENCES os_vtn_tbl (os_vtn_name) MATCH SIMPLE
@@ -51,6 +53,7 @@ CREATE TABLE os_vbr_if_tbl
   os_vbr_if_name character varying(31) NOT NULL,
   os_map_type character(7) NOT NULL,
   os_logical_port_id character varying(319) NOT NULL,
+  os_vbr_if_status integer NOT NULL,
   CONSTRAINT pk_os_vbr_if PRIMARY KEY (os_vtn_name, os_vbr_name, os_vbr_if_name),
   CONSTRAINT fk_os_vbr_if FOREIGN KEY (os_vtn_name, os_vbr_name)
       REFERENCES os_vbr_tbl (os_vtn_name, os_vbr_name) MATCH SIMPLE

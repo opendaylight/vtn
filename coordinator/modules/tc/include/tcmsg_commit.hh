@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -37,9 +37,13 @@ class TcMsgCommit : public TcMsg {
 /*class to handle candidate abort notifications*/
 class AbortCandidateDB : public TcMsgCommit {
  public:
+  uint64_t abort_version_;
   AbortCandidateDB(uint32_t sess_id,
                    unc::tclib::TcMsgOperType oper);
   TcOperRet Execute();
+  void SetData(unc_keytype_datatype_t target_db,
+               TcServiceType fail_oper,
+               uint64_t version);
 };
 /*class to handle Transaction Start and End*/
 class CommitTransaction : public TcMsgCommit {

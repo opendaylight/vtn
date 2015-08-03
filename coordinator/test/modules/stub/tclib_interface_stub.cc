@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -8,7 +8,9 @@
  */
 
 #include <unc/keytype.h>
-#include <../../stub/tclib_module/tclib_interface_stub.hh>
+
+#include "tclib_module/tclib_interface_stub.hh"
+
 namespace unc {
 namespace tclib {
 
@@ -63,6 +65,8 @@ void fill_driver_info(TcDriverInfoMap &drv_map) {
 TcCommonRet TcLibInterfaceStub::HandleCommitVoteRequest(
     uint32_t session_id,
     uint32_t config_id,
+    TcConfigMode config_mode,
+    std::string vtn_name,
     TcDriverInfoMap& driver_info) {
 
   if (session_id == 0)
@@ -80,6 +84,8 @@ TcCommonRet TcLibInterfaceStub::HandleCommitVoteRequest(
 TcCommonRet
 TcLibInterfaceStub::HandleCommitGlobalAbort(uint32_t session_id,
                                             uint32_t config_id,
+                                            TcConfigMode config_mode,
+                                            std::string vtn_name,
                                             TcCommitOpAbortPhase fail_phase) {
   if (tclib_stub_failure_ == PFC_TRUE)
     return TC_FAILURE;
@@ -126,7 +132,36 @@ TcLibInterfaceStub::HandleAuditGlobalAbort(
 
   return TC_SUCCESS;
 }
+/*
+TcCommonRet
+TcLibInterfaceStub::HandleAuditStart(uint32_t session_id,
+                                     unc_keytype_ctrtype_t ctr_type,
+                                     std::string controller_id,
+                                     TcAuditType audit_type,
+                                     uint64_t commit_number,
+                                     uint64_t commit_date,
+                                     std::string commit_application) {
+  if (tclib_stub_failure_ == PFC_TRUE) {
+    return TC_FAILURE;
+      }
 
+      return TC_SUCCESS;
+    }
+
+
+TcCommonRet
+TcCommonRet HandleAuditStart(uint32_t session_id,
+                                     unc_keytype_ctrtype_t ctr_type,
+                                     std::string controller_id,
+                                     pfc_bool_t force_reconnect,
+                                     TcAuditType audit_type) {
+  if (tclib_stub_failure_ == PFC_TRUE) {
+    return TC_FAILURE;
+  }
+
+  return TC_SUCCESS;
+        }
+*/
 }  // namespace tclib
 }  // namespace unc
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014 NEC Corporation
+ * Copyright (c) 2011-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -26,6 +26,11 @@ PFC_C_BEGIN_DECL
  * Invalid connection handle.
  */
 #define	PFC_IPCCONN_INVALID	PFC_CONST_U(0)
+
+/*
+ * Pseudo connection handle which represents the default connection.
+ */
+#define	PFC_IPCCONN_DEFAULT	PFC_CONST_U(1)
 
 /*
  * Handle of alternative connection pool.
@@ -395,6 +400,9 @@ extern int	pfc_ipcclnt_sess_altcreate5(pfc_ipcsess_t **PFC_RESTRICT sessp,
 					    const char *PFC_RESTRICT name,
 					    pfc_ipcid_t service,
 					    uint32_t flags);
+
+extern int	pfc_ipcclnt_conn_cancel(pfc_ipcconn_t conn,
+					pfc_bool_t discard);
 
 extern int	pfc_ipcclnt_forward(pfc_ipcsess_t *PFC_RESTRICT dsess,
 				    pfc_ipcsess_t *PFC_RESTRICT ssess,

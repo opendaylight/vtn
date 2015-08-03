@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -258,8 +258,8 @@ class VtepGrpMoMgr : public VnodeChildMoMgr {
       return UPLL_RC_SUCCESS;
     }
     upll_rc_t CreateVtunnelKey(ConfigKeyVal *ikey, ConfigKeyVal *&okey);
-    upll_rc_t IsReferenced(ConfigKeyVal *ikey,
-        upll_keytype_datatype_t dt_type, DalDmlIntf *dmi);
+    upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
+                           DalDmlIntf *dmi);
     upll_rc_t GetVnodeName(ConfigKeyVal *ikey,
         uint8_t *&vtn_name, uint8_t *&vnode_name) {
       return UPLL_RC_SUCCESS;
@@ -283,7 +283,7 @@ class VtepGrpMoMgr : public VnodeChildMoMgr {
      * @retval         true                 input key is valid
      * @retval         false                input key is invalid.
      **/
-    bool IsValidKey(void *tkey, uint64_t index);
+    bool IsValidKey(void *tkey, uint64_t index, MoMgrTables tbl = MAINTBL);
 
     /**
      * @Brief Validates the syntax for KT_VTEP_GRP keytype key structure.
@@ -310,7 +310,7 @@ class VtepGrpMoMgr : public VnodeChildMoMgr {
 };
 
 
-}  // namespace vtn
+}  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc
 #endif

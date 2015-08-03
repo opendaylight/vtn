@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -71,6 +71,8 @@ class ReadRequest: public ITCReq {
     key_ctr_t key_ctr_obj;
     val_ctr_t val_ctr_obj;
     key_dataflow_t key_dataflow_obj;
+    key_dataflow_v2_t key_dataflow_v2_obj;
+    val_dataflow_v2_t val_dataflow_v2_obj;
     key_ctr_dataflow_t key_ctr_dataflow_obj;
     key_ctr_domain_t key_domain_obj;
     val_ctr_domain_t val_domain_obj;
@@ -106,6 +108,10 @@ class ReadRequest: public ITCReq {
                                 physical_response_header &rsh);
     void GetDataflowStructure(ServerSession &session,
                                 void * &key_struct,
+                                physical_response_header &rsh);
+    void GetDataflowV2Structure(ServerSession &session,
+                                void * &key_struct,
+                                void * &val_struct,
                                 physical_response_header &rsh);
     void GetCtrDataflowStructure(ServerSession &session,
                                 void * &key_struct,

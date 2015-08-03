@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -42,7 +42,6 @@ Kt_Dataflow::Kt_Dataflow() {
   // Populate structure to be used for syntax validation
   if (attr_syntax_map_all.find(UNC_KT_DATAFLOW) ==
       attr_syntax_map_all.end()) {
-    pfc_log_info("Calling Fill_Attr_sytnax");
     Fill_Attr_Syntax_Map();
   }
   max_dataflow_traverse_count_ = 0;
@@ -141,28 +140,6 @@ UncRespCode Kt_Dataflow::PerformSyntaxValidation(
       return UNC_UPPL_RC_ERR_CFG_SYNTAX;
     }
   }
-  bool nonZeroVal = false;
-  for (int i = 0; i < 6; i++) {
-    if (key->src_mac_address[i] > 0) {
-      nonZeroVal = true;
-      break;
-    }
-  }
-  if (nonZeroVal == false) {
-    pfc_log_debug("Error in src_mac_address attribute");
-    return UNC_UPPL_RC_ERR_CFG_SYNTAX;
-  }
-
-/*
-  value = reinterpret_cast<char*>(key->src_mac_address);
-  IS_VALID_STRING_KEY(PORT_MAC_ADDRESS_STR, value, operation,
-                      ret_code, mandatory);
-  if (ret_code != UNC_RC_SUCCESS) {
-    pfc_log_debug("Error in src_mac_address attribute");
-    return UNC_UPPL_RC_ERR_CFG_SYNTAX;
-  }
-*/
-
   return UNC_RC_SUCCESS;
 }
 
@@ -207,10 +184,8 @@ UncRespCode Kt_Dataflow::PerformSemanticValidation(
   unc::capa::CapaModule *capa = reinterpret_cast<unc::capa::CapaModule *>(
     pfc::core::Module::getInstance("capa"));
   if (capa == NULL) {
-    pfc_log_warn("%s:%d: CapaModule is not found", __FUNCTION__, __LINE__);
-     return UNC_UPPL_RC_ERR_CFG_SEMANTIC;
-  } else {
-    pfc_log_info("Capa instance got successfully");
+    UPPL_LOG_FATAL("CapaModule is not found:%s", __FUNCTION__);
+    return UNC_UPPL_RC_ERR_CFG_SEMANTIC;
   }
   Kt_Controller KtObj;
   vector<void *> vect_key_ctr;
@@ -222,10 +197,9 @@ UncRespCode Kt_Dataflow::PerformSemanticValidation(
                                       UNC_DT_RUNNING,
                                       UNC_OP_READ);
   if (ret_code != UNC_RC_SUCCESS) {
-    pfc_log_debug("Read of Controller failed");
+    pfc_log_debug("Read Ctr info failed :%d", ret_code);
     return ret_code;
   }
-
   key_ctr_t *ctr_key = reinterpret_cast<key_ctr_t*>(vect_key_ctr[0]);
   val_ctr_st_t *val_ctr_vect = reinterpret_cast <val_ctr_st_t*>
                                            (vect_val_ctr[0]);
@@ -242,18 +216,17 @@ UncRespCode Kt_Dataflow::PerformSemanticValidation(
   uint8_t oper_status_db = val_ctr_vect->oper_status;
   string version = (const char*)val_ctr_vect->controller.version;
 
-  pfc_log_debug("controller_type=%d", (uint16_t)controller_type);
-  pfc_log_debug("oper_status_db=%d", oper_status_db);
-  pfc_log_debug("config version=%s", version.c_str());
+  pfc_log_debug("controller_type=%d, oper_status_db=%d, config version=%s",
+      (uint16_t)controller_type, oper_status_db, version.c_str());
 
   if (controller_type != UNC_CT_PFC &&
-      controller_type != UNC_CT_ODC ) {
-    pfc_log_error("Read operation is provided on only PFC/ODC controllers");
+      controller_type != UNC_CT_ODC) {
     ret_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    pfc_log_error("DF Read is allowed only for PFC or ODC controller"
+                  " :%d", ret_code);
   } else if (oper_status_db != UPPL_CONTROLLER_OPER_UP) {
-    pfc_log_error("Read operation is provided only on"
-                  " Controller which is in Up state");
     ret_code = UNC_UPPL_RC_ERR_CTRLR_DISCONNECTED;
+    pfc_log_error("DF Read is allowed only for UP Ctrs :%d", ret_code);
   }
   if (ret_code != UNC_RC_SUCCESS) {
     if (ctr_key != NULL) {
@@ -266,21 +239,18 @@ UncRespCode Kt_Dataflow::PerformSemanticValidation(
     }
     return ret_code;
   }
-  // Call CapaModule and check for PFC actual version
+  // Call CapaModule and check for actual version
 
   bool ret_actual = capa->GetReadCapability(controller_type,
                        version,
                        UNC_KT_DATAFLOW,
                        &nums,
                        &attrs);
-  pfc_log_debug("return of GetReadCapability = %d", ret_actual);
   if (ret_actual != true) {
-    pfc_log_info("KEY TYPE is NOT supported for version : %s",
-                       version.c_str());
     ret_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+    pfc_log_info("KEY TYPE is NOT supported for version : %s"
+                 " and ret_code: %d", version.c_str(), ret_code);
   }
-  pfc_log_debug("KEY TYPE is supported for version : %s",
-                      version.c_str());
   if (ctr_key != NULL) {
       delete ctr_key;
       ctr_key = NULL;
@@ -289,9 +259,72 @@ UncRespCode Kt_Dataflow::PerformSemanticValidation(
       delete val_ctr_vect;
       val_ctr_vect = NULL;
   }
+
   return ret_code;
 }
 
+/** getDomainType
+ * @Description : This function gets the type of given domain
+ * @param[in]   : key_struct - specifies key instance of CtrDomain
+ *                value_struct - Ignored
+ *                data_type - UNC_DT*,type of database
+ * @param[out]  :  domain_type - type of domain
+ * @return      :  UNC_RC_SUCCESS if the operation is successful
+ *                or UNC_UPPL_RC_ERR_* if failed
+ * */
+UncRespCode Kt_Dataflow::getDomainType(
+    OdbcmConnectionHandler *db_conn,
+    void* key_struct,
+    void* val_struct,
+    uint32_t data_type,
+    UpplDomainType& domain_type) {
+  pfc_log_trace("Entered into : %s", __func__);
+  UncRespCode ret_code = UNC_RC_SUCCESS;
+  key_ctr_domain_t *obj_key_domain =
+        reinterpret_cast <key_ctr_domain_t*>(key_struct);
+  // Read the ctr_domain_table
+  Kt_Ctr_Domain Ctr_Domain_Obj;
+  vector<void *> vect_key_domain;
+  vect_key_domain.push_back(obj_key_domain);
+  vector<void *> vect_val_domain;
+  ret_code = Ctr_Domain_Obj.ReadInternal(db_conn, vect_key_domain,
+                                      vect_val_domain,
+                                      UNC_DT_RUNNING,
+                                      UNC_OP_READ);
+  if (ret_code != UNC_RC_SUCCESS) {
+    pfc_log_debug("Read ctr domain info failed :%d", ret_code);
+    return ret_code;
+  }
+  key_ctr_domain_t *domain_key =
+    reinterpret_cast<key_ctr_domain_t*>(vect_key_domain[0]);
+  val_ctr_domain_st_t *val_domain_vect = reinterpret_cast <val_ctr_domain_st_t*>
+                                           (vect_val_domain[0]);
+  // release the memory
+  if (val_domain_vect == NULL || domain_key == NULL) {
+    if (domain_key != NULL) {
+      pfc_log_debug("Delete the domain key values");
+      delete domain_key;
+      domain_key = NULL;
+    }
+    if (val_domain_vect != NULL) {
+     delete val_domain_vect;
+     val_domain_vect = NULL;
+    }
+    pfc_log_debug("no ctr_domain key/val struct found");
+    return UNC_UPPL_RC_ERR_INSTANCE_EXISTS;
+  }
+
+  domain_type = (UpplDomainType)val_domain_vect->domain.type;
+  if (domain_key != NULL) {
+    delete domain_key;
+    domain_key = NULL;
+  }
+  if (val_domain_vect != NULL) {
+    delete val_domain_vect;
+    val_domain_vect = NULL;
+  }
+  return ret_code;
+}
 
 /** PerformRead
  * @Description : This function reads the instance of KT_Dataflow based on
@@ -321,53 +354,31 @@ UncRespCode Kt_Dataflow::PerformRead(OdbcmConnectionHandler *db_conn,
                                           uint32_t option1,
                                           uint32_t option2,
                                           uint32_t max_rep_ct) {
-  pfc_log_info("PerformRead:oper=%d,dt=%d",
+  pfc_log_debug("PerformRead:oper=%d,dt=%d",
                operation_type, data_type);
   if (operation_type == UNC_OP_READ) {
     max_rep_ct = 1;
   }
   key_dataflow_t *obj_key_dataflow =
              reinterpret_cast<key_dataflow_t*>(key_struct);
+  UncRespCode resp_code = UNC_RC_SUCCESS;
   if (option1 != UNC_OPT1_NORMAL) {
-    pfc_log_error("Invalid option1 specified for read operation");
-    physical_response_header rsh = {session_id,
-        configuration_id,
-        operation_type,
-        max_rep_ct,
-        option1,
-        option2,
-        data_type,
-        static_cast<uint32_t>(UNC_UPPL_RC_ERR_INVALID_OPTION1)};
-    int err = PhyUtil::sessOutRespHeader(sess, rsh);
-    err |= sess.addOutput((uint32_t)UNC_KT_DATAFLOW);
-    err |= sess.addOutput(*obj_key_dataflow);
-    if (err != 0) {
-      pfc_log_info("addOutput failed for physical_response_header");
-      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
-    }
-    return UNC_RC_SUCCESS;
+    resp_code = UNC_UPPL_RC_ERR_INVALID_OPTION1;
+    pfc_log_error("Invalid option1 specified for read operation:%d",
+                   resp_code);
   }
-  if (option2 != UNC_OPT2_NONE) {
-    pfc_log_error("Invalid option2 specified for read operation");
-    physical_response_header rsh = {session_id,
-        configuration_id,
-        operation_type,
-        max_rep_ct,
-        option1,
-        option2,
-        data_type,
-        static_cast<uint32_t>(UNC_UPPL_RC_ERR_INVALID_OPTION2)};
-    int err = PhyUtil::sessOutRespHeader(sess, rsh);
-    err |= sess.addOutput((uint32_t)UNC_KT_DATAFLOW);
-    err |= sess.addOutput(*obj_key_dataflow);
-    if (err != 0) {
-      pfc_log_info("addOutput failed for physical_response_header");
-      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
-    }
-    return UNC_RC_SUCCESS;
+  if (resp_code == UNC_RC_SUCCESS && option2 != UNC_OPT2_NONE &&
+      option2 != UNC_OPT2_NO_TRAVERSING) {
+    resp_code = UNC_UPPL_RC_ERR_INVALID_OPTION2;
+    pfc_log_error("Invalid option2 specified for read operation:%d",
+                     resp_code);
   }
-  if ((unc_keytype_datatype_t)data_type != UNC_DT_STATE) {
-    pfc_log_error("Data type is not allowed");
+  if (resp_code == UNC_RC_SUCCESS && data_type != UNC_DT_STATE) {
+    resp_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+      pfc_log_error("Data type other than DT-STATE not allowed: %d",
+                       resp_code);
+  }
+  if (resp_code != UNC_RC_SUCCESS) {
     physical_response_header rsh = {session_id,
         configuration_id,
         operation_type,
@@ -375,12 +386,13 @@ UncRespCode Kt_Dataflow::PerformRead(OdbcmConnectionHandler *db_conn,
         option1,
         option2,
         data_type,
-        static_cast<uint32_t>(UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED)};
+        static_cast<uint32_t>(resp_code)};
     int err = PhyUtil::sessOutRespHeader(sess, rsh);
     err |= sess.addOutput((uint32_t)UNC_KT_DATAFLOW);
     err |= sess.addOutput(*obj_key_dataflow);
     if (err != 0) {
-      pfc_log_error("addOutput failed for physical_response_header");
+      pfc_log_info("addOutput failed for physical_response_header:%d",
+                    UNC_UPPL_RC_ERR_IPC_WRITE_ERROR);
       return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
     return UNC_RC_SUCCESS;
@@ -390,8 +402,6 @@ UncRespCode Kt_Dataflow::PerformRead(OdbcmConnectionHandler *db_conn,
   extd_tout.tv_nsec = 0;
   sess.setTimeout(&extd_tout);
   pfc_log_trace("Extending the timeout to 3600 seconds");
-  //  read controller st data, oper_status, type, actual version
-  //  and configured version
   //  store the max_dataflow_traverse_count value which is gotton from uppl.conf
   PhysicalCore *physical_core = PhysicalLayer::get_instance()->
            get_physical_core();
@@ -401,8 +411,91 @@ UncRespCode Kt_Dataflow::PerformRead(OdbcmConnectionHandler *db_conn,
   key_dataflow_t key_copy;
   memcpy(&key_copy, key_struct, sizeof(key_dataflow_t));
   string empty = "";
-  UncRespCode ret_code = traversePFC(db_conn, session_id, configuration_id,
-                                     key_struct, sess, true, NULL, NULL, empty);
+  UncRespCode ret_code = UNC_RC_SUCCESS;
+  // domain type validation (if leaf/spine reject the request)
+  key_switch_t obj_key_switch;
+  memset(&obj_key_switch, '\0', sizeof(key_switch_t));
+  memcpy(obj_key_switch.ctr_key.controller_name,
+         obj_key_dataflow->controller_name,
+         sizeof(obj_key_dataflow->controller_name));
+  memcpy(obj_key_switch.switch_id, obj_key_dataflow->switch_id,
+         sizeof(obj_key_dataflow->switch_id));
+  void *key_str_switch = reinterpret_cast <void *>(&obj_key_switch);
+  // Read the switch_table
+  Kt_Switch Switch_Obj;
+  vector<void *> vect_key_switch;
+  vect_key_switch.push_back(key_str_switch);
+  vector<void *> vect_val_switch;
+  ret_code = Switch_Obj.ReadInternal(db_conn, vect_key_switch,
+                                      vect_val_switch,
+                                      UNC_DT_RUNNING,
+                                      UNC_OP_READ);
+  if (ret_code != UNC_RC_SUCCESS) {
+    pfc_log_debug("Read switch info failed :%d", ret_code);
+  } else {
+    key_switch_t *switch_key =
+               reinterpret_cast<key_switch_t*>(vect_key_switch[0]);
+    val_switch_st_t *switch_value = reinterpret_cast <val_switch_st_t*>
+                                           (vect_val_switch[0]);
+    if (switch_value == NULL || switch_key == NULL) {
+      if (switch_key != NULL) {
+        pfc_log_debug("Delete the swith key values");
+        delete switch_key;
+        switch_key = NULL;
+      }
+      if (switch_value != NULL) {
+        delete switch_value;
+        switch_value = NULL;
+      }
+      pfc_log_debug("Return the semantic error");
+      return UNC_UPPL_RC_ERR_DB_GET;
+    }
+    key_ctr_domain_t obj_key_domain;
+    memset(&obj_key_domain, '\0', sizeof(key_ctr_domain_t));
+    memcpy(obj_key_domain.ctr_key.controller_name,
+                 obj_key_switch.ctr_key.controller_name,
+                 sizeof(obj_key_switch.ctr_key.controller_name));
+    // copy the domain_name from switch value structure to
+    // ctr_domain key structure
+    memcpy(obj_key_domain.domain_name, switch_value->switch_val.domain_name,
+    sizeof(switch_value->switch_val.domain_name));
+    delete switch_key;
+    switch_key = NULL;
+    delete switch_value;
+    switch_value = NULL;
+    // get the domain type from the domain_table
+    UpplDomainType dom_type = UPPL_DOMAIN_TYPE_DEFAULT;
+    ret_code = getDomainType(db_conn, &obj_key_domain, NULL,
+                                     UNC_DT_RUNNING, dom_type);
+    if (ret_code != UNC_RC_SUCCESS) {
+      pfc_log_debug("Read domain type info failed :%d", ret_code);
+    }
+    //  else - dom_type default is UPPL_DOMAIN_TYPE_DEFAULT, so next if skips
+    if (dom_type == UPPL_DOMAIN_TYPE_PF_LEAF ||
+             dom_type == UPPL_DOMAIN_TYPE_PF_SPINE) {
+      physical_response_header rsh = {session_id,
+               configuration_id,
+               operation_type,
+               max_rep_ct,
+               option1,
+               option2,
+               data_type,
+               static_cast<uint32_t>(UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED)};
+      int err = PhyUtil::sessOutRespHeader(sess, rsh);
+      err |= sess.addOutput((uint32_t)UNC_KT_DATAFLOW);
+      err |= sess.addOutput(*obj_key_dataflow);
+      if (err != 0) {
+        pfc_log_info("addOutput failed for physical_response_header:%d",
+                    UNC_UPPL_RC_ERR_IPC_WRITE_ERROR);
+        return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
+      }
+      pfc_log_debug("Operation not allowed for leaf/spine domain");
+      return UNC_RC_SUCCESS;
+    }
+  }
+  ret_code = traversePFC(db_conn, session_id, configuration_id,
+                                     key_struct, sess, true, NULL, NULL, empty,
+                                     option2);
   physical_response_header rsh = {session_id,
         configuration_id,
         operation_type,
@@ -415,16 +508,18 @@ UncRespCode Kt_Dataflow::PerformRead(OdbcmConnectionHandler *db_conn,
   err |= sess.addOutput((uint32_t)UNC_KT_DATAFLOW);
   err |= sess.addOutput(key_copy);
   if (ret_code != UNC_RC_SUCCESS) {
-    pfc_log_error("Querying 1st PFC failed");
+    pfc_log_error("Querying 1st PFC failed:%d", ret_code);
     if (err != 0) {
-      pfc_log_error("addOutput failed for physical_response_header");
+      pfc_log_error("addOutput failed for physical_response_header:%d",
+          UNC_UPPL_RC_ERR_IPC_WRITE_ERROR);
       return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
     return UNC_RC_SUCCESS;
   } else {
     err = df_util_.sessOutDataflows(sess);
     if (err != 0) {
-      pfc_log_error("addOutput failed for physical_response_header");
+      pfc_log_error("addOutput failed for physical_response_header:%d",
+                    UNC_UPPL_RC_ERR_IPC_WRITE_ERROR);
       return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
   }
@@ -455,7 +550,8 @@ UncRespCode Kt_Dataflow::traversePFC(OdbcmConnectionHandler *db_conn,
                                           bool is_head_node,
                                           DataflowCmn *parentnode,
                                           DataflowCmn *lastPfcNode,
-                                          string &ingress_bdry_id) {
+                                          string &ingress_bdry_id,
+                                          uint32_t option2) {
   pfc_log_trace("Entered into : %s", __func__);
   key_dataflow_t *obj_key_dataflow =
                        reinterpret_cast<key_dataflow_t*>(key_struct);
@@ -481,27 +577,24 @@ UncRespCode Kt_Dataflow::traversePFC(OdbcmConnectionHandler *db_conn,
       return err_code;
     }
   }
-  // skip vlan filtering for vnp and polc // SARAN for VNP also?
+  map <UncDataflowFlowMatchType, void *>::iterator output_matches_iter;
+  // skip vlan filtering for vnp and polc
   if (!is_head_node) {
-  if (parentnode->df_segment->df_common->controller_type != UNC_CT_VNP &&
+    if (parentnode->df_segment->df_common->controller_type != UNC_CT_VNP &&
       parentnode->df_segment->df_common->controller_type != UNC_CT_POLC) {
-    // retrieve the VLAN ID from out_matches.
-
-
-      map <UncDataflowFlowMatchType, void *>::iterator output_matches_iter;
+      // retrieve the VLAN ID from out_matches.
       output_matches_iter = lastPfcNode->output_matches.find(UNC_MATCH_VLAN_ID);
       if (output_matches_iter != lastPfcNode->output_matches.end()) {
         val_df_flow_match_vlan_id_t *prev =
 reinterpret_cast<val_df_flow_match_vlan_id_t *>((*output_matches_iter).second);
         obj_key_dataflow->vlan_id =  prev->vlan_id;
       }
-  } else {
-    pfc_log_info("vlan id skipped for VNP and POLC");
-  }
+    } else {
+      pfc_log_info("vlan id skipped for VNP and POLC");
+    }
   }
   // retrieve the src MAC address from out_matches
   if (!is_head_node) {
-    map <UncDataflowFlowMatchType, void *>::iterator output_matches_iter;
     output_matches_iter = lastPfcNode->output_matches.find(UNC_MATCH_DL_SRC);
     if (output_matches_iter != lastPfcNode->output_matches.end()) {
       val_df_flow_match_dl_addr_t *prev =
@@ -532,29 +625,19 @@ reinterpret_cast<val_df_flow_match_dl_addr_t *>((*output_matches_iter).second);
     ClientSession *cli_session = NULL;
     int err1 = 0;
     UncRespCode driver_response = UNC_RC_SUCCESS;
-
-    unc_keytype_ctrtype_t ctr_type (UNC_CT_UNKNOWN);
-    UncRespCode ret_code (PhyUtil::get_controller_type(
-                             db_conn, controller_name,ctr_type,
-                            (unc_keytype_datatype_t)UNC_DT_RUNNING));
-    if (ret_code != UNC_RC_SUCCESS) {
-      pfc_log_error("error in getting the controller type: %d", ret_code);
-      if (ret_code == UNC_UPLL_RC_ERR_DB_ACCESS) {
-         pfc_log_debug("Returning as there is error in DB access");
-         return ret_code;
-      } else {
-        ret_code = UNC_RC_SUCCESS;
-      }
-    }
-
-    IPCClientDriverHandler *common_drv_handler(NULL);
-    if (ctr_type == UNC_CT_PFC) {
-      common_drv_handler=new IPCClientDriverHandler(UNC_CT_PFC, driver_response);
-    } else if ( ctr_type == UNC_CT_ODC) {
-      common_drv_handler=new IPCClientDriverHandler(UNC_CT_ODC, driver_response);
-    }
-    cli_session = common_drv_handler->ResetAndGetSession();
+    unc_keytype_ctrtype_t ctr_type = UNC_CT_UNKNOWN;
+    driver_response = PhyUtil::get_controller_type(db_conn, controller_name,
+                                          ctr_type, UNC_DT_RUNNING);
     if (driver_response != UNC_RC_SUCCESS) {
+      pfc_log_debug("Failed to get controller type with response code :%d",
+                     driver_response);
+      return driver_response;
+    }
+    IPCClientDriverHandler drv_handler(ctr_type, driver_response);
+    cli_session = drv_handler.ResetAndGetSession();
+    if (driver_response != UNC_RC_SUCCESS) {
+      pfc_log_error("Creation of session to driver failed: %d",
+                     driver_response);
       return driver_response;
     }
     err1 = PhyUtil::sessOutDriverReqHeader(*cli_session, rqh);
@@ -580,7 +663,7 @@ reinterpret_cast<val_df_flow_match_dl_addr_t *>((*output_matches_iter).second);
     pfc_log_trace("Extending the timeout to 3600 seconds");
     // Send the request to driver
     driver_response_header rsp;
-    driver_response = common_drv_handler->SendReqAndGetResp(rsp);
+    driver_response = drv_handler.SendReqAndGetResp(rsp);
     if (driver_response != UNC_RC_SUCCESS) {
       if (is_head_node) {
         pfc_log_error("Read request to Driver failed for controller %s"
@@ -616,7 +699,8 @@ reinterpret_cast<val_df_flow_match_dl_addr_t *>((*output_matches_iter).second);
     }
     for (uint32_t i = 0; i < total_flow_count; i++) {
       pfc_log_trace("Reading flow %d from driver ", i);
-      DataflowDetail *df_segm = new DataflowDetail(kidx_val_df_data_flow_cmn);
+      DataflowDetail *df_segm = new DataflowDetail(kidx_val_df_data_flow_cmn,
+                                                   ctr_type);
       if (df_segm == NULL) {
         pfc_log_debug("Memory not allocated for df_segm");
         return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
@@ -647,10 +731,12 @@ reinterpret_cast<val_df_flow_match_dl_addr_t *>((*output_matches_iter).second);
   std::string ctr_name((const char*)obj_key_dataflow->controller_name);
   pfc_log_debug("ctr_name passed to fill_ctrlr_dom_count_map-traversePFC:%s"
                   , ctr_name.c_str());
-  UncRespCode fill_status = fill_ctrlr_dom_count_map(db_conn,
+  UncRespCode ret_code = fill_ctrlr_dom_count_map(db_conn,
                   ctr_name);
-  if (fill_status != UNC_RC_SUCCESS)
-    pfc_log_debug("Map is not filled");
+  if (ret_code != UNC_RC_SUCCESS) {
+    pfc_log_debug("Controller-Domain count Map is not filled:%d", ret_code);
+    return ret_code;
+  }
   //  pfc flows stored in the vector pfc_flows are iterated here
   for (uint32_t i = 0; i < pfc_flows.size(); i++) {
     DataflowDetail *df_segm = pfc_flows[i];
@@ -658,12 +744,15 @@ reinterpret_cast<val_df_flow_match_dl_addr_t *>((*output_matches_iter).second);
     if (is_head_node) {
       df_cmn = new DataflowCmn(is_head_node, df_segm);
       pfc_log_trace("before calling df_util_ appendFlow");
-      df_cmn->apply_action();
+      if (option2 != UNC_OPT2_NO_TRAVERSING)
+        df_cmn->apply_action();
       uint32_t ret = df_util_.appendFlow(df_cmn);
       if (ret != 0) {
-        pfc_log_info("df_util_ appendFlow ret=%d", ret);
-        delete df_cmn;
-        df_cmn = NULL;
+        pfc_log_info("df_util_ appendFlow error=%d", ret);
+        if (df_cmn != NULL) {
+          delete df_cmn;
+          df_cmn = NULL;
+        }
         return UNC_UPPL_RC_FAILURE;
       }
     } else {
@@ -690,8 +779,10 @@ reinterpret_cast<val_df_flow_match_dl_addr_t *>((*output_matches_iter).second);
                       ") is not matching with 1st flow (id=%" PFC_PFMT_u64
                       ") so ignoring", df_cmn->df_segment->df_common->flow_id,
                       parentnode->df_segment->df_common->flow_id);
-        delete df_cmn;
-        df_cmn = NULL;
+        if (df_cmn != NULL) {
+          delete df_cmn;
+          df_cmn = NULL;
+        }
       }
     }
   }
@@ -701,13 +792,22 @@ reinterpret_cast<val_df_flow_match_dl_addr_t *>((*output_matches_iter).second);
       pfc_log_info("firstCtrlrFlows- vector is empty");
       return UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     }
+    // If option2 is UNC_OPT2_NO_TRAVERSING, UPPL wil just return the retrived
+    // flows to NB. It will not look for egress info and traverse further.With
+    // this output, user can confirm whether there are any flows from that
+    // point.
+    if (option2 == UNC_OPT2_NO_TRAVERSING) {
+      pfc_log_debug("Option2 is NO_TRAVERSING,hence returning the flows");
+      return UNC_RC_SUCCESS;
+    }
   } else {
     pfc_log_debug("Non is_head_node, next.size=%"
                  PFC_PFMT_SIZE_T ", existing reason=%d",
                  parentnode->next.size(), parentnode->addl_data->reason);
     if (parentnode->next.size() == 0 && parentnode->addl_data->reason ==
                                 UNC_DF_RES_SUCCESS) {  // Preserving old reason
-      if (parentnode->df_segment->df_common->controller_type == UNC_CT_PFC) {
+      if (parentnode->df_segment->df_common->controller_type == UNC_CT_PFC ||
+          parentnode->df_segment->df_common->controller_type == UNC_CT_ODC) {
                                             //  if parentnode is PFC type
         parentnode->addl_data->reason = UNC_DF_RES_FLOW_NOT_FOUND;
       } else {
@@ -722,10 +822,10 @@ reinterpret_cast<val_df_flow_match_dl_addr_t *>((*output_matches_iter).second);
   } else {
     CtrlrFlows = &(parentnode->next);
   }
-  checkFlowLimitAndTraverse(db_conn, session_id, configuration_id, sess,
-                              key_struct, CtrlrFlows,
+  ret_code = checkFlowLimitAndTraverse(db_conn, session_id, configuration_id,
+                              sess, key_struct, CtrlrFlows,
                               is_head_node, ingress_bdry_id);
-  return UNC_RC_SUCCESS;
+  return ret_code;
 }
 
 
@@ -763,6 +863,7 @@ UncRespCode Kt_Dataflow::traverseVNP(OdbcmConnectionHandler *db_conn,
   UncRespCode ret_code = checkBoundaryAndTraverse(db_conn, session_id,
            configuration_id, key_struct, sess, false,
            parentnode, lastPfcNode, ingress_bdry_id);
+  pfc_log_debug("checkBoundaryAndTraverse returned %d", ret_code);
   return ret_code;
 }
 
@@ -795,6 +896,7 @@ UncRespCode Kt_Dataflow::traverseUNKNOWN(OdbcmConnectionHandler *db_conn,
   UncRespCode ret_code = checkBoundaryAndTraverse(db_conn, session_id,
           configuration_id, key_struct, sess, false,
           parentnode, lastPfcNode, ingress_bdry_id);
+  pfc_log_debug("checkBoundaryAndTraverse returned %d", ret_code);
   return ret_code;
 }
 
@@ -831,10 +933,11 @@ UncRespCode Kt_Dataflow::checkBoundaryAndTraverse(
   if (((source_node->df_segment->df_common->controller_type == UNC_CT_PFC) ||
       (source_node->df_segment->df_common->controller_type == UNC_CT_ODC)) &&
      ((source_node->df_segment->df_common->
-             valid[kidxDfDataFlowEgressSwitchId] == 0) ||
-      (source_node->df_segment->df_common->valid[kidxDfDataFlowOutPort] == 0) ||
+             valid[kidxDfDataFlowEgressSwitchId] == UNC_VF_INVALID) ||
+      (source_node->df_segment->df_common->valid[kidxDfDataFlowOutPort] ==
+             UNC_VF_INVALID) ||
       (source_node->df_segment->df_common->
-           valid[kidxDfDataFlowOutDomain] == 0))) {
+           valid[kidxDfDataFlowOutDomain] == UNC_VF_INVALID))) {
     pfc_log_debug("Valid bits for egress attributes are set as invalid");
     source_node->addl_data->reason = UNC_DF_RES_SUCCESS;
     return UNC_RC_SUCCESS;
@@ -864,8 +967,8 @@ UncRespCode Kt_Dataflow::checkBoundaryAndTraverse(
 
   if (source_node->df_segment->df_common->controller_type != UNC_CT_UNKNOWN) {
     if (source_node->df_segment->df_common->egress_switch_id[0] == '\0') {
-    if ((source_node->next.size() == 0) &&
-       (source_node->addl_data->reason == UNC_DF_RES_SUCCESS))
+      if ((source_node->next.size() == 0) &&
+          (source_node->addl_data->reason == UNC_DF_RES_SUCCESS))
         source_node->addl_data->reason = UNC_DF_RES_SYSTEM_ERROR;
       pfc_log_debug("Switch id is empty");
       return UNC_RC_SUCCESS;
@@ -874,8 +977,8 @@ UncRespCode Kt_Dataflow::checkBoundaryAndTraverse(
            source_node->df_segment->df_common->egress_switch_id,
          sizeof(obj_bdry_val.lp_str.switch_id));
     if (source_node->df_segment->df_common->out_port[0] == '\0') {
-    if ((source_node->next.size() == 0) &&
-       (source_node->addl_data->reason == UNC_DF_RES_SUCCESS))
+      if ((source_node->next.size() == 0) &&
+          (source_node->addl_data->reason == UNC_DF_RES_SUCCESS))
         source_node->addl_data->reason = UNC_DF_RES_SYSTEM_ERROR;
       pfc_log_debug("Port no. is empty");
       return UNC_RC_SUCCESS;
@@ -898,10 +1001,10 @@ UncRespCode Kt_Dataflow::checkBoundaryAndTraverse(
                                     ingress_bdry_id);
   pfc_log_info("Size of list_ctr_nbrs:%" PFC_PFMT_SIZE_T, list_ctr_nbrs.size());
   if ((read_status != UNC_RC_SUCCESS) || (list_ctr_nbrs.size() == 0)) {
-    pfc_log_trace("Read of neighbours failed");
+    pfc_log_trace("Read of neighbours failed :%d", read_status);
     // for VNP and BYPASS add this error, PFC ignore.
     if (obj_bdry_val.controller_type == UNC_CT_PFC ||
-        obj_bdry_val.controller_type == UNC_CT_ODC ) {
+        obj_bdry_val.controller_type == UNC_CT_ODC) {
       source_node->addl_data->reason = UNC_DF_RES_SUCCESS;
     } else {
       source_node->addl_data->reason = UNC_DF_RES_DST_NOT_REACHED;
@@ -911,83 +1014,145 @@ UncRespCode Kt_Dataflow::checkBoundaryAndTraverse(
   list<boundary_val>::iterator nbrs_ctr_iter = list_ctr_nbrs.begin();
   for ( ; nbrs_ctr_iter != list_ctr_nbrs.end(); nbrs_ctr_iter++) {
     string current_bdry_id = (const char*)((*nbrs_ctr_iter).boundary_id);
-    pfc_log_debug("current_boundary_id:%s", current_bdry_id.c_str());
-    pfc_log_debug("ingress_bdry_id:%s", ingress_bdry_id.c_str());
+    pfc_log_debug("current_boundary_id:%s ingress_bdry_id:%s",
+                   current_bdry_id.c_str(), ingress_bdry_id.c_str());
     boundary_val obj_bval = *nbrs_ctr_iter;
-  if ((*nbrs_ctr_iter).controller_type == UNC_CT_PFC ||
-      (*nbrs_ctr_iter).controller_type == UNC_CT_ODC) {
-    key_dataflow_t obj_key_df;
-    memcpy(obj_key_df.controller_name, obj_bval.controller_name,
+    if (((*nbrs_ctr_iter).controller_type == UNC_CT_PFC) ||
+        ((*nbrs_ctr_iter).controller_type == UNC_CT_ODC)) {
+      key_dataflow_t obj_key_df;
+      memcpy(obj_key_df.controller_name, obj_bval.controller_name,
              sizeof(obj_bval.controller_name));
-    memcpy(obj_key_df.switch_id, obj_bval.lp_str.switch_id,
+      memcpy(obj_key_df.switch_id, obj_bval.lp_str.switch_id,
              sizeof(obj_bval.lp_str.switch_id));
-    memcpy(obj_key_df.port_id, obj_bval.lp_str.port_id,
+      memcpy(obj_key_df.port_id, obj_bval.lp_str.port_id,
              sizeof(obj_bval.lp_str.port_id));
-    key_dataflow_t *obj_key_dataflow =
+      key_dataflow_t *obj_key_dataflow =
                        reinterpret_cast<key_dataflow_t*>(key_struct);
-    obj_key_df.vlan_id = obj_key_dataflow->vlan_id;
-    memcpy(obj_key_df.src_mac_address, obj_key_dataflow->src_mac_address,
+      obj_key_df.vlan_id = obj_key_dataflow->vlan_id;
+      memcpy(obj_key_df.src_mac_address, obj_key_dataflow->src_mac_address,
              sizeof(obj_key_df.src_mac_address));
-
-    pfc_log_info("checkBoundaryAndTraverse  controller_type == UNC_CT_PFC");
-    ret_code = traversePFC(db_conn, session_id, configuration_id,
-                           reinterpret_cast<void*>(&obj_key_df), sess, false,
-                           source_node, lastPfcNode, current_bdry_id);
-    pfc_log_debug("traversePFC returned %d", ret_code);
-    if (source_node->next.size() == 0) {
-      if ((ret_code != UNC_RC_SUCCESS) &&
-          (source_node->addl_data->reason == UNC_DF_RES_SUCCESS)) {
-        if (ret_code == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE)
-          source_node->addl_data->reason = UNC_DF_RES_FLOW_NOT_FOUND;
-        else if (ret_code == UNC_UPPL_RC_ERR_CTRLR_DISCONNECTED)
-          source_node->addl_data->reason = UNC_DF_RES_CTRLR_DISCONNECTED;
-        else if (ret_code == UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED)
-          source_node->addl_data->reason = UNC_DF_RES_OPERATION_NOT_SUPPORTED;
-        else
-          source_node->addl_data->reason = UNC_DF_RES_SYSTEM_ERROR;
+      pfc_log_info("checkBoundaryAndTraverse controller_type UNC_CT_PFC/ODC");
+      UpplDomainType dom_type = UPPL_DOMAIN_TYPE_DEFAULT;
+      // fill the controller name and domain name
+      key_ctr_domain_t obj_key_domain;
+      memset(&obj_key_domain, '\0', sizeof(key_ctr_domain_t));
+      memcpy(obj_key_domain.ctr_key.controller_name, obj_bval.controller_name,
+             sizeof(obj_bval.controller_name));
+      memcpy(obj_key_domain.domain_name, obj_bval.domain_name,
+             sizeof(obj_bval.domain_name));
+      // get the domain type from the domain_table
+      ret_code = getDomainType(db_conn, &obj_key_domain, NULL,
+                                           UNC_DT_RUNNING , dom_type);
+      if (ret_code != UNC_RC_SUCCESS) {
+        pfc_log_debug("Failed to get the domain type :%d", ret_code);
       }
-    } else {
-      pfc_log_debug("Preserving the old reason:%d",
+      if (dom_type != UPPL_DOMAIN_TYPE_PF_LEAF &&
+            dom_type != UPPL_DOMAIN_TYPE_PF_SPINE) {
+        ret_code = traversePFC(db_conn, session_id, configuration_id,
+                           reinterpret_cast<void*>(&obj_key_df), sess, false,
+                           source_node, lastPfcNode, current_bdry_id,
+                           UNC_OPT2_NONE);
+        pfc_log_debug("traversePFC returned %d", ret_code);
+        if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS) {
+          return ret_code;  // For other errors, we are setting reason.
+        }
+      } else {
+        ret_code = UNC_UPPL_RC_ERR_INVALID_STATE;
+      }
+      if (source_node->next.size() == 0) {
+        if ((ret_code != UNC_RC_SUCCESS) &&
+            (source_node->addl_data->reason == UNC_DF_RES_SUCCESS)) {
+          if (ret_code == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE)
+            source_node->addl_data->reason = UNC_DF_RES_FLOW_NOT_FOUND;
+          else if (ret_code == UNC_UPPL_RC_ERR_CTRLR_DISCONNECTED)
+            source_node->addl_data->reason = UNC_DF_RES_CTRLR_DISCONNECTED;
+          else if (ret_code == UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED)
+            source_node->addl_data->reason = UNC_DF_RES_OPERATION_NOT_SUPPORTED;
+          else if (ret_code == UNC_UPPL_RC_ERR_INVALID_STATE)
+            source_node->addl_data->reason = UNC_DF_RES_DOMAIN_NOT_SUPPORTED;
+          else
+            source_node->addl_data->reason = UNC_DF_RES_SYSTEM_ERROR;
+        }
+      } else {
+        // Already flow appended, so donot overwrite the reason
+        pfc_log_debug("Preserving the old reason:%d",
                         source_node->addl_data->reason);
-      // Already flow appended, so donot overwrite the reason
-    }
-  } else if (((*nbrs_ctr_iter).controller_type == UNC_CT_VNP) ||
-        ((*nbrs_ctr_iter).controller_type == UNC_CT_POLC) ||
-        ((*nbrs_ctr_iter).controller_type == UNC_CT_UNKNOWN)) {
-    list<boundary_val> keys;
-    list<boundary_val> vals;
-    ret_code = getkeysfrom_boundary_map((const char*)obj_bval.controller_name,
+      }
+    } else if (((*nbrs_ctr_iter).controller_type == UNC_CT_VNP) ||
+          ((*nbrs_ctr_iter).controller_type == UNC_CT_POLC) ||
+          ((*nbrs_ctr_iter).controller_type == UNC_CT_UNKNOWN)) {
+      list<boundary_val> keys;
+      list<boundary_val> vals;
+      ret_code = getkeysfrom_boundary_map((const char*)obj_bval.controller_name,
                                          keys, vals,
                                          (const char*)obj_bval.domain_name,
                                          obj_bval.controller_type);
-    if (ret_code != UNC_RC_SUCCESS) {
-      if ((source_node->next.size() == 0) &&
-          source_node->addl_data->reason == UNC_DF_RES_SUCCESS) {
-        if (ret_code == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE)
-          source_node->addl_data->reason = UNC_DF_RES_DST_NOT_REACHED;
-        else
-          source_node->addl_data->reason = UNC_DF_RES_SYSTEM_ERROR;
+      if (ret_code != UNC_RC_SUCCESS) {
+        if ((source_node->next.size() == 0) &&
+            source_node->addl_data->reason == UNC_DF_RES_SUCCESS) {
+          if (ret_code == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE)
+            source_node->addl_data->reason = UNC_DF_RES_DST_NOT_REACHED;
+          else
+            source_node->addl_data->reason = UNC_DF_RES_SYSTEM_ERROR;
+        }
       }
-    }
-    pfc_log_info("getkeysfrom_boundary_map returned keys.size=%"
+      pfc_log_info("getkeysfrom_boundary_map returned keys.size=%"
+                     PFC_PFMT_SIZE_T, keys.size());
+      // This count is to track which is the last non pfc node
+      // the count is incremented by one when boundary id is found to be source
+      uint32_t count = 0;
+      // Fix for ticket 2137--start
+      list<boundary_val>::iterator keys_iter, vals_iter, iter_key1,
+                         iter_val1, iter2;
+      bool is_key_iterated = false;
+      if (obj_bval.controller_type == UNC_CT_POLC ||
+         (obj_bval.controller_type == UNC_CT_VNP)) {
+        for (iter_key1 = keys.begin(), iter_val1 = vals.begin(),
+          iter2 = ++keys.begin(); iter2 != keys.end(); iter2++) {
+          pfc_log_debug("value1 for comparison:\n"
+                    "controller_name:%s\ndomain_name:%s\nswitch_id:%s\n"
+                    "port_id:%s\n",
+                     (*iter_key1).controller_name, (*iter_key1).domain_name,
+                     (*iter_key1).lp_str.switch_id,
+                     (*iter_key1).lp_str.port_id);
+          pfc_log_debug("value2 for comparison:\n"
+                    "controller_name:%s\ndomain_name:%s\nswitch_id:%s\n"
+                    "port_id:%s\n",
+                     (*iter2).controller_name, (*iter2).domain_name,
+                     (*iter2).lp_str.switch_id, (*iter2).lp_str.port_id);
+
+          UPPL_COMPARE_STRUCT(*iter_key1, *iter2, is_key_iterated);
+          if (is_key_iterated == true) {
+            iter_key1 = keys.erase(iter_key1);
+            iter_val1 = vals.erase(iter_val1);
+            iter2 = iter_key1;
+            pfc_log_debug("Erasing a duplicate entry for PORT_GROUP");
+            is_key_iterated = false;
+            continue;
+          }
+          iter_key1++;
+          iter_val1++;
+        }
+        pfc_log_info("getkeysfrom_boundary_map keys.size after"
+                 " erasing duplicate entries=%"
                    PFC_PFMT_SIZE_T, keys.size());
-    list<boundary_val>::iterator keys_iter, vals_iter;
-    for (keys_iter = keys.begin(), vals_iter = vals.begin();
-         keys_iter != keys.end(); keys_iter++, vals_iter++) {
-      // exclude ingress port
-      bool ret1 = false;
-      // Comparing the keys
-      UPPL_COMPARE_STRUCT(obj_bval, (*keys_iter), ret1);
-      bool ret2 = false;
-      // Comparing the neighbour values
-      pfc_log_debug("value1 for comparison:\nport_type = %d\n"
+      }
+      // Fix for ticket 2137--end
+      for (keys_iter = keys.begin(), vals_iter = vals.begin();
+           keys_iter != keys.end(); keys_iter++, vals_iter++) {
+        bool ret1 = false;
+        // Comparing the keys
+        UPPL_COMPARE_STRUCT(obj_bval, (*keys_iter), ret1);
+        bool ret2 = false;
+        // Comparing the neighbour values
+        pfc_log_debug("value1 for comparison:\nport_type = %d\n"
                     "controller_name:%s\ndomain_name:%s\nswitch_id:%s\n"
                     "port_id:%s\nboundary_id:%s\ncurrent boundary_id:%s",
                      obj_bdry_val.lp_str.port_type,
                      obj_bdry_val.controller_name, obj_bdry_val.domain_name,
                      obj_bdry_val.lp_str.switch_id, obj_bdry_val.lp_str.port_id,
                      obj_bdry_val.boundary_id, current_bdry_id.c_str());
-      pfc_log_debug("value2 for comparison:\nport_type = %d\n"
+        pfc_log_debug("value2 for comparison:\nport_type = %d\n"
                     "controller_name:%s\ndomain_name:%s\nswitch_id:%s\n"
                     "port_id:%s\nboundary_id:%s\n",
                      (*vals_iter).lp_str.port_type,
@@ -995,10 +1160,10 @@ UncRespCode Kt_Dataflow::checkBoundaryAndTraverse(
                      (*vals_iter).lp_str.switch_id, (*vals_iter).lp_str.port_id,
                      (*vals_iter).boundary_id);
 
-      if (((*vals_iter).lp_str.port_type == UPPL_LP_SUBDOMAIN) ||
-          ((*vals_iter).lp_str.port_type == UPPL_LP_TRUNK_PORT) ||
-          ((*vals_iter).lp_str.port_type == UPPL_LP_SWITCH) ||
-          ((*vals_iter).lp_str.port_type == UPPL_LP_PORT_GROUP)) {
+        if (((*vals_iter).lp_str.port_type == UPPL_LP_SUBDOMAIN) ||
+           ((*vals_iter).lp_str.port_type == UPPL_LP_TRUNK_PORT) ||
+           ((*vals_iter).lp_str.port_type == UPPL_LP_SWITCH) ||
+           ((*vals_iter).lp_str.port_type == UPPL_LP_PORT_GROUP)) {
           pfc_log_debug("ret2 is false from COMPARE_STRUCT");
           if (strcmp((const char*)((*vals_iter).boundary_id),
                                 (const char*)(current_bdry_id.c_str())) == 0) {
@@ -1007,11 +1172,14 @@ UncRespCode Kt_Dataflow::checkBoundaryAndTraverse(
                pfc_log_debug("Boundary Id is same && vlan,"
                    "src mac are also not changed");
                ret2 = true;
+               count++;
             }
           } else {
             if (source_node->parent_node != NULL &&
-                source_node->parent_node->df_segment->
-                    df_common->controller_type != UNC_CT_PFC) {
+                ((source_node->parent_node->df_segment->
+                  df_common->controller_type != UNC_CT_PFC) &&
+                 (source_node->parent_node->df_segment->
+                  df_common->controller_type != UNC_CT_ODC))) {
               pfc_log_debug("PBP Boundary Id is not same nonpfc_ingr_bdry_id %s"
                 "current_bdry_id %s", source_node->parent_node->addl_data->
                               nonpfc_ingr_bdry_id.c_str(),
@@ -1031,149 +1199,192 @@ UncRespCode Kt_Dataflow::checkBoundaryAndTraverse(
               pfc_log_debug("PBP source_node->parent_node is PFC");
             }
           }
-      } else {
-        UPPL_COMPARE_STRUCT(obj_bdry_val, (*vals_iter), ret2);
-      }
-      DataflowDetail *df_segment =
+        } else {
+          UPPL_COMPARE_STRUCT(obj_bdry_val, (*vals_iter), ret2);
+        }
+        DataflowDetail *df_segment =
             new DataflowDetail(kidx_val_df_data_flow_cmn,
                unc_keytype_ctrtype_t((*nbrs_ctr_iter).controller_type));
-      if (df_segment == NULL) {
-             pfc_log_debug("Memory not allocated for df_segment");
-             return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
-      }
-      DataflowCmn *df_cmn = new DataflowCmn(is_head_node, df_segment);
-      if (df_cmn == NULL) {
-        delete df_segment;
-        df_segment = NULL;
-        pfc_log_debug("Memory not allocated for df_cmn");
-        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
-      }
-      pfc_log_debug("PBP obj_val.boundary_id=%s", obj_bval.boundary_id);
-      pfc_log_debug("PBP (*vals_iter).boundary_id=%s",
+        if (df_segment == NULL) {
+          pfc_log_debug("Memory not allocated for df_segment");
+          return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+        }
+        DataflowCmn *df_cmn = new DataflowCmn(is_head_node, df_segment);
+        if (df_cmn == NULL) {
+          delete df_segment;
+          df_segment = NULL;
+          pfc_log_debug("Memory not allocated for df_cmn");
+          return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+        }
+        pfc_log_debug("PBP obj_val.boundary_id=%s", obj_bval.boundary_id);
+        pfc_log_debug("PBP (*vals_iter).boundary_id=%s",
                          (*vals_iter).boundary_id);
-      pfc_log_debug("PBP current_bdry_id=%s", current_bdry_id.c_str());
-      df_cmn->addl_data->nonpfc_ingr_bdry_id =
+        pfc_log_debug("PBP current_bdry_id=%s", current_bdry_id.c_str());
+        df_cmn->addl_data->nonpfc_ingr_bdry_id =
                            (const char *)obj_bval.boundary_id;
 
-      if ((ret1 == true) && (ret2 == true)) {
-        if (keys.size() == 1) {
-         // Create a node
-           UncDataflowReason ret =
+        if ((ret1 == true) && (ret2 == true)) {
+          if ((keys.size() == 1) || count == (uint32_t)keys.size()) {
+            // Create a node
+            UncDataflowReason ret =
                     CreateDfCmnNodeForNonPfc(db_conn, df_segment, source_node,
                                      df_cmn, &obj_bval,
-                                     (*keys_iter), false);
-           if (ret != UNC_DF_RES_SUCCESS) {
-             delete df_cmn;
-             df_cmn = NULL;
-           }
-        } else {
-           delete df_cmn;
-           df_cmn = NULL;
-         }
-         pfc_log_debug("Ignoring source key");
-         continue;
-      }
-      UncDataflowReason ret = CreateDfCmnNodeForNonPfc(db_conn, df_segment,
+                                     (*keys_iter), false, ret_code);
+            if (ret != UNC_DF_RES_SUCCESS) {
+              if (df_cmn != NULL) {
+                delete df_cmn;
+                df_cmn = NULL;
+              }
+              if (ret_code != UNC_RC_SUCCESS)
+                return ret_code;
+            }
+          } else {
+            if (df_cmn != NULL) {
+              delete df_cmn;
+              df_cmn = NULL;
+            }
+          }
+          pfc_log_debug("Ignoring source key");
+          continue;
+        }
+        UncDataflowReason ret = CreateDfCmnNodeForNonPfc(db_conn, df_segment,
                                source_node,
-                               df_cmn, &obj_bval, (*keys_iter), true);
-      if (ret != UNC_DF_RES_SUCCESS) {
-        delete df_cmn;
-        df_cmn = NULL;
-        continue;
-      }
-      if ((*nbrs_ctr_iter).controller_type == UNC_CT_VNP ||
-           (*nbrs_ctr_iter).controller_type == UNC_CT_POLC ) {
-        ret_code = traverseVNP(db_conn, session_id, configuration_id,
+                               df_cmn, &obj_bval, (*keys_iter), true, ret_code);
+        if (ret != UNC_DF_RES_SUCCESS) {
+          if (df_cmn != NULL) {
+            delete df_cmn;
+            df_cmn = NULL;
+          }
+          if (ret_code != UNC_RC_SUCCESS)
+            return ret_code;
+          continue;
+        }
+      UpplDomainType dom_type = UPPL_DOMAIN_TYPE_DEFAULT;
+        if ((*nbrs_ctr_iter).controller_type == UNC_CT_VNP ||
+             (*nbrs_ctr_iter).controller_type == UNC_CT_POLC ) {
+          ret_code = traverseVNP(db_conn, session_id, configuration_id,
                             key_struct, sess, false, df_cmn, lastPfcNode,
                             current_bdry_id);
-      } else if ((*nbrs_ctr_iter).controller_type == UNC_CT_UNKNOWN) {
-        key_dataflow_t obj_key_df_tgt;
-        memcpy(obj_key_df_tgt.controller_name, (*vals_iter).controller_name,
+          if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS) {
+            return ret_code;
+          }
+        } else if ((*nbrs_ctr_iter).controller_type == UNC_CT_UNKNOWN) {
+          key_dataflow_t obj_key_df_tgt;
+          memcpy(obj_key_df_tgt.controller_name, (*vals_iter).controller_name,
              sizeof((*vals_iter).controller_name));
-        memcpy(obj_key_df_tgt.switch_id, (*vals_iter).lp_str.switch_id,
+          memcpy(obj_key_df_tgt.switch_id, (*vals_iter).lp_str.switch_id,
              sizeof((*vals_iter).lp_str.switch_id));
-        memcpy(obj_key_df_tgt.port_id, (*vals_iter).lp_str.port_id,
+          memcpy(obj_key_df_tgt.port_id, (*vals_iter).lp_str.port_id,
              sizeof((*vals_iter).lp_str.port_id));
-        key_dataflow_t *obj_key_dataflow =
+          key_dataflow_t *obj_key_dataflow =
                        reinterpret_cast<key_dataflow_t*>(key_struct);
-        obj_key_df_tgt.vlan_id = obj_key_dataflow->vlan_id;
-        memcpy(obj_key_df_tgt.src_mac_address,
+          obj_key_df_tgt.vlan_id = obj_key_dataflow->vlan_id;
+          memcpy(obj_key_df_tgt.src_mac_address,
                obj_key_dataflow->src_mac_address,
              sizeof(obj_key_df_tgt.src_mac_address));
-        if ((*vals_iter).controller_type == UNC_CT_PFC ||
-            (*vals_iter).controller_type == UNC_CT_ODC ) {
-          ret_code = traversePFC(db_conn, session_id, configuration_id,
+          if ((*vals_iter).controller_type == UNC_CT_PFC ||
+            (*vals_iter).controller_type == UNC_CT_ODC) {
+            // fill the controller name and domain name
+            key_ctr_domain_t obj_key_domain;
+            memset(&obj_key_domain, '\0', sizeof(key_ctr_domain_t));
+            memcpy(obj_key_domain.ctr_key.controller_name,
+                     (*vals_iter).controller_name,
+                     sizeof((*vals_iter).controller_name));
+            memcpy(obj_key_domain.domain_name, (*vals_iter).domain_name,
+             sizeof((*vals_iter).domain_name));
+            // get the domain type from the domain_table
+            ret_code = getDomainType(db_conn, &obj_key_domain, NULL,
+                                           UNC_DT_RUNNING, dom_type);
+            if (ret_code != UNC_RC_SUCCESS) {
+              pfc_log_debug("Failed to get the domain type :%d", ret_code);
+            }
+            if (dom_type != UPPL_DOMAIN_TYPE_PF_LEAF &&
+                        dom_type != UPPL_DOMAIN_TYPE_PF_SPINE) {
+              ret_code = traversePFC(db_conn, session_id, configuration_id,
                             &obj_key_df_tgt, sess, false, df_cmn, lastPfcNode,
-                            current_bdry_id);
-        } else if ((*vals_iter).controller_type == UNC_CT_VNP ||
+                            current_bdry_id, UNC_OPT2_NONE);
+              if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS) {
+                return ret_code;
+              }
+            } else {
+              ret_code = UNC_UPPL_RC_ERR_INVALID_STATE;
+            }
+          } else if ((*vals_iter).controller_type == UNC_CT_VNP ||
                     (*vals_iter).controller_type == UNC_CT_POLC) {
-          ret_code = traverseVNP(db_conn, session_id, configuration_id,
+            ret_code = traverseVNP(db_conn, session_id, configuration_id,
                             &obj_key_df_tgt, sess, false, df_cmn, lastPfcNode,
                             current_bdry_id);
+            if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS) {
+              return ret_code;
+            }
+          }
+        }
+        pfc_log_trace("traverseXXX returned %d", ret_code);
+        if ((ret_code != UNC_RC_SUCCESS) &&
+           (df_cmn->addl_data->reason == UNC_DF_RES_SUCCESS)) {
+          if (ret_code == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE)
+            df_cmn->addl_data->reason = UNC_DF_RES_DST_NOT_REACHED;
+          else if (ret_code == UNC_UPPL_RC_ERR_CTRLR_DISCONNECTED)
+            df_cmn->addl_data->reason = UNC_DF_RES_CTRLR_DISCONNECTED;
+          else if (ret_code == UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED)
+            df_cmn->addl_data->reason = UNC_DF_RES_OPERATION_NOT_SUPPORTED;
+          else if (ret_code == UNC_UPPL_RC_ERR_INVALID_STATE)
+            df_cmn->addl_data->reason = UNC_DF_RES_DOMAIN_NOT_SUPPORTED;
+          else
+            df_cmn->addl_data->reason = UNC_DF_RES_SYSTEM_ERROR;
         }
       }
-      pfc_log_trace("traverseXXX returned %d", ret_code);
-      if ((ret_code != UNC_RC_SUCCESS) &&
-          (df_cmn->addl_data->reason == UNC_DF_RES_SUCCESS)) {
-        if (ret_code == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE)
-          df_cmn->addl_data->reason = UNC_DF_RES_DST_NOT_REACHED;
-        else if (ret_code == UNC_UPPL_RC_ERR_CTRLR_DISCONNECTED)
-          df_cmn->addl_data->reason = UNC_DF_RES_CTRLR_DISCONNECTED;
-        else if (ret_code == UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED)
-          df_cmn->addl_data->reason = UNC_DF_RES_OPERATION_NOT_SUPPORTED;
-        else
-          df_cmn->addl_data->reason = UNC_DF_RES_SYSTEM_ERROR;
-      }
-    }
-    bool restart_1stloop = false;
-    do {
-    pfc_log_debug("PBP Erasing the intermediate flows size=%"PFC_PFMT_SIZE_T,
-                       source_node->next.size());
-    restart_1stloop = false;
-    for (vector<DataflowCmn *>::iterator iter_st = source_node->next.begin();
-        iter_st != source_node->next.end(); iter_st++) {
-      bool continue_from_1stloop = false;
-      for (vector<DataflowCmn *>::iterator iter_curr = iter_st+1;
-          iter_curr != source_node->next.end(); iter_curr++) {
-        DataflowCmn *st = reinterpret_cast<DataflowCmn *>(*iter_st);
-        DataflowCmn *curr = reinterpret_cast<DataflowCmn *>(*iter_curr);
-        if ((strcmp((const char*)st->df_segment->df_common->controller_name,
-            (const char*)curr->df_segment->df_common->controller_name) == 0) &&
-           (strcmp((const char*)st->df_segment->df_common->out_domain,
-            (const char*)curr->df_segment->df_common->out_domain) == 0)) {
-          pfc_log_debug("PBP cname %s and dname %s matching curr->next.size=%"
+      bool restart_1stloop = false;
+      do {
+        pfc_log_debug("PBP Erasing the intermediate flows size=%"
+                   PFC_PFMT_SIZE_T, source_node->next.size());
+        restart_1stloop = false;
+        for (vector<DataflowCmn *>::iterator iter_st =
+                                      source_node->next.begin();
+             iter_st != source_node->next.end(); iter_st++) {
+          bool continue_from_1stloop = false;
+          for (vector<DataflowCmn *>::iterator iter_curr = iter_st+1;
+                 iter_curr != source_node->next.end(); iter_curr++) {
+            DataflowCmn *st = reinterpret_cast<DataflowCmn *>(*iter_st);
+            DataflowCmn *curr = reinterpret_cast<DataflowCmn *>(*iter_curr);
+            if ((strcmp((const char*)st->df_segment->df_common->controller_name,
+             (const char*)curr->df_segment->df_common->controller_name) == 0) &&
+               (strcmp((const char*)st->df_segment->df_common->out_domain,
+               (const char*)curr->df_segment->df_common->out_domain) == 0)) {
+              pfc_log_debug("PBP cname %s and dname %s"
+                "matching curr->next.size=%"
                 PFC_PFMT_SIZE_T",st->next.size=%"PFC_PFMT_SIZE_T,
                 (const char*)st->df_segment->df_common->controller_name,
                 (const char*)curr->df_segment->df_common->out_domain,
                 curr->next.size(), st->next.size());
-          if (curr->next.size() == 0) {
-            if (source_node->next.size()>1)
-              source_node->head->total_flow_count--;
-            pfc_log_debug("PBP Erasing the intermediate flow");
-            delete curr;
-            source_node->next.erase(iter_curr);
-            continue_from_1stloop = true;
-            restart_1stloop = true;
-          } else if (st->next.size() == 0) {
-            if (source_node->next.size()>1)
-              source_node->head->total_flow_count--;
-            pfc_log_debug("PBP Erasing the intermediate flow");
-            delete st;
-            source_node->next.erase(iter_st);
-            continue_from_1stloop = true;
-            restart_1stloop = true;
+              if (curr->next.size() == 0) {
+                if (source_node->next.size()>1)
+                  source_node->head->total_flow_count--;
+                pfc_log_debug("PBP Erasing the intermediate flow");
+                delete curr;
+                source_node->next.erase(iter_curr);
+                continue_from_1stloop = true;
+                restart_1stloop = true;
+              } else if (st->next.size() == 0) {
+                if (source_node->next.size()>1)
+                  source_node->head->total_flow_count--;
+                pfc_log_debug("PBP Erasing the intermediate flow");
+                delete st;
+                source_node->next.erase(iter_st);
+                continue_from_1stloop = true;
+                restart_1stloop = true;
+              }
+            }
+            if (continue_from_1stloop)
+              break;
           }
+          if (restart_1stloop)
+            break;
         }
-        if (continue_from_1stloop)
-          break;
-      }
-      if (restart_1stloop)
-        break;
-    }
-    } while (restart_1stloop);
-    pfc_log_debug("PBP AFTER flows size=%"PFC_PFMT_SIZE_T,
+      } while (restart_1stloop);
+      pfc_log_debug("PBP AFTER flows size=%"PFC_PFMT_SIZE_T,
                      source_node->next.size());
-  }
+    }
   }
   return UNC_RC_SUCCESS;
 }
@@ -1223,10 +1434,6 @@ UncRespCode Kt_Dataflow::FindNeighbourCtr(OdbcmConnectionHandler *db_conn,
              string &ingress_bdry_id) {
   pfc_log_trace("Entered into : %s", __func__);
   UncRespCode read_status = UNC_RC_SUCCESS;
-  if (db_conn == NULL) {
-    pfc_log_error("db_conn is NULL");
-    PFC_ASSERT(false);
-  }
   read_status = PrepareBoundaryMap(db_conn);
   if (read_status != UNC_RC_SUCCESS)
     return read_status;
@@ -1342,7 +1549,7 @@ UncRespCode Kt_Dataflow::PrepareBoundaryMap
       dom_name = (const char*)obj_bdry_rec.dom_name1;
       ret_code = PrepareCollectiveLPMap(db_conn, ctr_name, dom_name);
       if (ret_code != UNC_RC_SUCCESS) {
-        pfc_log_info("Read of LP failed");
+        pfc_log_info("Read of LP failed :%d", ret_code);
         return ret_code;
       }
       lp_id = (const char*)obj_bdry_rec.lp_id1;
@@ -1351,7 +1558,7 @@ UncRespCode Kt_Dataflow::PrepareBoundaryMap
       ret_code = update_boundary_tbl_vect(lp_map_key, index2,
                  (uint8_t)UPPL_LEFT_PART);
       if (ret_code != UNC_RC_SUCCESS) {
-        pfc_log_info("update_boundary_tbl_vect returned failure");
+        pfc_log_info("update_boundary_tbl_vect returned failure:%d", ret_code);
         return ret_code;
       }
     }
@@ -1360,7 +1567,7 @@ UncRespCode Kt_Dataflow::PrepareBoundaryMap
       dom_name = (const char*)obj_bdry_rec.dom_name2;
       ret_code = PrepareCollectiveLPMap(db_conn, ctr_name, dom_name);
       if (ret_code != UNC_RC_SUCCESS) {
-        pfc_log_info("Read of LP failed");
+        pfc_log_info("Read of LP failed :%d", ret_code);
         return ret_code;
       }
       ss.str(std::string());
@@ -1370,7 +1577,7 @@ UncRespCode Kt_Dataflow::PrepareBoundaryMap
       ret_code = update_boundary_tbl_vect(lp_map_key, index2,
                   (uint8_t)UPPL_RIGHT_PART);
       if (ret_code != UNC_RC_SUCCESS) {
-        pfc_log_info("update_boundary_tbl_vect returned failure");
+        pfc_log_info("update_boundary_tbl_vect returned failure:%d", ret_code);
         return ret_code;
       }
     }
@@ -1413,7 +1620,7 @@ UncRespCode Kt_Dataflow::PrepareBoundaryMap
   */
   ret_code = fill_boundary_map(db_conn);
   if (ret_code != UNC_RC_SUCCESS) {
-    pfc_log_info("Parsing of Bdry value structures failed");
+    pfc_log_info("Parsing of Bdry value structures failed:%d", ret_code);
     return ret_code;
   }
   return ret_code;
@@ -1475,10 +1682,34 @@ UncRespCode Kt_Dataflow::getBoundaryPorts(DataflowCmn *lastPfcNode,
   pfc_log_trace("Count of found neighbours is %" PFC_PFMT_SIZE_T,
                 found_nbrs.size());
   if (found_nbrs.empty()) {
-    pfc_log_debug("No Neighbour found");
+    pfc_log_debug("No Neighbour found:%d", UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE);
     return UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
   }
   return UNC_RC_SUCCESS;
+}
+
+/** BRecordDebugPrint
+ *  @Description : this inline function stores the boundary_record struct
+ *  values into string
+ *  @param[in] : boundary_record
+ *  @return    : string
+ */
+inline std::string BRecordDebugPrint(boundary_record& oboundary_record,
+                   UpplBoundaryTblSection part) {
+  stringstream ss;
+  ss.str(std::string());
+  if (part == UPPL_LEFT_PART) {
+    ss << oboundary_record.sw_id1 << " " << oboundary_record.port_id1
+     << " " << oboundary_record.is_filled1 << " " <<
+     PhyUtil::uint8tostr(oboundary_record.port_type1);
+  } else if (part == UPPL_RIGHT_PART) {
+    ss << oboundary_record.sw_id2 << " " << oboundary_record.port_id2
+     << " " << oboundary_record.is_filled2 << " " <<
+     PhyUtil::uint8tostr(oboundary_record.port_type2);
+  } else {
+    pfc_log_info("invalid part value in BRecordDebugPrint");
+  }
+  return ss.str();
 }
 
 /** update_boundary_tbl_vect
@@ -1496,7 +1727,6 @@ UncRespCode Kt_Dataflow::update_boundary_tbl_vect(string lp_map_key,
   map<string, lp_struct>* lp_map = get_LP_map();
   map<string, lp_struct>::iterator lp_map_iter;
   vector<boundary_record>* bdry_rec_vect = get_boundary_tbl_vect();
-  stringstream ss;
   uint16_t bdry_iter_pos_cpy = bdry_iter_pos;
   boundary_record obj_bdry_iter_pos;
   if (bdry_rec_vect->empty()) {
@@ -1528,10 +1758,8 @@ UncRespCode Kt_Dataflow::update_boundary_tbl_vect(string lp_map_key,
                sizeof(obj_bdry_iter_pos.port_id1));
         obj_bdry_iter_pos.port_type1 = lp_map_iter->second.port_type;
         obj_bdry_iter_pos.is_filled1 = true;
-        ss.str(std::string());
-        ss << obj_bdry_iter_pos.sw_id1 << " " << obj_bdry_iter_pos.port_id1
-                                    << " " << obj_bdry_iter_pos.is_filled1;
-        pfc_log_debug("part 1 LMP:%s", ss.str().c_str());
+        pfc_log_debug("part 1 LMP:%s",
+               BRecordDebugPrint(obj_bdry_iter_pos, UPPL_LEFT_PART).c_str());
       } else if (part == UPPL_RIGHT_PART) {
         memcpy(obj_bdry_iter_pos.sw_id2, lmp_map_iter->second.switch_id,
                sizeof(obj_bdry_iter_pos.sw_id2));
@@ -1539,10 +1767,8 @@ UncRespCode Kt_Dataflow::update_boundary_tbl_vect(string lp_map_key,
                sizeof(obj_bdry_iter_pos.port_id2));
         obj_bdry_iter_pos.is_filled2 = true;
         obj_bdry_iter_pos.port_type2 = lp_map_iter->second.port_type;
-        ss.str(std::string());
-        ss << obj_bdry_iter_pos.sw_id1 << " " << obj_bdry_iter_pos.port_id1
-                                   << "" << obj_bdry_iter_pos.is_filled2;
-        pfc_log_debug("part 2 LMP:%s", ss.str().c_str());
+        pfc_log_debug("part 2 LMP:%s",
+              BRecordDebugPrint(obj_bdry_iter_pos, UPPL_RIGHT_PART).c_str());
       }
       if (lmp_map_iter == lmp_map_iter2.first) {
         (*bdry_rec_vect)[bdry_iter_pos] = obj_bdry_iter_pos;
@@ -1569,10 +1795,8 @@ UncRespCode Kt_Dataflow::update_boundary_tbl_vect(string lp_map_key,
                sizeof(obj_bdry_iter_pos.port_id1));
         obj_bdry_iter_pos.port_type1 = lp_map_iter->second.port_type;
         obj_bdry_iter_pos.is_filled1 = true;
-        ss.str(std::string());
-        ss << obj_bdry_iter_pos.sw_id1 << " " << obj_bdry_iter_pos.port_id1
-                                    << " " << obj_bdry_iter_pos.is_filled1;
-        pfc_log_info("part 1 PP:%s", ss.str().c_str());
+        pfc_log_debug("part 1 PP:%s",
+                BRecordDebugPrint(obj_bdry_iter_pos, UPPL_LEFT_PART).c_str());
       } else if (part == UPPL_RIGHT_PART) {
         memcpy(obj_bdry_iter_pos.sw_id2, lp_map_iter->second.switch_id,
                sizeof(obj_bdry_iter_pos.sw_id2));
@@ -1580,10 +1804,8 @@ UncRespCode Kt_Dataflow::update_boundary_tbl_vect(string lp_map_key,
                sizeof(obj_bdry_iter_pos.port_id2));
         obj_bdry_iter_pos.is_filled2 = true;
         obj_bdry_iter_pos.port_type2 = lp_map_iter->second.port_type;
-        ss.str(std::string());
-        ss << obj_bdry_iter_pos.sw_id1 << " " << obj_bdry_iter_pos.port_id1
-                                   << "" << obj_bdry_iter_pos.is_filled2;
-        pfc_log_info("part 2 PP:%s", ss.str().c_str());
+        pfc_log_debug("part 2 PP:%s",
+               BRecordDebugPrint(obj_bdry_iter_pos, UPPL_RIGHT_PART).c_str());
       }
       if (pp_map_iter == pp_map_iter2.first) {
         (*bdry_rec_vect)[bdry_iter_pos] = obj_bdry_iter_pos;
@@ -1604,9 +1826,8 @@ UncRespCode Kt_Dataflow::update_boundary_tbl_vect(string lp_map_key,
              sizeof(obj_bdry_iter_pos.port_id1));
       obj_bdry_iter_pos.is_filled1 = true;
       obj_bdry_iter_pos.port_type1 = lp_map_iter->second.port_type;
-      ss.str(std::string());
-      ss << obj_bdry_iter_pos.sw_id1 << " " << obj_bdry_iter_pos.port_id1;
-      pfc_log_info("part 1 LP test print:%s", ss.str().c_str());
+      pfc_log_debug("part 1 LP test print:%s",
+          BRecordDebugPrint(obj_bdry_iter_pos, UPPL_LEFT_PART).c_str());
     } else if (part == UPPL_RIGHT_PART) {
       memcpy(obj_bdry_iter_pos.sw_id2, lp_map_iter->second.switch_id,
              sizeof(obj_bdry_iter_pos.sw_id2));
@@ -1614,9 +1835,8 @@ UncRespCode Kt_Dataflow::update_boundary_tbl_vect(string lp_map_key,
              sizeof(obj_bdry_iter_pos.port_id2));
       obj_bdry_iter_pos.port_type2 = lp_map_iter->second.port_type;
       obj_bdry_iter_pos.is_filled2 = true;
-      ss.str(std::string());
-      ss << obj_bdry_iter_pos.sw_id1 << " " << obj_bdry_iter_pos.port_id1;
-      pfc_log_info("part 2 LP:%s", ss.str().c_str());
+      pfc_log_debug("part 2 LP:%s",
+          BRecordDebugPrint(obj_bdry_iter_pos, UPPL_RIGHT_PART).c_str());
     }
     (*bdry_rec_vect)[bdry_iter_pos] = obj_bdry_iter_pos;
   for (uint16_t index = bdry_iter_pos+1;
@@ -1636,10 +1856,8 @@ UncRespCode Kt_Dataflow::update_boundary_tbl_vect(string lp_map_key,
                sizeof(obj_bdry_rec.port_id1));
         obj_bdry_rec.port_type1 = obj_bdry_iter_pos.port_type1;
         obj_bdry_rec.is_filled1 = true;
-        ss.str(std::string());
-        ss<< obj_bdry_rec.sw_id1 << " " << obj_bdry_rec.port_id1
-          << " " << PhyUtil::uint8tostr(obj_bdry_rec.port_type1);
-        pfc_log_info("part 1 LP remaining:%s", ss.str().c_str());
+        pfc_log_debug("part 1 LP remaining:%s",
+            BRecordDebugPrint(obj_bdry_iter_pos, UPPL_LEFT_PART).c_str());
       } else if ((!memcmp(obj_bdry_rec.ctr_name2, obj_bdry_iter_pos.ctr_name1,
                          sizeof(obj_bdry_iter_pos.ctr_name1))) &&
                  (!memcmp(obj_bdry_rec.dom_name2, obj_bdry_iter_pos.dom_name1,
@@ -1668,10 +1886,8 @@ UncRespCode Kt_Dataflow::update_boundary_tbl_vect(string lp_map_key,
                sizeof(obj_bdry_rec.port_id1));
         obj_bdry_rec.port_type1 = obj_bdry_iter_pos.port_type2;
         obj_bdry_rec.is_filled1 = true;
-        ss.str(std::string());
-        ss << obj_bdry_rec.sw_id1 << " " << obj_bdry_rec.port_id1;
-        pfc_log_info("part 2 LP remaining:%s", ss.str().c_str());
-
+        pfc_log_info("part 2 LP remaining:%s",
+            BRecordDebugPrint(obj_bdry_iter_pos, UPPL_RIGHT_PART).c_str());
       } else if ((!memcmp(obj_bdry_rec.ctr_name2, obj_bdry_iter_pos.ctr_name2,
                          sizeof(obj_bdry_iter_pos.ctr_name2))) &&
                  (!memcmp(obj_bdry_rec.dom_name2, obj_bdry_iter_pos.dom_name2,
@@ -1751,7 +1967,7 @@ UncRespCode Kt_Dataflow::PrepareCollectiveLPMap(
                                       UNC_OP_READ_SIBLING_BEGIN);
   delete obj_key_logical_port;
   if (read_status != UNC_RC_SUCCESS) {
-    pfc_log_info("Read of Logical Ports failed");
+    pfc_log_info("Read of Logical Ports failed:%d", read_status);
     if (read_status == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE)
       return UNC_RC_SUCCESS;
     return read_status;
@@ -1840,7 +2056,7 @@ UncRespCode Kt_Dataflow::PrepareCollectiveLPMap(
      if (read_status != UNC_RC_SUCCESS) {
        if (read_status == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE)
          continue;
-       pfc_log_info("Read of Ports failed");
+       pfc_log_info("Read of Ports failed:%d", read_status);
        break;
      }
   }
@@ -1917,7 +2133,7 @@ UncRespCode Kt_Dataflow::PrepareLMPMap(
                                       UNC_OP_READ_SIBLING_BEGIN);
   delete obj_key_logical_member_port;
   if (read_status != UNC_RC_SUCCESS) {
-    pfc_log_info("Read of LMP values failed");
+    pfc_log_info("Read of LMP values failed:%d", read_status);
     return read_status;
   }
   // Traversing LMP values and building the LMP map
@@ -1986,7 +2202,7 @@ UncRespCode Kt_Dataflow::PreparePPMap(
                                       UNC_DT_RUNNING,
                                       UNC_OP_READ_SIBLING_BEGIN);
   if (read_status != UNC_RC_SUCCESS) {
-    pfc_log_info("Read of Physical Ports values failed");
+    pfc_log_info("Read of Physical Ports values failed:%d", read_status);
     return read_status;
   }
   // Traversing PP values and building the PP map
@@ -2069,7 +2285,7 @@ UncRespCode Kt_Dataflow::fill_boundary_map(
                   ret_code, ctr2_name.c_str());
       if (ret_code != UNC_RC_SUCCESS) {
         pfc_log_error("error in getting the controller type: %d", ret_code);
-        if (ret_code == UNC_UPLL_RC_ERR_DB_ACCESS) {
+        if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS) {
           pfc_log_debug("Returning as there is error in DB access");
           return ret_code;
         } else {
@@ -2133,7 +2349,7 @@ UncRespCode Kt_Dataflow::fill_boundary_map(
                 ret_code, ctr2_name.c_str());
       if (ret_code != UNC_RC_SUCCESS) {
         pfc_log_error("error in getting the controller type: %d", ret_code);
-        if (ret_code == UNC_UPLL_RC_ERR_DB_ACCESS) {
+        if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS) {
           pfc_log_debug("Returning as there is error in DB Access");
           return ret_code;
         } else  {
@@ -2156,7 +2372,7 @@ UncRespCode Kt_Dataflow::fill_boundary_map(
            sizeof(obj_bdry_val.lp_str.switch_id));
     memcpy(obj_bdry_val.lp_str.port_id, bdry_rec_st.port_id1,
            sizeof(obj_bdry_val.lp_str.port_id));
-        obj_bdry_val.lp_str.port_type = bdry_rec_st.port_type1;
+    obj_bdry_val.lp_str.port_type = bdry_rec_st.port_type1;
     memcpy(obj_bdry_val.boundary_id, bdry_rec_st.boundary_id,
                            sizeof(bdry_rec_st.boundary_id));
 
@@ -2224,13 +2440,11 @@ UncRespCode Kt_Dataflow::fill_ctrlr_dom_count_map(
   vector<TableAttrSchema> vect_table_attr_schema;
   list < vector<TableAttrSchema> > row_list;
 
-  pfc_log_info("controller name: %s", ctr_name.c_str());
   PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, ctr_name,
                         ctr_name.length(),
                         DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
   string domain_name = "";
-  pfc_log_info("domain_name: %s", domain_name.c_str());
   PhyUtil::FillDbSchema(unc::uppl::DOMAIN_NAME, domain_name,
                         domain_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
@@ -2254,8 +2468,8 @@ UncRespCode Kt_Dataflow::fill_ctrlr_dom_count_map(
   // For tetsing, printinig ctrlr_dom_count_map
   for (cmap_iter = count_map->begin(); cmap_iter != count_map->end();
        cmap_iter++) {
-    pfc_log_debug("key-ctr_name:%s", (cmap_iter->first).c_str());
-    pfc_log_debug("value-dom_count:%d", cmap_iter->second);
+    pfc_log_debug("key-ctr_name:%s-value-dom_count:%d",
+                  (cmap_iter->first).c_str(), cmap_iter->second);
   }
   if (count_map->empty())
     return UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
@@ -2277,8 +2491,8 @@ UncRespCode Kt_Dataflow::getkeysfrom_boundary_map(string ctr_name,
   size_t pos = 0;
   uint8_t w_count;
   string totalF, word, delimiter = "&";
-  pfc_log_debug("input ctr_name:%s", ctr_name.c_str());
-  pfc_log_debug("ingress domain name:%s", ingress_domain_name.c_str());
+  pfc_log_debug("input ctr_name:%s ingress domain name:%s",
+                  ctr_name.c_str(), ingress_domain_name.c_str());
   for (; bdry_map_iter != bdry_map->end(); bdry_map_iter++) {
     //  non PFC
     totalF = (*bdry_map_iter).first;
@@ -2312,11 +2526,11 @@ UncRespCode Kt_Dataflow::getkeysfrom_boundary_map(string ctr_name,
       w_count++;
     }
     obj_boundary_val.controller_type = ctr_type;
-    if ((obj_boundary_val.controller_type == UNC_CT_VNP) ||
+    if (((obj_boundary_val.controller_type == UNC_CT_VNP) ||
          (obj_boundary_val.controller_type == UNC_CT_POLC) ||
-        ((obj_boundary_val.controller_type == UNC_CT_UNKNOWN) &&
+        (obj_boundary_val.controller_type == UNC_CT_UNKNOWN)) &&
         (strcmp((const char*)obj_boundary_val.domain_name,
-                ingress_domain_name.c_str()) == 0))) {
+                ingress_domain_name.c_str()) == 0)) {
       found_keys.push_back(obj_boundary_val);
       found_vals.push_back((*bdry_map_iter).second);
     }
@@ -2326,7 +2540,7 @@ UncRespCode Kt_Dataflow::getkeysfrom_boundary_map(string ctr_name,
   return UNC_RC_SUCCESS;
 }
 
-void inline Kt_Dataflow::checkFlowLimitAndTraverse(
+UncRespCode Kt_Dataflow::checkFlowLimitAndTraverse(
                                          OdbcmConnectionHandler *db_conn,
                                          uint32_t session_id,
                                          uint32_t configuration_id,
@@ -2337,7 +2551,12 @@ void inline Kt_Dataflow::checkFlowLimitAndTraverse(
                                          string &ingress_bdry_id) {
     vector<DataflowCmn *>::iterator iter_flow = node->begin();
     while (iter_flow != node->end()) {
-      pfc_log_trace("Inside the iteration of firstCtrlrFlows");
+      if ((*iter_flow)->df_segment->df_common->controller_type != UNC_CT_PFC &&
+          (*iter_flow)->df_segment->df_common->controller_type != UNC_CT_ODC) {
+        iter_flow++;
+        pfc_log_trace("Inside the != PFC if cond.");
+        continue;
+      }
         // Checking the particular flow is traversed
       DataflowCmn *traverse_flow_cmn =
                             reinterpret_cast<DataflowCmn *>(*iter_flow);
@@ -2346,10 +2565,13 @@ void inline Kt_Dataflow::checkFlowLimitAndTraverse(
                ((*iter_flow)->df_segment->df_common->controller_name));
       if (traverse_flow_cmn->addl_data->reason !=
            UNC_DF_RES_EXCEEDS_FLOW_LIMIT) {
-        int ret_code = checkBoundaryAndTraverse(db_conn, session_id,
+        UncRespCode ret_code = checkBoundaryAndTraverse(db_conn, session_id,
                      configuration_id, key_struct, sess, false,
                      traverse_flow_cmn, traverse_flow_cmn, ingress_bdry_id);
         pfc_log_debug("checkBoundaryAndTraverse returned %d", ret_code);
+        if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS) {
+          return ret_code;
+        }
         vector<DataflowCmn *>::iterator match_flow_iter =  iter_flow + 1;
         unsigned int no_of_dataflow = 1;
         while (match_flow_iter != node->end()) {
@@ -2368,10 +2590,9 @@ void inline Kt_Dataflow::checkFlowLimitAndTraverse(
                 " max_dataflow_traverse_count_=%d",
                   no_of_dataflow, max_dataflow_traverse_count_);
               if (no_of_dataflow > max_dataflow_traverse_count_) {
-                pfc_log_debug("Setting FLOW_LIMIT to %p",
-                   traverse_match_flow_cmn);
                 traverse_match_flow_cmn->addl_data->reason =
                                                UNC_DF_RES_EXCEEDS_FLOW_LIMIT;
+                pfc_log_debug("Setting reason UNC_DF_RES_EXCEEDS_FLOW_LIMIT");
                 if (is_head_node)
                   traverse_match_flow_cmn->addl_data->controller_count = 1;
               }
@@ -2382,6 +2603,7 @@ void inline Kt_Dataflow::checkFlowLimitAndTraverse(
       }
       iter_flow++;
     }
+    return UNC_RC_SUCCESS;
 }
 
 UncDataflowReason Kt_Dataflow::CreateDfCmnNodeForNonPfc(
@@ -2391,7 +2613,8 @@ UncDataflowReason Kt_Dataflow::CreateDfCmnNodeForNonPfc(
                                           DataflowCmn *df_cmn,
                                           boundary_val *ingress_obj_bval,
                                           boundary_val &egress_obj_bval,
-                                          bool is_egress) {
+                                          bool is_egress,
+                                          UncRespCode &err_code) {
   string ctr_name = (const char*)ingress_obj_bval->controller_name;
   pfc_log_info("Creating DataflowCmn node for %s", ctr_name.c_str());
   memcpy(df_cmn->df_segment->df_common->controller_name,
@@ -2436,12 +2659,12 @@ UncDataflowReason Kt_Dataflow::CreateDfCmnNodeForNonPfc(
   }
   pfc_log_debug("node:%s",
   DataflowCmn::get_string(*df_cmn->df_segment->df_common).c_str());
-  UncRespCode fill_status =
-                fill_ctrlr_dom_count_map(db_conn, ctr_name);
-  if (fill_status != UNC_RC_SUCCESS)
-    pfc_log_debug("Map is not filled");
-
-  pfc_log_debug("Return of fill_ctrlr_dom_count_map:%d", fill_status);
+  err_code = fill_ctrlr_dom_count_map(db_conn, ctr_name);
+  if (err_code != UNC_RC_SUCCESS) {
+    pfc_log_debug("Controller-Domain Count Map is not filled:%d", err_code);
+    return UNC_DF_RES_SYSTEM_ERROR;
+  }
+  pfc_log_debug("Return of fill_ctrlr_dom_count_map:%d", err_code);
   UncDataflowReason ret = source_node->appendFlow(
                     df_cmn, *(df_util_.get_ctrlr_dom_count_map()));
   if (ret != UNC_DF_RES_SUCCESS) {

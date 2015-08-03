@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -30,7 +30,9 @@ class TcLibInterface {
    * @retval     TC_FAILURE Transaction start failed
    */
   virtual TcCommonRet HandleCommitTransactionStart(uint32_t session_id,
-                                                   uint32_t config_id)=0;
+                                                   uint32_t config_id,
+                                                   TcConfigMode config_mode, 
+                                                   std::string vtn_name)=0;
 
   /**
    * @brief      Handling of transaction end in commit operation
@@ -42,6 +44,8 @@ class TcLibInterface {
    */
   virtual TcCommonRet HandleCommitTransactionEnd(uint32_t session_id,
                                                  uint32_t config_id,
+                                                 TcConfigMode config_mode,
+                                                 std::string vtn_name,
                                                  TcTransEndResult end_result)=0;
 
   /**
@@ -56,6 +60,8 @@ class TcLibInterface {
    */
   virtual TcCommonRet HandleCommitVoteRequest(uint32_t session_id,
                                               uint32_t config_id,
+                                              TcConfigMode config_mode,
+                                              std::string vtn_name,
                                               TcDriverInfoMap& driver_info)=0;
 
   /**
@@ -83,6 +89,8 @@ class TcLibInterface {
    */
   virtual TcCommonRet HandleCommitGlobalCommit(uint32_t session_id,
                                                uint32_t config_id,
+                                               TcConfigMode config_mode,
+                                               std::string vtn_name,
                                                TcDriverInfoMap& driver_info)=0;
 
   /**
@@ -111,6 +119,8 @@ class TcLibInterface {
    */
   virtual TcCommonRet HandleCommitDriverResult(uint32_t session_id,
                                                uint32_t config_id,
+                                               TcConfigMode config_mode,
+                                               std::string vtn_name,
                                                TcCommitPhaseType phase,
                                                TcCommitPhaseResult
                                                driver_result)=0;
@@ -127,6 +137,8 @@ class TcLibInterface {
    */
   virtual TcCommonRet HandleCommitGlobalAbort(uint32_t session_id,
                                               uint32_t config_id,
+                                              TcConfigMode config_mode,
+                                              std::string vtn_name,
                                               TcCommitOpAbortPhase fail_phase)
                                               =0;
 
@@ -149,7 +161,7 @@ class TcLibInterface {
   virtual TcCommonRet HandleAuditStart(uint32_t session_id,
                                        unc_keytype_ctrtype_t ctr_type,
                                        std::string controller_id,
-                                       pfc_bool_t simplified_audit,
+                                       TcAuditType audit_type,
                                        uint64_t commit_number,
                                        uint64_t commit_date,
                                        std::string commit_application) = 0;
@@ -169,7 +181,8 @@ class TcLibInterface {
   virtual TcCommonRet HandleAuditStart(uint32_t session_id,
                                        unc_keytype_ctrtype_t ctr_type,
                                        std::string controller_id,
-                                       pfc_bool_t force_reconnect) = 0;
+                                       pfc_bool_t force_reconnect,
+                                       TcAuditType audit_type) = 0;
 
 
   /**
@@ -305,6 +318,20 @@ class TcLibInterface {
                                               TcAuditResult& audit_result)=0;
 
   /**
+   * @brief      Handling of audit cancel in driver, uppl, upll  modules 
+   * @param[in]  session_id 
+   *             session on which audit request sent
+   *             session id will be 0 for driver audit
+   * @param[in]  ctr_type controller type openflow/overlay/legacy 
+   * @param[in]  controller_id controller id intended for audit
+   * @retval     TC_SUCCESS audit cancel success
+   * @retval     TC_FAILURE audit cancel failed
+   */
+  virtual TcCommonRet HandleAuditCancel(uint32_t session_id,
+                                       unc_keytype_ctrtype_t ctr_type,
+                                       std::string controller_id) = 0;
+
+  /**
    * @brief      Handling of global abort in audit operation
    * @param[in]  session_id 
    *             session on which audit request sent (user audit)
@@ -327,7 +354,8 @@ class TcLibInterface {
    * @retval     TC_SUCCESS save configuration handling success 
    * @retval     TC_FAILURE save configuration handling failed
    */
-  virtual TcCommonRet HandleSaveConfiguration(uint32_t session_id)=0;
+  virtual TcCommonRet HandleSaveConfiguration(uint32_t session_id,
+                                              uint64_t save_version)=0;
 
   /** 
    * @brief      Abort candidate configuration 
@@ -338,7 +366,10 @@ class TcLibInterface {
    * @retval     TC_FAILURE abort candidate handling failed
    */
   virtual TcCommonRet HandleAbortCandidate(uint32_t session_id,
-                                           uint32_t config_id)=0;
+                                           uint32_t config_id,
+                                           TcConfigMode config_mode,
+                                           std::string vtn_name,
+                                           uint64_t abort_version)=0;
 
   /** 
    * @brief      Clear Startup Configuration
@@ -356,7 +387,10 @@ class TcLibInterface {
    * @retval     TC_FAILURE clear startup handling failed
    */
   virtual TcCommonRet HandleAuditConfig(unc_keytype_datatype_t db_target,
-                                        TcServiceType fail_oper)=0;
+                                        TcServiceType fail_oper,
+                                        TcConfigMode config_mode,
+                                        std::string vtn_name,
+                                        uint64_t version)=0;
 
   /** 
    * @brief      Setup Configuration Message sent to UPPL at the end of startup

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -10,7 +10,7 @@
 /*
  *    table_downgrade.hh
  *    Contians downgrade schema information for tables
- * 
+ *
  */
 
 

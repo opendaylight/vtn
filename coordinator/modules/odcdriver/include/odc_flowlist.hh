@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -66,15 +66,12 @@ public:
                                      std::string &request_indicator,
                                      json_object *object) {
     ODC_FUNC_TRACE;
+      UncRespCode ret = UNC_RC_SUCCESS;
     if ( Op != unc::odcdriver::CONFIG_READ &&
         Op != unc::odcdriver::CONFIG_DELETE ) {
       unc::odcdriver::flowConditionsUtil util_;
       if ( is_entry_ == PFC_FALSE ) {
-        UncRespCode ret(util_.SetValue(object,flow_condition_));
-        if ( ret != UNC_RC_SUCCESS ) {
-          pfc_log_error("Failed to Copy from flowcondtion to json!!");
-          return ret;
-        }
+        ret=util_.SetValue(object,flow_condition_);
       } else {
         std::list <match*>::iterator iter_;
         iter_ = flow_condition_->match_.begin();
@@ -91,7 +88,7 @@ public:
     } else {
       pfc_log_info("READ or delete");
     }
-    return UNC_RC_SUCCESS;
+    return ret;
   }
 // Return the HTTP operation intended
   restjson::HttpMethod get_http_method(
@@ -134,7 +131,6 @@ public:
       unc::odcdriver::flowConditionsUtil util_;
       json_object *parse(unc::restjson::JsonBuildParse::get_json_object(data));
       if ( parse != NULL ) {
-        // Clear memory when variable(parse) is out of scope
         unc::restjson::json_obj_destroy_util delete_obj(parse);
         UncRespCode ret(util_.GetValue( parse, flow_conditions_));
         if ( ret != UNC_RC_SUCCESS )
@@ -223,10 +219,10 @@ public:
     url.append("flowconditions");
     url.append("/");
     url.append(get_url_tail(key_in,val_new_in));
-
     pfc_log_info("The Flow list URL: %s",url.c_str());
 
     odl_flowlist_http_request flow_cond_request(&command_,url, NULL, is_entry_);
+
 
     odl_http_request odl_fc_create;
     return odl_fc_create.handle_request(ctr,

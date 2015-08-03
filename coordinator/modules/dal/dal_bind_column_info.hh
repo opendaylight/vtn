@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -61,7 +61,7 @@ class DalBindColumnInfo {
      *
      * @return uint8_t   - column index of the corresponding column
      */
-    inline uint8_t get_column_index() const {
+    inline uint16_t get_column_index() const {
       return (column_index_);
     }
 
@@ -360,7 +360,7 @@ class DalBindColumnInfo {
                               const void **addr) const;
 
 
-    uint8_t column_index_;        // Column Index as given in the schema
+    uint16_t column_index_;       // Column Index as given in the schema
                                   // from the corresponding table
 
     DalCDataType app_data_type_;  // C datatype used by DAL user
@@ -370,7 +370,7 @@ class DalBindColumnInfo {
     DalIoType io_type_;           // IO type to specify the column binding
 
     void *app_out_addr_;          // DAL user buffer for output. The result
-                                  // will be stored to this address after 
+                                  // will be stored to this address after
                                   // successful query execution/fetch results
 
     void *db_in_out_addr_;        // DAL buffer contains input/output value

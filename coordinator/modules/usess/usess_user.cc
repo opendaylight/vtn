@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -69,7 +69,7 @@ usess_ipc_err_e UsessUser::Retrieve(const std::string& name)
   L_FUNCTION_START();
 
   // Check user name character codes.
-  RETURN_IF((CheckUserName(name) != true), USESS_E_INVALID_USER,
+  RETURN_IF2((CheckUserName(name) != true), USESS_E_INVALID_USER,
       "%s", "Invalid user name string.");
 
   sql_statement = sql_statement.erase() +
@@ -80,13 +80,13 @@ usess_ipc_err_e UsessUser::Retrieve(const std::string& name)
 
   db_rtn = database_.Exec(sql_statement, false,
         sizeof(fetch_type)/sizeof(fetch_type[0]), fetch_type, exec_value);
-  RETURN_IF((db_rtn != mgmtdb::DB_E_OK || exec_value.size() == 0),
+  RETURN_IF2((db_rtn != mgmtdb::DB_E_OK || exec_value.size() == 0),
       USESS_E_INVALID_USER, "Failure select sql exec(tbl_unc_usess_user). err=%d",
       db_rtn);
 
   // Save the user data to class members.
   func_rtn = SetUserData(exec_value);
-  RETURN_IF((func_rtn != USESS_E_OK), func_rtn, "%s", "Failure DB data set.");
+  RETURN_IF2((func_rtn != USESS_E_OK), func_rtn, "%s", "Failure DB data set.");
 
   L_FUNCTION_COMPLETE();
   return USESS_E_OK;
@@ -116,17 +116,18 @@ usess_ipc_err_e UsessUser::Privilege(const user_privilege_e mode,
   case kPrivilegeUserPasswd:
 
     // check session mode.
-    RETURN_IF((sess.sess_mode != USESS_MODE_ENABLE), USESS_E_INVALID_MODE,
+    RETURN_IF2(((sess.sess_mode != USESS_MODE_ENABLE) && 
+              ((sess.sess_mode != USESS_MODE_OPER))), USESS_E_INVALID_MODE,
         "Invalid session mode. [%d]", sess.sess_mode);
 
+    // check user name.
     uname = CAST_IPC_STRING(sess.sess_uname);
-    // check user name.(only session mode=oper)
-    RETURN_IF((name.compare(uname) != 0), USESS_E_INVALID_USER,
+    RETURN_IF2((name.compare(uname) != 0), USESS_E_INVALID_USER,
         "Invalid user name. [%s]", uname.c_str());
     break;
 
   default:
-    RETURN_IF(true, USESS_E_NG, "%s", "Invalid privilege mode.");
+    RETURN_IF2(true, USESS_E_NG, "%s", "Invalid privilege mode.");
     break;
   }
 
@@ -166,18 +167,17 @@ usess_ipc_err_e UsessUser::Authenticate(const user_authenticate_e mode,
     }
 
     // Check password character codes.
-    RETURN_IF((CheckPassword(passwd) != true), USESS_E_INVALID_PASSWD,
+    RETURN_IF2((CheckPassword(passwd) != true), USESS_E_INVALID_PASSWD,
         "%s", "Invalid password string.");
 
     // Compare password.
-    RETURN_IF((CheckDigest(passwd, passwd_digest, passwd_digest) != true),
+    RETURN_IF2((CheckDigest(passwd, passwd_digest, passwd_digest) != true),
         USESS_E_INVALID_PASSWD, "%s", "Invalid password.");
-
     // Success.
     break;
 
   default:
-    RETURN_IF(true, USESS_E_NG, "%s", "Invalid authenticate mode.");
+    RETURN_IF2(true, USESS_E_NG, "%s", "Invalid authenticate mode.");
     break;
   }
 
@@ -207,14 +207,14 @@ usess_ipc_err_e UsessUser::ChangePassword(const char* passwd)
   L_FUNCTION_START();
 
   // Check password character codes.
-  RETURN_IF((CheckPassword(passwd) != true), USESS_E_INVALID_PASSWD,
+  RETURN_IF2((CheckPassword(passwd) != true), USESS_E_INVALID_PASSWD,
       "%s", "Invalid modify password string");
 
   // password hash.
   pfc_clock_get_realtime(&now_time);
 
   Hash(passwd, now_time, conf_.data().hash_type, hash_passwd);
-  RETURN_IF((hash_passwd.empty() != false), USESS_E_NG,
+  RETURN_IF2((hash_passwd.empty() != false), USESS_E_NG,
         "%s", "Failure modify password hash");
 
   // Update enable table record.
@@ -228,7 +228,7 @@ usess_ipc_err_e UsessUser::ChangePassword(const char* passwd)
                   "   WHERE uname = '" + name + "'";
 
   db_rtn = database_.Exec(sql_statement, true, 0, NULL, exec_value);
-  RETURN_IF((db_rtn != mgmtdb::DB_E_OK), USESS_E_NG,
+  RETURN_IF2((db_rtn != mgmtdb::DB_E_OK), USESS_E_NG,
       "Failure update sql exec(tbl_unc_usess_user). err=%d", db_rtn);
 
   L_FUNCTION_COMPLETE();
@@ -297,7 +297,7 @@ usess_ipc_err_e UsessUser::SetUserData(
           const mgmtdb::mgmtdb_variant_v& exec_value)
 {
   // Error, if count of columns and exec_value.size() is not equal.
-  RETURN_IF((exec_value.size() != 1 || exec_value[0].size() != 4),
+  RETURN_IF2((exec_value.size() != 1 || exec_value[0].size() != 4),
     USESS_E_NG, "abnormal column counts. count=%" PFC_PFMT_SIZE_T ", %"
     PFC_PFMT_SIZE_T,
     exec_value.size(), exec_value[0].size());

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -553,45 +553,11 @@ int DataflowDetail::sessReadDataflow(ClientSession& sess,
         is_flow_redirect  =  true;
      if (val_flow_path_obj->status ==  UPLL_DATAFLOW_PATH_STATUS_DROP)
         is_flow_drop  =  true;
-     int error = RedirectCheck(val_flow_path_obj);
-     if (error != 0) {
-      vtn_df_common->path_info_count--;
-      pfc_log_debug(" vtn path count after skipping is %d", vtn_df_common->path_info_count);
-      continue;
-     }
      vtn_path_infos.push_back(val_flow_path_obj);
     }
   }
   pfc_log_debug("Returned value is %d", err);
   return err;
-}
-
-int DataflowDetail::RedirectCheck(val_vtn_dataflow_path_info_t *path_info) {
-  int err = -1;
-  if (vtn_path_infos.size()) {
-    val_vtn_dataflow_path_info_t *path_info_prev = vtn_path_infos.back();
-    if ((path_info->valid[UPLL_IDX_VLINK_FLAG_VVDPI] == UNC_VF_VALID) &&
-           (path_info->vlink_flag == UPLL_DATAFLOW_PATH_VLINK_NOT_EXISTS_)) {
-      if ((path_info->valid[UPLL_IDX_IN_VNODE_VVDPI] ==  UNC_VF_INVALID) ||
-            (path_info->valid[UPLL_IDX_IN_VIF_VVDPI] == UNC_VF_INVALID) ||
-            (path_info_prev->valid[UPLL_IDX_IN_VNODE_VVDPI] ==  UNC_VF_INVALID) ||
-            (path_info_prev->valid[UPLL_IDX_IN_VIF_VVDPI] == UNC_VF_INVALID)) {
-            return err;
-      }
-      pfc_log_debug("previous path info %s", DataflowCmn::get_string(*path_info_prev).c_str());
-      if(!(strncmp((const char *)path_info->in_vnode, (const char *)path_info_prev->out_vnode, sizeof(path_info->in_vnode) + 1)) &&
-          !(strncmp((const char *)path_info->in_vif, (const char *)path_info_prev->out_vif, sizeof(path_info->in_vif) + 1)) &&
-           (path_info_prev->vlink_flag == UPLL_DATAFLOW_PATH_VLINK_EXISTS)) {
-           pfc_log_debug("skipping path info %s", DataflowCmn::get_string(*path_info).c_str());
-           strncpy((char *)path_info_prev->out_vnode, (const char *)path_info->out_vnode, sizeof(path_info->out_vnode)); 
-           strncpy((char *)path_info_prev->out_vif, (const char *)path_info->out_vif, sizeof(path_info->out_vif)); 
-           delete path_info;
-           path_info_prev->vlink_flag = UPLL_DATAFLOW_PATH_VLINK_NOT_EXISTS_; 
-           return err;
-      }
-    }
-  }
-  return 0;
 }
 
 /**  CompareDataflow
@@ -1644,6 +1610,24 @@ DataflowUtil::~DataflowUtil() {
   }
   upll_pfc_flows.clear();
   }
+  if (vext_info_map.size() > 0) {
+    std::map<std::string, void* >::iterator it;
+    std::string tmp_key;
+    it = vext_info_map.begin();
+    for ( ; it != vext_info_map.end(); ++it) {
+     tmp_key = it->first;
+     if ((tmp_key.compare(0, 1, "0")) == 0) {
+      UPLL_LOG_DEBUG("vexternal information ingress is deleted");
+      if (it->second)
+       delete reinterpret_cast<ConfigKeyVal *>(it->second);
+     }
+    }
+    vext_info_map.clear();
+  }
+  if (vnode_rename_map.size() > 0)
+    vnode_rename_map.clear();
+  if (bypass_dom_set.size() > 0)
+    bypass_dom_set.clear();
 }
 
 
@@ -2092,6 +2076,41 @@ string DataflowCmn::get_string(const key_ctr_dataflow_t &k) {
   ss << "KT_CTR_DATAFLOW:[KEY: "
       << "controller_name:" << k.ctr_key.controller_name
       << ", flow_id:" << uint64tostr(k.flow_id)
+      << "]";
+  return ss.str();
+}
+
+/** get_string
+ * @Description : This function returns controller name and flow_id from
+ *                the key structure
+ * @param[in]   : k - structure variable of type key_ctr_dataflow
+ * @return      : attributes in key structure of key_ctr_dataflow_t are returned
+ * returned
+ **/
+string DataflowCmn::get_string(const key_dataflow_v2_t &k) {
+  stringstream ss;
+  ss << "KT_DATAFLOW_V2:[KEY: "
+      << "controller_name:" << k.controller_name
+      << "]";
+  return ss.str();
+}
+
+/** get_string
+ * @Description : This function returns controller name and flow_id from
+ *                the key structure
+ * @param[in]   : k - structure variable of type key_ctr_dataflow
+ * @return      : attributes in key structure of key_ctr_dataflow_t are returned
+ * returned
+ **/
+string DataflowCmn::get_string(const val_dataflow_v2_t &v) {
+  stringstream ss;
+  stringstream valid;
+  for (unsigned int i = 0; i < 1; ++i) {
+    valid << uint8tostr(v.valid[i]);
+  }
+  ss << "VAL_DATAFLOW_V2:[VAL: "
+      << "flow_id:" << uint64tostr(v.flow_id)
+      << " valid:" << valid.str()
       << "]";
   return ss.str();
 }

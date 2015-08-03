@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,7 +10,10 @@
 #ifndef UPLL_UPLL_UTIL_HH_
 #define UPLL_UPLL_UTIL_HH_
 
+#include <sys/time.h>
+#include <sstream>
 #include <cstring>
+#include <string>
 #include "cxx/pfcxx/synch.hh"
 #include "uncxx/upll_log.hh"
 
@@ -53,7 +56,18 @@ inline static char *upll_strncpy(char *dest, const uint8_t *src, size_t n) {
 inline static char *upll_strncpy(uint8_t *dest, const char *src, size_t n) {
   return strncpy(reinterpret_cast<char*>(dest), src, n);
 }
-
+inline static int upll_strncmp(uint8_t *str1, const uint8_t *str2, size_t n) {
+  return strncmp(reinterpret_cast<const char*>(str1),
+                 reinterpret_cast<const char*>(str2),
+                 n);
+}
+inline std::string getTime() {
+  struct timeval _timeval;
+  gettimeofday(&_timeval, NULL);
+  std::stringstream ss;
+  ss <<_timeval.tv_sec <<_timeval.tv_usec;
+  return ss.str();
+}
 
 }  // namespace upll_util
 }  // namespace upll

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -25,6 +25,8 @@
 typedef enum {
   UNC_PHYSICAL_EVENTS = 0, /* Physical Topology Events */
   UNC_ALARMS,              /* Alarm Events */
+  UNC_UPPL_ALARMS,         /* Physical Alarm Events */
+  UNC_UPLL_ALARMS,         /* Logical Alarm Events */
   UNC_CTLR_STATE_EVENTS    /* Controller State Events */
 } unc_event_mask_t;
 
@@ -34,6 +36,7 @@ typedef enum {
 typedef enum {
   CONTROLLER_OPER_DOWN = 0,
   CONTROLLER_OPER_UP,
+  CONTROLLER_EVENTS_START,
   CONTROLLER_EVENTS_DONE
 } unc_state_event_type_t;
 
@@ -69,6 +72,7 @@ typedef enum {
 typedef enum {
   UNC_PHYS_PATH_FAULT = 0, /*Physical Path Fault/Recovery*/
   UNC_COREDOMAIN_SPLIT,      /*Broadcast Domain Split/Recovery*/
+  UNC_DOMAIN_SPLIT,      /* Domain Split/Recovery*/
   UNC_SUBDOMAIN_SPLIT,      /*Broadcast Domain Split/Recovery*/
   UNC_FLOW_ENT_FULL,       /*FlowEntry Full Occurred/Recovery*/
   UNC_DEFAULT_FLOW,        /*Default Flow Failure/Success*/
@@ -77,7 +81,9 @@ typedef enum {
   UNC_NWMON_FAULT,         /*Network Monitor Group Fault/Recovery(Cancel)*/
   UNC_PORT_DIRECTION,      /*Port direction is inconsistent/consistent*/
   UNC_PORT_CONGES,         /*OFS Port Congestion Occurred/Recovered*/
-  UNC_OFS_LACK_FEATURES    /*OFS is lack of features/OFS has recovered lack of features*/
+  UNC_OFS_LACK_FEATURES,    /*OFS is lack of features/OFS has recovered lack of features*/
+  UNC_OFS_DISABLED,    /*OFS is disabled/enabled */
+  UNC_VTN_ID_EXHAUSTION /*VTN ID Exhaustion*/
 }unc_alarm_type_t;
 
 /*

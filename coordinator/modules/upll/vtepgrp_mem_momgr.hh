@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -30,15 +30,15 @@ class VtepGrpMemMoMgr : public VnodeChildMoMgr {
   static BindInfo       vtepgrp_mem_bind_info[];
 //  static BindInfo       key_vtepgrp_mem_maintbl_update_bind_info[];
   /**
-   * @brief  Gets the valid array position of the variable in the value 
-   *         structure from the table in the specified configuration  
+   * @brief  Gets the valid array position of the variable in the value
+   *         structure from the table in the specified configuration
    *
-   * @param[in]     val      pointer to the value structure 
+   * @param[in]     val      pointer to the value structure
    * @param[in]     indx     database index for the variable
-   * @param[out]    valid    position of the variable in the valid array - 
+   * @param[out]    valid    position of the variable in the valid array -
    *                          NULL if valid does not exist.
    * @param[in]     dt_type  specifies the configuration
-   * @param[in]     tbl      specifies the table containing the given value 
+   * @param[in]     tbl      specifies the table containing the given value
    *
    **/
   upll_rc_t GetValid(void *val, uint64_t indx, uint8_t *&valid,
@@ -72,12 +72,13 @@ class VtepGrpMemMoMgr : public VnodeChildMoMgr {
                               DalDmlIntf *dmi,
                               IpcReqRespHeader *req = NULL);
   /**
-     * @brief  Duplicates the input configkeyval including the key and val.  
+     * @brief  Duplicates the input configkeyval including the key and val.
      * based on the tbl specified.
      *
      * @param[in]  okey   Output Configkeyval - allocated within the function
      * @param[in]  req    Input ConfigKeyVal to be duplicated.
-     * @param[in]  tbl    specifies if the val structure belongs to the main table/ controller table or rename table.
+     * @param[in]  tbl    specifies if the val structure belongs to the
+     *                    main table/ controller table or rename table.
      *
      * @retval         UPLL_RC_SUCCESS      Successfull completion.
      * @retval         UPLL_RC_ERR_GENERIC  Failure case.
@@ -85,13 +86,13 @@ class VtepGrpMemMoMgr : public VnodeChildMoMgr {
   upll_rc_t DupConfigKeyVal(ConfigKeyVal *&okey,
                    ConfigKeyVal *&req, MoMgrTables tbl = MAINTBL);
   /**
-     * @brief  Allocates for the specified val in the given configuration in the     * specified table.   
+     * @brief  Allocates for the specified val in the given configuration in the     * specified table.
      *
-     * @param[in/out]  ck_val   Reference pointer to configval structure 
-     *                          allocated.      
+     * @param[in/out]  ck_val   Reference pointer to configval structure
+     *                          allocated.
      * @param[in]      dt_type  specifies the configuration candidate/running/
-     *                          state 
-     * @param[in]      tbl      specifies if the corresponding table is the  
+     *                          state
+     * @param[in]      tbl      specifies if the corresponding table is the
      *                          main table / controller table or rename table.
      *
      * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -99,22 +100,25 @@ class VtepGrpMemMoMgr : public VnodeChildMoMgr {
      **/
   upll_rc_t AllocVal(ConfigVal *&ck_val, upll_keytype_datatype_t dt_type,
           MoMgrTables tbl = MAINTBL);
-/**
-    * @brief      Method to get a configkeyval of a specified keytype from an input configkeyval
+  /**
+    * @brief      Method to get a configkeyval of a specified keytype
+    *             from an input configkeyval
     *
-    * @param[in/out]  okey                 pointer to output ConfigKeyVal 
-    * @param[in]      parent_key           pointer to the configkeyval from which the output configkey val is initialized.
+    * @param[in/out]  okey                 pointer to output ConfigKeyVal
+    * @param[in]      parent_key           pointer to the configkeyval from
+    *                                      which the output
+    *                                      configkey val is initialized.
     *
     * @retval         UPLL_RC_SUCCESS      Successfull completion.
     * @retval         UPLL_RC_ERR_GENERIC  Failure case.
     */
   upll_rc_t GetChildConfigKey(ConfigKeyVal *&okey,
               ConfigKeyVal *parent_key);
-/**
-    * @brief      Method to get a configkeyval of the parent keytype 
+  /**
+    * @brief      Method to get a configkeyval of the parent keytype
     *
-    * @param[in/out]  okey           pointer to parent ConfigKeyVal 
-    * @param[in]      ikey           pointer to the child configkeyval from 
+    * @param[in/out]  okey           pointer to parent ConfigKeyVal
+    * @param[in]      ikey           pointer to the child configkeyval from
     * which the parent configkey val is obtained.
     *
     * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -123,7 +127,7 @@ class VtepGrpMemMoMgr : public VnodeChildMoMgr {
   upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *ikey);
 
   /**
-   * @Brief Get the VtepConfigKeyVal from VtepTbl 
+   * @Brief Get the VtepConfigKeyVal from VtepTbl
    *
    * @param[in] ikey                      ikey contains key and value structure.
    * @param[in] okey                      okey contains key and value structure.
@@ -142,7 +146,8 @@ class VtepGrpMemMoMgr : public VnodeChildMoMgr {
    *        for KT_VTEP_GRP_MEMBER keytype
    *
    * @param[in] req                       This structure contains
-   *                                      IpcReqRespHeader(first 8 fields of input request structure).
+   *                                      IpcReqRespHeader(first 8 fields
+   *                                      of input request structure).
    * @param[in] ikey                      ikey contains key and value structure.
    *
    * @retval UPLL_RC_SUCCESS              Successful.
@@ -171,7 +176,8 @@ class VtepGrpMemMoMgr : public VnodeChildMoMgr {
    *        based on the valid flag
    *
    * @param[in] req               This structure contains
-   *                              IpcReqRespHeader(first 8 fields of input request structure).
+   *                              IpcReqRespHeader(first 8 fields of
+   *                              input request structure).
    * @param[in] ikey              ikey contains key and value structure.
    * @param[in] crtlr_name        Controller name.
    *
@@ -193,8 +199,8 @@ class VtepGrpMemMoMgr : public VnodeChildMoMgr {
                                     MoMgrTables tbl ) {
     return true;
   }
-  upll_rc_t IsReferenced(ConfigKeyVal *ikey,
-           upll_keytype_datatype_t dt_type, DalDmlIntf *dmi) {
+  upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
+           DalDmlIntf *dmi) {
     return UPLL_RC_SUCCESS;
   }
 
@@ -210,13 +216,14 @@ class VtepGrpMemMoMgr : public VnodeChildMoMgr {
   /**
     * @brief      Method to check if individual portions of a key are valid
     *
-    * @param[in/out]  ikey                 pointer to ConfigKeyVal referring to a UNC resource
+    * @param[in/out]  ikey                 pointer to ConfigKeyVal referring
+    *                                      to a UNC resource
     * @param[in]      index                db index associated with the variable
     *
     * @retval         true                 input key is valid
     * @retval         false                input key is invalid.
     **/
-  bool IsValidKey(void *tkey, uint64_t index);
+  bool IsValidKey(void *tkey, uint64_t index, MoMgrTables tbl = MAINTBL);
 
   /**
    * @Brief Compare if Vtep member ControllerId and VtepGrp ControllerId are same
@@ -237,7 +244,7 @@ class VtepGrpMemMoMgr : public VnodeChildMoMgr {
 };
 
 
-}  // namespace vtn
+}  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc
 #endif

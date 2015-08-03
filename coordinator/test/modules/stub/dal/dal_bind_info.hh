@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,9 +14,9 @@
 #include <string.h>
 #include <vector>
 #include <map>
-#include <dal_defines.hh>
-#include <dal_schema.hh>
-#include <dal_bind_column_info.hh>
+#include "include/dal_defines.hh"
+#include "include/dal_schema.hh"
+#include "include/dal_bind_column_info.hh"
 
 namespace unc {
 namespace upll {
@@ -26,102 +26,101 @@ namespace dal {
 typedef std::vector<DalBindColumnInfo *> DalBindList;
 
 class DalBindInfo {
-public:
+  public:
 
-  enum Method {
-    BIND_INPUT,
-    BIND_OUTPUT,
-    BIND_MATCH,
-    COPY,
-    RESET
-  };
+	enum Method
+	{
+		BIND_INPUT,
+		BIND_OUTPUT,
+		BIND_MATCH,
+		COPY,
+		RESET
+	};
 
-  explicit DalBindInfo(const DalTableIndex table_index);
+    explicit DalBindInfo(const DalTableIndex table_index);
 
-  ~DalBindInfo();
+    ~DalBindInfo();
 
-  bool BindInput(const DalColumnIndex column_index,
-                 const DalCDataType app_data_type,
-                 const size_t array_size,
-                 const void *bind_addr);
+    bool BindInput(const DalColumnIndex column_index,
+                   const DalCDataType app_data_type,
+                   const size_t array_size,
+                   const void *bind_addr);
 
-  bool BindOutput(const DalColumnIndex column_index,
-                  const DalCDataType app_data_type,
-                  const size_t array_size,
-                  const void *bind_addr);
+    bool BindOutput(const DalColumnIndex column_index,
+                    const DalCDataType app_data_type,
+                    const size_t array_size,
+                    const void *bind_addr);
 
-  bool BindMatch(const DalColumnIndex column_index,
-                 const DalCDataType app_data_type,
-                 const size_t array_size,
-                 const void *bind_addr);
+    bool BindMatch(const DalColumnIndex column_index,
+                   const DalCDataType app_data_type,
+                   const size_t array_size,
+                   const void *bind_addr);
 
-  inline DalTableIndex get_table_index() const {
-    return (table_index_);
-  }
+    inline DalTableIndex get_table_index() const {
+      return (table_index_);
+    }
 
-  inline DalBindList get_bind_list() const {
-    return (bind_list_);
-  }
+    inline DalBindList get_bind_list() const {
+      return (bind_list_);
+    }
 
-  inline uint16_t get_input_bind_count() const {
-    return (input_bind_count_);
-  }
+    inline uint16_t get_input_bind_count() const {
+      return (input_bind_count_);
+    }
 
-  inline uint16_t get_output_bind_count() const {
-    return (output_bind_count_);
-  }
+    inline uint16_t get_output_bind_count() const {
+      return (output_bind_count_);
+    }
 
-  inline uint16_t get_match_bind_count() const {
-    return (match_bind_count_);
-  }
+    inline uint16_t get_match_bind_count() const {
+      return (match_bind_count_);
+    }
 
-  static void stub_set_table_index(DalTableIndex tableIndex) {
-    table_index_ = tableIndex;
-  }
+    static void stub_set_table_index(DalTableIndex tableIndex) {
+    	table_index_ = tableIndex;
+    }
 
-  static void stub_set_bind_list( DalBindList dalBindList) {
-    bind_list_ = dalBindList;
-  }
+    static void stub_set_bind_list( DalBindList dalBindList) {
+      bind_list_ = dalBindList;
+    }
 
-  static void  stub_set_input_bind_count(uint16_t bind_count) {
-    input_bind_count_= bind_count;
-  }
+    static void  stub_set_input_bind_count(uint16_t bind_count) {
+       input_bind_count_= bind_count;
+    }
 
-  static void  stub_set_output_bind_count( uint16_t output_bind) {
-    output_bind_count_=output_bind;
-  }
+    static void  stub_set_output_bind_count( uint16_t output_bind) {
+         output_bind_count_=output_bind;
+    }
 
-  static void stub_set_match_bind_count(uint16_t bind_count) {
-    match_bind_count_ = bind_count;
-  }
+    static void stub_set_match_bind_count(uint16_t bind_count) {
+    	match_bind_count_ = bind_count;
+    }
 
-  static void stub_setResultcode(DalBindInfo::Method methodType,
-                                 DalResultCode res_code) {
-    method_result_map.insert(std::make_pair(methodType,res_code));
-  }
+    static void stub_setResultcode(DalBindInfo::Method methodType ,DalResultCode res_code) {
+    	method_result_map.insert(std::make_pair(methodType,res_code));
+    }
 
-  static void clearStubData() {
-    method_result_map.clear();
-  }
+    static void clearStubData() {
+    	method_result_map.clear();
+    }
 
-  bool CopyResultToApp();
 
-  bool ResetDalOutBuffer();
-private:
-  bool stub_getMappedResultCode(DalBindInfo::Method);
-  static DalBindList bind_list_;
-  static DalTableIndex table_index_;
-  static uint16_t input_bind_count_;
+    bool CopyResultToApp();
 
-  static uint16_t output_bind_count_;
+    bool ResetDalOutBuffer();
+  private:
+    bool stub_getMappedResultCode(DalBindInfo::Method);
+    static DalBindList bind_list_;
+    static DalTableIndex table_index_;
+    static uint16_t input_bind_count_;
 
-  static uint16_t match_bind_count_;
-  static std::map<DalBindInfo::Method,bool> method_result_map;
+    static uint16_t output_bind_count_;
+
+    static uint16_t match_bind_count_;
+    static std::map<DalBindInfo::Method,bool> method_result_map;
 
 };  // class DalBindInfo
-
 }  // namespace dal
 }  // namespace upll
 }  // namespace unc
-
 #endif  // __DAL_BIND_INFO_HH__

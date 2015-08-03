@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -90,7 +90,7 @@ class Kt_LogicalPort: public Kt_State_Base {
       void *key_struct,
       void *value_struct,
       vector<uint32_t> &vectOperStatus,
-      pfc_bool_t is_delete_call = false);
+      pfc_bool_t is_delete_call);
 
   UncRespCode GetOperDownCriteria(OdbcmConnectionHandler *db_conn,
                                      uint32_t data_type,
@@ -193,9 +193,9 @@ class Kt_LogicalPort: public Kt_State_Base {
       uint32_t option2,
       vector<ODBCMOperator> &vect_key_operations,
       void* &old_value_struct,
-      CsRowStatus row_status= NOTAPPLIED,
-      pfc_bool_t is_filtering= false,
-      pfc_bool_t is_state= PFC_FALSE);
+      CsRowStatus row_status,
+      pfc_bool_t is_filtering,
+      pfc_bool_t is_state);
 
   void FillLogicalPortValueStructure(OdbcmConnectionHandler *db_conn,
       DBTableSchema &kt_logicalport_dbtableschema,
@@ -222,7 +222,6 @@ class Kt_LogicalPort: public Kt_State_Base {
       uint32_t data_type,
       uint32_t operation_type,
       uint32_t &max_rep_ct,
-      vector<val_logical_port_t> &vect_val_logical_port,
       vector<val_logical_port_st_t> &vect_val_logical_port_st,
       vector<key_logical_port_t> &logical_port_id);
 
@@ -277,5 +276,10 @@ class Kt_LogicalPort: public Kt_State_Base {
       vector<key_logical_port_t> &vectLogicalPortKey,
       uint32_t data_type);
   UncRespCode ValidatePortType(uint8_t port_type);
+  UncRespCode FillBoundaryCandidateDetails(
+           OdbcmConnectionHandler *db_conn, 
+           val_port_st_neighbor &obj_neighbor,
+           val_logical_port_boundary &val_lp_boundary, 
+           uint32_t data_type);
 };
 #endif

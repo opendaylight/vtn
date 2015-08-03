@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -45,7 +45,9 @@ typedef enum {
   TCOPER_RET_ABORT,
   TCOPER_RET_NO_DRIVER,
   TCOPER_RET_UNKNOWN,
-  TCOPER_RET_SIMPLIFIED_AUDIT
+  TCOPER_RET_SIMPLIFIED_AUDIT,
+  TCOPER_RET_AUDIT_CANCELLED,
+  TCOPER_RET_LAST_DB_OP_FAILED
 }TcOperRet;
 /*class to send notifications to all intended modules*/
 class TcMsg {
@@ -69,9 +71,17 @@ class TcMsg {
   virtual void SetData(unc_keytype_datatype_t target_db,
                        TcServiceType fail_oper) {}
 
+  virtual void SetData(unc_keytype_datatype_t target_db,
+                       TcServiceType fail_oper, uint64_t version) {}
+
   virtual void SetData(uint32_t config_id,
                        std::string controller_id,
                        unc_keytype_ctrtype_t driver_id) {}
+
+  virtual void SetData(uint32_t config_id, 
+                       TcConfigMode config_mode, 
+                       std::string vtn_name) {}
+
   /*method to get controller-type for user audit*/
   virtual unc_keytype_ctrtype_t  GetResult();
   /*method to send notifications in appropriate order*/
@@ -82,6 +92,7 @@ class TcMsg {
   tclib::TcTransEndResult GetTransResult();
   TcOperRet SetTransResult(tclib::TcTransEndResult result);
   virtual void SetReconnect(pfc_bool_t force_reconnect){}
+  virtual void SetAuditType(TcAuditType audit_type){}
   virtual void IsUserAudit(pfc_bool_t user_audit){}
   /*method to send response to VTN*/
   TcOperRet ForwardResponseInternal(pfc::core::ipc::ServerSession& srv_sess,
@@ -107,10 +118,32 @@ class TcMsg {
   tclib::TcAuditResult audit_result_;
   /*transaction result*/
   tclib::TcTransEndResult trans_result_;
+  
+  static pfc_bool_t       audit_cancel_flag_;
+  static pfc::core::Mutex audit_cancel_flag_mutex_;
+
+  static unc_keytype_ctrtype_t notify_driver_id_;
+  static pfc::core::Mutex      notify_driver_id_mutex_;
+
+  static std::string      notify_controller_id_;
+  static pfc::core::Mutex notify_controller_id_mutex_;
+
+  static void SetAuditCancelFlag(pfc_bool_t audit_cancelled);
+  static pfc_bool_t GetAuditCancelFlag();
+
+  /* Set/Get Functions for Controller Id */
+  static void SetNotifyControllerId(std::string const & ctr_id);
+  static std::string GetNotifyControllerId();
+
+  /* Set/Get Functions for Driver Id */
+  static void SetNotifyDriverId(unc_keytype_ctrtype_t Id);
+  static unc_keytype_ctrtype_t GetNotifyDriverId();
+
 
  protected:
   /*gets channel name of module*/
   std::string GetChannelName(TcDaemonName tc_client);
+  TcDaemonName GetDaemonName(std::string const & channel_name);
   /*mapping function for driver_ids*/
   TcDaemonName MapTcDriverId(unc_keytype_ctrtype_t driver_id);
   /*response mapping methods*/
@@ -124,8 +157,12 @@ class TcMsg {
 /* Handles Autosave enable/disable */
 class TcMsgAutoSave : public TcMsg {
  public:
+  uint64_t save_version_;
   TcMsgAutoSave(uint32_t sess_id, tclib::TcMsgOperType oper);
   TcOperRet Execute();
+  void SetData(unc_keytype_datatype_t target_db,
+               TcServiceType fail_oper,
+               uint64_t save_version);
 };
 
 /*handles SETUP and SETUP_COMPLETE notifications*/
@@ -144,27 +181,43 @@ class TcMsgNotifyConfigId : public TcMsg {
     void SetData(uint32_t config_id,
                  std::string controller_id,
                  unc_keytype_ctrtype_t driver_id);
+    void SetData(uint32_t config_id, 
+                 TcConfigMode config_mode, 
+                 std::string vtn_name);
     TcOperRet Execute();
 
    private:
     uint32_t config_id_;
+    TcConfigMode config_mode_;
+    std::string vtn_name_;
 };
 /*handles SAVE and CLEAR StartupDB notifications*/
 class TcMsgToStartupDB : public TcMsg {
  public:
+  uint64_t save_version_;
   TcMsgToStartupDB(uint32_t sess_id, tclib::TcMsgOperType oper);
   TcOperRet Execute();
+  void SetData(unc_keytype_datatype_t target_db,
+               TcServiceType fail_oper,
+               uint64_t save_version);
 };
 /*handles AuditDB notifications*/
 class TcMsgAuditDB : public TcMsg {
  public:
   TcMsgAuditDB(uint32_t sess_id, tclib::TcMsgOperType oper);
-  void SetData(unc_keytype_datatype_t target_db, TcServiceType fail_oper);
+  void SetData(unc_keytype_datatype_t target_db,
+               TcServiceType fail_oper,
+               uint64_t version);
+  void SetData(uint32_t config_id, TcConfigMode config_mode,
+               std::string vtn_name);
   TcOperRet Execute();
 
  protected:
   unc_keytype_datatype_t target_db_;
   TcServiceType fail_oper_;
+  uint64_t version_;
+  TcConfigMode config_mode_;
+  std::string vtn_name_;
 };
 
 }   // namespace tc

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -51,12 +51,15 @@ class TcLibIntfImpl : public unc::tclib::TcLibInterface {
   virtual ~TcLibIntfImpl();
   /* commit related interfaces */
   virtual TcCommonRet HandleCommitTransactionStart(uint32_t session_id,
-                                                   uint32_t config_id);
+                      uint32_t config_id, TcConfigMode config_mode,
+                      std::string vtn_name);
   virtual TcCommonRet HandleCommitTransactionEnd(uint32_t session_id,
-                                                 uint32_t config_id,
-                                                 TcTransEndResult end_result);
+                      uint32_t config_id, TcConfigMode config_mode,
+                      std::string vtn_name, TcTransEndResult end_result);
   virtual TcCommonRet HandleCommitVoteRequest(
-      uint32_t session_id, uint32_t config_id, TcDriverInfoMap& driver_info);
+      uint32_t session_id, uint32_t config_id,
+      TcConfigMode config_mode, std::string vtn_name,
+      TcDriverInfoMap& driver_info);
   /* Below function For Driver Modules */
   virtual TcCommonRet HandleCommitVoteRequest(
       uint32_t session_id, uint32_t config_id, TcControllerList controllers) {
@@ -64,7 +67,9 @@ class TcLibIntfImpl : public unc::tclib::TcLibInterface {
     return unc::tclib::TC_FAILURE;
   }
   virtual TcCommonRet HandleCommitGlobalCommit(
-      uint32_t session_id, uint32_t config_id, TcDriverInfoMap& driver_info);
+      uint32_t session_id, uint32_t config_id,
+      TcConfigMode config_mode, std::string vtn_name,
+      TcDriverInfoMap& driver_info);
 
   /* Below function For Driver Modules */
   virtual TcCommonRet HandleCommitGlobalCommit(
@@ -75,26 +80,31 @@ class TcLibIntfImpl : public unc::tclib::TcLibInterface {
 
   virtual TcCommonRet HandleCommonTxDriverResult(
       uint32_t session_id, uint32_t config_id,
+      TcConfigMode config_mode, std::string vtn_name,
       TcCommitPhaseType phase, TcCommitPhaseResult driver_result);
 
   virtual TcCommonRet HandleCommitDriverResult(
-      uint32_t session_id, uint32_t config_id, TcCommitPhaseType phase,
-      TcCommitPhaseResult driver_result);
+      uint32_t session_id, uint32_t config_id,
+      TcConfigMode config_mode, std::string vtn_name,
+      TcCommitPhaseType phase, TcCommitPhaseResult driver_result);
 
   virtual TcCommonRet HandleCommitGlobalAbort(
-      uint32_t session_id, uint32_t config_id, TcCommitOpAbortPhase fail_phase);
+      uint32_t session_id, uint32_t config_id,
+      TcConfigMode config_mode, std::string vtn_name,
+      TcCommitOpAbortPhase fail_phase);
 
 
   /* audit related interfaces */
   virtual TcCommonRet HandleAuditStart(
       uint32_t session_id, unc_keytype_ctrtype_t ctr_type,
-      std::string controller_id, pfc_bool_t simplified_audit,
+      std::string controller_id, TcAuditType audit_type,
       uint64_t commit_number, uint64_t commit_date,
       std::string commit_application);
 
   virtual TcCommonRet HandleAuditStart(
       uint32_t session_id, unc_keytype_ctrtype_t ctr_type,
-      std::string controller_id, pfc_bool_t force_reconnect) {
+      std::string controller_id, pfc_bool_t force_reconnect,
+      TcAuditType audit_type) {
     PFC_ASSERT(0);  // This function should never have been called
     return unc::tclib::TC_FAILURE;
   }
@@ -102,6 +112,10 @@ class TcLibIntfImpl : public unc::tclib::TcLibInterface {
   virtual TcCommonRet HandleAuditEnd(
       uint32_t session_id, unc_keytype_ctrtype_t ctr_type,
       std::string controller_id, TcAuditResult audit_result);
+
+  virtual TcCommonRet HandleAuditCancel(uint32_t session_id,
+                                       unc_keytype_ctrtype_t ctr_type,
+                                       std::string controller_id);
 
   virtual TcCommonRet HandleAuditTransactionStart(
       uint32_t session_id, unc_keytype_ctrtype_t ctr_type,
@@ -142,59 +156,66 @@ class TcLibIntfImpl : public unc::tclib::TcLibInterface {
       uint32_t session_id, unc_keytype_ctrtype_t ctr_type,
       std::string controller_id, TcAuditOpAbortPhase fail_phase);
 
-  /** 
-   * @brief Save Configuration 
+  /**
+   * @brief Save Configuration
    */
-  virtual TcCommonRet HandleSaveConfiguration(uint32_t session_id);
+  virtual TcCommonRet HandleSaveConfiguration(uint32_t session_id,
+                                              uint64_t version_no);
 
-  /** 
-   * @brief Abort Candidate Configuration 
+  /**
+   * @brief Abort Candidate Configuration
    */
   virtual TcCommonRet HandleAbortCandidate(uint32_t session_id,
-                                           uint32_t config_id);
+                                           uint32_t config_id,
+                                           TcConfigMode config_mode,
+                                           std::string vtn_name,
+                                           uint64_t version_no);
 
-  /** 
+  /**
    * @brief Clear Startup Configuration
    */
   virtual TcCommonRet HandleClearStartup(uint32_t session_id);
 
-  /** 
+  /**
    * @brief HandleAuditConfig DB
    */
   virtual TcCommonRet HandleAuditConfig(unc_keytype_datatype_t db_target,
-                                        TcServiceType fail_oper);
-  /** 
+                                        TcServiceType fail_oper,
+                                        TcConfigMode config_mode,
+                                        std::string vtn_name,
+                                        uint64_t version_no);
+  /**
    * @brief Setup Configuration
    * Message sent to UPPL at the end of startup operation to send messages to
    * driver
    */
   virtual TcCommonRet HandleSetup();
 
-  /** 
+  /**
    * @brief Setup Complete
    * Message sent to UPPL during state changes
    */
   virtual TcCommonRet HandleSetupComplete();
 
-  /** 
+  /**
    * @brief Get Driver Id
    * Invoked from TC to detect the driver id for a controller
    */
   // virtual unc_keytype_ctrtype_t HandleGetDriverId(std::string controller_id);
 
-  /** 
-   * @brief      Get controller type invoked from TC to detect the controller type 
-   *             for a controller
+  /**
+   * @brief      Get controller type invoked from TC to detect the controller
+   *             type for a controller
    * @param[in]  controller_id controller id intended for audit
    * @retval     openflow/overlay/legacy if controller id matches
-   * @retval     UNC_CT_UNKNOWN if controller id does not belong to 
+   * @retval     UNC_CT_UNKNOWN if controller id does not belong to
    *             any of controller type
    */
   virtual unc_keytype_ctrtype_t HandleGetControllerType(
       std::string controller_id);
 
-  /** 
-   * @brief Get Controller Type 
+  /**
+   * @brief Get Controller Type
    * Invoked from TC to detect the type of the controller
    * Intended for the driver modules
    */
@@ -250,8 +271,8 @@ class TcLibIntfImpl : public unc::tclib::TcLibInterface {
   pfc::core::ReadWriteLock sys_state_rwlock_;
 };
                                                                        // NOLINT
-}  // config_momgr
-}  // upll
-}  // unc
+}  // namespace config_momgr
+}  // namespace upll
+}  // namespace unc
                                                                        // NOLINT
 #endif  // UPLL_TCLIB_INTF_IMPL_HH_

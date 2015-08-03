@@ -326,20 +326,20 @@ UncRespCode OdcPort::parse_port_properties_value(
                                             -1,
                                             json_obj_node_prop_speed);
 
-  /*if ((restjson::REST_OP_SUCCESS != ret_val) ||
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
     (json_object_is_type(json_obj_node_prop_speed, json_type_null))) {
     pfc_log_error(" Error while parsing node bandwidth properties");
     return UNC_DRV_RC_ERR_GENERIC;
-    }*/
+    }
   ret_val = restjson::JsonBuildParse::parse(json_obj_node_prop_speed,
                                             "value",
                                             -1,
                                             speed);
 
-  /*if (restjson::REST_OP_SUCCESS != ret_val) {
+  if (restjson::REST_OP_SUCCESS != ret_val) {
     pfc_log_error(" Error while parsing node bandwidth properties");
     return UNC_DRV_RC_ERR_GENERIC;
-    }*/
+    }
 
   return UNC_RC_SUCCESS;
 }

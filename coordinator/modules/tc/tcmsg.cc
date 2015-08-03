@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,6 +13,16 @@
 
 namespace unc {
 namespace tc {
+
+pfc_bool_t       TcMsg::audit_cancel_flag_ = PFC_FALSE;
+pfc::core::Mutex TcMsg::audit_cancel_flag_mutex_;
+
+unc_keytype_ctrtype_t TcMsg::notify_driver_id_ = UNC_CT_UNKNOWN;
+pfc::core::Mutex      TcMsg::notify_driver_id_mutex_;
+
+std::string      TcMsg::notify_controller_id_;
+pfc::core::Mutex TcMsg::notify_controller_id_mutex_;
+
 
 /*!\brief Parameterized constructor of TcMsg.
  * @param sess_id - session identifier.
@@ -29,37 +39,22 @@ TcMsg::TcMsg(uint32_t sess_id, tclib::TcMsgOperType oper)
 
 TcMsg::~TcMsg() {
   pfc_log_debug("Deleting TcMsg");
-  int32_t ipc_ret = 0;
+  TcUtilRet ret = TCUTIL_RET_SUCCESS;
   if (sess_) {
-    delete sess_;
-    sess_ = NULL;
-    ipc_ret = pfc_ipcclnt_altclose(conn_);
-    if (ipc_ret == EBADF) {
-      pfc_log_error("%s Cannot close sess_ conn. Already closed?",
-                    __FUNCTION__);
-    } else if (ipc_ret != TCOPER_RET_SUCCESS) {
+    ret = TcClientSessionUtils::tc_session_close(&sess_, conn_);
+    if (ret != TCUTIL_RET_SUCCESS) {
       pfc_log_fatal("pfc_ipcclnt_altclose of sess_ failed");
     }
   }
   if (upll_sess_) {
-    delete upll_sess_;
-    upll_sess_ = NULL;
-    ipc_ret = pfc_ipcclnt_altclose(upll_conn_);
-    if (ipc_ret == EBADF) {
-      pfc_log_error("%s Cannot close upll_sess_ conn. Already closed?",
-                    __FUNCTION__);
-    } else if (ipc_ret != TCOPER_RET_SUCCESS) {
+    ret = TcClientSessionUtils::tc_session_close(&upll_sess_, upll_conn_);
+    if (ret != TCUTIL_RET_SUCCESS) {
       pfc_log_fatal("pfc_ipcclnt_altclose of upll_sess_ failed");
     }
   }
   if (uppl_sess_) {
-    delete uppl_sess_;
-    uppl_sess_ = NULL;
-    ipc_ret = pfc_ipcclnt_altclose(uppl_conn_);
-    if (ipc_ret == EBADF) {
-      pfc_log_error("%s Cannot close uppl_sess_ conn. Already closed?",
-                    __FUNCTION__);
-    } else if (ipc_ret != TCOPER_RET_SUCCESS) {
+    ret = TcClientSessionUtils::tc_session_close(&uppl_sess_, uppl_conn_);
+    if (ret != TCUTIL_RET_SUCCESS) {
       pfc_log_fatal("pfc_ipcclnt_altclose of uppl_sess_ failed");
     }
   }
@@ -154,8 +149,14 @@ TcMsg* TcMsg::CreateInstance(uint32_t sess_id,
 TcMsgAutoSave::TcMsgAutoSave(uint32_t sess_id,
                            tclib::TcMsgOperType oper)
   :TcMsg(sess_id, oper) {
+  save_version_ = 0;
 }
 
+void TcMsgAutoSave::SetData(unc_keytype_datatype_t target_db,
+                            TcServiceType fail_oper,
+                            uint64_t save_version) {
+  save_version_ = save_version;
+}
 
 TcOperRet TcMsgAutoSave::Execute() {
   pfc_log_debug("TcMsgAutoSave::Execute() entry");
@@ -212,8 +213,14 @@ TcOperRet TcMsgAutoSave::Execute() {
       return ReturnUtilResp(util_resp);
     }
 
-    pfc_log_info("notify %s with sessid(%d) srv_id %d",
-                 channel_name.c_str(), session_id_, service_id);
+    util_resp = TcClientSessionUtils::set_uint64(sess_, save_version_);
+    if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      return ReturnUtilResp(util_resp);
+    }
+
+    pfc_log_info("notify %s with sessid(%d) save_ver(%"PFC_PFMT_u64 
+                 "),srv_id %d",
+                 channel_name.c_str(), session_id_, save_version_, service_id);
 
     util_resp = TcClientSessionUtils::tc_session_invoke(sess_, resp);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
@@ -223,7 +230,7 @@ TcOperRet TcMsgAutoSave::Execute() {
 
     TcClientSessionUtils::tc_session_close(&sess_, conn);
 
-    if (PFC_EXPECT_TRUE(resp == tclib::TC_FAILURE)) {
+    if (PFC_EXPECT_TRUE(resp != tclib::TC_SUCCESS)) {
       pfc_log_info("Failure response from %s", channel_name.c_str());
       break;
     }
@@ -246,6 +253,18 @@ std::string TcMsg::GetChannelName(TcDaemonName daemon_id)  {
     return "";
   }
   return channel;
+}
+
+/*!brief this method returns daemon name for given channel name */
+TcDaemonName TcMsg::GetDaemonName(std::string const & channel_name) {
+  for (TcChannelNameMap::iterator it = channel_names_.begin();
+       it !=  channel_names_.end();
+       ++it) {
+    if (it->second == channel_name) {
+      return it->first;
+    }
+  }
+  return TC_NONE;
 }
 
 /*!\brief This method is invoked by TC service handler at startup to fetch the
@@ -299,16 +318,20 @@ TcDaemonName TcMsg::MapTcDriverId(unc_keytype_ctrtype_t driver_id) {
       drv_daemon = TC_DRV_OVERLAY;
       break;
     }
-    case UNC_CT_ODC: {
-      drv_daemon = TC_DRV_ODL;
-      break;
-    }
    /* case UNC_CT_LEGACY: {
       drv_daemon = TC_DRV_LEGACY;
       break;
     }*/
     case UNC_CT_POLC: {
       drv_daemon = TC_DRV_POLC;
+      break;
+    }
+    case UNC_CT_VAN: {
+      drv_daemon = TC_DRV_VAN;
+      break;
+    }
+    case UNC_CT_ODC: {
+      drv_daemon = TC_DRV_ODC;
       break;
     }
     default: {
@@ -328,10 +351,11 @@ tclib::TcAuditResult TcMsg::GetAuditResult() {
 
 TcOperRet TcMsg::SetAuditResult(tclib::TcAuditResult result) {
   if (PFC_EXPECT_TRUE(result == tclib::TC_AUDIT_SUCCESS) ||
-      PFC_EXPECT_TRUE(result == tclib::TC_AUDIT_FAILURE)) {
+      PFC_EXPECT_TRUE(result == tclib::TC_AUDIT_FAILURE) ||
+      PFC_EXPECT_TRUE(result == tclib::TC_AUDIT_CANCELLED) ) {
     audit_result_ = result;
   } else {
-    pfc_log_error("Invalid input for SetAuditResult():%d", result);
+    pfc_log_warn("Invalid input for SetAuditResult():%d", result);
     return TCOPER_RET_FAILURE;
   }
   pfc_log_debug("audit_result_:%d", audit_result_);
@@ -452,6 +476,8 @@ TcMsg::RespondToTc(pfc_ipcresp_t resp) {
     return TCOPER_RET_SUCCESS;
   } else if (PFC_EXPECT_TRUE(tclib::TC_FAILURE == resp)) {
     return TCOPER_RET_FAILURE;
+  } else if (PFC_EXPECT_TRUE(tclib::TC_LAST_DB_OPER_FAILURE == resp)) {
+    return TCOPER_RET_LAST_DB_OP_FAILED;
   }
   return TCOPER_RET_UNKNOWN;
 }
@@ -479,12 +505,14 @@ TcMsg::ValidateAuditDBAttributes(unc_keytype_datatype_t data_base,
                                  TcServiceType operation) {
   switch (operation) {
     case TC_OP_CANDIDATE_COMMIT:
+    case TC_OP_CANDIDATE_COMMIT_TIMED:
     case TC_OP_USER_AUDIT:
     case TC_OP_DRIVER_AUDIT: {
       PFC_VERIFY(data_base == UNC_DT_RUNNING);
       break;
     }
-    case TC_OP_CANDIDATE_ABORT: {
+    case TC_OP_CANDIDATE_ABORT: 
+    case TC_OP_CANDIDATE_ABORT_TIMED: {
       PFC_VERIFY(data_base == UNC_DT_CANDIDATE);
       break;
     }
@@ -588,7 +616,7 @@ TcOperRet TcMsgSetUp::Execute() {
 
     TcClientSessionUtils::tc_session_close(&sess_, conn_);
 
-    if (PFC_EXPECT_TRUE(resp == tclib::TC_FAILURE)) {
+    if (PFC_EXPECT_TRUE(resp != tclib::TC_SUCCESS)) {
       pfc_log_info("Failure response from %s", channel_name.c_str());
       break;
     }
@@ -617,6 +645,22 @@ void TcMsgNotifyConfigId::SetData(uint32_t config_id, std::string controller_id,
   config_id_ = config_id;
 }
 
+/*!\brief setter function for data member config_id_, config_mode_ and vtn_name_.
+ * @param[in] config_id - configuration mode identifier.
+ * @param[in] config_mode - configuration mode type.
+ * @param[in] vtn_name - vtn_name for configuration type VTN. 
+ * */
+void TcMsgNotifyConfigId::SetData(uint32_t config_id, TcConfigMode config_mode, 
+                                            std::string vtn_name) {
+  config_id_ = config_id;
+  config_mode_ = config_mode;
+  if (config_mode == TC_CONFIG_VTN) {
+    vtn_name_ = vtn_name;
+  } else {
+    vtn_name_.clear();
+  }
+}
+
 /*!\brief TC service handler invokes this method to notify the config_id and
  * session_id to UPLL and UPPL modules.
  * @result TcOperRet - TCOPER_RET_SUCCESS/TCOPER_RET_FAILURE/TCOPER_RET_FATAL
@@ -632,7 +676,7 @@ TcOperRet TcMsgNotifyConfigId::Execute() {
 
   notifyorder_.push_back(TC_UPLL);
   notifyorder_.push_back(TC_UPPL);
-  pfc_log_info("sending NOTIFY CONFIG-ID");
+  pfc_log_debug("sending NOTIFY CONFIG-ID");
 
   for (NotifyList::iterator list_iter = notifyorder_.begin();
           list_iter != notifyorder_.end(); list_iter++) {
@@ -658,8 +702,20 @@ TcOperRet TcMsgNotifyConfigId::Execute() {
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
       return ReturnUtilResp(util_resp);
     }
-    pfc_log_info("notify %s - session_id_:%d config_id_:%d",
-                 channel_name.c_str(), session_id_, config_id_);
+
+    util_resp = TcClientSessionUtils::set_uint8(sess_, config_mode_);
+    if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      return ReturnUtilResp(util_resp);
+    }
+
+    util_resp = TcClientSessionUtils::set_string(sess_, vtn_name_);
+    if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      return ReturnUtilResp(util_resp);
+    }
+    pfc_log_info("notify %s - session_id_:%u config_id_:%u"
+                 " config_mode_:%d vtn_name_:%s",
+                 channel_name.c_str(), session_id_, config_id_,
+                  config_mode_, vtn_name_.c_str());
 
     util_resp = TcClientSessionUtils::tc_session_invoke(sess_, resp);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
@@ -668,7 +724,7 @@ TcOperRet TcMsgNotifyConfigId::Execute() {
 
     TcClientSessionUtils::tc_session_close(&sess_, conn_);
 
-    if (PFC_EXPECT_TRUE(resp == tclib::TC_FAILURE)) {
+    if (PFC_EXPECT_TRUE(resp != tclib::TC_SUCCESS)) {
       pfc_log_info("Failure response from %s", channel_name.c_str());
       break;
     }
@@ -687,8 +743,14 @@ TcOperRet TcMsgNotifyConfigId::Execute() {
 TcMsgToStartupDB::TcMsgToStartupDB(uint32_t sess_id,
                                    tclib::TcMsgOperType oper)
   :TcMsg(sess_id, oper) {
+  save_version_ = 0;
 }
 
+void TcMsgToStartupDB::SetData(unc_keytype_datatype_t target_db,
+                               TcServiceType fail_oper,
+                               uint64_t save_version) {
+  save_version_ = save_version;
+}
 
 /*!\brief TC service handler invokes this method to send save/clear request
  * to startup datastore
@@ -740,6 +802,14 @@ TcOperRet TcMsgToStartupDB::Execute() {
       if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
         return ReturnUtilResp(util_resp);
       }
+
+      if (opertype_ == tclib::MSG_SAVE_CONFIG) {
+        pfc_log_debug("%s Setting save version in TcMsg", __FUNCTION__);
+        util_resp = TcClientSessionUtils::set_uint64(sess_, save_version_);
+        if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+          return ReturnUtilResp(util_resp);
+        }
+      }
     } else {
       pfc_log_error("Invalid Session ID");
       return TCOPER_RET_FAILURE;
@@ -753,7 +823,7 @@ TcOperRet TcMsgToStartupDB::Execute() {
     }
     TcClientSessionUtils::tc_session_close(&sess_, conn_);
 
-    if (PFC_EXPECT_TRUE(resp == tclib::TC_FAILURE)) {
+    if (PFC_EXPECT_TRUE(resp != tclib::TC_SUCCESS)) {
       pfc_log_info("Failure response from %s", channel_name.c_str());
       break;
     }
@@ -771,18 +841,36 @@ TcOperRet TcMsgToStartupDB::Execute() {
  * */
 TcMsgAuditDB::TcMsgAuditDB(uint32_t sess_id,
                            tclib::TcMsgOperType oper)
-  :TcMsg(sess_id, oper), target_db_(UNC_DT_INVALID), fail_oper_(TC_OP_INVALID) {
+  :TcMsg(sess_id, oper), target_db_(UNC_DT_INVALID),
+                         fail_oper_(TC_OP_INVALID),
+                         version_(0), 
+                         config_mode_(TC_CONFIG_INVALID) {
+  vtn_name_.clear();
 }
 
 
 /*!\brief setter function to set the target datastore and failed operation
  * @param[in] target_db - target db for audit
  * @param[in] fail_oper - Operation which caused the failover.
+ * @param[in] version - Abort / save version
  * */
 void TcMsgAuditDB::SetData(unc_keytype_datatype_t target_db,
-                           TcServiceType fail_oper) {
+                           TcServiceType fail_oper,
+                           uint64_t version) {
   target_db_ = target_db;
   fail_oper_ = fail_oper;
+  version_   = version;
+}
+
+/*!\brief setter function to set the config_mode and vtn_name 
+ * @param[in] config_mode 
+ * @param[in] vtn_name.
+ * */
+void TcMsgAuditDB::SetData(uint32_t config_id,
+                           TcConfigMode config_mode,
+                           std::string vtn_name) {
+  config_mode_ = config_mode;
+  vtn_name_ = vtn_name;
 }
 
 /*!\brief TC service handler invokes this method to send audit db request
@@ -802,8 +890,16 @@ TcOperRet TcMsgAuditDB::Execute() {
     pfc_log_error("Invalid AuditDB Attributes");
     return TCOPER_RET_FAILURE;
   }
-  notifyorder_.push_back(TC_UPPL);
-  notifyorder_.push_back(TC_UPLL);
+
+  if (fail_oper_ == TC_OP_RUNNING_SAVE ||
+      fail_oper_ == TC_OP_CANDIDATE_ABORT ||
+      fail_oper_ == TC_OP_CANDIDATE_ABORT_TIMED) {
+    notifyorder_.push_back(TC_UPLL);
+    notifyorder_.push_back(TC_UPPL);
+  } else {
+    notifyorder_.push_back(TC_UPPL);
+    notifyorder_.push_back(TC_UPLL);
+  }
   pfc_log_info("sending AUDIT-DB notification");
   for (NotifyList::iterator list_iter = notifyorder_.begin();
        list_iter != notifyorder_.end(); list_iter++) {
@@ -822,14 +918,45 @@ TcOperRet TcMsgAuditDB::Execute() {
     /*append data to channel */
     util_resp = TcClientSessionUtils::set_uint8(sess_, target_db_);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("%s Error setting target_db [%d] in session",
+                    __FUNCTION__, target_db_);
       return ReturnUtilResp(util_resp);
     }
     util_resp = TcClientSessionUtils::set_uint8(sess_, fail_oper_);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("%s Error setting fail_oper [%d] in session",
+                    __FUNCTION__, fail_oper_);
       return ReturnUtilResp(util_resp);
     }
-    pfc_log_info("notify %s - target_db_:%d, fail_oper_:%d ",
-                 channel_name.c_str(), target_db_, fail_oper_);
+    
+    util_resp = TcClientSessionUtils::set_uint8(sess_, config_mode_);
+    if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("%s Error setting config_mode [%d] in session",
+                    __FUNCTION__, config_mode_);
+      return ReturnUtilResp(util_resp);
+    }
+
+    util_resp = TcClientSessionUtils::set_string(sess_, vtn_name_);
+    if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("%s Error setting vtn_name [%s] in session",
+                    __FUNCTION__, vtn_name_.c_str());
+      return ReturnUtilResp(util_resp);
+    }
+
+    util_resp = TcClientSessionUtils::set_uint64(sess_, version_);
+    if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("%s Error setting abort/save version [%"PFC_PFMT_u64
+                    "] in session", __FUNCTION__, version_);
+      return ReturnUtilResp(util_resp);
+    }
+
+    pfc_log_info("notify %s - session[%u] target_db_:%d, fail_oper_:%d, "
+                 "config_mode:%d, vtn_name:%s, "
+                 "version_:%"PFC_PFMT_u64,
+                 channel_name.c_str(), session_id_, target_db_, fail_oper_,
+                 config_mode_, vtn_name_.c_str(),
+                 version_);
+
     /*Invoke the session */
     util_resp = TcClientSessionUtils::tc_session_invoke(sess_, resp);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
@@ -842,12 +969,50 @@ TcOperRet TcMsgAuditDB::Execute() {
       pfc_log_info("Failure response from %s", channel_name.c_str());
       break;
     }
+
+    if (resp == tclib::TC_LAST_DB_OPER_FAILURE) {
+      pfc_log_warn("AuditDB: Received TC_LAST_DB_OPER_FAILURE"
+                   "Stopping AuditDB");
+      break;
+    }
+
     pfc_log_info("Success response from %s", channel_name.c_str());
   }
   /*return server response */
   pfc_log_debug("TcMsgAuditDB::Execute() exit");
   notifyorder_.clear();
   return RespondToTc(resp);
+}
+
+ /* Set and Get Methods for auditCancelFlag */
+void TcMsg::SetAuditCancelFlag(pfc_bool_t audit_cancelled) {
+  pfc::core::ScopedMutex m(audit_cancel_flag_mutex_);
+  audit_cancel_flag_ = audit_cancelled;
+}
+
+pfc_bool_t TcMsg::GetAuditCancelFlag()  {
+  pfc::core::ScopedMutex m(audit_cancel_flag_mutex_);
+  return audit_cancel_flag_;
+}
+
+void TcMsg::SetNotifyDriverId(unc_keytype_ctrtype_t id) {
+  pfc::core::ScopedMutex m(notify_driver_id_mutex_);
+  notify_driver_id_ = id;
+}
+
+unc_keytype_ctrtype_t TcMsg::GetNotifyDriverId() {
+  pfc::core::ScopedMutex m(notify_driver_id_mutex_);
+  return notify_driver_id_;
+}
+
+void TcMsg::SetNotifyControllerId(std::string const & ctr_id) {
+  pfc::core::ScopedMutex m(notify_controller_id_mutex_);
+  notify_controller_id_ = ctr_id;
+}
+
+std::string TcMsg::GetNotifyControllerId() {
+  pfc::core::ScopedMutex m(notify_controller_id_mutex_);
+  return notify_controller_id_;
 }
 
 }  // namespace tc

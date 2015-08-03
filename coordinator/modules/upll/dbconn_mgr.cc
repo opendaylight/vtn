@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,10 +11,10 @@
  * config_mgr.cc - UPLL Config Manager
  */
 
+// #include <iostream>
+#include <sstream>
 #include "upll_util.hh"
 #include "dbconn_mgr.hh"
-#include <iostream>
-#include <sstream>
 
 namespace unc {
 namespace upll {
@@ -22,7 +22,7 @@ namespace config_momgr {
 
 using unc::upll::dal::DalOdbcMgr;
 namespace uudal = unc::upll::dal;
-using namespace unc::upll::upll_util;
+// using namespace unc::upll::upll_util;
 
 // Error translation given below apply for Connect/Disconnect/Commit/Rollback
 // Operations only.
@@ -62,7 +62,7 @@ void UpllDbConnMgr::ConvertConnInfoToStr() const {
   ss << " Max No. Of Connections:" << max_ro_conns_
      << " No. Of Connections In Use:" << active_ro_conns_cnt_
      << " No. Of Free Connections:" << (max_ro_conns_ - active_ro_conns_cnt_);
-  UPLL_LOG_DEBUG("DbConn: %s",ss.str().c_str()); 
+  UPLL_LOG_DEBUG("DbConn: %s", ss.str().c_str());
 #endif
 }
 
@@ -143,8 +143,8 @@ DalOdbcMgr *UpllDbConnMgr::GetConfigRwConn() {
   }
   config_rw_conn_->in_use_cnt++;
   if (config_rw_conn_->in_use_cnt > 1) {
-    UPLL_LOG_TRACE("Config connection shared %d times",
-                   config_rw_conn_->in_use_cnt);
+    UPLL_LOG_INFO("Config connection shared %d times",
+                  config_rw_conn_->in_use_cnt);
   }
   return &config_rw_conn_->dom;
 }
@@ -152,8 +152,12 @@ DalOdbcMgr *UpllDbConnMgr::GetConfigRwConn() {
 // GetAlarmRwConn() should be called only after InitializeDbConnections()
 // It cannot be called after terminating all connections
 DalOdbcMgr *UpllDbConnMgr::GetAlarmRwConn() {
+  // Allow only one thread to get alarm connection at a time
+  alarm_rw_conn_mutex_.lock();
+  UPLL_LOG_TRACE("Acquired alarm_rw_conn_mutex_ lock");
   pfc::core::ScopedMutex lock(conn_mutex_);
   if (alarm_rw_conn_ == NULL) {
+    alarm_rw_conn_mutex_.unlock();
     return NULL;
   }
   alarm_rw_conn_->in_use_cnt++;
@@ -173,8 +177,8 @@ DalOdbcMgr *UpllDbConnMgr::GetAuditRwConn() {
   }
   audit_rw_conn_->in_use_cnt++;
   if (audit_rw_conn_->in_use_cnt > 1) {
-    UPLL_LOG_TRACE("Audit connection shared %d times",
-                   audit_rw_conn_->in_use_cnt);
+    UPLL_LOG_INFO("Audit connection shared %d times",
+                  audit_rw_conn_->in_use_cnt);
   }
   return &audit_rw_conn_->dom;
 }
@@ -197,7 +201,11 @@ void UpllDbConnMgr::ReleaseRwConn(DalOdbcMgr *dom) {
       return;
     }
     dbc->in_use_cnt--;
-    if (dom->get_conn_state() == uudal::kDalDbDisconnected ) {
+    if (&alarm_rw_conn_->dom == dom) {
+      UPLL_LOG_TRACE("Release alarm_rw_conn_mutex_ lock");
+      alarm_rw_conn_mutex_.unlock();
+    }
+    if (dom->get_conn_state() == uudal::kDalDbDisconnected) {
        UPLL_LOG_FATAL("RW connection Failure.");
     }
   } else {
@@ -209,10 +217,14 @@ void UpllDbConnMgr::ReleaseRwConn(DalOdbcMgr *dom) {
           UPLL_LOG_INFO("Error: RW connection is not acquired, but released");
           return;
         }
-        if (dom->get_conn_state() == uudal::kDalDbDisconnected ) {
+        if (dom->get_conn_state() == uudal::kDalDbDisconnected) {
           UPLL_LOG_FATAL("Stale RW connection Failure.");
         }
         dbc->in_use_cnt--;
+        if (dbc->conn_name_ == kAlarmRwConn) {
+          UPLL_LOG_INFO("Release alarm_rw_conn_mutex_ lock");
+          alarm_rw_conn_mutex_.unlock();
+        }
         if (dbc->in_use_cnt == 0) {
           TerminateDbConn(dbc);
           delete dbc;
@@ -232,17 +244,19 @@ upll_rc_t UpllDbConnMgr::InitializeDbConnectionsNoLock() {
   upll_rc_t urc = UPLL_RC_SUCCESS;
 
   UPLL_LOG_INFO("Creating config db conn");
-  config_rw_conn_ = new DbConn;
+  config_rw_conn_ = new DbConn(kConfigRwConn);
   if (UPLL_RC_SUCCESS != (urc = DalOpen(&config_rw_conn_->dom, true))) {
     // return urc;  // Other dom object needs to be created.
   }
   UPLL_LOG_INFO("Creating alarm db conn");
-  alarm_rw_conn_ = new DbConn;
+  alarm_rw_conn_ = new DbConn(kAlarmRwConn);
+  alarm_rw_conn_->dom.set_wr_exclusion_on_runn();
   if (UPLL_RC_SUCCESS != (urc = DalOpen(&alarm_rw_conn_->dom, true))) {
     // return urc;  // Other dom object needs to be created.
   }
   UPLL_LOG_INFO("Creating audit db conn");
-  audit_rw_conn_ = new DbConn;
+  audit_rw_conn_ = new DbConn(kAuditRwConn);
+  audit_rw_conn_->dom.set_wr_exclusion_on_runn();
   if (UPLL_RC_SUCCESS != (urc = DalOpen(&audit_rw_conn_->dom, true))) {
     return urc;
   }
@@ -312,7 +326,9 @@ upll_rc_t UpllDbConnMgr::TerminateAllDbConnsNoLock() {
 
 void UpllDbConnMgr::TerminateAndInitializeDbConns(bool active) {
   UPLL_FUNC_TRACE;
-  UPLL_LOG_DEBUG("All DB connections are being closed and initialized based on cluster state");
+  UPLL_LOG_DEBUG(
+      "All DB connections are being closed and initialized "
+      "based on cluster state");
   pfc::core::ScopedMutex lock(conn_mutex_);
   TerminateAllDbConnsNoLock();
   if (active) {
@@ -364,7 +380,7 @@ upll_rc_t UpllDbConnMgr::AcquireRoConn(DalOdbcMgr **dom) {
 
   // Create a new connection
   upll_rc_t urc = UPLL_RC_SUCCESS;
-  DbConn *ro_conn = new DbConn;
+  DbConn *ro_conn = new DbConn(kRoConn);
   if (UPLL_RC_SUCCESS != (urc = DalOpen(&ro_conn->dom, false))) {
     delete ro_conn;
     TerminateAllRoConns_NoLock();
@@ -391,8 +407,10 @@ upll_rc_t UpllDbConnMgr::ReleaseRoConn(DalOdbcMgr *dom) {
       if ((*iter)->close_on_finish == true) {
         TerminateDbConn(*iter);
         DbConn *dbc = *iter;
-        delete dbc; 
+        delete dbc;
         ro_conn_pool_.erase(iter);
+        active_ro_conns_cnt_--;
+        ro_conn_sem_.post();
       } else {
         // If dom had encountered connection error, close all RO connections
         if (dom->get_conn_state() == uudal::kDalDbDisconnected) {
@@ -411,6 +429,6 @@ upll_rc_t UpllDbConnMgr::ReleaseRoConn(DalOdbcMgr *dom) {
   return UPLL_RC_ERR_GENERIC;
 }
                                                                        // NOLINT
-}  // namesapce config_momgr
-}  // namesapce upll
-}  // namesapce unc
+}  // namespace config_momgr
+}  // namespace upll
+}  // namespace unc

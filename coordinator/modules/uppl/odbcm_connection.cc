@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -109,7 +109,7 @@ ODBCManager* ODBCManager::get_ODBCManager() {
   if (ODBCManager_ == NULL) {
     ODBCManager_ = new ODBCManager();
     if (NULL == ODBCManager_) {
-      pfc_log_fatal("ODBCM::ODBCManager::get_ODBCManager: "
+      UPPL_LOG_FATAL("ODBCM::ODBCManager::get_ODBCManager: "
           "Error in memory allocation for ODBCManager_ !!! ");
       physical_layer->ODBCManager_mutex_.unlock();
       return NULL;
@@ -309,10 +309,13 @@ ODBCM_RC_STATUS ODBCManager::ParseConfigFile() {
   pfc::core::ConfBlock logblock(conf_handle, "odbcm_params");
 
   // store the parsed values in structure
-  conf_parser_.dsn     = logblock.getString("dsname", "UNC_DB_DSN");
+  conf_parser_.fip_dsn     = logblock.getString("db_fip_dsn", "UNC_DB_DSN");
+  conf_parser_.local_dsn     = logblock.getString("db_local_dsn",
+                                                  "UNC_DB_LC1_DSN");
   conf_parser_.time_out        = logblock.getUint32("time_out", 10);
 
-  ODBCM_PRINT_DEBUG_LOG("%s", conf_parser_.dsn.c_str());
+  ODBCM_PRINT_DEBUG_LOG("%s", conf_parser_.fip_dsn.c_str());
+  ODBCM_PRINT_DEBUG_LOG("%s", conf_parser_.local_dsn.c_str());
   ODBCM_PRINT_DEBUG_LOG("%d", conf_parser_.time_out);
   return ODBCM_RC_SUCCESS;
 }
@@ -361,6 +364,8 @@ ODBCM_RC_STATUS ODBCManager::OpenDBConnection(
     OdbcmConnectionHandler *conn_obj) {
   SQLRETURN odbc_rc = ODBCM_RC_SUCCESS;
   SQLHDBC conn_handle = conn_obj->get_conn_handle();
+  std::ostringstream conn_string_stream;
+  std::string conn_string;
   switch (conn_obj->get_conn_type()) {
     case kOdbcmConnReadWriteNb:
       // Check if connection already exists
@@ -372,10 +377,16 @@ ODBCM_RC_STATUS ODBCManager::OpenDBConnection(
         return ODBCM_RC_SUCCESS;
       }
       if (set_rw_connection_handle_(conn_handle) != ODBCM_RC_SUCCESS) {
-        pfc_log_fatal("ODBCM::ODBCManager::OpenDBConnection: "
+        UPPL_LOG_FATAL("ODBCM::ODBCManager::OpenDBConnection: "
             "Error in set_rw_connection_handle_ ");
         return ODBCM_RC_CONNECTION_ERROR;
       }
+      conn_string_stream << "DSN=" << conf_parser_.fip_dsn <<
+      ";TIMEOUT=" << conf_parser_.time_out;
+      conn_string = conn_string_stream.str();
+       pfc_log_debug("ODBCM::ODBCManager::OpenDBConnection: "
+             "connection string = %s", conn_string.c_str());
+  // 3. Connect to the datasource
       /**  setting SQL_ATTR_ACCESS_MODE for RW connection is not required
        *  SQL_MODE_READ_WRITE is default */
       break;
@@ -389,10 +400,16 @@ ODBCM_RC_STATUS ODBCManager::OpenDBConnection(
         return ODBCM_RC_SUCCESS;
       }
       if (set_rw_connection_handle_(conn_handle) != ODBCM_RC_SUCCESS) {
-        pfc_log_fatal("ODBCM::ODBCManager::OpenDBConnection: "
+        UPPL_LOG_FATAL("ODBCM::ODBCManager::OpenDBConnection: "
             "Error in set_rw_connection_handle_ ");
         return ODBCM_RC_CONNECTION_ERROR;
       }
+      conn_string_stream << "DSN=" << conf_parser_.fip_dsn <<
+          ";TIMEOUT=" << conf_parser_.time_out;
+      conn_string = conn_string_stream.str();
+      pfc_log_debug("ODBCM::ODBCManager::OpenDBConnection: "
+           "connection string = %s", conn_string.c_str());
+  // 3. Connect to the datasource
       /**  setting SQL_ATTR_ACCESS_MODE for RW connection is not required
        *  SQL_MODE_READ_WRITE is default */
       break;
@@ -402,6 +419,12 @@ ODBCM_RC_STATUS ODBCManager::OpenDBConnection(
             "Error in set_ro_connection_handle_ ");
         return ODBCM_RC_CONNECTION_ERROR;
       }
+      conn_string_stream << "DSN=" << conf_parser_.local_dsn <<
+         ";TIMEOUT=" << conf_parser_.time_out;
+      conn_string = conn_string_stream.str();
+      pfc_log_debug("ODBCM::ODBCManager::OpenDBConnection: "
+        "connection string = %s", conn_string.c_str());
+  // 3. Connect to the datasource
       odbc_rc = SQLSetConnectAttr(conn_handle, SQL_ATTR_ACCESS_MODE,
                                   (SQLPOINTER)SQL_MODE_READ_ONLY, 0);
       ODBCM_DBC_HANDLE_CHECK(conn_handle, odbc_rc);
@@ -429,15 +452,6 @@ ODBCM_RC_STATUS ODBCManager::OpenDBConnection(
   }
   //  create and pool the connections.
 
-  std::ostringstream conn_string_stream;
-  conn_string_stream << "DSN=" << conf_parser_.dsn <<
-      ";TIMEOUT=" << conf_parser_.time_out;
-
-  std::string conn_string = conn_string_stream.str();
-  pfc_log_debug("ODBCM::ODBCManager::OpenDBConnection: "
-      "connection string = %s", conn_string.c_str());
-
-  // 3. Connect to the datasource
   if (NULL != conn_handle)
     odbc_rc = SQLDriverConnect(conn_handle, NULL,
                                (unsigned char*)(conn_string.c_str()),
@@ -542,15 +556,24 @@ ODBCM_RC_STATUS ODBCManager::AssignDBConnection(
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   UncRespCode db_ret = UNC_RC_SUCCESS;
   /**RW conn shall be reused for READ which is op belongs to same session*/
+  //  if config_id is > 0, it is config mode read request.
+  PhysicalCore* physical_core = physical_layer->get_physical_core();
+  if (config_id != 0 && 
+      physical_core->get_system_state() != UPPL_SYSTEM_ST_ACTIVE) {
+    pfc_log_trace("Invalid config_id RW conn is not available in SBY node");
+    return ODBCM_RC_CONNECTION_ERROR;
+  }
   physical_layer->db_conpool_mutex_.lock();
-  if (config_id > 0) {
+  //  if session_id = USESS_ID_UPLL then read request should use RO conn only
+  if (config_id > 0 && session_id != USESS_ID_UPLL) {
     pfc_log_trace("RW conn req. for config mode READ operation");
     if (rw_nb_conn_obj_ != NULL) {
       db_conn = rw_nb_conn_obj_;
       pfc_log_trace("RW conn is assigned for READ operation");
     } else {  /*if RW connection not available allocate conn handle and return*/
-      pfc_log_trace("RW conn is NULL !!, Allocate RW connection and store/"
+      pfc_log_trace("RW conn is NULL !!, Open RW connection and store/"
                                       "assign for read req.");
+      // retry RW connection creation
       rw_nb_conn_obj_ = new OdbcmConnectionHandler(
                             unc::uppl::kOdbcmConnReadWriteNb,
                             db_ret,
@@ -650,15 +673,17 @@ ODBCM_RC_STATUS ODBCManager::AssignDBConnection(
       db_conn->set_using_session_id(session_id, th_id);
       conpool_inuse_map_[db_conn->get_using_session_id()] = db_conn;
       conpool_free_list_.pop_front();  // free pool is poped
-      pfc_log_trace("Freed RO conn is assgined for request sess_id = %" PFC_PFMT_u64,
+      pfc_log_trace("Freed RO conn is assgined for request sess_id = %"
+                    PFC_PFMT_u64,
                     db_conn->get_using_session_id());
     }
   }
   physical_layer->db_conpool_mutex_.unlock();
-  if (db_conn == NULL) {
+  // Commented as fix for REVERSE_INULL coverity error
+  /*if (db_conn == NULL) {
     pfc_log_info("After SEM release, db_conn is NULL");
     return ODBCM_RC_FAILED;
-  }
+  }*/
   pfc_log_debug("db_conn type is %d", db_conn->get_conn_type());
   return ODBCM_RC_SUCCESS;
 }
@@ -680,6 +705,7 @@ ODBCM_RC_STATUS ODBCManager::PoolDBConnection(OdbcmConnectionHandler *&conn_obj,
   if (config_id > 0) {  // RW conn is used for configure sess. READ, NO-POOL.
     pfc_log_debug("Read uses RWconn,NO-POOL required (ENDTRANS-ROLLBACK DONE)");
     SQLHDBC conn_handle = conn_obj->get_conn_handle();
+    PHY_SQLEXEC_LOCK();
     ODBCM_ROLLBACK_TRANSACTION(conn_handle);
     return ODBCM_RC_SUCCESS;
   }
@@ -837,6 +863,7 @@ ODBCM_RC_STATUS ODBCManager::CloseDBConnection(
       return ODBCM_RC_SUCCESS;
     }
     pfc_log_debug("Read Write connection will not be closed now");
+    PHY_SQLEXEC_LOCK();
     ODBCM_ROLLBACK_TRANSACTION(conn_handle);
     return ODBCM_RC_SUCCESS;
   }
@@ -1012,7 +1039,15 @@ ODBCM_RC_STATUS ODBCManager::initialize_odbcm_tables_column_map_(void) {
       {CTR_USER_NAME, std::string(CTR_USER_NAME_STR)},
       {CTR_PASSWORD, std::string(CTR_PASSWORD_STR)},
       {CTR_ENABLE_AUDIT, std::string(CTR_ENABLE_AUDIT_STR)},
+      {CTR_PORT, std::string(CTR_PORT_STR)},
+      {CTR_PORT_READ, std::string(CTR_PORT_STR_COALESCE)},
+      /* above is for special handling of port column, 
+       * if it is null return fixed value CTR_PORT_INVALID_VALUE
+       * */
       {CTR_ACTUAL_VERSION, std::string(CTR_ACTUAL_VERSION_STR)},
+      {CTR_ACTUAL_CONTROLLERID, std::string(CTR_ACTUAL_CONTROLLERID_STR)},
+      {CTR_VALID_ACTUAL_CONTROLLERID,
+         std::string(CTR_VALID_ACTUAL_CONTROLLERID_STR)},
       {CTR_OPER_STATUS, std::string(CTR_OPER_STATUS_STR)},
       {CTR_VALID, std::string(CTR_VALID_STR)},
       {CTR_CS_ROW_STATUS, std::string(CTR_CS_ROW_STATUS_STR)},
@@ -1065,6 +1100,12 @@ ODBCM_RC_STATUS ODBCManager::initialize_odbcm_tables_column_map_(void) {
       {PORT_ALARM_STATUS, std::string(PORT_ALARM_STATUS_STR)},
       {PORT_LOGIC_PORT_ID, std::string(PORT_LOGIC_PORT_ID_STR)},
       {PORT_VALID , std::string(PORT_VALID_STR)},
+      {PORT_CONNECTED_SWITCH_ID , std::string(PORT_CONNECTED_SWITCH_ID_STR)},
+      {PORT_CONNECTED_PORT_ID , std::string(PORT_CONNECTED_PORT_ID_STR)},
+      {PORT_CONNECTED_CONTROLLER_ID ,
+        std::string(PORT_CONNECTED_CONTROLLER_ID_STR)},
+      {PORT_CONNECTEDNEIGHBOR_VALID ,
+        std::string(PORT_CONNECTEDNEIGHBOR_VALID_STR)},
       {LINK_SWITCH_ID1, std::string(LINK_SWITCH_ID1_STR)},
       {LINK_PORT_ID1, std::string(LINK_PORT_ID1_STR)},
       {LINK_SWITCH_ID2, std::string(LINK_SWITCH_ID2_STR)},

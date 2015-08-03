@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -240,24 +240,23 @@ class VlanMapMoMgr : public VnodeChildMoMgr {
                               MoMgrTables tbl);
     upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey,
                               ConfigKeyVal *ikey);
-    upll_rc_t IsReferenced(ConfigKeyVal *ikey,
-                           upll_keytype_datatype_t dt_type,
+    upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                            DalDmlIntf *dmi);
     bool ResetDataForSibling(key_vlan_map *key_vmap,
                              uudst::vbridge_vlanmap::kVbrVlanMapIndex index);
     /**
      * @brief  VlanmapOnBoundary:
-     *         Verifies whether the flow filter or policing map configured 
-     *         in the requested boundary vlink request of logical port id 
+     *         Verifies whether the flow filter or policing map configured
+     *         in the requested boundary vlink request of logical port id
      *         is SW or SD
      *
      * @param[in]   req          This structure contains
-     *                           IpcReqRespHeader(first 8 fields of 
+     *                           IpcReqRespHeader(first 8 fields of
      *                           input request structure).
      * @param[out]  ikey         ConfigKeyVal instance of vlink.
-     * @param[in]   dmi          pointer to DalDmlIntf  
+     * @param[in]   dmi          pointer to DalDmlIntf
      **/
-    upll_rc_t CheckIfFfPmConfigured(IpcReqRespHeader *req, 
+    upll_rc_t CheckIfFfPmConfigured(IpcReqRespHeader *req,
                                     ConfigKeyVal *ikey, DalDmlIntf *dmi);
 
     /* @brief             To return Success if all the valid flags are
@@ -277,8 +276,8 @@ class VlanMapMoMgr : public VnodeChildMoMgr {
       return true;
     }
     static uint16_t kVbrVlanMapNumChildKey;
-    /** 
-     * @brief     Perform validation on key type specific, 
+    /**
+     * @brief     Perform validation on key type specific,
      *            before sending to driver
      *
      * @param[in]  ck_new                   Pointer to the ConfigKeyVal Structure
@@ -288,9 +287,9 @@ class VlanMapMoMgr : public VnodeChildMoMgr {
      * @param[in]  keytype                  Specifies the keytype
      * @param[in]  dmi                      Pointer to the DalDmlIntf(DB Interface)
      * @param[out] not_send_to_drv          Decides whether the configuration needs
-     *                                      to be sent to controller or not 
+     *                                      to be sent to controller or not
      * @param[in]  audit_update_phase       Specifies whether the phase is commit or audit
-     * 
+     *
      * @retval  UPLL_RC_SUCCESS             Completed successfully.
      * @retval  UPLL_RC_ERR_GENERIC         Generic failure.
      * @retval  UPLL_RC_ERR_CFG_SEMANTIC    Failure due to semantic validation.
@@ -326,7 +325,7 @@ class VlanMapMoMgr : public VnodeChildMoMgr {
      * @retval         false                input key is invalid.
      **/
     bool IsValidKey(void *tkey,
-                    uint64_t index);
+                    uint64_t index, MoMgrTables tbl = MAINTBL);
     upll_rc_t IsLogicalPortAndVlanIdInUse(ConfigKeyVal *ckv, DalDmlIntf *dmi,
                                           IpcReqRespHeader *req);
 
@@ -355,7 +354,7 @@ class VlanMapMoMgr : public VnodeChildMoMgr {
                                   bool begin,
                                   DalDmlIntf *dal);
   /**
-   * @brief  VlanmapOnBoundary 
+   * @brief  VlanmapOnBoundary
    *         To handles boundary vlink logical port id - SW or SD request
    *
    * @param[in]   req          This structure contains
@@ -366,10 +365,11 @@ class VlanMapMoMgr : public VnodeChildMoMgr {
    * @param[out]  vlanmap_ckv  ConfigKeyVal instance of vlanmap.
    * @param[in]   dmi          pointer to DalDmlIntf
    **/
-  upll_rc_t BoundaryVlanmapReq(IpcReqRespHeader *req,
+  upll_rc_t BoundaryMapReq(IpcReqRespHeader *req,
                                ConfigKeyVal *ikey, ConfigKeyVal *db_vlink,
-                               ConfigKeyVal *vlanmap_ckv, DalDmlIntf *dmi);
- 
+                               ConfigKeyVal *vlanmap_ckv,
+                               ConfigKeyVal *uppl_bdry, DalDmlIntf *dmi);
+
   upll_rc_t ReadSiblingBeginMo(IpcReqRespHeader *header,
                                ConfigKeyVal *ikey,
                                bool begin,
@@ -382,9 +382,18 @@ class VlanMapMoMgr : public VnodeChildMoMgr {
                      DalDmlIntf *dmi);
   upll_rc_t DeleteMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                      DalDmlIntf *dmi);
-  upll_rc_t TranslateError(ConfigKeyVal **err_ckv,
-                           ConfigKeyVal *ckv_running,
-                           DalDmlIntf *dmi, upll_keytype_datatype_t datatype);
+  upll_rc_t TranslateVlanmapError(ConfigKeyVal **err_ckv,
+                                  ConfigKeyVal *ckv_running,
+                                  DalDmlIntf *dmi,
+                                  upll_keytype_datatype_t datatype);
+  upll_rc_t TxUpdateErrorHandler(ConfigKeyVal *req,
+      ConfigKeyVal *ck_main,
+      DalDmlIntf *dmi,
+      upll_keytype_datatype_t dt_type,
+      ConfigKeyVal **err_ckv,
+      IpcResponse *ipc_resp);
+
+
   /**
    * @brief  Duplicates the input configkeyval including the key and val.
    * based on the tbl specified.
@@ -420,7 +429,6 @@ class VlanMapMoMgr : public VnodeChildMoMgr {
                                 const char *ctrlr_id,
                                 ConfigKeyVal *err_ckv,
                                 DalDmlIntf *dmi);
-
 };
 
 }  // namespace kt_momgr

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -7,8 +7,8 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-#ifndef UPLL_KEYTYPE_UPLL_EXT_H_
-#define UPLL_KEYTYPE_UPLL_EXT_H_
+#ifndef SRC_MODULES_UPLL_KEYTYPE_UPLL_EXT_H_
+#define SRC_MODULES_UPLL_KEYTYPE_UPLL_EXT_H_
 
 #include <unc/base.h>
 #include <unc/keytype.h>
@@ -24,9 +24,11 @@ typedef enum {
   UPLL_DT_STARTUP   = UNC_DT_STARTUP,    // Startup configuration
   UPLL_DT_IMPORT    = UNC_DT_IMPORT,     // Import configuration
   UPLL_DT_AUDIT     = (UNC_DT_STATE + UNC_DT_CANDIDATE +
-                       UNC_DT_RUNNING + UNC_DT_STARTUP + UNC_DT_IMPORT)
+                       UNC_DT_RUNNING + UNC_DT_STARTUP + UNC_DT_IMPORT),
+  UPLL_DT_CANDIDATE_DEL,
+  UPLL_DT_SYSTEM
 } upll_keytype_datatype_t;
 
 UNC_C_END_DECL
 
-#endif /* UPLL_KEYTYPE_UPLL_EXT_H_ */
+#endif  // SRC_MODULES_UPLL_KEYTYPE_UPLL_EXT_H_

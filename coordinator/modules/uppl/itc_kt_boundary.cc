@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -13,12 +13,14 @@
  *
  */
 
+#include <uncxx/tclib/tclib_defs.hh>
 #include "itc_kt_boundary.hh"
 #include "itc_kt_controller.hh"
 #include "itc_kt_logicalport.hh"
 #include "odbcm_db_varbind.hh"
 #include "ipct_util.hh"
 #include "itc_read_request.hh"
+
 using unc::uppl::PhysicalLayer;
 #define DEFAULT_DOMAIN "(DEFAULT)"
 
@@ -125,7 +127,8 @@ UncRespCode Kt_Boundary::CreateKeyInstance(OdbcmConnectionHandler *db_conn,
                              key_struct,
                              val_struct,
                              UNC_OP_CREATE, data_type, 0, 0,
-                             vect_key_operations, old_val_struct);
+                             vect_key_operations, old_val_struct,
+                             NOTAPPLIED, false, PFC_FALSE);
 
   // Send request to ODBC for boundary_table create
   ODBCM_RC_STATUS create_db_status = physical_layer->get_odbc_manager()->\
@@ -134,7 +137,7 @@ UncRespCode Kt_Boundary::CreateKeyInstance(OdbcmConnectionHandler *db_conn,
   if (create_db_status != ODBCM_RC_SUCCESS) {
     if (create_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
-      pfc_log_fatal("DB connection not available or cannot access DB");
+      UPPL_LOG_FATAL("DB connection not available or cannot access DB");
       create_status = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else if (create_db_status == ODBCM_RC_PKEY_VIOLATION) {
       // log fatal error to log daemon
@@ -187,17 +190,18 @@ UncRespCode Kt_Boundary::Update(OdbcmConnectionHandler *db_conn,
                                key_struct,
                                val_struct,
                                UNC_OP_UPDATE, data_type, 0, 0,
-                               vect_key_operations, old_val_struct);
+                               vect_key_operations, old_val_struct,
+                               NOTAPPLIED, false, PFC_FALSE);
 
     if (!((kt_boundary_dbtableschema.get_row_list()).empty())) {
       // Send request to ODBC for Boundary_common_table update
       ODBCM_RC_STATUS update_db_status = physical_layer->get_odbc_manager()->
           UpdateOneRow((unc_keytype_datatype_t)data_type,
-                       kt_boundary_dbtableschema, db_conn);
+                       kt_boundary_dbtableschema, db_conn, false);
       if (update_db_status != ODBCM_RC_SUCCESS &&
           update_db_status == ODBCM_RC_CONNECTION_ERROR) {
         // log fatal error to log daemon
-        pfc_log_fatal("DB connection not available or cannot access DB");
+        UPPL_LOG_FATAL("DB connection not available or cannot access DB");
         update_status = UNC_UPPL_RC_ERR_DB_ACCESS;
       } else if (update_db_status != ODBCM_RC_SUCCESS) {
         // log error to log daemon
@@ -281,6 +285,38 @@ UncRespCode Kt_Boundary::Delete(OdbcmConnectionHandler *db_conn,
   string boundary_id = (const char*)key_obj->boundary_id;
 
   // Check whether BOUNDARY is being referred in Logical layer
+  TcConfigMode config_mode;
+  std::string vtn_name = "";
+  UncRespCode validate_status = PhysicalLayer::get_instance() \
+      ->get_physical_core() \
+      ->GetConfigMode(session_id, configuration_id, config_mode, vtn_name);
+  if (validate_status != UNC_RC_SUCCESS) {
+    if (validate_status == UNC_UPPL_RC_ERR_INVALID_CONFIGID) {
+      pfc_log_error("Physical_core::GetConfigMode::Configid validation failed");
+    }
+    if (validate_status == UNC_UPPL_RC_ERR_INVALID_SESSIONID) {
+      pfc_log_error("Physical_core::GetConfigMode::Sessonid validation failed");
+    }
+    // Populate the response to be sent in ServerSession
+    physical_response_header rsh = {session_id,
+        configuration_id,
+        UNC_OP_DELETE,
+        0,
+        0,
+        0,
+        data_type,
+        static_cast<uint32_t>(validate_status)};
+    int err = PhyUtil::sessOutRespHeader(sess, rsh);
+    err |= sess.addOutput((uint32_t)UNC_KT_BOUNDARY);
+    err |= sess.addOutput(*key_obj);
+    if (err != 0) {
+      pfc_log_info(
+          "Server session addOutput failed, so return IPC_WRITE_ERROR");
+      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
+    }
+    return UNC_RC_SUCCESS;
+  }
+  // Check whether BOUNDARY is being referred in Logical layer
   delete_status = SendSemanticRequestToUPLL(key_struct,
                                             data_type);
 
@@ -288,7 +324,19 @@ UncRespCode Kt_Boundary::Delete(OdbcmConnectionHandler *db_conn,
     // log error and send error response
     pfc_log_error("Boundary is referred in Logical,"
         "so delete is not allowed");
+  } else if (delete_status == UNC_RC_SUCCESS &&
+                          config_mode == TC_CONFIG_REAL) {
+    // Check whether BOUNDARY is referred in Running DB in Logical layer
+    delete_status = SendSemanticRequestToUPLL(key_struct,
+                                              UNC_DT_RUNNING);
+    if (delete_status != UNC_RC_SUCCESS) {
+      pfc_log_error("Boundary is referred in Running DB in Logical, "
+         "so delete is not allowed");
+    }
   } else {
+    pfc_log_debug("Boundary is not referred in CANDIDATE DB in logical");
+  }
+  if (delete_status == UNC_RC_SUCCESS) {
     // Structure used to send request to ODBC
     DBTableSchema kt_boundary_dbtableschema;
 
@@ -317,7 +365,7 @@ UncRespCode Kt_Boundary::Delete(OdbcmConnectionHandler *db_conn,
     if (delete_db_status != ODBCM_RC_SUCCESS) {
       if (delete_db_status == ODBCM_RC_CONNECTION_ERROR) {
         // log fatal error to log daemon
-        pfc_log_fatal("DB connection not available or cannot access DB");
+        UPPL_LOG_FATAL("DB connection not available or cannot access DB");
         delete_status = UNC_UPPL_RC_ERR_DB_ACCESS;
       } else if (delete_db_status == ODBCM_RC_ROW_NOT_EXISTS) {
         pfc_log_error("given instance does not exist");
@@ -369,7 +417,7 @@ UncRespCode Kt_Boundary::ReadInternal(OdbcmConnectionHandler *db_conn,
                                          uint32_t operation_type) {
   if (operation_type != UNC_OP_READ && operation_type != UNC_OP_READ_SIBLING &&
       operation_type != UNC_OP_READ_SIBLING_BEGIN) {
-    pfc_log_trace ("This function not allowed for read next/bulk/count");
+    pfc_log_trace("This function not allowed for read next/bulk/count");
     return UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
   }
   pfc_log_debug("Processing Kt_Boundary::ReadInternal");
@@ -403,7 +451,8 @@ UncRespCode Kt_Boundary::ReadInternal(OdbcmConnectionHandler *db_conn,
                                         vect_boundary_id,
                                         vect_val_boundary_st);
     if (firsttime) {
-      pfc_log_trace("Clearing key_val and val_struct vectors for the firsttime");
+      pfc_log_trace(
+          "Clearing key_val and val_struct vectors for the first time");
       boundary_key.clear();
       boundary_val.clear();
       firsttime = false;
@@ -427,14 +476,15 @@ UncRespCode Kt_Boundary::ReadInternal(OdbcmConnectionHandler *db_conn,
     if ((vect_val_boundary_st.size() == UPPL_MAX_REP_CT) &&
                      (operation_type != UNC_OP_READ)) {
       pfc_log_debug("Op:%d, key.size:%" PFC_PFMT_SIZE_T"fetch_next_set",
-                    operation_type,boundary_key.size());
-      key_struct = reinterpret_cast<void *>(boundary_key[boundary_key.size() - 1]);
+                    operation_type, boundary_key.size());
+      key_struct = reinterpret_cast<void *>(
+                     boundary_key[boundary_key.size() - 1]);
       operation_type = UNC_OP_READ_SIBLING;
       continue;
     } else {
       break;
     }
-  } while(true);
+  } while (true);
   return read_status;
 }
 
@@ -581,7 +631,8 @@ UncRespCode Kt_Boundary::ReadBulkInternal(
                              key_struct,
                              val_struct,
                              UNC_OP_READ_BULK, data_type, 0, 0,
-                             vect_key_operations, old_val_struct);
+                             vect_key_operations, old_val_struct,
+                             NOTAPPLIED, false, PFC_FALSE);
   // Read rows from DB
   read_db_status = physical_layer->get_odbc_manager()-> \
       GetBulkRows((unc_keytype_datatype_t)data_type, max_rep_ct,
@@ -783,8 +834,7 @@ UncRespCode Kt_Boundary::PerformSemanticValidation(
   // In case of create operation, key should not exist
   if (operation == UNC_OP_CREATE) {
     if (key_status == UNC_RC_SUCCESS) {
-      pfc_log_error("Key instance already exists");
-      pfc_log_error("Hence create operation not allowed");
+      pfc_log_error("Key exist,CREATE not allowed");
       status = UNC_UPPL_RC_ERR_INSTANCE_EXISTS;
     } else if (key_status == UNC_UPPL_RC_ERR_DB_ACCESS) {
       pfc_log_error("DB Access failure");
@@ -797,8 +847,7 @@ UncRespCode Kt_Boundary::PerformSemanticValidation(
       pfc_log_error("DB Access failure");
       status = key_status;
     } else if (key_status != UNC_RC_SUCCESS) {
-      pfc_log_error("Key instance does not exist");
-      pfc_log_error("Hence update/delete/read operation not allowed");
+      pfc_log_error("Key doesn't exist,U/D/R oprn not allowed");
       status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     } else {
       pfc_log_debug("key instance exist update/del/read operation allowed");
@@ -939,6 +988,7 @@ UncRespCode Kt_Boundary::PerformSemanticValidation(
   pfc_log_debug("Return Code SemanticValidation: %d", status);
   return status;
 }
+
 
 /** PopulateDBSchemaForKtTable
  * @Description : This function populates the DBAttrSchema to be used to
@@ -1501,8 +1551,7 @@ UncRespCode Kt_Boundary::ReadBoundaryValFromDB(
     uint32_t operation_type,
     uint32_t &max_rep_ct,
     vector<key_boundary_t> &vect_key_boundary,
-    vector<val_boundary_st_t> &vect_val_boundary_st,
-    pfc_bool_t is_state) {
+    vector<val_boundary_st_t> &vect_val_boundary_st) {
   if (operation_type < UNC_OP_READ) {
     // Unsupported operation type for this function
     return UNC_RC_SUCCESS;
@@ -1524,7 +1573,8 @@ UncRespCode Kt_Boundary::ReadBoundaryValFromDB(
                              key_struct,
                              val_struct,
                              operation_type, data_type, 0, 0,
-                             vect_key_operations, old_val_struct);
+                             vect_key_operations, old_val_struct,
+                             NOTAPPLIED, false, PFC_FALSE);
 
   if (operation_type == UNC_OP_READ) {
     read_db_status = physical_layer->get_odbc_manager()->
@@ -1602,7 +1652,7 @@ UncRespCode Kt_Boundary::GetModifiedRows(OdbcmConnectionHandler *db_conn,
                              UNC_OP_READ, UNC_DT_CANDIDATE, 0, 0,
                              vect_key_operations, old_val_struct,
                              row_status,
-                             true);
+                             true, PFC_FALSE);
 
   read_db_status = physical_layer->get_odbc_manager()->
       GetModifiedRows(UNC_DT_CANDIDATE, kt_boundary_dbtableschema, db_conn);
@@ -1698,7 +1748,7 @@ UncRespCode Kt_Boundary::IsKeyExists(OdbcmConnectionHandler *db_conn,
     if (kt_boundary_dbtableschema.db_return_status_ != DELETED) {
       pfc_log_debug("DB returned success for Row exists");
     } else {
-      pfc_log_info("DB Returned failure for IsRowExists");
+      pfc_log_debug("DB Returned failure for IsRowExists");
       check_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     }
   } else {
@@ -1852,8 +1902,11 @@ UpplBoundaryOperStatus Kt_Boundary::getBoundaryInputOperStatus(
         PhyUtil::get_controller_type(db_conn, controller_name,
                                      ctrl_type,
                                      (unc_keytype_datatype_t) ctr_data_type);
-    if (ctr_type_status == UNC_RC_SUCCESS &&
-        ctrl_type == (unc_keytype_ctrtype_t) UNC_CT_UNKNOWN) {
+    if (ctr_type_status != UNC_RC_SUCCESS) {
+      pfc_log_debug("Error in get_controller_type :%d", ctr_type_status);
+      return UPPL_BOUNDARY_OPER_UNKNOWN;
+    }
+    if (ctrl_type == (unc_keytype_ctrtype_t) UNC_CT_UNKNOWN) {
       boundary_oper_status = UPPL_BOUNDARY_OPER_UP;
       pfc_log_info(
           "LP need not be considered for bypass controller."
@@ -1904,7 +1957,8 @@ UpplBoundaryOperStatus Kt_Boundary::getBoundaryInputOperStatus(
                                   ref_oper_status);
         }
       } else {
-        pfc_log_debug("Logical_Port's oper_status %d", logical_port_oper_status);
+        pfc_log_debug(
+            "Logical_Port's oper_status %d", logical_port_oper_status);
         ADD_LP_PORT_OPER_STATUS(logical_port_key,
                                 logical_port_oper_status,
                                 ref_oper_status);
@@ -1977,7 +2031,7 @@ UncRespCode Kt_Boundary::HandleOperStatus(
     // Update oper_status in boundary table
     return_code = SetOperStatus(db_conn, UNC_DT_STATE, NULL, value_struct,
                                 boundary_oper_status);
-    pfc_log_info("Set Boundary oper status status %d", return_code);
+    pfc_log_debug("Set Boundary oper status status %d", return_code);
     return return_code;
   }
   UpplBoundaryOperStatus first_oper_status = boundary_oper_status;
@@ -2191,7 +2245,7 @@ UncRespCode Kt_Boundary::SetOperStatus(OdbcmConnectionHandler *db_conn,
   // Send request to ODBC for boundary_table
   ODBCM_RC_STATUS update_db_status = physical_layer->get_odbc_manager()->
       UpdateOneRow((unc_keytype_datatype_t)data_type,
-                   kt_boundary_dbtableschema, db_conn);
+                   kt_boundary_dbtableschema, db_conn, true);
   if (update_db_status != ODBCM_RC_SUCCESS) {
     pfc_log_info(
         "oper_status update operation not success"
@@ -2585,7 +2639,8 @@ UncRespCode Kt_Boundary::SendOperStatusNotification(
         pfc_log_debug("%s", (IpctUtil::get_string(old_val_bdry)).c_str());
         // Call IPC server to post the event
         status = (UncRespCode) physical_layer
-            ->get_ipc_connection_manager()->SendEvent(&ser_evt);
+            ->get_ipc_connection_manager()->SendEvent(&ser_evt,
+                                             "", UPPL_EVENTS_KT_BOUNDARY);
       }
     }
   } else {

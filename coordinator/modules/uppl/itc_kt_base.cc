@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -51,7 +51,8 @@ UncRespCode Kt_Base::ValidateRequest(OdbcmConnectionHandler *db_conn,
       }
     }
     break;
-    case UNC_KT_DATAFLOW: {
+    case UNC_KT_DATAFLOW:
+    case UNC_KT_DATAFLOW_V2: {
       status = ValidateKtDataflow(operation,
                               data_type);
       if (status != UNC_RC_SUCCESS) {
@@ -88,6 +89,7 @@ UncRespCode Kt_Base::ValidateRequest(OdbcmConnectionHandler *db_conn,
     case UNC_KT_LOGICAL_MEMBER_PORT:
     case UNC_KT_SWITCH:
     case UNC_KT_PORT:
+    case UNC_KT_PORT_NEIGHBOR:
     case UNC_KT_LINK: {
       status = ValidateKtState(operation,
                                data_type);
@@ -331,14 +333,14 @@ UncRespCode Kt_Base::ReadSiblingCount(OdbcmConnectionHandler *db_conn,
   // Structure used to send request to ODBC
   DBTableSchema kt_dbtableschema;
   vector<ODBCMOperator> vect_prim_key_operations;
-  void* old_value;
+  void* old_value = NULL;
   PopulateDBSchemaForKtTable(db_conn, kt_dbtableschema,
                              key_struct,
                              val_struct,
                              UNC_OP_READ_SIBLING_COUNT, data_type,
                              option1, option2,
                              vect_prim_key_operations,
-                             old_value);
+                             old_value, NOTAPPLIED, false, PFC_FALSE);
   ODBCM_RC_STATUS read_db_status = ODBCM_RC_SUCCESS;
   if (!vect_prim_key_operations.empty()) {
     read_db_status = physical_layer->get_odbc_manager()->
@@ -423,7 +425,7 @@ UncRespCode Kt_Base::ConfigurationChangeNotification(
     status = UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
   } else {
     status = (UncRespCode) physical_layer->get_ipc_connection_manager()->
-        SendEvent(&ser_evt);
+        SendEvent(&ser_evt, "", event_type);
     pfc_log_debug(
         "Configuration notification status: %d for operation %d",
         status, oper_type);
@@ -499,6 +501,12 @@ int Kt_Base::AddKeyStructuretoSession(uint32_t key_type,
     }
     case UNC_KT_DATAFLOW: {
       key_dataflow_t *obj_key = reinterpret_cast<key_dataflow_t*>(key_struct);
+      err |= sess->addOutput(*obj_key);
+      break;
+    }
+    case UNC_KT_DATAFLOW_V2: {
+      key_dataflow_v2_t *obj_key = reinterpret_cast<key_dataflow_v2_t*>
+                                   (key_struct);
       err |= sess->addOutput(*obj_key);
       break;
     }
@@ -814,6 +822,15 @@ void Kt_Base::ClearValueStructure(uint32_t key_type,
     case UNC_KT_PORT: {
       val_port_st_t *old_val_kt =
           reinterpret_cast<val_port_st_t*>(old_value_struct);
+      if (old_val_kt != NULL) {
+        delete old_val_kt;
+        old_val_kt = NULL;
+      }
+      break;
+    }
+    case UNC_KT_PORT_NEIGHBOR: {
+      val_port_st_neighbor_t *old_val_kt =
+          reinterpret_cast<val_port_st_neighbor_t*>(old_value_struct);
       if (old_val_kt != NULL) {
         delete old_val_kt;
         old_val_kt = NULL;

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2013-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -51,7 +51,7 @@ EXTRA_CXX_INCDIRS	+= $(CAPA_SRCDIR)/include
 CPPFLAGS	+= -include ut_stub.h
 
 # Define a list of cfdef files to be compiled.
-ALT_CFDEF_FILES	= $(UPPL_SRCDIR)/uppl_ctr_capability.cfdef
+#ALT_CFDEF_FILES	= $(UPPL_SRCDIR)/uppl_ctr_capability.cfdef
 
 UPPL_SOURCES	= ipc_client_configuration_handler.cc 
 UPPL_SOURCES	+= ipc_client_logical_handler.cc 
@@ -87,7 +87,8 @@ UPPL_SOURCES	+= physicallayer.cc
 UPPL_SOURCES  += itc_kt_ctr_dataflow.cc
 UPPL_SOURCES  += itc_kt_dataflow.cc
 UPPL_SOURCES  += physical_taskq.cc
-
+UPPL_SOURCES  += itc_kt_port_neighbor.cc
+UPPL_SOURCES  += itc_kt_dataflow_v2.cc
 ODBC_SOURCES	= odbcm_mgr_stub.cc odbcm_utils_stub.cc
 TCLIB_SOURCES	= tclib_module.cc
 MISC_SOURCES	= ipc_client.cc ipc_server.cc module.cc alarm.cc

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,7 +13,6 @@
 #include "unc/base.h"
 #include "pfcxx/module.hh"
 #include "unc/usess_ipc.h"
-
 
 namespace unc {
 namespace usess {
@@ -35,6 +34,12 @@ namespace usess {
   pfc_log_fatal("%s.%s:" format, CLASS_NAME, __FUNCTION__, __VA_ARGS__)
 #define L_ERROR(format, ...) \
   pfc_log_error("%s.%s:" format, CLASS_NAME, __FUNCTION__, __VA_ARGS__)
+
+#define L_ERROR2(format, ...) \
+{ \
+  pfc_log_error("%s.%s:" format, CLASS_NAME, __FUNCTION__, __VA_ARGS__); \
+}
+
 #define L_WARN(format, ...) \
   pfc_log_warn("%s.%s:" format, CLASS_NAME, __FUNCTION__, __VA_ARGS__)
 #define L_INFO(format, ...) \
@@ -66,9 +71,21 @@ namespace usess {
     goto LABEL; \
   }
 
+#define GOTO_IF2(CONDITIONS, LABEL, FMT, ...) \
+  if (CONDITIONS) { \
+    L_ERROR2(FMT, __VA_ARGS__); \
+    goto LABEL; \
+  }
+
 #define RETURN_IF(CONDITIONS, RET, FMT, ...) \
   if (CONDITIONS) { \
     L_ERROR(FMT, __VA_ARGS__); \
+    return RET; \
+  }
+
+#define RETURN_IF2(CONDITIONS, RET, FMT, ...) \
+  if (CONDITIONS) { \
+    L_ERROR2(FMT, __VA_ARGS__); \
     return RET; \
   }
 
@@ -85,9 +102,21 @@ namespace usess {
     goto LABEL; \
   }
 
+#define GOTO_CODESET_IF2(CONDITIONS, LABEL, CODE, ERRVAL, FMT, ...) \
+  if (CONDITIONS) { \
+    L_ERROR2(FMT, __VA_ARGS__); \
+    CODE = ERRVAL; \
+    goto LABEL; \
+  }
+
 #define GOTO_CODESET_DETAIL_IF(CONDITIONS, LABEL, CODE, ERRVAL, RTN, FMT, ...) \
   GOTO_CODESET_IF(CONDITIONS, LABEL, CODE, ERRVAL, FMT " err=%d (%s)", \
               __VA_ARGS__, RTN, strerror(RTN))
+
+#define GOTO_CODESET_DETAIL_IF2(CONDITIONS, LABEL, CODE, ERRVAL, RTN, FMT, ...) \
+  GOTO_CODESET_IF2(CONDITIONS, LABEL, CODE, ERRVAL, FMT " err=%d (%s)", \
+              __VA_ARGS__, RTN, strerror(RTN))
+
 
 #define WARN_CODESET_DETAIL_IF(CONDITIONS, CODE, ERRVAL, RTN, FMT, ...) \
   WARN_CODESET_IF(CONDITIONS, CODE, ERRVAL, FMT " err=%d (%s)", \

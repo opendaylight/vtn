@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,7 +11,7 @@
 #define UNC_UPLL_MOMGR_IMPL_H
 
 #include <sys/time.h>
-// #include <functional>
+#include <functional>
 
 #include <map>
 #include <string>
@@ -27,6 +27,7 @@
 #include "ipct_st.hh"
 #include "uncxx/upll_log.hh"
 #include "upll_util.hh"
+#include "kt_util.hh"
 #include "dal_defines.hh"
 #include "dal_schema.hh"
 #include "momgr_intf.hh"
@@ -35,7 +36,7 @@
 #include "ctrlr_capa_defines.hh"
 #include "ctrlr_mgr.hh"
 #include "unc/uppl_common.h"
-
+#include "config_mgr.hh"
 
 namespace unc {
 namespace upll {
@@ -70,12 +71,20 @@ using unc::upll::dal::DalBindInfo;
 using unc::upll::dal::DalDmlIntf;
 using unc::upll::dal::DalCursor;
 using unc::upll::dal::DalResultCode;
+using unc::upll::ipc_util::controller_domain;
+using unc::upll::ipc_util::controller_domain_t;
+using unc::upll::tx_update_util::TxUpdateUtil;
 
 #define MAX_RENAME_FLAG_LEN 1
 #define STAND_ALONE_VNODE 0xFFFFFFFF
 
+#define MAX_LABEL_RANGE 0XFFFFFFFF
 #define REMOTE_IF_DISCONNECT 0xFFFFFFFF
 #define INVALID_MATCH_VALUE 0xFFFF
+
+inline bool IsUnifiedVbr(uint8_t *ctrlr_id) {
+  return (!strcmp(reinterpret_cast<char *>(ctrlr_id), "#"));
+}
 
 #define ResetValid(x, val) { \
   struct x *tval = reinterpret_cast<struct x *>(val);           \
@@ -91,13 +100,13 @@ using unc::upll::dal::DalResultCode;
   : NULL)
 
 #define GetStateVal(ikey) \
- ((ikey) ? \
-   (((ikey)->get_cfg_val()) ? \
-     (((ikey)->get_cfg_val()->get_next_cfg_val()) ? \
-       ((ikey)->get_cfg_val()->get_next_cfg_val()->get_val()) \
-     : NULL) \
-   : NULL) \
- : NULL)
+  ((ikey) ? \
+    (((ikey)->get_cfg_val()) ? \
+      (((ikey)->get_cfg_val()->get_next_cfg_val()) ? \
+        ((ikey)->get_cfg_val()->get_next_cfg_val()->get_val()) \
+      : NULL) \
+    : NULL) \
+  : NULL)
 
 // #define KEY_RESET(x) *(x) = ' '
 
@@ -128,6 +137,16 @@ typedef list<CtrlrVoteStatus *> CtrlrVoteStatusList;
     (keytype == UNC_KT_VROUTER) || (keytype == UNC_KT_VUNKNOWN) || \
     (keytype == UNC_KT_VTEP) || (keytype == UNC_KT_VTUNNEL) || \
     (keytype == UNC_KT_VTERMINAL))
+
+// TODO(PCM): Needs change when Unified vBridge is implemented.
+#define VIRTUAL_MODE_KT(keytype) ((keytype == UNC_KT_POLICING_PROFILE) \
+         || (keytype == UNC_KT_POLICING_PROFILE_ENTRY) \
+         || (keytype == UNC_KT_FLOWLIST) \
+         || (keytype == UNC_KT_FLOWLIST_ENTRY) \
+         || (keytype == UNC_KT_UNIFIED_NETWORK) \
+         || (keytype == UNC_KT_UNW_LABEL) \
+         || (keytype == UNC_KT_UNW_LABEL_RANGE) \
+         || (keytype == UNC_KT_UNW_SPINE_DOMAIN))
 
 #define GET_USER_DATA(ckey) { \
   void *user_data = (ckey)->get_user_data(); \
@@ -215,7 +234,7 @@ typedef list<CtrlrVoteStatus *> CtrlrVoteStatusList;
                reinterpret_cast<key_user_data_t *>(ckey->get_user_data()); \
   if (user_data) { \
     (ctrlr) = \
-         (reinterpret_cast<key_user_data_t *>(ckey->get_user_data()))->ctrlr_id; \
+       (reinterpret_cast<key_user_data_t *>(ckey->get_user_data()))->ctrlr_id; \
   } \
 }
 
@@ -264,8 +283,8 @@ do { \
 #define DELETE_IF_NOT_NULL(key) \
 do { \
   if (key)\
-  delete key;\
-  key = NULL;\
+  delete (key);\
+  (key) = NULL;\
 } while (0);
 
 #define POM_UPDATE_KTS(keytype, update) \
@@ -296,7 +315,16 @@ do { \
          || (keytype == UNC_KT_VTN_FLOWFILTER) \
          || (keytype == UNC_KT_VTN_FLOWFILTER_ENTRY))? true:false; \
 }
-
+#if 0
+bool IsGlobalKT(unc_key_type_t keytype) {
+  return ((keytype == UNC_KT_VTN) || (keytype == UNC_KT_POLICING_PROFILE)
+          ||(keytype == UNC_KT_POLICING_PROFILE_ENTRY)
+          || (keytype == UNC_KT_FLOWLIST) || (keytype == UNC_KT_FLOWLIST_ENTRY)
+          || (keytype == UNC_KT_VTN_POLICINGMAP)
+          || (keytype == UNC_KT_VTN_FLOWFILTER)
+          || (keytype == UNC_KT_VTN_FLOWFILTER_ENTRY));
+}
+#endif
 #define READ_OP(op) ((op == UNC_OP_READ) || (op == UNC_OP_READ_SIBLING) || \
                      (op == UNC_OP_READ_SIBLING_BEGIN) || \
                      (op == UNC_OP_READ_SIBLING_COUNT) || \
@@ -327,13 +355,16 @@ do { \
          || (keytype == UNC_KT_VRTIF_FLOWFILTER_ENTRY) \
          || (keytype == UNC_KT_VTERMIF_POLICINGMAP) \
          || (keytype == UNC_KT_VTERMIF_FLOWFILTER) \
-         || (keytype == UNC_KT_VTERMIF_FLOWFILTER_ENTRY))?true:false; \
+         || (keytype == UNC_KT_VTERMIF_FLOWFILTER_ENTRY) \
+         || (keytype == UNC_KT_POLICING_PROFILE) \
+         || (keytype == UNC_KT_FLOWLIST) \
+         || (keytype == UNC_KT_POLICING_PROFILE_ENTRY))?true:false; \
 }
 
 #define IS_INTERFACE_KEY(kt_type) ((kt_type == UNC_KT_VBR_IF) || \
                                    (kt_type == UNC_KT_VRT_IF) || \
                                    (kt_type == UNC_KT_VTEP_IF) || \
-                                   (kt_type == UNC_KT_VTUNNEL_IF ) || \
+                                   (kt_type == UNC_KT_VTUNNEL_IF) || \
                                    (kt_type == UNC_KT_VUNK_IF) || \
                                    (kt_type == UNC_KT_VTERM_IF))
 
@@ -342,10 +373,10 @@ do { \
                                             ((kt_type) == UNC_KT_VTERM_IF))
 
 #define ISRENAME_KEYTYPE(keytype) ((UNC_KT_VTN == keytype) || \
-           (UNC_KT_FLOWLIST == keytype) || \
-           (UNC_KT_POLICING_PROFILE == keytype) || (UNC_KT_VBRIDGE == keytype) || \
-           (UNC_KT_VROUTER == keytype) || (UNC_KT_VLINK == keytype)  || \
-           (UNC_KT_VTERMINAL == keytype)) \
+        (UNC_KT_FLOWLIST == keytype) || \
+        (UNC_KT_POLICING_PROFILE == keytype) || (UNC_KT_VBRIDGE == keytype) || \
+        (UNC_KT_VROUTER == keytype) || (UNC_KT_VLINK == keytype)  || \
+        (UNC_KT_VTERMINAL == keytype)) \
 
 
 
@@ -375,7 +406,9 @@ enum state_notification {
   kPathFaultReset,
   kCtrlrDisconnect,
   kReConnect,
-  kPortUp
+  kPortUp,
+  kVtnExhaustion,
+  kVtnExhaustionReset
 };
 enum flag_status {
   PORT_UP = 0x00,
@@ -383,8 +416,9 @@ enum flag_status {
   PORT_FAULT = 0x02,
   ADMIN_DISABLE = 0x04,
   REMOTE_DOWN = 0x08,
-  PATH_FAULT = 0x40,
-  REMOTE_PATH_FAULT = 0x80,
+  PATH_FAULT = 0x10,
+  REMOTE_PATH_FAULT = 0x20,
+  REMOTE_VTN_EXHAUSTION = 0x40,
 };
 
 #define POM_RENAME_KT(ktype) (((ktype) == UNC_KT_VBR_POLICINGMAP) || \
@@ -398,7 +432,7 @@ enum flag_status {
 { \
   if (POM_RENAME_KT(ktype)) \
     rename = rename & RENAME; \
-  else \
+  else\
     rename = rename & RENAME_BITS; \
 }
 
@@ -428,6 +462,11 @@ typedef struct key_vnode {
   uint8_t vnode_name[kMaxLenVnodeName+1];
 } key_vnode_t;
 
+typedef struct key_vnode_if_t {
+  key_vnode_t vnode_key;
+  uint8_t vnode_if_name[kMaxLenInterfaceName+1];
+} key_vnode_if;
+
 enum rename_key {
   UNC_RENAME_KEY,
   CTRLR_RENAME_KEY
@@ -444,9 +483,11 @@ enum vnode_if_type {
   kVunkIf,
   kVtepIf,
   kVtunnelIf,
-  /* VlanmapOnBoundary: kVlanMap is used when boundary 
+  /* VlanmapOnBoundary: kVlanMap is used when boundary
    * vnode_if is mapped to SD or SW */
-  kVlanMap
+  kVlanMap,
+  //  kVbrPortMap is used when boundary vnode_if type is unified vBridge
+  kVbrPortMap
 };
 
 #define VLINK_FLAG_NODE_TYPE 0xFC
@@ -477,7 +518,7 @@ enum vn_if_type {
 };
 
 enum NotifyPOMForPortMapInfo {
-  kPortMapNoChange = 0, 
+  kPortMapNoChange = 0,
   kPortMapCreated,  // Used to notify POM when PortMap is Created
   kPortMapDeleted,  // Used to notifyPOM when PortMap is Deleted
   kPortMapUpdated,  // PortMap is Updated. No Notification is required for POM
@@ -518,15 +559,16 @@ enum VlinkNodePosition {
 };
 
 #define VLINK_FLAG_NODE_POS 0xC0
-/* VlanmapOnBoundary: Below flags used to set/clear 
+/* VlanmapOnBoundary: Below flags used to set/clear
  * user or boundary configured bit in vlanmap flag */
 #define USER_VLANMAP_FLAG 0x40
 #define BOUNDARY_VLANMAP_FLAG 0x80
+#define BOUNDARY_UVBRIF_FLAG 0x80
+#define USER_VBRPM_IF_FLAG 0x40
 
-typedef struct controller_domain {
-  uint8_t                 *ctrlr;
-  uint8_t                 *domain;
-} controller_domain_t;
+// new vBridge flags
+#define USER_VBRPORTMAP_FLAG 0x40
+#define BOUNDARY_VBRPORTMAP_FLAG 0x80
 
 typedef struct key_user_data {
   uint8_t                 ctrlr_id[kMaxLenCtrlrId+1];
@@ -570,12 +612,15 @@ enum MoMgrTables {
   MAINTBL = 0,
   RENAMETBL,
   CTRLRTBL,
+  CONVERTTBL,
+  VBIDTBL,
+  GVTNIDTBL,
   MAX_MOMGR_TBLS
 };
 
 enum AdaptType {
- ADAPT_ALL = 0,
- ADAPT_ONE
+  ADAPT_ALL = 0,
+  ADAPT_ONE
 };
 
 enum BindStructTypes {
@@ -645,12 +690,14 @@ class Table {
   }
   unc_key_type_t get_key_type() { return key_type; }
   uudst::kDalTableIndex GetTblIndex() { return tbl_index; }
-  bool GetBindInfo(BindInfo *&binfo, int &nfields) {
+  bool GetBindInfo(BindInfo *&binfo,
+                   int &nfields) {
     binfo = db_info;
     nfields = nattr;
     return true;
   }
-  void GetKeyValStruct(int &oktype, int &okstruct, int &ovstruct) {
+  void GetKeyValStruct(
+             int &oktype, int &okstruct, int &ovstruct) {
     oktype = key_type;
     okstruct = key_struct;
     ovstruct = val_struct;
@@ -672,19 +719,20 @@ class MoMgrImpl : public MoManager {
                                        unc_key_type_t kt) const;
 
   bool OperStatusSupported(unc_key_type_t kt) {
-   switch (kt) {
-   case UNC_KT_VTN:
-   case UNC_KT_VBRIDGE:
-   case UNC_KT_VROUTER:
-   case UNC_KT_VBR_IF:
-   case UNC_KT_VRT_IF:
-   case UNC_KT_VBR_VLANMAP:
-   case UNC_KT_VTERMINAL:
-   case UNC_KT_VTERM_IF:
-    return true;
-   default:
-    return false;
-   }
+    switch (kt) {
+      case UNC_KT_VTN:
+      case UNC_KT_VBRIDGE:
+      case UNC_KT_VROUTER:
+      case UNC_KT_VBR_IF:
+      case UNC_KT_VRT_IF:
+      case UNC_KT_VBR_VLANMAP:
+      case UNC_KT_VTERMINAL:
+      case UNC_KT_VTERM_IF:
+      case UNC_KT_VBR_PORTMAP:
+        return true;
+      default:
+        return false;
+    }
   }
 
   // Converts the driver returned err_ckv specific to VTN
@@ -695,6 +743,53 @@ class MoMgrImpl : public MoManager {
                              DalDmlIntf *dmi,
                              uint8_t* ctrlr_id,
                              upll_keytype_datatype_t dt_type);
+
+  /* @brief         Convert vlink keytype error to corresponding vbrif keytype
+   *                if the given vlink is part of vbrif portmap in PFC.
+   *
+   * @param[in]  err_ckv      Pointer to the ConfigKeyVal Structure
+   * @param[in]  datatype     Specifies the configuration CANDIDATE/RUNNING
+   * @param[in]  keytype      keytype
+   * @param[in]  dmi          Pointer to the DalDmlIntf(DB Interface)
+   *
+   * @retval  UPLL_RC_SUCCESS                 Translation required.
+   * @retval  UPLL_RC_ERR_GENERIC             Generic failure.
+   * @retval  UPLL_RC_ERR_DB_ACCESS           DB Read/Write error.
+   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE    Translation not required.
+   **/
+  upll_rc_t TranslateVlinkTOVbrIfError(
+      ConfigKeyVal *err_ckv,
+      DalDmlIntf *dmi,
+      upll_keytype_datatype_t datatype);
+
+  /* @brief      Check rename operation is possible or not.
+   *
+   * @param[in]  ikey        Pointer to the ConfigKeyVal Structure
+   * @param[in]  ctrlr_name  Controller name
+   * @param[in]  dmi         Pointer to the DalDmlIntf(DB Interface)
+   *
+   * @retval  UPLL_RC_SUCCESS                       Translation required.
+   * @retval  UPLL_RC_ERR_GENERIC                   Generic failure.
+   * @retval  UPLL_RC_ERR_DB_ACCESS                 DB Read/Write error.
+   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE          Rename allowed.
+   * @retval  UPLL_RC_ERR_NOT_ALLOWED_AT_THIS_TIME  Rename not allowed for the
+   *                                                existing configuration
+   **/
+  upll_rc_t ValidateRename(ConfigKeyVal *ikey,
+                           DalDmlIntf *dmi,
+                           uint8_t *ctrlr_name);
+
+  bool ThresholdAlarmProcessingRequired(ConfigKeyVal *can_key,
+                                        ConfigKeyVal *run_key,
+                                        unc_keytype_operation_t op,
+                                        TcConfigMode config_mode);
+
+  upll_rc_t ProcessSpineDomainAndLabel(ConfigKeyVal *can_key,
+                                       ConfigKeyVal *run_key,
+                                       ConfigKeyVal *upd_key,
+                                       unc_keytype_operation_t op,
+                                       TcConfigMode config_mode,
+                                       DalDmlIntf* dmi);
 
  protected:
   Table **table;
@@ -723,7 +818,19 @@ class MoMgrImpl : public MoManager {
   upll_rc_t TxCopyRenameTableFromCandidateToRunning(
                                     unc_key_type_t key_type,
                                     unc_keytype_operation_t op,
-                                    DalDmlIntf* dmi);
+                                    DalDmlIntf* dmi,
+                                    TcConfigMode config_mode,
+                                    std::string vtn_name);
+  upll_rc_t TxComputeOperStatusandCommit(
+                         unc_key_type_t key_type,
+                         CtrlrCommitStatusList *ctrlr_commit_status,
+                         unc_keytype_operation_t op,
+                         DalDmlIntf* dmi, TcConfigMode config_mode,
+                         std::string vtn_name);
+  upll_rc_t UpdateGWPortStatus(ConfigKeyVal *ckey, DalDmlIntf *dmi,
+                              uint32_t driver_result);
+  upll_rc_t CheckUnifiedOperStatus(ConfigKeyVal *ikey,
+                                            DalDmlIntf *dmi);
 
 
 #if 0
@@ -790,7 +897,8 @@ class MoMgrImpl : public MoManager {
    * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
    */
   virtual upll_rc_t UpdateParentOperStatus(ConfigKeyVal *ikey,
-                                           DalDmlIntf *dmi, uint32_t driver_result) {
+                                           DalDmlIntf *dmi,
+                                           uint32_t driver_result) {
     UPLL_LOG_DEBUG("Unsupported operation for this keytype %d\n",
                       (ikey)?ikey->get_key_type():0);
     return UPLL_RC_ERR_GENERIC;
@@ -844,7 +952,8 @@ class MoMgrImpl : public MoManager {
                                    ConfigKeyVal *&ckv_driver_req,
                                    DalDmlIntf *dmi,
                                    bool &invalid_attr,
-                                   bool check_audit_phase); /* It will be true only on audit phase */
+                                   bool check_audit_phase);
+                       /* chech_audit_phase will be true only on audit phase */
 
   virtual upll_rc_t  ValidateMessage(IpcReqRespHeader *req,
                                      ConfigKeyVal *ikey) = 0;
@@ -924,7 +1033,7 @@ class MoMgrImpl : public MoManager {
    * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
    *
    **/
-  virtual upll_rc_t AdaptValToVtnService(ConfigKeyVal *ikey, 
+  virtual upll_rc_t AdaptValToVtnService(ConfigKeyVal *ikey,
                                          AdaptType adapt_type = ADAPT_ALL) {
     return UPLL_RC_SUCCESS;
   }
@@ -951,12 +1060,15 @@ class MoMgrImpl : public MoManager {
    * @param[in]  ck_old                   Contains running information (It can
    *                                      be NULL during audit phase)
    * @param[in]  op                       Operation name.
-   * @param[in]  dt_type                  Specifies the configuration CANDIDATE/RUNNING
+   * @param[in]  dt_type                  Specifies the configuration
+   *                                      CANDIDATE/RUNNING
    * @param[in]  keytype                  Specifies the keytype
-   * @param[in]  dmi                      Pointer to the DalDmlIntf(DB Interface)
-   * @param[out] not_send_to_drv          Decides whether the configuration needs
-   *                                      to be sent to controller or not
-   * @param[in]  audit_update_phase       Specifies whether the phase is commit or audit,
+   * @param[in]  dmi                      Pointer to the DalDmlIntf
+   *                                      (DB Interface)
+   * @param[out] not_send_to_drv          Decides whether the configuration
+   *                                      needs to be sent to controller or not
+   * @param[in]  audit_update_phase       Specifies whether the phase is commit
+   *                                      or audit,
    *                                      true - audit / false - commit
    *
    * @retval  UPLL_RC_SUCCESS             Completed successfully.
@@ -976,6 +1088,32 @@ class MoMgrImpl : public MoManager {
     UPLL_FUNC_TRACE;
     return UPLL_RC_SUCCESS;
   }
+  /**
+   * @brief     During Commit failure, convert driver error
+   *            configuration based of the keytype and set to err_ckv.
+   *            This function can be invoked only during COMMIT phase.
+   *
+   * @param[in]  ck_unc             It contains UNC specific names.
+   * @param[in]  ck_driver          It contains Controller specific name.
+   * @param[in]  dt_type            Specifies the configuration
+   *                                CANDIDATE/RUNNING
+   * @param[in]  dmi                Pointer to the DalDmlIntf
+   *                                (DB Interface)
+   * @param[in]  err_ckv            Pointer to the ConfigKeyVal Structure
+   * @param[in]  ipc_resp           Pointer contains driver response.
+   *
+   * @retval  UPLL_RC_SUCCESS               Translation required.
+   * @retval  UPLL_RC_ERR_GENERIC           Generic failure.
+   * @retval  UPLL_RC_ERR_DB_ACCESS         DB Read/Write error.
+   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE  Translation not required.
+   *
+   */
+  virtual upll_rc_t TxUpdateErrorHandler(ConfigKeyVal *ckv_unc,
+                                          ConfigKeyVal *ck_driver,
+                                          DalDmlIntf *dmi,
+                                          upll_keytype_datatype_t dt_type,
+                                          ConfigKeyVal **err_ckv,
+                                          IpcResponse *ipc_resp);
 
  public:
   MoMgrImpl() {
@@ -996,10 +1134,10 @@ class MoMgrImpl : public MoManager {
   virtual upll_rc_t ValidateAttribute(ConfigKeyVal *kval, DalDmlIntf *dmi,
                                       IpcReqRespHeader *req = NULL) =0;
 
-  /* @brief      - allocates a configkeyval with oper status = UNINIT 
+  /* @brief      - allocates a configkeyval with oper status = UNINIT
    *
-   * @param[out]  ck_vn    Pointer to a configkeyval 
-   * @param[in]   ikey     null if no key is to be copied 
+   * @param[out]  ck_vn    Pointer to a configkeyval
+   * @param[in]   ikey     null if no key is to be copied
    * @param[in]   dmi      Database connection parameter
    *
    * @retval  UPLL_RC_SUCCESS      Completed successfully.
@@ -1007,7 +1145,9 @@ class MoMgrImpl : public MoManager {
    *
    **/
   upll_rc_t GetCkvUninit(ConfigKeyVal *&ck_vn, ConfigKeyVal *ikey,
-                         DalDmlIntf *dmi, val_oper_status oper_status = UPLL_OPER_STATUS_UNINIT);
+                         DalDmlIntf *dmi,
+                         val_oper_status oper_status = UPLL_OPER_STATUS_UNINIT,
+                         MoMgrTables tbl = MAINTBL);
   virtual upll_rc_t  ValidateCapability(IpcReqRespHeader *req,
                                         ConfigKeyVal *ikey,
                                         const char *ctrlr_name = NULL) = 0;
@@ -1023,7 +1163,8 @@ class MoMgrImpl : public MoManager {
    *
    * @param[in]  okey   Output Configkeyval - allocated within the function
    * @param[in]  req    Input ConfigKeyVal to be duplicated.
-   * @param[in]  tbl    specifies if the val structure belongs to the main table/ controller table or rename table.
+   * @param[in]  tbl    specifies if the val structure belongs to the main table
+   *                    controller table or rename table.
    *
    * @retval         UPLL_RC_SUCCESS      Successfull completion.
    * @retval         UPLL_RC_ERR_GENERIC  Failure case.
@@ -1041,7 +1182,8 @@ class MoMgrImpl : public MoManager {
    * @retval         false  input key is invalid.
    **/
   virtual bool IsValidKey(void *tkey,
-                          uint64_t index) = 0;
+                          uint64_t index,
+                          MoMgrTables tbl = MAINTBL) = 0;
   /**
    * @brief  Filters the attributes which need not be sent to controller
    *
@@ -1066,7 +1208,7 @@ class MoMgrImpl : public MoManager {
    *
    * @param[in/out]  val1   first record value instance.
    * @param[in]      val2   second record value instance.
-   * @param[in]      audit  if true, CompareValidValue called from audit process.
+   * @param[in]      audit  if true, CompareValidValue called from audit process
    *
    **/
   virtual bool CompareValidValue(void *&val1,
@@ -1125,6 +1267,14 @@ class MoMgrImpl : public MoManager {
                                      upll_keytype_datatype_t dt_type,
                                      DalDmlIntf *dmi,
                                      uint8_t *ctrlr_id) = 0;
+  virtual upll_rc_t GetChildConvertConfigKey(ConfigKeyVal *&okey,
+                                             ConfigKeyVal *parent_key) {
+    return UPLL_RC_ERR_GENERIC;
+  }
+  virtual upll_rc_t GetVbIdChildConfigKey(ConfigKeyVal *&okey,
+                                          ConfigKeyVal *parent_key) {
+    return UPLL_RC_ERR_GENERIC;
+  }
   upll_rc_t ReadConfigDB(ConfigKeyVal *ikey,
                          upll_keytype_datatype_t dt_type,
                          unc_keytype_operation_t op,
@@ -1138,10 +1288,12 @@ class MoMgrImpl : public MoManager {
                          uint32_t &sibling_count,
                          DalDmlIntf *dmi,
                          MoMgrTables tbl = MAINTBL);
-  upll_rc_t DeleteChildren(ConfigKeyVal *ikey,
+  virtual upll_rc_t DeleteChildren(ConfigKeyVal *ikey,
                            ConfigKeyVal *pkey,
                            upll_keytype_datatype_t dt_type,
                            DalDmlIntf *dmi,
+                           TcConfigMode config_mode,
+                           string vtn_name,
                            MoMgrTables tbl = MAINTBL);
   /**
    * @brief      Method to determine if given key is renamed
@@ -1170,6 +1322,21 @@ class MoMgrImpl : public MoManager {
                            DalDmlIntf *dmi,
                            DbSubOp *pdbop,
                            MoMgrTables tbl = MAINTBL);
+  upll_rc_t UpdateConfigDB(ConfigKeyVal *ikey,
+                           upll_keytype_datatype_t dt_type,
+                           unc_keytype_operation_t op,
+                           DalDmlIntf *dmi,
+                           TcConfigMode cfg_mode,
+                           string vtn_name,
+                           MoMgrTables tbl = MAINTBL);
+  upll_rc_t UpdateConfigDB(ConfigKeyVal *ikey,
+                           upll_keytype_datatype_t dt_type,
+                           unc_keytype_operation_t op,
+                           DalDmlIntf *dmi,
+                           DbSubOp *pdbop,
+                           TcConfigMode cfg_mode,
+                           string vtn_name,
+                           MoMgrTables tbl = MAINTBL);
   upll_rc_t DiffConfigDB(upll_keytype_datatype_t dt_cfg1,
                          upll_keytype_datatype_t dt_cfg2,
                          unc_keytype_operation_t op,
@@ -1177,6 +1344,8 @@ class MoMgrImpl : public MoManager {
                          ConfigKeyVal *&nreq,
                          DalCursor **cfg1_cursor,
                          DalDmlIntf *dmi,
+                         TcConfigMode config_mode,
+                         std::string vtn_name,
                          MoMgrTables tbl = MAINTBL);
   upll_rc_t DiffConfigDB(upll_keytype_datatype_t dt_cfg1,
                          upll_keytype_datatype_t dt_cfg2,
@@ -1186,6 +1355,8 @@ class MoMgrImpl : public MoManager {
                          DalCursor **cfg1_cursor,
                          DalDmlIntf *dmi,
                          uint8_t *cntrlr_id,
+                         TcConfigMode config_mode,
+                         std::string vtn_name,
                          MoMgrTables tbl = MAINTBL,
                          bool read_withcs = false,
                          bool auditdiff_with_flag = false);
@@ -1217,9 +1388,9 @@ class MoMgrImpl : public MoManager {
   /**
    * @brief      Method used to Delete the Values in the specified key type.
    *
-   * @param[in]  req                        contains first 8 fields of input request structure
-   * @param[in]  ikey                       key and value structure
-   * @param[in]  dmi                        Pointer to DalDmlIntf Class.
+   * @param[in]  req         contains first 8 fields of input request structure
+   * @param[in]  ikey        key and value structure
+   * @param[in]  dmi         Pointer to DalDmlIntf Class.
    *
    * @retval     UPLL_RC_SUCCESS            Successfull completion.
    * @retval     UPLL_RC_ERR_GENERIC        Failure case.
@@ -1233,9 +1404,9 @@ class MoMgrImpl : public MoManager {
   /**
    * @brief      Method used to Update the Values in the specified key type.
    *
-   * @param[in]  req                        contains first 8 fields of input request structure
-   * @param[in]  ikey                       key and value structure
-   * @param[in]  dmi                        Pointer to DalDmlIntf Class.
+   * @param[in]  req         contains first 8 fields of input request structure
+   * @param[in]  ikey        key and value structure
+   * @param[in]  dmi         Pointer to DalDmlIntf Class.
    *
    * @retval     UPLL_RC_SUCCESS            Successfull completion.
    * @retval     UPLL_RC_ERR_GENERIC        Failure case.
@@ -1248,10 +1419,10 @@ class MoMgrImpl : public MoManager {
    * @brief     Method used to Rename the VTN and Vnodes during IMPORT operation
    *            when conflicting with corresponding objects in the UNC.
    *
-   * @param[in]  req                         contains first 8 fields of input request structure
-   * @param[in]  key                         key and value structure
-   * @param[in]  dmi                         Pointer to DalDmlIntf Class.
-   * @param[in]  ctrlr_id                    Controller Id.
+   * @param[in]  req       contains first 8 fields of input request structure
+   * @param[in]  key       key and value structure
+   * @param[in]  dmi       Pointer to DalDmlIntf Class.
+   * @param[in]  ctrlr_id  Controller Id.
    *
    * @retval     UPLL_RC_SUCCESS             Successfull completion.
    * @retval     UPLL_RC_ERR_INSTANCE_EXISTS Failure case.
@@ -1262,7 +1433,8 @@ class MoMgrImpl : public MoManager {
                              DalDmlIntf *dmi,
                              const char *ctrlr_id);
 
-  /* @brief         Read the configuration either from RDBMS and/or from the controller
+  /* @brief         Read the configuration either from RDBMS and/or
+   *                from the controller
    *
    * @param[in]     req    Pointer to IpcResResHeader
    * @param[in/out] ikey   Pointer to the ConfigKeyVal Structure
@@ -1279,9 +1451,11 @@ class MoMgrImpl : public MoManager {
                            ConfigKeyVal *ikey,
                            DalDmlIntf *dmi);
 
-  /* @brief         READ_SIBLING_BEGIN: Gets the first MO from the sibling group under the parent
+  /* @brief         READ_SIBLING_BEGIN: Gets the first MO from the
+   *                sibling group under the parent
    *                specified in the key from the specified UNC database
-   *                READ_SIBLING: Gets the next MO from the sibling group under the parent
+   *                READ_SIBLING: Gets the next MO from the sibling group
+   *                under the parent
    *                specified in the key from the specified UNC database
    *
    * @param[in]     req    Pointer to IpcResResHeader
@@ -1354,52 +1528,64 @@ class MoMgrImpl : public MoManager {
   virtual upll_rc_t ControlMo(IpcReqRespHeader *header,
                               ConfigKeyVal *ikey,
                               DalDmlIntf *dmi) {
-  return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT;
+    return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT;
   }
 
   virtual upll_rc_t TxVote(unc_key_type_t keytype,
                            DalDmlIntf *dmi,
+                           TcConfigMode config_mode,
+                           std::string vtn_name,
                            ConfigKeyVal **err_ckv);
   virtual upll_rc_t TxVoteCtrlrStatus(unc_key_type_t keytype,
                                       list<CtrlrVoteStatus*> *ctrlr_vote_status,
-                                      DalDmlIntf *dmi);
+                                      DalDmlIntf *dmi,
+                                      TcConfigMode config_mode,
+                                      std::string vtn_name);
 
   /**
-   * @brief  Update controller with the new created / updated / deleted configuration
-   *                   between the Candidate and the Running configuration
+   * @brief  Update controller with the new created / updated / deleted
+   * configuration between the Candidate and the Running configuration
    *
-   * @param[in]  keytype                        Specifies the keytype
-   * @param[in]  session_id                     Ipc client session id
-   * @param[in]  config_id                      Ipc request header config id
-   * @param[in]  phase                          Specifies the operation
-   * @param[in]  dmi                            Pointer to DalDmlIntf class.
-   * @param[out] affected_ctrlr_set             Returns the list of controller to
-   *                                             which the command has been delivered.
+   * @param[in]  keytype                  Specifies the keytype
+   * @param[in]  session_id               Ipc client session id
+   * @param[in]  config_id                Ipc request header config id
+   * @param[in]  phase                    Specifies the operation
+   * @param[in]  dmi                      Pointer to DalDmlIntf class.
+   * @param[out] affected_ctrlr_set       Returns the list of controller to
+   *                                      which the command has been delivered.
    *
    * @retval  UPLL_RC_SUCCESS                    Request successfully processed.
    * @retval  UPLL_RC_ERR_GENERIC                Generic error.
    * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource is diconnected.
    * @retval  UPLL_RC_ERR_DB_ACCESS              DBMS access failure.
-   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Instance specified does not exist.
-   * @retval  UPLL_RC_ERR_INSTANCE_EXISTS        Instance specified already exist.
+   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE Instance specified does not exist.
+   * @retval  UPLL_RC_ERR_INSTANCE_EXISTS  Instance specified already exist.
    */
   virtual upll_rc_t TxUpdateController(unc_key_type_t keytype,
                                        uint32_t session_id, uint32_t config_id,
                                        uuc::UpdateCtrlrPhase phase,
                                        set<string> *affected_ctrlr_set,
                                        DalDmlIntf *dmi,
-                                       ConfigKeyVal **err_ckv);
+                                       ConfigKeyVal **err_ckv,
+                                       TxUpdateUtil *tx_util,
+                                       TcConfigMode config_mode,
+                                       std::string vtn_name);
 
   // To clear c_flag and u_flag in candidate tables
   virtual upll_rc_t TxClearCreateUpdateFlag(unc_key_type_t keytype,
                                             upll_keytype_datatype_t cfg_type,
-                                            DalDmlIntf *dmi);
-        
+                                            DalDmlIntf *dmi,
+                                            TcConfigMode config_mode,
+                                            std::string vtn_name);
+
   virtual upll_rc_t TxCopyCandidateToRunning(
       unc_key_type_t keytype,
       list<CtrlrCommitStatus*> *ctrlr_commit_status,
-      DalDmlIntf *dmi);
-  virtual upll_rc_t TxEnd(unc_key_type_t keytype, DalDmlIntf *dmi);
+      DalDmlIntf *dmi, TcConfigMode config_mode,
+      std::string vtn_name);
+
+  virtual upll_rc_t TxEnd(unc_key_type_t keytype, DalDmlIntf *dmi,
+                          TcConfigMode config_mode, std::string vtn_name);
 
   virtual upll_rc_t MergeValidate(unc_key_type_t keytype,
                                   const char *ctrlr_id,
@@ -1419,10 +1605,11 @@ class MoMgrImpl : public MoManager {
    * @retval     UPLL_RC_SUCCESS             Successfull completion.
    * @retval     UPLL_RC_ERR_GENERIC         Failure case.
    */
-  virtual upll_rc_t MergeImportToCandidate(unc_key_type_t keytype,
-                                           const char *ctrlr_id,
-                                           DalDmlIntf *dmi,
-                                           upll_import_type = UPLL_IMPORT_TYPE_FULL);
+  virtual upll_rc_t MergeImportToCandidate(
+      unc_key_type_t keytype,
+      const char *ctrlr_id,
+      DalDmlIntf *dmi,
+      upll_import_type = UPLL_IMPORT_TYPE_FULL);
 
   /**
    * @brief     Method used to Clear the tables in the IMPORT Datatbase.
@@ -1449,21 +1636,22 @@ class MoMgrImpl : public MoManager {
    * @param[in]  phase       Specifies the Controller name.
    * @param[in]  dmi         Pointer to DalDmlIntf class.
    *
-   * @retval  UPLL_RC_SUCCESS                    Request successfully processed.
-   * @retval  UPLL_RC_ERR_GENERIC                Generic error.
+   * @retval  UPLL_RC_SUCCESS                Request successfully processed.
+   * @retval  UPLL_RC_ERR_GENERIC            Generic error.
    * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource is diconnected.
-   * @retval  UPLL_RC_ERR_DB_ACCESS              DBMS access failure.
-   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Instance specified does not exist.
-   * @retval  UPLL_RC_ERR_INSTANCE_EXISTS        Instance specified already exist.
+   * @retval  UPLL_RC_ERR_DB_ACCESS          DBMS access failure.
+   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE   Instance specified does not exist.
+   * @retval  UPLL_RC_ERR_INSTANCE_EXISTS    Instance specified already exist.
    */
-  virtual upll_rc_t AuditUpdateController(unc_key_type_t keytype,
-                                          const char *ctrlr_id,
-                                          uint32_t session_id,
-                                          uint32_t config_id,
-                                          uuc::UpdateCtrlrPhase phase,
-                                          DalDmlIntf *dmi,
-                                          ConfigKeyVal **err_ckv,
-                                          KTxCtrlrAffectedState *ctrlr_affected);
+  virtual upll_rc_t AuditUpdateController(
+      unc_key_type_t keytype,
+      const char *ctrlr_id,
+      uint32_t session_id,
+      uint32_t config_id,
+      uuc::UpdateCtrlrPhase phase,
+      DalDmlIntf *dmi,
+      ConfigKeyVal **err_ckv,
+      KTxCtrlrAffectedState *ctrlr_affected);
   /**
    * @brief  updates the config status of errored objects returned by the
    *         controller as invalid.
@@ -1474,12 +1662,12 @@ class MoMgrImpl : public MoManager {
    *       if vote failed
    * @param[in]  dmi          Pointer to DalDmlIntf class.
    *
-   * @retval  UPLL_RC_SUCCESS                    Request successfully processed.
-   * @retval  UPLL_RC_ERR_GENERIC                Generic error.
+   * @retval  UPLL_RC_SUCCESS           Request successfully processed.
+   * @retval  UPLL_RC_ERR_GENERIC       Generic error.
    * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource is diconnected.
-   * @retval  UPLL_RC_ERR_DB_ACCESS              DBMS access failure.
-   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Instance specified does not exist.
-   * @retval  UPLL_RC_ERR_INSTANCE_EXISTS        Instance specified already exist.
+   * @retval  UPLL_RC_ERR_DB_ACCESS     DBMS access failure.
+   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE Instance specified does not exist.
+   * @retval  UPLL_RC_ERR_INSTANCE_EXISTS  Instance specified already exist.
    */
   virtual upll_rc_t AuditVoteCtrlrStatus(unc_key_type_t keytype,
                                          CtrlrVoteStatus *vote_status,
@@ -1496,12 +1684,12 @@ class MoMgrImpl : public MoManager {
    *             if commit failed
    * @param[in]  dmi            Pointer to DalDmlIntf class.
    *
-   * @retval  UPLL_RC_SUCCESS                    Request successfully processed.
-   * @retval  UPLL_RC_ERR_GENERIC                Generic error.
+   * @retval  UPLL_RC_SUCCESS              Request successfully processed.
+   * @retval  UPLL_RC_ERR_GENERIC          Generic error.
    * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource is diconnected.
-   * @retval  UPLL_RC_ERR_DB_ACCESS              DBMS access failure.
-   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Instance specified does not exist.
-   * @retval  UPLL_RC_ERR_INSTANCE_EXISTS        Instance specified already exist.
+   * @retval  UPLL_RC_ERR_DB_ACCESS        DBMS access failure.
+   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE Instance specified does not exist.
+   * @retval  UPLL_RC_ERR_INSTANCE_EXISTS  Instance specified already exist.
    */
   virtual upll_rc_t AuditCommitCtrlrStatus(unc_key_type_t keytype,
                                            CtrlrCommitStatus *commit_status,
@@ -1513,12 +1701,12 @@ class MoMgrImpl : public MoManager {
    * @param[in]  ctrlr_id  specifies the controller name.
    * @param[in]  dmi       Pointer to DalDmlIntf class.
    *
-   * @retval  UPLL_RC_SUCCESS                    Request successfully processed.
-   * @retval  UPLL_RC_ERR_GENERIC                Generic error.
+   * @retval  UPLL_RC_SUCCESS              Request successfully processed.
+   * @retval  UPLL_RC_ERR_GENERIC          Generic error.
    * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource is diconnected.
-   * @retval  UPLL_RC_ERR_DB_ACCESS              DBMS access failure.
-   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Instance specified does not exist.
-   * @retval  UPLL_RC_ERR_INSTANCE_EXISTS        Instance specified already exist.
+   * @retval  UPLL_RC_ERR_DB_ACCESS        DBMS access failure.
+   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE Instance specified does not exist.
+   * @retval  UPLL_RC_ERR_INSTANCE_EXISTS  Instance specified already exist.
    */
   virtual upll_rc_t AuditEnd(unc_key_type_t keytype,
                              const char *ctrlr_id,
@@ -1527,7 +1715,9 @@ class MoMgrImpl : public MoManager {
                                          DalDmlIntf *dmi);
   virtual upll_rc_t ClearConfiguration(unc_key_type_t kt,
                                   DalDmlIntf *dmi,
-                                  upll_keytype_datatype_t cfg_type);
+                                  upll_keytype_datatype_t cfg_type,
+                                  TcConfigMode config_mode,
+                                  std::string vtn_name);
   virtual upll_rc_t ClearStartup(unc_key_type_t kt,
                                  DalDmlIntf *dmi);
   /* updates both candidate and running from startup */
@@ -1544,10 +1734,19 @@ class MoMgrImpl : public MoManager {
                                      upll_keytype_datatype_t cfg_type);
   virtual upll_rc_t CopyRunningToCandidate(unc_key_type_t kt,
                                            DalDmlIntf *dmi,
-                                           unc_keytype_operation_t op);
-  virtual upll_rc_t IsCandidateDirty(unc_key_type_t kt,
-                                     bool *dirty,
-                                     DalDmlIntf *dmi);
+                                           unc_keytype_operation_t op,
+                                           TcConfigMode config_mode,
+                                           std::string vtn_name);
+  virtual upll_rc_t IsCandidateDirtyInGlobal(
+      unc_key_type_t kt, bool *dirty, DalDmlIntf *dmi,
+      bool shallow_check);
+
+  virtual upll_rc_t IsCandidateDirtyShallowInPcm(unc_key_type_t kt,
+                                          TcConfigMode config_mode,
+                                          std::string vtn_name,
+                                          bool *dirty,
+                                          DalDmlIntf *dmi);
+  virtual upll_rc_t ClearVirtualKtDirtyInGlobal(DalDmlIntf *dmi);
 
   /*
    *  Rename
@@ -1555,7 +1754,8 @@ class MoMgrImpl : public MoManager {
 
   /**
    * @brief     Method used in Rename Operation.
-   *            This function collects the Unc new name, Unc old name and Ctrlr name
+   *            This function collects the Unc new name,
+   *            Unc old name and Ctrlr name
    *            informations and creats the configkeyval.
    *
    * @param[in]  ikey                        key and value structure.
@@ -1604,8 +1804,8 @@ class MoMgrImpl : public MoManager {
                                   bool  &no_rename);
 
   /**
-   * @brief     Method used in rename opertaion while update the new name into the tables
-   *            to Gets the bindinfo detail for the specifed key type.
+   * @brief     Method used in rename opertaion while update the new name into
+   *            the tables to Gets the bindinfo detail for the specifed key type.
    *
    * @param[in]  key_type                    unc key type.
    * @param[out] binfo                       Bindinfo details.
@@ -1697,6 +1897,7 @@ class MoMgrImpl : public MoManager {
    * @brief     Method used in Delete opertaion. Its semantic checks
    *            for the specifed key type.
    *
+   * @param[in]  req                         Pointer to IpcResResHeader
    * @param[in]  ikey                        key and value structure.
    * @param[in]  dt_type                     key  type.
    * @param[in]  dmi                         Pointer to DalDmlIntf Class.
@@ -1705,10 +1906,9 @@ class MoMgrImpl : public MoManager {
    * @retval     UPLL_RC_ERR_GENERIC         Failure case.
    * @retval     UPLL_RC_ERR_CFG_SEMANTIC    Failue dueto Semantic.
    */
-  virtual upll_rc_t IsReferenced(ConfigKeyVal *ikey,
-                                 upll_keytype_datatype_t dt_type,
+  virtual upll_rc_t IsReferenced(IpcReqRespHeader *req,
+                                 ConfigKeyVal *ikey,
                                  DalDmlIntf *dmi) = 0;
-
   /*
    * @brief     Method used to checks the Vnode presents in the
    *            vlink table.
@@ -1734,6 +1934,7 @@ class MoMgrImpl : public MoManager {
    * @param[in]  ikey                         key and value structure.
    * @param[in]  dt_type                      key  type.
    * @param[in]  dmi                          Pointer to DalDmlIntf Class.
+   * @param[in]  vexternal_kt                 ikey is vexternal disguised in VBR kt
    *
    * @retval     UPLL_RC_SUCCESS              Vnode not exists in the table.
    * @retval     UPLL_RC_ERR_GENERIC          Failure case.
@@ -1742,7 +1943,8 @@ class MoMgrImpl : public MoManager {
    */
   upll_rc_t VnodeChecks(ConfigKeyVal *ikey,
                         upll_keytype_datatype_t dt_type,
-                        DalDmlIntf *dmi);
+                        DalDmlIntf *dmi,
+                        bool vexternal_kt);
   /*
    * @brief     Method used to checks the Vnode name is Uniq or not
    *            in all vnodes main table during partial Import.
@@ -1750,7 +1952,7 @@ class MoMgrImpl : public MoManager {
    * @param[in]  ikey                         key and value structure.
    * @param[in]  dt_type                      key  type.
    * @param[in]  dmi                          Pointer to DalDmlIntf Class.
-   * @param[in]  ctrlr_id                     Specifies the controller name. 
+   * @param[in]  ctrlr_id                     Specifies the controller name.
    *
    * @retval     UPLL_RC_SUCCESS              Vnode not exists in the table.
    * @retval     UPLL_RC_ERR_GENERIC          Failure case.
@@ -1760,7 +1962,7 @@ class MoMgrImpl : public MoManager {
   upll_rc_t PartialImport_VnodeChecks(ConfigKeyVal *ikey,
                                  upll_keytype_datatype_t dt_type,
                                  const char *ctrlr_id,
-                                 DalDmlIntf *dmi); 
+                                 DalDmlIntf *dmi);
   /**
    * @brief  Creates Vnode MoMgr specific key
    *
@@ -1830,11 +2032,12 @@ class MoMgrImpl : public MoManager {
    *
    */
   virtual upll_rc_t UpdateControllerTableForVtn(uint8_t *vtn_name,
-                                        controller_domain *ctrlr_dom,
-                                        unc_keytype_operation_t op,
-                                        upll_keytype_datatype_t dt_type,
-                                        DalDmlIntf *dmi,
-                                        uint8_t flag) {
+                                                controller_domain *ctrlr_dom,
+                                                unc_keytype_operation_t op,
+                                                upll_keytype_datatype_t dt_type,
+                                                DalDmlIntf *dmi,
+                                                uint8_t flag,
+                                                TcConfigMode config_mode) {
     UPLL_FUNC_TRACE
     return UPLL_RC_ERR_GENERIC;
   }
@@ -1843,7 +2046,9 @@ class MoMgrImpl : public MoManager {
                                                upll_keytype_datatype_t dt_type,
                                                DalDmlIntf *dmi,
                                                InterfacePortMapInfo flag,
-                                               unc_keytype_operation_t oper) {
+                                               unc_keytype_operation_t oper,
+                                               TcConfigMode config_mode,
+                                               string vtn_name) {
   return UPLL_RC_ERR_GENERIC;
 }
 
@@ -1886,7 +2091,9 @@ class MoMgrImpl : public MoManager {
   };
   virtual upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
                                       upll_keytype_datatype_t dt_type,
-                                      DalDmlIntf *dmi) {
+                                      DalDmlIntf *dmi,
+                                      TcConfigMode config_mode,
+                                      string vtn_name) {
     return UPLL_RC_SUCCESS;
   }
   virtual upll_rc_t SetValidAudit(ConfigKeyVal *&ikey) {
@@ -1941,10 +2148,14 @@ class MoMgrImpl : public MoManager {
                              upll_keytype_datatype_t dt_type,
                              MoMgrTables tbl = MAINTBL) = 0;
 
-  /* VlanmapOnBoundary: Handle all boundary vlanmap request */
-  virtual upll_rc_t BoundaryVlanmapReq(IpcReqRespHeader *req,
-                                 ConfigKeyVal *ikey, ConfigKeyVal *db_vlink,
-                                 ConfigKeyVal *vlanmap_ckv, DalDmlIntf *dmi) {
+  // Handle all boundary vlanmap request
+  // Handle all boundary portmap request
+  virtual upll_rc_t BoundaryMapReq(IpcReqRespHeader *req,
+                                       ConfigKeyVal *ikey,
+                                       ConfigKeyVal *db_vlink,
+                                       ConfigKeyVal *vlanmap_ckv,
+                                       ConfigKeyVal *uppl_bdry,
+                                       DalDmlIntf *dmi) {
     return UPLL_RC_SUCCESS;
   }
 
@@ -1962,61 +2173,64 @@ class MoMgrImpl : public MoManager {
                                 uint8_t * vnode_name,
                                 uint8_t * if_name,
                                 ConfigKeyVal *ffe_key);
-  /* @brief      Returns portmap information if portmap is valid 
-   *             Else returns NULL for portmap 
-   *              
+  /* @brief      Returns portmap information if portmap is valid
+   *             Else returns NULL for portmap
+   *
    * @param[in]   ikey     Pointer to ConfigKeyVal
-   * @param[out]  valid_pm portmap is valid 
+   * @param[out]  valid_pm portmap is valid
    * @param[out]  pm       pointer to portmap informtation if valid_pm
    *
    * @retval  UPLL_RC_SUCCESS      Completed successfully.
    * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
-   * 
-   **/ 
-   virtual upll_rc_t GetPortMap(ConfigKeyVal *ikey, uint8_t &valid_pm,
-                                val_port_map_t *&pm, uint8_t &valid_admin,
-                                uint8_t &admin_status) {
-      return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT;
-   }
-template<typename T3>
-upll_rc_t IsLogicalPortAndVlanIdInUse(ConfigKeyVal *ckv,
-                                      DalDmlIntf *dmi,
-                                      IpcReqRespHeader *req,
-                                      bool &match);
+   *
+   **/
+  virtual upll_rc_t GetPortMap(ConfigKeyVal *ikey,
+                               uint8_t &valid_pm, val_port_map_t *&pm,
+                               uint8_t &valid_admin, uint8_t &admin_status) {
+    return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT;
+  }
 
-virtual upll_rc_t SetPortmapConfiguration(ConfigKeyVal *ikey,
-                                          upll_keytype_datatype_t dt_type,
-                                          DalDmlIntf *dmi,
-                                          InterfacePortMapInfo flag) {
-  return UPLL_RC_ERR_GENERIC;
-}
+  template<typename T3>
+  upll_rc_t IsLogicalPortAndVlanIdInUse(ConfigKeyVal *ckv,
+                                        DalDmlIntf *dmi,
+                                        IpcReqRespHeader *req,
+                                        bool &match);
+
+  virtual upll_rc_t SetPortmapConfiguration(ConfigKeyVal *ikey,
+                                            upll_keytype_datatype_t dt_type,
+                                            DalDmlIntf *dmi,
+                                            InterfacePortMapInfo flag,
+                                            TcConfigMode config_mode,
+                                            string vtn_name) {
+    return UPLL_RC_ERR_GENERIC;
+  }
 
   virtual  upll_rc_t ValidateNWM(ConfigKeyVal *ikey,
                                  upll_keytype_datatype_t dt_type,
                                  DalDmlIntf *dmi);
-   virtual upll_rc_t  SetRedirectNodeAndPortForRead
-                                   ( ConfigKeyVal *ikey ,
-                                     controller_domain  ctrlr_dom,
-                                     val_flowfilter_entry* val_entry, 
-                                     DalDmlIntf *dmi);
- 
+  virtual upll_rc_t  SetRedirectNodeAndPortForRead
+                                     (ConfigKeyVal *ikey ,
+                                      controller_domain  ctrlr_dom,
+                                      val_flowfilter_entry* val_entry,
+                                      DalDmlIntf *dmi);
+
   virtual upll_rc_t GetRenamedUncRedirectedNode(
                                       val_flowfilter_entry* val_entry,
                                       DalDmlIntf *dmi ,
-                                      uint8_t* ctrlr_id) ;
+                                      uint8_t* ctrlr_id);
   virtual upll_rc_t PerformSemanticCheckForNWM(
                                       ConfigKeyVal *ikey,
                                       DalDmlIntf *dmi ,
-                                      upll_keytype_datatype_t dt_type); 
+                                      upll_keytype_datatype_t dt_type);
   virtual upll_rc_t  SetVtnNameInRedirectNodeAndPortForRead(
                                       ConfigKeyVal *ck_main ,
                                       uint8_t* vnode_vtn_name);
-   virtual upll_rc_t VerifyRedirectDestination(ConfigKeyVal *ikey,
-                                        DalDmlIntf *dmi,
-                                        upll_keytype_datatype_t dt_type) {
-  return UPLL_RC_ERR_GENERIC;
-   }
-   virtual upll_rc_t GetControllerDomainSpan(ConfigKeyVal *ikey,
+  virtual upll_rc_t VerifyRedirectDestination(ConfigKeyVal *ikey,
+                                      DalDmlIntf *dmi,
+                                      upll_keytype_datatype_t dt_type) {
+    return UPLL_RC_ERR_GENERIC;
+  }
+  virtual upll_rc_t GetControllerDomainSpan(ConfigKeyVal *ikey,
                                 upll_keytype_datatype_t dt_type,
                                 DalDmlIntf *dmi) {
     return UPLL_RC_ERR_GENERIC;
@@ -2026,12 +2240,15 @@ virtual upll_rc_t SetPortmapConfiguration(ConfigKeyVal *ikey,
     return UPLL_RC_ERR_GENERIC;
   }
   upll_rc_t GlobalTxUpdateController(unc_key_type_t keytype,
-    uint32_t session_id,
-    uint32_t config_id,
-    uuc::UpdateCtrlrPhase phase,
-    set<string> *affected_ctrlr_set,
-    DalDmlIntf *dmi,
-    ConfigKeyVal **err_ckv);
+                                     uint32_t session_id,
+                                     uint32_t config_id,
+                                     uuc::UpdateCtrlrPhase phase,
+                                     set<string> *affected_ctrlr_set,
+                                     DalDmlIntf *dmi,
+                                     ConfigKeyVal **err_ckv,
+                                     TxUpdateUtil *tx_util,
+                                     TcConfigMode config_mode,
+                                     std::string vtn_name);
 
 
   virtual upll_rc_t GetDomainsForController(
@@ -2052,12 +2269,12 @@ virtual upll_rc_t SetPortmapConfiguration(ConfigKeyVal *ikey,
       KTxCtrlrAffectedState *ctrlr_affected);
 
  /**
-   * @brief   Remove the controller specific information from 
+   * @brief   Remove the controller specific information from
    *          candidate configuration during partial import
-   *        
+   *
    *
    * @param[in]  keytype    keytype
-   * @param[in]  ctrlr_id   pointer to the controller name   
+   * @param[in]  ctrlr_id   pointer to the controller name
    * @param[in]  dmi        DalDmlIntf pointer
    *
    * @retval UPLL_RC_SUCCESS             Successful
@@ -2068,12 +2285,12 @@ virtual upll_rc_t SetPortmapConfiguration(ConfigKeyVal *ikey,
                                         DalDmlIntf *dmi);
 
   /**
-   * @brief   Partiam import merge validate function for the  
+   * @brief   Partiam import merge validate function for the
    *          key types
-   *        
+   *
    *
    * @param[in]  keytype        keytype
-   * @param[in]  ctrlr_id       pointer to the controller name   
+   * @param[in]  ctrlr_id       pointer to the controller name
    * @param[out] conflict_ckv   Conflict configkeyval
    * @param[in]  dmi            DalDmlIntf pointer
    *
@@ -2086,8 +2303,8 @@ virtual upll_rc_t SetPortmapConfiguration(ConfigKeyVal *ikey,
                                   const char *ctrlr_id,
                                   ConfigKeyVal *conflict_ckv,
                                   DalDmlIntf *dmi) {
-   UPLL_FUNC_TRACE;
-   return UPLL_RC_ERR_NO_SUCH_OPERATION;
+    UPLL_FUNC_TRACE;
+    return UPLL_RC_ERR_NO_SUCH_OPERATION;
   }
   /**
    * @brief   This method is used only by vNode and vLink keytypes
@@ -2125,11 +2342,13 @@ virtual upll_rc_t SetPortmapConfiguration(ConfigKeyVal *ikey,
   * @retval UPLL_RC_ERR_GENERIC           falied to update the VbrIf
   * @retval UPLL_RC_ERR_DB_DISCONNECT     Databse disconnect error
   */
- upll_rc_t GenerateAutoName(ConfigKeyVal *&ikey,
+  upll_rc_t GenerateAutoName(ConfigKeyVal *&ikey,
                              upll_keytype_datatype_t dt_type,
                              controller_domain_t *ctrlr_dom,
                              DalDmlIntf *dmi,
-                             bool *auto_rename);
+                             bool *auto_rename,
+                             TcConfigMode config_mode,
+                             string vtn_id);
  /**
   * @brief  Get the specific vtn_name and vnode_name from ConfigKeyVal
   *
@@ -2140,16 +2359,16 @@ virtual upll_rc_t SetPortmapConfiguration(ConfigKeyVal *ikey,
   * @retval UPLL_RC_SUCCESS      Successful
   * @retval UPLL_RC_ERR_GENERIC  failed to retrieve the values
   */
- virtual upll_rc_t GetVnodeName(ConfigKeyVal *ikey,
+  virtual upll_rc_t GetVnodeName(ConfigKeyVal *ikey,
                                uint8_t *&vtn_name,
                                uint8_t *&vnode_name) {
-   UPLL_FUNC_TRACE;
-   return UPLL_RC_ERR_GENERIC;
- };
+    UPLL_FUNC_TRACE;
+    return UPLL_RC_ERR_GENERIC;
+  };
 
  /**
   * @brief  This method is deside audto rename requried for vNode types
-  *  for other keytypes just convert PFC name to UNC name in case of renamed 
+  *  for other keytypes just convert PFC name to UNC name in case of renamed
   *  in candidate configuration
   *
   * @param[in]  ikey         ConfigKeyVal pointer
@@ -2196,7 +2415,21 @@ virtual upll_rc_t SetPortmapConfiguration(ConfigKeyVal *ikey,
   * @retval UPLL_RC_ERR_GENERIC  failed to retrieve the values
   */
   virtual upll_rc_t CopyRenameTables(const char *ctrlr_id,
-                                     DalDmlIntf *dom) ;
+                                     upll_keytype_datatype_t dt_type,
+                                     DalDmlIntf *dom);
+ /**
+  * @brief  This method is used to Copy the rename tables
+  * for candidate configuration into import configuration
+  *
+  *
+  * @param[in]  ctrlr_id     Pointer to the controller name
+  * @param[in]  dmi          DalDmlIntf pointer
+  *
+  * @retval UPLL_RC_SUCCESS      Successful
+  * @retval UPLL_RC_ERR_GENERIC  failed to retrieve the values
+  */
+  virtual upll_rc_t CopyVtnUnifiedTable(upll_keytype_datatype_t dt_type,
+                                     DalDmlIntf *dom);
  /**
   * @brief  This method is used to Remove the delete
   * configuration information from import rename table
@@ -2255,17 +2488,85 @@ virtual upll_rc_t SetPortmapConfiguration(ConfigKeyVal *ikey,
                                                const char *ctrlr_id,
                                                ConfigKeyVal *conflict_ckv,
                                                DalDmlIntf *dmi);
+  /**
+   * @Brief This API is used to do the semantic check with respect to
+   * configuration mode specific during commit
+   *
+   * @param[in]  ikey                          Pointer to ConfigKeyVal Class
+   * @param[in]  dmi                           Pointer to DalDmlIntf Class
+   * @param[in]  session_id                    Ipc client session id
+   * @param[in]  config_id                     Ipc request header config id
+   * @param[in]  operation                     Describes the Type of Opeartion
+   * @param[in]  keytype                       Specifies the keytype
+   *
+   * @retval    UPLL_RC_SUCCESS                Successful completion
+   * @retval    UPLL_RC_ERR_GENERIC            Generic Error code
+   * @retval    UPLL_RC_ERR_NO_SUCH_INSTANCE   No Record in DB
+   * @retval    UPLL_RC_ERR_INSTANCE_EXISTS    Record exists in DB
+   */
+
+  upll_rc_t PerformModeSpecificSemanticCheck(ConfigKeyVal *ikey,
+                                             DalDmlIntf *dmi,
+                                             uint32_t session_id,
+                                             uint32_t config_id,
+                                             unc_keytype_operation_t operation,
+                                             unc_key_type_t keytype,
+                                             TcConfigMode config_mode,
+                                             string vtn_name);
+
+
+  /**CtrlrTypeAndDomainCheck
+   * Verifies the controller presence in the candidate or running database
+   *
+   * @param[in] ikey - ConfigKeyVal pointer
+   * @param[in] req - Describes RequestResponderHeaderClass
+   *
+   * @retval  UPLL_RC_SUCCESS      Successfull completion.
+   * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error. 
+   */
+  virtual upll_rc_t CtrlrTypeAndDomainCheck(ConfigKeyVal *ikey,
+                                            IpcReqRespHeader *req) {
+    return UPLL_RC_ERR_GENERIC;
+  }
+  upll_rc_t CopyVTunnelFromRunningToCandidate(
+                          unc_keytype_operation_t op,
+                          DalDmlIntf* dmi,
+                          TcConfigMode config_mode,
+                          std::string cfg_vtn_name);
+  /**
+   * @Brief This API is used to check the policer name availability
+   * in policingprofiletbl in candidate or running DB
+   *
+   * @param[in] ikey                          Pointer to ConfigKeyVal Class.
+   * @param[in] dt_type                       Configuration information.
+   * @param[in] dmi                           Pointer to DalDmlIntf Class.
+   * @param[in] op                            Describes the Type of Opeartion.
+   *
+   * @retval    UPLL_RC_SUCCESS               Successful completion.
+   * @retval    UPLL_RC_ERR_GENERIC           Generic Error code.
+   * @retval    UPLL_RC_ERR_NO_SUCH_INSTANCE  No Record in DB.
+   * @retval    UPLL_RC_ERR_INSTANCE_EXISTS   Record exists in DB.
+   */
+
+  virtual upll_rc_t IsPolicyProfileReferenced(ConfigKeyVal *ikey,
+                                              upll_keytype_datatype_t dt_type,
+                                              DalDmlIntf* dmi,
+                                              unc_keytype_operation_t op) {
+    return UPLL_RC_ERR_GENERIC;
+  }
 
   virtual upll_rc_t CopyKeyToVal(ConfigKeyVal *ikey,
                                  ConfigKeyVal *&okey) {
     return UPLL_RC_ERR_GENERIC;
   }
-  virtual upll_rc_t ValidateVtnRename(ConfigKeyVal *ikey, ConfigKeyVal *tkey, DalDmlIntf *dmi) {
+  virtual upll_rc_t ValidateVtnRename(ConfigKeyVal *ikey,
+                                      ConfigKeyVal *tkey, DalDmlIntf *dmi) {
     return UPLL_RC_ERR_GENERIC;
   }
 
   void PrintMap();
   static std::map<std::string, std::string>auto_rename_;
+  static std::map<std::string, std::string>audit_auto_rename_;
 
   virtual upll_rc_t PurgeCandidate(unc_key_type_t keytype,
                                      const char *ctrlr_id,
@@ -2275,15 +2576,166 @@ virtual upll_rc_t SetPortmapConfiguration(ConfigKeyVal *ikey,
     upll_keytype_datatype_t dt_type, DalDmlIntf *dmi, uint8_t *ctrlr_id);
 
   upll_rc_t GetRenamedUncKeyWithRedirection(unc_key_type_t kt_type,
-    const char *ctrlr_id, DalDmlIntf *dmi );
+                                            upll_keytype_datatype_t dt_type,
+                                            const char *ctrlr_id,
+                                            DalDmlIntf *dmi);
 
   virtual unc_key_type_t GetVlinkVnodeIfKeyType(ConfigKeyVal *ck_vlink,
                                               int pos ) {
   UPLL_FUNC_TRACE;
   return UNC_KT_ROOT;
 }
-  
+  upll_rc_t ResetPortMapVlinkFlag(ConfigKeyVal *ikey,
+                                  upll_keytype_datatype_t dt_type,
+                                  DalDmlIntf *dmi);
+  template<typename T1>
+  void CheckOperStatus(uint8_t *vtn_name, ConfigVal *ck_val,
+                        unc_key_type_t kt_type,
+                       controller_domain ctrlr_dom);
 
+upll_rc_t GetFLPPCountQuery(ConfigKeyVal *ikey,
+                            unc_key_type_t deletedkt,
+                            string &query_string);
+  upll_rc_t GetConfigModeInfo(IpcReqRespHeader *req,
+                              TcConfigMode &config_mode,
+                              string &vtn_name);
+
+  virtual upll_rc_t InstanceExistsInScratchTbl(
+      ConfigKeyVal *ikey, TcConfigMode config_mode, string vtn_name,
+      DalDmlIntf *dmi) {
+    return UPLL_RC_SUCCESS;
+  }
+
+  virtual upll_rc_t ComputeCtrlrTblRefCountFromScratchTbl(
+      ConfigKeyVal *ikey,
+      DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
+      TcConfigMode config_mode, string vtn_name) {
+    return UPLL_RC_SUCCESS;
+  }
+
+  virtual upll_rc_t ClearScratchTbl(
+      TcConfigMode config_mode, string vtn_name,
+      DalDmlIntf *dmi, bool is_abort = false) {
+    return UPLL_RC_ERR_GENERIC;
+  }
+  static inline bool IsEqual(const key_vnode_t &keyvbr1,
+                             const key_vnode_t &keyvbr2) {
+    UPLL_FUNC_TRACE;
+    if (0 != strcmp((const char *)keyvbr1.vtn_key.vtn_name,
+                    (const char *)keyvbr2.vtn_key.vtn_name)) {
+      return false;
+    }
+    if (0 != strcmp((const char *)keyvbr1.vnode_name,
+                    (const char *)keyvbr2.vnode_name)) {
+      return false;
+    }
+    return true;
+  }
+
+  static inline bool IsEqual(const key_vnode_if_t &keyvbrif1,
+                             const key_vnode_if_t &keyvbrif2) {
+    UPLL_FUNC_TRACE;
+    if (IsEqual(keyvbrif1.vnode_key, keyvbrif2.vnode_key)) {
+      if (0 != strcmp((const char *)keyvbrif1.vnode_if_name,
+                      (const char *)keyvbrif2.vnode_if_name)) {
+        return false;
+      }
+    } else {
+      return false;
+    }
+    return true;
+  }
+
+  // convert functions
+  virtual upll_rc_t ConvertVbr(DalDmlIntf *dmi, IpcReqRespHeader *req,
+                         ConfigKeyVal *ikey, TcConfigMode config_mode,
+                         string vtn_name,  unc_keytype_operation_t op) {
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  virtual upll_rc_t ConvertVbrIf(DalDmlIntf *dmi, bool match_ctrlr_dom,
+                                ConfigKeyVal *ikey, TcConfigMode config_mode,
+                                string vtn_name, unc_keytype_operation_t op) {
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  virtual upll_rc_t ConvertVtunnelIf(ConfigKeyVal *ikey,
+                          unc_keytype_operation_t op, TcConfigMode config_mode,
+                          string vtn_name,  DalDmlIntf *dmi) {
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  virtual upll_rc_t DeleteVtunnelIf(ConfigKeyVal *ikey,
+                          TcConfigMode config_mode,
+                          string vtn_name,  DalDmlIntf *dmi) {
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+
+  virtual  upll_rc_t ConvertVtunnel(ConfigKeyVal *ikey, uint8_t *un_vbr_name,
+                          unc_keytype_operation_t op, TcConfigMode config_mode,
+                          string vtn_name, DalDmlIntf *dmi) {
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  virtual upll_rc_t ConvertVlink(ConfigKeyVal *ikey, unc_keytype_operation_t op,
+                                 DalDmlIntf *dmi, TcConfigMode config_mode,
+                                 string vtn_name) {
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  virtual upll_rc_t DeleteConvertVlink(ConfigKeyVal *ikey, bool match_ctrlr_dom,
+                                 DalDmlIntf *dmi, TcConfigMode config_mode,
+                                 string vtn_name) {
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+
+  virtual upll_rc_t
+  MergeConvertVbridgeImportToCandidate(const char *ctrlr_name,
+                                       DalDmlIntf *dmi,
+                                       upll_import_type import_type) {
+    return UPLL_RC_SUCCESS;
+  }
+
+
+  virtual upll_rc_t HandleSpineDomainIdChange(
+                        DalDmlIntf *dmi, IpcReqRespHeader *req,
+                        ConfigKeyVal *new_spinedom_ckv,
+                        ConfigKeyVal *old_vtunnel_ckv) {
+    return UPLL_RC_SUCCESS;
+  }
+  static bool import_unified_exists_;
+
+  upll_rc_t TxCopyConvertTblFromCandidateToRunning(
+      unc_keytype_operation_t op, CtrlrCommitStatusList *ctrlr_commit_status,
+      DalDmlIntf* dmi, TcConfigMode config_mode, std::string vtn_name);
+
+  upll_rc_t UpdateUVbrConfigStatusFromVtnGwPort(ConfigKeyVal *ckey,
+      DalDmlIntf* dmi, TcConfigMode config_mode, std::string vtn_name);
+  upll_rc_t GetUniqueVtns(ConfigKeyVal *ikey,
+                          std::set<std::string> *vtn_list,
+                          DalDmlIntf *dmi);
+  upll_rc_t BindInfoForPortEvents(DalBindInfo *dal_bind_info,
+                        ConfigKeyVal *ck_vnif);
+
+  /**
+   * @Brief This const member function is used to get an import mode
+   *        from UpllConfigMgr.
+   *
+   * @param[in]   None
+   * @param[out]  None
+   *
+   * @retval    UncImportMode which can be
+   *                            UNC_IMPORT_ERROR_MODE / UNC_IMPORT_IGNORE_MODE
+   */
+  UncImportMode GetImportErrorBehaviour(void) const {
+    return (uuc::UpllConfigMgr::GetUpllConfigMgr()->GetImportErrorBehaviour());
+  }
+
+  virtual upll_rc_t ValidateUpdateMo(ConfigKeyVal *ikey, ConfigKeyVal *db_ckv) {
+    return UPLL_RC_ERR_GENERIC;
+  }
 };  // class MoMgrImpl
 }  // namespace kt_momgr
 }  // namespace upll
@@ -2305,6 +2757,6 @@ namespace std {
       }
     }
   };
-}
+}  // namespace std
 
-#endif
+#endif  // UNC_UPLL_MOMGR_IMPL_H

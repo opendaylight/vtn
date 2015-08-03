@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2013-2015 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -166,6 +166,19 @@ ipc_struct key_ctr_dataflow {
   key_ctr ctr_key;
   UINT64 flow_id;
 };
+
+##
+## UNC_KT_DATAFLOW_V2 ipc structure
+##
+ipc_struct key_dataflow_v2 {
+  UINT8  controller_name[32];
+};
+
+ipc_struct val_dataflow_v2 {
+  UINT64 flow_id;
+  UINT8  valid[1];
+};
+
 
 ipc_struct key_vtn_dataflow {
   key_vtn  vtn_key;

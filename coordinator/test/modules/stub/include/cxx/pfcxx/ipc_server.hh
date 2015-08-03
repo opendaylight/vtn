@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -112,6 +112,7 @@ class ServerSession {
   int addOutput(val_vtn_t&);
   int addOutput(key_vtn_t&);
   int addOutput(key_dataflow&);
+  int addOutput(key_vtn_dataflow&);
   int addOutput(val_switch_st_detail_t&);
   int addOutput(val_df_data_flow_st_t&);
   int addOutput(key_ctr_dataflow&);
@@ -120,8 +121,10 @@ class ServerSession {
   int addOutput(val_vtnstation_controller_stat&);
   int addOutput(key_vtn_flowfilter&);
   int addOutput(val_flowfilter&);
-
-
+  int addOutput(key_dataflow_v2&);
+  int addOutput(val_dataflow_v2&);
+  int addOutput(val_lm_port_st_neighbor_t&);
+  int addOutput(val_logical_port_boundary&);
   int   getArgument(uint32_t index, int8_t &data);
   int   getArgument(uint32_t index, uint8_t &data);
   int   getArgument(uint32_t index, int16_t &data);
@@ -170,8 +173,10 @@ class ServerSession {
   int getArgument(int, val_vtnstation_controller_stat&);
   int getArgument(int, key_vtn_flowfilter_t&);
   int getArgument(int, val_flowfilter_t&);
-
-  uint32_t getArgCount(void);
+  int getArgument(int, key_dataflow_v2_t&);
+  int getArgument(int, val_dataflow_v2_t&);
+  int getArgument(int, key_vtn_dataflow_t&);
+    uint32_t getArgCount(void);
   int   getArgType(uint32_t index, pfc_ipctype_t &type);
   int   getArgStructName(uint32_t index, const char *&name);
   int   getArgStructName(uint32_t index, std::string &name);

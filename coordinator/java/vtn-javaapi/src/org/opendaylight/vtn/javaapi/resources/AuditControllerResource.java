@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -9,8 +9,10 @@
 
 package org.opendaylight.vtn.javaapi.resources;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
+import org.opendaylight.vtn.core.ipc.IpcDataUnit;
 import org.opendaylight.vtn.core.ipc.IpcException;
 import org.opendaylight.vtn.core.ipc.IpcString;
 import org.opendaylight.vtn.core.util.Logger;
@@ -20,12 +22,11 @@ import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.conversion.IpcDataUnitWrapper;
-import org.opendaylight.vtn.javaapi.ipc.enums.UncBaseEnums;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
-import org.opendaylight.vtn.javaapi.ipc.enums.UncIpcErrorCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncTCEnums;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncTCEnumsForAudit;
 import org.opendaylight.vtn.javaapi.validation.AuditControllerResourceValidator;
 
 /**
@@ -109,8 +110,25 @@ public class AuditControllerResource extends AbstractResource {
 						.setIpcUint8Value(VtnServiceJsonConsts.VAL_0));
 			}
 
+			if (requestBody != null
+					&& requestBody.has(VtnServiceJsonConsts.AUDIT)
+					&& requestBody.getAsJsonObject(VtnServiceJsonConsts.AUDIT)
+							.has(VtnServiceJsonConsts.REAL_NETWORK_AUDIT)) {
+				String audit = requestBody
+						.getAsJsonObject(VtnServiceJsonConsts.AUDIT)
+						.getAsJsonPrimitive(VtnServiceJsonConsts.REAL_NETWORK_AUDIT)
+						.getAsString();
+				if (VtnServiceJsonConsts.TRUE.equalsIgnoreCase(audit)) {
+					session.addOutput(IpcDataUnitWrapper
+							.setIpcUint8Value(VtnServiceJsonConsts.VAL_1));
+				}
+			}
+
 			LOG.info("Request packet created successfully");
+			long start = System.currentTimeMillis();
 			status = session.invoke();
+			LOG.debug("The treatment of under layer cost the following time: "
+					+ (System.currentTimeMillis() - start) + "(ms)");
 			LOG.info("Request packet processed with status:" + status);
 			final String operationType = IpcDataUnitWrapper
 					.getIpcDataUnitValue(session
@@ -178,59 +196,126 @@ public class AuditControllerResource extends AbstractResource {
 	private int handleResponse(ClientSession session,
 			final int operationStatus, final int auditResult)
 			throws IpcException {
-		int status;
-		final int responseCode;
+		int status = UncCommonEnum.UncResultCode.UNC_SUCCESS.getValue();
+
 		if (auditResult == UncTCEnums.TcAuditStatus.TC_AUDIT_OPER_SUCCESS
 				.getValue()) {
-			if (operationStatus == UncTCEnums.OperationStatus.TC_SYSTEM_FAILURE
-					.getCode()) {
-				createTcErrorInfo(UncIpcErrorCode.getTcCodes(operationStatus));
-				LOG.info("Request not processed successfully : "
-						+ operationStatus);
-				status = UncCommonEnum.UncResultCode.UNC_SERVER_ERROR
-						.getValue();
-			} else {
 				LOG.info("Request processed successfully");
 				status = UncCommonEnum.UncResultCode.UNC_SUCCESS.getValue();
+		} else {
+			LOG.info("Request not processed successfully : " + operationStatus);
+			setInfo(operationStatusProcess(session, operationStatus));
+			status = UncCommonEnum.UncResultCode.UNC_SERVER_ERROR.getValue();
+			}
+		return status;
+	}
+
+	private JsonObject operationStatusProcess(ClientSession session,
+			final int operationStatus) throws IpcException {
+		JsonObject info = new JsonObject();
+		
+		UncTCEnumsForAudit.OperationStatus operationStatusEnum = UncTCEnumsForAudit.OperationStatus.UNKNOWN;
+		if (operationStatus == UncTCEnums.OperationStatus.TC_INVALID_STATE
+					.getCode()) {
+			operationStatusEnum = UncTCEnumsForAudit.OperationStatus.INVALID_STATE;
+		} else if (operationStatus == UncTCEnums.OperationStatus.TC_SYSTEM_BUSY
+				.getCode()) {
+			operationStatusEnum = UncTCEnumsForAudit.OperationStatus.SYSTEM_BUSY;
+		} else if (operationStatus == UncTCEnums.OperationStatus.TC_INVALID_OPERATION_TYPE
+				.getCode()) {
+			operationStatusEnum = UncTCEnumsForAudit.OperationStatus.INVALID_OPERATION_TYPE;
+		} else if (operationStatus == UncTCEnums.OperationStatus.TC_SYSTEM_FAILURE
+				.getCode()) {
+			operationStatusEnum = UncTCEnumsForAudit.OperationStatus.SYSTEM_FAILURE;
+		} else if (operationStatus == UncTCEnums.OperationStatus.TC_AUDIT_CANCELLED
+				.getCode()) {
+			operationStatusEnum = UncTCEnumsForAudit.OperationStatus.AUDIT_CANCELLED;
+		} else if (operationStatus == UncTCEnums.OperationStatus.TC_OPER_ABORT.getCode() || 
+				   operationStatus == UncTCEnums.OperationStatus.TC_OPER_SUCCESS.getCode()) {
+			// No response body from IPC.
+			if (session.getResponseCount() <= 4) {
+				operationStatusEnum =  UncTCEnumsForAudit.OperationStatus.OPER_ABORT;
+			} else {
+				return responseCodeProcess(session);
 			}
 		} else {
-			if (operationStatus == UncTCEnums.OperationStatus.TC_INVALID_OPERATION_TYPE
-					.getCode()) {
-				createTcErrorInfo(UncIpcErrorCode.getTcCodes(operationStatus));
-			} else if (operationStatus == UncTCEnums.OperationStatus.TC_INVALID_STATE
-					.getCode()) {
-				createTcErrorInfo(UncIpcErrorCode.getTcCodes(operationStatus));
-			} else if (operationStatus == UncTCEnums.OperationStatus.TC_SYSTEM_BUSY
-					.getCode()) {
-				createTcErrorInfo(UncIpcErrorCode.getTcCodes(operationStatus));
-			} else {
-				LOG.info("Request not processed successfully : "
-						+ operationStatus);
-				responseCode = Integer.parseInt(IpcDataUnitWrapper
-						.getIpcDataUnitValue(session
-								.getResponse(VtnServiceJsonConsts.VAL_5)));
-				LOG.info("Response Code : " + responseCode);
-				if (responseCode == UncBaseEnums.UncRespCode.UNC_RC_NO_SUCH_INSTANCE
-						.getCode()) {
-					createErrorInfo(
-							UncBaseEnums.UncRespCode.UNC_RC_NO_SUCH_INSTANCE
-									.getErrorCode(),
-							UncBaseEnums.UncRespCode.UNC_RC_NO_SUCH_INSTANCE
-									.getMessage());
-				} else if (responseCode == UncBaseEnums.UncRespCode.UNC_RC_CTR_BUSY
-						.getCode()) {
-					createErrorInfo(
-							UncBaseEnums.UncRespCode.UNC_RC_CTR_BUSY
-									.getErrorCode(),
-							UncBaseEnums.UncRespCode.UNC_RC_CTR_BUSY
-									.getMessage());
-				} else {
-					createErrorInfo(UncBaseEnums.UncRespCode.UNC_RC_INTERNAL_ERR
-							.getErrorCode());
-				}
-			}
-			status = UncCommonEnum.UncResultCode.UNC_SERVER_ERROR.getValue();
+			operationStatusEnum = UncTCEnumsForAudit.OperationStatus.UNKNOWN;
 		}
-		return status;
+
+		JsonObject error = new JsonObject();
+		error.addProperty(VtnServiceJsonConsts.CODE, operationStatusEnum.getErrorCode());
+		error.addProperty(VtnServiceJsonConsts.MSG, operationStatusEnum.getMessage());
+
+		info.add(VtnServiceJsonConsts.ERROR, error);
+		return info;
+	}
+
+	private JsonObject responseCodeProcess(ClientSession session) throws IpcException {
+		int index = VtnServiceJsonConsts.VAL_4;
+		int responseCode = -1;
+		int noOfErrors = -1;
+		UncTCEnumsForAudit.TcResponseCode errorEnum = UncTCEnumsForAudit.TcResponseCode.NO_SUCH_INSTANCE;
+		int count = session.getResponseCount();
+		JsonArray errInfos = new JsonArray();
+		UncTCEnumsForAudit.TcResponseCode responseCodeEnum = UncTCEnumsForAudit.TcResponseCode.NO_SUCH_INSTANCE;
+
+		do {
+			if (index >= count) {
+				break;
+			}
+
+			IpcDataUnit ipcDataUnit = session.getResponse(index);
+			if (IpcDataUnit.STRING != ipcDataUnit.getType()) {
+				index++;
+				continue;
+			}
+
+			index += 1;
+			responseCode = Integer.parseInt(IpcDataUnitWrapper
+					.getIpcDataUnitValue(session.getResponse(index)));
+			if (UncTCEnums.TcResponseCode.TC_INTERNAL_ERR.getCode() == responseCode) {
+				responseCodeEnum = UncTCEnumsForAudit.TcResponseCode.INTERNAL_ERR;
+			} else if (UncTCEnums.TcResponseCode.TC_CONFIG_INVAL.getCode() == responseCode) {
+				responseCodeEnum = UncTCEnumsForAudit.TcResponseCode.CONFIG_INVAL;
+			} else if (UncTCEnums.TcResponseCode.TC_CTR_BUSY.getCode() == responseCode) {
+				responseCodeEnum = UncTCEnumsForAudit.TcResponseCode.CTR_BUSY;
+			} else if (UncTCEnums.TcResponseCode.TC_CTR_DISCONNECTED.getCode() == responseCode) {
+				responseCodeEnum = UncTCEnumsForAudit.TcResponseCode.CTR_DISCONNECTED;
+			} else if (UncTCEnums.TcResponseCode.TC_CTRLAPI_FAILURE.getCode() == responseCode) {
+				responseCodeEnum = UncTCEnumsForAudit.TcResponseCode.CTRLAPI_FAILURE;
+			} else if (UncTCEnums.TcResponseCode.TC_CTR_CONFIG_STATUS_ERR.getCode() == responseCode) {
+				responseCodeEnum = UncTCEnumsForAudit.TcResponseCode.CTR_CONFIG_STATUS_ERR;
+			} else if (UncTCEnums.TcResponseCode.TC_NO_SUCH_INSTANCE.getCode() == responseCode) {
+				responseCodeEnum = UncTCEnumsForAudit.TcResponseCode.NO_SUCH_INSTANCE;
+			} else if (UncTCEnums.TcResponseCode.TC_ERR_DRIVER_NOT_PRESENT.getCode() == responseCode) {
+				responseCodeEnum = UncTCEnumsForAudit.TcResponseCode.ERR_DRIVER_NOT_PRESENT;
+			} else {
+				responseCodeEnum = UncTCEnumsForAudit.TcResponseCode.UNKNOWN;
+			}
+			//add err message
+			JsonObject info = new JsonObject();
+			info.addProperty(VtnServiceJsonConsts.MSG, responseCodeEnum.getMessage());
+			errInfos.add(info);
+
+			if (responseCodeEnum.getErrorCode() > errorEnum.getErrorCode()) {
+				errorEnum = responseCodeEnum;
+			}
+
+			index += 1;
+			noOfErrors = Integer.parseInt(IpcDataUnitWrapper
+					.getIpcDataUnitValue(session.getResponse(index)));
+			if (noOfErrors > 0) {
+				index += noOfErrors * 2;
+			}
+		} while (true);
+
+		JsonObject error = new JsonObject();
+		error.addProperty(VtnServiceJsonConsts.CODE, errorEnum.getErrorCode());
+		error.addProperty(VtnServiceJsonConsts.MSG, errorEnum.getMessage());
+		error.add(VtnServiceJsonConsts.INFOS, errInfos);
+
+		JsonObject info = new JsonObject();
+		info.add(VtnServiceJsonConsts.ERROR, error);
+		return info;
 	}
 }

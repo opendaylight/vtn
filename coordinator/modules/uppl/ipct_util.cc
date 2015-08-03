@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -57,11 +57,11 @@ string IpctUtil::get_string(const key_ctr_t &k) {
 string IpctUtil::get_string(const val_ctr_t &v) {
   stringstream ss;
   stringstream valid;
-  for (unsigned int i = 0; i < 7 ; ++i) {
+  for (unsigned int i = 0; i < 8 ; ++i) {
     valid << PhyUtil::uint8tostr(v.valid[i]);
   }
   stringstream cs_attr;
-  for (unsigned int i = 0; i < 7 ; ++i) {
+  for (unsigned int i = 0; i < 8 ; ++i) {
     cs_attr << PhyUtil::uint8tostr(v.cs_attr[i]);
   }
   ss << "KT_CONTROLLER:[VAL: "
@@ -72,6 +72,7 @@ string IpctUtil::get_string(const val_ctr_t &v) {
   << ", user:" << v.user
   << ", password:" << v.password
   << ", enable_audit:" << PhyUtil::uint8tostr(v.enable_audit)
+  << ", port:" << v.port
   << ", valid:" << valid.str()
   << ", cs_row_status:" << PhyUtil::uint8tostr(v.cs_row_status)
   << ", cs_attr:" << cs_attr.str()
@@ -91,15 +92,15 @@ string IpctUtil::get_string(const val_ctr_st_t &val_st) {
   stringstream ss;
   val_ctr_t v = val_st.controller;
   stringstream valid;
-  for (unsigned int i = 0; i < 7 ; ++i) {
+  for (unsigned int i = 0; i < 8 ; ++i) {
     valid << PhyUtil::uint8tostr(v.valid[i]);
   }
   stringstream st_valid;
-  for (unsigned int i = 0; i < 3 ; ++i) {
+  for (unsigned int i = 0; i < 4 ; ++i) {
     st_valid << PhyUtil::uint8tostr(val_st.valid[i]);
   }
   stringstream cs_attr;
-  for (unsigned int i = 0; i < 7 ; ++i) {
+  for (unsigned int i = 0; i < 8 ; ++i) {
     cs_attr << PhyUtil::uint8tostr(v.cs_attr[i]);
   }
   ss << "KT_CONTROLLER:[VAL: "
@@ -110,11 +111,13 @@ string IpctUtil::get_string(const val_ctr_st_t &val_st) {
   << ", user:" << v.user
   << ", password:" << v.password
   << ", enable_audit:" << PhyUtil::uint8tostr(v.enable_audit)
+  << ", port:" << v.port
   << ", valid:" << valid.str()
   << ", cs_row_status:" << PhyUtil::uint8tostr(v.cs_row_status)
   << ", cs_attr:" << cs_attr.str()
   << ", actual_version:" << val_st.actual_version
   << ", oper_status:" << PhyUtil::uint8tostr(val_st.oper_status)
+  << ", actual_controllerid:" << val_st.actual_id
   << ", st valid:" << st_valid.str()
   << "]"
   << endl;
@@ -132,7 +135,7 @@ string IpctUtil::get_string(const val_ctr_commit_ver_t &val_commit_ver) {
   stringstream ss;
   val_ctr_t v = val_commit_ver.controller;
   stringstream valid;
-  for (unsigned int i = 0; i < 7 ; ++i) {
+  for (unsigned int i = 0; i < 8 ; ++i) {
     valid << PhyUtil::uint8tostr(v.valid[i]);
   }
   stringstream commit_ver_valid;
@@ -140,7 +143,7 @@ string IpctUtil::get_string(const val_ctr_commit_ver_t &val_commit_ver) {
     commit_ver_valid << PhyUtil::uint8tostr(val_commit_ver.valid[i]);
   }
   stringstream cs_attr;
-  for (unsigned int i = 0; i < 7 ; ++i) {
+  for (unsigned int i = 0; i < 8 ; ++i) {
     cs_attr << PhyUtil::uint8tostr(v.cs_attr[i]);
   }
   ss << "KT_CONTROLLER:[VAL: "
@@ -151,6 +154,7 @@ string IpctUtil::get_string(const val_ctr_commit_ver_t &val_commit_ver) {
   << ", user:" << v.user
   << ", password:" << v.password
   << ", enable_audit:" << PhyUtil::uint8tostr(v.enable_audit)
+  << ", port:" << v.port
   << ", valid:" << valid.str()
   << ", cs_row_status:" << PhyUtil::uint8tostr(v.cs_row_status)
   << ", cs_attr:" << cs_attr.str()
@@ -272,7 +276,7 @@ string IpctUtil::get_string(const val_logical_port_st_t &v) {
   for (unsigned int i = 0; i < 5; ++i) {
     valid << PhyUtil::uint8tostr(v.logical_port.valid[i]);
   }
-  ss << "KT_LOGICAL_PORT:[VAL: "
+  ss << "KT_LOGICAL_PORT:(st)[VAL: "
       << "description:" << v.logical_port.description
       << ", port_type:" << PhyUtil::uint8tostr(v.logical_port.port_type)
   << ", switch_id:" << v.logical_port.switch_id
@@ -285,6 +289,33 @@ string IpctUtil::get_string(const val_logical_port_st_t &v) {
   << "]" << endl;
   return ss.str();
 }
+
+/** 
+ * @Description : This function returns the values from the value structure
+ * @param[in]   : v - structure variable of type val_logical_port_boundary_t
+ * @return      : string - value structure elements of val_logical_port_boundary_t
+ **/
+string IpctUtil::get_string(const val_logical_port_boundary_t &v) {
+  stringstream ss;
+  stringstream st_valid;
+  stringstream valid;
+  for (unsigned int i = 0; i < 4; ++i) {
+    valid << PhyUtil::uint8tostr(v.valid[i]);
+  }
+  for (unsigned int i = 0; i < 2; ++i) {
+    st_valid << PhyUtil::uint8tostr(v.logical_port_st_val.valid[i]);
+  }
+  ss << "KT_LOGICAL_PORT(boundary):[VAL: "
+  << " logical_port:"<< get_string(v.logical_port_st_val)
+  << ", st_valid:" << st_valid.str()
+  << ", boundary_candidate:" << PhyUtil::uint8tostr(v.boundary_candidate)
+  << ", connected_controller:" << v.connected_controller
+  << ", connected_domain:" << v.connected_domain
+  << ", valid:" << valid.str()
+  << "]" << endl;
+  return ss.str();
+}
+
 
 /** 
  * @Description : This function returns the values from the value structure
@@ -327,6 +358,37 @@ string IpctUtil::get_string(const key_logical_member_port_t &k) {
       << ", physical_port_id: " << k.physical_port_id
       << "]"
       << endl;
+  return ss.str();
+}
+
+/** 
+ * @Description : This function returns the values from the value structure
+ * @param[in]   : v - structure variable of type val_lm_port_st_neighbor
+ * @return      : string - attributes in value structure of  val_lm_port_st_neighbor
+ *
+ **/
+string IpctUtil::get_string(const val_lm_port_st_neighbor &v) {
+  stringstream ss;
+  stringstream valid;
+  for (unsigned int i = 0 ; i < 4; ++i) {
+    valid << PhyUtil::uint8tostr(v.port.valid[i]);
+  }
+  stringstream neigh_valid;
+  for (unsigned int i = 0; i < 4; ++i) {
+    neigh_valid << PhyUtil::uint8tostr(v.valid[i]);
+  }
+  ss << "KT_LOGICAL_MEMBER_PORT neighbor VAL: "
+  << "port_number:" << PhyUtil::uint8tostr(v.port.port_number)
+  << ", description:" << v.port.description
+  << ", admin_st:" << PhyUtil::uint8tostr(v.port.admin_status)
+  << ", tav:" << PhyUtil::uint8tostr
+           (v.port.trunk_allowed_vlan)
+  << ", valid:" << valid.str()
+  << ", cn_ctr_id:" << v.connected_controller_id
+  << ", cn_sw_id:" << v.connected_switch_id
+  << ", cn_port_id:" << v.connected_port_id
+  << ", neigbour_valid:" << neigh_valid.str()
+  << "]";
   return ss.str();
 }
 
@@ -609,16 +671,17 @@ string IpctUtil::get_string(const val_port_st_neighbor &v) {
     valid << PhyUtil::uint8tostr(v.port.valid[i]);
   }
   stringstream neigh_valid;
-  for (unsigned int i = 0; i < 3; ++i) {
+  for (unsigned int i = 0; i < 4; ++i) {
     neigh_valid << PhyUtil::uint8tostr(v.valid[i]);
   }
-  ss << "KT_PORT:[NEIGHBOUR VAL: "
-      << "port_number:" << PhyUtil::uint8tostr(v.port.port_number)
+  ss << "KT_PORT_NEIGHBOUR VAL: "
+  << "port_number:" << PhyUtil::uint8tostr(v.port.port_number)
   << ", description:" << v.port.description
   << ", admin_st:" << PhyUtil::uint8tostr(v.port.admin_status)
   << ", tav:" << PhyUtil::uint8tostr
-  (v.port.trunk_allowed_vlan)
+           (v.port.trunk_allowed_vlan)
   << ", valid:" << valid.str()
+  << ", cn_ctr_id:" << v.connected_controller_id
   << ", cn_sw_id:" << v.connected_switch_id
   << ", cn_port_id:" << v.connected_port_id
   << ", neigbour_valid:" << neigh_valid.str()

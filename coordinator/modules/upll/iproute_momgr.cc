@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -8,16 +8,13 @@
  */
 
 #include "iproute_momgr.hh"
-#define NUM_KEY_MAIN_TBL_ 6
-#if 0
-namespace upll_dal_vbrif unc::upll::dal::schema::table::vbridge_interface;
-#endif
+#define NUM_KEY_MAIN_TBL_ 5
 
 namespace unc {
 namespace upll {
 namespace kt_momgr {
 
-  uint16_t IpRouteMoMgr::kIpRouteNumChildKey = 4;
+  uint16_t IpRouteMoMgr::kIpRouteNumChildKey = 3;
 
 BindInfo IpRouteMoMgr::ip_route_bind_info[] = {
     { uudst::static_ip_route::kDbiVtnName, CFG_KEY, offsetof(
@@ -35,8 +32,8 @@ BindInfo IpRouteMoMgr::ip_route_bind_info[] = {
     { uudst::static_ip_route::kDbiNextHopAddr, CFG_KEY, offsetof(
         key_static_ip_route, next_hop_addr.s_addr),
       uud::kDalUint32, 1 },
-    { uudst::static_ip_route::kDbiNwmName, CFG_KEY, offsetof(
-        key_static_ip_route, nwm_name),
+    { uudst::static_ip_route::kDbiNwmName2, CFG_VAL, offsetof(
+        val_static_ip_route, nwm_name),
       uud::kDalChar, 32 },
     { uudst::static_ip_route::kDbiMetric, CFG_VAL, offsetof(val_static_ip_route,
                                                             group_metric),
@@ -47,8 +44,14 @@ BindInfo IpRouteMoMgr::ip_route_bind_info[] = {
     { uudst::static_ip_route::kDbiDomainId, CK_VAL, offsetof(key_user_data,
                                                              domain_id),
       uud::kDalChar, 32 },
+    { uudst::static_ip_route::kDbiValidNwmName2, CFG_META_VAL, offsetof(
+        val_static_ip_route, valid[UPLL_IDX_NWM_NAME_SIR]),
+      uud::kDalUint8, 1 },
     { uudst::static_ip_route::kDbiValidMetric, CFG_META_VAL, offsetof(
         val_static_ip_route, valid[UPLL_IDX_GROUP_METRIC_SIR]),
+      uud::kDalUint8, 1 },
+    { uudst::static_ip_route::kDbiCsNwmName2, CS_VAL, offsetof(
+        val_static_ip_route, cs_attr[UPLL_IDX_NWM_NAME_SIR]),
       uud::kDalUint8, 1 },
     { uudst::static_ip_route::kDbiCsMetric, CS_VAL, offsetof(
         val_static_ip_route, cs_attr[UPLL_IDX_GROUP_METRIC_SIR]),
@@ -66,9 +69,6 @@ BindInfo IpRouteMoMgr::key_ip_route_maintbl_update_bind_info[] = {
     { uudst::static_ip_route::kDbiVrouterName, CFG_MATCH_KEY, offsetof(
         key_static_ip_route_t, vrt_key.vrouter_name),
       uud::kDalChar, kMaxLenVnodeName + 1 },
-    { uudst::static_ip_route::kDbiNwmName, CFG_MATCH_KEY, offsetof(
-        key_static_ip_route, nwm_name),
-      uud::kDalChar, kMaxLenVnodeName + 1 },
     { uudst::static_ip_route::kDbiVtnName, CFG_INPUT_KEY, offsetof(
         key_rename_vnode_info_t, new_unc_vtn_name),
       uud::kDalChar, kMaxLenVtnName + 1 },
@@ -82,13 +82,14 @@ BindInfo IpRouteMoMgr::key_ip_route_maintbl_update_bind_info[] = {
 IpRouteMoMgr::IpRouteMoMgr() {
   UPLL_FUNC_TRACE
   ntable = MAX_MOMGR_TBLS;
-  table = new Table *[ntable];
+  table = new Table *[ntable]();
   table[MAINTBL] = new Table(uudst::kDbiStaticIpRouteTbl, UNC_KT_VRT_IPROUTE,
                          ip_route_bind_info, IpctSt::kIpcStKeyStaticIpRoute,
                          IpctSt::kIpcStValStaticIpRoute,
                          uudst::static_ip_route::kDbiStaticIpRouteNumCols);
   table[RENAMETBL] = NULL;
   table[CTRLRTBL] = NULL;
+  table[CONVERTTBL] = NULL;
   nchild = 0;
   child = NULL;
 }
@@ -117,10 +118,21 @@ upll_rc_t IpRouteMoMgr::ValidateAttribute(ConfigKeyVal *ikey,
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   if (ikey->get_key_type() != UNC_KT_VRT_IPROUTE) result_code =
       UPLL_RC_ERR_CFG_SYNTAX;
+  if (GetVal(ikey)) {
+    result_code = PerformSemanticCheckForNWM(ikey, dmi, req->datatype);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_INFO("VRT_IP_ROUTE Network Monitor validation failed");
+      if (req->datatype == UPLL_DT_CANDIDATE)
+        return UPLL_RC_ERR_INVALID_NWMONGRP;
+      else
+        return UPLL_RC_ERR_CFG_SEMANTIC;
+    }
+  }
   return result_code;
 }
 
-bool IpRouteMoMgr::IsValidKey(void *key, uint64_t index) {
+bool IpRouteMoMgr::IsValidKey(void *key, uint64_t index,
+                              MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
   key_static_ip_route *iproute_key =
       reinterpret_cast<key_static_ip_route*>(key);
@@ -168,16 +180,8 @@ bool IpRouteMoMgr::IsValidKey(void *key, uint64_t index) {
         return false;
       }
       break;
-    case uudst::static_ip_route::kDbiNwmName:
-      ret_val = ValidateKey(reinterpret_cast<char *>(iproute_key->nwm_name),
-                            kMinLenNwmName, kMaxLenNwmName);
-      if (ret_val != UPLL_RC_SUCCESS) {
-        UPLL_LOG_TRACE("syntax check failure for iproute_key->nwm_name");
-        return false;
-      }
-      break;
     default:
-//      UPLL_LOG_TRACE("Invalid Key Index %d", index);
+      UPLL_LOG_TRACE("Invalid Key Index");
       break;
   }
   return true;
@@ -238,12 +242,6 @@ upll_rc_t IpRouteMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
                         reinterpret_cast<key_static_ip_route *>
                         (pkey)->vrt_key.vrouter_name,
                         (kMaxLenVnodeName + 1));
-      if (strlen(reinterpret_cast<char *>
-                 (reinterpret_cast<key_static_ip_route *>(pkey)->nwm_name))) {
-        uuu::upll_strncpy(vrt_ip_route->nwm_name,
-                      reinterpret_cast<key_static_ip_route *>(pkey)->nwm_name,
-                      (kMaxLenNwmName + 1));
-      }
       vrt_ip_route->dst_addr.s_addr =
           reinterpret_cast<key_static_ip_route *>(pkey)->dst_addr.s_addr;
       vrt_ip_route->dst_addr_prefixlen =
@@ -380,8 +378,8 @@ upll_rc_t IpRouteMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
   if (op == UNC_OP_CREATE) {
     vrt_val->cs_row_status = cs_status;
   } else if (op == UNC_OP_UPDATE) {
-    void *val = reinterpret_cast<void *>(&vrt_val);
-    CompareValidValue(val, GetVal(upd_key), true);
+    void *val_tmp = vrt_val;
+    CompareValidValue(val_tmp, GetVal(upd_key), true);
     UPLL_LOG_TRACE("%s", (upd_key->ToStrAll()).c_str());
     vrt_val->cs_row_status = vrt_val2->cs_row_status;
   } else {
@@ -459,10 +457,13 @@ upll_rc_t IpRouteMoMgr::ValidateMessage(IpcReqRespHeader *req,
     return UPLL_RC_ERR_BAD_REQUEST;
   }
   ret_val = ValidateIpRouteKey(iproute_key, op);
-
   if (ret_val != UPLL_RC_SUCCESS) {
     UPLL_LOG_DEBUG("syntax check failure for key_static_ip_route struct");
-    return UPLL_RC_ERR_CFG_SYNTAX;
+    if ((req->datatype == UPLL_DT_IMPORT) ||
+        (req->datatype == UPLL_DT_AUDIT)) {
+      ret_val = UPLL_RC_ERR_CFG_SYNTAX;
+    }
+    return ret_val;
   }
   if (op == UNC_OP_CREATE || op == UNC_OP_UPDATE || op == UNC_OP_DELETE) {
     if (dt_type == UPLL_DT_CANDIDATE || UPLL_DT_IMPORT == dt_type) {
@@ -480,16 +481,18 @@ upll_rc_t IpRouteMoMgr::ValidateMessage(IpcReqRespHeader *req,
             ikey->get_cfg_val()->get_st_num());
         return UPLL_RC_ERR_BAD_REQUEST;
       }
-      val_static_ip_route *iproute_val =
-        reinterpret_cast<val_static_ip_route*>(ikey->get_cfg_val()->get_val());
-      if (iproute_val == NULL) {
-        UPLL_LOG_DEBUG("val struct is mandatory for create and update op");
-        return UPLL_RC_ERR_BAD_REQUEST;
-      }
-      ret_val = ValidateIpRouteValue(iproute_val, op);
-      if (ret_val != UPLL_RC_SUCCESS) {
-        UPLL_LOG_DEBUG("Syntax check failure for val_static_ip_route");
-        return UPLL_RC_ERR_CFG_SYNTAX;
+      if (op != UNC_OP_DELETE) {
+        val_static_ip_route *iproute_val =
+         reinterpret_cast<val_static_ip_route*>(ikey->get_cfg_val()->get_val());
+        if (iproute_val == NULL) {
+          UPLL_LOG_DEBUG("val struct is mandatory for create and update op");
+          return UPLL_RC_ERR_BAD_REQUEST;
+        }
+        ret_val = ValidateIpRouteValue(iproute_val, op);
+        if (ret_val != UPLL_RC_SUCCESS) {
+          UPLL_LOG_DEBUG("Syntax check failure for val_static_ip_route");
+          return UPLL_RC_ERR_CFG_SYNTAX;
+        }
       }
       return UPLL_RC_SUCCESS;
     } else {
@@ -576,25 +579,10 @@ upll_rc_t IpRouteMoMgr::ValidateIpRouteKey(key_static_ip_route *iproute_key,
       (operation == UNC_OP_READ_SIBLING_COUNT)) {
     // Poisoning child keys for this operation
     UPLL_LOG_TRACE("Operation is %d", operation);
-    StringReset(iproute_key->nwm_name);
     iproute_key->dst_addr_prefixlen = INVALID_PREFIX_LENGTH;
     iproute_key->dst_addr.s_addr = INVALID_DST_IP_ADDR;
     iproute_key->next_hop_addr.s_addr = INVALID_NEXT_HOP_ADDR;
     return UPLL_RC_SUCCESS;
-  }
-
-  if (strlen(reinterpret_cast<char*>(iproute_key->nwm_name)) != 0) {
-    UPLL_LOG_DEBUG("Currently nwm name is not supported for this KT");
-    return UPLL_RC_ERR_CFG_SYNTAX;
-    /*
-    ret_val = ValidateKey(reinterpret_cast<char *>(iproute_key->nwm_name),
-                          kMinLenNwmName,
-                          kMaxLenNwmName);
-    if (ret_val != UPLL_RC_SUCCESS) {
-      UPLL_LOG_DEBUG("syntax check failed. nwm name - %s", iproute_key->nwm_name);
-      return UPLL_RC_ERR_CFG_SYNTAX;
-    }
-    */
   }
 
   // TODO(s): Need to validate if inputs are given
@@ -604,18 +592,18 @@ upll_rc_t IpRouteMoMgr::ValidateIpRouteKey(key_static_ip_route *iproute_key,
                           true, true)) {
     UPLL_LOG_DEBUG("Numeric range check failed. dst_addr_prefixlen - %d",
                   iproute_key->dst_addr_prefixlen);
-    return UPLL_RC_ERR_CFG_SYNTAX;
+    return UPLL_RC_ERR_INVALID_DEST_ADDR;
   }
   if (iproute_key->dst_addr.s_addr == 0xffffffff) {
     UPLL_LOG_DEBUG("Bad destination address. addr:0x%08x",
                   iproute_key->dst_addr.s_addr);
-    return UPLL_RC_ERR_CFG_SYNTAX;
+    return UPLL_RC_ERR_INVALID_DEST_ADDR;
   }
   if (iproute_key->next_hop_addr.s_addr == 0x00000000 ||
       iproute_key->next_hop_addr.s_addr == 0xffffffff) {
     UPLL_LOG_DEBUG("Bad next hop address. addr:0x%08x",
                   iproute_key->next_hop_addr.s_addr);
-    return UPLL_RC_ERR_CFG_SYNTAX;
+    return UPLL_RC_ERR_INVALID_NEXTHOP_ADDR;
   }
   return UPLL_RC_SUCCESS;
 }
@@ -623,29 +611,62 @@ upll_rc_t IpRouteMoMgr::ValidateIpRouteKey(key_static_ip_route *iproute_key,
 upll_rc_t IpRouteMoMgr::ValidateIpRouteValue(val_static_ip_route *iproute_val,
                                              uint32_t op) {
   UPLL_FUNC_TRACE;
+  bool ret_val = false;
 
-  if (iproute_val->group_metric != 0 ||
-      iproute_val->valid[UPLL_IDX_GROUP_METRIC_SIR] == UNC_VF_VALID ||
-      iproute_val->valid[UPLL_IDX_GROUP_METRIC_SIR] == UNC_VF_VALID_NO_VALUE) {
-    iproute_val->valid[UPLL_IDX_GROUP_METRIC_SIR] = UNC_VF_NOT_SUPPORTED;
-    UPLL_LOG_DEBUG("Currently metric is not supported for this KT");
-    return UPLL_RC_ERR_CFG_SYNTAX;
+  // Attribute syntax validation
+  for (unsigned int valid_index = 0;
+     valid_index < sizeof(iproute_val->valid) / sizeof(iproute_val->valid[0]);
+     valid_index++) {
+    if (iproute_val->valid[valid_index] == UNC_VF_VALID) {
+      switch (valid_index) {
+        case UPLL_IDX_NWM_NAME_SIR:
+          ret_val = ValidateString(iproute_val->nwm_name,
+                                   kMinLenNwmName, kMaxLenNwmName);
+          break;
+        case UPLL_IDX_GROUP_METRIC_SIR:
+          ret_val = ValidateNumericRange(iproute_val->group_metric,
+                          (uint16_t) kMinLenGroupMetric,
+                          (uint16_t) kMaxLenGroupMetric, true, true);
+          break;
+        default:
+          UPLL_LOG_ERROR("Invalid index %d", valid_index);
+          return UPLL_RC_ERR_GENERIC;
+      }
+      if (!ret_val) {
+        UPLL_LOG_DEBUG("value syntax check failed");
+        return UPLL_RC_ERR_CFG_SYNTAX;
+      }
+    }
   }
-  /*
-  if (iproute_val->valid[UPLL_IDX_GROUP_METRIC_SIR] == UNC_VF_VALID) {
-    if (!ValidateNumericRange(iproute_val->group_metric,
-                              (uint16_t) kMinLenGroupMetric,
-                              (uint16_t) kMaxLenGroupMetric, true, true)) {
-      UPLL_LOG_DEBUG(
-          "Numeric range check failure for vrt_ip_route_val->group_metric");
+  // reset data if valid flags are invalid or valid_no_value
+  for (unsigned int valid_index = 0;
+     valid_index < sizeof(iproute_val->valid) / sizeof(iproute_val->valid[0]);
+     valid_index++) {
+    if ((iproute_val->valid[valid_index] == UNC_VF_INVALID) ||
+        (iproute_val->valid[valid_index] == UNC_VF_VALID_NO_VALUE)) {
+      switch (valid_index) {
+        case UPLL_IDX_NWM_NAME_SIR:
+          StringReset(iproute_val->nwm_name);
+          break;
+        case UPLL_IDX_GROUP_METRIC_SIR:
+          iproute_val->group_metric = 0;
+          break;
+        default:
+          UPLL_LOG_ERROR("Never here");
+          return UPLL_RC_ERR_GENERIC;
+      }
+    }
+  }
+  if (op == UNC_OP_CREATE) {
+    if (((iproute_val->valid[UPLL_IDX_GROUP_METRIC_SIR] == UNC_VF_VALID) &&
+        (iproute_val->valid[UPLL_IDX_NWM_NAME_SIR] == UNC_VF_INVALID)) ||
+        (iproute_val->valid[UPLL_IDX_NWM_NAME_SIR] == UNC_VF_VALID_NO_VALUE) ||
+        (iproute_val->valid[UPLL_IDX_GROUP_METRIC_SIR] ==
+         UNC_VF_VALID_NO_VALUE)) {
+      UPLL_LOG_ERROR("Invalid valid flags combination for ip_route create");
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
-  } else if (iproute_val->valid[UPLL_IDX_GROUP_METRIC_SIR]
-      == UNC_VF_VALID_NO_VALUE
-      && (op == UNC_OP_CREATE || op == UNC_OP_UPDATE)) {
-    iproute_val->group_metric = 0;
   }
-  */
   return UPLL_RC_SUCCESS;
 }
 
@@ -725,6 +746,17 @@ upll_rc_t IpRouteMoMgr::ValIpRouteAttributeSupportCheck(
     unc_keytype_operation_t operation) {
   UPLL_FUNC_TRACE;
   if (iproute_val != NULL) {
+    if ((iproute_val->valid[UPLL_IDX_NWM_NAME_SIR] == UNC_VF_VALID)
+        || (iproute_val->valid[UPLL_IDX_NWM_NAME_SIR]
+            == UNC_VF_VALID_NO_VALUE)) {
+      if (attrs[unc::capa::static_ip_route::kCapNwmName] == 0) {
+        iproute_val->valid[UPLL_IDX_NWM_NAME_SIR] = UNC_VF_INVALID;
+        if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
+          UPLL_LOG_DEBUG("Nwm name attribute is not supported by ctrlr");
+          return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
+        }
+      }
+    }
     if ((iproute_val->valid[UPLL_IDX_GROUP_METRIC_SIR] == UNC_VF_VALID)
         || (iproute_val->valid[UPLL_IDX_GROUP_METRIC_SIR]
             == UNC_VF_VALID_NO_VALUE)) {
@@ -806,11 +838,23 @@ bool IpRouteMoMgr::CompareValidValue(void *&val1, void *val2,
       reinterpret_cast<val_static_ip_route_t *>(val1);
   val_static_ip_route_t *val_iprte2 =
       reinterpret_cast<val_static_ip_route_t *>(val2);
+  if (!val_iprte1 || !val_iprte2) {
+    UPLL_LOG_ERROR("Invalid param");
+    return false;
+  }
   for (unsigned int loop = 0;
-        loop < sizeof(val_iprte1->valid) / sizeof(uint8_t); ++loop) {
+       loop < sizeof(val_iprte1->valid) / sizeof(uint8_t); ++loop) {
     if (UNC_VF_INVALID == val_iprte1->valid[loop]
         && UNC_VF_VALID == val_iprte2->valid[loop])
        val_iprte1->valid[loop] = UNC_VF_VALID_NO_VALUE;
+  }
+  if (UNC_VF_VALID == val_iprte1->valid[UPLL_IDX_NWM_NAME_SIR]
+      && UNC_VF_VALID == val_iprte2->valid[UPLL_IDX_NWM_NAME_SIR]) {
+    if (!(uuu::upll_strncmp(val_iprte1->nwm_name, val_iprte2->nwm_name,
+                            kMaxLenNwmName+1))) {
+      val_iprte1->valid[UPLL_IDX_NWM_NAME_SIR] =
+        (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
+    }
   }
   if (UNC_VF_VALID == val_iprte1->valid[UPLL_IDX_GROUP_METRIC_SIR]
       && UNC_VF_VALID == val_iprte2->valid[UPLL_IDX_GROUP_METRIC_SIR]) {
@@ -863,7 +907,7 @@ upll_rc_t IpRouteMoMgr::MergeValidate(unc_key_type_t keytype,
   travel_key = ikey;
   while (travel_key) {
     result_code = GetChildConfigKey(tkey, travel_key);
-    if (UPLL_RC_SUCCESS != result_code){
+    if (UPLL_RC_SUCCESS != result_code) {
       UPLL_LOG_DEBUG("GetChildConfigKey Failed");
       DELETE_IF_NOT_NULL(tkey);
       return result_code;
@@ -903,7 +947,7 @@ upll_rc_t IpRouteMoMgr::MergeValidate(unc_key_type_t keytype,
 }
 
 // Overridden Read Sibling from momgr_impl.
-// This keytype contains 4 child keys and needs special handling.
+// This keytype contains 3 child keys and needs special handling.
 upll_rc_t IpRouteMoMgr::ReadSiblingMo(IpcReqRespHeader *header,
                                    ConfigKeyVal *ikey,
                                    bool begin,
@@ -972,7 +1016,7 @@ upll_rc_t IpRouteMoMgr::ReadSiblingMo(IpcReqRespHeader *header,
         return UPLL_RC_ERR_GENERIC;
       }
 
-      // uint16_t kIpRouteNumChildKey = 4;
+      // uint16_t kIpRouteNumChildKey = 3;
       bool fetched_from_query = false;
       for (uint16_t childKeyIndex = uuds::TableNumPkCols(
                uudst::kDbiStaticIpRouteTbl) - 1;
@@ -1092,8 +1136,6 @@ bool IpRouteMoMgr::ResetDataForSibling(key_static_ip_route *key_ipr,
       key_ipr->dst_addr_prefixlen = INVALID_PREFIX_LENGTH;
     case uudst::static_ip_route::kDbiNextHopAddr:
       key_ipr->next_hop_addr.s_addr = INVALID_NEXT_HOP_ADDR;
-    case uudst::static_ip_route::kDbiNwmName:
-      memset(key_ipr->nwm_name, 0, sizeof(key_ipr->nwm_name));
       break;
     default:
       UPLL_LOG_DEBUG("Not a child key index");
@@ -1102,6 +1144,44 @@ bool IpRouteMoMgr::ResetDataForSibling(key_static_ip_route *key_ipr,
   UPLL_LOG_TRACE("Resetting Data for index(%d)", index);
   return true;
 }
+
+// implementation of valid flags syntax check during update
+upll_rc_t IpRouteMoMgr::ValidateUpdateMo(ConfigKeyVal *ikey,
+                                         ConfigKeyVal *db_ckv) {
+  UPLL_FUNC_TRACE;
+  if (!(GetVal(db_ckv)) || !(GetVal(ikey))) {
+    UPLL_LOG_ERROR("NULL input val structures");
+    return UPLL_RC_ERR_GENERIC;
+  }
+  val_static_ip_route_t *val_ipr_db =
+                reinterpret_cast<val_static_ip_route_t *>(GetVal(db_ckv));
+  val_static_ip_route_t *val_ipr_ikey =
+                reinterpret_cast<val_static_ip_route_t *>(GetVal(ikey));
+  // if nwm_name is valid_no_value then group_metric need to be unconfigured
+  if (val_ipr_ikey->valid[UPLL_IDX_NWM_NAME_SIR] == UNC_VF_VALID_NO_VALUE) {
+  // StringReset(val_ipr_ikey->nwm_name);
+  // already reseted data in ValidateIpRouteValue
+      val_ipr_ikey->group_metric = 0;
+      val_ipr_ikey->valid[UPLL_IDX_GROUP_METRIC_SIR] = UNC_VF_VALID_NO_VALUE;
+  }
+  if (val_ipr_ikey->valid[UPLL_IDX_NWM_NAME_SIR] == UNC_VF_INVALID) {
+    if ((val_ipr_ikey->valid[UPLL_IDX_GROUP_METRIC_SIR] == UNC_VF_VALID) &&
+        (val_ipr_db->valid[UPLL_IDX_NWM_NAME_SIR] == UNC_VF_INVALID)) {
+      UPLL_LOG_ERROR("group metric is VALID and nwm_name is not configured"
+                     " in DB during update");
+      return UPLL_RC_ERR_CFG_SYNTAX;
+    }
+    if ((val_ipr_ikey->valid[UPLL_IDX_GROUP_METRIC_SIR] ==
+         UNC_VF_VALID_NO_VALUE) &&
+        (val_ipr_db->valid[UPLL_IDX_NWM_NAME_SIR] == UNC_VF_INVALID)) {
+      UPLL_LOG_ERROR("group metric is VALID_NO_VALUE and nwm_name is not"
+                     " configured in DB during update");
+      return UPLL_RC_ERR_CFG_SYNTAX;
+    }
+  }
+  return UPLL_RC_SUCCESS;
+}
+
 }  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc

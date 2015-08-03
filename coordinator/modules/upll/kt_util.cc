@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -17,11 +17,11 @@
 
 #include "uncxx/upll_log.hh"
 #include "kt_util.hh"
-
+#include "pfc/ipc.h"
 namespace unc {
 namespace upll {
 namespace ipc_util {
-
+// using namespace unc::upll::kt_momgr;
 std::map<unc_key_type_t, KtUtil::KtMsgTemplate*> KtUtil::kt_msg_templates_;
 KtUtil *KtUtil::singleton_instance_;
 
@@ -54,7 +54,7 @@ const std::vector<IpctSt::IpcStructNum>& KtUtil::GetCfgMsgTemplate(
   static std::vector<IpctSt::IpcStructNum> dummy;
   std::map<unc_key_type_t, KtMsgTemplate*>::iterator it
     = kt_msg_templates_.find(kt);
-  if (it != kt_msg_templates_.end() ) {
+  if (it != kt_msg_templates_.end()) {
     return it->second->kt_cfg_msg;
   }
   return dummy;
@@ -65,6 +65,31 @@ const std::vector<IpctSt::IpcStructNum>& KtUtil::GetCfgMsgTemplate(
  */
 void KtUtil::Init() {
   KtMsgTemplate *tmpl;
+  // UNC_KT_UNIFIED_NETWORK
+  tmpl = new KtMsgTemplate();
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyUnifiedNw);
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStValUnifiedNw);
+  kt_msg_templates_[UNC_KT_UNIFIED_NETWORK] = tmpl;
+  // UNC_KT_UNW_LABEL
+  tmpl = new KtMsgTemplate();
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyUnwLabel);
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStValUnwLabel);
+  kt_msg_templates_[UNC_KT_UNW_LABEL] = tmpl;
+  // UNC_KT_UNW_LABEL_RANGE
+  tmpl = new KtMsgTemplate();
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyUnwLabelRange);
+  // NO_VAL_STRUCT
+  kt_msg_templates_[UNC_KT_UNW_LABEL_RANGE] = tmpl;
+  // UNC_KT_UNW_SPINE_DOMAIN
+  tmpl = new KtMsgTemplate();
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyUnwSpineDomain);
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStValUnwSpineDomain);
+  kt_msg_templates_[UNC_KT_UNW_SPINE_DOMAIN] = tmpl;
+  // UNC_KT_VTN_UNIFIED
+  tmpl = new KtMsgTemplate();
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVtnUnified);
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStValVtnUnified);
+  kt_msg_templates_[UNC_KT_VTN_UNIFIED] = tmpl;
   // UNC_KT_FLOWLIST
   tmpl = new KtMsgTemplate();
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyFlowlist);
@@ -110,6 +135,11 @@ void KtUtil::Init() {
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVbr);
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStValVbr);
   kt_msg_templates_[UNC_KT_VBRIDGE] = tmpl;
+  // UNC_KT_VBR_PORTMAP
+  tmpl = new KtMsgTemplate();
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVbrPortMap);
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStPfcdrvValVbrPortMap);
+  kt_msg_templates_[UNC_KT_VBR_PORTMAP] = tmpl;
   // UNC_KT_VBR_VLANMAP
   tmpl = new KtMsgTemplate();
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVlanMap);
@@ -224,14 +254,14 @@ void KtUtil::Init() {
   // UNC_KT_VTERMIF_POLICINGMAP_ENTRY // read only
 
   // UNC_KT_VTERM_IF_FLOWFILTER
+  tmpl = new KtMsgTemplate();
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVtermIfFlowfilter);
-  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStPfcdrvValVbrifVextif);
   kt_msg_templates_[UNC_KT_VTERMIF_FLOWFILTER] = tmpl;
 
   // UNC_KT_VTERMIF_FLOWFILTER_ENTRY
   tmpl = new KtMsgTemplate();
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVtermIfFlowfilterEntry);
-  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStPfcdrvValFlowfilterEntry);
+  tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStValFlowfilterEntry);
   kt_msg_templates_[UNC_KT_VTERMIF_FLOWFILTER_ENTRY] = tmpl;
 
   // UNC_KT_VUNKNOWN
@@ -279,7 +309,7 @@ void KtUtil::Init() {
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVlink);
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStValVlink);
   kt_msg_templates_[UNC_KT_VLINK] = tmpl;
- //UNC_KT_VTN_DATAFLOW
+  // UNC_KT_VTN_DATAFLOW
   tmpl = new KtMsgTemplate();
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVtnDataflow);
   kt_msg_templates_[UNC_KT_VTN_DATAFLOW] = tmpl;
@@ -293,7 +323,7 @@ void KtUtil::Init() {
  * @param stnum
  * @param data
  *
- * @return 
+ * @return
  */
 std::string KtUtil::KtStructToStr(IpctSt::IpcStructNum stnum, void *data) {
   std::stringstream ss;
@@ -354,6 +384,41 @@ std::string KtUtil::KtStructToStr(IpctSt::IpcStructNum stnum, void *data) {
       // Below this line add all other ipc_structs
     case IpctSt::kIpcStKeyRoot:
       return "ROOT";
+    case IpctSt::kIpcStKeyUnifiedNw:
+      return IpcStructToStr(*reinterpret_cast<key_unified_nw*>(data));
+    case IpctSt::kIpcStValUnifiedNw:
+      return IpcStructToStr(*reinterpret_cast<val_unified_nw*>(data));
+    case IpctSt::kIpcStKeyUnwLabel:
+      return IpcStructToStr(*reinterpret_cast<key_unw_label*>(data));
+    case IpctSt::kIpcStValUnwLabel:
+      return IpcStructToStr(*reinterpret_cast<val_unw_label*>(data));
+    case IpctSt::kIpcStKeyUnwLabelRange:
+      return IpcStructToStr(*reinterpret_cast<key_unw_label_range*>(data));
+    case IpctSt::kIpcStValUnwLabelRange:
+      return IpcStructToStr(*reinterpret_cast<val_unw_label_range*>(data));
+    case IpctSt::kIpcStKeyUnwSpineDomain:
+      return IpcStructToStr(*reinterpret_cast<key_unw_spine_domain*>(data));
+    case IpctSt::kIpcStValUnwSpineDomain:
+      return IpcStructToStr(*reinterpret_cast<val_unw_spine_domain*>(data));
+    case IpctSt::kIpctStValUnwSpineDomain_Ext:
+      return IpcStructToStr(*reinterpret_cast<val_unw_spdom_ext*>(data));
+    case IpctSt::kIpctStValSpineAlarmSt:
+      return IpcStructToStr(*reinterpret_cast<val_spdom_st*>(data));
+    case IpctSt::kIpcStValUnwSpineDomainSt:
+      return IpcStructToStr(*reinterpret_cast<val_unw_spine_domain_st*>(data));
+    case IpctSt::kIpcStValUnwSpineDomainAssignedLabel:
+      return IpcStructToStr(
+          *reinterpret_cast<val_unw_spine_domain_assigned_label*>(data));
+    case IpctSt::kIpcStValUnwSpineDomainFdbentry:
+      return IpcStructToStr(
+          *reinterpret_cast<val_unw_spine_domain_fdbentry*>(data));
+    case IpctSt::kIpcStValUnwSpineDomainFdbentryVtn:
+      return IpcStructToStr(
+          *reinterpret_cast<val_unw_spine_domain_fdbentry_vtn*>(data));
+    case IpctSt::kIpcStKeyVtnUnified:
+      return IpcStructToStr(*reinterpret_cast<key_vtn_unified*>(data));
+    case IpctSt::kIpcStValVtnUnified:
+      return IpcStructToStr(*reinterpret_cast<val_vtn_unified*>(data));
     case IpctSt::kIpcStValPing:
       return IpcStructToStr(*reinterpret_cast<val_ping*>(data));
     case IpctSt::kIpcStValVtnNeighbor:
@@ -407,6 +472,12 @@ std::string KtUtil::KtStructToStr(IpctSt::IpcStructNum stnum, void *data) {
       return IpcStructToStr(*reinterpret_cast<key_vlan_map*>(data));
     case IpctSt::kIpcStValVlanMap:
       return IpcStructToStr(*reinterpret_cast<val_vlan_map*>(data));
+    case IpctSt::kIpcStKeyVbrPortMap:
+      return IpcStructToStr(*reinterpret_cast<key_vbr_portmap*>(data));
+    case IpctSt::kIpcStValVbrPortMap:
+      return IpcStructToStr(*reinterpret_cast<val_vbr_portmap*>(data));
+    case IpctSt::kIpcStValVbrPortMapSt:
+      return IpcStructToStr(*reinterpret_cast<val_vbr_portmap_st*>(data));
     case IpctSt::kIpcStKeyVrt:
       return IpcStructToStr(*reinterpret_cast<key_vrt*>(data));
     case IpctSt::kIpcStValVrt:
@@ -605,7 +676,42 @@ std::string KtUtil::KtStructToStr(IpctSt::IpcStructNum stnum, void *data) {
     case IpctSt::kIpcStKeyVtermIfFlowfilterEntry:
       return IpcStructToStr(
           *reinterpret_cast<key_vterm_if_flowfilter_entry*>(data));
-
+    // Convert structures
+    case IpctSt::kIpcStKeyConvertVbr:
+      return IpcStructToStr(*reinterpret_cast<key_convert_vbr*>(data));
+    case IpctSt::kIpcStValConvertVbr:
+      return IpcStructToStr(*reinterpret_cast<val_convert_vbr*>(data));
+    case IpctSt::kIpcStKeyConvertVbrIf:
+      return IpcStructToStr(*reinterpret_cast<key_convert_vbr_if*>(data));
+    case IpctSt::kIpcStValConvertVbrIf:
+      return IpcStructToStr(*reinterpret_cast<val_convert_vbr_if*>(data));
+    case IpctSt::kIpcStKeyConvertVtunnel:
+      return IpcStructToStr(*reinterpret_cast<key_convert_vtunnel*>(data));
+    case IpctSt::kIpcStValConvertVtunnel:
+      return IpcStructToStr(*reinterpret_cast<val_convert_vtunnel*>(data));
+    case IpctSt::kIpcStKeyConvertVtunnelIf:
+      return IpcStructToStr(*reinterpret_cast<key_convert_vtunnel_if*>(data));
+    case IpctSt::kIpcStValConvertVtunnelIf:
+      return IpcStructToStr(*reinterpret_cast<val_convert_vtunnel_if*>(data));
+    case IpctSt::kIpcStKeyConvertVlink:
+      return IpcStructToStr(*reinterpret_cast<key_convert_vlink*>(data));
+    case IpctSt::kIpcStValConvertVlink:
+      return IpcStructToStr(*reinterpret_cast<val_convert_vlink*>(data));
+    case IpctSt::kIpcStValVtnGatewayPort:
+      return IpcStructToStr(*reinterpret_cast<val_vtn_gateway_port*>(data));
+    // Expand structures
+    case IpctSt::kIpcStValVbrExpand:
+      return IpcStructToStr(*reinterpret_cast<val_vbr_expand*>(data));
+    case IpctSt::kIpcStValVbrIfExpand:
+      return IpcStructToStr(*reinterpret_cast<val_vbr_if_expand*>(data));
+    case IpctSt::kIpcStValVbrPortMapExpand:
+      return IpcStructToStr(*reinterpret_cast<val_vbr_portmap_expand*>(data));
+    case IpctSt::kIpcStValVtunnelExpand:
+      return IpcStructToStr(*reinterpret_cast<val_vtunnel_expand*>(data));
+    case IpctSt::kIpcStValVtunnelIfExpand:
+      return IpcStructToStr(*reinterpret_cast<val_vtunnel_if_expand*>(data));
+    case IpctSt::kIpcStValVlinkExpand:
+      return IpcStructToStr(*reinterpret_cast<val_vlink_expand*>(data));
       // Driver structures
     case IpctSt::kIpcStPfcdrvValVbrIf:
       return IpcStructToStr(*reinterpret_cast<pfcdrv_val_vbr_if*>(data));
@@ -620,6 +726,12 @@ std::string KtUtil::KtStructToStr(IpctSt::IpcStructNum stnum, void *data) {
     /* VlanmapOnBoundary: Added new val struct */
     case IpctSt::kIpcStPfcdrvValVlanMap:
       return IpcStructToStr(*reinterpret_cast<pfcdrv_val_vlan_map*>(data));
+    case IpctSt::kIpcStPfcdrvValVbrPortMap:
+      return IpcStructToStr(*reinterpret_cast<pfcdrv_val_vbr_portmap*>(data));
+    case IpctSt::kIpcStPfcdrvValVtnController:
+      return IpcStructToStr(
+                        *reinterpret_cast<pfcdrv_val_vtn_controller*>(data));
+
       // Physical structures
     case IpctSt::kIpcStKeyCtr:
       return IpcStructToStr(*reinterpret_cast<key_ctr*>(data));
@@ -629,6 +741,10 @@ std::string KtUtil::KtStructToStr(IpctSt::IpcStructNum stnum, void *data) {
       return IpcStructToStr(*reinterpret_cast<val_ctr_st*>(data));
     case IpctSt::kIpcStKeyCtrDomain:
       return IpcStructToStr(*reinterpret_cast<key_ctr_domain*>(data));
+    case IpctSt::kIpcStValCtrDomain:
+      return IpcStructToStr(*reinterpret_cast<val_ctr_domain*>(data));
+    case IpctSt::kIpcStValCtrDomainSt:
+      return IpcStructToStr(*reinterpret_cast<val_ctr_domain_st*>(data));
     case IpctSt::kIpcStKeyLogicalPort:
       return IpcStructToStr(*reinterpret_cast<key_logical_port*>(data));
     case IpctSt::kIpcStValLogicalPort:
@@ -650,6 +766,14 @@ std::string KtUtil::KtStructToStr(IpctSt::IpcStructNum stnum, void *data) {
       return IpcStructToStr(*reinterpret_cast<vnpdrv_val_vtunnel_if*>(data));
     case IpctSt::kIpcStKeyVtnDataflow:
       return IpcStructToStr(*reinterpret_cast<key_vtn_dataflow*>(data));
+    case IpctSt::kIpcStKeyVbid:
+      return IpcStructToStr(*reinterpret_cast<key_vbid_label*>(data));
+    case IpctSt::kIpcStValVbid:
+      return IpcStructToStr(*reinterpret_cast<val_vbid_label*>(data));
+    case IpctSt::kIpcStKeyGVtnId:
+      return IpcStructToStr(*reinterpret_cast<key_gvtnid_label*>(data));
+    case IpctSt::kIpcStValGVtnId:
+      return IpcStructToStr(*reinterpret_cast<val_gvtnid_label*>(data));
   }
   return ss.str();
 }
@@ -753,6 +877,180 @@ std::string KtUtil::ConfigStatusToStr(const uint8_t *cfgstatus, int size) {
   return ss.str();
 }
 
+std::string KtUtil::IpcStructToStr(const key_unified_nw& key_unified_nw) {
+  std::stringstream ss;
+  ss << "   -----   key_unified_nw   -----   " << endl;
+  ss << "   -->unified_nw_name " << key_unified_nw.unified_nw_id << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_unified_nw& val_unified_nw) {
+  std::stringstream ss;
+  ss << "   -----   val_unified_nw   -----   " << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(val_unified_nw.valid);
+  ss << "   -->cs_row_status " << chr2int(val_unified_nw.cs_row_status) <<
+      endl;
+  ss << "   -->cs_attr " << CS_ARRAY_TO_STR(val_unified_nw.cs_attr);
+  ss << "   -->routing_type " <<chr2int(val_unified_nw.routing_type) << endl;
+  ss << "   -->is_default " << chr2int(val_unified_nw.is_default) << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const key_unw_label& key_unw_label) {
+  std::stringstream ss;
+  ss << "   -----   key_unw_label   -----   " << endl;
+  ss<< "   -->unified_nw_name       " <<
+      key_unw_label.unified_nw_key.unified_nw_id << endl;
+  ss << "   -->unw_label_name " <<key_unw_label.unw_label_id << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_unw_label& val_unw_label) {
+  std::stringstream ss;
+  ss << "   -----   val_unw_label   -----   " << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(val_unw_label.valid);
+  ss << "   -->cs_row_status " << chr2int(val_unw_label.cs_row_status) << endl;
+  ss << "   -->cs_attr " << CS_ARRAY_TO_STR(val_unw_label.cs_attr);
+  ss << "   -->max_count " << val_unw_label.max_count << endl;
+  ss << "   -->raising_threshold" << val_unw_label.raising_threshold << endl;
+  ss << "   -->falling_threshold" << val_unw_label.falling_threshold << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const key_unw_label_range& key_unwl_range) {
+  std::stringstream ss;
+  ss << "   -----   key_unw_label_range   -----   " << endl;
+  ss << "   -->unified_nw_name      " <<
+      key_unwl_range.unw_label_key.unified_nw_key.unified_nw_id <<endl;
+  ss << "   -->unw_label_name " <<
+      key_unwl_range.unw_label_key.unw_label_id << endl;
+  ss << "  --->min_range  " << key_unwl_range.range_min << endl;
+  ss << "  --->max_range  " << key_unwl_range.range_max << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_unw_label_range& val_unwl_range) {
+  std::stringstream ss;
+  ss << "   -----   val_unw_label_range   -----   " << endl;
+  ss << "   -->cs_row_status " << chr2int(val_unwl_range.cs_row_status) << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(
+    const key_unw_spine_domain& key_unws_domain) {
+  std::stringstream ss;
+  ss << "   -----   key_unw_spine_domain  ----  " << endl;
+  ss << "   --> unified_nw_name   " <<key_unws_domain.unw_key.unified_nw_id <<
+      endl;
+  ss << "   --> unw_spine_id  " <<key_unws_domain.unw_spine_id << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(
+    const val_unw_spine_domain &val_unws_domain) {
+  std::stringstream ss;
+  ss << "   ----  val_unw_spine_domain  ----  " <<endl;
+  ss << "   --> valid " << VALID_ARRAY_TO_STR(val_unws_domain.valid);
+  ss << "   --> cs_row_status " << chr2int(val_unws_domain.cs_row_status) <<
+      endl;
+  ss << "   --> cs_attr " << CS_ARRAY_TO_STR(val_unws_domain.cs_attr);
+  ss << "   --> spine_controller_id " << val_unws_domain.spine_controller_id <<
+      endl;
+  ss << "   --> spine_domain_id " << val_unws_domain.spine_domain_id << endl;
+  ss << "   --> unw_label_id "    << val_unws_domain.unw_label_id << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(
+    const val_unw_spdom_ext &val_unw_spdom_ext) {
+  std::stringstream ss;
+  ss << "   ----  val_unw_spine_domain_ext  ----  " <<endl;
+  ss << "   --> valid " << VALID_ARRAY_TO_STR(val_unw_spdom_ext.valid) << endl;
+  ss << IpcStructToStr(val_unw_spdom_ext.val_unw_spine_dom) << endl;
+  ss << " --- Used label count " << val_unw_spdom_ext.used_label_count << endl;
+  // ss << " -- Alarm Status "<<chr2int(val_unw_spdom_ext.alarm_status) << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(
+    const val_spdom_st &val_spdom_st) {
+  std::stringstream ss;
+  ss << "   ----  val_spdom_st ----  " <<endl;
+  ss << "   --> valid " << VALID_ARRAY_TO_STR(val_spdom_st.valid) << endl;
+  ss << " --> Alarm Status " <<chr2int(val_spdom_st.alarm_status) << endl;
+  return ss.str();
+}
+std::string KtUtil::IpcStructToStr(
+    const val_unw_spine_domain_st &val_unwsd_st) {
+  std::stringstream ss;
+  ss << "   ----  val_unw_spine_domain_st ---- " << endl;
+  ss << "   --> valid " << VALID_ARRAY_TO_STR(val_unwsd_st.valid);
+  ss << "   --> max_count " << val_unwsd_st.max_count << endl;
+  ss << "   --> used_count " << val_unwsd_st.used_count << endl;
+  ss << "   --> alarm_status " <<chr2int(val_unwsd_st.alarm_status) << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(
+    const val_unw_spine_domain_assigned_label &val_assigned_label) {
+  std::stringstream ss;
+  ss << "   ----  val_unw_spine_domain_assigned_label ----" << endl;
+  ss << "   --> valid " << VALID_ARRAY_TO_STR(val_assigned_label.valid);
+  ss << "   --> label " << val_assigned_label.label << endl;
+  ss << "   --> vtn_id " << val_assigned_label.vtn_id << endl;
+  ss << "   --> vnode_id " << val_assigned_label.vnode_id << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(
+    const val_unw_spine_domain_fdbentry &val_unwsd_fdbentry) {
+  std::stringstream ss;
+  ss << "   ----  val_unw_spine_domain_fdbentry ----" << endl;
+  ss << "   --> valid " << VALID_ARRAY_TO_STR(val_unwsd_fdbentry.valid);
+  ss << "   --> max_count " <<val_unwsd_fdbentry.max_count << endl;
+  ss << "   --> max_switch_id " <<val_unwsd_fdbentry.max_switch_id << endl;
+  ss << "   --> min_count " <<val_unwsd_fdbentry.min_count << endl;
+  ss << "   --> min_switch_id " <<val_unwsd_fdbentry.min_switch_id << endl;
+  ss << "   --> avg_count " <<val_unwsd_fdbentry.avg_count << endl;
+  ss << "   --> num_of_switches " <<val_unwsd_fdbentry.num_of_switches << endl;
+  ss << "   --> vtn_count " <<val_unwsd_fdbentry.vtn_count << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(
+    const val_unw_spine_domain_fdbentry_vtn &val_fdbentry_vtn) {
+  std::stringstream ss;
+  ss << "   ----  val_unw_spine_domain_fdbentry_vtn ----" << endl;
+  ss << "   --> valid " << VALID_ARRAY_TO_STR(val_fdbentry_vtn.valid);
+  ss << "   --> vtn_id " <<val_fdbentry_vtn.vtn_id << endl;
+  ss << "   --> vlan_id " <<val_fdbentry_vtn.vlan_id << endl;
+  ss << "   --> max_count " <<val_fdbentry_vtn.max_count << endl;
+  ss << "   --> max_switch_id " <<val_fdbentry_vtn.max_switch_id << endl;
+  ss << "   --> min_count " <<val_fdbentry_vtn.min_count << endl;
+  ss << "   --> min_switch_id " <<val_fdbentry_vtn.min_switch_id << endl;
+  ss << "   --> avg_count " <<val_fdbentry_vtn.avg_count << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const key_vtn_unified &key_vtn_unified) {
+  std::stringstream ss;
+  ss << "   ----  key_vtn_unified ----" <<endl;
+  ss << "   --> vtn_name " <<key_vtn_unified.vtn_key.vtn_name <<endl;
+  ss << "   --> unified_nw_id " <<key_vtn_unified.unified_nw_id << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_vtn_unified &val_vtn_unified) {
+  std::stringstream ss;
+  ss << "   ----  val_vtn_unified ----" <<endl;
+  ss << "   --> valid " << VALID_ARRAY_TO_STR(val_vtn_unified.valid);
+  ss << "   --> cs_row_status " << chr2int(val_vtn_unified.cs_row_status) <<
+      endl;
+  ss << "   --> cs_attr " << CS_ARRAY_TO_STR(val_vtn_unified.cs_attr) << endl;
+  ss << "   --> spine_id " << val_vtn_unified.spine_id << endl;
+  return ss.str();
+}
+
 std::string KtUtil::IpcStructToStr(const val_ping& val_ping_t) {
   std::stringstream ss;
   ss << "   -----   val_ping   -----   " << endl;
@@ -790,7 +1088,8 @@ std::string KtUtil::IpcStructToStr(const key_vtn_dataflow& key_vtn_df) {
   ss << "   -->vtn_name " << key_vtn_df.vtn_key.vtn_name << endl;
   ss << "   -->vnode_name " << key_vtn_df.vnode_id << endl;
   ss << "   -->vlan_id " << key_vtn_df.vlanid << endl;
-  ss << "   -->source_mac_addr " << MacAddrToStr(key_vtn_df.src_mac_address) << endl;
+  ss << "   -->source_mac_addr " << MacAddrToStr(key_vtn_df.src_mac_address)
+      << endl;
   return ss.str();
 }
 
@@ -930,6 +1229,7 @@ std::string KtUtil::IpcStructToStr(const val_vbr& val_vbr) {
   ss << "   -->host_addr " << Ipv4AddrToStr(val_vbr.host_addr) << endl;
   ss << "   -->host_addr_prefixlen " << chr2int(val_vbr.host_addr_prefixlen)
       << endl;
+  ss << "   -->label " << chr2int(val_vbr.label) << endl;
   return ss.str();
 }
 
@@ -1037,6 +1337,39 @@ std::string KtUtil::IpcStructToStr(const val_vlan_map& val_vlan_map) {
   ss << "   -->cs_row_status " << chr2int(val_vlan_map.cs_row_status) << endl;
   ss << "   -->cs_attr " << CS_ARRAY_TO_STR(val_vlan_map.cs_attr);
   ss << "   -->vlan_id " << val_vlan_map.vlan_id << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const key_vbr_portmap& key_vbr_portmap) {
+  std::stringstream ss;
+  ss << "   -----   key_vbr_portmap   -----   " << endl;
+  // ss << "   -->vtn_key " << endl;
+  ss << IpcStructToStr(key_vbr_portmap.vbr_key);
+  ss << "   -->vbr_portmap_id " << key_vbr_portmap.portmap_id << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_vbr_portmap& val_vbr_portmap) {
+  std::stringstream ss;
+  ss << "   -----   val_vbr_portmap   -----   " << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(val_vbr_portmap.valid);
+  ss << "   -->cs_row_status " << chr2int(val_vbr_portmap.cs_row_status)
+      << endl;
+  ss << "   -->cs_attr " << CS_ARRAY_TO_STR(val_vbr_portmap.cs_attr);
+  ss << "   -->controller_id " << val_vbr_portmap.controller_id << endl;
+  ss << "   -->domain_id " << val_vbr_portmap.domain_id << endl;
+  ss << "   -->logical_port_id " << val_vbr_portmap.logical_port_id << endl;
+  ss << "   -->label_type " << chr2int(val_vbr_portmap.label_type) << endl;
+  ss << "   -->label " << chr2int(val_vbr_portmap.label) << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(
+    const val_vbr_portmap_st& val_vbr_portmap_st) {
+  std::stringstream ss;
+  ss << "   -----   val_vbr_portmap_st   -----   " << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(val_vbr_portmap_st.valid);
+  ss << "   -->oper_status " << chr2int(val_vbr_portmap_st.oper_status) << endl;
   return ss.str();
 }
 
@@ -1165,7 +1498,6 @@ std::string KtUtil::IpcStructToStr(const key_static_ip_route& data) {
   ss << "   -->dst_addr " << Ipv4AddrToStr(data.dst_addr) << endl;
   ss << "   -->dst_addr_prefixlen " << chr2int(data.dst_addr_prefixlen) << endl;
   ss << "   -->next_hop_addr " << Ipv4AddrToStr(data.next_hop_addr) << endl;
-  ss << "   -->nwm_name " << data.nwm_name << endl;
   return ss.str();
 }
 
@@ -1175,6 +1507,7 @@ std::string KtUtil::IpcStructToStr(const val_static_ip_route& data) {
   ss << "   -->valid " << VALID_ARRAY_TO_STR(data.valid);
   ss << "   -->cs_row_status " << chr2int(data.cs_row_status) << endl;
   ss << "   -->cs_attr " << CS_ARRAY_TO_STR(data.cs_attr);
+  ss << "   -->nwm_name " << data.nwm_name << endl;
   ss << "   -->group_metric " << data.group_metric << endl;
   return ss.str();
 }
@@ -1555,7 +1888,8 @@ std::string KtUtil::IpcStructToStr(const val_vlink& val_vlink) {
   ss << "   -->vnode2_name " << val_vlink.vnode2_name << endl;
   ss << "   -->vnode2_ifname " << val_vlink.vnode2_ifname << endl;
   ss << "   -->boundary_name " << val_vlink.boundary_name << endl;
-  ss << "   -->vlan_id " << val_vlink.vlan_id << endl;
+  ss << "   -->label_type " << chr2int(val_vlink.label_type) << endl;
+  ss << "   -->label " << chr2int(val_vlink.label) << endl;
   ss << "   -->description " << val_vlink.description << endl;
   return ss.str();
 }
@@ -1851,7 +2185,8 @@ std::string KtUtil::IpcStructToStr(const key_vterm_if_flowfilter&
   std::stringstream ss;
   ss << "   -----   key_vterm_if_flowfilter   -----   " << endl;
   ss << IpcStructToStr(key_vterm_if_flowfilter.if_key);
-  ss << "   -->direction " << chr2int(key_vterm_if_flowfilter.direction) << endl;
+  ss << "   -->direction " << chr2int(key_vterm_if_flowfilter.direction)
+     << endl;
   return ss.str();
 }
 
@@ -1883,7 +2218,8 @@ std::string KtUtil::IpcStructToStr(const val_rename_policingprofile&
   ss << "   -->valid " << VALID_ARRAY_TO_STR(val_rename_policingprofile.valid);
   ss << "   -->policingprofile_newname "
       << val_rename_policingprofile.policingprofile_newname << endl;
-  ss << "   -->Rename_type " << chr2int(val_rename_policingprofile.rename_type) << endl;
+  ss << "   -->Rename_type " << chr2int(val_rename_policingprofile.rename_type)
+      << endl;
   return ss.str();
 }
 
@@ -2073,6 +2409,25 @@ std::string KtUtil::IpcStructToStr(const key_ctr_domain &data) {
   return ss.str();
 }
 
+std::string KtUtil::IpcStructToStr(const val_ctr_domain &data) {
+  std::stringstream ss;
+  ss << "   -----   val_ctr_domain   -----   " << endl;
+  ss << "   -->Type " << chr2int(data.type) << endl;
+  ss << "   -->description " << data.description << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(data.valid);
+  ss << "   -->cs_row_status " << data.cs_row_status << endl;
+  ss << "   -->cs_attr " << CS_ARRAY_TO_STR(data.cs_attr);
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_ctr_domain_st &data) {
+  std::stringstream ss;
+  ss << "   -----   val_ctr_domain_st   -----   " << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(data.valid);
+  ss << IpcStructToStr(data.domain);
+  ss << "   -->oper_status " << chr2int(data.oper_status) << endl;
+  return ss.str();
+}
 std::string KtUtil::IpcStructToStr(const key_logical_port &data) {
   std::stringstream ss;
   ss << "   -----   key_logical_port   -----   " << endl;
@@ -2206,6 +2561,24 @@ std::string KtUtil::IpcStructToStr(const pfcdrv_val_vlan_map &data) {
   return ss.str();
 }
 
+std::string KtUtil::IpcStructToStr(const pfcdrv_val_vbr_portmap &data) {
+  std::stringstream ss;
+  ss << "   -----   pfcdrv_val_vbr_portmap   -----   " << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(data.valid);
+  ss << IpcStructToStr(data.vbrpm);
+  ss << "   -->bdry_ref_count " << chr2int(data.bdry_ref_count) << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const pfcdrv_val_vtn_controller &data) {
+  std::stringstream ss;
+  ss << "   -----   pfcdrv_val_vtn_controller   -----   " << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(data.valid);
+  ss << "   -->label_type " << chr2int(data.label_type) << endl;
+  ss << "   -->label " << data.label << endl;
+  return ss.str();
+}
+
 // VNP-DRV
 std::string KtUtil::IpcStructToStr(const vnpdrv_val_vtunnel& data) {
   std::stringstream ss;
@@ -2223,9 +2596,209 @@ std::string KtUtil::IpcStructToStr(const vnpdrv_val_vtunnel_if& data) {
   ss << "   -->vlan_id " << data.vlan_id << endl;
   return ss.str();
 }
+// convert function definition
+std::string KtUtil::IpcStructToStr(const key_convert_vbr &data) {
+std::stringstream ss;
+ss << "   ----- key_convert_vbr --------------" << endl;
+ss << IpcStructToStr(data.vbr_key);
+ss << "   -->convert_vbr_name" << data.conv_vbr_name << endl;
+return ss.str();
+}
 
+std::string KtUtil::IpcStructToStr(const val_convert_vbr &data) {
+std::stringstream ss;
+ss << "   ----- val_convert_vbr -----   " << endl;
+ss << "   -->valid " << VALID_ARRAY_TO_STR(data.valid) << endl;
+ss << "   -->label " << chr2int(data.label) << endl;
+return ss.str();
+}
 
+std::string KtUtil::IpcStructToStr(const key_convert_vbr_if &data) {
+  std::stringstream ss;
+  ss << "   ----- key_convert_vbr_if --------------" << endl;
+  ss << IpcStructToStr(data.convert_vbr_key);
+  ss << "   -->convert_vbr_if_name" << data.convert_if_name;
+  return ss.str();
+}
 
+std::string KtUtil::IpcStructToStr(const val_convert_vbr_if&
+                                   val_convert_vbrif) {
+  std::stringstream ss;
+  ss << "   -----   val_convert_vbr_if   -----   " << endl;
+  ss << "   -->cs_row_status " <<
+      chr2int(val_convert_vbrif.cs_row_status) << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const key_convert_vtunnel &data) {
+std::stringstream ss;
+ss << "   ----- key_convert_vtunnel --------------" << endl;
+ss << IpcStructToStr(data.vtn_key);
+ss << "   -->convert_vtunnel_name   " << data.convert_vtunnel_name << endl;
+return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_convert_vtunnel &data) {
+std::stringstream ss;
+ss << "   ----- val_convert_vtunnel -----   " << endl;
+ss << "   -->valid " << VALID_ARRAY_TO_STR(data.valid) << endl;
+ss << "   -->ref_count       " << data.ref_count << endl;
+ss << "   -->label           " << data.label << endl;
+return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const key_convert_vtunnel_if &data) {
+std::stringstream ss;
+ss << "   ----- key_convert_vtunnel_if --------------" << endl;
+ss << IpcStructToStr(data.convert_vtunnel_key);
+ss << "   -->convert_vtunnel_if_name   " << data.convert_if_name << endl;
+return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_convert_vtunnel_if &data) {
+std::stringstream ss;
+ss << "   ----- val_convert_vtunnel_if -----   " << endl;
+ss << "   -->valid " << VALID_ARRAY_TO_STR(data.valid) << endl;
+ss << "   -->un_vbr_name     " << data.un_vbr_name << endl;
+return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const key_convert_vlink &data) {
+  std::stringstream ss;
+  ss << "   ----- key_convert_vlink --------------" << endl;
+  ss << IpcStructToStr(data.vbr_key);
+  ss << "   -->convert_vlink_name" << data.convert_vlink_name;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(
+    const val_convert_vlink &convert_val_vlink) {
+  std::stringstream ss;
+  ss << "   ----- val_convert_vlink -----   " << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(convert_val_vlink.valid) << endl;
+  ss << "   -->vnode1_name " << convert_val_vlink.vnode1_name << endl;
+  ss << "   -->vnode1_ifname " << convert_val_vlink.vnode1_ifname << endl;
+  ss << "   -->vnode2_name " << convert_val_vlink.vnode2_name << endl;
+  ss << "   -->vnode2_ifname " << convert_val_vlink.vnode2_ifname << endl;
+  ss << "   -->boundary_name " << convert_val_vlink.boundary_name << endl;
+  ss << "   -->label_type " << chr2int(convert_val_vlink.label_type) << endl;
+  ss << "   -->label " << chr2int(convert_val_vlink.label) << endl;
+
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_vbr_expand &data) {
+  std::stringstream ss;
+  ss << "   ----------- val_vbr_expand --------------" << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(data.valid) << endl;
+  ss << "   -->vbridge_name " << data.vbridge_name  << endl;
+  ss << "   -->controller_id " << data.controller_id << endl;
+  ss << "   -->domain_id " << data.domain_id << endl;
+  ss << "   -->label " << chr2int(data.label) << endl;
+  ss << "   -->controller_vtn_name " << data.controller_vtn_name << endl;
+  ss << "   -->controller_vtn_label " << data.controller_vtn_label << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_vbr_portmap_expand &data) {
+  std::stringstream ss;
+  ss << "   ----------- val_vbr_portmap_expand --------------" << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(data.valid) << endl;
+  ss << "   -->portmap_id " << data.portmap_id << endl;
+  ss << "   -->logical_port_id " << data.logical_port_id << endl;
+  ss << "   -->label_type " << chr2int(data.label_type) << endl;
+  ss << "   -->label " << chr2int(data.label) << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_vbr_if_expand &data) {
+  std::stringstream ss;
+  ss << "   ----------- val_vbr_if_expand --------------" << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(data.valid) << endl;
+  ss << "   -->if_name " << data.if_name << endl;
+  ss << "   -->connected_vnode_name " << data.connected_vnode_name << endl;
+  ss << "   -->connected_if_name " << data.connected_if_name << endl;
+  ss << "   -->connected_vlink_name " << data.connected_vlink_name << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_vtunnel_expand &data) {
+  std::stringstream ss;
+  ss << "   ----------- val_vtunnel_expand --------------" << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(data.valid) << endl;
+  ss << "   -->vtunnel_name " << data.vtunnel_name  << endl;
+  ss << "   -->controller_id " << data.controller_id << endl;
+  ss << "   -->domain_id " << data.domain_id << endl;
+  ss << "   -->label " << chr2int(data.label) << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_vtunnel_if_expand &data) {
+  std::stringstream ss;
+  ss << "   ----------- val_vtunnel_if_expand --------------" << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(data.valid) << endl;
+  ss << "   -->if_name " << data.if_name << endl;
+  ss << "   -->connected_vnode_name " << data.connected_vnode_name << endl;
+  ss << "   -->connected_if_name " << data.connected_if_name << endl;
+  ss << "   -->connected_vlink_name " << data.connected_vlink_name << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_vlink_expand &data) {
+  std::stringstream ss;
+  ss << "   ----------- val_vlink_expand --------------" << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(data.valid) << endl;
+  ss << "   -->vlink_name " << data.vlink_name << endl;
+  ss << "   -->vnode1_name " << data.vnode1_name << endl;
+  ss << "   -->vnode1_ifname " << data.vnode1_ifname << endl;
+  ss << "   -->vnode2_name " << data.vnode2_name << endl;
+  ss << "   -->vnode2_ifname " << data.vnode2_ifname << endl;
+  ss << "   -->boundary_name " << data.boundary_name << endl;
+  ss << "   -->label_type " << chr2int(data.label_type) << endl;
+  ss << "   -->label " << chr2int(data.label) << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_vtn_gateway_port &data) {
+std::stringstream ss;
+  ss << "   ----- val_vtn_gateway_port -----   " << endl;
+  ss << "   -->valid " << VALID_ARRAY_TO_STR(data.valid) << endl;
+  ss << "   -->logical_port_id " << data.logical_port_id << endl;
+  ss << "   -->label           " << data.label << endl;
+  ss << "   -->ref_count       " << data.ref_count << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const key_vbid_label &data) {
+  std::stringstream ss;
+  ss << "   ----- key_vbid_label --------------" << endl;
+  ss << IpcStructToStr(data.vtn_key);
+  ss << "   -->row_no " << data.label_row << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_vbid_label &data) {
+  std::stringstream ss;
+  ss << "   ----- val_vbid_label -----   " << endl;
+  ss << "   -->label " << data.label_id << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const key_gvtnid_label &data) {
+  std::stringstream ss;
+  ss << "   ----- key_gvtnid_label --------------" << endl;
+  ss << "   -->data.ctrlr_name " << data.ctrlr_name << endl;
+  ss << "   -->data.domain_name " << data.domain_name << endl;
+  ss << "   -->row_no" << data.label_row << endl;
+  return ss.str();
+}
+
+std::string KtUtil::IpcStructToStr(const val_gvtnid_label &data) {
+  std::stringstream ss;
+  ss << "   ----- val_gvtnid_label -----   " << endl;
+  ss << "   -->label " << data.label_id << endl;
+  return ss.str();
+}
 }  // namespace ipc_util
 }  // namespace upll
 }  // namespace unc

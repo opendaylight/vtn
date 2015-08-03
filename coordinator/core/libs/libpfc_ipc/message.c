@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013 NEC Corporation
+ * Copyright (c) 2011-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -634,11 +634,13 @@ pfc_ipcmsg_recv(ipc_sess_t *PFC_RESTRICT sess, ipc_msg_t *PFC_RESTRICT msg,
 	}
 
 	msg->im_size = meta.imm_size;
+#ifndef	PFC_LP64
 	if (PFC_EXPECT_FALSE(msg->im_size > IPC_OUTSIZE_MAX)) {
 		IPC_LOG_ERROR("Too large PDU data: %u", msg->im_size);
 
 		return E2BIG;
 	}
+#endif	/* !PFC_LP64 */
 
 	IPC_LOG_VERBOSE("Receiving IPC message: count=%u, size=%u",
 			msg->im_count, msg->im_size);

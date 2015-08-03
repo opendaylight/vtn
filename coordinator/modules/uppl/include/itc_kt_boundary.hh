@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -116,6 +116,9 @@ class Kt_Boundary: public Kt_Base {
         string logical_port_id,
         vector<OperStatusHolder> &ref_oper_status);
 
+    UncRespCode SendSemanticRequestToUPLL(void* key_struct,
+                                             uint32_t data_type);
+
   private:
     void PopulateDBSchemaForKtTable(OdbcmConnectionHandler *db_conn,
         DBTableSchema &kt_dbtableschema,
@@ -127,9 +130,9 @@ class Kt_Boundary: public Kt_Base {
         uint32_t option2,
         vector<ODBCMOperator> &vect_key_operations,
         void* &old_value_struct,
-        CsRowStatus row_status= NOTAPPLIED,
-        pfc_bool_t is_filtering= false,
-        pfc_bool_t is_state= PFC_FALSE);
+        CsRowStatus row_status,
+        pfc_bool_t is_filtering,
+        pfc_bool_t is_state);
 
     void FillBoundaryValueStructure(OdbcmConnectionHandler *db_conn,
         DBTableSchema &kt_boundary_dbtableschema,
@@ -156,11 +159,7 @@ class Kt_Boundary: public Kt_Base {
         uint32_t operation_type,
         uint32_t &max_repetition_count,
         vector<key_boundary_t> &vect_key_boundary,
-        vector<val_boundary_st_t> &vect_val_boundary_st,
-        pfc_bool_t is_state = PFC_FALSE);
-
-    UncRespCode SendSemanticRequestToUPLL(void* key_struct,
-                                             uint32_t data_type);
+        vector<val_boundary_st_t> &vect_val_boundary_st);
 
     UncRespCode ReadBulkInternal(OdbcmConnectionHandler *db_conn,
         void* key_struct,

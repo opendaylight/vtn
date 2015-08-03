@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -77,7 +77,7 @@ class Kt_Controller: public Kt_Base {
                                      void* val_struct,
                                      uint32_t data_type,
                                      uint32_t key_type,
-                                    pfc_bool_t commit_ver_flag = false);
+                                    pfc_bool_t commit_ver_flag);
 
     UncRespCode Delete(OdbcmConnectionHandler *db_conn,
                           uint32_t session_id,
@@ -196,6 +196,11 @@ class Kt_Controller: public Kt_Base {
                                     void* key_struct, string actual_version,
                                     uint32_t data_type,
                                     uint32_t valid_flag);
+    UncRespCode SetActualControllerId(OdbcmConnectionHandler *db_conn,
+                                    void* key_struct, string actual_id,
+                                    uint32_t data_type, uint32_t valid_flag);
+    UncRespCode CheckDuplicateControllerId(string ctr_id, string ctr_name,
+                                    OdbcmConnectionHandler *db_conn);
     void FillControllerCommitVerStructure(
             OdbcmConnectionHandler *db_conn,
             DBTableSchema &kt_controller_dbtableschema,
@@ -215,6 +220,11 @@ class Kt_Controller: public Kt_Base {
             vector<val_ctr_commit_ver_t> &vect_val_ctr_cv,
             vector<string> &controller_id);
 
+    UncRespCode SendSemanticRequestToUPLL(void* key_struct,
+                                             uint32_t data_type);
+    UncRespCode ClearImportAndStateEntries(
+           OdbcmConnectionHandler *db_conn, string controller_name);
+
   private:
     void PopulateDBSchemaForKtTable(OdbcmConnectionHandler *db_conn,
         DBTableSchema &kt_dbtableschema,
@@ -226,26 +236,15 @@ class Kt_Controller: public Kt_Base {
         uint32_t option2,
         vector<ODBCMOperator> &vect_key_operations,
         void* &old_value_struct,
-        CsRowStatus row_status= NOTAPPLIED,
-        pfc_bool_t is_filtering= false,
-        pfc_bool_t is_state= PFC_FALSE);
+        CsRowStatus row_status,
+        pfc_bool_t is_filtering,
+        pfc_bool_t is_state);
 
     void PopulateDBSchemaForCommitVersion(OdbcmConnectionHandler *db_conn,
         DBTableSchema &kt_dbtableschema,
         void* key_struct,
         void* val_struct,
-        uint8_t operation_type,
-        uint32_t data_type,
-        uint32_t option1,
-        uint32_t option2,
-        vector<ODBCMOperator> &vect_key_operations,
-        void* &old_value_struct,
-        CsRowStatus row_status= NOTAPPLIED,
-        pfc_bool_t is_filtering= false,
-        pfc_bool_t is_state= PFC_FALSE);
-
-    UncRespCode SendSemanticRequestToUPLL(void* key_struct,
-                                             uint32_t data_type);
+        uint8_t operation_type);
 
     void FillControllerValueStructure(OdbcmConnectionHandler *db_conn,
         DBTableSchema &kt_controller_dbtableschema,
@@ -304,7 +303,7 @@ class Kt_Controller: public Kt_Base {
                                          void *key_struct,
                                          void *val_struct,
                                          uint32_t data_type,
-                                         uint32_t ctrl_type = UNC_CT_UNKNOWN);
+                                         uint32_t ctrl_type);
     UncRespCode ValidateControllerType(OdbcmConnectionHandler *db_conn,
         uint32_t operation,
         uint32_t data_type,
@@ -353,11 +352,23 @@ class Kt_Controller: public Kt_Base {
         unc_keytype_ctrtype_t ctr_type,
         UncRespCode ctr_type_code,
         val_ctr *val_ctr);
+    UncRespCode ValidateControllerPort(
+        OdbcmConnectionHandler *db_conn,
+        uint32_t operation,
+        uint32_t data_type,
+        unc_keytype_ctrtype_t ctr_type,
+        UncRespCode ctr_type_code,
+        val_ctr *val_ctr);
     UncRespCode CheckIpAndClearStateDB(OdbcmConnectionHandler *db_conn,
                                           void *key_struct);
     UncRespCode CheckSameIp(OdbcmConnectionHandler *db_conn,
                                void *key_struct,
                                void *val_struct,
                                uint32_t data_type);
+
+  private:
+    UncRespCode ValKtCtrAttributeSupportCheck(val_ctr_t *obj_val_ctr,
+                            const val_ctr_t *db_ctr_val, const uint8_t* attrs,
+                            unc_keytype_operation_t op_type);
 };
 #endif

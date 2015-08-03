@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -28,23 +28,24 @@ enum VtepIfMoMgrTables {
 class VtepIfMoMgr : public VnodeChildMoMgr {
  private:
   static BindInfo       vtep_if_bind_info[];
-  /* @brief      Returns admin and portmap information if portmap is 
-   *             valid. Else returns NULL for portmap 
-   *              
+  /* @brief      Returns admin and portmap information if portmap is
+   *             valid. Else returns NULL for portmap
+   *
    * @param[in]   ikey     Pointer to ConfigKeyVal
-   * @param[out]  valid_pm portmap is valid 
+   * @param[out]  valid_pm portmap is valid
    * @param[out]  pm       pointer to portmap informtation if valid_pm
-   * @param[out]  valid_admin admin_status valid value 
+   * @param[out]  valid_admin admin_status valid value
    * @param[out]  admin_status  value of admin_status
    *
    * @retval  UPLL_RC_SUCCESS      Completed successfully.
    * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
-   * 
-   **/ 
-  virtual upll_rc_t GetPortMap(ConfigKeyVal *ikey, uint8_t &valid_pm,
-                                val_port_map_t *&pm,
-                                uint8_t &valid_admin,
-                                uint8_t &admin_status) {
+   *
+   **/
+  virtual upll_rc_t GetPortMap(ConfigKeyVal *ikey,
+                               uint8_t &valid_pm,
+                               val_port_map_t *&pm,
+                               uint8_t &valid_admin,
+                               uint8_t &admin_status) {
      UPLL_FUNC_TRACE;
      if (ikey == NULL) return UPLL_RC_ERR_GENERIC;
      val_vtep_if *ifval = reinterpret_cast<val_vtep_if *>
@@ -63,15 +64,15 @@ class VtepIfMoMgr : public VnodeChildMoMgr {
      return UPLL_RC_SUCCESS;
   }
   /**
-   * @brief  Gets the valid array position of the variable in the value 
-   *         structure from the table in the specified configuration  
+   * @brief  Gets the valid array position of the variable in the value
+   *         structure from the table in the specified configuration
    *
-   * @param[in]     val      pointer to the value structure 
+   * @param[in]     val      pointer to the value structure
    * @param[in]     indx     database index for the variable
-   * @param[out]    valid    position of the variable in the valid array - 
+   * @param[out]    valid    position of the variable in the valid array -
    *                          NULL if valid does not exist.
    * @param[in]     dt_type  specifies the configuration
-   * @param[in]     tbl      specifies the table containing the given value 
+   * @param[in]     tbl      specifies the table containing the given value
    *
    **/
   upll_rc_t GetValid(void *val,  uint64_t indx, uint8_t *&valid,
@@ -90,7 +91,7 @@ class VtepIfMoMgr : public VnodeChildMoMgr {
    /**
    * @brief  Compares the valid value between two database records.
    * 	     if both the values are same, update the valid flag for corresponding
-   * 	     attribute as invalid in the first record. 
+   * 	     attribute as invalid in the first record.
    *
    * @param[in/out]  val1   first record value instance.
    * @param[in]      val2   second record value instance.
@@ -126,7 +127,7 @@ class VtepIfMoMgr : public VnodeChildMoMgr {
                                         DalDmlIntf *dmi,
                                         IpcReqRespHeader *req);
   /**
-     * @brief  Duplicates the input configkeyval including the key and val.  
+     * @brief  Duplicates the input configkeyval including the key and val.
      * based on the tbl specified.
      *
      * @param[in]  okey   Output Configkeyval - allocated within the function
@@ -150,13 +151,13 @@ class VtepIfMoMgr : public VnodeChildMoMgr {
   upll_rc_t AdaptValToVtnService(ConfigKeyVal *ikey, AdaptType adapt_type);
 
   /**
-     * @brief  Allocates for the specified val in the given configuration in the     * specified table.   
+     * @brief  Allocates for the specified val in the given configuration in the     * specified table.
      *
-     * @param[in/out]  ck_val   Reference pointer to configval structure 
-     *                          allocated.      
+     * @param[in/out]  ck_val   Reference pointer to configval structure
+     *                          allocated.
      * @param[in]      dt_type  specifies the configuration candidate/running/
-     *                          state 
-     * @param[in]      tbl      specifies if the corresponding table is the  
+     *                          state
+     * @param[in]      tbl      specifies if the corresponding table is the
      *                          main table / controller table or rename table.
      *
      * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -167,7 +168,7 @@ class VtepIfMoMgr : public VnodeChildMoMgr {
 /**
     * @brief      Method to get a configkeyval of a specified keytype from an input configkeyval
     *
-    * @param[in/out]  okey                 pointer to output ConfigKeyVal 
+    * @param[in/out]  okey                 pointer to output ConfigKeyVal
     * @param[in]      parent_key           pointer to the configkeyval from which the output configkey val is initialized.
     *
     * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -176,10 +177,10 @@ class VtepIfMoMgr : public VnodeChildMoMgr {
   upll_rc_t GetChildConfigKey(ConfigKeyVal *&okey,
       ConfigKeyVal *parent_key);
 /**
-    * @brief      Method to get a configkeyval of the parent keytype 
+    * @brief      Method to get a configkeyval of the parent keytype
     *
-    * @param[in/out]  okey           pointer to parent ConfigKeyVal 
-    * @param[in]      ikey           pointer to the child configkeyval from 
+    * @param[in/out]  okey           pointer to parent ConfigKeyVal
+    * @param[in]      ikey           pointer to the child configkeyval from
     * which the parent configkey val is obtained.
     *
     * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -301,8 +302,8 @@ class VtepIfMoMgr : public VnodeChildMoMgr {
     UPLL_LOG_INFO("Not supported for this keytype. Returning Generic Error");
     return UPLL_RC_ERR_GENERIC;
   }
-  upll_rc_t IsReferenced(ConfigKeyVal *ikey,
-           upll_keytype_datatype_t dt_type, DalDmlIntf *dmi);
+  upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
+                         DalDmlIntf *dmi);
 
  public:
   VtepIfMoMgr();
@@ -322,7 +323,7 @@ class VtepIfMoMgr : public VnodeChildMoMgr {
     * @retval         true                 input key is valid
     * @retval         false                input key is invalid.
     **/
-  bool IsValidKey(void *tkey, uint64_t index);
+  bool IsValidKey(void *tkey, uint64_t index, MoMgrTables tbl = MAINTBL);
 
   /* @brief         Updates vtepif structure
    *                based on valid[PORTMAP] flag.
@@ -345,7 +346,7 @@ class VtepIfMoMgr : public VnodeChildMoMgr {
              ConfigKeyVal *&ikey);
 #endif
 };
-}  // namesapce vtn
+}  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc
 #endif

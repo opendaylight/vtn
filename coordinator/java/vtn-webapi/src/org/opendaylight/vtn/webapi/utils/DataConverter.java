@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -66,10 +66,15 @@ public final class DataConverter {
 		JsonObject convertedObj = null;
 		final JsonParser parser = new JsonParser();
 		try {
-			if (ContentTypeEnum.APPLICATION_XML.getContentType().equals(
-					contentType) ||
-					ContentTypeEnum.APPLICATION_XML_SCVMM.getContentType().equals(
-					contentType)) {
+
+			String mime = "";
+			if (contentType != null) {
+				String mimeArray[] = contentType.split(ApplicationConstants.SEMI_COLON);
+				mime = mimeArray[0];
+			}
+
+			if (ContentTypeEnum.APPLICATION_XML.getContentType().equals(mime) ||
+			    ContentTypeEnum.APPLICATION_XML_SCVMM.getContentType().equals(mime)) {
 				final Random random = new Random();
 				final String randomString = String.valueOf(random.nextInt());
 				final String randomStringSpace = String.valueOf(random
@@ -97,7 +102,7 @@ public final class DataConverter {
 
 				convertedObj = (JsonObject) parser.parse(jsonString);
 			} else if (ContentTypeEnum.APPLICATION_JSON.getContentType()
-					.equals(contentType)) {
+					.equals(mime)) {
 				convertedObj = (JsonObject) parser.parse(rawRequestString);
 			} else {
 				LOG.error("Content-Type is not valid");

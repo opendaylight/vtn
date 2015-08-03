@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,14 +10,13 @@
 #ifndef UNC_TEST_TC_TCMSG_H_
 #define UNC_TEST_TC_TCMSG_H_
 
+#include <iostream>
 #include <stdio.h>
 #include <stdarg.h>
-#include <gtest/gtest.h>
-#include <utility>
-#include <string>
 #include "tcmsg.hh"
 #include "tcmsg_commit.hh"
 #include "tcmsg_audit.hh"
+#include <gtest/gtest.h>
 
 using namespace std;
 using namespace unc::tc;
@@ -33,26 +32,19 @@ int stub_set_arg = CLEAR;
 int stub_clnt_forward = CLEAR;
 int stub_same_driverid = CLEAR;
 int stub_set_string = CLEAR;
-#define CLEAR_STUB_FLAGS() \
-  stub_session_invoke = CLEAR;\
-  stub_create_session = CLEAR;\
-  stub_response = CLEAR;\
-  stub_set_arg = CLEAR;\
-  stub_clnt_forward = CLEAR; \
-  stub_same_driverid = CLEAR;
 
 /*Frames TcChannelNameMap*/
 TcChannelNameMap GetChannelNameMap(int SetChannelName) {
+  
   TcChannelNameMap test_map;
-  if (SetChannelName) {
-    test_map.insert((std::pair<TcDaemonName, std::string>(TC_UPLL, "lgcnwd")));
-    test_map.insert((std::pair<TcDaemonName, std::string>(TC_UPPL, "phynwd")));
-    test_map.insert((std::pair<TcDaemonName,
-                     std::string>(TC_DRV_OPENFLOW, "drvpfcd")));
-    test_map.insert((std::pair<TcDaemonName,
-                     std::string>(TC_DRV_OVERLAY, "drvoverlay")));
-  } else {
-    test_map.insert((std::pair<TcDaemonName, std::string>(TC_UPLL, "")));
+  if(SetChannelName) {
+    test_map.insert((std::pair<TcDaemonName,std::string>(TC_UPLL, "lgcnwd")));
+    test_map.insert((std::pair<TcDaemonName,std::string>(TC_UPPL, "phynwd")));
+    test_map.insert((std::pair<TcDaemonName,std::string>(TC_DRV_OPENFLOW, "drvpfcd")));
+    test_map.insert((std::pair<TcDaemonName,std::string>(TC_DRV_OVERLAY, "drvoverlay")));
+  }else{
+    test_map.insert((std::pair<TcDaemonName,std::string>(TC_DRV_OPENFLOW, "lgcnwd")));
+    test_map.insert((std::pair<TcDaemonName,std::string>(TC_DRV_OPENFLOW, "")));
   }
   return test_map;
 }
@@ -72,23 +64,23 @@ class TestTcMsg : public TcMsg {
   TestTcMsg(uint32_t sess_id, unc::tclib::TcMsgOperType oper)
       :TcMsg(sess_id, oper) {}
 
-  TcOperRet Execute() {
+  TcOperRet Execute(){
     return TCOPER_RET_SUCCESS;
   }
-
+  
   TcDaemonName TestMapTcDriverId(unc_keytype_ctrtype_t driver_id) {
     return MapTcDriverId(driver_id);
   }
 
-  TcOperRet TestRespondToTc(pfc_ipcresp_t resp) {
+  TcOperRet TestRespondToTc(pfc_ipcresp_t resp){
     return RespondToTc(resp);
   }
 
-  TcOperRet TestReturnUtilResp(TcUtilRet ret) {
+  TcOperRet TestReturnUtilResp(TcUtilRet ret){
     return ReturnUtilResp(ret);
   }
 
-  void ClearAbortOnFailVector() {
+  void ClearAbortOnFailVector(){
     abort_on_fail_.clear();
   }
   unc_keytype_ctrtype_t  TestGetResult() {
@@ -96,24 +88,25 @@ class TestTcMsg : public TcMsg {
   }
 };
 
-class TestCommit : public TcMsgCommit {
+class TestCommit : public TcMsgCommit{
  public:
   TestCommit(uint32_t sess_id, unc::tclib::TcMsgOperType oper)
       :TcMsgCommit(sess_id, oper) {}
 
-  TcOperRet TestSendAbortRequest(AbortOnFailVector abort_on_fail) {
+  TcOperRet TestSendAbortRequest(AbortOnFailVector abort_on_fail){
     return SendAbortRequest(abort_on_fail);
   }
 
-  TcOperRet TestSendTransEndRequest(AbortOnFailVector abort_on_fail) {
+  TcOperRet TestSendTransEndRequest(AbortOnFailVector abort_on_fail){
     return SendTransEndRequest(abort_on_fail);
   }
-  TcOperRet Execute() {
+  TcOperRet Execute(){
     return TCOPER_RET_SUCCESS;
   }
 };
 
 class TestCommitTrans : public CommitTransaction {
+
  public:
   TestCommitTrans(uint32_t sess_id, unc::tclib::TcMsgOperType oper)
             :CommitTransaction(sess_id, oper) {}
@@ -124,44 +117,49 @@ class TestCommitTrans : public CommitTransaction {
 };
 
 class Test2phase : public TwoPhaseCommit {
+
  public:
   Test2phase(uint32_t sess_id, unc::tclib::TcMsgOperType oper)
-      :TwoPhaseCommit(sess_id, oper) {}
-
-  TcOperRet TestSendRequest(std::string channel_name) {
+      :TwoPhaseCommit(sess_id, oper){}
+  
+  TcOperRet TestSendRequest(std::string channel_name){
     return SendRequest(channel_name);
   }
-
+  
   TcOperRet TestSendRequestToDriver() {
     return SendRequestToDriver();
   }
-
+  
   TcOperRet TestGetControllerInfo(pfc::core::ipc::ClientSession* sess) {
     return GetControllerInfo(sess);
+  }
+  
+  TcOperRet TestHandleDriverNotPresent(unc_keytype_ctrtype_t driver){
+    return HandleDriverNotPresent(driver);
   }
 };
 
 
-class TestAudit : public TcMsgAudit {
+class TestAudit : public TcMsgAudit{
  public:
   TestAudit(uint32_t sess_id, unc::tclib::TcMsgOperType oper)
       :TcMsgAudit(sess_id, oper) {}
 
-  TcOperRet TestSendAbortRequest(AbortOnFailVector abort_on_fail) {
+  TcOperRet TestSendAbortRequest(AbortOnFailVector abort_on_fail){
     return SendAbortRequest(abort_on_fail);
   }
 
   TcOperRet TestSendAuditTransEndRequest(AbortOnFailVector abort_on_fail,
-                                         unc::tclib::TcMsgOperType oper) {
+                                         unc::tclib::TcMsgOperType oper){
     return SendAuditTransEndRequest(abort_on_fail, oper);
   }
-
-  TcOperRet Execute() {
+  TcOperRet Execute(){
     return TCOPER_RET_SUCCESS;
   }
 };
 
 class TestAuditTrans : public AuditTransaction {
+
  public:
   TestAuditTrans(uint32_t sess_id, unc::tclib::TcMsgOperType oper)
             :AuditTransaction(sess_id, oper) {}
@@ -172,18 +170,19 @@ class TestAuditTrans : public AuditTransaction {
 };
 
 class Test2phaseAudit : public TwoPhaseAudit {
+
  public:
   Test2phaseAudit(uint32_t sess_id, unc::tclib::TcMsgOperType oper)
-      :TwoPhaseAudit(sess_id, oper) { }
-
-  TcOperRet TestSendRequest(std::string channel_name) {
+      :TwoPhaseAudit(sess_id, oper){}
+  
+  TcOperRet TestSendRequest(std::string channel_name){
     return SendRequest(channel_name);
   }
-
+  
   TcOperRet TestSendRequestToDriver() {
     return SendRequestToDriver();
   }
-
+  
   TcOperRet TestGetControllerInfo(pfc::core::ipc::ClientSession* sess) {
     return GetControllerInfo(sess);
   }

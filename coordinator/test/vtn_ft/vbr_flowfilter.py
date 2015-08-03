@@ -460,6 +460,10 @@ def update_vbr_flowlist():
   if retval != 0:
     print "VBRFlowListEntry Update Failed"
     exit(1)
+#  retval=flowlistentry.validate_flowlist_entry('FlowlistOne', 'UpdateFlowlistentryOne','ControllerFirst', presence='yes', position=0)
+#  if retval != 0:
+#    print "VBRFlowListEntry Updatation Validate Failed at Co-ordinator"
+#    exit(1)
 
   retval=flowfilter.delete_flowfilter_entry('VtnOne|VbrOne', 'FlowfilterOne')
   if retval != 0:
@@ -491,6 +495,11 @@ def update_vbr_flowlist():
     print "Flowlist validation Failed after deleting"
     exit(1)
 
+#  retval=flowlistentry.validate_flowlist_entry('FlowlistOne', 'UpdateFlowlistentryOne','ControllerFirst', presence='no', position=0)
+#  if retval != 0:
+#    print "VBRFlowListEntry Delete Validate Failed at Co-ordinator"
+#    exit(1)
+
   retval=vtn_vbr.delete_vtn('VtnOne')
   if retval != 0:
     print "DELETE VTN Failed"
@@ -514,7 +523,7 @@ def negative_vbr_flowfilter():
     print "Controller Create Failed"
     exit(1)
   print "Negative test scenario test cases"
-  print 'TEST 8 : VBR->FLOWFILTER TEST: Create Three VBR and VbrFlowFilterEntry with vbrone negative  the VbrFlowFilterEntry to vbrthree'
+  print 'TEST 3 : VBR->FLOWFILTER TEST: Create Three VBR and VbrFlowFilterEntry with vbrone negative  the VbrFlowFilterEntry to vbrthree'
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -630,9 +639,14 @@ def negative_vbr_flowfilter():
     exit(1)
 
   retval=flowfilter.update_flowfilter_entry('VtnOne|VbrOne', 'FlowfilterOne', 'NegativeFlowfilter')
-  if retval == 0:
+  if retval != 0:
     print "VBRFlowFilterEntry at negative  priority and dscp has  Failed"
     print "Because flowfilter priority range up 63 and dscp range up to 7 its more than test was faild its showing Bad error"
+    exit(1)
+
+  retval=flowfilter.validate_flowfilter_entry('VtnOne|VbrOne', 'FlowfilterOne|NegativeFlowfilter', presence='yes', position=0)
+  if retval != 0:
+    print "VBRFlowFilterEntry Negative  Validate Failed at Co-ordinator"
     exit(1)
 
   retval=flowfilter.delete_flowfilter_entry('VtnOne|VbrOne', 'FlowfilterOne')
@@ -685,7 +699,7 @@ def test_vbr_flowfilter_pass():
     print "Controller Create Failed"
     exit(1)
   print "action type create pass"
-  print "TEST 4 : VBR->FLOWFILTER TEST"
+  print "TEST 5 : VBR->FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -835,7 +849,7 @@ def update_vbr_flowfilter_pass():
     print "Controller Create Failed"
     exit(1)
 
-  print 'TEST 5 : VBR->FLOWFILTER TEST: Create Three VBR and VbrFlowFilterEntry with vbrone update the VbrFlowFilterEntry to vbrthree'
+  print 'TEST 6 : VBR->FLOWFILTER TEST: Create Three VBR and VbrFlowFilterEntry with vbrone update the VbrFlowFilterEntry to vbrthree'
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -996,7 +1010,7 @@ def test_vbr_flowfilter_drop():
     print "Controller Create Failed"
     exit(1)
 
-  print "TEST 6 : VBR->FLOWFILTER TEST"
+  print "TEST 1 : VBR->FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -1146,7 +1160,7 @@ def update_vbr_flowfilter_drop():
     print "Controller Create Failed"
     exit(1)
 
-  print 'TEST 7 : VBR->FLOWFILTER TEST: Create Three VBR and VbrFlowFilterEntry with vbrone update the VbrFlowFilterEntry to vbrthree'
+  print 'TEST 8 : VBR->FLOWFILTER TEST: Create Three VBR and VbrFlowFilterEntry with vbrone update the VbrFlowFilterEntry to vbrthree'
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:

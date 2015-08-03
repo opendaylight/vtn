@@ -1,5 +1,5 @@
  /*
-  * Copyright (c) 2013-2014 NEC Corporation
+  * Copyright (c) 2013-2015 NEC Corporation
   * All rights reserved.
   *
   * This program and the accompanying materials are made available under the
@@ -12,8 +12,8 @@
 namespace unc {
 namespace vtnreadutil {
   driver_read_util::driver_read_util(pfc::core::ipc::ServerSession& sess) :
-             df_util_(NULL), sess_(sess) {}
-
+             df_util_(NULL), df_cmn_(NULL), sess_(sess),
+             alternate_flow(PFC_FALSE)  {}
 
   driver_read_util::~driver_read_util() {
     if ( df_util_ )
@@ -36,8 +36,13 @@ namespace vtnreadutil {
             pfc_log_info("Iterations of writing read results to sess");
             (*it)->write_to_sess(sess_);
       }
-      if (df_util_)
+      if ((df_util_) && (alternate_flow == PFC_FALSE) ) {
         df_util_->sessOutDataflowsFromDriver(sess_);
+      } else if ((df_cmn_) && (alternate_flow == PFC_TRUE) ) {
+        int putresp_pos = 13;
+        pfc_log_info("df_cmn sessOutDataflow read results to sess");
+        df_cmn_->sessOutDataflow(sess_, putresp_pos);
+      }
   }
 
 
@@ -62,6 +67,13 @@ namespace vtnreadutil {
       return option;
   }
 
+  const char* driver_read_util::get_ctr_id() {
+      ODC_FUNC_TRACE;
+      const char* option;
+      if (sess_.getArgument(unc::driver::IPC_CONTROLLER_ID_INDEX, option))
+        pfc_log_error("Error Reading Option2");
+      return option;
+  }
 
 }  // namespace vtnreadutil
 }  // namespace unc

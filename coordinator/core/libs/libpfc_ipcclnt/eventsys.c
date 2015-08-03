@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -608,11 +608,15 @@ ipc_event_close(int *fdp)
 static inline void PFC_FATTR_ALWAYS_INLINE
 ipc_elsess_cancel_clients(ipc_elsess_t *elsp)
 {
-	// Nothing to do if the IPC client library is already disabled.
+	/* Nothing to do if the IPC client library is already disabled. */
 	if (!ipc_disabled) {
+		ipc_clnotify_t	clnotify;
+
+		IPC_CLNOTIFY_INIT(&clnotify, elsp, PFC_FALSE);
+
 		IPC_CLIENT_RDLOCK();
 		pfc_ipcclnt_conn_iterate(pfc_ipcclnt_canceller_conn_notify,
-					 elsp);
+					 &clnotify);
 		IPC_CLIENT_UNLOCK();
 	}
 }
@@ -4096,9 +4100,11 @@ ipc_elsess_disconnect(ipc_elsess_t *elsp)
 		}
 
 		if (ipc_auto_cancel) {
-			// Cancel ongoing IPC invocation request on client
-			// sessions which connects to the same IPC server as
-			// the listener session.
+			/*
+			 * Cancel ongoing IPC invocation request on client
+			 * sessions which connects to the same IPC server as
+			 * the listener session.
+			 */
 			IPC_ELSESS_UNLOCK(elsp);
 			locked = PFC_FALSE;
 			ipc_elsess_cancel_clients(elsp);

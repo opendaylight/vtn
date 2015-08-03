@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,6 +12,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.openstack.beans.FreeCounterBean;
@@ -38,22 +40,24 @@ public class FreeCounterDao {
 	 * @return - available resource counter
 	 * @throws SQLException
 	 */
-	public int
-			getCounter(Connection connection, FreeCounterBean freeCounterBean)
+	public List<Integer>
+			getCounterList(Connection connection, FreeCounterBean freeCounterBean)
 					throws SQLException {
 		final String sql = VtnOpenStackSQLFactory.SEL_FC_SQL;
 		int resourceCounter = -1;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
+		List<Integer> idList = new ArrayList<Integer>();
 		try {
 			statement = connection.prepareStatement(sql);
 			statement.setString(1, freeCounterBean.getResourceId());
 			statement.setString(2, freeCounterBean.getVtnName());
 			resultSet = statement.executeQuery();
-			if (resultSet.next()) {
+			while (resultSet.next()) {
 				resourceCounter = resultSet.getInt(1);
 				LOG.debug("Resource counter is available in os_free_counter_tbl : "
 						+ resourceCounter);
+				idList.add(resourceCounter);
 			}
 		} finally {
 			if (resultSet != null) {
@@ -63,7 +67,7 @@ public class FreeCounterDao {
 				statement.close();
 			}
 		}
-		return resourceCounter;
+		return idList;
 	}
 
 	/**

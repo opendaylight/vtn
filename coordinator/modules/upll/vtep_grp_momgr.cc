@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -57,10 +57,12 @@ VtepGrpMoMgr::VtepGrpMoMgr() {
       IpctSt::kIpcStKeyVtepGrp, IpctSt::kIpcStValVtepGrp,
       uudst::vtep_group::kDbiVtepGrpNumCols+1);
   ntable = MAX_MOMGR_TBLS;
-  table = new Table *[ntable];
+  table = new Table *[ntable]();
   table[MAINTBL] = tbl;
   table[RENAMETBL] = NULL;
   table[CTRLRTBL] = NULL;
+  table[CONVERTTBL] = NULL;
+
   nchild = sizeof(vtep_grp_child) / sizeof(*vtep_grp_child);
   child = vtep_grp_child;
 #ifdef _STANDALONE_
@@ -71,7 +73,8 @@ VtepGrpMoMgr::VtepGrpMoMgr() {
 /*
  *  * Based on the key type the bind info will pass
  *   *
- bool VtepGrpMoMgr::GetRenameKeyBindInfo(unc_key_type_t key_type, BindInfo *&binfo, int &nattr,
+ bool VtepGrpMoMgr::GetRenameKeyBindInfo(unc_key_type_t key_type,
+ BindInfo *&binfo, int &nattr,
  MoMgrTables tbl ) {
  if (MAINTBL == tbl) {
  nattr = NUM_KEY_MAIN_TBL_;
@@ -83,7 +86,7 @@ VtepGrpMoMgr::VtepGrpMoMgr() {
 
 
 
-bool VtepGrpMoMgr::IsValidKey(void *key, uint64_t index) {
+bool VtepGrpMoMgr::IsValidKey(void *key, uint64_t index, MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
   key_vtep_grp *vtep_grp_key = reinterpret_cast<key_vtep_grp *>(key);
   upll_rc_t ret_val = UPLL_RC_SUCCESS;
@@ -827,8 +830,8 @@ upll_rc_t VtepGrpMoMgr::CreateVtunnelKey(ConfigKeyVal *ikey,
   return result_code;
 }
 
-upll_rc_t VtepGrpMoMgr::IsReferenced(ConfigKeyVal *ikey,
-    upll_keytype_datatype_t dt_type, DalDmlIntf *dmi) {
+upll_rc_t VtepGrpMoMgr::IsReferenced(IpcReqRespHeader *req,
+    ConfigKeyVal *ikey, DalDmlIntf *dmi) {
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   ConfigKeyVal *okey = NULL;
   if ( !ikey || !(ikey->get_key()) || !dmi)
@@ -838,7 +841,7 @@ upll_rc_t VtepGrpMoMgr::IsReferenced(ConfigKeyVal *ikey,
   MoMgrImpl *mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>
                                             (GetMoManager(UNC_KT_VTUNNEL)));
   DbSubOp dbop = {kOpReadMultiple, kOpMatchNone, kOpInOutNone};
-  result_code = mgr->ReadConfigDB(okey, dt_type, UNC_OP_READ, dbop,
+  result_code = mgr->ReadConfigDB(okey, req->datatype, UNC_OP_READ, dbop,
                                   dmi, MAINTBL);
   UPLL_LOG_TRACE("Vtepgroup ReadConfigDb");
   if (UPLL_RC_SUCCESS == result_code) {
@@ -851,6 +854,6 @@ upll_rc_t VtepGrpMoMgr::IsReferenced(ConfigKeyVal *ikey,
 }
 
 
-}  // namespace vtn
+}  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc

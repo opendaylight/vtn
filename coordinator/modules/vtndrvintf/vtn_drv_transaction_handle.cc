@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -404,6 +404,13 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleAuditEnd(uint32_t session_id,
   if (audit_result == unc::tclib::TC_AUDIT_SUCCESS) {
     pfc_log_debug("AUDIT_END result:%d", audit_result);
     ctr->set_audit_result(PFC_TRUE);
+    unc::driver::VtnDrvIntf* to_start = static_cast<unc::driver::VtnDrvIntf*>
+                  (pfc::core::Module::getInstance("vtndrvintf"));
+    to_start->event_start(controller_id);
+    if (NULL != ctr->physical_port_cache) {
+      delete ctr->physical_port_cache;
+      ctr->physical_port_cache = NULL;
+    }
   }
   return unc::tclib::TC_SUCCESS;
 }
@@ -412,7 +419,7 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleAuditStart(
     uint32_t session_id,
     unc_keytype_ctrtype_t ctr_type,
     std::string controller_id,
-    pfc_bool_t simplified_audit,
+    TcAuditType audit_type,
     uint64_t commit_number,
     uint64_t commit_date,
     std::string commit_application) {
@@ -435,6 +442,14 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleAuditStart(
   ctr = util_obj.get_controller_handle();
   PFC_ASSERT(ctr != NULL);
   ctr->set_audit_result(PFC_FALSE);
+  return unc::tclib::TC_SUCCESS;
+}
+
+unc::tclib::TcCommonRet DriverTxnInterface::HandleAuditCancel(
+      uint32_t session_id,
+      unc_keytype_ctrtype_t ctr_type,
+      std::string controller_id) {
+
   return unc::tclib::TC_SUCCESS;
 }
 

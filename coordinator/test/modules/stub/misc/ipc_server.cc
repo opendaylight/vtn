@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -395,6 +395,11 @@ ServerSession::addOutput(key_ctr_dataflow&) {
 }
 
 int
+ServerSession::addOutput(key_vtn_dataflow&) {
+  return addOutPut_;
+}
+
+int
 ServerSession::addOutput(key_vtn_t&) {
   if (rest_code) {
     return addOutPut_;
@@ -474,8 +479,25 @@ ServerSession::addOutput(val_vtnstation_controller_stat&){
   return addOutPut_;
 }
 
+int 
+ServerSession::addOutput(key_dataflow_v2&) {
+  return addOutPut_;
+}
 
+int
+ServerSession::addOutput(val_dataflow_v2&) {
+  return addOutPut_;
+}
 
+int
+ServerSession::addOutput(val_lm_port_st_neighbor_t&) {
+  return addOutPut_;
+}
+
+int
+ServerSession::addOutput(val_logical_port_boundary&) {
+  return addOutPut_;
+}
 
 void
 ServerSession::stub_setAddOutput(int result) {
@@ -653,6 +675,15 @@ int
 ServerSession::getArgument(int /*index*/, val_link_st_t& /*data*/) {
   return result_;
 }
+int 
+ServerSession::getArgument(int, key_dataflow_v2_t&) {
+   return result_;
+}
+
+int
+ServerSession::getArgument(int, val_dataflow_v2_t&) {
+  return result_;
+}
 
 int
 ServerSession::getArgument(int index, key_vtn_t& data) {
@@ -700,6 +731,11 @@ ServerSession::getArgument(int index, val_vbr_t& data) {
 
 int
 ServerSession::getArgument(int, key_ctr_dataflow&) {
+  return result_;
+}
+
+int
+ServerSession::getArgument(int, key_vtn_dataflow&) {
   return result_;
 }
 

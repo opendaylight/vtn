@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,6 +12,7 @@
 
 // `#include <iostream>
 #include <string>
+#include <set>
 #include "momgr_impl.hh"
 #include "vnode_momgr.hh"
 
@@ -27,16 +28,19 @@ class VbrMoMgr : public VnodeMoMgr {
     static BindInfo vbr_rename_bind_info[];
     static BindInfo key_vbr_maintbl_bind_info[];
     static BindInfo key_vbr_renametbl_update_bind_info[];
+    //  Added for Vbridge converttbl
+    static BindInfo conv_vbr_bind_info[];
+    static BindInfo key_conv_vbr_converttbl_bind_info[];
     /**
-     * @brief  Gets the valid array position of the variable in the value 
-     *         structure from the table in the specified configuration  
+     * @brief  Gets the valid array position of the variable in the value
+     *         structure from the table in the specified configuration
      *
-     * @param[in]     val      pointer to the value structure 
+     * @param[in]     val      pointer to the value structure
      * @param[in]     indx     database index for the variable
-     * @param[out]    valid    position of the variable in the valid array - 
+     * @param[out]    valid    position of the variable in the valid array -
      *                          NULL if valid does not exist.
      * @param[in]     dt_type  specifies the configuration
-     * @param[in]     tbl      specifies the table containing the given value 
+     * @param[in]     tbl      specifies the table containing the given value
      *
      **/
     upll_rc_t GetValid(void *val,
@@ -80,19 +84,36 @@ class VbrMoMgr : public VnodeMoMgr {
             return UPLL_RC_ERR_GENERIC;
         }
       } else if (tbl == RENAMETBL) {
-        switch(indx){
+        switch (indx) {
           case uudst::vnode_rename::kDbiCtrlrVtnName:
             valid = &(reinterpret_cast<val_rename_vnode*>
                     (val))->valid[UPLL_CTRLR_VTN_NAME_VALID];
             break;
           case  uudst::vnode_rename::kDbiCtrlrVnodeName:
             valid = &(reinterpret_cast<val_rename_vnode*>
-                    (val))->valid[UPLL_CTRLR_VNODE_NAME_VALID]; 
+                    (val))->valid[UPLL_CTRLR_VNODE_NAME_VALID];
             break;
           default:
             break;
-        } 
+        }
         return UPLL_RC_SUCCESS;
+      } else if (tbl == CONVERTTBL) {
+        switch (indx) {
+          case uudst::convert_vbridge::kDbiOperStatus:
+            valid = &(reinterpret_cast<val_db_vbr_st *>(val))->
+                                vbr_val_st.valid[UPLL_IDX_OPER_STATUS_VBRS];
+            break;
+          case uudst::convert_vbridge::kDbiDownCount:
+          case uudst::convert_vbridge::kDbiUnknownCount:
+            valid = NULL;
+            break;
+          case uudst::convert_vbridge::kDbiLabel:
+            valid = &(reinterpret_cast<val_convert_vbr_t *>(val))->
+                                valid[UPLL_IDX_LABEL_CONV_VBR];
+            break;
+          default:
+            return UPLL_RC_ERR_GENERIC;
+        }
       }
       return UPLL_RC_SUCCESS;
     }
@@ -113,12 +134,12 @@ class VbrMoMgr : public VnodeMoMgr {
 
     /**
      * @brief  Compares the valid value between two database records.
-     * 	     if both the values are same, update the valid flag for 
-     * 	     corresponding attribute as invalid in the first record. 
+     * 	     if both the values are same, update the valid flag for
+     * 	     corresponding attribute as invalid in the first record.
      *
      * @param[in/out]  val1   first record value instance.
      * @param[in]      val2   second record value instance.
-     * @param[in]      audit  if true, CompareValidValue called from audit 
+     * @param[in]      audit  if true, CompareValidValue called from audit
      *  			    process..
      *
      **/
@@ -160,7 +181,7 @@ class VbrMoMgr : public VnodeMoMgr {
      *                               (first 8 fields of input request structure).
      * @param[in]  ikey              ikey contains key and value structure.
      * @param[in]  ctrlr_id          Controller id associated with ikey.
-     *  
+     *
      * @retval  UPLL_RC_SUCCESS              Validation succeeded.
      * @retval  UPLL_RC_ERR_GENERIC          Validation failure.
      * @retval  UPLL_RC_ERR_INVALID_OPTION1  Option1 is not valid.
@@ -188,7 +209,7 @@ class VbrMoMgr : public VnodeMoMgr {
     upll_rc_t ValidateMessage(IpcReqRespHeader *req,
                               ConfigKeyVal *ikey);
     /**
-     * @Brief  compares controller id and domain id before 
+     * @Brief  compares controller id and domain id before
      *         updating the value to DB.
      *
      * @param[in]  ikey  ikey contains key and value structure.
@@ -217,7 +238,7 @@ class VbrMoMgr : public VnodeMoMgr {
     upll_rc_t ValVbrAttributeSupportCheck(val_vbr_t *vbr_val,
                                           const uint8_t *attrs,
                                           unc_keytype_operation_t operation);
- 
+
     /**
      * @Brief  Validates the syntax for KT_VBR keytype Rename structure.
      *
@@ -252,12 +273,12 @@ class VbrMoMgr : public VnodeMoMgr {
                                uint32_t operation);
 
     /**
-     * @brief  Duplicates the input configkeyval including the key and val.  
+     * @brief  Duplicates the input configkeyval including the key and val.
      * based on the tbl specified.
      *
      * @param[in]  okey   Output Configkeyval - allocated within the function
      * @param[in]  req    Input ConfigKeyVal to be duplicated.
-     * @param[in]  tbl    specifies if the val structure belongs to the main 
+     * @param[in]  tbl    specifies if the val structure belongs to the main
      * table/ controller table or rename table.
      *
      * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -267,10 +288,10 @@ class VbrMoMgr : public VnodeMoMgr {
                               ConfigKeyVal *&req,
                               MoMgrTables tbl = MAINTBL);
     /**
-     * @brief  Allocates for the specified val in the given configuration in the     * specified table.   
+     * @brief  Allocates for the specified val in the given configuration in the     * specified table.
      *
-     * @param[in]  ck_val   Reference pointer to configval structure allocated.      * @param[in]  dt_type  specifies the configuration candidate/running/state 
-     * @param[in]  tbl      specifies if the corresponding table is the  main 
+     * @param[in]  ck_val   Reference pointer to configval structure allocated.      * @param[in]  dt_type  specifies the configuration candidate/running/state
+     * @param[in]  tbl      specifies if the corresponding table is the  main
      *                      table / controller table or rename table.
      *
      * @retval     UPLL_RC_SUCCESS      Successfull completion.
@@ -280,10 +301,10 @@ class VbrMoMgr : public VnodeMoMgr {
                        upll_keytype_datatype_t dt_type,
                        MoMgrTables tbl = MAINTBL);
     /**
-     * @brief      Method to get a configkeyval of the parent keytype 
+     * @brief      Method to get a configkeyval of the parent keytype
      *
-     * @param[in/out]  okey           pointer to parent ConfigKeyVal 
-     * @param[in]      ikey           pointer to the child configkeyval from 
+     * @param[in/out]  okey           pointer to parent ConfigKeyVal
+     * @param[in]      ikey           pointer to the child configkeyval from
      * which the parent configkey val is obtained.
      *
      * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -311,17 +332,23 @@ class VbrMoMgr : public VnodeMoMgr {
                             DalDmlIntf *dmi,
                             const char *ctrlr_id,
                             bool &renamed);
+
+    upll_rc_t IsRenamed(ConfigKeyVal *ikey,
+                        upll_keytype_datatype_t dt_type,
+                        DalDmlIntf *dmi,
+                        uint8_t &rename);
+
     bool GetRenameKeyBindInfo(unc_key_type_t key_type,
                               BindInfo *&binfo,
                               int &nattr,
                               MoMgrTables tbl);
     upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey,
                               ConfigKeyVal *ikey);
- 
-  /* @brief     To convert the value structure read from DB to 
+
+  /* @brief     To convert the value structure read from DB to
    *            VTNService during READ operations
-   * @param[in/out] ikey      Pointer to the ConfigKeyVal Structure             
-   * 
+   * @param[in/out] ikey      Pointer to the ConfigKeyVal Structure
+   *
    * @retval  UPLL_RC_SUCCESS                    Completed successfully.
    * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
    *
@@ -347,23 +374,23 @@ class VbrMoMgr : public VnodeMoMgr {
      * @retval         false                input key is invalid.
      **/
     bool IsValidKey(void *key,
-                    uint64_t index);
+                    uint64_t index, MoMgrTables tbl = MAINTBL);
     /* @brief         This method invoke when the VTN merge hapeening between
-     *                Running and DT import. This will checks the vnode name 
-     *                unique or not and semantic checks like IP Address, Mac 
-     *                Address and network host address. 
-     *              
+     *                Running and DT import. This will checks the vnode name
+     *                unique or not and semantic checks like IP Address, Mac
+     *                Address and network host address.
+     *
      * @param[in]     keytype       UNC KEY TYPE
-     * @param[in/out] ctrlr_id      Controller ID                    
-     * @param[in]     conflict_ckv  key and value structure 
+     * @param[in/out] ctrlr_id      Controller ID
+     * @param[in]     conflict_ckv  key and value structure
      * @param[in]     dal    Pointer to the DalDmlIntf(DB Interface)
-     * 
+     *
      * @retval  UPLL_RC_SUCCESS                    Completed successfully.
      * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
      * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource disconnected.
      * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
      * @retval  UPLL_RC_ERR_MERGE_CONFLICT         Semantic check error.
-     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist 
+     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist
      *
      **/
 
@@ -384,6 +411,10 @@ class VbrMoMgr : public VnodeMoMgr {
      */
     upll_rc_t ValidateVbrKey(key_vbr_t *vbr_key,
                          unc_keytype_operation_t operation = UNC_OP_INVALID);
+
+    upll_rc_t ValidateVbrRead(IpcReqRespHeader *req,
+                              ConfigKeyVal *ikey,
+                              DalDmlIntf *dmi);
     /**
      * @brief     Method used in Delete opertaion. Its semantic checks
      *            for the VBR key.
@@ -397,8 +428,7 @@ class VbrMoMgr : public VnodeMoMgr {
      * @retval     UPLL_RC_ERR_CFG_SEMANTIC    Failue dueto Semantic.
      */
 
-    upll_rc_t IsReferenced(ConfigKeyVal *ikey,
-                           upll_keytype_datatype_t dt_type,
+    upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                            DalDmlIntf *dmi);
 
     /**
@@ -420,8 +450,8 @@ class VbrMoMgr : public VnodeMoMgr {
     /**
      * @brief      Method to get a configkeyval of a specified keytype from an input configkeyval
      *
-     * @param[in/out]  okey                 pointer to output ConfigKeyVal 
-     * @param[in]      parent_key           pointer to the configkeyval from 
+     * @param[in/out]  okey                 pointer to output ConfigKeyVal
+     * @param[in]      parent_key           pointer to the configkeyval from
      * which the output configkey val is initialized.
      *
      * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -430,8 +460,133 @@ class VbrMoMgr : public VnodeMoMgr {
     upll_rc_t GetChildConfigKey(ConfigKeyVal *&okey,
                                 ConfigKeyVal *parent_key);
 
+    upll_rc_t GetUnifiedVbridgeConfigKey(ConfigKeyVal *&vbr_ckv,
+                                       ConfigKeyVal *parent_key);
+
+    upll_rc_t GetChildConvertConfigKey(ConfigKeyVal *&okey,
+                                       ConfigKeyVal *parent_key);
+
     upll_rc_t GetControllerDomainId(ConfigKeyVal *ikey,
                                     controller_domain_t *ctrlr_dom);
+
+    upll_rc_t DeleteConvertVbrMo(IpcReqRespHeader *req,
+                                 ConfigKeyVal *ikey,
+                                 TcConfigMode config_mode,
+                                 string vtn_name,
+                                 DalDmlIntf *dmi);
+
+    upll_rc_t ConvertVbr(DalDmlIntf *dmi,
+                         IpcReqRespHeader *req,
+                         ConfigKeyVal *ikey,
+                         TcConfigMode config_mode,
+                         string vtn_name,
+                         unc_keytype_operation_t op);
+
+    upll_rc_t AdaptValToDriver(ConfigKeyVal *&ck_vbr,
+                               ConfigKeyVal *ck_conv_vbr,
+                               MoMgrTables tbl_indx,
+                               bool &is_unified);
+
+    upll_rc_t TxUpdateController(unc_key_type_t keytype,
+                                 uint32_t session_id,
+                                 uint32_t config_id,
+                                 uuc::UpdateCtrlrPhase phase,
+                                 set<string> *affected_ctrlr_set,
+                                 DalDmlIntf *dmi,
+                                 ConfigKeyVal **err_ckv,
+                                 TxUpdateUtil *tx_util,
+                                 TcConfigMode config_mode,
+                                 std::string vtn_name);
+    upll_rc_t AuditUpdateController(unc_key_type_t keytype,
+                                    const char *ctrlr_id,
+                                    uint32_t session_id,
+                                    uint32_t config_id,
+                                    uuc::UpdateCtrlrPhase phase,
+                                    DalDmlIntf *dmi,
+                                    ConfigKeyVal **err_ckv,
+                                    KTxCtrlrAffectedState *ctrlr_affected);
+
+    upll_rc_t TranslateVbrPortmapToVbrErr(ConfigKeyVal *ikey,
+                                     ConfigKeyVal **err_ckv,
+                                     upll_keytype_datatype_t dt_type,
+                                     DalDmlIntf *dmi);
+
+    upll_rc_t ReadExpandMo(IpcReqRespHeader *header,
+                           ConfigKeyVal *ikey,
+                           DalDmlIntf *dmi);
+
+    upll_rc_t ReadConvertVbridge(IpcReqRespHeader *req,
+                                 ConfigKeyVal *ikey,
+                                 DalDmlIntf *dmi,
+                                 ConfigKeyVal *con_vbr,
+                                 ConfigKeyVal *vbr_pm,
+                                 ConfigKeyVal *con_vbrif,
+                                 ConfigKeyVal *con_vlink);
+
+    upll_rc_t FrameVbrExpand(ConfigKeyVal *ikey,
+                             ConfigVal *vbr_ex,
+                             IpcReqRespHeader *req,
+                             DalDmlIntf *dmi);
+
+    upll_rc_t FrameVbrPmExpand(ConfigKeyVal *ikey,
+                               ConfigVal *val_ex);
+
+    upll_rc_t FrameVbrIfExpandUsingConvVlink(ConfigKeyVal *ikey,
+                                             ConfigVal *tmp_vbrifx);
+
+    upll_rc_t FrameVbrIfExpandUsingVlink(ConfigKeyVal *vbrif_ckv,
+                                         ConfigKeyVal *vlink_ckv,
+                                         ConfigVal *vbrif_ex,
+                                         bool *uvb_vnode1);
+
+    upll_rc_t GetVlinkMaintblFromConvVbrIf(ConfigKeyVal *vbrif_ckv,
+                                           ConfigKeyVal *&vlnk_ckv,
+                                           IpcReqRespHeader *req,
+                                           DalDmlIntf *dmi,
+                                           bool *uvb_vnode1);
+
+    upll_rc_t FrameVtunnelExpand(ConfigKeyVal *ikey,
+                                 ConfigVal *tmp_vtunnx);
+
+    upll_rc_t FrameVtunIfExpand(ConfigKeyVal *ikey,
+                                ConfigVal *vtunif_ex);
+
+    upll_rc_t FrameVlinkExpand(ConfigKeyVal *ikey,
+                               ConfigVal *tmp_vlnkx);
+
+    upll_rc_t HandleVbrIfRead(ConfigKeyVal *ikey,
+                              IpcReqRespHeader *req,
+                              DalDmlIntf *dmi,
+                              ConfigKeyVal *con_vbrif,
+                              ConfigKeyVal *con_vlink,
+                              ConfigVal *vbr_ex);
+
+    upll_rc_t HandleVtunnelRead(ConfigKeyVal *vlink_ckv,
+                                ConfigVal *vtun_ex);
+
+    upll_rc_t HandleVtunnelIfRead(const std::string &vtun_name,
+                                  ConfigKeyVal *vlink_ckv,
+                                  ConfigVal *vtun_ex);
+
+    upll_rc_t HandleVlinkRead(ConfigKeyVal *vlink_ckv,
+                              ConfigVal *vlink_ex);
+
+    bool CompareVbrIf(ConfigKeyVal *ckv_cvbr,
+                      ConfigKeyVal *ckv_vbrif);
+
+    bool CompareVlink(ConfigKeyVal *ckv_vbrif,
+                      ConfigKeyVal *ckv_vlink);
+
+    upll_rc_t HandleVbrPortmapRead(ConfigKeyVal *ikey,
+                                   ConfigKeyVal *vbr_pm,
+                                   ConfigVal *vbr_ex);
+
+    bool CompareVbrPm(ConfigKeyVal *ckv_cvbr,
+                      ConfigKeyVal *ckv_vbrpm);
+
+    upll_rc_t ConvertVbrToUvbr(ConfigKeyVal *cvbr_ckv,
+                               ConfigKeyVal *&uvbr_ckv);
+
     /**
      * @Brief Validates Same host address present in another vnode
      *        during VTN stiching.
@@ -446,10 +601,72 @@ class VbrMoMgr : public VnodeMoMgr {
      */
     upll_rc_t ValidateVtnRename(ConfigKeyVal *org_vtn_ckv,
                                 ConfigKeyVal *rename_vtn_ckv, DalDmlIntf *dmi);
+
+    upll_rc_t ValidateConvertVbrMessage(IpcReqRespHeader *req,
+                                        ConfigKeyVal *ikey,
+                                        DalDmlIntf *dmi);
+
+    upll_rc_t CreateConvertVbrMo(IpcReqRespHeader *req,
+                                 ConfigKeyVal *ikey,
+                                 TcConfigMode config_mode,
+                                 string vtn_name,
+                                 DalDmlIntf *dmi);
 #if 0
-    upll_rc_t IsHostAddrAndPrefixLenInUse(ConfigKeyVal *ckv, DalDmlIntf *dmi, 
-					     IpcReqRespHeader *req);
+    upll_rc_t IsHostAddrAndPrefixLenInUse(ConfigKeyVal *ckv, DalDmlIntf *dmi,
+                                          IpcReqRespHeader *req);
 #endif
+
+    upll_rc_t CreateImportConvertVbridge(ConfigKeyVal* unc_vbr_ckv,
+                                         IpcReqRespHeader *req,
+                                         DalDmlIntf *dmi,
+                                         upll_import_type import_type,
+                                         const char *ctrlr_id);
+
+    upll_rc_t IsVbIdInUse(ConfigKeyVal *ikey,
+                          DalDmlIntf *dmi,
+                          upll_keytype_datatype_t dt_type);
+
+    upll_rc_t CheckUnifiedVbridgeTransparency(ConfigKeyVal *ikey,
+                                              DalDmlIntf *dmi,
+                                              upll_keytype_datatype_t datatype);
+    upll_rc_t MergeValidateConvertVbridge(ConfigKeyVal *uni_vbr_ckv,
+                                          upll_keytype_datatype_t dt_type,
+                                          DalDmlIntf *dmi,
+                                          const char *ctrlr_id,
+                                          upll_import_type import_type);
+    upll_rc_t MergeValidateVbid(ConfigKeyVal* ikey,
+                                upll_keytype_datatype_t dt_type,
+                                DalDmlIntf *dmi, const char *ctrlr_id,
+                                upll_import_type import_type);
+    upll_rc_t MergeValidateTransparentvBridge(ConfigKeyVal* ikey,
+                                              upll_keytype_datatype_t dt_type,
+                                              DalDmlIntf *dmi,
+                                              const char *ctrlr_id,
+                                              upll_import_type import_type);
+    upll_rc_t PartialMergeValidate(unc_key_type_t keytype,
+                                   const char *ctrlr_id, ConfigKeyVal *err_ckv,
+                                   DalDmlIntf *dmi);
+    upll_rc_t MergeConvertVbridgeImportToCandidate(const char *ctrlr_name,
+                                DalDmlIntf *dmi, upll_import_type import_type);
+    upll_rc_t UpdateUvbrConfigStatus(ConfigKeyVal *vbr_key,
+                                     unc_keytype_operation_t op,
+                                     uint32_t driver_result,
+                                     ConfigKeyVal *upd_key,
+                                     DalDmlIntf *dmi);
+    upll_rc_t UnifiedVbrVnodeChecks(ConfigKeyVal *ikey,
+                                    upll_keytype_datatype_t datatype,
+                                    const char *ctrlr_id,
+                                    DalDmlIntf *dmi);
+    upll_rc_t UpdateConvVbrConfigStatus(ConfigKeyVal *vbr_key,
+                                       unc_keytype_operation_t op,
+                                       uint32_t driver_result,
+                                       ConfigKeyVal *upd_key,
+                                       DalDmlIntf *dmi);
+    upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
+    upll_rc_t UpdateUVbrConfigStatusAuditVote(ConfigKeyVal *ckv_drv_rslt,
+                                              DalDmlIntf *dmi);
+    upll_rc_t UpdateUvbrConfigStatusAuditUpdate(uuc::UpdateCtrlrPhase phase,
+                               ConfigKeyVal *ikey, DalDmlIntf *dmi);
 };
 
 }  // namespace kt_momgr

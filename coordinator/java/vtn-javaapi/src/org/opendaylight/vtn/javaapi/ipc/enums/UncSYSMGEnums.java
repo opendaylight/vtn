@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -118,7 +118,9 @@ public class UncSYSMGEnums {
 		MGMT_E_INVALID_DESTINATION("Invalid destination"),
 		MGMT_E_INVALID_COMMUNITY("Invalid community"),
 		MGMT_E_INVALID_IPADDR("Invalid IP address"),
-		MGMT_E_INVALID_PROMPT("Invalid promt");
+		MGMT_E_INVALID_PROMPT("Invalid promt"),
+		MGMT_E_ENTRIES_EXCEED_MAX("Unable to set because entries exceed maximum"),
+		MGMT_E_CMD_NOT_FOUND("Invalid parameter");
 
 		private final String message;
 

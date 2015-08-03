@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -21,6 +21,8 @@
 #include "vlanmap_momgr.hh"
 #include "vbr_if_flowfilter_momgr.hh"
 #include "vbr_if_policingmap_momgr.hh"
+#include "config_yield.hh"
+#include "convert_vnode.hh"
 
 #define NUM_KEY_RENAME_TBL_ 4
 #define NUM_KEY_MAIN_TBL_ 5
@@ -55,8 +57,10 @@ BindInfo VlinkMoMgr::vlink_bind_info[] = {
     { uudst::vlink::kDbiBoundaryName, CFG_VAL, offsetof(val_vlink,
                                                         boundary_name),
       uud::kDalChar, 32 },
-    { uudst::vlink::kDbiVlanid, CFG_VAL, offsetof(val_vlink, vlan_id),
-      uud::kDalUint16, 1 },
+    { uudst::vlink::kDbiLabelType, CFG_VAL, offsetof(val_vlink, label_type),
+      uud::kDalUint8, 1 },
+    { uudst::vlink::kDbiLabel, CFG_VAL, offsetof(val_vlink, label),
+      uud::kDalUint32, 1 },
     { uudst::vlink::kDbiDesc, CFG_VAL, offsetof(val_vlink, description),
       uud::kDalChar, 128 },
     { uudst::vlink::kDbiOperStatus, ST_VAL,
@@ -91,8 +95,11 @@ BindInfo VlinkMoMgr::vlink_bind_info[] = {
     { uudst::vlink::kDbiValidBoundaryName, CFG_META_VAL, offsetof(
         val_vlink, valid[UPLL_IDX_BOUNDARY_NAME_VLNK]),
       uud::kDalUint8, 1 },
-    { uudst::vlink::kDbiValidVlanid, CFG_META_VAL, offsetof(
-        val_vlink, valid[UPLL_IDX_VLAN_ID_VLNK]),
+    { uudst::vlink::kDbiValidLabelType, CFG_META_VAL, offsetof(
+        val_vlink, valid[UPLL_IDX_LABEL_TYPE_VLNK]),
+      uud::kDalUint8, 1 },
+    { uudst::vlink::kDbiValidLabel, CFG_META_VAL, offsetof(
+        val_vlink, valid[UPLL_IDX_LABEL_VLNK]),
       uud::kDalUint8, 1 },
     { uudst::vlink::kDbiValidDesc, CFG_META_VAL, offsetof(
         val_vlink, valid[UPLL_IDX_DESCRIPTION_VLNK]),
@@ -118,8 +125,11 @@ BindInfo VlinkMoMgr::vlink_bind_info[] = {
     { uudst::vlink::kDbiCsBoundaryName, CS_VAL, offsetof(
         val_vlink, cs_attr[UPLL_IDX_BOUNDARY_NAME_VLNK]),
       uud::kDalUint8, 1 },
-    { uudst::vlink::kDbiCsVlanid, CS_VAL, offsetof(
-        val_vlink, cs_attr[UPLL_IDX_VLAN_ID_VLNK]),
+    { uudst::vlink::kDbiCsLabelType, CS_VAL, offsetof(
+        val_vlink, cs_attr[UPLL_IDX_LABEL_TYPE_VLNK]),
+      uud::kDalUint8, 1 },
+    { uudst::vlink::kDbiCsLabel, CS_VAL, offsetof(
+        val_vlink, cs_attr[UPLL_IDX_LABEL_VLNK]),
       uud::kDalUint8, 1 },
     { uudst::vlink::kDbiCsDesc, CS_VAL, offsetof(
         val_vlink, cs_attr[UPLL_IDX_DESCRIPTION_VLNK]),
@@ -181,10 +191,106 @@ BindInfo VlinkMoMgr::key_vlink_renametbl_update_bind_info[] = {
         key_rename_vnode_info_t, new_unc_vnode_name),
       uud::kDalChar, kMaxLenVnodeName + 1 } };
 
+BindInfo VlinkMoMgr::convert_vlink_bind_info[] = {
+    { uudst::convert_vlink::kDbiVtnName, CFG_KEY,
+      offsetof(key_convert_vlink, vbr_key.vtn_key.vtn_name),
+      uud::kDalChar, kMaxLenVtnName + 1 },
+    { uudst::convert_vlink::kDbiVbrName, CFG_KEY,
+      offsetof(key_convert_vlink, vbr_key.vbridge_name),
+      uud::kDalChar, kMaxLenVnodeName + 1 },
+    { uudst::convert_vlink::kDbiVlinkName, CFG_KEY,
+      offsetof(key_convert_vlink, convert_vlink_name),
+      uud::kDalChar, kMaxLenVlinkName + 1 },
+    { uudst::convert_vlink::kDbiVnode1Name, CFG_VAL,
+      offsetof(val_convert_vlink, vnode1_name),
+      uud::kDalChar, kMaxLenConvertVnodeName + 1 },
+    { uudst::convert_vlink::kDbiVnode1Ifname, CFG_VAL,
+      offsetof(val_convert_vlink, vnode1_ifname),
+      uud::kDalChar, kMaxLenInterfaceName + 1},
+    { uudst::convert_vlink::kDbiVnode2Name, CFG_VAL,
+      offsetof(val_convert_vlink, vnode2_name),
+      uud::kDalChar, kMaxLenConvertVnodeName + 1 },
+    { uudst::convert_vlink::kDbiVnode2Ifname, CFG_VAL,
+      offsetof(val_convert_vlink, vnode2_ifname),
+      uud::kDalChar, kMaxLenInterfaceName + 1 },
+    { uudst::convert_vlink::kDbiBoundaryName, CFG_VAL,
+      offsetof(val_convert_vlink, boundary_name),
+      uud::kDalChar, kMaxLenBoundaryName + 1 },
+    { uudst::convert_vlink::kDbiLabelType, CFG_VAL,
+      offsetof(val_convert_vlink, label_type), uud::kDalUint8, 1 },
+    { uudst::convert_vlink::kDbiLabel, CFG_VAL,
+      offsetof(val_convert_vlink, label), uud::kDalUint32, 1 },
+    { uudst::convert_vlink::kDbiCtrlr1Name, CK_VAL,
+      offsetof(key_user_data, ctrlr_id), uud::kDalChar, kMaxLenCtrlrId + 1 },
+    { uudst::convert_vlink::kDbiDomain1Id, CK_VAL,
+      offsetof(key_user_data, domain_id), uud::kDalChar, kMaxLenDomainId + 1 },
+    { uudst::convert_vlink::kDbiCtrlr2Name, CK_VAL2,
+      offsetof(key_user_data, ctrlr_id), uud::kDalChar, kMaxLenCtrlrId + 1 },
+    { uudst::convert_vlink::kDbiDomain2Id, CK_VAL2,
+      offsetof(key_user_data, domain_id), uud::kDalChar, kMaxLenDomainId + 1 },
+    { uudst::convert_vlink::kDbiOperStatus, ST_VAL,
+      offsetof(val_vlink_st, oper_status), uud::kDalUint8, 1 },
+    { uudst::convert_vlink::kDbiDownCount, ST_VAL,
+      offsetof(val_db_vlink_st, down_count), uud::kDalUint32, 1 },
+    { uudst::convert_vlink::kDbiValidVnode1Name, CFG_META_VAL,
+      offsetof(val_convert_vlink, valid[UPLL_IDX_VNODE1_NAME_CVLINK]),
+      uud::kDalUint8, 1 },
+    { uudst::convert_vlink::kDbiValidVnode1Ifname, CFG_META_VAL,
+      offsetof(val_convert_vlink, valid[UPLL_IDX_VNODE1_IF_NAME_CVLINK]),
+      uud::kDalUint8, 1 },
+    { uudst::convert_vlink::kDbiValidVnode2Name, CFG_META_VAL,
+      offsetof(val_convert_vlink, valid[UPLL_IDX_VNODE2_NAME_CVLINK]),
+      uud::kDalUint8, 1 },
+    { uudst::convert_vlink::kDbiValidVnode2Ifname, CFG_META_VAL,
+      offsetof(val_convert_vlink, valid[UPLL_IDX_VNODE2_IF_NAME_CVLINK]),
+      uud::kDalUint8, 1 },
+    { uudst::convert_vlink::kDbiValidBoundaryName, CFG_META_VAL,
+      offsetof(val_convert_vlink, valid[UPLL_IDX_BOUNDARY_NAME_CVLINK]),
+      uud::kDalUint8, 1 },
+    { uudst::convert_vlink::kDbiValidLabelType, CFG_META_VAL,
+      offsetof(val_convert_vlink, valid[UPLL_IDX_LABEL_TYPE_CVLINK]),
+      uud::kDalUint8, 1 },
+    { uudst::convert_vlink::kDbiValidLabel, CFG_META_VAL,
+      offsetof(val_convert_vlink, valid[UPLL_IDX_LABEL_CVLINK]),
+      uud::kDalUint8, 1 },
+    { uudst::convert_vlink::kDbiValidOperStatus, ST_META_VAL,
+      offsetof(val_vlink_st, valid[UPLL_IDX_OPER_STATUS_VLNKS]),
+      uud::kDalUint8, 1 },
+    { uudst::convert_vlink::kDbiCsVnode1Name, CS_VAL,
+      offsetof(val_convert_vlink, cs_attr[UPLL_IDX_VNODE1_NAME_CVLINK]),
+      uud::kDalUint8, 1 },
+    { uudst::convert_vlink::kDbiCsVnode1Ifname, CS_VAL,
+      offsetof(val_convert_vlink, cs_attr[UPLL_IDX_VNODE1_IF_NAME_CVLINK]),
+      uud::kDalUint8, 1 },
+    { uudst::convert_vlink::kDbiCsVnode2Name, CS_VAL,
+      offsetof(val_convert_vlink, cs_attr[UPLL_IDX_VNODE2_NAME_CVLINK]),
+      uud::kDalUint8, 1 },
+    { uudst::convert_vlink::kDbiCsVnode2Ifname, CS_VAL,
+      offsetof(val_convert_vlink, cs_attr[UPLL_IDX_VNODE2_IF_NAME_CVLINK]),
+      uud::kDalUint8, 1 },
+    { uudst::convert_vlink::kDbiCsBoundaryName, CS_VAL, offsetof(
+        val_convert_vlink, cs_attr[UPLL_IDX_BOUNDARY_NAME_CVLINK]),
+      uud::kDalUint8, 1 },
+    { uudst::convert_vlink::kDbiCsLabelType, CS_VAL, offsetof(
+        val_convert_vlink, cs_attr[UPLL_IDX_LABEL_TYPE_CVLINK]),
+      uud::kDalUint8, 1 },
+    { uudst::convert_vlink::kDbiCsLabel, CS_VAL, offsetof(
+        val_convert_vlink, cs_attr[UPLL_IDX_LABEL_CVLINK]),
+      uud::kDalUint8, 1 },
+    { uudst::convert_vlink::kDbiCsRowstatus, CS_VAL,
+      offsetof(val_vlink, cs_row_status),
+      uud::kDalUint8, 1 },
+    { uudst::convert_vlink::kDbiKeyFlags, CK_VAL,
+      offsetof(key_user_data, flags),
+      uud::kDalUint8, 1 },
+    { uudst::convert_vlink::kDbiValFlags, CK_VAL2,
+      offsetof(key_user_data, flags),
+      uud::kDalUint8, 1 }};
+
 VlinkMoMgr::VlinkMoMgr() {
   UPLL_FUNC_TRACE;
   ntable = MAX_MOMGR_TBLS;
-  table = new Table *[ntable];
+  table = new Table *[ntable]();
   table[MAINTBL] = new Table(uudst::kDbiVlinkTbl, UNC_KT_VLINK,
                              vlink_bind_info, IpctSt::kIpcStKeyVlink,
                              IpctSt::kIpcStValVlink,
@@ -193,10 +299,14 @@ VlinkMoMgr::VlinkMoMgr() {
                   vlink_rename_bind_info, IpctSt::kIpcInvalidStNum,
                   IpctSt::kIpcInvalidStNum,
                   uudst::vlink_rename::kDbiVlinkRenameNumCols);
+  table[CONVERTTBL] = new Table(uudst::kDbiConvertVlinkTbl, UNC_KT_VLINK,
+                  convert_vlink_bind_info, IpctSt::kIpcStKeyConvertVlink,
+                  IpctSt::kIpcStValConvertVlink,
+                  uudst::convert_vlink::kDbiConvertVlinkNumCols);
+
   table[CTRLRTBL] = NULL;
   nchild = 0;
   child = NULL;
-  ck_boundary = NULL;
 //    SetMoManager(UNC_KT_VLINK, (MoMgr *)this);
 }
 
@@ -209,24 +319,14 @@ upll_rc_t VlinkMoMgr::CreateAuditMoImpl(ConfigKeyVal *ikey,
     UPLL_LOG_DEBUG("Cannot perform create operation");
     return UPLL_RC_ERR_GENERIC;
   }
-  uint8_t *controller_id = reinterpret_cast<uint8_t *>(
-                                 const_cast<char *>(ctrlr_id));
 
-  /* check if object is renamed in the corresponding Rename Tbl
-   * if "renamed"  create the object by the UNC name.
-   * else - create using the controller name.
-   */
-  result_code = GetRenamedUncKey(ikey, UPLL_DT_RUNNING, dmi, controller_id);
-  if (result_code != UPLL_RC_SUCCESS &&
-      result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE) {
-    UPLL_LOG_DEBUG("GetRenamedUncKey Failed err_code %d", result_code);
-    return result_code;
-  }
   controller_domain ctrlr_dom;
   ctrlr_dom.ctrlr = NULL;
   ctrlr_dom.domain = NULL;
   uint8_t rename_flag = 0;
-  GET_USER_DATA_FLAGS(ikey,rename_flag);
+  string vtn_name = "";
+
+  GET_USER_DATA_FLAGS(ikey, rename_flag);
   GET_RENAME_FLAG(rename_flag, UNC_KT_VLINK);
   if (rename_flag) {
     GET_USER_DATA_CTRLR_DOMAIN(ikey, ctrlr_dom);
@@ -264,7 +364,8 @@ upll_rc_t VlinkMoMgr::CreateAuditMoImpl(ConfigKeyVal *ikey,
     UPLL_LOG_DEBUG("GetChildConfigKey Failed");
     return result_code;
   }
-  DbSubOp dbop1 = {kOpReadSingle,  kOpMatchNone, kOpInOutFlag | kOpInOutCtrlr | kOpInOutDomain};
+  DbSubOp dbop1 = {kOpReadSingle, kOpMatchNone,
+    kOpInOutFlag | kOpInOutCtrlr | kOpInOutDomain};
   result_code = ReadConfigDB(temp_key, UPLL_DT_RUNNING,
       UNC_OP_READ, dbop1, dmi, MAINTBL);
   if (result_code == UPLL_RC_SUCCESS) {
@@ -273,7 +374,8 @@ upll_rc_t VlinkMoMgr::CreateAuditMoImpl(ConfigKeyVal *ikey,
     GET_USER_DATA_FLAGS(ikey, flag);
     flag |= tmp_flag;
     SET_USER_DATA_FLAGS(ikey, flag);
-    flag = 0; tmp_flag = 0;
+    flag = 0;
+    tmp_flag = 0;
     GET_USER_DATA_FLAGS(temp_key->get_cfg_val(), tmp_flag);
     GET_USER_DATA_FLAGS(ikey->get_cfg_val(), flag);
     flag |= tmp_flag;
@@ -281,8 +383,18 @@ upll_rc_t VlinkMoMgr::CreateAuditMoImpl(ConfigKeyVal *ikey,
   } else {
     UPLL_LOG_DEBUG("Record not found in RUNNING DB");
   }
+
+  bool auto_rename = false;
+  result_code = GenerateAutoName(ikey, UPLL_DT_AUDIT, &ctrlr_dom,
+                                 dmi, &auto_rename, TC_CONFIG_GLOBAL, vtn_name);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_DEBUG("Record Creation fialed in CANDIDATE DB");
+    return result_code;
+  }
+
   result_code = UpdateConfigDB(ikey, UPLL_DT_AUDIT, UNC_OP_CREATE,
-                               dmi, &dbop, MAINTBL);
+                               dmi, &dbop, TC_CONFIG_GLOBAL, vtn_name,
+                               MAINTBL);
   if (result_code != UPLL_RC_SUCCESS) {
     UPLL_LOG_DEBUG("Record Creation failed in CANDIDATE DB");
   }
@@ -306,14 +418,17 @@ upll_rc_t VlinkMoMgr::CreateCandidateMo(IpcReqRespHeader *req,
     UPLL_LOG_INFO("ValidateMessage Failed : %d", result_code);
     return result_code;
   }
-  result_code = ValidateAttribute(ikey, dmi, req);
+
+  ConfigKeyVal* uppl_bdry = NULL;
+  result_code = ValidateAttribute(ikey, uppl_bdry, dmi, req);
   if (result_code != UPLL_RC_SUCCESS) {
      UPLL_LOG_INFO("ValidateAttribute returning %d", result_code);
      return result_code;
   }
   // vbrIf checks are done and respective Vnodes ContollerIds are filled
   if (UPLL_DT_IMPORT != req->datatype) {
-    result_code = UpdateVlinkIf(req, ikey, dmi, ctrlr_dom);
+    result_code = UpdateVlinkIf(req, ikey, uppl_bdry, dmi, ctrlr_dom);
+    DELETE_IF_NOT_NULL(uppl_bdry);
     if (result_code != UPLL_RC_SUCCESS) {
       UPLL_LOG_INFO("Error in checking for Vlink Interfaces. result code %d",
                     result_code);
@@ -326,6 +441,7 @@ upll_rc_t VlinkMoMgr::CreateCandidateMo(IpcReqRespHeader *req,
     GET_USER_DATA_CTRLR_DOMAIN(ikey->get_cfg_val(), ctrlr_dom[1]);
     UPLL_LOG_TRACE("The Rename Value is %d", rename);
   }
+  DELETE_IF_NOT_NULL(uppl_bdry);
   ConfigKeyVal *temp_key = NULL;
   bool is_vunk_interface = true;
   if (UPLL_DT_CANDIDATE == req->datatype ||
@@ -348,7 +464,8 @@ upll_rc_t VlinkMoMgr::CreateCandidateMo(IpcReqRespHeader *req,
       is_vunk_interface = false;
     }
   }
-  if (UNC_KT_VUNK_IF != GetVlinkVnodeIfKeyType(ikey, 0)) {
+  if (UNC_KT_VUNK_IF != GetVlinkVnodeIfKeyType(ikey, 0) &&
+      (!IsUnifiedVbr(ctrlr_dom[0].ctrlr))) {
     result_code = ValidateCapability(req, ikey, reinterpret_cast<const char *>
                                      (ctrlr_dom[0].ctrlr));
     if (result_code != UPLL_RC_SUCCESS) {
@@ -357,7 +474,8 @@ upll_rc_t VlinkMoMgr::CreateCandidateMo(IpcReqRespHeader *req,
       return result_code;
     }
   }
-  if (UNC_KT_VUNK_IF != GetVlinkVnodeIfKeyType(ikey, 1)) {
+  if (UNC_KT_VUNK_IF != GetVlinkVnodeIfKeyType(ikey, 1) &&
+      (!IsUnifiedVbr(ctrlr_dom[1].ctrlr))) {
     if (ctrlr_dom[1].ctrlr == NULL) {
       DELETE_IF_NOT_NULL(temp_key);
       UPLL_LOG_TRACE(" The Node 2 interface controller name is NULL");
@@ -393,8 +511,9 @@ upll_rc_t VlinkMoMgr::DeleteMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
 }
 
 upll_rc_t VlinkMoMgr::ValidateAttribute(ConfigKeyVal *ikey,
-                                DalDmlIntf *dmi,
-                                IpcReqRespHeader *req) {
+                                        ConfigKeyVal *&uppl_bdry,
+                                        DalDmlIntf *dmi,
+                                        IpcReqRespHeader *req) {
   upll_rc_t result_code;
   if (!ikey || !ikey->get_cfg_val()) {
     UPLL_LOG_DEBUG("Invalid parameter");
@@ -402,7 +521,7 @@ upll_rc_t VlinkMoMgr::ValidateAttribute(ConfigKeyVal *ikey,
   }
   val_vlink_t *vlink_val = reinterpret_cast<val_vlink *>(GetVal(ikey));
   if (vlink_val->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] == UNC_VF_VALID) {
-    result_code = ValidateBoundary(vlink_val->boundary_name, req);
+    result_code = ValidateBoundary(vlink_val->boundary_name, req, uppl_bdry);
     if (result_code != UPLL_RC_SUCCESS) return UPLL_RC_ERR_CFG_SEMANTIC;
   }
   return UPLL_RC_SUCCESS;
@@ -588,7 +707,9 @@ upll_rc_t VlinkMoMgr::NotifyPOMForPortMapVlinkFlag(
                                               upll_keytype_datatype_t dt_type,
                                               ConfigKeyVal *ckv_if,
                                               DalDmlIntf *dmi,
-                                              unc_keytype_operation_t op) {
+                                              unc_keytype_operation_t op,
+                                              TcConfigMode config_mode,
+                                              string vtn_name) {
   UPLL_FUNC_TRACE;
   MoMgrImpl *pom_mgr =  NULL;
   MoMgrImpl *vnode_mgr = NULL;
@@ -601,7 +722,6 @@ upll_rc_t VlinkMoMgr::NotifyPOMForPortMapVlinkFlag(
                                      (const_cast<MoManager *>(
                                      GetMoManager(UNC_KT_VBR_IF)));
   } else if (ckv_if->get_key_type() == UNC_KT_VRT_IF) {
-
     pom_mgr = reinterpret_cast<MoMgrImpl *>
                                      (const_cast<MoManager *>(
                                      GetMoManager(UNC_KT_VRTIF_FLOWFILTER)));
@@ -620,17 +740,15 @@ upll_rc_t VlinkMoMgr::NotifyPOMForPortMapVlinkFlag(
   }
 
   uint8_t user_data_flags = 0;
-  InterfacePortMapInfo if_info; 
-  GET_USER_DATA_FLAGS(ckv_if,user_data_flags);
-  if (user_data_flags & VIF_TYPE_BOUNDARY) { 
+  InterfacePortMapInfo if_info;
+  GET_USER_DATA_FLAGS(ckv_if, user_data_flags);
+  if (user_data_flags & VIF_TYPE_BOUNDARY) {
       UPLL_LOG_DEBUG("VLINK TYPE --BOUNDRY");
       if_info = kPortMapConfigured;
-  }
-  else if (user_data_flags & VIF_TYPE_LINKED) {
+  } else if (user_data_flags & VIF_TYPE_LINKED) {
     UPLL_LOG_DEBUG("VLINK TYPE --INTERNAL VLINK");
      if_info = kVlinkConfigured;
-  }
-  else {
+  } else {
      UPLL_LOG_DEBUG("VLINK TYPE --NO VLINK");
      if_info = kVlinkPortMapNotConfigured;
   }
@@ -640,11 +758,10 @@ upll_rc_t VlinkMoMgr::NotifyPOMForPortMapVlinkFlag(
     return UPLL_RC_ERR_GENERIC;
   }
   if (UNC_OP_DELETE == op) {
-
     // Notify the POM Component to clear the vlink flag
      result_code = pom_mgr->SetVlinkPortmapConfiguration(okey, dt_type,
-                                  dmi, kVlinkPortMapNotConfigured, op);
-
+                                  dmi, kVlinkPortMapNotConfigured, op,
+                                  config_mode, vtn_name);
      if (okey) {
        delete okey;
        okey = NULL;
@@ -658,7 +775,8 @@ upll_rc_t VlinkMoMgr::NotifyPOMForPortMapVlinkFlag(
   } else {
     // Notify the POM Component to update the vlink or Portmap flag
      result_code = pom_mgr->SetVlinkPortmapConfiguration(okey, dt_type,
-                                            dmi, if_info, op);
+                                            dmi, if_info, op,
+                                            config_mode, vtn_name);
 
      if (okey) {
        delete okey;
@@ -670,9 +788,8 @@ upll_rc_t VlinkMoMgr::NotifyPOMForPortMapVlinkFlag(
                     result_code);
         return result_code;
      }
-     if((if_info == kPortMapConfigured) &&
+     if ((if_info == kPortMapConfigured) &&
         (ckv_if->get_key_type() == UNC_KT_VBR_IF)) {
-
         pom_mgr = reinterpret_cast<MoMgrImpl *>
                                        (const_cast<MoManager *>(
                                        GetMoManager(UNC_KT_VBRIF_POLICINGMAP)));
@@ -688,7 +805,8 @@ upll_rc_t VlinkMoMgr::NotifyPOMForPortMapVlinkFlag(
 
        // Notify the VBR IF PolicingMap Component to update the Portmap flag
        result_code = pom_mgr->SetVlinkPortmapConfiguration(okey, dt_type,
-                                                         dmi, if_info, op);
+                                                         dmi, if_info, op,
+                                                         config_mode, vtn_name);
        if (okey) {
          delete okey;
          okey = NULL;
@@ -711,7 +829,9 @@ upll_rc_t VlinkMoMgr::UpdateVlinkMemIfFlag(upll_keytype_datatype_t dt_type,
                                            DalDmlIntf *dmi,
                                            vnode_if_type &vnif_type,
                                            MoMgrImpl *mgr,
-                                           unc_keytype_operation_t op) {
+                                           unc_keytype_operation_t op,
+                                           TcConfigMode config_mode,
+                                           string vtn_name) {
   UPLL_FUNC_TRACE;
   if (!ckv_if || !mgr) {
     UPLL_LOG_DEBUG("Invalid param");
@@ -762,6 +882,12 @@ upll_rc_t VlinkMoMgr::UpdateVlinkMemIfFlag(upll_keytype_datatype_t dt_type,
                (if_val)->vm));
      vnif_type = kVlanMap;
      break;
+  case UNC_KT_VBR_PORTMAP:
+     ResetValid(val_vlan_map, &(reinterpret_cast<pfcdrv_val_vbr_portmap_t *>
+               (if_val)->vbrpm));
+     vnif_type = kVbrPortMap;
+     break;
+
   default:
      if (dup_ckvif) delete dup_ckvif;
      UPLL_LOG_DEBUG("Unsupported keytype %d", ckv_if->get_key_type());
@@ -770,7 +896,8 @@ upll_rc_t VlinkMoMgr::UpdateVlinkMemIfFlag(upll_keytype_datatype_t dt_type,
   UPLL_LOG_TRACE("Updating the Flag value in Interface Table %d",
                            ckv_if->get_key_type());
   result_code = mgr->UpdateConfigDB(dup_ckvif, dt_type,
-                      UNC_OP_UPDATE, dmi, &dbop, MAINTBL);
+                      UNC_OP_UPDATE, dmi, &dbop, config_mode,
+                      vtn_name, MAINTBL);
   if (result_code != UPLL_RC_SUCCESS)
     UPLL_LOG_DEBUG("Returning error %d", result_code);
   if (dup_ckvif) delete dup_ckvif;
@@ -779,6 +906,7 @@ upll_rc_t VlinkMoMgr::UpdateVlinkMemIfFlag(upll_keytype_datatype_t dt_type,
 
 upll_rc_t VlinkMoMgr::UpdateVlinkIf(IpcReqRespHeader *req,
                                     ConfigKeyVal *ikey,
+                                    ConfigKeyVal *uppl_bdry,
                                     DalDmlIntf *dmi,
                                     controller_domain *ctrlr_dom) {
   UPLL_FUNC_TRACE;
@@ -801,6 +929,14 @@ upll_rc_t VlinkMoMgr::UpdateVlinkIf(IpcReqRespHeader *req,
   ConfigKeyVal *ck_drv_vbr_if = NULL;
   ConfigVal *cv_link;
   int i = 0;
+  TcConfigMode config_mode = TC_CONFIG_INVALID;
+  std::string vtn_name = "";
+  result_code = GetConfigModeInfo(req, config_mode, vtn_name);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_DEBUG("GetConfigMode failed");
+    return result_code;
+  }
+
   VbrIfMoMgr *mgr =
       static_cast<VbrIfMoMgr *>(const_cast<MoManager *>(GetMoManager(
           UNC_KT_VBR_IF)));
@@ -835,23 +971,28 @@ upll_rc_t VlinkMoMgr::UpdateVlinkIf(IpcReqRespHeader *req,
     GET_USER_DATA_CTRLR_DOMAIN(ck_if[i], ctrlr_dom[i]);
     UPLL_LOG_TRACE(" The Controller and Domain Name is %s & %s",
                      ctrlr_dom[i].ctrlr, ctrlr_dom[i].domain);
-    GET_USER_DATA_FLAGS(ck_if[i], rename_flag);
-    if (rename_flag & VIF_TYPE) {
-      UPLL_LOG_DEBUG("Interface is already part of another vlink");
-      delete ck_drv_vbr_if;  // COV RESOURCE LEAK
-      for (int i =0; i <2; i++)
-        DELETE_IF_NOT_NULL(ck_if[i]);
-      return UPLL_RC_ERR_CFG_SEMANTIC;
-    }
-    GET_USER_DATA_FLAGS(ck_if[i], vnode_rename_flag);
-    if (vnode_rename_flag & 0x02) {
-      GET_USER_DATA_FLAGS(cv_link, rename_flag);
-      if (vnodeif_number == kVlinkVnode2)
-         vnode_rename_flag = 0x08;
-      else
-         vnode_rename_flag = 0x04;
-      rename_flag |= vnode_rename_flag;
-      SET_USER_DATA_FLAGS(cv_link, rename_flag);
+    //  During audit, same vlink is exist in both
+    //  UNC and PFC. vnode interface vlink flag is set during vnode interface
+    //  CreateAuditMoImpl from running to audit
+    if (req->datatype != UPLL_DT_AUDIT) {
+      GET_USER_DATA_FLAGS(ck_if[i], rename_flag);
+      if (rename_flag & VIF_TYPE) {
+        UPLL_LOG_DEBUG("Interface is already part of another vlink");
+        delete ck_drv_vbr_if;  // COV RESOURCE LEAK
+        for (int i =0; i <2; i++)
+          DELETE_IF_NOT_NULL(ck_if[i]);
+        return UPLL_RC_ERR_CFG_SEMANTIC;
+      }
+      GET_USER_DATA_FLAGS(ck_if[i], vnode_rename_flag);
+      if (vnode_rename_flag & 0x02) {
+        GET_USER_DATA_FLAGS(cv_link, rename_flag);
+        if (vnodeif_number == kVlinkVnode2)
+          vnode_rename_flag = 0x08;
+        else
+          vnode_rename_flag = 0x04;
+        rename_flag |= vnode_rename_flag;
+        SET_USER_DATA_FLAGS(cv_link, rename_flag);
+      }
     }
     delete ck_drv_vbr_if;
     ck_drv_vbr_if = NULL;
@@ -930,7 +1071,9 @@ upll_rc_t VlinkMoMgr::UpdateVlinkIf(IpcReqRespHeader *req,
       result_code = NotifyPOMForPortMapVlinkFlag(dt_type,
                                             ck_if[i],
                                             dmi,
-                                            UNC_OP_CREATE);
+                                            UNC_OP_CREATE,
+                                            config_mode,
+                                            vtn_name);
 
       if (result_code != UPLL_RC_SUCCESS) {
         UPLL_LOG_DEBUG("Returning error %d", result_code);
@@ -939,13 +1082,14 @@ upll_rc_t VlinkMoMgr::UpdateVlinkIf(IpcReqRespHeader *req,
         return result_code;
       }
     }
-   // SET_USER_DATA_FLAGS(ck_if[i], rename_flag);
+    // SET_USER_DATA_FLAGS(ck_if[i], rename_flag);
     key_type = ck_if[i]->get_key_type();
     MoMgrImpl *if_mgr = reinterpret_cast<MoMgrImpl *>
                  (const_cast<MoManager *>(GetMoManager(key_type)));
 
     result_code = UpdateVlinkMemIfFlag(dt_type, ck_if[i],
-                               dmi, vnif_type[i], if_mgr, UNC_OP_CREATE);
+                               dmi, vnif_type[i], if_mgr, UNC_OP_CREATE,
+                               config_mode, vtn_name);
     if (result_code != UPLL_RC_SUCCESS) {
       UPLL_LOG_DEBUG("Returning error %d", result_code);
       for (int i =0; i <2; i++)
@@ -985,8 +1129,18 @@ upll_rc_t VlinkMoMgr::UpdateVlinkIf(IpcReqRespHeader *req,
   if (valid_boundary) {
     UPLL_LOG_TRACE("Valid boundary");
 
-    /* VlanmapOnBoundary: In case of boundary vlan-map, 
-     * update vnode_if type in vlink flag */
+    /* VlanmapOnBoundary: In case of boundary vlan-map,
+     * update vnode_if type as kVlanmap in vlink flag.
+     * In case of boundary vbr-portmap update vnode if type
+     * as KVbrPortMap in vlink flag */
+    result_code = UpdateVlinkFlagFromBoundary(ikey, uppl_bdry);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_DEBUG("UpdateVlinkMemIfFlag returns error:%d", result_code);
+      for (int i =0; i <2; i++)
+        DELETE_IF_NOT_NULL(ck_if[i]);
+      return result_code;
+    }
+
     ConfigKeyVal *dup_vlink = NULL;
     result_code = DupConfigKeyVal(dup_vlink, ikey);
     if (result_code != UPLL_RC_SUCCESS) {
@@ -996,37 +1150,29 @@ upll_rc_t VlinkMoMgr::UpdateVlinkIf(IpcReqRespHeader *req,
       return result_code;
     }
 
-    result_code = UpdateVlinkVlanmapFlag(ikey, dup_vlink);
-    if (result_code != UPLL_RC_SUCCESS) {
-      UPLL_LOG_DEBUG("UpdateVlinkMemIfFlag returns error:%d", result_code);
-      for (int i =0; i <2; i++)
-        DELETE_IF_NOT_NULL(ck_if[i]);
-      return result_code;
-    }
-
-    VlinkNodePosition vlanmap_vnode_number = kVlinkVnode1;
+    VlinkNodePosition vnode_pos_number = kVlinkVnode1;
     for (int i = 0; i < 2; i++) {
       /* Get the key type of vnode_if */
       unc_key_type_t ktype;
       ktype = GetVlinkVnodeIfKeyType(dup_vlink, i);
-      if (ktype == UNC_KT_VBR_VLANMAP) {
+      if (ktype == UNC_KT_VBR_VLANMAP || ktype == UNC_KT_VBR_PORTMAP) {
         MoMgrImpl *mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>
             (GetMoManager(ktype)));
         if (!mgr) {
-          UPLL_LOG_DEBUG("Vlan-map MoMgr is invalid:%d", ktype);
+          UPLL_LOG_DEBUG("Invalid MoMgr:%d", ktype);
           for (int i =0; i <2; i++)
             DELETE_IF_NOT_NULL(ck_if[i]);
           delete dup_vlink;
           return UPLL_RC_ERR_GENERIC;
         }
 
-        ConfigKeyVal *vlanmap_ckv = NULL;
+        ConfigKeyVal *vnode_child_ckv = NULL;
         /* Set the flag of cfg_val with vnode_number which will be used in
-         * vbr vlan-map GetChildConfigKey to populate vbr_vlanmap info */
-        SET_USER_DATA_FLAGS(dup_vlink->get_cfg_val(), vlanmap_vnode_number);
+         * vbr vlan-map or vbr_portmap GetChildConfigKey to populate
+         * vbr_vlanamp or vbr_portmap ckv respectively from vLink ckv */
+        SET_USER_DATA_FLAGS(dup_vlink->get_cfg_val(), vnode_pos_number);
 
-        /* Boundary vlink update operation for SW or SD */
-        result_code = mgr->GetChildConfigKey(vlanmap_ckv, dup_vlink);
+        result_code = mgr->GetChildConfigKey(vnode_child_ckv, dup_vlink);
         if (result_code != UPLL_RC_SUCCESS) {
           UPLL_LOG_DEBUG("Returning %d", result_code);
           delete dup_vlink;
@@ -1035,30 +1181,33 @@ upll_rc_t VlinkMoMgr::UpdateVlinkIf(IpcReqRespHeader *req,
           return result_code;
         }
 
-        val_vlink_t *dup_val = reinterpret_cast<val_vlink_t *>(GetVal(dup_vlink));
+        val_vlink_t *dup_val =
+            reinterpret_cast<val_vlink_t *>(GetVal(dup_vlink));
 
-        /* valid flag of boundary_name is INVALID -> Boundary vlanmap CREATE req */
+        // valid flag of db_vlink boundary_name is INVALID,
+        // Boundary vlanmap CREATE req
         dup_val->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] = UNC_VF_INVALID;
-        dup_val->valid[UPLL_IDX_VLAN_ID_VLNK]       = UNC_VF_INVALID;
+        dup_val->valid[UPLL_IDX_LABEL_VLNK]       = UNC_VF_INVALID;
 
-        /* Create request for Boundary vlanmap */
-        result_code = mgr->BoundaryVlanmapReq(req, ikey, dup_vlink,
-            vlanmap_ckv, dmi);
-        DELETE_IF_NOT_NULL(vlanmap_ckv);
+        /* Create request for BoundaryMap */
+        result_code = mgr->BoundaryMapReq(req, ikey, dup_vlink,
+                                          vnode_child_ckv, uppl_bdry, dmi);
+        DELETE_IF_NOT_NULL(vnode_child_ckv);
         if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_DEBUG("BoundaryVlanmapReq returns error: %d", result_code);
+          UPLL_LOG_DEBUG("BoundaryMapReq returns error: %d", result_code);
           delete dup_vlink;
           for (int i =0; i <2; i++)
             DELETE_IF_NOT_NULL(ck_if[i]);
           return result_code;
         }
       }
-      vlanmap_vnode_number = kVlinkVnode2;
+      vnode_pos_number = kVlinkVnode2;
     }
     DELETE_IF_NOT_NULL(dup_vlink);
-    /* VlanmapOnBoundary: end */
+    /* boundary vbr_portmap/vbr_vlanmap end */
 
-    result_code = UpdateVnodeIf(dt_type, ikey, ck_if, dmi, req->operation);
+    result_code = UpdateVnodeIf(dt_type, ikey, ck_if, dmi, req->operation,
+                                uppl_bdry, config_mode, vtn_name);
     if (result_code != UPLL_RC_SUCCESS) {
       UPLL_LOG_DEBUG("Returning error %d", result_code);
     }
@@ -1075,6 +1224,25 @@ upll_rc_t VlinkMoMgr::ValidateIfType(ConfigKeyVal **vnodeIf) {
 
   unc_key_type_t node1_ktype = vnodeIf[0]->get_key_type();
   unc_key_type_t node2_ktype = vnodeIf[1]->get_key_type();
+  controller_domain_t ctr_dom;
+  ctr_dom.ctrlr = ctr_dom.domain = NULL;
+
+  //  Unified vBridge interfcae cannot be linked to VRT_IF/VUNK_IF/
+  //  VTEP_IF/VTUNNEL_IF
+  if ((node1_ktype == UNC_KT_VUNK_IF) || (node1_ktype == UNC_KT_VRT_IF) ||
+      (node1_ktype == UNC_KT_VTUNNEL_IF) ||
+      (node1_ktype == UNC_KT_VTEP_IF)) {
+    if (node2_ktype == UNC_KT_VBR_IF) {
+      GET_USER_DATA_CTRLR_DOMAIN(vnodeIf[1], ctr_dom);
+      if (ctr_dom.ctrlr) {
+        if (IsUnifiedVbr(ctr_dom.ctrlr)) {
+          UPLL_LOG_DEBUG("vLink cannot be configured between unified vBridge"
+                         "interfcae and %d", node2_ktype);
+          return UPLL_RC_ERR_CFG_SEMANTIC;
+        }
+      }
+    }
+  }
   switch (node1_ktype) {
     case UNC_KT_VUNK_IF:
       if (node2_ktype == UNC_KT_VRT_IF) {
@@ -1096,6 +1264,28 @@ upll_rc_t VlinkMoMgr::ValidateIfType(ConfigKeyVal **vnodeIf) {
           (node2_ktype == UNC_KT_VTUNNEL_IF)) {
         UPLL_LOG_DEBUG("Invalid combination for vlink");
         return UPLL_RC_ERR_CFG_SEMANTIC;
+      }
+    break;
+    case UNC_KT_VBR_IF:
+      GET_USER_DATA_CTRLR_DOMAIN(vnodeIf[0], ctr_dom);
+      if (ctr_dom.ctrlr && IsUnifiedVbr(ctr_dom.ctrlr)) {
+        //  node1 is unified vBridge interface, return UPLL_RC_ERR_CFG_SEMANTIC
+        //  error if node2 is other than unified vBridge interface
+        if ((node2_ktype == UNC_KT_VUNK_IF) || (node2_ktype == UNC_KT_VRT_IF) ||
+            (node2_ktype == UNC_KT_VTUNNEL_IF) ||
+            (node2_ktype == UNC_KT_VTEP_IF)) {
+          UPLL_LOG_DEBUG("vLink cannot be configured between unified vBridge"
+                         "interfcae and %d", node2_ktype);
+          return UPLL_RC_ERR_CFG_SEMANTIC;
+        } else if (node2_ktype == UNC_KT_VBR_IF) {
+          //  If node1 is unified vBridge node2 also unified vBridge
+          GET_USER_DATA_CTRLR_DOMAIN(vnodeIf[1], ctr_dom);
+          if (ctr_dom.ctrlr && IsUnifiedVbr(ctr_dom.ctrlr)) {
+            UPLL_LOG_DEBUG("vLink cannot be configured between unified vBridge"
+                           "interfcae and normal vBridge interface");
+            return UPLL_RC_ERR_CFG_SEMANTIC;
+          }
+        }
       }
     break;
     default:
@@ -1173,7 +1363,10 @@ upll_rc_t VlinkMoMgr::GetControllerDomainId(ConfigKeyVal *ikey,
 upll_rc_t VlinkMoMgr::UpdateVnodeIf(upll_keytype_datatype_t dt_type,
                       ConfigKeyVal *ikey, ConfigKeyVal **vnif,
                       DalDmlIntf *dmi,
-                      unc_keytype_operation_t op) {
+                      unc_keytype_operation_t op,
+                      ConfigKeyVal *uppl_bdry,
+                      TcConfigMode config_mode,
+                      string vtn_name) {
   UPLL_FUNC_TRACE;
   if (ikey == NULL || dt_type == UPLL_DT_INVALID || dmi == NULL)
     return UPLL_RC_ERR_GENERIC;
@@ -1182,14 +1375,17 @@ upll_rc_t VlinkMoMgr::UpdateVnodeIf(upll_keytype_datatype_t dt_type,
       reinterpret_cast<val_vlink *>(GetVal(ikey))->
                                 valid[UPLL_IDX_BOUNDARY_NAME_VLNK];
   if ((valid_boundary == UNC_VF_VALID) ||
-	  (valid_boundary == UNC_VF_VALID_NO_VALUE)) {
+    (valid_boundary == UNC_VF_VALID_NO_VALUE)) {
     for (int i = 0; i < 2; i++) {
       /* VlanmapOnBoundary: for vlanmap continue */
-      if (GetVlinkVnodeIfKeyType(ikey, i) == UNC_KT_VBR_VLANMAP)
+      if ((GetVlinkVnodeIfKeyType(ikey, i) == UNC_KT_VBR_VLANMAP) ||
+          (GetVlinkVnodeIfKeyType(ikey, i) == UNC_KT_VBR_PORTMAP))
         continue;
 
       UPLL_LOG_TRACE("Before UpdatePortmap %s", (vnif[i]->ToStrAll()).c_str());
-      result_code = UpdateVnodeIfPortmap(ikey, vnif[i], dmi, dt_type, op, valid_boundary);
+      result_code = UpdateVnodeIfPortmap(ikey, vnif[i], dmi, dt_type,
+                                         op, valid_boundary, uppl_bdry,
+                                         config_mode, vtn_name);
       if (result_code != UPLL_RC_SUCCESS) {
         UPLL_LOG_DEBUG("Updation of VnIf Portmap failed %d", result_code);
         return result_code;
@@ -1198,9 +1394,11 @@ upll_rc_t VlinkMoMgr::UpdateVnodeIf(upll_keytype_datatype_t dt_type,
   } else {
       UPLL_LOG_DEBUG("Internal vlink");
   }
+#if 0
   if (ck_boundary)
     delete ck_boundary;
   ck_boundary= NULL;
+#endif
   return result_code;
 }
 
@@ -1249,10 +1447,13 @@ upll_rc_t VlinkMoMgr::CheckPortmapValidandUpdateVbrIf(
 upll_rc_t VlinkMoMgr::UpdateVnodeIfPortmap(
     ConfigKeyVal *ikey, ConfigKeyVal *ck_vn_if, DalDmlIntf *dmi,
                                      upll_keytype_datatype_t dt_type,
-                                     unc_keytype_operation_t op, 
-				     uint8_t valid_boundary) {
+                                     unc_keytype_operation_t op,
+                                     uint8_t valid_boundary,
+                                     ConfigKeyVal *uppl_bdry,
+                                     TcConfigMode config_mode,
+                                     string vtn_name) {
   UPLL_FUNC_TRACE;
-  // ck_boundary is not used 
+  // ck_boundary is not used
   if (ikey == NULL || dmi == NULL || ck_vn_if == NULL ||
       dt_type == UPLL_DT_INVALID) {
     UPLL_LOG_DEBUG("Invalid param");
@@ -1297,7 +1498,9 @@ upll_rc_t VlinkMoMgr::UpdateVnodeIfPortmap(
       result_code = NotifyPOMForPortMapVlinkFlag(dt_type,
                                               ck_vn_if,
                                               dmi,
-                                              op);
+                                              op,
+                                              config_mode,
+                                              vtn_name);
 
       if (result_code != UPLL_RC_SUCCESS) {
         UPLL_LOG_DEBUG("Returning error %d", result_code);
@@ -1311,12 +1514,14 @@ upll_rc_t VlinkMoMgr::UpdateVnodeIfPortmap(
     /* VlanmapOnBoundary: During update: input received is vlanmap */
     case UNC_KT_VBR_VLANMAP:
       return UPLL_RC_SUCCESS;
+    case UNC_KT_VBR_PORTMAP:
+      return UPLL_RC_SUCCESS;
     default:
       UPLL_LOG_DEBUG("Unsupported keytype %d", ktype);
       return UPLL_RC_ERR_CFG_SEMANTIC;
     }
     UPLL_LOG_DEBUG("valid_port %d valid vlanid %d", valid_port,
-                      vlink_val->valid[UPLL_IDX_VLAN_ID_VLNK]);
+                      vlink_val->valid[UPLL_IDX_LABEL_VLNK]);
   } else if (valid_boundary == UNC_VF_VALID_NO_VALUE) {
     val_port_map *portmap = NULL;
     switch (ktype) {
@@ -1328,7 +1533,8 @@ upll_rc_t VlinkMoMgr::UpdateVnodeIfPortmap(
             UNC_VF_INVALID;
       drv_ifval->vbr_if_val.valid[UPLL_IDX_PM_VBRI] = UNC_VF_VALID_NO_VALUE;
       result_code = reinterpret_cast<VbrIfMoMgr *>(mgr)->
-                       UpdatePortMap(ck_vn_if, dt_type, dmi, ck_vn_if);
+                       UpdatePortMap(ck_vn_if, dt_type, dmi, ck_vn_if,
+                                     config_mode, vtn_name);
       if (result_code != UPLL_RC_SUCCESS) {
         UPLL_LOG_DEBUG("Clear Portmap failed %d", result_code);
         return result_code;
@@ -1367,6 +1573,8 @@ upll_rc_t VlinkMoMgr::UpdateVnodeIfPortmap(
     /* VlanmapOnBoundary: vlanmap case continue */
     case UNC_KT_VBR_VLANMAP:
       return UPLL_RC_SUCCESS;
+    case UNC_KT_VBR_PORTMAP:
+      return UPLL_RC_SUCCESS;
     default:
       UPLL_LOG_DEBUG("Unsupported keytype %d", ktype);
       return UPLL_RC_ERR_GENERIC;
@@ -1375,7 +1583,7 @@ upll_rc_t VlinkMoMgr::UpdateVnodeIfPortmap(
   if (valid_boundary == UNC_VF_VALID) {
     if ((valid_port == UNC_VF_INVALID) ||
         ((valid_port == UNC_VF_VALID) && (op != UNC_OP_CREATE))) {
-      result_code = ConverttoDriverPortMap(ck_vn_if, ikey, dmi);
+      result_code = ConverttoDriverPortMap(ck_vn_if, ikey, uppl_bdry, dmi);
       if (result_code != UPLL_RC_SUCCESS) {
         UPLL_LOG_DEBUG("Returning error %d", result_code);
         return result_code;
@@ -1449,7 +1657,7 @@ upll_rc_t VlinkMoMgr::UpdateVnodeIfPortmap(
   }
   DbSubOp dbop = { kOpNotRead, kOpMatchNone, kOpInOutNone };
   result_code = mgr->UpdateConfigDB(ck_vn_if, dt_type, UNC_OP_UPDATE,
-      dmi, &dbop, MAINTBL);
+      dmi, &dbop, config_mode, vtn_name, MAINTBL);
   if (result_code != UPLL_RC_SUCCESS) {
     UPLL_LOG_DEBUG("Updation failed %d", result_code);
     return result_code;
@@ -1511,6 +1719,7 @@ bool VlinkMoMgr::CompareVbrIfWithPhysicalData(ConfigKeyVal *ck_drv_vbr_if,
 
 upll_rc_t VlinkMoMgr::ConverttoDriverPortMap(ConfigKeyVal *iokey,
                                          ConfigKeyVal *ikey,
+                                         ConfigKeyVal *ck_boundary,
                                          DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
@@ -1527,7 +1736,7 @@ upll_rc_t VlinkMoMgr::ConverttoDriverPortMap(ConfigKeyVal *iokey,
   }
   unc_key_type_t ktype = iokey->get_key_type();
   val_port_map *port_map_val = NULL;
-  UPLL_LOG_DEBUG("ktype %d " ,ktype);
+  UPLL_LOG_DEBUG("ktype %d " , ktype);
   switch (ktype) {
   case UNC_KT_VBR_IF:
   {
@@ -1572,7 +1781,7 @@ upll_rc_t VlinkMoMgr::ConverttoDriverPortMap(ConfigKeyVal *iokey,
         }
         if (drv_ifval1->vbr_if_val.valid[UPLL_IDX_PM_VBRI] == UNC_VF_VALID) {
           port_map_in_run = true;
-          drv_ifval->vbr_if_val.valid[UPLL_IDX_PM_VBRI] = UNC_VF_VALID; 
+          drv_ifval->vbr_if_val.valid[UPLL_IDX_PM_VBRI] = UNC_VF_VALID;
           drv_ifval->valid[PFCDRV_IDX_VEXT_NAME_VBRIF] = UNC_VF_VALID;
           uuu::upll_strncpy(drv_ifval->vex_name, drv_ifval1->vex_name,
               kMaxLenVnodeName+1);
@@ -1583,7 +1792,7 @@ upll_rc_t VlinkMoMgr::ConverttoDriverPortMap(ConfigKeyVal *iokey,
           uuu::upll_strncpy(reinterpret_cast<char *>(drv_ifval->vex_link_name),
               drv_ifval1->vex_link_name, kMaxLenVlinkName+1);
         }
-      } 
+      }
       if (!port_map_in_run) {
         UPLL_LOG_TRACE("Generate vexternal and vexternal if name");
         std::string if_name = reinterpret_cast<const char *>
@@ -1591,34 +1800,72 @@ upll_rc_t VlinkMoMgr::ConverttoDriverPortMap(ConfigKeyVal *iokey,
         if (strlen(if_name.c_str()) >= 10) {
           if_name.erase(10);
         }
+        // Autogenerate a vexternal name, vext-if name, vlink-name.
+        // Vexternal name needs to be unique with in controller for that VTN.
+        while (1) {
+          struct timeval _timeval;
+          struct timezone _timezone;
+          gettimeofday(&_timeval, &_timezone);
 
-        struct timeval _timeval;
-        struct timezone _timezone;
-        gettimeofday(&_timeval, &_timezone);
+          std::stringstream ss;
+          ss << if_name << _timeval.tv_sec << _timeval.tv_usec;
+          std::string unique_id = ss.str();
+          std::string vex_name("vx_");
+          vex_name += unique_id;
+          std::string vex_if_name("vi_");
+          vex_if_name += unique_id;
+          std::string vex_link_name("vl_");
+          vex_link_name += unique_id;
 
-        std::stringstream ss;
-        ss << if_name << _timeval.tv_sec << _timeval.tv_usec;
-        std::string unique_id = ss.str();
-        std::string vex_name("vx_");
-        vex_name += unique_id;
-        std::string vex_if_name("vi_");
-        vex_if_name += unique_id;
-        std::string vex_link_name("vl_");
-        vex_link_name += unique_id;
+          key_vbr *vbr_key = reinterpret_cast<key_vbr *>(ConfigKeyVal::Malloc
+                                                         (sizeof(key_vbr)));
+          uuu::upll_strncpy(vbr_key->vtn_key.vtn_name,
+                            reinterpret_cast<key_vlink *>
+                            (iokey->get_key())->vtn_key.vtn_name,
+                            (kMaxLenVtnName+1));
+          uuu::upll_strncpy(vbr_key->vbridge_name, vex_name.c_str(),
+                            (kMaxLenVnodeName+1));
 
-        drv_ifval->vbr_if_val.valid[UPLL_IDX_PM_VBRI] = UNC_VF_VALID;
-        drv_ifval->valid[PFCDRV_IDX_VEXT_NAME_VBRIF] = UNC_VF_VALID;
-        uuu::upll_strncpy(drv_ifval->vex_name, vex_name.c_str(),
-            kMaxLenVnodeName+1);
+          ConfigKeyVal *vex_ckv = new ConfigKeyVal(UNC_KT_VBRIDGE,
+                                                   IpctSt::kIpcStKeyVbr,
+                                                   vbr_key, NULL);
 
-        drv_ifval->valid[PFCDRV_IDX_VEXTIF_NAME_VBRIF] = UNC_VF_VALID;
-        uuu::upll_strncpy(reinterpret_cast<char *>(drv_ifval->vex_if_name),
-            vex_if_name.c_str(), kMaxLenInterfaceName+1);
+          controller_domain ctrlr_dom;
+          ctrlr_dom.ctrlr = NULL;
+          ctrlr_dom.domain = NULL;
+          GET_USER_DATA_CTRLR_DOMAIN(iokey, ctrlr_dom);
+          SET_USER_DATA_CTRLR_DOMAIN(vex_ckv, ctrlr_dom);
+          // Auto generated vexternal name of vBridge interface, should not be
+          // same of other vnodes and other vexternal's of the same controller
+          result_code = VnodeChecks(vex_ckv, UPLL_DT_CANDIDATE, dmi, true);
+          DELETE_IF_NOT_NULL(vex_ckv);
+          if (result_code == UPLL_RC_ERR_CFG_SEMANTIC ||
+              result_code == UPLL_RC_ERR_INSTANCE_EXISTS) {
+            UPLL_LOG_DEBUG("Another Vnode %s already exists.  Error code : %d",
+                           vex_name.c_str(), result_code);
+            continue;  // retry and generate unique name
+          } else if (result_code == UPLL_RC_SUCCESS) {
+            drv_ifval->vbr_if_val.valid[UPLL_IDX_PM_VBRI] = UNC_VF_VALID;
+            drv_ifval->valid[PFCDRV_IDX_VEXT_NAME_VBRIF] = UNC_VF_VALID;
+            uuu::upll_strncpy(drv_ifval->vex_name, vex_name.c_str(),
+                              kMaxLenVnodeName+1);
 
-        drv_ifval->valid[PFCDRV_IDX_VLINK_NAME_VBRIF] = UNC_VF_VALID;
-        uuu::upll_strncpy(reinterpret_cast<char *>(drv_ifval->vex_link_name),
-            vex_link_name.c_str(), kMaxLenVlinkName+1);
-      }   
+            drv_ifval->valid[PFCDRV_IDX_VEXTIF_NAME_VBRIF] = UNC_VF_VALID;
+            uuu::upll_strncpy(reinterpret_cast<char *>(drv_ifval->vex_if_name),
+                              vex_if_name.c_str(), kMaxLenInterfaceName+1);
+
+            drv_ifval->valid[PFCDRV_IDX_VLINK_NAME_VBRIF] = UNC_VF_VALID;
+            uuu::upll_strncpy(reinterpret_cast<char *>
+                              (drv_ifval->vex_link_name),
+                              vex_link_name.c_str(), kMaxLenVlinkName+1);
+          } else {
+            UPLL_LOG_DEBUG("Vnodchecks failed. %d", result_code);
+            DELETE_IF_NOT_NULL(okey);
+            return result_code;
+          }
+          break;
+        }
+      }
     }
     port_map_val = &drv_ifval->vbr_if_val.portmap;
     DELETE_IF_NOT_NULL(okey);
@@ -1719,11 +1966,11 @@ upll_rc_t VlinkMoMgr::ConverttoDriverPortMap(ConfigKeyVal *iokey,
   }
   val_vlink *vlink_val = reinterpret_cast<val_vlink *>(GetVal(ikey));
   port_map_val->valid[UPLL_IDX_VLAN_ID_PM] =
-                                 vlink_val->valid[UPLL_IDX_VLAN_ID_VLNK];
-  switch (vlink_val->valid[UPLL_IDX_VLAN_ID_VLNK]) {
+                                 vlink_val->valid[UPLL_IDX_LABEL_VLNK];
+  switch (vlink_val->valid[UPLL_IDX_LABEL_VLNK]) {
   case UNC_VF_VALID:
-    port_map_val->vlan_id = vlink_val->vlan_id;
-    if (port_map_val->vlan_id == 0xFFFF)
+    port_map_val->vlan_id = vlink_val->label;
+    if (port_map_val->vlan_id == NO_VLAN_ID)
       port_map_val->tagged = UPLL_VLAN_UNTAGGED;
     else
       port_map_val->tagged = UPLL_VLAN_TAGGED;
@@ -1861,7 +2108,7 @@ upll_rc_t VlinkMoMgr::GetVlinkKeyVal(ConfigKeyVal *keyVal,
   unc_key_type_t keytype = keyVal->get_key_type();
 
   /* VlanmapOnBoundary: Added vlanmap check */
-  if (keytype != UNC_KT_VBR_VLANMAP) {
+  if ((keytype != UNC_KT_VBR_VLANMAP) && (keytype != UNC_KT_VBR_PORTMAP)) {
   key_vbr_if *vbr_key_if = reinterpret_cast<key_vbr_if *>(keyVal->get_key());
   if (!vbr_key_if) {
     UPLL_LOG_ERROR("Invalid key");
@@ -1891,9 +2138,10 @@ upll_rc_t VlinkMoMgr::GetVlinkKeyVal(ConfigKeyVal *keyVal,
     link_val->valid[UPLL_IDX_VNODE2_NAME_VLNK] = UNC_VF_INVALID;
     link_val->valid[UPLL_IDX_VNODE2_IF_NAME_VLNK] = UNC_VF_INVALID;
     }
-   /* VlanmapOnBoundary: changes*/
-   } else {
-    key_vlan_map *vlanmap_key = reinterpret_cast<key_vlan_map *>(keyVal->get_key());
+    /* VlanmapOnBoundary: changes*/
+  } else if (keytype == UNC_KT_VBR_VLANMAP) {
+    key_vlan_map *vlanmap_key =
+        reinterpret_cast<key_vlan_map *>(keyVal->get_key());
     if (!vlanmap_key) {
       UPLL_LOG_ERROR("Invalid key");
       free(link_val);
@@ -1912,6 +2160,33 @@ upll_rc_t VlinkMoMgr::GetVlinkKeyVal(ConfigKeyVal *keyVal,
     } else  {
       uuu::upll_strncpy(link_val->vnode1_name,
                         vlanmap_key->vbr_key.vbridge_name,
+                       (kMaxLenVnodeName + 1));
+      link_val->valid[UPLL_IDX_VNODE1_NAME_VLNK] = UNC_VF_VALID;
+      link_val->valid[UPLL_IDX_VNODE2_NAME_VLNK] = UNC_VF_INVALID;
+      link_val->valid[UPLL_IDX_VNODE2_IF_NAME_VLNK] = UNC_VF_INVALID;
+      link_val->valid[UPLL_IDX_VNODE2_IF_NAME_VLNK] = UNC_VF_INVALID;
+    }
+  } else {
+    key_vbr_portmap *vbr_pmkey =
+        reinterpret_cast<key_vbr_portmap *>(keyVal->get_key());
+    if (!vbr_pmkey) {
+      UPLL_LOG_ERROR("Invalid key");
+      free(link_val);
+      return UPLL_RC_ERR_GENERIC;
+    }
+    GET_USER_DATA_FLAGS(keyVal, mem_vlink);
+    mem_vlink &= VIF_TYPE;
+    if (mem_vlink & kVlinkVnode2) {
+      uuu::upll_strncpy(link_val->vnode2_name,
+                        vbr_pmkey->vbr_key.vbridge_name,
+                       (kMaxLenVnodeName + 1));
+      link_val->valid[UPLL_IDX_VNODE2_NAME_VLNK] = UNC_VF_VALID;
+      link_val->valid[UPLL_IDX_VNODE1_NAME_VLNK] = UNC_VF_INVALID;
+      link_val->valid[UPLL_IDX_VNODE1_IF_NAME_VLNK] = UNC_VF_INVALID;
+      link_val->valid[UPLL_IDX_VNODE2_IF_NAME_VLNK] = UNC_VF_INVALID;
+    } else  {
+      uuu::upll_strncpy(link_val->vnode1_name,
+                        vbr_pmkey->vbr_key.vbridge_name,
                        (kMaxLenVnodeName + 1));
       link_val->valid[UPLL_IDX_VNODE1_NAME_VLNK] = UNC_VF_VALID;
       link_val->valid[UPLL_IDX_VNODE2_NAME_VLNK] = UNC_VF_INVALID;
@@ -1950,6 +2225,9 @@ bool VlinkMoMgr::GetRenameKeyBindInfo(unc_key_type_t key_type, BindInfo *&binfo,
   } else if (RENAMETBL == tbl) {
     nattr = NUM_KEY_RENAME_TBL_;
     binfo = key_vlink_renametbl_update_bind_info;
+  } else {
+    UPLL_LOG_DEBUG("Invalid Table ");
+    return PFC_FALSE;
   }
   return PFC_TRUE;
 }
@@ -1993,9 +2271,13 @@ upll_rc_t VlinkMoMgr::GetValid(void *val,
         valid = &(reinterpret_cast<val_vlink_t *>(val))->
                             valid[UPLL_IDX_BOUNDARY_NAME_VLNK];
         break;
-      case uudst::vlink::kDbiVlanid:
+      case uudst::vlink::kDbiLabelType:
         valid = &(reinterpret_cast<val_vlink_t *>(val))->
-                            valid[UPLL_IDX_VLAN_ID_VLNK];
+            valid[UPLL_IDX_LABEL_TYPE_VLNK];
+        break;
+      case uudst::vlink::kDbiLabel:
+        valid = &(reinterpret_cast<val_vlink_t *>(val))->
+            valid[UPLL_IDX_LABEL_VLNK];
         break;
       case uudst::vlink::kDbiDesc:
         valid = &(reinterpret_cast<val_vlink_t *>(val))->
@@ -2018,38 +2300,118 @@ upll_rc_t VlinkMoMgr::GetValid(void *val,
        default:
          break;
      }
+  } else if (tbl == CONVERTTBL) {
+    switch (indx) {
+      case uudst::convert_vlink::kDbiOperStatus:
+        valid = &(reinterpret_cast<val_vlink *>(val))->
+                            valid[UPLL_IDX_OPER_STATUS_VLNKS];
+          break;
+      case uudst::convert_vlink::kDbiDownCount:
+        valid = NULL;
+          break;
+      case uudst::convert_vlink::kDbiVnode1Name:
+        valid = &(reinterpret_cast<val_convert_vlink_t *>(val))->
+                            valid[UPLL_IDX_VNODE1_NAME_CVLINK];
+        break;
+      case uudst::convert_vlink::kDbiVnode1Ifname:
+        valid = &(reinterpret_cast<val_convert_vlink_t *>(val))->
+                            valid[UPLL_IDX_VNODE1_IF_NAME_CVLINK];
+        break;
+      case uudst::convert_vlink::kDbiVnode2Name:
+        valid = &(reinterpret_cast<val_convert_vlink_t *>(val))->
+                            valid[UPLL_IDX_VNODE2_NAME_CVLINK];
+        break;
+      case uudst::convert_vlink::kDbiVnode2Ifname:
+        valid = &(reinterpret_cast<val_convert_vlink_t *>(val))->
+                            valid[UPLL_IDX_VNODE2_IF_NAME_CVLINK];
+        break;
+      case uudst::convert_vlink::kDbiBoundaryName:
+        valid = &(reinterpret_cast<val_convert_vlink_t *>(val))->
+                            valid[UPLL_IDX_BOUNDARY_NAME_CVLINK];
+        break;
+      case uudst::convert_vlink::kDbiLabelType:
+        valid = &(reinterpret_cast<val_convert_vlink_t *>(val))->
+            valid[UPLL_IDX_LABEL_TYPE_CVLINK];
+        break;
+      case uudst::convert_vlink::kDbiLabel:
+        valid = &(reinterpret_cast<val_convert_vlink_t *>(val))->
+            valid[UPLL_IDX_LABEL_CVLINK];
+        break;
+      default:
+        return UPLL_RC_ERR_GENERIC;
+    }
   }
   return UPLL_RC_SUCCESS;
 }
 
-bool VlinkMoMgr::IsValidKey(void *key, uint64_t index) {
+bool VlinkMoMgr::IsValidKey(void *key, uint64_t index,
+                            MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
-  key_vlink *vlink_key = reinterpret_cast<key_vlink *>(key);
   upll_rc_t ret_val = UPLL_RC_SUCCESS;
-  switch (index) {
-    case uudst::vlink::kDbiVtnName:
-    case uudst::vnode_rename::kDbiUncVtnName:
-      ret_val = ValidateKey(
-                          reinterpret_cast<char *>(vlink_key->vtn_key.vtn_name),
-                          kMinLenVtnName, kMaxLenVtnName);
-      if (ret_val != UPLL_RC_SUCCESS) {
-        UPLL_LOG_TRACE("VTN Name is not valid(%d)", ret_val);
+  if (tbl == CONVERTTBL) {
+    key_convert_vlink *conv_vlink_key =
+        reinterpret_cast<key_convert_vlink *>(key);
+    switch (index) {
+      case uudst::convert_vlink::kDbiVtnName:
+        ret_val = ValidateKey(
+            reinterpret_cast<char *>(conv_vlink_key->vbr_key.vtn_key.vtn_name),
+            kMinLenVtnName, kMaxLenVtnName);
+        if (ret_val != UPLL_RC_SUCCESS) {
+          UPLL_LOG_TRACE("VTN Name is not valid(%d)", ret_val);
+          return false;
+        }
+        break;
+      case uudst::convert_vlink::kDbiVbrName:
+        ret_val = ValidateKey(reinterpret_cast<char *>(
+                conv_vlink_key->vbr_key.vbridge_name),
+                kMinLenVnodeName, kMaxLenVnodeName);
+        if (ret_val != UPLL_RC_SUCCESS) {
+          UPLL_LOG_TRACE("Unified vBridge Name is not valid(%d)", ret_val);
+          return false;
+        }
+        break;
+      case uudst::convert_vlink::kDbiVlinkName:
+        ret_val = ValidateKey(reinterpret_cast<char *>(
+                conv_vlink_key->convert_vlink_name),
+                kMinLenVlinkName, kMaxLenVlinkName);
+        if (ret_val != UPLL_RC_SUCCESS) {
+          UPLL_LOG_TRACE("convert VLink Name is not valid(%d)", ret_val);
+          return false;
+        }
+        break;
+
+      default:
+        UPLL_LOG_TRACE("Invalid Key Index");
         return false;
-      }
-      break;
-    case uudst::vlink::kDbiVlinkName:
-    case uudst::vnode_rename::kDbiUncvnodeName:
-      ret_val = ValidateKey(reinterpret_cast<char *>(vlink_key->vlink_name),
-                            kMinLenVlinkName, kMaxLenVlinkName);
-      if (ret_val != UPLL_RC_SUCCESS) {
-        UPLL_LOG_TRACE("VLink Name is not valid(%d)", ret_val);
+        break;
+    }
+  } else {
+    key_vlink *vlink_key = reinterpret_cast<key_vlink *>(key);
+    switch (index) {
+      case uudst::vlink::kDbiVtnName:
+      case uudst::vnode_rename::kDbiUncVtnName:
+        ret_val = ValidateKey(
+            reinterpret_cast<char *>(vlink_key->vtn_key.vtn_name),
+            kMinLenVtnName, kMaxLenVtnName);
+        if (ret_val != UPLL_RC_SUCCESS) {
+          UPLL_LOG_TRACE("VTN Name is not valid(%d)", ret_val);
+          return false;
+        }
+        break;
+      case uudst::vlink::kDbiVlinkName:
+      case uudst::vnode_rename::kDbiUncvnodeName:
+        ret_val = ValidateKey(reinterpret_cast<char *>(vlink_key->vlink_name),
+                              kMinLenVlinkName, kMaxLenVlinkName);
+        if (ret_val != UPLL_RC_SUCCESS) {
+          UPLL_LOG_TRACE("VLink Name is not valid(%d)", ret_val);
+          return false;
+        }
+        break;
+      default:
+        UPLL_LOG_TRACE("Invalid Key Index");
         return false;
-      }
-      break;
-    default:
-      UPLL_LOG_TRACE("Invalid Key Index");
-      return false;
-      break;
+        break;
+    }
   }
   return true;
 }
@@ -2070,11 +2432,11 @@ upll_rc_t VlinkMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
 
   void *pkey;
   if (parent_key == NULL) {
-    if (!okey) 
+    if (!okey)
     okey = new ConfigKeyVal(UNC_KT_VLINK, IpctSt::kIpcStKeyVlink, vlink_key,
                             NULL);
     else if (okey->get_key() != vlink_key)
-      okey->SetKey(IpctSt::kIpcStKeyVlink,vlink_key);
+      okey->SetKey(IpctSt::kIpcStKeyVlink, vlink_key);
     return (okey)?UPLL_RC_SUCCESS:UPLL_RC_ERR_GENERIC;
   } else {
     pkey = parent_key->get_key();
@@ -2156,6 +2518,12 @@ upll_rc_t VlinkMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
              reinterpret_cast<key_vlan_map_t *>(pkey)->vbr_key.vtn_key.vtn_name,
               (kMaxLenVtnName+1));
       break;
+    case UNC_KT_VBR_PORTMAP:
+      uuu::upll_strncpy(vlink_key->vtn_key.vtn_name,
+             reinterpret_cast<key_vbr_portmap_t *>(
+                 pkey)->vbr_key.vtn_key.vtn_name, (kMaxLenVtnName+1));
+      break;
+
     default:
       if (!okey || !(okey->get_key()))
         free(vlink_key);
@@ -2165,7 +2533,7 @@ upll_rc_t VlinkMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
     okey = new ConfigKeyVal(UNC_KT_VLINK, IpctSt::kIpcStKeyVlink, vlink_key,
                           NULL);
   else if (okey->get_key() != vlink_key)
-    okey->SetKey(IpctSt::kIpcStKeyVlink,vlink_key);
+    okey->SetKey(IpctSt::kIpcStKeyVlink, vlink_key);
   if (okey == NULL) {
     free(vlink_key);
     result_code = UPLL_RC_ERR_GENERIC;
@@ -2202,8 +2570,11 @@ upll_rc_t VlinkMoMgr::GetParentConfigKey(ConfigKeyVal *&okey,
          reinterpret_cast<key_vlink *>(pkey)->vtn_key.vtn_name,
           (kMaxLenVtnName+1));
   okey = new ConfigKeyVal(UNC_KT_VTN, IpctSt::kIpcStKeyVtn, vtn_key, NULL);
-  if (okey == NULL) result_code = UPLL_RC_ERR_GENERIC;
-  else SET_USER_DATA(okey, ikey);
+  if (okey == NULL) {
+    result_code = UPLL_RC_ERR_GENERIC;
+  } else {
+    SET_USER_DATA(okey, ikey);
+  }
   return result_code;
 }
 
@@ -2233,6 +2604,17 @@ upll_rc_t VlinkMoMgr::AllocVal(ConfigVal *&ck_val,
       val = reinterpret_cast<void *>(
            ConfigKeyVal::Malloc(sizeof(val_db_rename_vlink)));
       ck_val = new ConfigVal(IpctSt::kIpcInvalidStNum, val);
+      break;
+    case CONVERTTBL:
+      val = reinterpret_cast<void *>(
+           ConfigKeyVal::Malloc(sizeof(val_convert_vlink)));
+      ck_val = new ConfigVal(IpctSt::kIpcStValConvertVlink, val);
+      if (dt_type == UPLL_DT_STATE) {
+        val = reinterpret_cast<void *>(
+              ConfigKeyVal::Malloc(sizeof(val_db_vlink_st)));
+        ConfigVal *ck_nxtval = new ConfigVal(IpctSt::kIpcStValVlinkSt, val);
+        ck_val->AppendCfgVal(ck_nxtval);
+      }
       break;
     default:
       val = NULL;
@@ -2276,6 +2658,17 @@ upll_rc_t VlinkMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey, ConfigKeyVal *&req,
         memcpy(rename_val, ival, sizeof(val_rename_vlink));
         tmp1 = new ConfigVal(IpctSt::kIpcStValRenameVlink, rename_val);
       }
+    } else if (tbl == CONVERTTBL) {
+      val_convert_vlink_t *ival =
+                    reinterpret_cast<val_convert_vlink_t *>(GetVal(req));
+      if (!ival) {
+        UPLL_LOG_TRACE("Empty Val structure");
+        return UPLL_RC_ERR_GENERIC;
+      }
+      val_convert_vlink_t *vlink_val = reinterpret_cast<val_convert_vlink_t *>
+          (ConfigKeyVal::Malloc(sizeof(val_convert_vlink_t)));
+      memcpy(vlink_val, ival, sizeof(val_convert_vlink_t));
+      tmp1 = new ConfigVal(IpctSt::kIpcStValConvertVlink, vlink_val);
     }
     tmp = tmp->get_next_cfg_val();
   };
@@ -2291,19 +2684,34 @@ upll_rc_t VlinkMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey, ConfigKeyVal *&req,
     }
   };
   void *tkey = (req != NULL) ? (req)->get_key() : NULL;
-  key_vlink *ikey = reinterpret_cast<key_vlink *>(tkey);
-  key_vlink *vlink_key = reinterpret_cast<key_vlink *>
-                                 (ConfigKeyVal::Malloc(sizeof(key_vlink)));
-  memcpy(vlink_key, ikey, sizeof(key_vlink));
-  okey = new ConfigKeyVal(UNC_KT_VLINK, IpctSt::kIpcStKeyVlink, vlink_key,
-                          tmp1);
-  if (okey) {
-    SET_USER_DATA(okey, req);
-    if (RENAMETBL != tbl)
-      SET_USER_DATA(okey->get_cfg_val(), req->get_cfg_val());
+  if (tbl == CONVERTTBL) {
+    key_convert_vlink_t *ikey = reinterpret_cast<key_convert_vlink_t *>(tkey);
+    key_convert_vlink_t *vlink_key = reinterpret_cast<key_convert_vlink_t *>
+        (ConfigKeyVal::Malloc(sizeof(key_convert_vlink_t)));
+    memcpy(vlink_key, ikey, sizeof(key_convert_vlink_t));
+    okey = new ConfigKeyVal(UNC_KT_VLINK, IpctSt::kIpcStKeyConvertVlink,
+                            vlink_key, tmp1);
+    if (!okey) {
+      DELETE_IF_NOT_NULL(tmp1);
+      FREE_IF_NOT_NULL(vlink_key);
+      return UPLL_RC_ERR_GENERIC;
+    }
   } else {
-    delete tmp1;
+    key_vlink *ikey = reinterpret_cast<key_vlink *>(tkey);
+    key_vlink *vlink_key = reinterpret_cast<key_vlink *>
+        (ConfigKeyVal::Malloc(sizeof(key_vlink)));
+    memcpy(vlink_key, ikey, sizeof(key_vlink));
+    okey = new ConfigKeyVal(UNC_KT_VLINK, IpctSt::kIpcStKeyVlink, vlink_key,
+                            tmp1);
+    if (!okey) {
+      DELETE_IF_NOT_NULL(tmp1);
+      FREE_IF_NOT_NULL(vlink_key);
+      return UPLL_RC_ERR_GENERIC;
+    }
   }
+  SET_USER_DATA(okey, req);
+  if (RENAMETBL != tbl)
+    SET_USER_DATA(okey->get_cfg_val(), req->get_cfg_val());
   return UPLL_RC_SUCCESS;
 }
 
@@ -2316,74 +2724,76 @@ upll_rc_t VlinkMoMgr::GetRenamedUncKey(ConfigKeyVal *ikey,
   DbSubOp dbop = { kOpReadSingle, kOpMatchCtrlr, kOpInOutNone };
   key_vlink *ctrlr_key = reinterpret_cast<key_vlink *>(ikey->get_key());
 
-  /* 
+  /*
    * Vnodes are renamed in value structure. so need to convert into unc name
    * in case of partial import for audit not required
    */
-  if (UPLL_DT_IMPORT == dt_type || UPLL_DT_RUNNING == dt_type) {
-   val_vlink_t *val_vlink = reinterpret_cast<val_vlink_t*>(GetVal(ikey));
+  if (UPLL_DT_IMPORT == dt_type || UPLL_DT_RUNNING == dt_type ||
+      UPLL_DT_AUDIT == dt_type) {
+    val_vlink_t *val_vlink = reinterpret_cast<val_vlink_t*>(GetVal(ikey));
    /* For rename value is not available so no need to convret into unc
     * name
     */
-   if (val_vlink){
-    MoMgrImpl *mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
+    if (val_vlink) {
+      MoMgrImpl *mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
                                               (GetMoManager(UNC_KT_VBRIDGE)));
-    if (!mgr) {
-     return UPLL_RC_ERR_GENERIC;
-    }
-    ConfigKeyVal *vnode_ckv = NULL;
-    uint8_t rename = 0x00;
-    controller_domain ctrlr_dom;
-    ctrlr_dom.ctrlr = NULL;
-    ctrlr_dom.domain = NULL;
-    GET_USER_DATA_FLAGS(ikey, rename);
-    result_code = mgr->GetChildConfigKey(vnode_ckv, NULL);
-    if (UPLL_RC_SUCCESS != result_code) {
-      UPLL_LOG_DEBUG("GetChildConfigKey failed");
-      return result_code;
-    }
-    key_vbr_t *vbr_key = reinterpret_cast<key_vbr_t *>(vnode_ckv->get_key());
-    uuu::upll_strncpy(vbr_key->vtn_key.vtn_name, ctrlr_key->vtn_key.vtn_name,
-                      (kMaxLenVtnName+1));
-    for (int i = 0; i < 2;  i++) {
-      uint8_t valid = (0 == i)?val_vlink->valid[UPLL_IDX_VNODE1_NAME_VLNK]:
-          val_vlink->valid[UPLL_IDX_VNODE2_NAME_VLNK];
-      uint8_t *vnode_name = (0 == i)?val_vlink->vnode1_name:
-          val_vlink->vnode2_name;
-      if (valid) {
-        uuu::upll_strncpy(vbr_key->vtn_key.vtn_name, ctrlr_key->vtn_key.vtn_name,
-                          (kMaxLenVtnName+1));
-        uuu::upll_strncpy(vbr_key->vbridge_name, vnode_name,
-                          (kMaxLenVnodeName+1));
-        result_code  = mgr->GetRenamedUncKey(vnode_ckv, dt_type, dmi, ctrlr_id);
-        if (UPLL_RC_SUCCESS != result_code &&
-            UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
-          UPLL_LOG_DEBUG("vnode's GetRenamedUncKey failed %d", result_code);
-          delete vnode_ckv;
-          return result_code;
-        }
-        GET_USER_DATA_CTRLR_DOMAIN(vnode_ckv, ctrlr_dom);
-        if (UPLL_RC_SUCCESS == result_code) {
-          uuu::upll_strncpy(vnode_name, vbr_key->vbridge_name,
-                            (kMaxLenVnodeName+1));
-          GET_USER_DATA_FLAGS(ikey->get_cfg_val(), rename);
-          if (1 == i) {
-            rename = rename | VN1_RENAME;
-            SET_USER_DATA_CTRLR_DOMAIN(ikey->get_cfg_val(), ctrlr_dom);
-            SET_USER_DATA_CTRLR_DOMAIN(ikey, ctrlr_dom);
-          }
-          else {
-            rename = rename | VN2_RENAME;
-            SET_USER_DATA_CTRLR_DOMAIN(ikey, ctrlr_dom);
-            SET_USER_DATA_CTRLR_DOMAIN(ikey->get_cfg_val(), ctrlr_dom);
-          }
-          SET_USER_DATA_FLAGS(ikey->get_cfg_val(), rename);
-        }
+      if (!mgr) {
+        return UPLL_RC_ERR_GENERIC;
       }
-      result_code = UPLL_RC_SUCCESS;
+      ConfigKeyVal *vnode_ckv = NULL;
+      uint8_t rename = 0x00;
+      controller_domain ctrlr_dom;
+      ctrlr_dom.ctrlr = NULL;
+      ctrlr_dom.domain = NULL;
+      GET_USER_DATA_FLAGS(ikey, rename);
+      result_code = mgr->GetChildConfigKey(vnode_ckv, NULL);
+      if (UPLL_RC_SUCCESS != result_code) {
+        UPLL_LOG_DEBUG("GetChildConfigKey failed");
+        return result_code;
+      }
+      key_vbr_t *vbr_key = reinterpret_cast<key_vbr_t *>(vnode_ckv->get_key());
+      uuu::upll_strncpy(vbr_key->vtn_key.vtn_name, ctrlr_key->vtn_key.vtn_name,
+                        (kMaxLenVtnName+1));
+      for (int i = 0; i < 2;  i++) {
+        uint8_t valid = (0 == i)?val_vlink->valid[UPLL_IDX_VNODE1_NAME_VLNK]:
+            val_vlink->valid[UPLL_IDX_VNODE2_NAME_VLNK];
+        uint8_t *vnode_name = (0 == i)?val_vlink->vnode1_name:
+            val_vlink->vnode2_name;
+        if (valid) {
+          uuu::upll_strncpy(vbr_key->vtn_key.vtn_name,
+                            ctrlr_key->vtn_key.vtn_name,
+                            (kMaxLenVtnName+1));
+          uuu::upll_strncpy(vbr_key->vbridge_name, vnode_name,
+                            (kMaxLenVnodeName+1));
+          result_code  = mgr->GetRenamedUncKey(vnode_ckv, dt_type,
+                                               dmi, ctrlr_id);
+          if (UPLL_RC_SUCCESS != result_code &&
+              UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
+            UPLL_LOG_DEBUG("vnode's GetRenamedUncKey failed %d", result_code);
+            delete vnode_ckv;
+            return result_code;
+          }
+          GET_USER_DATA_CTRLR_DOMAIN(vnode_ckv, ctrlr_dom);
+          if (UPLL_RC_SUCCESS == result_code) {
+            uuu::upll_strncpy(vnode_name, vbr_key->vbridge_name,
+                              (kMaxLenVnodeName+1));
+            GET_USER_DATA_FLAGS(ikey->get_cfg_val(), rename);
+            if (1 == i) {
+              rename = rename | VN1_RENAME;
+              SET_USER_DATA_CTRLR_DOMAIN(ikey->get_cfg_val(), ctrlr_dom);
+              SET_USER_DATA_CTRLR_DOMAIN(ikey, ctrlr_dom);
+            } else {
+              rename = rename | VN2_RENAME;
+              SET_USER_DATA_CTRLR_DOMAIN(ikey, ctrlr_dom);
+              SET_USER_DATA_CTRLR_DOMAIN(ikey->get_cfg_val(), ctrlr_dom);
+            }
+            SET_USER_DATA_FLAGS(ikey->get_cfg_val(), rename);
+          }
+        }
+        result_code = UPLL_RC_SUCCESS;
+      }
+      delete vnode_ckv;
     }
-    delete vnode_ckv;
-   }
   }
   val_db_rename_vlink *rename_vlink = reinterpret_cast<val_db_rename_vlink *>
                    (ConfigKeyVal::Malloc(sizeof(val_db_rename_vlink)));
@@ -2418,7 +2828,7 @@ upll_rc_t VlinkMoMgr::GetRenamedUncKey(ConfigKeyVal *ikey,
   uint8_t rename = 0;
   unc_key->AppendCfgVal(IpctSt::kIpcInvalidStNum, rename_vlink);
 
-  dbop.inoutop = kOpInOutCtrlr | kOpInOutDomain ;
+  dbop.inoutop = kOpInOutCtrlr | kOpInOutDomain;
   result_code = ReadConfigDB(unc_key, dt_type, UNC_OP_READ, dbop, dmi,
                                        RENAMETBL);
   if (result_code == UPLL_RC_SUCCESS) {
@@ -2440,8 +2850,9 @@ upll_rc_t VlinkMoMgr::GetRenamedUncKey(ConfigKeyVal *ikey,
     SET_USER_DATA(ikey, unc_key);
   } else if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
     upll_rc_t res_code = UPLL_RC_SUCCESS;
-    MoMgrImpl *vtn_mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
-                                                       (GetMoManager(UNC_KT_VTN)));
+    MoMgrImpl *vtn_mgr =
+        reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
+                                      (GetMoManager(UNC_KT_VTN)));
     if (!vtn_mgr) {
       UPLL_LOG_DEBUG("mgr is NULL");
       DELETE_IF_NOT_NULL(unc_key);
@@ -2503,10 +2914,7 @@ upll_rc_t VlinkMoMgr::GetRenamedControllerKey(ConfigKeyVal *ikey,
       !strlen(reinterpret_cast<const char *>(ctrlr_dom->domain))) {
     GET_USER_DATA_CTRLR_DOMAIN(ikey->get_cfg_val(), *ctrlr_dom);
   }
-  /* Read controller name from running rename table,
-   * since there is no rename table for audit case */
-  if (dt_type == UPLL_DT_AUDIT)
-    dt_type = UPLL_DT_RUNNING;
+
   val_vlink_t *val = reinterpret_cast<val_vlink_t *>(GetVal(ikey));
   if (!val) {
     UPLL_LOG_DEBUG("Val Structure is Error");
@@ -2571,8 +2979,9 @@ upll_rc_t VlinkMoMgr::GetRenamedControllerKey(ConfigKeyVal *ikey,
     }
     SET_USER_DATA_FLAGS(ikey, rename);
   } else if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
-    MoMgrImpl *vtn_mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
-                                                       (GetMoManager(UNC_KT_VTN)));
+    MoMgrImpl *vtn_mgr
+        = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
+                                        (GetMoManager(UNC_KT_VTN)));
     if (!vtn_mgr) {
       UPLL_LOG_DEBUG("mgr is NULL");
       DELETE_IF_NOT_NULL(okey);
@@ -2652,8 +3061,13 @@ upll_rc_t VlinkMoMgr::UpdateConfigStatus(ConfigKeyVal *vlink_key,
     UPLL_LOG_DEBUG("Error in BoundaryVlink");
     return result_code;
   }
-  if ((bound_vlink == false) && (driver_result == UPLL_RC_ERR_CTR_DISCONNECTED)) {
-    val_vlinkst->vlink_val_st.oper_status = UPLL_OPER_STATUS_UNKNOWN;
+  if (bound_vlink == false) {
+    if (driver_result == UPLL_RC_ERR_CTR_DISCONNECTED) {
+      val_vlinkst->vlink_val_st.oper_status = UPLL_OPER_STATUS_UNKNOWN;
+    } else if (vlink_val->admin_status == UPLL_ADMIN_ENABLE) {
+      if (op == UNC_OP_CREATE)
+        val_vlinkst->vlink_val_st.oper_status = UPLL_OPER_STATUS_UP;
+    }
   }
   UPLL_LOG_TRACE("%s", (vlink_key->ToStr()).c_str());
   for ( unsigned int loop = 0;
@@ -2846,6 +3260,7 @@ upll_rc_t VlinkMoMgr::GetRenameInfo(ConfigKeyVal *ikey,
     return UPLL_RC_ERR_GENERIC;
   }
   key_vlink_t * vlink_key_ = NULL;
+  string vtn_id = "";
 
   vlink_key_ = reinterpret_cast<key_vlink_t *>(ikey->get_key());
   if (!vlink_key_) {
@@ -2961,7 +3376,7 @@ upll_rc_t VlinkMoMgr::GetRenameInfo(ConfigKeyVal *ikey,
     okey->SetCfgVal(rename_val_);
     dbop.readop = kOpNotRead;
     result_code = UpdateConfigDB(okey, UPLL_DT_IMPORT, UNC_OP_CREATE, dmi,
-                                 RENAMETBL);
+                                 TC_CONFIG_GLOBAL, vtn_id, RENAMETBL);
     if (tmp_key)
       delete tmp_key;
   }
@@ -2974,6 +3389,8 @@ upll_rc_t VlinkMoMgr::UpdateVnodeVal(ConfigKeyVal *rename_info,
                                      bool &no_rename) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
+  string vtn_name = "";
+
   if (!rename_info) return UPLL_RC_ERR_GENERIC;
   key_rename_vnode_info *rename_info_ =
                           reinterpret_cast<key_rename_vnode_info *>(
@@ -3013,7 +3430,7 @@ upll_rc_t VlinkMoMgr::UpdateVnodeVal(ConfigKeyVal *rename_info,
   val_vlink_->valid[UPLL_IDX_VNODE1_NAME_VLNK] = UNC_VF_VALID;
 
   result_code = ReadConfigDB(okey, data_type, UNC_OP_READ, dbop, dmi, MAINTBL);
-  if ((UPLL_RC_SUCCESS != result_code) && 
+  if ((UPLL_RC_SUCCESS != result_code) &&
       (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code)) {
     UPLL_LOG_DEBUG("ReadConfigDB failed %d", result_code);
     DELETE_IF_NOT_NULL(okey);
@@ -3048,7 +3465,7 @@ upll_rc_t VlinkMoMgr::UpdateVnodeVal(ConfigKeyVal *rename_info,
       dbop.inoutop =  kOpInOutFlag;
 
       result_code = UpdateConfigDB(okey, data_type, UNC_OP_UPDATE, dmi,
-                                   &dbop, MAINTBL);
+                                   &dbop, TC_CONFIG_GLOBAL, vtn_name, MAINTBL);
       if (UPLL_RC_SUCCESS != result_code) return result_code;
       okey = okey->get_next_cfg_key_val();
     }
@@ -3088,15 +3505,16 @@ upll_rc_t VlinkMoMgr::UpdateVnodeVal(ConfigKeyVal *rename_info,
       dbop.readop = kOpNotRead;
       dbop.inoutop =  kOpInOutFlag;
       result_code = UpdateConfigDB(okey, data_type, UNC_OP_UPDATE, dmi,
-                                   &dbop, MAINTBL);
+                                   &dbop, TC_CONFIG_GLOBAL, vtn_name, MAINTBL);
       if (UPLL_RC_SUCCESS != result_code) return result_code;
       okey = okey->get_next_cfg_key_val();
     }
     if (temp) {
       delete temp;
     }
-  } else if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE)
+  } else if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
     result_code = UPLL_RC_SUCCESS;
+  }
   if (okey)
     delete okey;
   return result_code;
@@ -3104,10 +3522,13 @@ upll_rc_t VlinkMoMgr::UpdateVnodeVal(ConfigKeyVal *rename_info,
 
 
 upll_rc_t VlinkMoMgr::ValidateBoundary(uint8_t *boundary_name,
-                                       IpcReqRespHeader *req) {
+                                       IpcReqRespHeader *req,
+                                       ConfigKeyVal *&ck_boundary) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   IpcResponse ipc_resp;
+  TcConfigMode config_mode = TC_CONFIG_INVALID;
+  std::string vtn_name = "";
 
   key_boundary *bndrykey = static_cast<key_boundary *>
          (ConfigKeyVal::Malloc(sizeof(key_boundary)));  // COV NULL RETURN
@@ -3118,13 +3539,36 @@ upll_rc_t VlinkMoMgr::ValidateBoundary(uint8_t *boundary_name,
   ck_boundary = new ConfigKeyVal(UNC_KT_BOUNDARY, IpctSt::kIpcStKeyBoundary,
                                  bndrykey, NULL);
 
-  result_code = SendIpcReq(req->clnt_sess_id, req->config_id, UNC_OP_READ,
-                   UPLL_DT_CANDIDATE, ck_boundary, NULL, &ipc_resp);
+  result_code = SendIpcReq(USESS_ID_UPLL, 0, UNC_OP_READ,
+                   req->datatype, ck_boundary, NULL, &ipc_resp);
   if (result_code != UPLL_RC_SUCCESS) {
     UPLL_LOG_DEBUG("Error in retrieving boundary data %d", result_code);
     DELETE_IF_NOT_NULL(ipc_resp.ckv_data);
     DELETE_IF_NOT_NULL(ck_boundary);
     return result_code;
+  }
+
+  //  Get acquired configuration mode from tc based on session_id and config_id
+  if (req->datatype == UPLL_DT_CANDIDATE && req->operation != UNC_OP_DELETE) {
+    result_code = GetConfigModeInfo(req, config_mode, vtn_name);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_DEBUG("GetConfigMode failed");
+      return result_code;
+    }
+    //  Acquired configuration mode is VTN specific mode,
+    //  and so verify boundary existence in running db.
+    // TODO(Tamil) remove the unwanted if check
+    if (config_mode == TC_CONFIG_VTN) {
+      DELETE_IF_NOT_NULL(ipc_resp.ckv_data);
+      result_code = SendIpcReq(USESS_ID_UPLL, 0, UNC_OP_READ,
+                             UPLL_DT_RUNNING, ck_boundary, NULL, &ipc_resp);
+      if (result_code != UPLL_RC_SUCCESS) {
+        UPLL_LOG_DEBUG("Error in retrieving boundary data %d", result_code);
+        DELETE_IF_NOT_NULL(ipc_resp.ckv_data);
+        DELETE_IF_NOT_NULL(ck_boundary);
+        return result_code;
+      }
+    }
   }
   /* store the boundary data returned by physical in temp. class variable*/
   if (ipc_resp.ckv_data)
@@ -3147,18 +3591,48 @@ upll_rc_t VlinkMoMgr::IsKeyInUse(upll_keytype_datatype_t dt_type,
   val_vlink_t *linkval = static_cast<val_vlink_t *>
                          (ConfigKeyVal::Malloc(sizeof(val_vlink_t)));
   key_boundary *bndrykey = reinterpret_cast<key_boundary *>(ckv->get_key());
-  if (!strlen(reinterpret_cast<const char *>(bndrykey->boundary_id))) {
+  if (!bndrykey ||
+      !strlen(reinterpret_cast<const char *>(bndrykey->boundary_id))) {
     free(linkval);
     free(vlink_key);
     return UPLL_RC_ERR_GENERIC;
   }
+
+  //  Populate vLink ConfigKeyVal
   uuu::upll_strncpy(linkval->boundary_name, bndrykey->boundary_id,
                     (kMaxLenBoundaryName+1));
   linkval->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] = UNC_VF_VALID;
-  ck_link = new ConfigKeyVal(UNC_KT_LINK, IpctSt::kIpcStKeyVlink, vlink_key,
-                            new ConfigVal(IpctSt::kIpcStValVlink, linkval));
+  ck_link = new ConfigKeyVal(UNC_KT_VLINK, IpctSt::kIpcStKeyVlink, vlink_key,
+                             new ConfigVal(IpctSt::kIpcStValVlink, linkval));
+  //  Validate whether received bdry is used in vLink maintbl.
+  //  If it is used set in_use as true
   result_code = ReadConfigDB(ck_link, dt_type, UNC_OP_READ, dbop, dmi,
                              MAINTBL);
+  delete ck_link;
+  if (result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+    *in_use = (UPLL_RC_SUCCESS == result_code) ? true : false;
+    return result_code;
+  }
+  //  Received boundary not used in vLink maintbl. Perform same check in vLink
+  //  converttbl. set in_use as true, if boundary is used in vLink convertbl.
+
+  //  Populate convert vLink ConfigKeyVal
+  key_convert_vlink_t *conv_vlink_key =
+      reinterpret_cast<key_convert_vlink_t *>
+      (ConfigKeyVal::Malloc(sizeof(key_convert_vlink)));
+  val_convert_vlink_t *link_conv_val = static_cast<val_convert_vlink_t *>
+      (ConfigKeyVal::Malloc(sizeof(val_convert_vlink_t)));
+  uuu::upll_strncpy(link_conv_val->boundary_name, bndrykey->boundary_id,
+                    (kMaxLenBoundaryName+1));
+  link_conv_val->valid[UPLL_IDX_BOUNDARY_NAME_CVLINK] = UNC_VF_VALID;
+  ck_link = new ConfigKeyVal(UNC_KT_VLINK, IpctSt::kIpcStKeyConvertVlink,
+                             conv_vlink_key,
+                             new ConfigVal(IpctSt::kIpcStValConvertVlink,
+                                           link_conv_val));
+
+  //  verify boundary is used in vLink convert tbl
+  result_code = ReadConfigDB(ck_link, dt_type, UNC_OP_READ, dbop, dmi,
+                             CONVERTTBL);
   delete ck_link;
   if (UPLL_RC_SUCCESS != result_code
       && UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
@@ -3199,7 +3673,7 @@ upll_rc_t VlinkMoMgr::UpdateAuditConfigStatus(
      ((phase == uuc::kUpllUcpDelete)?UNC_OP_DELETE:UNC_OP_INVALID));
 
   result_code = SetConsolidatedStatus(ckv_running, op, cs_status, dmi);
-  
+
   return result_code;
 }
 
@@ -3225,7 +3699,7 @@ bool VlinkMoMgr::CompareValidValue(void *&val1, void *val2,
         && UNC_VF_VALID == val_vlink2->valid[loop])
       val_vlink1->valid[loop] = UNC_VF_VALID_NO_VALUE;
   }
-  if (UNC_VF_INVALID != val_vlink1->valid[UPLL_IDX_DESCRIPTION_VLNK]) { 
+  if (UNC_VF_INVALID != val_vlink1->valid[UPLL_IDX_DESCRIPTION_VLNK]) {
     if ((!copy_to_running) ||
         ((UNC_VF_VALID == val_vlink1->valid[UPLL_IDX_DESCRIPTION_VLNK]) &&
          (!strcmp(reinterpret_cast<char*>(val_vlink1->description),
@@ -3268,10 +3742,16 @@ bool VlinkMoMgr::CompareValidValue(void *&val1, void *val2,
                 reinterpret_cast<char*>(val_vlink2->boundary_name)))
       val_vlink1->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] = UNC_VF_INVALID;
   }
-  if (UNC_VF_VALID == val_vlink1->valid[UPLL_IDX_VLAN_ID_VLNK]
-      && UNC_VF_VALID == val_vlink2->valid[UPLL_IDX_VLAN_ID_VLNK]) {
-    if (val_vlink1->vlan_id == val_vlink2->vlan_id)
-      val_vlink1->valid[UPLL_IDX_VLAN_ID_VLNK] = UNC_VF_INVALID;
+  if (UNC_VF_VALID == val_vlink1->valid[UPLL_IDX_LABEL_TYPE_VLNK]
+      && UNC_VF_VALID == val_vlink2->valid[UPLL_IDX_LABEL_TYPE_VLNK]) {
+    if (val_vlink1->label_type == val_vlink2->label_type)
+      val_vlink1->valid[UPLL_IDX_LABEL_TYPE_VLNK] = UNC_VF_INVALID;
+  }
+  if (UNC_VF_VALID == val_vlink1->valid[UPLL_IDX_LABEL_VLNK]
+      && UNC_VF_VALID == val_vlink2->valid[UPLL_IDX_LABEL_VLNK]) {
+    if (val_vlink1->label == val_vlink2->label) {
+      val_vlink1->valid[UPLL_IDX_LABEL_VLNK] = UNC_VF_INVALID;
+    }
   }
   for (unsigned int loop = 0;
         loop < sizeof(val_vlink1->valid)/sizeof(val_vlink1->valid[0]);
@@ -3542,8 +4022,11 @@ upll_rc_t VlinkMoMgr::ValidateVlinkValue(val_vlink_t *val_vlink,
                     val_vlink->boundary_name);
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
-    if (val_vlink->valid[UPLL_IDX_VLAN_ID_VLNK] != UNC_VF_VALID) {
-      UPLL_LOG_DEBUG("vlan_id is mandatory if boundary is specified");
+
+    if (val_vlink->valid[UPLL_IDX_LABEL_TYPE_VLNK] != UNC_VF_VALID ||
+        val_vlink->label_type != UPLL_LABEL_TYPE_VLAN ||
+        val_vlink->valid[UPLL_IDX_LABEL_VLNK] != UNC_VF_VALID) {
+      UPLL_LOG_DEBUG("label_id is mandatory if boundary is specified");
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
 #if 0
@@ -3556,19 +4039,42 @@ upll_rc_t VlinkMoMgr::ValidateVlinkValue(val_vlink_t *val_vlink,
       && ((operation == UNC_OP_UPDATE) || (operation == UNC_OP_CREATE))) {
     val_vlink->boundary_name[0] = ' ';
     val_vlink->boundary_name[1] = '\0';
+    // In U17, VLAN_ID attribute is going to change as label_type and label.
+    // If Boundary name is erased then vlan_id details should be cleared.
+    val_vlink->label = 0;
+    val_vlink->label_type = 0;
+    val_vlink->valid[UPLL_IDX_LABEL_VLNK] = UNC_VF_VALID_NO_VALUE;
+    val_vlink->valid[UPLL_IDX_LABEL_TYPE_VLNK] = UNC_VF_VALID_NO_VALUE;
   }
 
-  if (val_vlink->valid[UPLL_IDX_VLAN_ID_VLNK] == UNC_VF_VALID) {
-    if ((val_vlink->vlan_id != 0xFFFF) &&
-         !ValidateNumericRange(val_vlink->vlan_id,
-         (uint16_t)(kMinVlanId), (uint16_t)
-         (kMaxVlanId), true, true)) {
-      UPLL_LOG_DEBUG("Syntax check failed. vlan_id- (%d)", val_vlink->vlan_id);
+  if (val_vlink->valid[UPLL_IDX_LABEL_TYPE_VLNK] == UNC_VF_VALID) {
+    if (val_vlink->label_type != UPLL_LABEL_TYPE_VLAN ||
+        val_vlink->valid[UPLL_IDX_LABEL_VLNK] != UNC_VF_VALID) {
+      UPLL_LOG_DEBUG("Label and Label type valid flag invalid combination");
+      return UPLL_RC_ERR_CFG_SYNTAX;
+    }
+  } else if ((val_vlink->valid[UPLL_IDX_LABEL_TYPE_VLNK] ==
+              UNC_VF_VALID_NO_VALUE)
+      && ((operation == UNC_OP_UPDATE) || (operation == UNC_OP_CREATE))) {
+     val_vlink->label_type = 0;
+  }
+
+  if (val_vlink->valid[UPLL_IDX_LABEL_VLNK] == UNC_VF_VALID) {
+    if (val_vlink->valid[UPLL_IDX_LABEL_TYPE_VLNK] != UNC_VF_VALID ||
+        (val_vlink->valid[UPLL_IDX_LABEL_TYPE_VLNK] == UNC_VF_VALID &&
+         val_vlink->label_type != UPLL_LABEL_TYPE_VLAN)) {
+    }
+    //  no-vlan-id , vlanid(1 to 4096)
+    if ((val_vlink->label != NO_VLAN_ID) &&
+        !(ValidateNumericRange(val_vlink->label,
+         (uint32_t)(kMinVlanId), (uint32_t)
+         (kMaxVlanId), true, true))) {
+      UPLL_LOG_DEBUG("Syntax check failed. vlan_id- (%d)", val_vlink->label);
      return UPLL_RC_ERR_CFG_SYNTAX;
     }
-  } else if ((val_vlink->valid[UPLL_IDX_VLAN_ID_VLNK] == UNC_VF_VALID_NO_VALUE)
+  } else if ((val_vlink->valid[UPLL_IDX_LABEL_VLNK] == UNC_VF_VALID_NO_VALUE)
       && ((operation == UNC_OP_UPDATE) || (operation == UNC_OP_CREATE))) {
-     val_vlink->vlan_id = 0;
+     val_vlink->label = 0;
   }
   return UPLL_RC_SUCCESS;
 }
@@ -3706,12 +4212,25 @@ upll_rc_t VlinkMoMgr::ValVlinkAttributeSupportCheck(val_vlink_t *val_vlink,
     }
   }
 
-  if ((val_vlink->valid[UPLL_IDX_VLAN_ID_VLNK] == UNC_VF_VALID)
-      || (val_vlink->valid[UPLL_IDX_VLAN_ID_VLNK] == UNC_VF_VALID_NO_VALUE)) {
-    if (attrs[unc::capa::vlink::kCapVlanId] == 0) {
-      val_vlink->valid[UPLL_IDX_VLAN_ID_VLNK] = UNC_VF_INVALID;
+  if ((val_vlink->valid[UPLL_IDX_LABEL_TYPE_VLNK] == UNC_VF_VALID)
+      || (val_vlink->valid[UPLL_IDX_LABEL_TYPE_VLNK] ==
+          UNC_VF_VALID_NO_VALUE)) {
+    if (attrs[unc::capa::vlink::kCapLabelType] == 0) {
+      val_vlink->valid[UPLL_IDX_LABEL_TYPE_VLNK] = UNC_VF_INVALID;
       if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
-        UPLL_LOG_DEBUG("UPLL_IDX_VLAN_ID_VLNK not supported in pfc controller");
+        UPLL_LOG_DEBUG("UPLL_IDX_LABEL_TYPE_VLINK not supported"
+                       " in pfc controller");
+        return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
+      }
+    }
+  }
+
+  if ((val_vlink->valid[UPLL_IDX_LABEL_VLNK] == UNC_VF_VALID)
+      || (val_vlink->valid[UPLL_IDX_LABEL_VLNK] == UNC_VF_VALID_NO_VALUE)) {
+    if (attrs[unc::capa::vlink::kCapLabel] == 0) {
+      val_vlink->valid[UPLL_IDX_LABEL_VLNK] = UNC_VF_INVALID;
+      if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
+        UPLL_LOG_DEBUG("UPLL_IDX_LABEL_VLNK not supported in pfc controller");
         return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
       }
     }
@@ -3935,8 +4454,8 @@ upll_rc_t VlinkMoMgr::CheckVnodeInfo(ConfigKeyVal *ikey,
   return result_code;
 }
 
-upll_rc_t VlinkMoMgr::IsReferenced(ConfigKeyVal *ikey,
-                                   upll_keytype_datatype_t dt_type,
+upll_rc_t VlinkMoMgr::IsReferenced(IpcReqRespHeader *req,
+                                   ConfigKeyVal *ikey,
                                    DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
   if (!ikey) return UPLL_RC_ERR_GENERIC;
@@ -3948,7 +4467,7 @@ upll_rc_t VlinkMoMgr::IsReferenced(ConfigKeyVal *ikey,
   }
   DbSubOp dbop1 = { kOpReadSingle, kOpMatchNone,
     kOpInOutFlag | kOpInOutDomain | kOpInOutCtrlr};
-  result_code = ReadConfigDB(ck_vlink, dt_type, UNC_OP_READ, dbop1,
+  result_code = ReadConfigDB(ck_vlink, req->datatype, UNC_OP_READ, dbop1,
                                   dmi, MAINTBL);
   if (result_code != UPLL_RC_SUCCESS) {
     UPLL_LOG_DEBUG("Invalid param %d", result_code);
@@ -3960,34 +4479,20 @@ upll_rc_t VlinkMoMgr::IsReferenced(ConfigKeyVal *ikey,
   /* reset the bits of the interfaces constituiing the vlink */
   SET_USER_DATA_FLAGS(ck_vlink->get_cfg_val(), kVlinkVnode1);
 
-  /* In bdry vlanmap case: During vlink delete, get
-   * logical_port_id from UPPL. It is required for updating flag
-   * in correct entry in vlan-map table */
+  /* In bdry vlanmap case/bdry vbrportmap case: During vlink delete, get
+   * logical_port_id from UPPL. It is required for updating flag or delete
+   * correct entry in vlan-map/vbr-portmap table */
+  ConfigKeyVal *ck_boundary = NULL;
   if ((GetVlinkVnodeIfKeyType(ck_vlink, 0) == UNC_KT_VBR_VLANMAP) ||
-      (GetVlinkVnodeIfKeyType(ck_vlink, 1) == UNC_KT_VBR_VLANMAP)) {
-    uint32_t session_id = 0;
-    uint32_t config_id  = 0;
-
-    unc::tclib::TcLibModule *tclib =
-      unc::upll::config_momgr::UpllConfigMgr::GetTcLibModule();
-    PFC_ASSERT(tclib != NULL);
-    if (tclib == NULL) {
-      UPLL_LOG_ERROR("Unable to get tclib module");
-      return UPLL_RC_ERR_GENERIC;
-    }
-
-    /* Get current session_id and config_id from TcLib */
-    tclib->GetSessionAttributes(&session_id, &config_id);
-    UPLL_LOG_TRACE("session_id = %u. config_id = %u", session_id, config_id);
-
-    IpcReqRespHeader req;
-    memset(&req, 0, sizeof(IpcReqRespHeader));
-    req.clnt_sess_id = session_id;
-    req.config_id    = config_id;
+      (GetVlinkVnodeIfKeyType(ck_vlink, 1) == UNC_KT_VBR_VLANMAP) ||
+      (GetVlinkVnodeIfKeyType(ck_vlink, 0) == UNC_KT_VBR_PORTMAP) ||
+      (GetVlinkVnodeIfKeyType(ck_vlink, 1) == UNC_KT_VBR_PORTMAP)) {
+    req->operation = UNC_OP_DELETE;
 
     val_vlink_t *vlink_val = reinterpret_cast<val_vlink_t *>(GetVal(ck_vlink));
     /* Get logical_port_id details from physical*/
-    upll_rc_t rc = ValidateBoundary(vlink_val->boundary_name, &req);
+    upll_rc_t rc = ValidateBoundary(vlink_val->boundary_name, req,
+                    ck_boundary);
     if (rc != UPLL_RC_SUCCESS) {
       delete ck_vlink;
       return UPLL_RC_ERR_CFG_SEMANTIC;
@@ -4001,6 +4506,7 @@ upll_rc_t VlinkMoMgr::IsReferenced(ConfigKeyVal *ikey,
     if (ktype == UNC_KT_ROOT) {
       UPLL_LOG_DEBUG("Invalid param");
       delete ck_vlink;
+      DELETE_IF_NOT_NULL(ck_boundary);
       return UPLL_RC_ERR_GENERIC;
     }
     MoMgrImpl *mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
@@ -4010,6 +4516,7 @@ upll_rc_t VlinkMoMgr::IsReferenced(ConfigKeyVal *ikey,
     if (!ck_vnif || result_code != UPLL_RC_SUCCESS) {
       UPLL_LOG_DEBUG("Returning error %d", result_code);
       delete ck_vlink;
+      DELETE_IF_NOT_NULL(ck_boundary);
       return result_code;
     }
     /* VlanmapOnBoundary: Boundary-vlanmap case: vlink deletion-
@@ -4017,13 +4524,13 @@ upll_rc_t VlinkMoMgr::IsReferenced(ConfigKeyVal *ikey,
      * delete the entry in vlanmap_tbl */
     if (ktype == UNC_KT_VBR_VLANMAP) {
       SET_USER_DATA_FLAGS(ck_vnif, 0);
-      
+
       uint8_t *logical_port_id = NULL;
       uint8_t flags = 0;
-      
+
       GET_USER_DATA_FLAGS(ck_vlink->get_cfg_val(), flags);
       flags &= VLINK_FLAG_NODE_POS;
- 
+
       val_boundary_t *boundary_val = reinterpret_cast<val_boundary_t *>(
                                            GetVal(ck_boundary));
 #if 0
@@ -4044,10 +4551,11 @@ upll_rc_t VlinkMoMgr::IsReferenced(ConfigKeyVal *ikey,
       /* If controller or domain is NULL, return error */
       if (!ctrlr_dom.ctrlr || !ctrlr_dom.domain) {
         UPLL_LOG_ERROR("Controller_name or domain_name is NULL");
+        DELETE_IF_NOT_NULL(ck_boundary);
         return UPLL_RC_ERR_GENERIC;
       }
-      if((!strcmp(reinterpret_cast<char *>(ctrlr_dom.ctrlr),
-         reinterpret_cast<char *>(boundary_val->controller_name1))) && 
+      if ((!strcmp(reinterpret_cast<char *>(ctrlr_dom.ctrlr),
+         reinterpret_cast<char *>(boundary_val->controller_name1))) &&
          (!strcmp(reinterpret_cast<char *>(ctrlr_dom.domain),
                    reinterpret_cast<char *>(boundary_val->domain_name1)))) {
         logical_port_id = boundary_val->logical_port_id1;
@@ -4058,6 +4566,7 @@ upll_rc_t VlinkMoMgr::IsReferenced(ConfigKeyVal *ikey,
         logical_port_id = boundary_val->logical_port_id2;
       } else {
         UPLL_LOG_ERROR(" Controller and domain match not found");
+        DELETE_IF_NOT_NULL(ck_boundary);
         return UPLL_RC_ERR_CFG_SEMANTIC;
       }
 #endif
@@ -4072,42 +4581,60 @@ upll_rc_t VlinkMoMgr::IsReferenced(ConfigKeyVal *ikey,
         vlanmap_key->logical_port_id_valid = PFC_TRUE;
       }
     }
+    if (ktype != UNC_KT_VBR_PORTMAP) {
+      result_code = mgr->ReadConfigDB(ck_vnif, req->datatype, UNC_OP_READ,
+          dbop1, dmi, MAINTBL);
+      if (result_code != UPLL_RC_SUCCESS) {
+        UPLL_LOG_DEBUG("Returing error %d", result_code);
+        delete ck_vnif;
+        delete ck_vlink;
+        DELETE_IF_NOT_NULL(ck_boundary);
+        return result_code;
+      }
+    }
 
-    result_code = mgr->ReadConfigDB(ck_vnif, dt_type, UNC_OP_READ,
-                                    dbop1, dmi, MAINTBL);
+    // Get the config_id and vtn_name from tclib
+    TcConfigMode config_mode = TC_CONFIG_INVALID;
+    std::string vtn_name = "";
+    result_code = GetConfigModeInfo(req, config_mode, vtn_name);
     if (result_code != UPLL_RC_SUCCESS) {
-      UPLL_LOG_DEBUG("Returing error %d", result_code);
+      UPLL_LOG_DEBUG("GetConfigMode failed");
       delete ck_vnif;
       delete ck_vlink;
+      DELETE_IF_NOT_NULL(ck_boundary);
       return result_code;
     }
 
-    /* VlanmapOnBoundary: If kt is vlanmap (bdry vlanmap case): 
-     * NotifyPOMForPortMapVlinkFlag is not reqd 
+    /* VlanmapOnBoundary: If kt is vlanmap (bdry vlanmap case):
+     * NotifyPOMForPortMapVlinkFlag is not reqd
      * UpdateVlinkMemIfFlag will be done inside switch case */
-    if (ktype != UNC_KT_VBR_VLANMAP) {
+    if (ktype != UNC_KT_VBR_VLANMAP &&
+        ktype != UNC_KT_VBR_PORTMAP) {
       GET_USER_DATA_FLAGS(ck_vnif, if_flag);
       if_flag &= ~VIF_TYPE;
       SET_USER_DATA_FLAGS(ck_vnif, if_flag);
       vnode_if_type vnif_type;
-      result_code = NotifyPOMForPortMapVlinkFlag(dt_type,
+      result_code = NotifyPOMForPortMapVlinkFlag(req->datatype,
           ck_vnif,
           dmi,
-          UNC_OP_DELETE);
+          UNC_OP_DELETE, config_mode, vtn_name);
 
       if (result_code != UPLL_RC_SUCCESS) {
         UPLL_LOG_DEBUG("NotifyPOMForPortMapVlinkFlag returning error %d",
             result_code);
         delete ck_vnif;
         delete ck_vlink;
+        DELETE_IF_NOT_NULL(ck_boundary);
         return result_code;
       }
-      result_code = UpdateVlinkMemIfFlag(dt_type, ck_vnif, dmi,
-          vnif_type, mgr, UNC_OP_DELETE);
+      result_code = UpdateVlinkMemIfFlag(req->datatype, ck_vnif, dmi,
+          vnif_type, mgr, UNC_OP_DELETE,
+          config_mode, vtn_name);
       if (result_code != UPLL_RC_SUCCESS) {
         UPLL_LOG_DEBUG("Returning error %d", result_code);
         delete ck_vnif;
         delete ck_vlink;
+        DELETE_IF_NOT_NULL(ck_boundary);
         return result_code;
       }
       UPLL_LOG_DEBUG("Reset bit for iftype %d", vnif_type);
@@ -4120,6 +4647,7 @@ upll_rc_t VlinkMoMgr::IsReferenced(ConfigKeyVal *ikey,
           UPLL_LOG_DEBUG("Invalid param");
           delete ck_vnif;
           delete ck_vlink;
+          DELETE_IF_NOT_NULL(ck_boundary);
           return UPLL_RC_ERR_GENERIC;
         }
         if (val_drv_vbr->vbr_if_val.valid[UPLL_IDX_PM_VBRI] == UNC_VF_VALID) {
@@ -4129,11 +4657,13 @@ upll_rc_t VlinkMoMgr::IsReferenced(ConfigKeyVal *ikey,
           val_drv_vbr->vbr_if_val.valid[UPLL_IDX_ADMIN_STATUS_VBRI] =
                                                            UNC_VF_INVALID;
           result_code = reinterpret_cast<VbrIfMoMgr *>(mgr)->
-                           UpdateConfigVal(ck_vnif, dt_type, dmi);
+                           UpdateConfigVal(ck_vnif, req->datatype, dmi,
+                                           config_mode, vtn_name);
           if (result_code != UPLL_RC_SUCCESS) {
             UPLL_LOG_DEBUG("Returning %d", result_code);
             delete ck_vnif;
             delete ck_vlink;
+            DELETE_IF_NOT_NULL(ck_boundary);
             return result_code;
           }
         }
@@ -4145,6 +4675,7 @@ upll_rc_t VlinkMoMgr::IsReferenced(ConfigKeyVal *ikey,
           UPLL_LOG_DEBUG("Invalid param");
           delete ck_vnif;
           delete ck_vlink;
+          DELETE_IF_NOT_NULL(ck_boundary);
           return UPLL_RC_ERR_GENERIC;
         }
         if (vtepif_val->valid[UPLL_IDX_PORT_MAP_VTEPI] == UNC_VF_VALID) {
@@ -4152,11 +4683,12 @@ upll_rc_t VlinkMoMgr::IsReferenced(ConfigKeyVal *ikey,
           vtepif_val->valid[UPLL_IDX_ADMIN_ST_VTEPI] = UNC_VF_INVALID;
           vtepif_val->valid[UPLL_IDX_PORT_MAP_VTEPI] = UNC_VF_VALID_NO_VALUE;
           result_code = reinterpret_cast<VtepIfMoMgr *>(mgr)->
-                         UpdateConfigVal(ck_vnif, dt_type, dmi);
+                         UpdateConfigVal(ck_vnif, req->datatype, dmi);
           if (result_code != UPLL_RC_SUCCESS) {
             UPLL_LOG_DEBUG("UpdateConfigVal returned %d", result_code);
             delete ck_vnif;
             delete ck_vlink;
+            DELETE_IF_NOT_NULL(ck_boundary);
             return result_code;
           }
         }
@@ -4168,6 +4700,7 @@ upll_rc_t VlinkMoMgr::IsReferenced(ConfigKeyVal *ikey,
         if (vtunnelif_val == NULL) {
           UPLL_LOG_DEBUG("Invalid param");
           delete ck_vlink;
+          DELETE_IF_NOT_NULL(ck_boundary);
           return UPLL_RC_ERR_GENERIC;
         }
         if (vtunnelif_val->valid[UPLL_IDX_PORT_MAP_VTNL_IF] == UNC_VF_VALID) {
@@ -4176,10 +4709,11 @@ upll_rc_t VlinkMoMgr::IsReferenced(ConfigKeyVal *ikey,
                                UNC_VF_VALID_NO_VALUE;
           vtunnelif_val->valid[UPLL_IDX_ADMIN_ST_VTNL_IF] = UNC_VF_INVALID;
           result_code = reinterpret_cast<VtunnelIfMoMgr *>(mgr)->
-                         UpdateConfigVal(ck_vnif, dt_type, dmi);
+                         UpdateConfigVal(ck_vnif, req->datatype, dmi);
           if (result_code != UPLL_RC_SUCCESS) {
             delete ck_vnif;
             delete ck_vlink;
+            DELETE_IF_NOT_NULL(ck_boundary);
             UPLL_LOG_DEBUG("UpdateConfigVal returned %d", result_code);
             return result_code;
           }
@@ -4187,17 +4721,20 @@ upll_rc_t VlinkMoMgr::IsReferenced(ConfigKeyVal *ikey,
         break;
       }
       /* VlanmapOnBoundary: Added vlanmap case */
-      case UNC_KT_VBR_VLANMAP: {
+      case UNC_KT_VBR_VLANMAP:
+      case UNC_KT_VBR_PORTMAP: {
+        if (ktype == UNC_KT_VBR_VLANMAP) {
         pfcdrv_val_vlan_map_t *vlanmap_val = static_cast
             <pfcdrv_val_vlan_map_t *> (GetVal(ck_vnif));
         if (vlanmap_val == NULL) {
           UPLL_LOG_DEBUG("vlanmap_val is NULL");
           delete ck_vlink;
+          DELETE_IF_NOT_NULL(ck_boundary);
           return UPLL_RC_ERR_GENERIC;
         }
         uint8_t flags = 0;
         GET_USER_DATA_FLAGS(ck_vnif, flags);
-        
+
         if (vlanmap_val->vm.valid[UPLL_IDX_VLAN_ID_VM] == UNC_VF_VALID) {
           /* Update only bdry_ref_count or flag if it refered with
            * other vlink or vlan_map*/
@@ -4209,34 +4746,51 @@ upll_rc_t VlinkMoMgr::IsReferenced(ConfigKeyVal *ikey,
               UPLL_LOG_TRACE("Vlanmap Flag before reset = %u", flags);
               flags &= ~BOUNDARY_VLANMAP_FLAG;
               SET_USER_DATA_FLAGS(ck_vnif, flags);
-              vlanmap_val->valid[PFCDRV_IDX_BDRY_REF_COUNT] = UNC_VF_VALID_NO_VALUE;
+              vlanmap_val->valid[PFCDRV_IDX_BDRY_REF_COUNT] =
+                  UNC_VF_VALID_NO_VALUE;
             }
 
             vlanmap_val->bdry_ref_count--;
             DbSubOp dbop1 = { kOpNotRead, kOpMatchNone, kOpInOutFlag };
-            result_code = mgr->UpdateConfigDB(ck_vnif, dt_type, UNC_OP_UPDATE,
-                                              dmi, &dbop1, MAINTBL);
+            result_code = mgr->UpdateConfigDB(ck_vnif, req->datatype,
+                                              UNC_OP_UPDATE, dmi, &dbop1,
+                                              config_mode, vtn_name, MAINTBL);
             if (UPLL_RC_SUCCESS != result_code) {
               UPLL_LOG_ERROR("bdry_ref_count update failed:%d", result_code);
               delete ck_vnif;
               delete ck_vlink;
+              DELETE_IF_NOT_NULL(ck_boundary);
               return result_code;
             }
           } else {
             /* Deletes vlanmap entry*/
             DbSubOp dbop = { kOpNotRead, kOpMatchNone, kOpInOutNone };
-            result_code = mgr->UpdateConfigDB(ck_vnif, dt_type, UNC_OP_DELETE,
-                                              dmi, &dbop, MAINTBL);
+            result_code = mgr->UpdateConfigDB(ck_vnif, req->datatype,
+                                              UNC_OP_DELETE, dmi, &dbop,
+                                              config_mode, vtn_name, MAINTBL);
             if (result_code != UPLL_RC_SUCCESS) {
               UPLL_LOG_DEBUG("UpdateConfigDB returns error = %d", result_code);
               delete ck_vnif;
               delete ck_vlink;
+              DELETE_IF_NOT_NULL(ck_boundary);
               return result_code;
             }
           }
         }
-        delete ck_vnif;
-
+      }
+      if (ktype == UNC_KT_VBR_PORTMAP) {
+        result_code = mgr->BoundaryMapReq(req, ikey, ck_vlink,
+                                              ck_vnif, ck_boundary, dmi);
+        if (result_code != UPLL_RC_SUCCESS) {
+          UPLL_LOG_DEBUG("UpdateConfigDB returns error = %d", result_code);
+          delete ck_vnif;
+          delete ck_vlink;
+          DELETE_IF_NOT_NULL(ck_boundary);
+          return result_code;
+        }
+       }
+       delete ck_vnif;
+        // reset vlink represent bit in vbr_if flag
         ConfigKeyVal *vbrif_ckv = NULL;
         MoMgrImpl *mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
                                         (GetMoManager(UNC_KT_VBR_IF)));
@@ -4244,15 +4798,17 @@ upll_rc_t VlinkMoMgr::IsReferenced(ConfigKeyVal *ikey,
         if (!vbrif_ckv || result_code != UPLL_RC_SUCCESS) {
           UPLL_LOG_DEBUG("GetChildConfigKey error = %d", result_code);
           delete ck_vlink;
+          DELETE_IF_NOT_NULL(ck_boundary);
           return result_code;
         }
         /* Reads vbr_if info from DB */
-        result_code = mgr->ReadConfigDB(vbrif_ckv, dt_type, UNC_OP_READ,
+        result_code = mgr->ReadConfigDB(vbrif_ckv, req->datatype, UNC_OP_READ,
                                         dbop1, dmi, MAINTBL);
         if (result_code != UPLL_RC_SUCCESS) {
           UPLL_LOG_DEBUG("ReadConfigDB error = %d", result_code);
           delete vbrif_ckv;
           delete ck_vlink;
+          DELETE_IF_NOT_NULL(ck_boundary);
           return result_code;
         }
 
@@ -4260,32 +4816,37 @@ upll_rc_t VlinkMoMgr::IsReferenced(ConfigKeyVal *ikey,
         GET_USER_DATA_FLAGS(vbrif_ckv, if_flag);
         if_flag &= ~VIF_TYPE;
         SET_USER_DATA_FLAGS(vbrif_ckv, if_flag);
-        vnode_if_type vnif_type; 
+        vnode_if_type vnif_type;
         UPLL_LOG_TRACE("Vlanmap delete vbr_if flag = %u", if_flag);
 
-        result_code = UpdateVlinkMemIfFlag(dt_type, vbrif_ckv, dmi,
-                                           vnif_type, mgr, UNC_OP_DELETE);
+        result_code = UpdateVlinkMemIfFlag(req->datatype, vbrif_ckv, dmi,
+                                           vnif_type, mgr, UNC_OP_DELETE,
+                                           config_mode, vtn_name);
         DELETE_IF_NOT_NULL(vbrif_ckv);
         if (result_code != UPLL_RC_SUCCESS) {
           UPLL_LOG_DEBUG("UpdateVlinkVlanmapFlag error = %d", result_code);
           delete ck_vlink;
+          DELETE_IF_NOT_NULL(ck_boundary);
           return result_code;
         }
 
         SET_USER_DATA_FLAGS(ck_vlink->get_cfg_val(), kVlinkVnode2);
         continue;
       }
+      break;
       default:
         UPLL_LOG_TRACE("No Portmap");
     }
     if (executed) {
       DbSubOp dbop = { kOpNotRead, kOpMatchNone, kOpInOutNone };
-      result_code = mgr->UpdateConfigDB(ck_vnif, dt_type, UNC_OP_UPDATE,
-                                        dmi, &dbop, MAINTBL);
+      result_code = mgr->UpdateConfigDB(ck_vnif, req->datatype, UNC_OP_UPDATE,
+                                        dmi, &dbop, config_mode, vtn_name,
+                                        MAINTBL);
       if (result_code != UPLL_RC_SUCCESS) {
         UPLL_LOG_DEBUG("Returning %d", result_code);
         delete ck_vnif;
         delete ck_vlink;
+        DELETE_IF_NOT_NULL(ck_boundary);
         return result_code;
       }
     }
@@ -4344,6 +4905,8 @@ upll_rc_t VlinkMoMgr::SetConsolidatedStatus(ConfigKeyVal *vlink,
   }
   SET_USER_DATA_FLAGS(vlink->get_cfg_val(), rename_flag);
   if (!GetVal(vnif[0]) ||!GetVal(vnif[1])) {
+    DELETE_IF_NOT_NULL(vnif[0]);
+    DELETE_IF_NOT_NULL(vnif[1]);
     UPLL_LOG_DEBUG("Returning error");
     return UPLL_RC_ERR_GENERIC;
   }
@@ -4362,12 +4925,14 @@ upll_rc_t VlinkMoMgr::SetConsolidatedStatus(ConfigKeyVal *vlink,
     GET_USER_DATA_DOMAIN(vlink->get_cfg_val(), dom2);
     if (!ctrlr1 || !ctrlr2 || !dom1 || !dom2) {
       UPLL_LOG_DEBUG("Invalid param");
+      DELETE_IF_NOT_NULL(vnif[0]);
+      DELETE_IF_NOT_NULL(vnif[1]);
       return UPLL_RC_ERR_GENERIC;
     }
-    if (strncmp(reinterpret_cast<char *>(ctrlr1), 
-                reinterpret_cast<char *>(ctrlr2), kMaxLenCtrlrId+1) || 
+    if (strncmp(reinterpret_cast<char *>(ctrlr1),
+                reinterpret_cast<char *>(ctrlr2), kMaxLenCtrlrId+1) ||
         strncmp(reinterpret_cast<char *>(dom1),
-                reinterpret_cast<char *>(dom2),kMaxLenDomainId+1)) 
+                reinterpret_cast<char *>(dom2), kMaxLenDomainId+1))
       bound_vlink = true;
   }
   if ((op == UNC_OP_CREATE) || (op == UNC_OP_UPDATE)) {
@@ -4378,6 +4943,8 @@ upll_rc_t VlinkMoMgr::SetConsolidatedStatus(ConfigKeyVal *vlink,
       pm = pm1 = pm2 = NULL;
 
       val_vlan_map *vlanmap = NULL, *vlanmap1 = NULL, *vlanmap2 = NULL;
+      //  vbr_portmap case
+      val_vbr_portmap_t *vbr_pm = NULL, *vbr_pm1 = NULL, *vbr_pm2 = NULL;
       for (int if_type = 0; if_type < 2; if_type++) {
         switch (if_ktype) {
         case UNC_KT_VBR_IF: {
@@ -4413,6 +4980,15 @@ upll_rc_t VlinkMoMgr::SetConsolidatedStatus(ConfigKeyVal *vlink,
           c_status = (unc_keytype_configstatus_t)
                      (reinterpret_cast<val_vunk_if *>
                      (GetVal(vnif[if_type]))->cs_row_status); }
+        break;
+        case UNC_KT_VBR_PORTMAP: {
+           vbr_pm = &(reinterpret_cast<pfcdrv_val_vbr_portmap *>
+                             (GetVal(vnif[if_type]))->vbrpm);
+          c_status = (unc_keytype_configstatus_t)
+                     (reinterpret_cast<pfcdrv_val_vbr_portmap*>
+                     (GetVal(vnif[if_type]))->vbrpm.cs_row_status); }
+
+        break;
         default:
         break;
         }
@@ -4420,6 +4996,9 @@ upll_rc_t VlinkMoMgr::SetConsolidatedStatus(ConfigKeyVal *vlink,
           /* VlanmapOnBoundary: changes */
           if (if_ktype == UNC_KT_VBR_VLANMAP) {
             vlanmap1 = vlanmap;
+          } else if (if_ktype == UNC_KT_VBR_PORTMAP) {
+            //  vbr_portmap
+            vbr_pm1 = vbr_pm;
           } else {
             pm1 = static_cast<val_port_map *>(pm);
           }
@@ -4427,6 +5006,8 @@ upll_rc_t VlinkMoMgr::SetConsolidatedStatus(ConfigKeyVal *vlink,
           /* VlanmapOnBoundary: changes */
           if (if_ktype == UNC_KT_VBR_VLANMAP) {
             vlanmap2 = vlanmap;
+          } else if (if_ktype == UNC_KT_VBR_PORTMAP) {
+            vbr_pm2 = vbr_pm;
           } else {
             pm2 = static_cast<val_port_map *>(pm);
           }
@@ -4449,6 +5030,20 @@ upll_rc_t VlinkMoMgr::SetConsolidatedStatus(ConfigKeyVal *vlink,
         vlanid_cstatus[1] = (unc_keytype_configstatus_t)
           (vlanmap2->cs_attr[UPLL_IDX_VLAN_ID_VM]);
       }
+      //  Vbr portmap node1
+      if (vbr_pm1 &&
+          (vbr_pm1->valid[UPLL_IDX_LABEL_VBRPM] == UNC_VF_VALID ||
+           vbr_pm1->valid[UPLL_IDX_LABEL_VBRPM] == UNC_VF_VALID_NO_VALUE)) {
+        vlanid_cstatus[0] = (unc_keytype_configstatus_t)
+          (vbr_pm1->cs_attr[UPLL_IDX_LABEL_VBRPM]);
+      }
+      // Vbrportmap node2
+      if (vbr_pm2 &&
+          (vbr_pm2->valid[UPLL_IDX_LABEL_VBRPM] == UNC_VF_VALID ||
+           vbr_pm2->valid[UPLL_IDX_LABEL_VBRPM] == UNC_VF_VALID_NO_VALUE)) {
+        vlanid_cstatus[1] = (unc_keytype_configstatus_t)
+          (vbr_pm2->cs_attr[UPLL_IDX_LABEL_VBRPM]);
+      }
       if (pm1 && (pm1->valid[UPLL_IDX_VLAN_ID_PM] == UNC_VF_VALID ||
           pm1->valid[UPLL_IDX_VLAN_ID_PM] == UNC_VF_VALID_NO_VALUE))
         vlanid_cstatus[0] = (unc_keytype_configstatus_t)
@@ -4458,22 +5053,30 @@ upll_rc_t VlinkMoMgr::SetConsolidatedStatus(ConfigKeyVal *vlink,
         vlanid_cstatus[1] = (unc_keytype_configstatus_t)
                         (pm2->cs_attr[UPLL_IDX_VLAN_ID_PM]);
       if ((vlanid_cstatus[0] == UNC_CS_APPLIED) &&
-          (vlanid_cstatus[1] == UNC_CS_APPLIED))
-        vlink_val->cs_attr[UPLL_IDX_VLAN_ID_VLNK] = UNC_CS_APPLIED;
-      else if ((vlanid_cstatus[0] == UNC_CS_INVALID) ||
-               (vlanid_cstatus[1] == UNC_CS_INVALID))
-        vlink_val->cs_attr[UPLL_IDX_VLAN_ID_VLNK] = UNC_CS_INVALID;
-      else if ((vlanid_cstatus[0] == UNC_CS_NOT_APPLIED) &&
-               (vlanid_cstatus[1] == UNC_CS_NOT_APPLIED))
-        vlink_val->cs_attr[UPLL_IDX_VLAN_ID_VLNK]  = UNC_CS_NOT_APPLIED;
-      else {
-        if (node_vunk_if == 1) // If first node is KT_VUNKOWN_IF
-          vlink_val->cs_attr[UPLL_IDX_VLAN_ID_VLNK] = vlanid_cstatus[1];
-        else if (node_vunk_if == 2)  // If second node is KT_VUNKOWN_IF
-          vlink_val->cs_attr[UPLL_IDX_VLAN_ID_VLNK] = vlanid_cstatus[0];
-        else  // Set Partially Applied for other cases
-          vlink_val->cs_attr[UPLL_IDX_VLAN_ID_VLNK] =
+          (vlanid_cstatus[1] == UNC_CS_APPLIED)) {
+        vlink_val->cs_attr[UPLL_IDX_LABEL_VLNK] = UNC_CS_APPLIED;
+        vlink_val->cs_attr[UPLL_IDX_LABEL_TYPE_VLNK] = UNC_CS_APPLIED;
+      } else if ((vlanid_cstatus[0] == UNC_CS_INVALID) ||
+               (vlanid_cstatus[1] == UNC_CS_INVALID)) {
+        vlink_val->cs_attr[UPLL_IDX_LABEL_VLNK] = UNC_CS_INVALID;
+        vlink_val->cs_attr[UPLL_IDX_LABEL_TYPE_VLNK] = UNC_CS_INVALID;
+      } else if ((vlanid_cstatus[0] == UNC_CS_NOT_APPLIED) &&
+               (vlanid_cstatus[1] == UNC_CS_NOT_APPLIED)) {
+        vlink_val->cs_attr[UPLL_IDX_LABEL_VLNK]  = UNC_CS_NOT_APPLIED;
+        vlink_val->cs_attr[UPLL_IDX_LABEL_TYPE_VLNK] = UNC_CS_NOT_APPLIED;
+      } else {
+        if (node_vunk_if == 1) {  //  If first node is KT_VUNKOWN_IF
+          vlink_val->cs_attr[UPLL_IDX_LABEL_VLNK] = vlanid_cstatus[1];
+          vlink_val->cs_attr[UPLL_IDX_LABEL_TYPE_VLNK] = vlanid_cstatus[1];
+        } else if (node_vunk_if == 2) {  //  If second node is KT_VUNKOWN_IF
+          vlink_val->cs_attr[UPLL_IDX_LABEL_VLNK] = vlanid_cstatus[0];
+          vlink_val->cs_attr[UPLL_IDX_LABEL_TYPE_VLNK] = vlanid_cstatus[0];
+        } else {  //  Set Partially Applied for other cases
+          vlink_val->cs_attr[UPLL_IDX_LABEL_VLNK] =
                                           UNC_CS_PARTIALLY_APPLIED;
+          vlink_val->cs_attr[UPLL_IDX_LABEL_TYPE_VLNK] =
+                                          UNC_CS_PARTIALLY_APPLIED;
+        }
       }
     /* update consolidated config status if boundary vlink */
       if (op == UNC_OP_CREATE)  {
@@ -4515,7 +5118,7 @@ upll_rc_t VlinkMoMgr::MergeValidate(unc_key_type_t keytype,
   ConfigKeyVal *dup_key = NULL;
   result_code = GetChildConfigKey(dup_key, ikey);
   if (UPLL_RC_SUCCESS != result_code) {
-    if(dup_key) delete dup_key;
+    if (dup_key) delete dup_key;
     UPLL_LOG_DEBUG("GetChildConfigKey Failed");
     return result_code;
   }
@@ -4541,7 +5144,7 @@ upll_rc_t VlinkMoMgr::MergeValidate(unc_key_type_t keytype,
        delete dup_key;
        return result_code;
     }
-    dbop.inoutop = kOpInOutCtrlr | kOpInOutDomain ;
+    dbop.inoutop = kOpInOutCtrlr | kOpInOutDomain;
     result_code = ReadConfigDB(ca_temp, UPLL_DT_CANDIDATE, UNC_OP_READ,
                                dbop, dmi, MAINTBL);
     if (UPLL_RC_SUCCESS != result_code &&
@@ -4559,7 +5162,8 @@ upll_rc_t VlinkMoMgr::MergeValidate(unc_key_type_t keytype,
         GET_USER_DATA_CTRLR(ca_temp, ctrlr1);
         GET_USER_DATA_CTRLR(ca_temp->get_cfg_val(), ctrlr2);
         if (ctrlr1 && ctrlr2) {
-          if (strcmp(ctrlr_id,(const char *)ctrlr1) || strcmp(ctrlr_id, (const char *)ctrlr2)) {
+          if (strcmp(ctrlr_id, (const char *)ctrlr1) ||
+              strcmp(ctrlr_id, (const char *)ctrlr2)) {
             ikey->ResetWith(travel);
             delete dup_key;
             delete ca_temp;
@@ -4583,7 +5187,7 @@ upll_rc_t VlinkMoMgr::MergeValidate(unc_key_type_t keytype,
     /* Any other DB error */
     result_code = UPLL_RC_SUCCESS;
     travel = travel->get_next_cfg_key_val();
-    DELETE_IF_NOT_NULL(ca_temp);  
+    DELETE_IF_NOT_NULL(ca_temp);
   }
   if (dup_key) delete dup_key;
   return result_code;
@@ -4615,6 +5219,48 @@ upll_rc_t VlinkMoMgr::AdaptValToVtnService(ConfigKeyVal *ikey,
                          (ConfigKeyVal::Malloc(sizeof(val_vlink_st)));
         val_db_vlink_st *db_vlink_val_st = reinterpret_cast<val_db_vlink_st *>
                                      (cval->get_val());
+        uuc::CtrlrMgr* ctr_mgr = uuc::CtrlrMgr::GetInstance();
+        controller_domain ctrlr_dom[2] = {{NULL, NULL}, {NULL, NULL}};
+        GET_USER_DATA_CTRLR_DOMAIN(ikey, ctrlr_dom[0]);
+        GET_USER_DATA_CTRLR_DOMAIN(ikey->get_cfg_val(), ctrlr_dom[1]);
+        val_vlink *vlink_val = reinterpret_cast<val_vlink *>GetVal(ikey);
+        if (vlink_val->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] == UNC_VF_VALID) {
+          upll_rc_t rs_code = ResetCtrlrDomForUnifiedInterface(
+                          vlink_val->boundary_name, ctrlr_dom);
+          if (rs_code != UPLL_RC_SUCCESS) {
+            UPLL_LOG_ERROR("Error in ResetCtrlrDomForUnifiedInterface : %d",
+                            rs_code);
+            return rs_code;
+          }
+        }
+        if (db_vlink_val_st->vlink_val_st.oper_status !=
+            UPLL_OPER_STATUS_UNKNOWN) {
+          if ((ctrlr_dom[0].ctrlr && ctr_mgr->IsCtrlrInUnknownList(
+                       reinterpret_cast<char*>(ctrlr_dom[0].ctrlr))) ||
+              (ctrlr_dom[1].ctrlr && ctr_mgr->IsCtrlrInUnknownList(
+                            reinterpret_cast<char*>(ctrlr_dom[1].ctrlr)))) {
+            db_vlink_val_st->vlink_val_st.oper_status =
+                                          UPLL_OPER_STATUS_UNKNOWN;
+          }
+        }
+        if (db_vlink_val_st->vlink_val_st.oper_status ==
+                   UPLL_OPER_STATUS_UP) {
+          char *ctrlr1 = reinterpret_cast<char*>(ctrlr_dom[0].ctrlr);
+          char *ctrlr2 = reinterpret_cast<char*>(ctrlr_dom[1].ctrlr);
+          char *dom1 = reinterpret_cast<char*>(ctrlr_dom[0].domain);
+          char *dom2 = reinterpret_cast<char*>(ctrlr_dom[1].domain);
+          char *vtn_name = reinterpret_cast<char*>(
+                    (reinterpret_cast<key_vtn*>(ikey->get_key()))->vtn_name);
+          if ((ctrlr1 && ctr_mgr->IsPathFaultOccured(ctrlr1, dom1)) ||
+              (ctrlr2 && ctr_mgr->IsPathFaultOccured(ctrlr2, dom2)) ||
+              (ctrlr1 && ctr_mgr->HasVtnExhaustionOccured(
+                                  vtn_name, ctrlr1, dom1)) ||
+              (ctrlr2 && ctr_mgr->HasVtnExhaustionOccured(
+                                  vtn_name, ctrlr2, dom2))) {
+            db_vlink_val_st->vlink_val_st.oper_status =
+                                          UPLL_OPER_STATUS_DOWN;
+          }
+        }
         memcpy(vlink_val_st, &(db_vlink_val_st->vlink_val_st),
                sizeof(val_vlink_st));
         cval->SetVal(IpctSt::kIpcStValVlinkSt, vlink_val_st);
@@ -4707,6 +5353,15 @@ upll_rc_t VlinkMoMgr::UpdateMo(IpcReqRespHeader *req,
         return UPLL_RC_ERR_CFG_SEMANTIC;
       }
     }
+    // Check DB value of boundary name, whether it is set or not, if the
+    // Boundary name is not set then erase VLAN_ID attribute value.
+    if (vlink_val->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] == UNC_VF_INVALID &&
+        vlink_val1->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] == UNC_VF_INVALID) {
+      vlink_val1->label = 0;
+      vlink_val1->valid[UPLL_IDX_LABEL_VLNK] = UNC_VF_VALID_NO_VALUE;
+      vlink_val1->label_type = 0;
+      vlink_val1->valid[UPLL_IDX_LABEL_TYPE_VLNK] = UNC_VF_VALID_NO_VALUE;
+    }
   }
 
   controller_domain ctrlr_dom[2] = { { NULL, NULL }, { NULL, NULL } };
@@ -4722,7 +5377,7 @@ upll_rc_t VlinkMoMgr::UpdateMo(IpcReqRespHeader *req,
   /* VlanmapOnBoundary: changes */
   SET_USER_DATA(ikey, dup_ckvlink);
 
-  if (ctrlr_dom[0].ctrlr != NULL) {
+  if ((ctrlr_dom[0].ctrlr != NULL) && (!IsUnifiedVbr(ctrlr_dom[0].ctrlr))) {
     result_code = ValidateCapability(
              req, ikey, reinterpret_cast<const char *>
                                    (ctrlr_dom[0].ctrlr));
@@ -4733,7 +5388,7 @@ upll_rc_t VlinkMoMgr::UpdateMo(IpcReqRespHeader *req,
       }
   }
   bool bound_vlink = false;
-  if (ctrlr_dom[1].ctrlr != NULL) {
+  if (ctrlr_dom[1].ctrlr != NULL && (!IsUnifiedVbr(ctrlr_dom[1].ctrlr))) {
     if (ctrlr_dom[0].ctrlr == NULL ||
         (strcmp(reinterpret_cast<const char *>(ctrlr_dom[0].ctrlr),
                reinterpret_cast<const char *>(ctrlr_dom[1].ctrlr))) ||
@@ -4752,7 +5407,7 @@ upll_rc_t VlinkMoMgr::UpdateMo(IpcReqRespHeader *req,
       bound_vlink = true;
   }
   if (bound_vlink) {
-   /* boundary vlink */
+    /* boundary vlink */
     val_vlink_t *vlink_val = reinterpret_cast<val_vlink *>(GetVal(ikey));
     if (vlink_val && vlink_val->admin_status == UPLL_ADMIN_DISABLE) {
       UPLL_LOG_ERROR("Boundary vlink cannot be shut\n");
@@ -4768,8 +5423,8 @@ upll_rc_t VlinkMoMgr::UpdateMo(IpcReqRespHeader *req,
   }
 
   uint8_t valid_boundary = tmp_val->valid[UPLL_IDX_BOUNDARY_NAME_VLNK];
-  uint8_t valid_vlanid = tmp_val->valid[UPLL_IDX_VLAN_ID_VLNK]; 
-  /* Below flag is used to reset the valid flag of boundary_name 
+  uint8_t valid_vlanid = tmp_val->valid[UPLL_IDX_LABEL_VLNK];
+  /* Below flag is used to reset the valid flag of boundary_name
    * in ikey at the end for only vlan-id update case */
   bool check_boundary_valid = false;
 
@@ -4794,8 +5449,9 @@ upll_rc_t VlinkMoMgr::UpdateMo(IpcReqRespHeader *req,
     }
   }
 
+  ConfigKeyVal *ck_boundary = NULL;
   /* Send ipc to UPPL only if boundary_name is VALID */
-  result_code = ValidateAttribute(ikey, dmi, req);
+  result_code = ValidateAttribute(ikey, ck_boundary, dmi, req);
   if (UPLL_RC_SUCCESS  != result_code) {
     delete dup_ckvlink;
     UPLL_LOG_ERROR("Validate Attribute is Failed");
@@ -4811,15 +5467,26 @@ upll_rc_t VlinkMoMgr::UpdateMo(IpcReqRespHeader *req,
    * Case2: Boundary-map request after no boundary-map:w
    * Below code should be executed to update the vlink flag */
   if (((vlink_ikeyval->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] == UNC_VF_VALID) &&
-       (vlink_dbval->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] == UNC_VF_VALID_NO_VALUE)) ||
+       (vlink_dbval->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] ==
+        UNC_VF_VALID_NO_VALUE)) ||
        ((vlink_ikeyval->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] == UNC_VF_VALID) &&
        (vlink_dbval->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] == UNC_VF_INVALID))) {
-    result_code = UpdateVlinkVlanmapFlag(ikey, dup_ckvlink);
+    result_code = UpdateVlinkFlagFromBoundary(ikey, ck_boundary);
     if (UPLL_RC_SUCCESS  != result_code) {
       UPLL_LOG_ERROR("Failed to update vlink ikey flag");
       delete dup_ckvlink;
       return result_code;
     }
+    uint8_t flags = 0;
+    GET_USER_DATA_FLAGS(ikey, flags);
+    SET_USER_DATA_FLAGS(dup_ckvlink, flags);
+  }
+  TcConfigMode config_mode = TC_CONFIG_INVALID;
+  std::string vtn_name = "";
+  result_code = GetConfigModeInfo(req, config_mode, vtn_name);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_DEBUG("GetConfigMode failed");
+    return result_code;
   }
 
   /* Except description update request,
@@ -4835,6 +5502,7 @@ upll_rc_t VlinkMoMgr::UpdateMo(IpcReqRespHeader *req,
         UPLL_LOG_DEBUG("Boundary operation on non-boundary interface");
         if (ck_vnif[0]) delete ck_vnif[0];
         delete dup_ckvlink;
+        DELETE_IF_NOT_NULL(ck_boundary);
         return UPLL_RC_ERR_CFG_SEMANTIC;
       }
       MoMgrImpl *mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager *>
@@ -4844,6 +5512,7 @@ upll_rc_t VlinkMoMgr::UpdateMo(IpcReqRespHeader *req,
         delete dup_ckvlink;
         DELETE_IF_NOT_NULL(ck_vnif[0]);
         DELETE_IF_NOT_NULL(ck_vnif[1]);
+        DELETE_IF_NOT_NULL(ck_boundary);
         return UPLL_RC_ERR_GENERIC;
       }
       SET_USER_DATA_FLAGS(dup_ckvlink->get_cfg_val(), vnode_number);
@@ -4853,27 +5522,32 @@ upll_rc_t VlinkMoMgr::UpdateMo(IpcReqRespHeader *req,
         delete dup_ckvlink;
         DELETE_IF_NOT_NULL(ck_vnif[0]);
         DELETE_IF_NOT_NULL(ck_vnif[1]);
+        DELETE_IF_NOT_NULL(ck_boundary);
         return result_code;
       }
       /* VlanmapOnBoundary: Boundary vlink update operation for SW or SD */
-      if (ktype == UNC_KT_VBR_VLANMAP) {
+      if ((ktype == UNC_KT_VBR_VLANMAP) || (ktype == UNC_KT_VBR_PORTMAP)) {
         UPLL_LOG_DEBUG("Vlink update operation SW or SD boundary");
 
         /* validateBoundary should be called only once */
         if (!ck_boundary) {
           if ((vlink_ikeyval->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] ==
               UNC_VF_VALID_NO_VALUE) &&
-             (vlink_dbval->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] == UNC_VF_VALID)) {
+             (vlink_dbval->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] ==
+              UNC_VF_VALID)) {
             /* no boundary of logical port id SW or SD. case first gets
              * the boundary info from uppl and updates the vlink ikey flag */
-            result_code = ValidateBoundary(vlink_dbval->boundary_name, req);
+            result_code = ValidateBoundary(vlink_dbval->boundary_name, req,
+                                           ck_boundary);
             if (result_code != UPLL_RC_SUCCESS) {
               delete dup_ckvlink;
               DELETE_IF_NOT_NULL(ck_vnif[0]);
               DELETE_IF_NOT_NULL(ck_vnif[1]);
+              DELETE_IF_NOT_NULL(ck_boundary);
               return UPLL_RC_ERR_CFG_SEMANTIC;
             }
-            result_code = UpdateVlinkVlanmapFlag(ikey, dup_ckvlink);
+            result_code = UpdateVlinkFlagFromBoundary(ikey,
+                                                ck_boundary);
             if (result_code != UPLL_RC_SUCCESS) {
               delete dup_ckvlink;
               DELETE_IF_NOT_NULL(ck_vnif[0]);
@@ -4886,8 +5560,8 @@ upll_rc_t VlinkMoMgr::UpdateMo(IpcReqRespHeader *req,
 
         SET_USER_DATA_FLAGS(ck_vnif[i], 0);
         /* Handles boundary vlanmap request */
-        result_code = mgr->BoundaryVlanmapReq(req, ikey, dup_ckvlink,
-                                              ck_vnif[i], dmi);
+        result_code = mgr->BoundaryMapReq(req, ikey, dup_ckvlink,
+                                              ck_vnif[i], ck_boundary, dmi);
         if (result_code != UPLL_RC_SUCCESS) {
           UPLL_LOG_DEBUG("Failed to update vlink for SD or SW boundary");
           /* ck_boundary should be deleted */
@@ -4909,6 +5583,7 @@ upll_rc_t VlinkMoMgr::UpdateMo(IpcReqRespHeader *req,
         if (ck_vnif[0]) delete ck_vnif[0];
         if (ck_vnif[1]) delete ck_vnif[1];
         ck_vnif[0] = ck_vnif[1] = NULL;
+        DELETE_IF_NOT_NULL(ck_boundary);
         return result_code;
       }
       vnode_number = kVlinkVnode2;
@@ -4919,33 +5594,41 @@ upll_rc_t VlinkMoMgr::UpdateMo(IpcReqRespHeader *req,
        delete dup_ckvlink;
        DELETE_IF_NOT_NULL(ck_vnif[0]);
        DELETE_IF_NOT_NULL(ck_vnif[1]);
+       DELETE_IF_NOT_NULL(ck_boundary);
        return UPLL_RC_ERR_CFG_SEMANTIC;
     }
     UPLL_LOG_DEBUG("Before UpdateVnodeIf %s", (ikey->ToStrAll()).c_str());
     result_code = UpdateVnodeIf(req->datatype, ikey, ck_vnif, dmi,
-                                req->operation);
+                                req->operation, ck_boundary,
+                                config_mode, vtn_name);
     for (int i = 0; i < 2 ; i++)
       if (ck_vnif[i]) delete ck_vnif[i];
     if (result_code != UPLL_RC_SUCCESS) {
       delete dup_ckvlink;
+      DELETE_IF_NOT_NULL(ck_boundary);
       UPLL_LOG_DEBUG("Returning error %d", result_code);
       return result_code;
     }
   }
+  DELETE_IF_NOT_NULL(ck_boundary);
   UPLL_LOG_DEBUG("The ikey Structue before update  %s",
                 (ikey->ToStrAll()).c_str());
 
   /* VlanmapOnBoundary: Added vlanmap check */
   if ((GetVlinkVnodeIfKeyType(dup_ckvlink, 0) == UNC_KT_VBR_VLANMAP) ||
-     (GetVlinkVnodeIfKeyType(dup_ckvlink, 1) == UNC_KT_VBR_VLANMAP)) {
+     (GetVlinkVnodeIfKeyType(dup_ckvlink, 1) == UNC_KT_VBR_VLANMAP) ||
+     (GetVlinkVnodeIfKeyType(dup_ckvlink, 0) == UNC_KT_VBR_PORTMAP) ||
+     (GetVlinkVnodeIfKeyType(dup_ckvlink, 1) == UNC_KT_VBR_PORTMAP)) {
     UPLL_LOG_TRACE("ikey flags update with boundary vlanmap vlink flag");
     DbSubOp dbop = { kOpNotRead, kOpMatchNone, kOpInOutFlag };
     result_code = UpdateConfigDB(ikey, req->datatype, UNC_OP_UPDATE,
-                               dmi, &dbop, MAINTBL);
+                               dmi, &dbop, config_mode, vtn_name,
+                               MAINTBL);
   } else {
     DbSubOp dbop = { kOpNotRead, kOpMatchNone, kOpInOutNone };
     result_code = UpdateConfigDB(ikey, req->datatype, UNC_OP_UPDATE,
-                                 dmi, &dbop, MAINTBL);
+                                 dmi, &dbop, config_mode, vtn_name,
+                                 MAINTBL);
   }
 
   if (UPLL_RC_SUCCESS != result_code) {
@@ -4979,9 +5662,9 @@ upll_rc_t VlinkMoMgr::GetVnodeIfFromVlink(ConfigKeyVal *vlink,
     int j = (pos > 1)?i:pos;
     unc_key_type_t ktype = GetVlinkVnodeIfKeyType(vlink, j);
 
-    /* VlanmapOnBoundary: In boundary vlan-map case: 
+    /* VlanmapOnBoundary: In boundary vlan-map case:
      * Get the vBrIf of vlan-mapped interface */
-    if (ktype == UNC_KT_VBR_VLANMAP)
+    if ((ktype == UNC_KT_VBR_VLANMAP) || (ktype == UNC_KT_VBR_PORTMAP))
       ktype = UNC_KT_VBR_IF;
 
     MoMgrImpl *mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
@@ -4998,8 +5681,8 @@ upll_rc_t VlinkMoMgr::GetVnodeIfFromVlink(ConfigKeyVal *vlink,
       return result_code;
     }
 
-    DbSubOp dbop = { kOpReadSingle, kOpMatchNone, kOpInOutCs|kOpInOutCtrlr|
-                                                  kOpInOutDomain | kOpInOutFlag};
+    DbSubOp dbop = { kOpReadSingle, kOpMatchNone,
+      kOpInOutCs | kOpInOutCtrlr | kOpInOutDomain | kOpInOutFlag};
     result_code = mgr->ReadConfigDB(vnif[i], UPLL_DT_STATE,
                               UNC_OP_READ, dbop, dmi, MAINTBL);
     if (result_code != UPLL_RC_SUCCESS) {
@@ -5036,13 +5719,13 @@ upll_rc_t VlinkMoMgr::GetRemoteIf(ConfigKeyVal *ck_vnif,
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   uint8_t vif_flag = 0;
-  uint8_t rem_if; 
+  uint8_t rem_if;
 
   if (!ck_vnif) {
     UPLL_LOG_DEBUG("Returning error\n");
     return UPLL_RC_ERR_GENERIC;
   }
-  GET_USER_DATA_FLAGS(ck_vnif,vif_flag);
+  GET_USER_DATA_FLAGS(ck_vnif, vif_flag);
   if (vif_flag & 0xA0)
     rem_if = 1;
   else if (vif_flag & 0x50)
@@ -5051,11 +5734,11 @@ upll_rc_t VlinkMoMgr::GetRemoteIf(ConfigKeyVal *ck_vnif,
     return UPLL_RC_ERR_GENERIC;
   result_code = GetVlinkKeyVal(ck_vnif, datatype, ck_vlink, dmi);
   if (result_code != UPLL_RC_SUCCESS) {
-    UPLL_LOG_ERROR("Returning error %d\n",result_code);
+    UPLL_LOG_ERROR("Returning error %d\n", result_code);
     DELETE_IF_NOT_NULL(ck_vlink);
     return result_code;
   }
-  result_code = GetVnodeIfFromVlink(ck_vlink,&ck_remif,dmi,rem_if);
+  result_code = GetVnodeIfFromVlink(ck_vlink, &ck_remif, dmi, rem_if);
   if (result_code != UPLL_RC_SUCCESS) {
     UPLL_LOG_ERROR("get remote interface failed %d", result_code);
     DELETE_IF_NOT_NULL(ck_vlink);
@@ -5065,19 +5748,17 @@ upll_rc_t VlinkMoMgr::GetRemoteIf(ConfigKeyVal *ck_vnif,
 }
 
 /* VlanmapOnBoundary changes */
-upll_rc_t VlinkMoMgr::UpdateVlinkVlanmapFlag(ConfigKeyVal *&ikey,
-                                             ConfigKeyVal *&db_vlinkckv) {
+upll_rc_t VlinkMoMgr::UpdateVlinkFlagFromBoundary(ConfigKeyVal *&ikey,
+                                             ConfigKeyVal *ck_boundary) {
   UPLL_FUNC_TRACE;
 
-  uint8_t flag1        = 0;
-  uint8_t flag2        = 0;
+  uint8_t node1_flag   = 0;
+  uint8_t node2_flag   = 0;
   uint8_t tmp_flag     = 0;
 
   val_vlink_t *ival = reinterpret_cast<val_vlink_t *>(GetVal(ikey));
-  val_vlink_t *dbval = reinterpret_cast<val_vlink_t *>(GetVal(db_vlinkckv));
-
-  if (!ival || !dbval) {
-    UPLL_LOG_DEBUG("ival:%p or dbval:%p is NULL", ival, dbval);
+  if (!ival) {
+    UPLL_LOG_DEBUG("ival:%p is NULL", ival);
     return UPLL_RC_ERR_GENERIC;
   }
 
@@ -5088,114 +5769,116 @@ upll_rc_t VlinkMoMgr::UpdateVlinkVlanmapFlag(ConfigKeyVal *&ikey,
   }
 
   /* If bdry info from uppl is present */
-  if (ck_boundary && ck_boundary->get_cfg_val()) {
+  if (!ck_boundary || !ck_boundary->get_cfg_val()) {
+    UPLL_LOG_DEBUG("ck_boundary is NULL");
+    return UPLL_RC_ERR_GENERIC;
+  }
 
-    controller_domain_t vlink_ctrlr_dom[2];
-    vlink_ctrlr_dom[0].ctrlr = NULL;
-    vlink_ctrlr_dom[0].domain = NULL;
-    vlink_ctrlr_dom[1].ctrlr = NULL;
-    vlink_ctrlr_dom[1].domain = NULL;
-    val_boundary_t  *boundary_val =
-          reinterpret_cast<val_boundary_t *>(GetVal(ck_boundary));
-    upll_rc_t result_code = GetControllerDomainId(ikey, vlink_ctrlr_dom);
-    if (result_code != UPLL_RC_SUCCESS) {
-      UPLL_LOG_DEBUG("Failed to get vlink controller and domain");
-      return UPLL_RC_SUCCESS;
+  controller_domain_t vlink_ctrlr_dom[2];
+  vlink_ctrlr_dom[0].ctrlr = NULL;
+  vlink_ctrlr_dom[0].domain = NULL;
+  vlink_ctrlr_dom[1].ctrlr = NULL;
+  vlink_ctrlr_dom[1].domain = NULL;
+  val_boundary_t  *boundary_val =
+      reinterpret_cast<val_boundary_t *>(GetVal(ck_boundary));
+  //  Get vLink controller domain
+  upll_rc_t result_code = GetControllerDomainId(ikey, vlink_ctrlr_dom);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_DEBUG("Failed to get vlink controller and domain");
+    return UPLL_RC_SUCCESS;
+  }
+
+  for (int i = 0; i < 2; i++) {
+    uint8_t *bdry_ctr_name = NULL;
+    uint8_t *bdry_domain   = NULL;
+    uint8_t *logical_port_id = NULL;
+
+    if (i == 0) {
+      logical_port_id = boundary_val->logical_port_id1;
+      bdry_ctr_name = boundary_val->controller_name1;
+      bdry_domain   = boundary_val->domain_name1;
+    } else {
+      logical_port_id = boundary_val->logical_port_id2;
+      bdry_ctr_name = boundary_val->controller_name2;
+      bdry_domain   = boundary_val->domain_name2;
     }
 
-    for (int i = 0; i<2; i++) {
-      uint8_t *bdry_ctr_name = NULL;
-      uint8_t *bdry_domain   = NULL;
-      uint8_t *logical_port_id = NULL;
-
-      if (i == 0) {
-        logical_port_id = boundary_val->logical_port_id1;
-        bdry_ctr_name = boundary_val->controller_name1;
-        bdry_domain   = boundary_val->domain_name1;
-      } else {
-        logical_port_id = boundary_val->logical_port_id2;
-        bdry_ctr_name = boundary_val->controller_name2;
-        bdry_domain   = boundary_val->domain_name2;
+    for (int index = 0; index <2; index++) {
+      if (!vlink_ctrlr_dom[index].ctrlr) {
+        UPLL_LOG_TRACE(
+            "Controller name is empty. controller type is unknown");
+        continue;
       }
 
-      if ((toupper(logical_port_id[0]) == 'S' &&
-            toupper(logical_port_id[1]) == 'W') ||
-          (toupper(logical_port_id[0]) == 'S' &&
-           toupper(logical_port_id[1]) == 'D')) {
-        for (int index = 0; index <2; index++) {
-          if (!vlink_ctrlr_dom[index].ctrlr) {
-            UPLL_LOG_TRACE("Controller name is empty. controller type is unknown");
-            continue;
-          }
-          if ((!strcmp(reinterpret_cast<char *>(vlink_ctrlr_dom[index].ctrlr),
+      uint8_t boundarymap_flag = 0;
+      if (!strcmp(reinterpret_cast<char *>(vlink_ctrlr_dom[index].ctrlr),
+                  "#") &&
+          (!strcmp(reinterpret_cast<char *>(vlink_ctrlr_dom[index].domain),
+                   "#"))) {
+        // unified vBridge
+        boundarymap_flag = kVbrPortMap;
+      } else if ((!strcmp(
+                  reinterpret_cast<char *>(vlink_ctrlr_dom[index].ctrlr),
                   reinterpret_cast<char *>(bdry_ctr_name))) &&
-              (!strcmp(reinterpret_cast<char *>(vlink_ctrlr_dom[index].domain),
-                       reinterpret_cast<char *>(bdry_domain)))) {
-            if (index == 0) {
-              UPLL_LOG_TRACE("Node1 is SW or SD");
-              flag1 = (uint8_t)(VLINK_FLAG_NODE1_TYPE&(kVlanMap<<kVlinkVnodeIf1Type));
-              if ((ival->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] == UNC_VF_VALID_NO_VALUE)
-                  && (dbval->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] == UNC_VF_VALID)) {
-                flag1 = (uint8_t)(VLINK_FLAG_NODE1_TYPE&(kVbrIf<<kVlinkVnodeIf1Type));
-              }
-              /*Set ikey node1 flag */
-              GET_USER_DATA_FLAGS(ikey, tmp_flag);
-              tmp_flag &= ~VLINK_FLAG_NODE1_TYPE;
-              tmp_flag |= flag1;
-              SET_USER_DATA_FLAGS(ikey, tmp_flag);
-            } else {
-              UPLL_LOG_TRACE("Node2 is SW or SD");
-              flag2 = (uint8_t)(VLINK_FLAG_NODE2_TYPE&(kVlanMap<<kVlinkVnodeIf2Type));
-              if ((ival->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] == UNC_VF_VALID_NO_VALUE)
-                  && (dbval->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] == UNC_VF_VALID)) {
-                flag2 = (uint8_t)(VLINK_FLAG_NODE2_TYPE&(kVbrIf<<kVlinkVnodeIf2Type));
-              }
-              /*Set ikey node1 flag */
-              GET_USER_DATA_FLAGS(ikey, tmp_flag);
-              tmp_flag &= ~VLINK_FLAG_NODE2_TYPE;
-              tmp_flag |= flag2;
-              SET_USER_DATA_FLAGS(ikey, tmp_flag);
-            } 
+                 (!strcmp(
+                   reinterpret_cast<char *>(vlink_ctrlr_dom[index].domain),
+                   reinterpret_cast<char *>(bdry_domain)))) {
+        if ((toupper(logical_port_id[0]) == 'S' &&
+             toupper(logical_port_id[1]) == 'W') ||
+            (toupper(logical_port_id[0]) == 'S' &&
+             toupper(logical_port_id[1]) == 'D')) {
+          boundarymap_flag = kVlanMap;
+        }
+      } else {
+        //  vlink controller domain is not matched with boundary controller
+        //  and domain
+        continue;
+      }
+
+      if (boundarymap_flag) {
+        if (index == 0) {
+          node1_flag = (uint8_t)
+              (VLINK_FLAG_NODE1_TYPE&(boundarymap_flag << kVlinkVnodeIf1Type));
+          //  For VALID_NO_VALUE case vLink flag is reset to vBrIf
+          if (ival->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] ==
+              UNC_VF_VALID_NO_VALUE) {
+            node1_flag = (uint8_t)
+                (VLINK_FLAG_NODE1_TYPE&(kVbrIf << kVlinkVnodeIf1Type));
           }
+          /*Set ikey node1 flag */
+          GET_USER_DATA_FLAGS(ikey, tmp_flag);
+          tmp_flag &= ~VLINK_FLAG_NODE1_TYPE;
+          tmp_flag |= node1_flag;
+          SET_USER_DATA_FLAGS(ikey, tmp_flag);
+        } else {
+          node2_flag = (uint8_t)
+              (VLINK_FLAG_NODE2_TYPE&(boundarymap_flag << kVlinkVnodeIf2Type));
+          //  For VALID_NO_VALUE case vLink flag is reset to vBrIf
+          if (ival->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] ==
+              UNC_VF_VALID_NO_VALUE) {
+            node2_flag = (uint8_t)
+                (VLINK_FLAG_NODE2_TYPE&(kVbrIf << kVlinkVnodeIf2Type));
+          }
+          /*Set ikey node1 flag */
+          GET_USER_DATA_FLAGS(ikey, tmp_flag);
+          tmp_flag &= ~VLINK_FLAG_NODE2_TYPE;
+          tmp_flag |= node2_flag;
+          SET_USER_DATA_FLAGS(ikey, tmp_flag);
         }
       }
     }
-
-    /* During vLink update: no-boundarymap: Dont set the tkey flag */
-    if ((ival->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] == UNC_VF_VALID_NO_VALUE) &&
-        (dbval->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] == UNC_VF_VALID)) {
-      return UPLL_RC_SUCCESS;
-    }
-
-    if (flag1 != 0) {
-      /*Set dbvlink node1 flag */
-      GET_USER_DATA_FLAGS(db_vlinkckv, tmp_flag);
-      tmp_flag &= ~VLINK_FLAG_NODE1_TYPE;
-      tmp_flag |= flag1;
-      SET_USER_DATA_FLAGS(db_vlinkckv, tmp_flag);
-    }
-
-    if (flag2 != 0) {
-      /*Set dbvlink node2 flag */
-      GET_USER_DATA_FLAGS(db_vlinkckv, tmp_flag);
-      tmp_flag &= ~VLINK_FLAG_NODE2_TYPE;
-      tmp_flag |= flag2;
-      SET_USER_DATA_FLAGS(db_vlinkckv, tmp_flag);
-    }
-  } else {
-    UPLL_LOG_DEBUG("ck_boundary is NULL");
-    return UPLL_RC_ERR_GENERIC;
   }
   return UPLL_RC_SUCCESS;
 }
 
-upll_rc_t VlinkMoMgr::GetVlinkKeyValFromVlanMap(ConfigKeyVal *vlanmap_ckv,
-                                                ConfigKeyVal *&vlink_ckv,
-                                                DalDmlIntf *dmi,
-                                                upll_keytype_datatype_t datatype) {
+upll_rc_t VlinkMoMgr::GetVlinkKeyValFromVlanMap(
+    ConfigKeyVal *vlanmap_ckv,
+    ConfigKeyVal *&vlink_ckv,
+    DalDmlIntf *dmi,
+    upll_keytype_datatype_t datatype) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
-  uint32_t  session_id  = 0;
+  uint32_t  session_id  = USESS_ID_UPLL;
   uint32_t  config_id   = 0;
 
   key_vlan_map *vlanmap_key = (vlanmap_ckv->get_key()) ?
@@ -5226,28 +5909,17 @@ upll_rc_t VlinkMoMgr::GetVlinkKeyValFromVlanMap(ConfigKeyVal *vlanmap_ckv,
   ctrlr_dom.ctrlr = ctrlr_dom.domain = NULL;
   GET_USER_DATA_CTRLR_DOMAIN(vlanmap_ckv, ctrlr_dom);
 
-  unc::tclib::TcLibModule *tclib =
-        unc::upll::config_momgr::UpllConfigMgr::GetTcLibModule();
-  PFC_ASSERT(tclib != NULL);
-  if (tclib == NULL) {
-    UPLL_LOG_ERROR("Unable to get tclib module");
-    return UPLL_RC_ERR_GENERIC;
-  }
-
-  /* Get current session_id and config_id from TcLib */
-  tclib->GetSessionAttributes(&session_id, &config_id);
-  UPLL_LOG_TRACE("session_id = %u. config_id = %u", session_id, config_id);
-
   key_boundary *bndrykey = static_cast<key_boundary *>
          (ConfigKeyVal::Malloc(sizeof(key_boundary)));  // COV NULL RETURN
   val_boundary_t *boundary_val = reinterpret_cast<val_boundary *>(
       ConfigKeyVal::Malloc(sizeof(val_boundary)));
-  ConfigVal *cv_boundary = new ConfigVal(IpctSt::kIpcStValBoundary, boundary_val);
+  ConfigVal *cv_boundary = new ConfigVal(IpctSt::kIpcStValBoundary,
+                                         boundary_val);
   uuu::upll_strncpy(boundary_val->logical_port_id2, logical_port_id,
-                    kMaxLenBoundaryName);
+                    (kMaxLenLogicalPortId + 1));
   boundary_val->valid[kIdxBoundaryLogicalPortId2] = UNC_VF_VALID;
   uuu::upll_strncpy(boundary_val->controller_name2, ctrlr_dom.ctrlr,
-                    kMaxLenCtrlrId);
+                    kMaxLenCtrlrId + 1);
   boundary_val->valid[kIdxBoundaryControllerName2] = UNC_VF_VALID;
   ConfigKeyVal *ck_boundary = new ConfigKeyVal(UNC_KT_BOUNDARY,
                                                IpctSt::kIpcStKeyBoundary,
@@ -5266,10 +5938,10 @@ upll_rc_t VlinkMoMgr::GetVlinkKeyValFromVlanMap(ConfigKeyVal *vlanmap_ckv,
     boundary_val = reinterpret_cast<val_boundary_t *>(GetVal(ck_boundary));
     memset(boundary_val, 0, sizeof(val_boundary_t));
     uuu::upll_strncpy(boundary_val->logical_port_id1, logical_port_id,
-        kMaxLenBoundaryName);
+        (kMaxLenLogicalPortId + 1));
     boundary_val->valid[kIdxBoundaryLogicalPortId1] = UNC_VF_VALID;
     uuu::upll_strncpy(boundary_val->controller_name1, ctrlr_dom.ctrlr,
-        kMaxLenCtrlrId);
+        kMaxLenCtrlrId + 1);
     boundary_val->valid[kIdxBoundaryControllerName1] = UNC_VF_VALID;
     DELETE_IF_NOT_NULL(ipc_resp.ckv_data);
     result_code = SendIpcReq(session_id, config_id, UNC_OP_READ_SIBLING,
@@ -5338,8 +6010,9 @@ upll_rc_t VlinkMoMgr::GetVlinkKeyValFromVlanMap(ConfigKeyVal *vlanmap_ckv,
 
     if (vlink_ckv == NULL) {
       vlink_ckv = ckv_vlink;
-    } else
+    } else {
       vlink_ckv->AppendCfgKeyVal(ckv_vlink);
+    }
 
     UPLL_LOG_TRACE("%s", vlink_ckv->ToStrAll().c_str());
     ck_boundary_tmp = ck_boundary_tmp->get_next_cfg_key_val();
@@ -5394,7 +6067,12 @@ VlinkMoMgr::PurgeCandidate(unc_key_type_t key_type,
   ConfigKeyVal *ca_temp_ckv = NULL;
   DalCursor *dal_cursor_handle;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
+  string vtn_id = "";
+
   for (int tbl = MAINTBL; tbl < ntable; tbl++) {
+    if (tbl == CONVERTTBL) {
+      continue;
+    }
     temp_ckv = NULL;
     ca_temp_ckv = NULL;
     dal_cursor_handle = NULL;
@@ -5404,8 +6082,10 @@ VlinkMoMgr::PurgeCandidate(unc_key_type_t key_type,
     if (tbl_index >= uudst::kDalNumTables)
       continue;
 
-    result_code = DiffConfigDB(UPLL_DT_IMPORT, UPLL_DT_CANDIDATE, UNC_OP_DELETE, temp_ckv,
-                               ca_temp_ckv, &dal_cursor_handle, dmi,(MoMgrTables)(tbl));
+    result_code = DiffConfigDB(UPLL_DT_IMPORT, UPLL_DT_CANDIDATE,
+                               UNC_OP_DELETE, temp_ckv, ca_temp_ckv,
+                               &dal_cursor_handle, dmi, TC_CONFIG_GLOBAL,
+                               vtn_id, (MoMgrTables)(tbl));
     while (result_code == UPLL_RC_SUCCESS) {
       // Iterate loop to get next record
       result_code =DalToUpllResCode(dmi->GetNextRecord(dal_cursor_handle));
@@ -5417,7 +6097,7 @@ VlinkMoMgr::PurgeCandidate(unc_key_type_t key_type,
       uint8_t *ca_ctrlr_id = NULL;
       GET_USER_DATA_CTRLR(temp_ckv, ca_ctrlr_id);
       if (ca_ctrlr_id) {
-        if(!strcmp((const char*)ca_ctrlr_id, (const char*)ctrlr_id)){
+        if (!strcmp((const char*)ca_ctrlr_id, (const char*)ctrlr_id)) {
           // Delete the Partial import controller configuration from candidate
           // which is not present in controller configuration.
           bool boundary = false;
@@ -5430,15 +6110,21 @@ VlinkMoMgr::PurgeCandidate(unc_key_type_t key_type,
                * overlay keytype check is
                * not required
                */
-              if (UNC_KT_VBR_VLANMAP != key_type1 && UNC_KT_VBR_IF != key_type1) {
+              if (UNC_KT_VBR_VLANMAP != key_type1 &&
+                  UNC_KT_VBR_IF != key_type1 &&
+                  UNC_KT_VBR_PORTMAP != key_type1) {
                 boundary = false;
                 break;
               }
             }
           }
           if (!boundary) {
-            UPLL_LOG_DEBUG("The Deleting configuraiton is %s",temp_ckv->ToStr().c_str());
-            result_code = UpdateConfigDB(temp_ckv, UPLL_DT_CANDIDATE, UNC_OP_DELETE, dmi, (MoMgrTables)(tbl));
+            UPLL_LOG_DEBUG("The Deleting configuraiton is %s",
+                           temp_ckv->ToStr().c_str());
+            result_code = UpdateConfigDB(temp_ckv, UPLL_DT_CANDIDATE,
+                                         UNC_OP_DELETE, dmi,
+                                         TC_CONFIG_GLOBAL,
+                                         vtn_id, (MoMgrTables)(tbl));
             if (UPLL_RC_SUCCESS != result_code) {
               UPLL_LOG_DEBUG("UpdateConfigDB failed  %d", result_code);
               delete temp_ckv;
@@ -5456,7 +6142,7 @@ VlinkMoMgr::PurgeCandidate(unc_key_type_t key_type,
       }
     }
 
-    delete temp_ckv;
+    DELETE_IF_NOT_NULL(temp_ckv);
     delete ca_temp_ckv;
     if (dal_cursor_handle) {
       dmi->CloseCursor(dal_cursor_handle, true);
@@ -5477,84 +6163,77 @@ upll_rc_t VlinkMoMgr::CreateImportMo(IpcReqRespHeader *req,
   if (ikey == NULL || req == NULL) {
     return UPLL_RC_ERR_GENERIC;
   }
-  switch (req->datatype) {
-    case UPLL_DT_AUDIT: {
-      return CreateAuditMoImpl(ikey, dmi, ctrlr_id);
-    }
-    case UPLL_DT_IMPORT: {
-      if (!ctrlr_id) {
-        UPLL_LOG_DEBUG("Empty controller name");
-        return UPLL_RC_ERR_GENERIC;
-      }
-      upll_rc_t result_code = UPLL_RC_SUCCESS;
-      ConfigKeyVal *temp_ckv = NULL;
-      UPLL_LOG_TRACE("TODO Ctrlr Input %s", ikey->ToStr().c_str());
-      result_code = ValidateMessage(req, ikey);
-      if (UPLL_RC_SUCCESS != result_code) {
-        UPLL_LOG_DEBUG("Validate Messgae Failed");
-        return result_code;
-      }
-      SET_USER_DATA_FLAGS(ikey, NO_RENAME);
-      bool is_rename = false;
-      controller_domain ctrlr_dom[2] = { { NULL, NULL }, { NULL, NULL } };
-      if (UPLL_IMPORT_TYPE_PARTIAL == import_type) {
-        SET_USER_DATA_CTRLR(ikey, ctrlr_id);
-        result_code = DupConfigKeyVal(temp_ckv, ikey);
-        if (UPLL_RC_SUCCESS != result_code) {
-          UPLL_LOG_DEBUG("GetChildConfigKey failed %d", result_code);
-          return result_code;
-        }
-        result_code = GetUncKey(ikey, UPLL_DT_IMPORT, dmi,
-                                ctrlr_id);
-        if (UPLL_RC_SUCCESS != result_code &&
-            UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
-          UPLL_LOG_DEBUG("GetUncKey failed %d", result_code);
-          delete temp_ckv;
-          return result_code;
-        }
-        if (UPLL_RC_SUCCESS == result_code) {
-          is_rename = true;
-        }
-      }
-      result_code = UpdateVlinkIf(req, ikey, dmi, ctrlr_dom);
-      if (result_code != UPLL_RC_SUCCESS) {
-        UPLL_LOG_INFO("Error in checking for Vlink Interfaces. result code %d",
-                      result_code);
-        DELETE_IF_NOT_NULL(temp_ckv);
-        return result_code;
-      }
-      if (UPLL_IMPORT_TYPE_PARTIAL == import_type) {
-        if (!is_rename) {
-          result_code = AutoRename(ikey, req->datatype, dmi,
-                                   &is_rename);
-          if (UPLL_RC_SUCCESS != result_code) {
-            UPLL_LOG_DEBUG("AutoRename failed %d", result_code);
-            delete temp_ckv;
-            return result_code;
-          }
-        }
-      }
-      uint8_t rename = 0x00;
-      GET_USER_DATA_FLAGS(ikey, rename);
-      UPLL_LOG_TRACE("The Rename flga is %d", rename);
-      SET_USER_DATA_CTRLR_DOMAIN(ikey, ctrlr_dom[0]);
-      SET_USER_DATA_CTRLR_DOMAIN(ikey->get_cfg_val(), ctrlr_dom[1]);
-      UPLL_LOG_TRACE("The result code of GetUncKey %d", result_code);
-      result_code = CreateMo(req, ikey, dmi);
-      if (UPLL_IMPORT_TYPE_PARTIAL == import_type) {
-        /*
-         * Convert UNC name into Ctrlr name if
-         * renamed
-         */
-        ikey->ResetWith(temp_ckv);
-        delete temp_ckv;
-      }
+  if (!ctrlr_id) {
+    UPLL_LOG_DEBUG("Empty controller name");
+    return UPLL_RC_ERR_GENERIC;
+  }
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  ConfigKeyVal *temp_ckv = NULL;
+  UPLL_LOG_TRACE("TODO Ctrlr Input %s", ikey->ToStr().c_str());
+  if (req->datatype == UPLL_DT_IMPORT) {
+    result_code = ValidateMessage(req, ikey);
+    if (UPLL_RC_SUCCESS != result_code) {
+      UPLL_LOG_DEBUG("Validate Messgae Failed");
       return result_code;
     }
-    default:
-      return UPLL_RC_ERR_GENERIC;
-
   }
+  SET_USER_DATA_FLAGS(ikey, NO_RENAME);
+  bool is_rename = false;
+  controller_domain ctrlr_dom[2] = { { NULL, NULL }, { NULL, NULL } };
+  if (UPLL_IMPORT_TYPE_PARTIAL == import_type) {
+    SET_USER_DATA_CTRLR(ikey, ctrlr_id);
+    result_code = DupConfigKeyVal(temp_ckv, ikey);
+    if (UPLL_RC_SUCCESS != result_code) {
+      UPLL_LOG_DEBUG("GetChildConfigKey failed %d", result_code);
+      return result_code;
+    }
+    result_code = GetUncKey(ikey, req->datatype, dmi,
+                            ctrlr_id);
+    if (UPLL_RC_SUCCESS != result_code &&
+        UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
+      UPLL_LOG_DEBUG("GetUncKey failed %d", result_code);
+      delete temp_ckv;
+      return result_code;
+    }
+    if (UPLL_RC_SUCCESS == result_code) {
+      is_rename = true;
+    }
+  }
+  ConfigKeyVal *uppl_bdry = NULL;
+  result_code = UpdateVlinkIf(req, ikey, uppl_bdry, dmi, ctrlr_dom);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_INFO("Error in checking for Vlink Interfaces. result code %d",
+                  result_code);
+    DELETE_IF_NOT_NULL(temp_ckv);
+    return result_code;
+  }
+  if (UPLL_IMPORT_TYPE_PARTIAL == import_type) {
+    if (!is_rename) {
+      result_code = AutoRename(ikey, req->datatype, dmi,
+                               &is_rename);
+      if (UPLL_RC_SUCCESS != result_code) {
+        UPLL_LOG_DEBUG("AutoRename failed %d", result_code);
+        delete temp_ckv;
+        return result_code;
+      }
+    }
+  }
+  uint8_t rename = 0x00;
+  GET_USER_DATA_FLAGS(ikey, rename);
+  UPLL_LOG_TRACE("The Rename flga is %d", rename);
+  SET_USER_DATA_CTRLR_DOMAIN(ikey, ctrlr_dom[0]);
+  SET_USER_DATA_CTRLR_DOMAIN(ikey->get_cfg_val(), ctrlr_dom[1]);
+  UPLL_LOG_TRACE("The result code of GetUncKey %d", result_code);
+  result_code = CreateMo(req, ikey, dmi);
+  if (UPLL_IMPORT_TYPE_PARTIAL == import_type) {
+    /*
+     * Convert UNC name into Ctrlr name if
+     * renamed
+     */
+    ikey->ResetWith(temp_ckv);
+    delete temp_ckv;
+  }
+  return result_code;
 }
 
 upll_rc_t VlinkMoMgr::SetOperStatus(ConfigKeyVal *ikey, DalDmlIntf *dmi,
@@ -5567,6 +6246,8 @@ upll_rc_t VlinkMoMgr::SetOperStatus(ConfigKeyVal *ikey, DalDmlIntf *dmi,
   UPLL_LOG_DEBUG("notification %d ikey %s\n", notification,
                     ikey->ToStrAll().c_str());
   upll_rc_t result_code = UPLL_RC_SUCCESS;
+  string vtn_name = "";
+
   uint8_t orig_status = PORT_UP;
   ConfigVal *tmp =
       (ikey->get_cfg_val()) ? ikey->get_cfg_val()->get_next_cfg_val() : NULL;
@@ -5595,7 +6276,7 @@ upll_rc_t VlinkMoMgr::SetOperStatus(ConfigKeyVal *ikey, DalDmlIntf *dmi,
   case kCommit:
     if (vlink_db_valst->down_count & PORT_UNKNOWN) {
       vlink_valst->oper_status = UPLL_OPER_STATUS_UNKNOWN;
-    } else if (vlink_db_valst->down_count == PORT_UP){
+    } else if (vlink_db_valst->down_count == PORT_UP) {
       vlink_valst->oper_status = UPLL_OPER_STATUS_UP;
     } else {
       vlink_valst->oper_status = UPLL_OPER_STATUS_DOWN;
@@ -5631,7 +6312,8 @@ upll_rc_t VlinkMoMgr::SetOperStatus(ConfigKeyVal *ikey, DalDmlIntf *dmi,
         vlink_valst->oper_status = UPLL_OPER_STATUS_DOWN;
       }
     } else if (orig_status & ~PORT_FAULT) {
-      /* operstatus is already DOWN due some other reason than PORT_FAULT. Clear PORT_FAULT flag and break */
+      /* operstatus is already DOWN due some other reason than PORT_FAULT.
+       * Clear PORT_FAULT flag and break */
       vlink_db_valst->down_count &= ~PORT_FAULT;
       vlink_valst->oper_status = UPLL_OPER_STATUS_DOWN;
     } else {
@@ -5651,7 +6333,8 @@ upll_rc_t VlinkMoMgr::SetOperStatus(ConfigKeyVal *ikey, DalDmlIntf *dmi,
     vlink_db_valst->down_count |= PATH_FAULT;
     break;
   case kPathFaultReset:
-    /* Clear the Path fault flag. If OperStatus is UP, then set OperStatus to UP */
+    /* Clear the Path fault flag.
+     * If OperStatus is UP, then set OperStatus to UP */
     vlink_db_valst->down_count &= ~PATH_FAULT;
     if (vlink_db_valst->down_count == PORT_UP) {
       vlink_valst->oper_status = UPLL_OPER_STATUS_UP;
@@ -5666,7 +6349,8 @@ upll_rc_t VlinkMoMgr::SetOperStatus(ConfigKeyVal *ikey, DalDmlIntf *dmi,
   vlink_val->valid[UPLL_IDX_ADMIN_STATUS_VLNK] = UNC_VF_INVALID;
   DbSubOp dbop = { kOpNotRead, kOpMatchNone, kOpInOutNone };
   result_code = UpdateConfigDB(ikey, UPLL_DT_STATE, UNC_OP_UPDATE, dmi,
-                                 &dbop, MAINTBL);
+                               &dbop, TC_CONFIG_GLOBAL,
+                               vtn_name, MAINTBL);
   UPLL_LOG_DEBUG("Vlink SetOperstatus for VTN after Update is \n %s",
                     ikey->ToStr().c_str());
   if (result_code != UPLL_RC_SUCCESS) {
@@ -5676,11 +6360,13 @@ upll_rc_t VlinkMoMgr::SetOperStatus(ConfigKeyVal *ikey, DalDmlIntf *dmi,
   return result_code;
 }
 
-upll_rc_t VlinkMoMgr::SetVlinkAndIfsOnReconnect(ConfigKeyVal *ck_vlink, ConfigKeyVal **ck_vnif,
-                                      DalDmlIntf *dmi, state_notification notfn, bool pf_exist) {
+upll_rc_t VlinkMoMgr::SetVlinkAndIfsOnReconnect(
+    ConfigKeyVal *ck_vlink,
+    ConfigKeyVal **ck_vnif,
+    DalDmlIntf *dmi, bool is_unified) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
-
+  string vtn_id = "";
   val_vlink *vlink_val = reinterpret_cast<val_vlink *>(GetVal(ck_vlink));
 
   uint32_t new_flag[3] = {0, 0, 0};
@@ -5698,14 +6384,49 @@ upll_rc_t VlinkMoMgr::SetVlinkAndIfsOnReconnect(ConfigKeyVal *ck_vlink, ConfigKe
     UPLL_LOG_DEBUG("Returning error %d\n", result_code);
     return result_code;
   }
+
+  if ((vlink_ctrlr_dom[0].ctrlr && IsUnifiedVbr(vlink_ctrlr_dom[0].ctrlr)) ||
+      (vlink_ctrlr_dom[1].ctrlr && IsUnifiedVbr(vlink_ctrlr_dom[1].ctrlr))) {
+    result_code = ResetCtrlrDomForUnifiedInterface(vlink_val->boundary_name,
+                                vlink_ctrlr_dom);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_ERROR("Error in ResetCtrlrDomForUnifiedInterface : %d",
+                          result_code);
+      return result_code;
+    }
+    if (!is_unified && vlink_ctrlr_dom[0].ctrlr && vlink_ctrlr_dom[1].ctrlr &&
+        !strcmp(reinterpret_cast<char*>(vlink_ctrlr_dom[0].ctrlr),
+                reinterpret_cast<char*>(vlink_ctrlr_dom[1].ctrlr))) {
+      // vbr if operstatus for vbrif b/w vBr and UvBr will be handled
+      // as part of conv if computation
+      return UPLL_RC_SUCCESS;
+    }
+  }
+  bool is_ctrlr_disc = false;
+  bool internal_boundary = false;
+  uuc::CtrlrMgr* ctr_mgr = uuc::CtrlrMgr::GetInstance();
+  if (ck_vnif[1]->get_key_type() != UNC_KT_VUNK_IF) {
+    uint8_t* remote_ctrlr = NULL;
+    GET_USER_DATA_CTRLR(ck_vnif[1], remote_ctrlr);
+    char *ctrlr1 = reinterpret_cast<char*>(vlink_ctrlr_dom[0].ctrlr);
+    char *ctrlr2 = reinterpret_cast<char*>(vlink_ctrlr_dom[1].ctrlr);
+    if (ctrlr1 && ctrlr2 && !strcmp(ctrlr1, ctrlr2))
+      internal_boundary = true;
+    is_ctrlr_disc =
+       (ctr_mgr->IsCtrlrInUnknownList(reinterpret_cast<char*>(remote_ctrlr))) &&
+       (internal_boundary == false);
+  }
   if ((bound_vlink == true) &&
       (vlink_val->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] == UNC_VF_INVALID)) {
     for (int i = 0; i < 3; i++) {
+      if (is_ctrlr_disc && (i != 0)) {
+        continue;
+      }
       new_flag[i] |= PORT_FAULT;
     }
   }
   VnodeChildMoMgr *if_mgr[2] = {NULL, NULL};
-  for (int i= 0; i<2; i++) {
+  for (int i= 0; i < 2; i++) {
     if (ck_vnif[i]->get_key_type() != UNC_KT_VUNK_IF) {
       uint8_t valid_pm, valid_admin, admin_status;
       val_port_map_t *pm = NULL;
@@ -5723,28 +6444,40 @@ upll_rc_t VlinkMoMgr::SetVlinkAndIfsOnReconnect(ConfigKeyVal *ck_vlink, ConfigKe
       }
       if (admin_status == UPLL_ADMIN_DISABLE) {
         uint8_t npos = (i == 0)? 1 : 0;
-        new_flag[2] |= REMOTE_DOWN;
         new_flag[i] |= ADMIN_DISABLE;
-        new_flag[npos] |= REMOTE_DOWN;
+        if (!is_ctrlr_disc) {
+          new_flag[2] |= REMOTE_DOWN;
+          new_flag[npos] |= REMOTE_DOWN;
+        }
       }
-      if ((valid_pm == UNC_VF_VALID) && (i == 0) && (notfn == kCommit)) {
-        unc_key_type_t ktype = ck_vnif[i]->get_key_type(); 
+      if (valid_pm == UNC_VF_VALID) {
+        if (i == 1 && !internal_boundary)
+          continue;
+        unc_key_type_t ktype = ck_vnif[i]->get_key_type();
         if (ktype != UNC_KT_VTEP_IF && ktype != UNC_KT_VTUNNEL_IF) {
           //  get logical port state
           controller_domain ctrlr_dom = {NULL, NULL};
           GET_USER_DATA_CTRLR_DOMAIN(ck_vnif[i], ctrlr_dom)
-          uuc::CtrlrMgr* ctr_mgr = uuc::CtrlrMgr::GetInstance();
           bool result(false);
           uint8_t state(UPPL_LOGICAL_PORT_OPER_UNKNOWN);
-          result = ctr_mgr->GetLogicalPortSt(reinterpret_cast<const char*>(ctrlr_dom.ctrlr),
-                                             reinterpret_cast<const char*>(pm->logical_port_id),
-                                             state);
+          result = ctr_mgr->GetLogicalPortSt(
+              reinterpret_cast<const char*>(ctrlr_dom.ctrlr),
+              reinterpret_cast<const char*>(pm->logical_port_id),
+              state);
           if (result == false) {
-            return UPLL_RC_SUCCESS;
+            val_db_vbr_if_st *vnif_st = reinterpret_cast<val_db_vbr_if_st *>
+                                        (GetStateVal(ck_vnif[i]));
+            if (vnif_st->down_count & PORT_UNKNOWN) {
+              new_flag[i] |= PORT_UNKNOWN;
+              new_flag[2] |= PORT_UNKNOWN;
+            }
+            continue;
           }
           if (state == UPPL_LOGICAL_PORT_OPER_DOWN) {
             /* Set PORT_FAULT flag */
             for (int i= 0; i< 3; i++) {
+              if (is_ctrlr_disc && (i != 0))
+                continue;
               new_flag[i] |= PORT_FAULT;
             }
           }
@@ -5775,109 +6508,81 @@ upll_rc_t VlinkMoMgr::SetVlinkAndIfsOnReconnect(ConfigKeyVal *ck_vlink, ConfigKe
       rem_orig_flag = rem_vnif_st->down_count;
       if (rem_vnif_st->down_count & PORT_FAULT) {
         for (int i= 0; i< 3; i++) {
+          if (is_ctrlr_disc && (i != 1))
+            continue;
           new_flag[i] |= PORT_FAULT;
         }
-      } else if (bound_vlink && rem_vnif_st->down_count & PORT_UNKNOWN) {
-          new_flag[2] |= PORT_UNKNOWN;
       }
+      if (rem_vnif_st->down_count & REMOTE_VTN_EXHAUSTION)
+        new_flag[1] |= REMOTE_VTN_EXHAUSTION;
+      if (rem_vnif_st->down_count & REMOTE_PATH_FAULT)
+        new_flag[1] |= REMOTE_PATH_FAULT;
     }
-    if (notfn == kPathFault) {
-      new_flag[0] |= PATH_FAULT;
-      if (vnif_st->down_count == new_flag[0])
-        return UPLL_RC_SUCCESS;
-      vnif_st->down_count |= PATH_FAULT;
-      if (rem_vnif_st != NULL) {
-        if (bound_vlink)
-          rem_vnif_st->down_count |= REMOTE_PATH_FAULT;
-        else
-          rem_vnif_st->down_count |= PATH_FAULT;
-      }
-    } else if (notfn == kPathFaultReset) {
-      if (vnif_st->down_count == new_flag[0])
-        return UPLL_RC_SUCCESS;
-      vnif_st->down_count &= ~PATH_FAULT;
-      if (rem_vnif_st != NULL) {
-        if (bound_vlink)
-          rem_vnif_st->down_count &= ~REMOTE_PATH_FAULT;
-        else
-          rem_vnif_st->down_count &= ~PATH_FAULT;
-      }
-    } else {
-      if (pf_exist == false) {
-        if (vnif_st->down_count & REMOTE_PATH_FAULT) {
-          new_flag[0] |= REMOTE_PATH_FAULT;
-          new_flag[1] |= PATH_FAULT;
-          new_flag[2] |= PATH_FAULT;
-        }
-      } else {
-        if (vnif_st->down_count & PATH_FAULT) {
-          new_flag[0] |= PATH_FAULT;
-        }
-      }
-      if (vnif_st->down_count == new_flag[0])
-        return UPLL_RC_SUCCESS;
+    state_notification notification = kCommit;
+    if (vnif_st->down_count != new_flag[0]) {
       UPLL_LOG_DEBUG("orig flag[%d] is set to %d", 0, vnif_st->down_count);
-      vnif_st->down_count = new_flag[0];
-    }
-    vnif_st->vbr_if_val_st.valid[0] = UNC_VF_VALID;
-    if (vnif_st->down_count == PORT_UP) {
-      /* if down_count is PORT_UP, set operStatus to UP */
-      vnif_st->vbr_if_val_st.oper_status = UPLL_OPER_STATUS_UP;
-    } else if (vnif_st->down_count & PORT_UNKNOWN) {
-      /* if down_count is UNKNOWN, set operStatus to UNKNOWN */
-      vnif_st->vbr_if_val_st.oper_status = UPLL_OPER_STATUS_UNKNOWN;
-    } else {
-      /* if down_count is DOWN, set operStatus to DOWN */
-      vnif_st->vbr_if_val_st.oper_status = UPLL_OPER_STATUS_DOWN;
-    }
-    result_code = if_mgr[0]->UpdateConfigDB(ck_vnif[0], UPLL_DT_STATE, UNC_OP_UPDATE,
-                                dmi, &dbop, MAINTBL);
-    if (result_code != UPLL_RC_SUCCESS) {
-      UPLL_LOG_DEBUG("Error in UpdateConfigDB : %d", result_code);
-      return result_code;
+      // vnif_st->down_count = new_flag[0];
+      if (is_unified) {
+        controller_domain ctrlr_dom = {
+          reinterpret_cast<uint8_t*>(const_cast<char*>("#")),
+          reinterpret_cast<uint8_t*>(const_cast<char*>("#"))};
+        SET_USER_DATA_CTRLR_DOMAIN(ck_vnif[0], ctrlr_dom);
+        notification = kPortFaultReset;
+        result_code =  if_mgr[0]->UpdateOperStatus(ck_vnif[0], dmi,
+                                        notification, UNC_OP_UPDATE,
+                                        true, true);
+      } else {
+        vnif_st->down_count = new_flag[0];
+        vnif_st->vbr_if_val_st.valid[0] = UNC_VF_VALID;
+        if (vnif_st->down_count == PORT_UP) {
+          /* if down_count is PORT_UP, set operStatus to UP */
+          vnif_st->vbr_if_val_st.oper_status = UPLL_OPER_STATUS_UP;
+        } else if (vnif_st->down_count & PORT_UNKNOWN) {
+          /* if down_count is UNKNOWN, set operStatus to UNKNOWN */
+          vnif_st->vbr_if_val_st.oper_status = UPLL_OPER_STATUS_UNKNOWN;
+        } else {
+          /* if down_count is DOWN, set operStatus to DOWN */
+          vnif_st->vbr_if_val_st.oper_status = UPLL_OPER_STATUS_DOWN;
+        }
+        result_code = if_mgr[0]->UpdateConfigDB(ck_vnif[0], UPLL_DT_STATE,
+                                              UNC_OP_UPDATE,
+                                              dmi, &dbop, TC_CONFIG_GLOBAL,
+                                              vtn_id, MAINTBL);
+      }
+      if (result_code != UPLL_RC_SUCCESS) {
+        UPLL_LOG_DEBUG("Error in UpdateConfigDB : %d", result_code);
+        return result_code;
+      }
     }
     if ((ck_vnif[1]->get_key_type()) != UNC_KT_VUNK_IF) {
-      if (notfn == kPathFaultReset || notfn == kPathFault) {
-        result_code =  if_mgr[1]->UpdateOperStatus(ck_vnif[1], dmi, kCommit, UNC_OP_UPDATE, true, true);
-        if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_DEBUG("Error in UpdateConfigDB : %d", result_code);
-          return result_code;
-        }
-        if (notfn == kPathFaultReset) {
-          uint32_t rem_down_count = reinterpret_cast<val_db_vbr_if_st *>
-                                 (GetStateVal(ck_vnif[1]))->down_count;
-          
-          if(!(rem_down_count & PATH_FAULT))
-            vlink_st->down_count &= ~PATH_FAULT;
-        }
-      } else {
-        if (rem_orig_flag != new_flag[1]) { 
-          rem_vnif_st->down_count = new_flag[1];
-          bool propagate = false;
-          if (bound_vlink)
-            propagate = true;
-          if (bound_vlink == false || !(rem_orig_flag & PORT_UNKNOWN)) {
-            result_code =  if_mgr[1]->UpdateOperStatus(ck_vnif[1], dmi,
-                                          kCommit, UNC_OP_UPDATE, true, propagate);
-            if (result_code != UPLL_RC_SUCCESS) {
-              UPLL_LOG_DEBUG("Error in UpdateConfigDB : %d", result_code);
-              return result_code;
-            }
+      notification = kCommit;
+      if (rem_orig_flag != new_flag[1]) {
+        bool propagate = false;
+        if (bound_vlink)
+          propagate = true;
+        if (bound_vlink == false || !(rem_orig_flag & PORT_UNKNOWN) ||
+            is_unified) {
+          if (is_unified && (rem_orig_flag & PORT_UNKNOWN))
+            notification = kPortFaultReset;
+          else
+            rem_vnif_st->down_count = new_flag[1];
+          result_code =  if_mgr[1]->UpdateOperStatus(ck_vnif[1], dmi,
+                                        notification, UNC_OP_UPDATE,
+                                        true, propagate);
+          if (result_code != UPLL_RC_SUCCESS) {
+            UPLL_LOG_DEBUG("Error in UpdateConfigDB : %d", result_code);
+            return result_code;
           }
         }
-      } 
+      }
     }
   }
-  if (notfn == kPathFault) {
-    vlink_st->down_count |= PATH_FAULT;
-  } else if(notfn == kCommit) {
-    if (!(vlink_st->down_count == PORT_UP &&
-        vlink_st->vlink_val_st.oper_status == UPLL_OPER_STATUS_UNKNOWN)) {
-      if (vlink_st->down_count == new_flag[2])
-        return UPLL_RC_SUCCESS;
-    }
-    vlink_st->down_count = new_flag[2];
+  if (!(vlink_st->down_count == PORT_UP &&
+      vlink_st->vlink_val_st.oper_status == UPLL_OPER_STATUS_UNKNOWN)) {
+    if (vlink_st->down_count == new_flag[2])
+      return UPLL_RC_SUCCESS;
   }
+  vlink_st->down_count = new_flag[2];
   vlink_st->vlink_val_st.valid[0] = UNC_VF_VALID;
   if (vlink_st->down_count == PORT_UP) {
     /* if down_count is PORT_UP, set operStatus to UP */
@@ -5890,23 +6595,18 @@ upll_rc_t VlinkMoMgr::SetVlinkAndIfsOnReconnect(ConfigKeyVal *ck_vlink, ConfigKe
     return UPLL_RC_SUCCESS;
   }
   result_code = UpdateConfigDB(ck_vlink, UPLL_DT_STATE, UNC_OP_UPDATE, dmi,
-                                   &dbop, MAINTBL);
+                               &dbop, TC_CONFIG_GLOBAL,
+                               vtn_id, MAINTBL);
   return result_code;
 }
 
 upll_rc_t VlinkMoMgr::BoundaryStatusHandler(uint8_t *boundary_name,
                                             bool oper_status,
-                                            DalDmlIntf *dmi) {
+                                            uuc::UpllDbConnMgr* db_con,
+                                            uuc::ConfigLock* cfg_lock) {
   UPLL_FUNC_TRACE;
-
-  UPLL_LOG_DEBUG("Boundary name :(%s) oper_status:(%d)", boundary_name,
-      oper_status);
   upll_rc_t result_code = UPLL_RC_SUCCESS;
-  state_notification notification =
-       (oper_status == UPLL_OPER_STATUS_UP) ? kPortFaultReset :
-                                              kPortFault;
-
-  /* Allocate a vlink config key with the given val*/
+  std::set<std::string> vtn_list;
   ConfigKeyVal *ck_vlink = NULL;
   result_code = GetChildConfigKey(ck_vlink, NULL);
   if (!ck_vlink || result_code != UPLL_RC_SUCCESS) {
@@ -5925,10 +6625,79 @@ upll_rc_t VlinkMoMgr::BoundaryStatusHandler(uint8_t *boundary_name,
   /* copy fault boundaryname to vlink value structure */
   uuu::upll_strncpy(reinterpret_cast<char *>(vlink_val->boundary_name),
                     reinterpret_cast<char *>(boundary_name),
-                    kMaxLenBoundaryName);
+                    (kMaxLenBoundaryName + 1));
 
   /* set Boundary flag as valid */
   vlink_val->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] = UNC_VF_VALID;
+
+  { // scope lock
+    uuc::ScopedConfigLock lock(*cfg_lock, uuc::kNormalTaskPriority,
+                               UPLL_DT_RUNNING, uuc::ConfigLock::CFG_READ_LOCK);
+    uuc::DalOdbcMgr *dmi = db_con->GetAlarmRwConn();
+    if (dmi == NULL) {
+      DELETE_IF_NOT_NULL(ck_vlink);
+      return UPLL_RC_ERR_GENERIC;
+    }
+    result_code = GetUniqueVtns(ck_vlink, &vtn_list, dmi);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_DEBUG("Error in GetUniqueVtns");
+      DELETE_IF_NOT_NULL(ck_vlink);
+      db_con->DalTxClose(dmi, (result_code == UPLL_RC_SUCCESS));
+      db_con->ReleaseRwConn(dmi);
+      return result_code;
+    }
+    db_con->DalTxClose(dmi, (result_code == UPLL_RC_SUCCESS));
+    db_con->ReleaseRwConn(dmi);
+    if (vtn_list.empty()) {
+      DELETE_IF_NOT_NULL(ck_vlink);
+      return UPLL_RC_SUCCESS;
+    }
+  }  // scope lock
+  uuc::NormalTaskYield oper_yield(
+      uuc::TaskYieldIntf::YIELD_OP_OPER_STATUS_CTR_EVENT, cfg_lock);
+  std::set<std::string>::iterator it = vtn_list.begin(),
+                                  it_end = vtn_list.end();
+  for (; it != it_end; ++it) {
+    uuc::ScopedYield scfg_yield(&oper_yield);
+    uuc::DalOdbcMgr *dmi = db_con->GetAlarmRwConn();
+    if (dmi == NULL) {
+      vtn_list.clear();
+      DELETE_IF_NOT_NULL(ck_vlink);
+      return UPLL_RC_ERR_GENERIC;
+    }
+    key_vtn *vtn_key = reinterpret_cast<key_vtn*>(ck_vlink->get_key());
+    uuu::upll_strncpy(vtn_key->vtn_name, (*it).c_str(), kMaxLenVtnName + 1);
+    result_code = BoundaryStatusHandler(ck_vlink, oper_status, dmi);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_ERROR("Error in BoundaryStatusHandler : %d", result_code);
+      DELETE_IF_NOT_NULL(ck_vlink);
+      vtn_list.clear();
+      db_con->DalTxClose(dmi, (result_code == UPLL_RC_SUCCESS));
+      db_con->ReleaseRwConn(dmi);
+      return result_code;
+    }
+    db_con->DalTxClose(dmi, (result_code == UPLL_RC_SUCCESS));
+    db_con->ReleaseRwConn(dmi);
+  }
+  DELETE_IF_NOT_NULL(ck_vlink);
+  return result_code;
+}
+
+upll_rc_t VlinkMoMgr::BoundaryStatusHandler(ConfigKeyVal *ikey,
+                                            bool oper_status, DalDmlIntf *dmi) {
+  UPLL_FUNC_TRACE;
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  ConfigKeyVal *ck_vlink = NULL;
+  result_code = DupConfigKeyVal(ck_vlink, ikey, MAINTBL);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_ERROR("Error in DupConfigKeyVal %d", result_code);
+    return result_code;
+  }
+
+  state_notification notification =
+       (oper_status == UPLL_OPER_STATUS_UP) ? kPortFaultReset :
+                                              kPortFault;
+
   DbSubOp dbop = {kOpReadMultiple, kOpMatchNone,
                     kOpInOutFlag | kOpInOutCtrlr | kOpInOutDomain};
 
@@ -5952,7 +6721,8 @@ upll_rc_t VlinkMoMgr::BoundaryStatusHandler(uint8_t *boundary_name,
     ConfigKeyVal *vnif[2] = {NULL, NULL};
     VnodeChildMoMgr *ktype_mgr[2] = {NULL, NULL};
     val_db_vbr_if_st *vnif_st[2] = {NULL, NULL};
-    val_db_vlink_st *vlink_st = reinterpret_cast<val_db_vlink_st*>(GetStateVal(ck_vlink));
+    val_db_vlink_st *vlink_st =
+        reinterpret_cast<val_db_vlink_st*>(GetStateVal(ck_vlink));
     for (int i = 0; i < 2; i++) {
       result_code = GetVnodeIfFromVlink(ck_vlink, &vnif[i], dmi, i);
       if (result_code != UPLL_RC_SUCCESS) {
@@ -6029,130 +6799,256 @@ upll_rc_t VlinkMoMgr::BoundaryStatusHandler(uint8_t *boundary_name,
   return result_code;
 }
 
-
-upll_rc_t VlinkMoMgr::RestoreVlinkOperStatus(uint8_t *ctrlr_id,
-                                          DalDmlIntf *dmi) {
+upll_rc_t VlinkMoMgr::RestoreVlinkOperStatus(uint8_t *ctrlr_name,
+                         uint8_t *domain_name, uint8_t *vtn_name,
+                         uuc::UpllDbConnMgr* db_con,
+                         uuc::ConfigLock* cfg_lock, state_notification notfn) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
-  ConfigKeyVal *ck_vlink = NULL;
+  ConfigKeyVal *tmp_ck_vlink = NULL;
+  string ctrlr_id = reinterpret_cast<const char*>(ctrlr_name);
+  {
+  uuc::ScopedConfigLock lock(*cfg_lock, uuc::kNormalTaskPriority,
+                             UPLL_DT_RUNNING, uuc::ConfigLock::CFG_READ_LOCK);
+  int nattr = 0;
+  BindInfo *binfo = NULL;
+  DalCursor *dal_cursor_handle = NULL;
 
+  const uudst::kDalTableIndex tbl_index = GetTable(MAINTBL, UPLL_DT_RUNNING);
+
+  if (tbl_index >= uudst::kDalNumTables) {
+    UPLL_LOG_DEBUG("Invalid Table Index - %d", tbl_index);
+    return UPLL_RC_ERR_GENERIC;
+  }
+  DalBindInfo dal_bind_info(tbl_index);
+
+  if (!GetBindInfo(MAINTBL, UPLL_DT_RUNNING, binfo, nattr)) {
+    UPLL_LOG_DEBUG("GetBindInfo failed");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  ConfigKeyVal *ck_vlink = NULL;
   result_code = GetChildConfigKey(ck_vlink, NULL);
   if (result_code != UPLL_RC_SUCCESS) {
     UPLL_LOG_DEBUG("Invalid param");
     return result_code;
   }
-  SET_USER_DATA_CTRLR(ck_vlink, ctrlr_id);
-  DbSubOp dbop = { kOpReadMultiple, kOpMatchNone, kOpInOutCtrlr | kOpInOutFlag};
-  result_code = ReadConfigDB(ck_vlink, UPLL_DT_STATE, UNC_OP_READ, dbop, dmi,
-                           MAINTBL);
-  if (result_code == UPLL_RC_SUCCESS) {
-    while (ck_vlink != NULL) {
-      ConfigKeyVal *tmp_ck_vlink = ck_vlink->get_next_cfg_key_val();
-      ck_vlink->set_next_cfg_key_val(NULL);
+  ConfigVal* cv_vlink = NULL;
+  result_code = AllocVal(cv_vlink, UPLL_DT_RUNNING, MAINTBL);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_DEBUG("Error in AllocVal");
+    return result_code;
+  }
+  ck_vlink->SetCfgVal(cv_vlink);
+  GET_USER_DATA(ck_vlink);
+  GET_USER_DATA(ck_vlink->get_cfg_val());
+
+  void *tkey = NULL;
+  for (int i = 0; i < nattr; i++) {
+    switch (binfo[i].struct_type) {
+    case CFG_KEY:
+      tkey = ck_vlink->get_key();
+    break;
+    case CFG_VAL:
+    case CFG_META_VAL:
+      tkey = ck_vlink->get_cfg_val()->get_val();
+    break;
+    case CK_VAL:
+      tkey = ck_vlink->get_user_data();
+    break;
+    case CK_VAL2:
+      tkey = ck_vlink->get_cfg_val()->get_user_data();
+    break;
+    default:
+      continue;
+    }
+    uint64_t indx = binfo[i].index;
+    void *p = reinterpret_cast<void *>(reinterpret_cast<char *>(tkey)
+                + binfo[i].offset);
+    dal_bind_info.BindOutput(indx, binfo[i].app_data_type,
+               binfo[i].array_size, p);
+  }
+  string query_string = "SELECT vtn_name, vlink_name, admin_status,"
+     "vnode1_name, vnode1_ifname, vnode2_name, vnode2_ifname, boundary_name,"
+     "label_type, label, description, controller1_name, domain1_id,"
+     "controller2_name, domain2_id, valid_vnode1_name, valid_vnode1_ifname,"
+     "valid_vnode2_name, valid_vnode2_ifname, valid_boundary_name,"
+     "valid_label_type, valid_label, valid_description, key_flags, val_flags "
+     "from ru_vlink_tbl where ";
+  if (notfn == kCtrlrDisconnect) {
+    query_string = query_string+ "((controller1_name='" + ctrlr_id +
+    "' AND controller2_name!='" + ctrlr_id+ "') OR (controller1_name!='" +
+    ctrlr_id +
+    "' AND controller2_name='"+ ctrlr_id+"') "
+    " OR controller1_name='#' OR controller2_name='#')";
+  } else {
+    string dom_id = reinterpret_cast<const char*>(domain_name);
+    query_string = query_string + "(((controller1_name='" +
+    ctrlr_id + "' AND domain1_id='" + dom_id + "') OR (controller2_name='"
+    + ctrlr_id +
+    "' AND domain2_id='"+ dom_id;
+    if (notfn == kVtnExhaustion || notfn == kVtnExhaustionReset) {
+      string vtn_id = reinterpret_cast<const char*>(vtn_name);
+      query_string = query_string +
+      "') OR controller1_name='#' OR controller2_name='#')" +
+      " AND (vtn_name='" + vtn_id + "')";
+    } else {
+      query_string = query_string +"'))";
+    }
+    query_string = query_string + ")";
+  }
+  uuc::DalOdbcMgr *dmi = db_con->GetAlarmRwConn();
+  if (dmi == NULL) {
+    UPLL_LOG_ERROR("Error in GetAlarmRwConn");
+    DELETE_IF_NOT_NULL(ck_vlink);
+    return UPLL_RC_ERR_GENERIC;
+  }
+  result_code = DalToUpllResCode(dmi->ExecuteAppQueryMultipleRecords(
+               query_string, 0, &dal_bind_info,
+               &dal_cursor_handle));
+  ConfigKeyVal *last_tmp_ck_vlink = NULL;
+  while (result_code == UPLL_RC_SUCCESS) {
+    result_code = DalToUpllResCode(dmi->GetNextRecord(dal_cursor_handle));
+    if (result_code == UPLL_RC_SUCCESS) {
+      ConfigKeyVal *ck_tmp = NULL;
+      result_code = DupConfigKeyVal(ck_tmp, ck_vlink, MAINTBL);
+      if (tmp_ck_vlink == NULL) {
+        tmp_ck_vlink = ck_tmp;
+      } else {
+        last_tmp_ck_vlink->AppendCfgKeyVal(ck_tmp);
+      }
+      last_tmp_ck_vlink = ck_tmp;
+    }
+  }
+  if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+    result_code = UPLL_RC_SUCCESS;
+  }
+  DELETE_IF_NOT_NULL(ck_vlink);
+  if (dal_cursor_handle != NULL)
+    dmi->CloseCursor(dal_cursor_handle, false);
+  db_con->DalTxClose(dmi, (result_code == UPLL_RC_SUCCESS));
+  db_con->ReleaseRwConn(dmi);
+  }
+  static int yield_count = 0;
+  ConfigKeyVal* ck_tmp = tmp_ck_vlink;
+
+  // Below operstatus update needs to be yielded for every iter
+  uuc::NormalTaskYield oper_yield(uuc::TaskYieldIntf::
+                                  YIELD_OP_OPER_STATUS_CTR_EVENT,
+                                  cfg_lock);
+  while (tmp_ck_vlink) {
+  {
+    uuc::ScopedYield scfg_yield(&oper_yield);
+    uuc::DalOdbcMgr *dmi = db_con->GetAlarmRwConn();
+    if (dmi == NULL) {
+      UPLL_LOG_ERROR("Error in GetAlarmRwConn");
+      DELETE_IF_NOT_NULL(ck_tmp);
+      return UPLL_RC_ERR_GENERIC;
+    }
+    // Yield after every 50 vlink operstatus processing
+    // 50 can be modified based on the performance
+    while (yield_count < 50 && tmp_ck_vlink) {
+      ++yield_count;
       controller_domain_t vlink_ctrlr_dom[2] = {{NULL, NULL}, {NULL, NULL}};
-      result_code = GetControllerDomainId(ck_vlink, vlink_ctrlr_dom);
+      result_code = GetControllerDomainId(tmp_ck_vlink, vlink_ctrlr_dom);
       if (UPLL_RC_SUCCESS != result_code) {
         unc_key_type_t ktype[2] = {UNC_KT_ROOT, UNC_KT_ROOT};
         for (int vnode_count = 0; vnode_count < 2; vnode_count++) {
-          ktype[vnode_count] = GetVlinkVnodeIfKeyType(ck_vlink, vnode_count);
+          ktype[vnode_count] =
+                GetVlinkVnodeIfKeyType(tmp_ck_vlink, vnode_count);
         }
         if (ktype[0] != UNC_KT_VUNK_IF && ktype[1] != UNC_KT_VUNK_IF) {
           UPLL_LOG_DEBUG("Empty Controller name recieved.")
           UPLL_LOG_DEBUG("Controller is empty only for UNKNOWN controllers");
-          DELETE_IF_NOT_NULL(ck_vlink);
-          DELETE_IF_NOT_NULL(tmp_ck_vlink);
+          db_con->DalTxClose(dmi, (result_code == UPLL_RC_SUCCESS));
+          db_con->ReleaseRwConn(dmi);
+          DELETE_IF_NOT_NULL(ck_tmp);
           return result_code;
         }
       }
+      val_vlink *tmp_val = reinterpret_cast<val_vlink*>(GetVal(tmp_ck_vlink));
+      if (!tmp_val) {
+        db_con->DalTxClose(dmi, (result_code == UPLL_RC_SUCCESS));
+        db_con->ReleaseRwConn(dmi);
+        DELETE_IF_NOT_NULL(ck_tmp);
+        return UPLL_RC_ERR_GENERIC;
+      }
+      if (tmp_val->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] != UNC_VF_VALID) {
+        tmp_ck_vlink = tmp_ck_vlink->get_next_cfg_key_val();
+        continue;
+      }
+      result_code = ResetCtrlrDomForUnifiedInterface(
+                              tmp_val->boundary_name, vlink_ctrlr_dom);
+      if (result_code != UPLL_RC_SUCCESS) {
+        UPLL_LOG_ERROR("Error in ResetCtrlrDomForUnifiedInterface : %d",
+                                result_code);
+        db_con->DalTxClose(dmi, (result_code == UPLL_RC_SUCCESS));
+        db_con->ReleaseRwConn(dmi);
+        DELETE_IF_NOT_NULL(ck_tmp);
+        return result_code;
+      }
+
       char *ctrlr1 = reinterpret_cast<char*>(vlink_ctrlr_dom[0].ctrlr);
       char *ctrlr2 = reinterpret_cast<char*>(vlink_ctrlr_dom[1].ctrlr);
-      if ((ctrlr1 && !strcmp(ctrlr1, reinterpret_cast<char*>(ctrlr_id))) ||
-         (ctrlr2 && !strcmp(ctrlr2, reinterpret_cast<char*>(ctrlr_id)))) {
-        result_code = SetOperStatus(ck_vlink, dmi, kCtrlrDisconnect);
-        uint8_t vnode_pos = 0;
-        if (ctrlr1 && strcmp(ctrlr1, reinterpret_cast<char*>(ctrlr_id))) {
-          vnode_pos = 0;
-        } else if (ctrlr2 && strcmp(ctrlr2, reinterpret_cast<char*>(ctrlr_id))){
-          vnode_pos = 1;
-        } else {
-          /* continue if controller type is bypass */
-          DELETE_IF_NOT_NULL(ck_vlink);
-          ck_vlink = tmp_ck_vlink;
+      char *dom1 = reinterpret_cast<char*>(vlink_ctrlr_dom[0].domain);
+      char *dom2 = reinterpret_cast<char*>(vlink_ctrlr_dom[1].domain);
+      string dom_id = reinterpret_cast<char*>(domain_name);
+      uint8_t vnode_pos = 0;
+      if (!ctrlr1 || !ctrlr2 || (strcmp(ctrlr1, ctrlr_id.c_str()) &&
+                                 strcmp(ctrlr2, ctrlr_id.c_str()))) {
+        // skip by pass interfaces
+        tmp_ck_vlink = tmp_ck_vlink->get_next_cfg_key_val();
+        continue;
+      }
+      if (ctrlr1 && strcmp(ctrlr1, ctrlr_id.c_str())) {
+        vnode_pos = 0;
+      } else if (ctrlr2 && strcmp(ctrlr2, ctrlr_id.c_str())) {
+        vnode_pos = 1;
+      } else if (dom1 && strcmp(dom1, dom_id.c_str())) {
+        vnode_pos = 0;
+      } else if (dom2 && strcmp(dom2, dom_id.c_str())) {
+        vnode_pos = 1;
+      }
+      ConfigKeyVal *ck_remif = NULL;
+      result_code =
+             GetVnodeIfFromVlink(tmp_ck_vlink, &ck_remif, dmi, vnode_pos);
+      if (result_code != UPLL_RC_SUCCESS) {
+        if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+          result_code = UPLL_RC_SUCCESS;
+          DELETE_IF_NOT_NULL(ck_remif);
+          tmp_ck_vlink = tmp_ck_vlink->get_next_cfg_key_val();
           continue;
         }
-        ConfigKeyVal *ck_remif = NULL;
-        result_code = GetVnodeIfFromVlink(ck_vlink, &ck_remif, dmi, vnode_pos);
-        if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_ERROR("get remote interface failed %d", result_code);
-          DELETE_IF_NOT_NULL(ck_remif);
-          DELETE_IF_NOT_NULL(ck_vlink);
-          DELETE_IF_NOT_NULL(tmp_ck_vlink);
-          return result_code;
-        }
-        VnodeChildMoMgr *mgr = reinterpret_cast<VnodeChildMoMgr*>(const_cast<MoManager*>
-                                               (GetMoManager(ck_remif->get_key_type())));
-        result_code = mgr->RecomputeVlinkAndIfoperStatus(ck_vlink, ck_remif, dmi);
+        UPLL_LOG_ERROR("get remote interface failed %d", result_code);
         DELETE_IF_NOT_NULL(ck_remif);
-        if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_ERROR("get remote interface failed %d", result_code);
-          DELETE_IF_NOT_NULL(ck_vlink);
-          DELETE_IF_NOT_NULL(tmp_ck_vlink);
-          return result_code;
-        }
+        DELETE_IF_NOT_NULL(ck_tmp);
+        db_con->DalTxClose(dmi, (result_code == UPLL_RC_SUCCESS));
+        db_con->ReleaseRwConn(dmi);
+        return result_code;
       }
-      DELETE_IF_NOT_NULL(ck_vlink);
-      ck_vlink = tmp_ck_vlink;
+      VnodeChildMoMgr *mgr = reinterpret_cast<VnodeChildMoMgr*>(
+                                      const_cast<MoManager*>
+                                      (GetMoManager(ck_remif->get_key_type())));
+      result_code = mgr->RecomputeVlinkAndIfoperStatus(tmp_ck_vlink, ck_remif,
+                                                       dmi, notfn);
+      DELETE_IF_NOT_NULL(ck_remif);
+      if (result_code != UPLL_RC_SUCCESS) {
+        UPLL_LOG_ERROR("get remote interface failed %d", result_code);
+        DELETE_IF_NOT_NULL(ck_tmp);
+        db_con->DalTxClose(dmi, (result_code == UPLL_RC_SUCCESS));
+        db_con->ReleaseRwConn(dmi);
+        return result_code;
+      }
+      yield_count++;
+      tmp_ck_vlink = tmp_ck_vlink->get_next_cfg_key_val();
     }
-  } else if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
-    DELETE_IF_NOT_NULL(ck_vlink);
-    result_code = UPLL_RC_SUCCESS;
-  } else {
-    DELETE_IF_NOT_NULL(ck_vlink);
+    yield_count = 0;
+    db_con->DalTxClose(dmi, (result_code == UPLL_RC_SUCCESS));
+    db_con->ReleaseRwConn(dmi);
   }
-  return result_code;
-}
-
-
-
-#if 0
-  UPLL_FUNC_TRACE;
-  upll_rc_t result_code = UPLL_RC_SUCCESS;
-  ConfigKeyVal *ck_val = NULL;
-
-  result_code = GetChildConfigKey(ck_val, NULL);
-  if (result_code != UPLL_RC_SUCCESS) {
-    UPLL_LOG_DEBUG("Invalid param");
-    return result_code;
   }
-  SET_USER_DATA_CTRLR(ck_val, ctrlr_id);
-  DbSubOp dbop = { kOpReadMultiple, kOpMatchNone, kOpInOutCtrlr | kOpInOutFlag};
-  result_code = ReadConfigDB(ck_val, UPLL_DT_STATE, UNC_OP_READ, dbop, dmi,
-                           MAINTBL);
-  if (result_code == UPLL_RC_SUCCESS) {
-    result_code = SetOperStatus(ck_val, dmi, kCtrlrDisconnect);
-  } else if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
-      result_code = UPLL_RC_SUCCESS;
-  }
-  DELETE_IF_NOT_NULL(ck_val);
-  return result_code;
-#endif
-upll_rc_t VlinkMoMgr::InitOperStatus(DalDmlIntf *dmi) {
-  UPLL_FUNC_TRACE;
-  upll_rc_t result_code = UPLL_RC_SUCCESS;
-  ConfigKeyVal *ck_vlink = NULL;
-  result_code = GetCkvUninit(ck_vlink, NULL, dmi, UPLL_OPER_STATUS_UNKNOWN);
-  if (result_code != UPLL_RC_SUCCESS) {
-    UPLL_LOG_DEBUG("Error in GetCkvUninit");
-    return result_code;
-  }
-  DbSubOp dbop = {kOpNotRead, kOpMatchNone, kOpInOutNone};
-  // Update Oper status in vlink Main table
-  result_code = UpdateConfigDB(ck_vlink, UPLL_DT_STATE, UNC_OP_UPDATE,
-                               dmi, &dbop, MAINTBL);
-  DELETE_IF_NOT_NULL(ck_vlink);
-  if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
-    result_code = UPLL_RC_SUCCESS;
-  }
+  yield_count = 0;
+  DELETE_IF_NOT_NULL(ck_tmp);
   return result_code;
 }
 
@@ -6162,6 +7058,11 @@ upll_rc_t VlinkMoMgr::GetBoundaryStatusFromPhysical(uint8_t *boundary,
                             uint32_t session_id,
                             uint32_t config_id) {
   UPLL_FUNC_TRACE;
+  if (uuc::UpllConfigMgr::GetUpllConfigMgr()->get_map_phy_resource_status()
+      == false) {
+    bound_operStatus = UPLL_OPER_STATUS_UNKNOWN;
+    return UPLL_RC_SUCCESS;
+  }
   IpcResponse ipc_resp;
   ConfigKeyVal *ck_bound = NULL;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
@@ -6176,7 +7077,7 @@ upll_rc_t VlinkMoMgr::GetBoundaryStatusFromPhysical(uint8_t *boundary,
                     (kMaxLenBoundaryName+1));
   ck_bound = new ConfigKeyVal(UNC_KT_BOUNDARY,
                               IpctSt::kIpcStKeyBoundary, bound_cfg, NULL);
-  result_code = SendIpcReq(session_id, config_id, UNC_OP_READ,
+  result_code = SendIpcReq(USESS_ID_UPLL, 0, UNC_OP_READ,
                    UPLL_DT_STATE, ck_bound, NULL, &ipc_resp);
   if ((result_code != UPLL_RC_SUCCESS) || (!ipc_resp.ckv_data)) {
     delete ck_bound;
@@ -6229,7 +7130,8 @@ upll_rc_t VlinkMoMgr::TxUpdateDtState(unc_key_type_t keytype,
   while (ck_vlink) {
     ConfigKeyVal *tmp_ck_vlink = ck_vlink->get_next_cfg_key_val();
     ck_vlink->set_next_cfg_key_val(NULL);
-    result_code = UpdateVlinkAndIfOperStatus(ck_vlink, vnif, session_id, config_id, dmi);
+    result_code = UpdateVlinkAndIfOperStatus(ck_vlink, vnif,
+                                             session_id, config_id, dmi);
     DELETE_IF_NOT_NULL(ck_vlink);
     DELETE_IF_NOT_NULL(vnif[0]);
     DELETE_IF_NOT_NULL(vnif[1]);
@@ -6268,6 +7170,8 @@ upll_rc_t VlinkMoMgr::UpdateVlinkAndIfOperStatus(ConfigKeyVal *ck_vlink,
       if (ck_vnif[i] == NULL) {
         result_code = GetVnodeIfFromVlink(ck_vlink, &ck_vnif[i], dmi, i);
         if (result_code != UPLL_RC_SUCCESS) {
+          if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE)
+            result_code = UPLL_RC_SUCCESS;
           UPLL_LOG_ERROR("get %d constituent interface of vlink failed %d",
                          i, result_code);
           return result_code;
@@ -6335,14 +7239,6 @@ upll_rc_t VlinkMoMgr::UpdateVlinkAndIfOperStatus(ConfigKeyVal *ck_vlink,
         if (vnif_st[1] != NULL)
           vnif_st[1]->down_count &= ~REMOTE_DOWN;
       }
-      /* During interface Create, check if it is Path fault affected controller-domain.
-       * if present, set PATH_FAULT */
-      if (is_path_fault) {
-        for (int i = 0; i < 3; i++) {
-          new_flag[i] |= PATH_FAULT;
-        }
-        is_path_fault = false;
-      }
     } else {
       if (vlink_val->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] == UNC_VF_INVALID) {
         /* vLink is Boundary vlink, but is not boundary mapped */
@@ -6357,14 +7253,24 @@ upll_rc_t VlinkMoMgr::UpdateVlinkAndIfOperStatus(ConfigKeyVal *ck_vlink,
           }
         }
       } else {
+        result_code = ResetCtrlrDomForUnifiedInterface(vlink_val->boundary_name,
+                                         vlink_ctrlr_dom);
+        if (result_code != UPLL_RC_SUCCESS) {
+          UPLL_LOG_ERROR("Error in ResetCtrlrDomForUnifiedInterface : %d",
+                          result_code);
+          return result_code;
+        }
         if (session_id != 0 && config_id != 0) {
           /* vLink is Boundary vlink and boundary mapped */
           val_oper_status bound_oper_status = UPLL_OPER_STATUS_DOWN;
 
           result_code = GetBoundaryStatusFromPhysical(vlink_val->boundary_name,
-                        vlink_ctrlr_dom, bound_oper_status, session_id, config_id);
+                        vlink_ctrlr_dom, bound_oper_status,
+                        session_id, config_id);
           if (result_code != UPLL_RC_SUCCESS) {
-            UPLL_LOG_ERROR("Returning error %d\n", result_code);
+            UPLL_LOG_DEBUG("Returning error %d\n", result_code);
+            if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE)
+              result_code = UPLL_RC_SUCCESS;
           }
           switch (bound_oper_status) {
           case  UPLL_OPER_STATUS_DOWN:
@@ -6376,9 +7282,15 @@ upll_rc_t VlinkMoMgr::UpdateVlinkAndIfOperStatus(ConfigKeyVal *ck_vlink,
             new_flag[2] |= PORT_UNKNOWN;
             for (int i = 0; i< 2; i++) {
               if (ck_vnif[i]->get_key_type() != UNC_KT_VUNK_IF) {
+                if (vnif_st[i]->down_count == PORT_UNKNOWN) {
+                  new_flag[i] |= PORT_UNKNOWN;
+                  continue;
+                }
                 uint8_t valid_pm = 0, valid_admin = 0, admin_status = 0;
                 val_port_map_t *pm = NULL;
-                result_code =  ktype_mgr[i]->GetPortMap(ck_vnif[i], valid_pm, pm, valid_admin, admin_status);
+                result_code =  ktype_mgr[i]->GetPortMap(
+                    ck_vnif[i], valid_pm,
+                    pm, valid_admin, admin_status);
                 if (result_code != UPLL_RC_SUCCESS) {
                   UPLL_LOG_DEBUG("Returning error %d\n", result_code);
                   return result_code;
@@ -6387,11 +7299,12 @@ upll_rc_t VlinkMoMgr::UpdateVlinkAndIfOperStatus(ConfigKeyVal *ck_vlink,
                   controller_domain_t ctrlr_dom = {NULL, NULL};
                   val_oper_status port_oper_status = UPLL_OPER_STATUS_UP;
                   GET_USER_DATA_CTRLR_DOMAIN(ck_vnif[i], ctrlr_dom);
-                  result_code =  ktype_mgr[i]->GetPortStatusFromPhysical(pm, ctrlr_dom, port_oper_status);
+                  result_code =  ktype_mgr[i]->GetPortStatusFromPhysical(
+                      pm, ctrlr_dom, port_oper_status);
                   if (result_code != UPLL_RC_SUCCESS) {
-                    UPLL_LOG_DEBUG("Error retrieving port status from physical %d %d",
-                          result_code, port_oper_status);
-                    //return result_code;
+                    UPLL_LOG_DEBUG(
+                        "Error retrieving port status from physical %d %d",
+                        result_code, port_oper_status);
                   }
                   switch (port_oper_status) {
                   case  UPLL_OPER_STATUS_DOWN:
@@ -6406,10 +7319,11 @@ upll_rc_t VlinkMoMgr::UpdateVlinkAndIfOperStatus(ConfigKeyVal *ck_vlink,
                   }
                 } else {
                   val_oper_status ctrlr_operstatus = UPLL_OPER_STATUS_UNKNOWN;
-                  result_code = ktype_mgr[i]->GetCtrlrStatusFromPhysical(vlink_ctrlr_dom[i].ctrlr,
-                                                           ctrlr_operstatus);
+                  result_code = ktype_mgr[i]->GetCtrlrStatusFromPhysical(
+                      vlink_ctrlr_dom[i].ctrlr, ctrlr_operstatus);
                   if (result_code != UPLL_RC_SUCCESS) {
-                    UPLL_LOG_ERROR("GetCtrlrStatusFromPhysical failed : %d", result_code);
+                    UPLL_LOG_ERROR("GetCtrlrStatusFromPhysical failed : %d",
+                                   result_code);
                   }
                   if (ctrlr_operstatus == UPLL_OPER_STATUS_UNKNOWN) {
                     new_flag[i] |= PORT_UNKNOWN;
@@ -6425,9 +7339,7 @@ upll_rc_t VlinkMoMgr::UpdateVlinkAndIfOperStatus(ConfigKeyVal *ck_vlink,
         }
       }
       if (is_path_fault) {
-        new_flag[0] |= PATH_FAULT;
         new_flag[1] |= REMOTE_PATH_FAULT;
-        new_flag[2] |= PATH_FAULT;
         is_path_fault = false;
       }
       if (ck_vnif[1]->get_key_type() != UNC_KT_VUNK_IF) {
@@ -6436,8 +7348,6 @@ upll_rc_t VlinkMoMgr::UpdateVlinkAndIfOperStatus(ConfigKeyVal *ck_vlink,
                          reinterpret_cast<char*>(vlink_ctrlr_dom[1].domain));
         if (is_path_fault) {
           new_flag[0] |= REMOTE_PATH_FAULT;
-          new_flag[1] |= PATH_FAULT;
-          new_flag[2] |= PATH_FAULT;
           is_path_fault = false;
         }
       }
@@ -6476,6 +7386,8 @@ upll_rc_t VlinkMoMgr::UpdateVlinkAndIfOperStatus(ConfigKeyVal *ck_vlink,
      * original and new flag values */
     for (int i = 0; i < 2; i++) {
       if (ck_vnif[i]->get_key_type() != UNC_KT_VUNK_IF) {
+       if (orig_flag[i] == PORT_UNKNOWN && new_flag[i] == PORT_UNKNOWN)
+         continue;
         state_notification notification = kCommit;
         if (orig_flag[i] == PORT_UP) {
           /* original flag status is UP.
@@ -6525,12 +7437,6 @@ upll_rc_t VlinkMoMgr::UpdateVlinkAndIfOperStatus(ConfigKeyVal *ck_vlink,
       UPLL_LOG_DEBUG("SetOperStatus failed %d", result_code);
       return result_code;
     }
-#if 0
-    if (session_id != 0 && config_id != 0) {
-      DELETE_IF_NOT_NULL(ck_vnif[0]);
-      DELETE_IF_NOT_NULL(ck_vnif[1]);
-    }
-#endif
   return result_code;
 }
 upll_rc_t VlinkMoMgr::GetRenamedVnodeName(ConfigKeyVal *ikey,
@@ -6546,7 +7452,8 @@ upll_rc_t VlinkMoMgr::GetRenamedVnodeName(ConfigKeyVal *ikey,
   // During UPDATE operation check both old/new vlink value structures
   // contains same vnode names before renaming to controller specific name
   if (ikey->get_cfg_val()->get_next_cfg_val() &&
-      ((ikey->get_cfg_val()->get_next_cfg_val())->get_st_num() == IpctSt::kIpcStValVlink)) {
+      ((ikey->get_cfg_val()->get_next_cfg_val())->get_st_num() ==
+       IpctSt::kIpcStValVlink)) {
     GET_USER_DATA_FLAGS(ikey->get_cfg_val()->get_next_cfg_val(), val_rename1);
     val_vlink_t *val_vlink = reinterpret_cast<val_vlink_t *>(GetVal(ikey));
     ConfigVal *configval_vlink_next = ikey->get_cfg_val()->get_next_cfg_val();
@@ -6556,12 +7463,14 @@ upll_rc_t VlinkMoMgr::GetRenamedVnodeName(ConfigKeyVal *ikey,
       UPLL_LOG_DEBUG("Received NULL Val Structure");
       return UPLL_RC_ERR_GENERIC;
     }
-    // If vnode1_name of old/new value structures are same set same_vnode1 flag to true
+    // If vnode1_name of old/new value structures
+    // are same set same_vnode1 flag to true
     if (!strncmp(reinterpret_cast<char*>(val_vlink->vnode1_name),
                  reinterpret_cast<char*>(val_vlink_next->vnode1_name),
                  (kMaxLenVnodeName+1)))
       same_vnode1 = true;
-    // If vnode2_name of old/new value structures are same set same_vnode2 flag to true
+    // If vnode2_name of old/new value structures
+    // are same set same_vnode2 flag to true
     if (!strncmp(reinterpret_cast<char*>(val_vlink->vnode2_name),
                  reinterpret_cast<char*>(val_vlink_next->vnode2_name),
                  (kMaxLenVnodeName+1)))
@@ -6569,15 +7478,17 @@ upll_rc_t VlinkMoMgr::GetRenamedVnodeName(ConfigKeyVal *ikey,
   }
 
   GET_USER_DATA_FLAGS(ikey->get_cfg_val(), val_rename);
-  MoMgrImpl *mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
-                                                 (GetMoManager(UNC_KT_VBRIDGE)));
+  MoMgrImpl *mgr =
+      reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
+                                    (GetMoManager(UNC_KT_VBRIDGE)));
   if (!mgr) {
     return UPLL_RC_ERR_GENERIC;
   }
   ConfigVal *cfg_val = ikey->get_cfg_val();
   bool vnodes_copy[2] = {same_vnode1, same_vnode2};
   uint8_t val_count = 0;
-  // check if any one of the vnode is renamed in both old/new vlink value structures
+  // check if any one of the vnode is renamed
+  // in both old/new vlink value structures
   if ((val_rename & 0x04) || (val_rename & 0x08) ||
       (val_rename1 & 0x04) || (val_rename1 & 0x08)) {
     while (cfg_val && val_count <= 1) {
@@ -6596,8 +7507,9 @@ upll_rc_t VlinkMoMgr::GetRenamedVnodeName(ConfigKeyVal *ikey,
         uint8_t *vnode_name = (0 == i)?val_vlink->vnode1_name:
             val_vlink->vnode2_name;
         vnode_rename = (i == 0)? 0x80:0x40;
-        // If the vnode names are same in both the value structures, it is not required to
-        // rename old value structure, since it is copied in the first iteration itself
+        // If the vnode names are same in both the value structures,
+        // it is not required to rename old value structure,
+        // since it is copied in the first iteration itself
         if (vnode_flag[i]) {
           if (val_count == 1 && vnodes_copy[i]) {
             continue;
@@ -6613,8 +7525,8 @@ upll_rc_t VlinkMoMgr::GetRenamedVnodeName(ConfigKeyVal *ikey,
             dt_type = (dt_type == UPLL_DT_CANDIDATE)?UPLL_DT_RUNNING:dt_type;
             key_vbr *vbr_key = reinterpret_cast<key_vbr *>
                 (ConfigKeyVal::Malloc(sizeof(key_vbr)));
-            okey = new ConfigKeyVal(UNC_KT_VBRIDGE, IpctSt::kIpcStKeyVbr, vbr_key,
-                                    NULL);
+            okey = new ConfigKeyVal(UNC_KT_VBRIDGE, IpctSt::kIpcStKeyVbr,
+                                    vbr_key, NULL);
             uint8_t *vnode_name;
             if (i == 0)
               vnode_name = val_vlink->vnode1_name;
@@ -6622,12 +7534,13 @@ upll_rc_t VlinkMoMgr::GetRenamedVnodeName(ConfigKeyVal *ikey,
               vnode_name = val_vlink->vnode2_name;
             uuu::upll_strncpy(vbr_key->vbridge_name, vnode_name,
                               (kMaxLenVnodeName + 1));
-            uuu::upll_strncpy(vbr_key->vtn_key.vtn_name, reinterpret_cast<key_vlink *>(
-                    ikey->get_key())->vtn_key.vtn_name , (kMaxLenVtnName+1));
-
+            uuu::upll_strncpy(vbr_key->vtn_key.vtn_name,
+                              reinterpret_cast<key_vlink *>(ikey->get_key())->
+                              vtn_key.vtn_name, (kMaxLenVtnName+1));
           }
           SET_USER_DATA_CTRLR_DOMAIN(okey, *ctrlr_dom);
-          DbSubOp op = {kOpReadSingle, kOpMatchCtrlr, kOpInOutCtrlr | kOpInOutDomain};
+          DbSubOp op = {kOpReadSingle, kOpMatchCtrlr,
+            kOpInOutCtrlr | kOpInOutDomain};
           result_code =  mgr->ReadConfigDB(okey, dt_type,
                                            UNC_OP_READ, op, dmi, RENAMETBL);
           if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
@@ -6645,15 +7558,20 @@ upll_rc_t VlinkMoMgr::GetRenamedVnodeName(ConfigKeyVal *ikey,
             }
             UPLL_LOG_TRACE("The controller vnode name is %s",
                            rename_val->ctrlr_vnode_name);
-            uuu::upll_strncpy(vnode_name, rename_val->ctrlr_vnode_name, (kMaxLenVnodeName+1));
-            // If vnode names are same in the both value structure and if vnode of new
-            // val structure is renamed, then copy the same to old value structure
+            uuu::upll_strncpy(vnode_name, rename_val->ctrlr_vnode_name,
+                              (kMaxLenVnodeName+1));
+            // If vnode names are same in the both
+            // value structure and if vnode of new
+            // val structure is renamed, then copy the
+            // same to old value structure
             if ((copy_vnode) && (i == 0)) {
               uuu::upll_strncpy(val_vlink_next->vnode1_name,
-                                rename_val->ctrlr_vnode_name, (kMaxLenVnodeName+1));
+                                rename_val->ctrlr_vnode_name,
+                                (kMaxLenVnodeName+1));
             } else if ((copy_vnode) && (i == 1)) {
               uuu::upll_strncpy(val_vlink_next->vnode2_name,
-                                rename_val->ctrlr_vnode_name, (kMaxLenVnodeName+1));
+                                rename_val->ctrlr_vnode_name,
+                                (kMaxLenVnodeName+1));
             }
             DELETE_IF_NOT_NULL(okey);
           } else {
@@ -6671,6 +7589,790 @@ upll_rc_t VlinkMoMgr::GetRenamedVnodeName(ConfigKeyVal *ikey,
   DELETE_IF_NOT_NULL(okey);
   return result_code;
 }
+
+upll_rc_t VlinkMoMgr::GetChildConvertConfigKey(ConfigKeyVal *&okey,
+                                             ConfigKeyVal *parent_key) {
+  UPLL_FUNC_TRACE;
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  key_convert_vlink_t * conv_vlink_key = NULL;
+
+  unc_key_type_t ktype;
+
+  void *pkey;
+  if (parent_key == NULL) {
+    if (!okey) {
+      conv_vlink_key = reinterpret_cast<key_convert_vlink *>
+          (ConfigKeyVal::Malloc(sizeof(key_convert_vlink)));
+
+      okey = new ConfigKeyVal(UNC_KT_VLINK, IpctSt::kIpcStKeyConvertVlink,
+                              conv_vlink_key, NULL);
+    }
+    return (okey)?UPLL_RC_SUCCESS:UPLL_RC_ERR_GENERIC;
+  } else {
+    pkey = parent_key->get_key();
+  }
+
+  if (!pkey) {
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  if (okey) {
+    if (okey->get_key_type() != UNC_KT_VLINK)
+      return UPLL_RC_ERR_GENERIC;
+  }
+
+  if ((okey) && (okey->get_key())) {
+    conv_vlink_key = reinterpret_cast<key_convert_vlink_t *>(okey->get_key());
+  } else {
+    conv_vlink_key = reinterpret_cast<key_convert_vlink_t *>
+        (ConfigKeyVal::Malloc(sizeof(key_convert_vlink_t)));
+  }
+
+  ktype = parent_key->get_key_type();
+  switch (ktype) {
+    case UNC_KT_VTN:
+      uuu::upll_strncpy(conv_vlink_key->vbr_key.vtn_key.vtn_name,
+             reinterpret_cast<key_vtn *>(pkey)->vtn_name,
+             (kMaxLenVtnName+1) );
+      break;
+    case UNC_KT_VBRIDGE:
+      uuu::upll_strncpy(conv_vlink_key->vbr_key.vtn_key.vtn_name,
+             reinterpret_cast<key_vbr *>(pkey)->vtn_key.vtn_name,
+             (kMaxLenVtnName+1) );
+      uuu::upll_strncpy(conv_vlink_key->vbr_key.vbridge_name,
+           reinterpret_cast<key_vbr *>(pkey)->vbridge_name,
+           (kMaxLenVnodeName+1));
+      break;
+    case UNC_KT_VBR_PORTMAP:
+      uuu::upll_strncpy(conv_vlink_key->vbr_key.vtn_key.vtn_name,
+         reinterpret_cast<key_vbr_portmap*>(pkey)->vbr_key.vtn_key.vtn_name,
+         (kMaxLenVtnName+1) );
+      uuu::upll_strncpy(conv_vlink_key->vbr_key.vbridge_name,
+        reinterpret_cast<key_vbr_portmap*>(pkey)->vbr_key.vbridge_name,
+        (kMaxLenVnodeName+1));
+      break;
+    case UNC_KT_VBR_IF:
+      uuu::upll_strncpy(conv_vlink_key->vbr_key.vtn_key.vtn_name,
+         reinterpret_cast<key_convert_vbr_if_t*>
+               (pkey)->convert_vbr_key.vbr_key.vtn_key.vtn_name,
+         (kMaxLenVtnName+1) );
+      uuu::upll_strncpy(conv_vlink_key->vbr_key.vbridge_name,
+        reinterpret_cast<key_convert_vbr_if_t*>
+                               (pkey)->convert_vbr_key.vbr_key.vbridge_name,
+        (kMaxLenVnodeName+1));
+      break;
+    case UNC_KT_VLINK:
+      if (parent_key->get_st_num() == IpctSt::kIpcStKeyConvertVlink) {
+        uuu::upll_strncpy(conv_vlink_key->vbr_key.vtn_key.vtn_name,
+            reinterpret_cast<key_convert_vlink *>(
+                pkey)->vbr_key.vtn_key.vtn_name, (kMaxLenVtnName+1));
+        uuu::upll_strncpy(conv_vlink_key->vbr_key.vbridge_name,
+            reinterpret_cast<key_convert_vlink *>(pkey)->vbr_key.vbridge_name,
+           (kMaxLenVnodeName+1));
+        uuu::upll_strncpy(conv_vlink_key->convert_vlink_name,
+            reinterpret_cast<key_convert_vlink *>(pkey)->convert_vlink_name,
+           (kMaxLenVlinkName+1));
+      }
+      break;
+    default:
+      if (!okey || !(okey->get_key()))
+        free(conv_vlink_key);
+      return UPLL_RC_ERR_GENERIC;
+  }
+  if (!okey)
+    okey = new ConfigKeyVal(UNC_KT_VLINK, IpctSt::kIpcStKeyConvertVlink,
+                            conv_vlink_key, NULL);
+  else if (okey->get_key() != conv_vlink_key)
+    okey->SetKey(IpctSt::kIpcStKeyConvertVlink, conv_vlink_key);
+  if (okey == NULL) {
+    free(conv_vlink_key);
+    result_code = UPLL_RC_ERR_GENERIC;
+  } else {
+    SET_USER_DATA(okey, parent_key);
+  }
+  return result_code;
+}
+
+upll_rc_t VlinkMoMgr::ConvertVlink(ConfigKeyVal *ikey,
+                                   unc_keytype_operation_t operation,
+                                   DalDmlIntf *dmi, TcConfigMode config_mode,
+                                   string vtn_name) {
+  UPLL_FUNC_TRACE;
+
+  //  validate input
+  if (!ikey || !ikey->get_key() || !dmi || (operation != UNC_OP_CREATE)) {
+    UPLL_LOG_ERROR("Invalid inputs received");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  //  For create of vlink all value structure attributes
+  //  are mandatory.
+  val_convert_vlink *convert_vlink_val = reinterpret_cast<val_convert_vlink*>
+      (GetVal(ikey));
+  if (!convert_vlink_val ||
+      convert_vlink_val->valid[UPLL_IDX_LABEL_CVLINK] != UNC_VF_VALID ||
+      convert_vlink_val->valid[UPLL_IDX_VNODE1_NAME_CVLINK] != UNC_VF_VALID ||
+      convert_vlink_val->valid[UPLL_IDX_VNODE1_IF_NAME_CVLINK] !=
+      UNC_VF_VALID ||
+      convert_vlink_val->valid[UPLL_IDX_VNODE2_NAME_CVLINK] != UNC_VF_VALID ||
+      convert_vlink_val->valid[UPLL_IDX_VNODE2_IF_NAME_CVLINK] !=
+      UNC_VF_VALID) {
+    UPLL_LOG_ERROR("Received invalid inputs");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  //  During create, creates entry in ca_convert_vlink_tbl
+  //  and vtn_gateway_tbl.
+  return CreateConvertVlink(ikey, dmi, config_mode, vtn_name);
+}
+
+upll_rc_t
+VlinkMoMgr::GetBoundaryFromVlinkControllerDomain(ConfigKeyVal **uppl_bdry,
+                    controller_domain_t *ctrlr_dom, TcConfigMode config_mode) {
+  UPLL_FUNC_TRACE;
+
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+
+  //  Get boundary information from UPPL based on leaf node controller domain
+  //  and spine node controller domai
+  uint32_t  session_id  = USESS_ID_UPLL;
+  uint32_t  config_id   = 0;
+  IpcResponse ipc_resp;
+  memset(&ipc_resp, 0, sizeof(IpcResponse));
+
+  key_boundary *bndry_key = reinterpret_cast<key_boundary *>
+         (ConfigKeyVal::Malloc(sizeof(key_boundary)));
+  val_boundary_t *boundary_val = reinterpret_cast<val_boundary *>(
+      ConfigKeyVal::Malloc(sizeof(val_boundary)));
+  ConfigVal *cv_boundary = new ConfigVal(IpctSt::kIpcStValBoundary,
+                                         boundary_val);
+  uuu::upll_strncpy(boundary_val->controller_name1, ctrlr_dom[0].ctrlr,
+                    kMaxLenCtrlrId+1);
+  boundary_val->valid[kIdxBoundaryControllerName1] = UNC_VF_VALID;
+  uuu::upll_strncpy(boundary_val->controller_name2, ctrlr_dom[1].ctrlr,
+                    kMaxLenCtrlrId+1);
+  boundary_val->valid[kIdxBoundaryControllerName2] = UNC_VF_VALID;
+  uuu::upll_strncpy(boundary_val->domain_name1, ctrlr_dom[0].domain,
+                    kMaxLenDomainId+1);
+  boundary_val->valid[kIdxBoundaryDomainName1] = UNC_VF_VALID;
+  uuu::upll_strncpy(boundary_val->domain_name2, ctrlr_dom[1].domain,
+                    kMaxLenDomainId+1);
+  boundary_val->valid[kIdxBoundaryDomainName2] = UNC_VF_VALID;
+  *uppl_bdry = new ConfigKeyVal(UNC_KT_BOUNDARY, IpctSt::kIpcStKeyBoundary,
+                               bndry_key, cv_boundary);
+  result_code = SendIpcReq(session_id, config_id, UNC_OP_READ_SIBLING,
+                           UPLL_DT_CANDIDATE, *uppl_bdry, NULL, &ipc_resp);
+  if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+    //  If unable to find the boundary information from UPPL
+    //  Swap the controller_name1 and controller_name2,
+    //  Swap the domain_name1 and domain_name2 and send Read
+    //  request to UPPL with new ConfigKeyVal
+    memset(boundary_val, 0, sizeof(val_boundary_t));
+    uuu::upll_strncpy(boundary_val->controller_name1, ctrlr_dom[1].ctrlr,
+        kMaxLenCtrlrId+1);
+    boundary_val->valid[kIdxBoundaryControllerName1] = UNC_VF_VALID;
+    uuu::upll_strncpy(boundary_val->controller_name2, ctrlr_dom[0].ctrlr,
+        kMaxLenCtrlrId+1);
+    boundary_val->valid[kIdxBoundaryControllerName2] = UNC_VF_VALID;
+    uuu::upll_strncpy(boundary_val->domain_name1, ctrlr_dom[1].domain,
+        kMaxLenDomainId+1);
+    boundary_val->valid[kIdxBoundaryDomainName1] = UNC_VF_VALID;
+    uuu::upll_strncpy(boundary_val->domain_name2, ctrlr_dom[0].domain,
+        kMaxLenDomainId+1);
+    boundary_val->valid[kIdxBoundaryDomainName2] = UNC_VF_VALID;
+
+    DELETE_IF_NOT_NULL(ipc_resp.ckv_data);
+    result_code = SendIpcReq(session_id, config_id, UNC_OP_READ_SIBLING,
+        UPLL_DT_CANDIDATE, *uppl_bdry, NULL, &ipc_resp);
+    if (result_code == UPLL_RC_SUCCESS) {
+      // Boundary information is avaiable in UPPL and
+      // if acuired configuration mode is VTN mode, validate
+      // whether the same boundary exist in RUNNING database
+      if (config_mode == TC_CONFIG_VTN) {
+        (*uppl_bdry)->ResetWith(ipc_resp.ckv_data);
+        delete ipc_resp.ckv_data;
+        result_code = SendIpcReq(session_id, config_id, UNC_OP_READ,
+                                UPLL_DT_RUNNING, *uppl_bdry, NULL, &ipc_resp);
+        if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+          UPLL_LOG_ERROR("Acquired configuration mode is VTN mode"
+                         "boundary information not available in running");
+          result_code = UPLL_RC_ERR_CFG_SEMANTIC;
+        }
+      }
+    }
+  } else if (result_code == UPLL_RC_SUCCESS) {
+    // Boundary information is avaiable in UPPL and
+    // if acuired configuration mode is VTN mode, validate
+    // whether the same boundary exist in RUNNING database
+    if (config_mode == TC_CONFIG_VTN) {
+      (*uppl_bdry)->ResetWith(ipc_resp.ckv_data);
+      delete ipc_resp.ckv_data;
+      result_code = SendIpcReq(session_id, config_id, UNC_OP_READ,
+                               UPLL_DT_RUNNING, *uppl_bdry, NULL, &ipc_resp);
+      if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+        UPLL_LOG_ERROR("Acquired configuration mode is VTN mode"
+                       "boundary information not available in running");
+        result_code = UPLL_RC_ERR_CFG_SEMANTIC;
+      }
+    }
+  }
+
+
+  //  If unable to found boundary information reset result_code
+  //  to UPLL_RC_ERR_CFG_SEMANTIC
+  if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE)
+     result_code = UPLL_RC_ERR_CFG_SEMANTIC;
+
+  if ((result_code != UPLL_RC_SUCCESS) || (!ipc_resp.ckv_data)) {
+    UPLL_LOG_DEBUG("Error in retrieving boundary info from UPPL");
+    DELETE_IF_NOT_NULL(ipc_resp.ckv_data);
+    DELETE_IF_NOT_NULL(*uppl_bdry);
+    return result_code;
+  }
+  (*uppl_bdry)->ResetWith(ipc_resp.ckv_data);
+  delete ipc_resp.ckv_data;
+
+  return UPLL_RC_SUCCESS;
+}
+
+upll_rc_t VlinkMoMgr::CreateConvertVlink(ConfigKeyVal *ikey,
+                                         DalDmlIntf *dmi,
+                                         TcConfigMode config_mode,
+                                         string vtn_name ) {
+  UPLL_FUNC_TRACE;
+
+  if (!ikey) {
+    UPLL_LOG_ERROR("Invalid input");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  key_convert_vlink *convert_vlink_key =
+    reinterpret_cast<key_convert_vlink*>(ikey->get_key());
+  val_convert_vlink_t *vlink_convert_val =
+          reinterpret_cast<val_convert_vlink_t*>(GetVal(ikey));
+  //  validate input
+  if (!convert_vlink_key || !vlink_convert_val) {
+    UPLL_LOG_ERROR("Invalid input");
+    return UPLL_RC_ERR_GENERIC;
+  }
+  UPLL_LOG_TRACE("Received vLink ConfigKeyVal %s", (ikey->ToStrAll()).c_str());
+
+  upll_rc_t         result_code  = UPLL_RC_SUCCESS;
+  controller_domain ctrlr_dom[2] = { { NULL, NULL }, { NULL, NULL } };
+
+  //  Get convert vLink controller domain
+  result_code = GetControllerDomainId(ikey, ctrlr_dom);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_ERROR("Failed to get vLink controller domain information");
+    return result_code;
+  }
+
+  //  validate vLink controller domain
+  if (!ctrlr_dom[0].ctrlr || !ctrlr_dom[0].domain ||
+      !ctrlr_dom[1].ctrlr || !ctrlr_dom[1].domain) {
+    UPLL_LOG_ERROR("Invalid controller and domain received");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  //  Get boundary_id from UPPL based on leaf node controller domain
+  //  and spine node controller domain.
+  //  If acquired config_mode is VTN mode, validate same boundary exist in
+  //  runnning database
+  ConfigKeyVal *bdry_ckv = NULL;
+  result_code = GetBoundaryFromVlinkControllerDomain(&bdry_ckv,
+                                           ctrlr_dom, config_mode);
+  if (result_code != UPLL_RC_SUCCESS || !bdry_ckv) {
+    if (result_code == UPLL_RC_ERR_CFG_SEMANTIC) {
+      result_code = UPLL_RC_ERR_EXPAND;
+    }
+    UPLL_LOG_ERROR("Failed to get boundary information from UPLL."
+                   "result_code = %u", result_code);
+    DELETE_IF_NOT_NULL(bdry_ckv);
+    return result_code;
+  }
+  UPLL_LOG_TRACE("boundary ConfigKeyVal %s", (bdry_ckv->ToStrAll()).c_str());
+
+  //  Get boundary_id from uppl bdry_ckv key
+  uint8_t *boundary_id = bdry_ckv->get_key()?
+    (reinterpret_cast<key_boundary *>
+     (bdry_ckv->get_key()))->boundary_id : NULL;
+  if (boundary_id == NULL) {
+    UPLL_LOG_DEBUG("Boundary key is empty");
+    DELETE_IF_NOT_NULL(bdry_ckv);
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  //  copy bdry_id to vlink_convert_val
+  uuu::upll_strncpy(vlink_convert_val->boundary_name,
+                    boundary_id,
+                    (kMaxLenBoundaryName+1));
+  vlink_convert_val->valid[UPLL_IDX_BOUNDARY_NAME_CVLINK] = UNC_VF_VALID;
+
+  //  Validate vLink name is valid or not if not valid auto generate new name
+  result_code = ValidateKey(reinterpret_cast<char *>(
+          convert_vlink_key->convert_vlink_name),
+      kMinLenVlinkName, kMaxLenVlinkName);
+  if (result_code != UPLL_RC_SUCCESS) {
+    while (1) {
+      //  Auto generate vLink name
+      struct timeval _timeval;
+      struct timezone _timezone;
+      gettimeofday(&_timeval, &_timezone);
+      std::stringstream ss;
+      ss << _timeval.tv_sec << _timeval.tv_usec;
+      std::string unique_id = ss.str();
+      std::string vlink_name("c_vl_");
+      vlink_name += unique_id;
+
+      // populate vlink_name in vlink_ckv
+      uuu::upll_strncpy(convert_vlink_key->convert_vlink_name,
+                        vlink_name.c_str(), (kMaxLenVlinkName + 1));
+
+      ConfigKeyVal *conv_vlink_ckv = NULL;
+      result_code = GetChildConvertConfigKey(conv_vlink_ckv, ikey);
+      if (result_code != UPLL_RC_SUCCESS) {
+        UPLL_LOG_ERROR("Failed to get convert ConfigKeyVal");
+        DELETE_IF_NOT_NULL(bdry_ckv);
+        return result_code;
+      }
+
+      DbSubOp dbop1 = { kOpReadExist, kOpMatchNone, kOpInOutNone };
+      result_code = UpdateConfigDB(conv_vlink_ckv, UPLL_DT_CANDIDATE,
+                                   UNC_OP_READ, dmi, &dbop1, CONVERTTBL);
+      DELETE_IF_NOT_NULL(conv_vlink_ckv);
+      if (result_code == UPLL_RC_ERR_INSTANCE_EXISTS) {
+        continue;
+      } else if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+        break;
+      } else {
+        DELETE_IF_NOT_NULL(bdry_ckv);
+        return result_code;
+      }
+    }
+  }
+
+  UPLL_LOG_TRACE("convert vLink ConfigKeyVal %s", (ikey->ToStrAll()).c_str());
+  DbSubOp dbop = { kOpNotRead, kOpMatchNone, kOpInOutFlag | kOpInOutDomain
+    | kOpInOutCtrlr };
+
+  //  create vLink in converttbl
+  result_code = UpdateConfigDB(ikey, UPLL_DT_CANDIDATE, UNC_OP_CREATE,
+                               dmi, &dbop, config_mode, vtn_name, CONVERTTBL);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_ERROR("Failed to create converted vLink");
+    DELETE_IF_NOT_NULL(bdry_ckv);
+    return result_code;
+  }
+
+  //  Create VTN gateway port
+  VtnMoMgr *vtn_mgr =
+      reinterpret_cast<VtnMoMgr *>(const_cast<MoManager *>(GetMoManager(
+          UNC_KT_VTN)));
+  if (!vtn_mgr) {
+    DELETE_IF_NOT_NULL(bdry_ckv);
+    return UPLL_RC_ERR_GENERIC;
+  }
+  result_code = vtn_mgr->ConvertGatewayPort(ikey, bdry_ckv, dmi, UNC_OP_CREATE,
+                                            config_mode, vtn_name);
+  DELETE_IF_NOT_NULL(bdry_ckv);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_ERROR("Failed to create converted vLink");
+    return result_code;
+  }
+
+  return result_code;
+}
+
+/** This function delets the convert_vlink entry based on vtn and unified vbr
+ * name and also matches ctrlr/domain if match_ctrlr_dom is set.
+ * match_ctrlr_dom is false when second port-map with logical-port-id
+ * gets deleted(this time need to remove 2 vlinks for given vtn/unified vbridge.
+ * Also this function invokes ConvertGatewayPort to delete the vtn_gatewy_port
+ * entry.
+ */
+upll_rc_t VlinkMoMgr::DeleteConvertVlink(
+    ConfigKeyVal *ikey, bool match_ctrlr_dom, DalDmlIntf *dmi,
+    TcConfigMode config_mode, string vtn_name ) {
+  UPLL_FUNC_TRACE;
+
+  upll_rc_t    result_code        = UPLL_RC_SUCCESS;
+  ConfigKeyVal *convert_vlink_ckv = NULL;
+  DbSubOp      dbop = {kOpNotRead, kOpMatchNone, kOpInOutNone};
+
+  //  Get convert vLink ConfigKeyVal
+  result_code = GetChildConvertConfigKey(convert_vlink_ckv, ikey);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_ERROR("Failed to get vlink convert ConfigKeyVal");
+    return result_code;
+  }
+
+  // Delete corresponding entry from gateway port tbl
+  VtnMoMgr *vtn_mgr =
+      reinterpret_cast<VtnMoMgr *>(const_cast<MoManager *>(GetMoManager(
+          UNC_KT_VTN)));
+  if (!vtn_mgr) {
+    UPLL_LOG_ERROR("Invalid mgr");
+    DELETE_IF_NOT_NULL(convert_vlink_ckv);
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  if (!match_ctrlr_dom) {
+    // Two boundary vlinks going to be deleted, need to send
+    // two request to vtn gateway port delete
+    DbSubOp read_dbop = { kOpReadMultiple, kOpMatchNone,
+                          kOpInOutCtrlr|kOpInOutDomain};
+    result_code = ReadConfigDB(convert_vlink_ckv, UPLL_DT_CANDIDATE,
+                               UNC_OP_READ, read_dbop, dmi, CONVERTTBL);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_ERROR("ReadConfigDB failed:%d", result_code);
+      DELETE_IF_NOT_NULL(convert_vlink_ckv);
+      return result_code;
+    }
+    for (ConfigKeyVal *tmp = convert_vlink_ckv; tmp;
+         tmp = tmp->get_next_cfg_key_val()) {
+      result_code = vtn_mgr->ConvertGatewayPort(tmp, NULL, dmi, UNC_OP_DELETE,
+                                                config_mode, vtn_name);
+      if (result_code != UPLL_RC_SUCCESS) {
+        UPLL_LOG_INFO("ConvertGatewayPort Delete failed:%d", result_code);
+        DELETE_IF_NOT_NULL(convert_vlink_ckv);
+        return result_code;
+      }
+    }
+    convert_vlink_ckv->DeleteCfgVal();
+    StringReset(static_cast<key_convert_vlink_t*>(
+            convert_vlink_ckv->get_key())->convert_vlink_name);
+  } else {
+    result_code = vtn_mgr->ConvertGatewayPort(ikey, NULL, dmi, UNC_OP_DELETE,
+                                              config_mode, vtn_name);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_INFO("ConvertGatewayPort Delete failed:%d", result_code);
+      DELETE_IF_NOT_NULL(convert_vlink_ckv);
+      return result_code;
+    }
+    dbop.matchop = kOpMatchCtrlr|kOpMatchDomain;
+  }
+
+  //  Delete entry from ca_convert_vlink
+  result_code = UpdateConfigDB(convert_vlink_ckv, UPLL_DT_CANDIDATE,
+      UNC_OP_DELETE, dmi, &dbop, config_mode, vtn_name, CONVERTTBL);
+  DELETE_IF_NOT_NULL(convert_vlink_ckv);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_ERROR("Failed to delete Convert Vlink, %d", result_code);
+    return result_code;
+  }
+
+  return result_code;
+}
+
+upll_rc_t VlinkMoMgr::GetVlinkKeyValFromVbrPortMap(ConfigKeyVal *vbr_pm_ckv,
+                                           ConfigKeyVal *&vlink_ckv,
+                                           DalDmlIntf *dmi,
+                                           upll_keytype_datatype_t datatype) {
+  UPLL_FUNC_TRACE;
+
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  uint32_t  session_id  = USESS_ID_UPLL;
+  uint32_t  config_id   = 0;
+
+  pfcdrv_val_vbr_portmap_t *vbr_pm_val =
+      reinterpret_cast<pfcdrv_val_vbr_portmap_t *>(GetVal(vbr_pm_ckv));
+  if (!vbr_pm_val ||
+      vbr_pm_val->vbrpm.valid[UPLL_IDX_LOGICAL_PORT_ID_VBRPM] != UNC_VF_VALID) {
+    UPLL_LOG_ERROR("Logical port id is not present");
+    return UPLL_RC_ERR_GENERIC;
+  }
+  uint8_t *logical_port_id = vbr_pm_val->vbrpm.logical_port_id;
+
+  IpcResponse ipc_resp;
+  memset(&ipc_resp, 0, sizeof(IpcResponse));
+
+  // ConfigKeyVal for Boundary
+  controller_domain ctrlr_dom;
+  ctrlr_dom.ctrlr = ctrlr_dom.domain = NULL;
+  GET_USER_DATA_CTRLR_DOMAIN(vbr_pm_ckv, ctrlr_dom);
+
+  key_boundary *bndrykey = static_cast<key_boundary *>
+         (ConfigKeyVal::Malloc(sizeof(key_boundary)));  // COV NULL RETURN
+  val_boundary_t *boundary_val = reinterpret_cast<val_boundary *>(
+      ConfigKeyVal::Malloc(sizeof(val_boundary)));
+  ConfigVal *cv_boundary = new ConfigVal(IpctSt::kIpcStValBoundary,
+                                         boundary_val);
+  uuu::upll_strncpy(boundary_val->logical_port_id2, logical_port_id,
+                    kMaxLenLogicalPortId);
+  boundary_val->valid[kIdxBoundaryLogicalPortId2] = UNC_VF_VALID;
+  uuu::upll_strncpy(boundary_val->controller_name2, ctrlr_dom.ctrlr,
+                    kMaxLenCtrlrId);
+  boundary_val->valid[kIdxBoundaryControllerName2] = UNC_VF_VALID;
+  ConfigKeyVal *ck_boundary = new ConfigKeyVal(UNC_KT_BOUNDARY,
+                                               IpctSt::kIpcStKeyBoundary,
+                                               bndrykey, cv_boundary);
+//  SET_USER_DATA_CTRLR_DOMAIN(ck_boundary, ctrlr_dom);
+
+  /* Case1: Audit - Always check boundary in RUNNING
+   * Case2: Commit(del) -  check CANDIDATE
+   * Case3: Commit(Cr/upd) - check RUNNING */
+  upll_keytype_datatype_t dt_type = (UPLL_DT_AUDIT == datatype)?
+                                    UPLL_DT_RUNNING:datatype;
+
+  result_code = SendIpcReq(session_id, config_id, UNC_OP_READ_SIBLING,
+                           dt_type, ck_boundary, NULL, &ipc_resp);
+  if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+    //  If unable to find the boundary, copy the logical_port_id and
+    //  controller_name in to boundary 1st node
+    boundary_val = reinterpret_cast<val_boundary_t *>(GetVal(ck_boundary));
+    memset(boundary_val, 0, sizeof(val_boundary_t));
+    uuu::upll_strncpy(boundary_val->logical_port_id1, logical_port_id,
+        kMaxLenLogicalPortId);
+    boundary_val->valid[kIdxBoundaryLogicalPortId1] = UNC_VF_VALID;
+    uuu::upll_strncpy(boundary_val->controller_name1, ctrlr_dom.ctrlr,
+        kMaxLenCtrlrId);
+    boundary_val->valid[kIdxBoundaryControllerName1] = UNC_VF_VALID;
+    DELETE_IF_NOT_NULL(ipc_resp.ckv_data);
+    result_code = SendIpcReq(session_id, config_id, UNC_OP_READ_SIBLING,
+                           dt_type, ck_boundary, NULL, &ipc_resp);
+  }
+
+  if ((result_code != UPLL_RC_SUCCESS) || (!ipc_resp.ckv_data)) {
+    UPLL_LOG_DEBUG("Error in retrieving boundary info from UPPL");
+    DELETE_IF_NOT_NULL(ck_boundary);
+    return result_code;
+  }
+  ck_boundary->ResetWith(ipc_resp.ckv_data);
+  delete ipc_resp.ckv_data;
+
+  ConfigKeyVal *ck_boundary_tmp = ck_boundary;
+  //  It may be possible multiple boundaries for the same logical_port_id
+  //  and controller_name.Same boundary can also be used in multiple vLink's
+  //  based on each boundary get corresponding vLink's
+  while (ck_boundary_tmp) {
+    uint8_t *boundary_id = ck_boundary_tmp->get_key()?
+      (reinterpret_cast<key_boundary *>
+       (ck_boundary_tmp->get_key()))->boundary_id : NULL;
+    if (boundary_id == NULL) {
+      UPLL_LOG_DEBUG("Boundary key is empty");
+      DELETE_IF_NOT_NULL(ck_boundary);
+      return UPLL_RC_ERR_GENERIC;
+    }
+
+    //  Populate vLink ConfigKeyVal
+    ConfigKeyVal *ckv_vlink = NULL;
+    result_code = GetChildConfigKey(ckv_vlink, NULL);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_DEBUG("GetChildConfigKey failed for vlink");
+      DELETE_IF_NOT_NULL(ck_boundary);
+      return result_code;
+    }
+    ConfigVal *cv_vlink = NULL;
+    result_code = AllocVal(cv_vlink, datatype, MAINTBL);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_DEBUG("AllocVal failed for vlink");
+      DELETE_IF_NOT_NULL(ck_boundary);
+      return result_code;
+    }
+    ckv_vlink->AppendCfgVal(cv_vlink);
+    val_vlink *vlink_val = reinterpret_cast<val_vlink*>GetVal(ckv_vlink);
+    if (vlink_val == NULL) {
+      UPLL_LOG_DEBUG("val_vlink is NULL");
+      DELETE_IF_NOT_NULL(ckv_vlink);
+      DELETE_IF_NOT_NULL(ck_boundary);
+      return UPLL_RC_ERR_GENERIC;
+    }
+    uuu::upll_strncpy(vlink_val->boundary_name, boundary_id,
+                      kMaxLenBoundaryName+1);
+    vlink_val->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] = UNC_VF_VALID;
+
+    DbSubOp dbop = { kOpReadMultiple, kOpMatchNone, kOpInOutFlag};
+    result_code = ReadConfigDB(ckv_vlink, datatype,
+                               UNC_OP_READ, dbop, dmi, MAINTBL);
+    if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+      ck_boundary_tmp = ck_boundary_tmp->get_next_cfg_key_val();
+      DELETE_IF_NOT_NULL(ckv_vlink);
+      continue;
+    }
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_DEBUG("Failed to read vlink info based on boundary id");
+      DELETE_IF_NOT_NULL(ckv_vlink);
+      DELETE_IF_NOT_NULL(ck_boundary);
+      return result_code;
+    }
+
+    if (vlink_ckv == NULL) {
+      vlink_ckv = ckv_vlink;
+    } else {
+      vlink_ckv->AppendCfgKeyVal(ckv_vlink);
+    }
+
+    UPLL_LOG_TRACE("%s", vlink_ckv->ToStrAll().c_str());
+    ck_boundary_tmp = ck_boundary_tmp->get_next_cfg_key_val();
+  }
+  DELETE_IF_NOT_NULL(ck_boundary);
+
+  // If vlink_ckv is NULL, do not send SUCCESS
+  if (!vlink_ckv) {
+    UPLL_LOG_INFO("No vlink found in datatype:%d", datatype);
+    return UPLL_RC_ERR_NO_SUCH_INSTANCE;
+  }
+
+  return UPLL_RC_SUCCESS;
+}
+
+upll_rc_t VlinkMoMgr::ValidateConvertVlink(uuc::UpdateCtrlrPhase phase,
+    DalDmlIntf *dmi, ConfigKeyVal **err_ckv, TxUpdateUtil *tx_util,
+    TcConfigMode config_mode, std::string vtn_name) {
+  UPLL_FUNC_TRACE;
+
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  ConfigKeyVal *req = NULL, *nreq = NULL;
+  DalCursor *dal_cursor_handle = NULL;
+
+  unc_keytype_operation_t op = (phase == uuc::kUpllUcpCreate)?UNC_OP_CREATE:
+      ((phase == uuc::kUpllUcpUpdate)?UNC_OP_UPDATE:
+       ((phase == uuc::kUpllUcpDelete)?UNC_OP_DELETE:UNC_OP_INVALID));
+
+  if (op == UNC_OP_INVALID) {
+    UPLL_LOG_INFO("Invalid operation received-%d", op);
+    // Not a valid operation
+    return UPLL_RC_ERR_BAD_REQUEST;
+  }
+
+  // Other than create operation and other than VTN mode
+  // bdry validation is not required
+  if (UNC_OP_CREATE != op || config_mode != TC_CONFIG_VTN) {
+    return UPLL_RC_SUCCESS;
+  }
+
+  result_code = GetChildConvertConfigKey(req, NULL);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_ERROR("Failed to get convert vLink config key val");
+    return result_code;
+  }
+
+  result_code = DiffConfigDB(UPLL_DT_CANDIDATE, UPLL_DT_RUNNING,
+                             op, req, nreq, &dal_cursor_handle, dmi,
+                             config_mode, vtn_name, CONVERTTBL);
+  while (result_code == UPLL_RC_SUCCESS) {
+    if (tx_util->GetErrCount() > 0) {
+      UPLL_LOG_ERROR("TxUpdateUtil says exit the loop.");
+      dmi->CloseCursor(dal_cursor_handle, true);
+      DELETE_IF_NOT_NULL(nreq);
+      DELETE_IF_NOT_NULL(req);
+      return UPLL_RC_ERR_GENERIC;
+    }
+
+    DalResultCode db_result = uud::kDalRcSuccess;
+    // Iterate loop to get next record
+    db_result = dmi->GetNextRecord(dal_cursor_handle);
+    result_code = DalToUpllResCode(db_result);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_DEBUG(" GetNextRecord failed err code(%d)", result_code);
+      break;
+    }
+
+    //  If boundary is valid
+    if (reinterpret_cast<val_convert_vlink_t*>(
+        GetVal(req))->valid[UPLL_IDX_BOUNDARY_NAME_CVLINK] == UNC_VF_VALID) {
+      ConfigKeyVal *ck_boundary = NULL;
+
+      IpcReqRespHeader ipc_req;
+      memset(&ipc_req, 0, sizeof(IpcReqRespHeader));
+      ipc_req.datatype = UPLL_DT_RUNNING;
+      ipc_req.operation = op;
+      result_code = ValidateBoundary(reinterpret_cast<val_convert_vlink_t*>(
+              GetVal(req))->boundary_name, &ipc_req, ck_boundary);
+      if (UPLL_RC_SUCCESS  != result_code || !ck_boundary) {
+        DELETE_IF_NOT_NULL(ck_boundary);
+        if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+          UPLL_LOG_ERROR("Boundary information is not available in running DB");
+          // TODO(U17): err_ckv fill
+          result_code = UPLL_RC_ERR_CFG_SEMANTIC;
+        }
+        return result_code;
+      }
+      DELETE_IF_NOT_NULL(ck_boundary);
+    }
+  }
+  if (dal_cursor_handle)
+    dmi->CloseCursor(dal_cursor_handle, true);
+  DELETE_IF_NOT_NULL(nreq);
+  DELETE_IF_NOT_NULL(req);
+  result_code = (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE)?
+      UPLL_RC_SUCCESS : result_code;
+  return result_code;
+}
+upll_rc_t VlinkMoMgr::ResetCtrlrDomForUnifiedInterface(uint8_t *boundary_name,
+                      controller_domain *vlink_ctrlr_dom) {
+  UPLL_FUNC_TRACE;
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  if ((vlink_ctrlr_dom[0].ctrlr &&
+      !strcmp(reinterpret_cast<char*>(vlink_ctrlr_dom[0].ctrlr), "#")) ||
+      (vlink_ctrlr_dom[1].ctrlr &&
+      !strcmp(reinterpret_cast<char*>(vlink_ctrlr_dom[1].ctrlr), "#"))) {
+    ConfigKeyVal *ck_boundary = NULL;
+    IpcResponse ipc_resp;
+
+    memset(&ipc_resp, 0, sizeof(IpcResponse));
+    key_boundary *bndrykey = static_cast<key_boundary *>
+         (ConfigKeyVal::Malloc(sizeof(key_boundary)));  // COV NULL RETURN
+
+    uuu::upll_strncpy(bndrykey->boundary_id, boundary_name,
+                   (kMaxLenBoundaryName+1));
+    ck_boundary = new ConfigKeyVal(UNC_KT_BOUNDARY, IpctSt::kIpcStKeyBoundary,
+                                 bndrykey, NULL);
+
+    result_code = SendIpcReq(USESS_ID_UPLL, 0, UNC_OP_READ,
+                   UPLL_DT_CANDIDATE, ck_boundary, NULL, &ipc_resp);
+    if (UPLL_RC_SUCCESS  != result_code) {
+      DELETE_IF_NOT_NULL(ck_boundary);
+      UPLL_LOG_ERROR("Boundary information is not available in running DB");
+      return result_code;
+    }
+    if (ipc_resp.ckv_data) {
+      ck_boundary->ResetWith(ipc_resp.ckv_data);
+      DELETE_IF_NOT_NULL(ipc_resp.ckv_data);
+    }
+    val_boundary_t *boundary_val =
+        reinterpret_cast<val_boundary_t*>(GetVal(ck_boundary));
+    if (!boundary_val)
+      return UPLL_RC_ERR_GENERIC;
+    if (vlink_ctrlr_dom[0].ctrlr &&
+        !strcmp(reinterpret_cast<char*>(vlink_ctrlr_dom[0].ctrlr), "#")) {
+      if (boundary_val->logical_port_id1[0] == 'M' &&
+          boundary_val->logical_port_id1[1] == 'G') {
+        uuu::upll_strncpy(vlink_ctrlr_dom[0].ctrlr,
+                          boundary_val->controller_name1,
+                          (kMaxLenCtrlrId+1));
+        uuu::upll_strncpy(vlink_ctrlr_dom[0].domain, boundary_val->domain_name1,
+                      (kMaxLenDomainId+1));
+      } else {
+        uuu::upll_strncpy(vlink_ctrlr_dom[0].ctrlr,
+                          boundary_val->controller_name2,
+                          (kMaxLenCtrlrId+1));
+        uuu::upll_strncpy(vlink_ctrlr_dom[0].domain, boundary_val->domain_name2,
+                      (kMaxLenDomainId+1));
+      }
+    }
+    if (vlink_ctrlr_dom[1].ctrlr &&
+        !strcmp(reinterpret_cast<char*>(vlink_ctrlr_dom[1].ctrlr), "#")) {
+      if (boundary_val->logical_port_id2[0] == 'M' &&
+          boundary_val->logical_port_id2[1] == 'G') {
+        uuu::upll_strncpy(vlink_ctrlr_dom[1].ctrlr,
+                          boundary_val->controller_name2,
+                          (kMaxLenCtrlrId+1));
+        uuu::upll_strncpy(vlink_ctrlr_dom[1].domain, boundary_val->domain_name2,
+                      (kMaxLenDomainId+1));
+      } else {
+        uuu::upll_strncpy(vlink_ctrlr_dom[1].ctrlr,
+                          boundary_val->controller_name1,
+                          (kMaxLenCtrlrId+1));
+        uuu::upll_strncpy(vlink_ctrlr_dom[1].domain, boundary_val->domain_name1,
+                      (kMaxLenDomainId+1));
+      }
+    }
+    DELETE_IF_NOT_NULL(ck_boundary);
+  }
+  return result_code;
+}
+
 }  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc

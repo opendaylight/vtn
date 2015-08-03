@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -46,8 +46,8 @@ class UpllDbConnMgr {
   void ReleaseRwConn(DalOdbcMgr *dom);
 
   inline size_t get_ro_conn_limit() const { return max_ro_conns_; }
-  upll_rc_t AcquireRoConn(DalOdbcMgr **);
-  upll_rc_t ReleaseRoConn(DalOdbcMgr *);
+  upll_rc_t AcquireRoConn(DalOdbcMgr **dom);
+  upll_rc_t ReleaseRoConn(DalOdbcMgr *dom);
   // void DestroyRoConns();
   upll_rc_t DalOpen(DalOdbcMgr *dom, bool read_write_conn);
   upll_rc_t DalTxClose(DalOdbcMgr *dom, bool commit);
@@ -56,16 +56,33 @@ class UpllDbConnMgr {
   inline void ConvertConnInfoToStr() const;
 
  private:
+  enum  DbConnName {
+    kConfigRwConn = 0,
+    kAlarmRwConn,
+    kAuditRwConn,
+    kRoConn
+  };
   class DbConn {
    public:
-    DbConn() { in_use_cnt = 0; close_on_finish = false; }
-    DalOdbcMgr dom;	// DAL object instance which manages the ODBC connection
-    uint32_t in_use_cnt;		// If >0, connection is allocated
-    bool close_on_finish;	// If true, the connection is closed after the connection is returned.
+    explicit DbConn(DbConnName conn_name) {
+      in_use_cnt = 0;
+      close_on_finish = false;
+      conn_name_ = conn_name;
+    }
+    // DAL object instance which manages the ODBC connection
+    DalOdbcMgr dom;
+    uint32_t in_use_cnt;    // If >0, connection is allocated
+    DbConnName conn_name_;
+    // If true, the connection is closed after the connection is returned.
+    bool close_on_finish;
   };
   DbConn* config_rw_conn_;  // shared connection
   DbConn* alarm_rw_conn_;   // shared connection
-  DbConn* audit_rw_conn_; 
+  DbConn* audit_rw_conn_;
+
+  // alarm connection might be used by multiple threads. To allow one connection
+  // at a time alarm_rw_conn_mutex_ is used.
+  pfc::core::Mutex alarm_rw_conn_mutex_;
 
   size_t max_ro_conns_;
   size_t active_ro_conns_cnt_;
@@ -77,7 +94,7 @@ class UpllDbConnMgr {
 
   upll_rc_t InitializeDbConnectionsNoLock();
   upll_rc_t TerminateAllDbConnsNoLock();
-  upll_rc_t TerminateDbConn(DbConn *);
+  upll_rc_t TerminateDbConn(DbConn *dbc);
   upll_rc_t TerminateAllRoConns_NoLock();
 };
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -20,7 +20,8 @@ namespace usess {
 const char* UsessConfCommon::kConfBlockName_ = "usess_conf_common";
 const usess_conf_common_t UsessConfCommon::kDefaultConf_ = {
                            { -1,     // .lock_timeout.tv_sec
-                             -1}     // .lock_timeout.tv_nsec
+                             -1},    // .lock_timeout.tv_nsec
+                              0      // .auth_retry_count
 };
 
 
@@ -74,6 +75,9 @@ usess_ipc_err_e UsessConfCommon::LoadConf(void)
         "lock_timeout_sec", kDefaultConf_.lock_timeout.tv_sec);
   data_.lock_timeout.tv_nsec = conf_block.getInt64(
         "lock_timeout_nsec", kDefaultConf_.lock_timeout.tv_nsec);
+//  data_.auth_retry_count = conf_block.getUint32(
+//        "auth_retry_count", kDefaultConf_.auth_retry_count);
+  data_.auth_retry_count = 0;
 
   L_FUNCTION_COMPLETE();
   return USESS_E_OK;

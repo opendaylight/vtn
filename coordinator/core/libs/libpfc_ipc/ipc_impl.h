@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2013 NEC Corporation
+ * Copyright (c) 2011-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -59,7 +59,11 @@ typedef const ipc_strinfo_t	ipc_cstrinfo_t;
 /*
  * Maximum data size in output stream.
  */
-#define	IPC_OUTSIZE_MAX			PFC_CONST_U(0x20000000)	/* 512M */
+#ifdef	PFC_LP64
+#define	IPC_OUTSIZE_MAX			UINT32_MAX		/* 4G - 1 */
+#else	/* !PFC_LP64 */
+#define	IPC_OUTSIZE_MAX			PFC_CONST_U(0x80000000)	/* 2G */
+#endif	/* PFC_LP64 */
 
 /*
  * Maximum length of IPC channel name.

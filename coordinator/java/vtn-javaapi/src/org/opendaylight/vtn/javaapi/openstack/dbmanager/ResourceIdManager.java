@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -30,6 +30,8 @@ import org.opendaylight.vtn.javaapi.openstack.dao.VBridgeInterfaceDao;
 import org.opendaylight.vtn.javaapi.openstack.dao.VRouterDao;
 import org.opendaylight.vtn.javaapi.openstack.dao.VRouterInterfaceDao;
 import org.opendaylight.vtn.javaapi.openstack.dao.VtnDao;
+import org.opendaylight.vtn.javaapi.openstack.dao.CommonDao;
+import org.opendaylight.vtn.javaapi.resources.openstack.AutoIdManager;
 
 /**
  * ResourceId Manager class that contains interface for management of
@@ -59,8 +61,28 @@ public class ResourceIdManager {
 		 * Check if any resource counter is available that can be used
 		 */
 		final FreeCounterDao freeCounterDao = new FreeCounterDao();
-		resourceCounter = freeCounterDao
-				.getCounter(connection, freeCounterBean);
+		List<Integer> idList = freeCounterDao
+				.getCounterList(connection, freeCounterBean);
+		if (!idList.isEmpty()) {
+			if (freeCounterBean.getResourceId().equals(VtnServiceOpenStackConsts.TENANT_RES_ID)) {
+				boolean isFind = false;
+				int maxId = AutoIdManager.getInstance().getMaxId();
+				LOG.debug("getResourceCounter()max id is " + maxId);
+				for (int index = 0; index < idList.size(); index++) {
+					resourceCounter = idList.get(index).intValue();
+					if (resourceCounter > maxId) {
+						LOG.info("getResourceCounter()used free id is " + resourceCounter);
+						isFind = true;
+						break;
+					}
+				}
+				if (!isFind) {
+					resourceCounter = -1;
+				}
+			} else {
+				resourceCounter = idList.get(0).intValue();
+			}
+		}
 
 		freeCounterBean.setResourceCounter(resourceCounter);
 
@@ -136,19 +158,32 @@ public class ResourceIdManager {
 		List<Integer> ifIds = null;
 		boolean result = false;
 		int deletionStatus = -1;
+		CommonDao comDao = new CommonDao();
 
 		if (resourceBean instanceof VtnBean) {
 			final VtnDao vtnDao = new VtnDao();
+			final VtnBean vtnBean = (VtnBean) resourceBean;
+			boolean isAuto = comDao.isAutoResourceName(connection, vtnBean);
 			deletionStatus = vtnDao.delete(connection, (VtnBean) resourceBean);
+			if ((false == isAuto) && comDao.isMaxId(connection, vtnBean)) {
+				freeCounterBean.setResourceCounter(0);
+			}
 		} else if (resourceBean instanceof VBridgeBean) {
+			final VBridgeBean vbrBean = (VBridgeBean) resourceBean;
+			boolean isAuto = comDao.isAutoResourceName(connection, vbrBean);
 			final VBridgeInterfaceDao vrtInterfaceDao = new VBridgeInterfaceDao();
 			VBridgeInterfaceBean vInterfaceBean = new VBridgeInterfaceBean();
+			vInterfaceBean
+					.setVtnName(((VBridgeBean) resourceBean).getVtnName());
 			vInterfaceBean
 					.setVbrName(((VBridgeBean) resourceBean).getVbrName());
 			ifIds = vrtInterfaceDao.getVbrIfIds(connection, vInterfaceBean);
 			final VBridgeDao vBridgeDao = new VBridgeDao();
 			deletionStatus = vBridgeDao.delete(connection,
 					(VBridgeBean) resourceBean);
+			if ((false == isAuto) && comDao.isMaxId(connection, vbrBean)) {
+				freeCounterBean.setResourceCounter(0);
+			}
 		} else if (resourceBean instanceof VRouterBean) {
 			final VRouterInterfaceDao vrtInterfaceDao = new VRouterInterfaceDao();
 			VRouterInterfaceBean vInterfaceBean = new VRouterInterfaceBean();
@@ -165,8 +200,13 @@ public class ResourceIdManager {
 					(VRouterInterfaceBean) resourceBean);
 		} else if (resourceBean instanceof VBridgeInterfaceBean) {
 			final VBridgeInterfaceDao vInterfaceDao = new VBridgeInterfaceDao();
+			final VBridgeInterfaceBean vbrIfBean = (VBridgeInterfaceBean) resourceBean;
+			boolean isAuto = comDao.isAutoResourceName(connection, vbrIfBean);
 			deletionStatus = vInterfaceDao.delete(connection,
 					(VBridgeInterfaceBean) resourceBean);
+			if ((false == isAuto) && comDao.isMaxId(connection, vbrIfBean)) {
+				freeCounterBean.setResourceCounter(0);
+			}
 		} else if (resourceBean instanceof StaticRouteBean) {
 			final StaticRouteDao staticRouteDao = new StaticRouteDao();
 			deletionStatus = staticRouteDao.delete(connection,

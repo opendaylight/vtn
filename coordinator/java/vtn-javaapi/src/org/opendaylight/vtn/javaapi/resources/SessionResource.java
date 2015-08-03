@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -21,12 +21,8 @@ import org.opendaylight.vtn.javaapi.constants.VtnServiceIpcConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.conversion.IpcDataUnitWrapper;
-import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
+import org.opendaylight.vtn.javaapi.ipc.enums.*;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
-import org.opendaylight.vtn.javaapi.ipc.enums.UncIpcErrorCode;
-import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
-import org.opendaylight.vtn.javaapi.ipc.enums.UncSessionEnums;
-import org.opendaylight.vtn.javaapi.ipc.enums.UncStructEnum;
 import org.opendaylight.vtn.javaapi.validation.SessionResourceValidator;
 
 /**
@@ -106,7 +102,10 @@ public class SessionResource extends AbstractResource {
 			// JsonObject
 			session.addOutput(usessIpcReqSessDel);
 			LOG.info("Request packet created successfully");
+			long start = System.currentTimeMillis();
 			status = session.invoke();
+			LOG.debug("The treatment of under layer cost the following time: "
+					+ (System.currentTimeMillis() - start) + "(ms)");
 			LOG.info("Request packet processed with status:" + status);
 			if (status != UncSessionEnums.UsessIpcErrE.USESS_E_OK.ordinal()) {
 				LOG.info("Error occurred while performing operation");
@@ -198,7 +197,10 @@ public class SessionResource extends AbstractResource {
 					usessIpcReqSessIdDetail);
 			session.addOutput(usessIpcReqSessDetail);
 			LOG.info("Request packet created successfully");
+			long start = System.currentTimeMillis();
 			status = session.invoke();
+			LOG.debug("The treatment of under layer cost the following time: "
+					+ (System.currentTimeMillis() - start) + "(ms)");
 			LOG.info("Request packet processed with status:" + status);
 			if (status != UncSessionEnums.UsessIpcErrE.USESS_E_OK.ordinal()) {
 				LOG.info("Error occurred while performing operation");
@@ -400,6 +402,7 @@ public class SessionResource extends AbstractResource {
 				+ IpcDataUnitWrapper.getIpcStructUint32Value(responseStruct,
 						VtnServiceIpcConsts.SESS_MODE));
 		// add configstatus to response json
+		boolean enableFlag = false;
 		if (IpcDataUnitWrapper
 				.getIpcStructUint32Value(responseStruct,
 						VtnServiceIpcConsts.CONFIG_STATUS)
@@ -416,12 +419,61 @@ public class SessionResource extends AbstractResource {
 						.getValue())) {
 			sessJson.addProperty(VtnServiceJsonConsts.CONFIGSTATUS,
 					VtnServiceJsonConsts.ENABLE);
+			enableFlag = true;
+		} else if (IpcDataUnitWrapper
+				.getIpcStructUint32Value(responseStruct,
+						VtnServiceIpcConsts.CONFIG_STATUS)
+				.equals(UncSessionEnums.UsessConfigModeE.CONFIG_STATUS_TCLOCK_PART
+						.getValue())) {
+			sessJson.addProperty(VtnServiceJsonConsts.CONFIGSTATUS,
+					VtnServiceJsonConsts.ENABLE);
+			enableFlag = true;
 		} else {
 			LOG.debug("Incorrect value for config_status");
 		}
 		LOG.debug("configstatus: "
 				+ IpcDataUnitWrapper.getIpcStructUint32Value(responseStruct,
 						VtnServiceIpcConsts.CONFIG_STATUS));
+
+		// add config_mode to response json
+		if (enableFlag) {
+			if (IpcDataUnitWrapper
+					.getIpcStructUint32Value(responseStruct,
+							VtnServiceIpcConsts.CONFIG_MODE)
+					.equals(String.valueOf(UncTCEnums.ConfigMode.TC_CONFIG_GLOBAL
+							.ordinal()))) {
+				sessJson.addProperty(VtnServiceJsonConsts.CONFIGMODE,
+						VtnServiceJsonConsts.GLOBAL_MODE);
+			} else if (IpcDataUnitWrapper
+					.getIpcStructUint32Value(responseStruct,
+							VtnServiceIpcConsts.CONFIG_MODE)
+					.equals(String.valueOf(UncTCEnums.ConfigMode.TC_CONFIG_REAL
+							.ordinal()))) {
+				sessJson.addProperty(VtnServiceJsonConsts.CONFIGMODE,
+						VtnServiceJsonConsts.REAL_MODE);
+			} else if (IpcDataUnitWrapper
+					.getIpcStructUint32Value(responseStruct,
+							VtnServiceIpcConsts.CONFIG_MODE)
+					.equals(String.valueOf(UncTCEnums.ConfigMode.TC_CONFIG_VIRTUAL
+							.ordinal()))) {
+				sessJson.addProperty(VtnServiceJsonConsts.CONFIGMODE,
+						VtnServiceJsonConsts.VIRTUAL_MODE);
+			} else if (IpcDataUnitWrapper
+					.getIpcStructUint32Value(responseStruct,
+							VtnServiceIpcConsts.CONFIG_MODE)
+					.equals(String.valueOf(UncTCEnums.ConfigMode.TC_CONFIG_VTN
+							.ordinal()))) {
+				sessJson.addProperty(VtnServiceJsonConsts.CONFIGMODE,
+						VtnServiceJsonConsts.VTN_MODE);
+				sessJson.addProperty(VtnServiceJsonConsts.VTNNAME,
+						IpcDataUnitWrapper
+								.getIpcStructUint8ArrayValue(responseStruct,
+										VtnServiceIpcConsts.VTNNAME));
+			} else {
+				LOG.debug("Incorrect value for config_mode");
+			}
+		}
+
 		response.add(VtnServiceJsonConsts.SESSION, sessJson);
 		LOG.trace("Completed SessionResource#createGetResponse()");
 		return response;

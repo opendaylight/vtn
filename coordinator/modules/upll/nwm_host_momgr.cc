@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -110,13 +110,14 @@ BindInfo NwMonitorHostMoMgr::key_nwm_host_maintbl_update_bind_info[] = {
 NwMonitorHostMoMgr::NwMonitorHostMoMgr() {
   UPLL_FUNC_TRACE
   ntable = MAX_MOMGR_TBLS;
-  table = new Table *[ntable];
+  table = new Table *[ntable]();
   table[MAINTBL] = new Table(uudst::kDbiVbrNwMonHostTbl,
       UNC_KT_VBR_NWMONITOR_HOST, nwm_host_bind_info,
       IpctSt::kIpcStKeyNwmHost, IpctSt::kIpcStValNwmHost,
       uudst::vbridge_networkmonitor_host::kDbiVbrNwMonHostNumCols);
   table[RENAMETBL] = NULL;
   table[CTRLRTBL] = NULL;
+  table[CONVERTTBL] = NULL;
   nchild = 0;
   child = NULL;
 }
@@ -136,7 +137,8 @@ bool NwMonitorHostMoMgr::GetRenameKeyBindInfo(unc_key_type_t key_type,
   return PFC_TRUE;
 }
 
-bool NwMonitorHostMoMgr::IsValidKey(void *key, uint64_t index) {
+bool NwMonitorHostMoMgr::IsValidKey(void *key, uint64_t index,
+                                    MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
   key_nwm_host *nwmh_key = reinterpret_cast<key_nwm_host *>(key);
   uint32_t val = 0;
@@ -336,7 +338,7 @@ upll_rc_t NwMonitorHostMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
   UPLL_FUNC_TRACE;
   if (req == NULL) return UPLL_RC_ERR_GENERIC;
   if (okey != NULL) return UPLL_RC_ERR_GENERIC;
-  if (req->get_key_type() != UNC_KT_VBR_NWMONITOR_HOST) 
+  if (req->get_key_type() != UNC_KT_VBR_NWMONITOR_HOST)
     return UPLL_RC_ERR_GENERIC;
   ConfigVal *tmp1 = NULL, *tmp = (req)->get_cfg_val();
   if (tmp) {
@@ -411,7 +413,7 @@ upll_rc_t NwMonitorHostMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
   } else if (op == UNC_OP_UPDATE) {
     void *val = reinterpret_cast<void*>(nwm_val);
     CompareValidValue(val, GetVal(upd_key), true);
-    UPLL_LOG_TRACE("Key in Running %s",(upd_key->ToStrAll()).c_str());
+    UPLL_LOG_TRACE("Key in Running %s", (upd_key->ToStrAll()).c_str());
     nwm_val->cs_row_status = nwm_val2->cs_row_status;
   } else {
     return UPLL_RC_ERR_GENERIC;
@@ -456,31 +458,31 @@ bool NwMonitorHostMoMgr::CompareValidValue(void *&val1, void *val2,
   if (UNC_VF_VALID == valnwmhost1->valid[UPLL_IDX_HEALTH_INTERVAL_NWMH]
       && UNC_VF_VALID == valnwmhost2->valid[UPLL_IDX_HEALTH_INTERVAL_NWMH]) {
     if (valnwmhost1->health_interval == valnwmhost2->health_interval)
-      valnwmhost1->valid[UPLL_IDX_HEALTH_INTERVAL_NWMH] = 
+      valnwmhost1->valid[UPLL_IDX_HEALTH_INTERVAL_NWMH] =
         (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   if (UNC_VF_VALID == valnwmhost1->valid[UPLL_IDX_RECOVERY_INTERVAL_NWMH]
       && UNC_VF_VALID == valnwmhost2->valid[UPLL_IDX_RECOVERY_INTERVAL_NWMH]) {
     if (valnwmhost1->recovery_interval == valnwmhost2->recovery_interval)
-      valnwmhost1->valid[UPLL_IDX_RECOVERY_INTERVAL_NWMH] = 
+      valnwmhost1->valid[UPLL_IDX_RECOVERY_INTERVAL_NWMH] =
         (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   if (UNC_VF_VALID == valnwmhost1->valid[UPLL_IDX_FAILURE_COUNT_NWMH]
       && UNC_VF_VALID == valnwmhost2->valid[UPLL_IDX_FAILURE_COUNT_NWMH]) {
     if (valnwmhost1->failure_count == valnwmhost2->failure_count)
-      valnwmhost1->valid[UPLL_IDX_FAILURE_COUNT_NWMH] = 
+      valnwmhost1->valid[UPLL_IDX_FAILURE_COUNT_NWMH] =
         (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   if (UNC_VF_VALID == valnwmhost1->valid[UPLL_IDX_RECOVERY_COUNT_NWMH]
       && UNC_VF_VALID == valnwmhost2->valid[UPLL_IDX_RECOVERY_COUNT_NWMH]) {
     if (valnwmhost1->recovery_count == valnwmhost2->recovery_count)
-      valnwmhost1->valid[UPLL_IDX_RECOVERY_COUNT_NWMH] = 
+      valnwmhost1->valid[UPLL_IDX_RECOVERY_COUNT_NWMH] =
         (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   if (UNC_VF_VALID == valnwmhost1->valid[UPLL_IDX_WAIT_TIME_NWMH]
       && UNC_VF_VALID == valnwmhost2->valid[UPLL_IDX_WAIT_TIME_NWMH]) {
     if (valnwmhost1->wait_time == valnwmhost2->wait_time)
-      valnwmhost1->valid[UPLL_IDX_WAIT_TIME_NWMH] = 
+      valnwmhost1->valid[UPLL_IDX_WAIT_TIME_NWMH] =
         (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
   for (unsigned int loop = 0;
@@ -603,7 +605,8 @@ upll_rc_t NwMonitorHostMoMgr::ValidateMessage(IpcReqRespHeader *req,
   }
   ret_val = ValidateNwMonHostKey(key_nwm_host, operation);
   if (ret_val != UPLL_RC_SUCCESS) {
-    UPLL_LOG_DEBUG("Key structure validation failure for KT_VBR_NWMONITOR_HOST");
+    UPLL_LOG_DEBUG(
+        "Key structure validation failure for KT_VBR_NWMONITOR_HOST");
     return UPLL_RC_ERR_CFG_SYNTAX;
   } else {
     if (((operation == UNC_OP_CREATE) || (operation == UNC_OP_UPDATE))
@@ -647,7 +650,8 @@ upll_rc_t NwMonitorHostMoMgr::ValidateMessage(IpcReqRespHeader *req,
       }
     } else if ((operation == UNC_OP_DELETE) || (operation == UNC_OP_READ_NEXT)
         || (operation == UNC_OP_READ_BULK)) {
-      UPLL_LOG_TRACE("Value structure is none for operation type:%d", operation);
+      UPLL_LOG_TRACE(
+          "Value structure is none for operation type:%d", operation);
       return UPLL_RC_SUCCESS;
     } else {
       UPLL_LOG_DEBUG("Invalid datatype(%d) and operation(%d)", dt_type,
@@ -669,7 +673,7 @@ upll_rc_t NwMonitorHostMoMgr::ValidateNwMonHostValue(
           val_nwm_host->health_interval);
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
-  } 
+  }
 #if 0
   else if ((val_nwm_host->valid[UPLL_IDX_HEALTH_INTERVAL_NWMH]
         == UNC_VF_VALID_NO_VALUE)
@@ -687,7 +691,7 @@ upll_rc_t NwMonitorHostMoMgr::ValidateNwMonHostValue(
           val_nwm_host->recovery_interval);
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
-  } 
+  }
 #if 0
   else if ((val_nwm_host->valid[UPLL_IDX_RECOVERY_INTERVAL_NWMH]
         == UNC_VF_VALID_NO_VALUE)
@@ -704,7 +708,7 @@ upll_rc_t NwMonitorHostMoMgr::ValidateNwMonHostValue(
           val_nwm_host->failure_count);
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
-  } 
+  }
 #if 0
   else if ((val_nwm_host->valid[UPLL_IDX_FAILURE_COUNT_NWMH]
         == UNC_VF_VALID_NO_VALUE)
@@ -721,7 +725,7 @@ upll_rc_t NwMonitorHostMoMgr::ValidateNwMonHostValue(
           val_nwm_host->recovery_count);
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
-  } 
+  }
 #if 0
   else if ((val_nwm_host->valid[UPLL_IDX_RECOVERY_COUNT_NWMH]
         == UNC_VF_VALID_NO_VALUE)
@@ -738,7 +742,7 @@ upll_rc_t NwMonitorHostMoMgr::ValidateNwMonHostValue(
           val_nwm_host->wait_time);
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
-  } 
+  }
 #if 0
   else if ((val_nwm_host->valid[UPLL_IDX_WAIT_TIME_NWMH]
         == UNC_VF_VALID_NO_VALUE)
@@ -770,7 +774,7 @@ upll_rc_t NwMonitorHostMoMgr::ValidateNwMonHostKey(
   }
   if ((operation == UNC_OP_READ_SIBLING_BEGIN) ||
       (operation == UNC_OP_READ_SIBLING_COUNT)) {
-    key_nwm_host->host_address.s_addr = 0x00000000; 
+    key_nwm_host->host_address.s_addr = 0x00000000;
   } else {
     if (key_nwm_host->host_address.s_addr == 0x00000000 ||
         key_nwm_host->host_address.s_addr == 0xffffffff) {
@@ -845,7 +849,7 @@ upll_rc_t NwMonitorHostMoMgr::ValidateCapability(IpcReqRespHeader *req,
     ConfigKeyVal *ikey,
     const char * ctrlr_name) {
   UPLL_FUNC_TRACE;
-  if (!ikey || !req ) {
+  if (!ikey || !req) {
     UPLL_LOG_DEBUG("ConfigKeyVal / IpcReqRespHeader is Null");
     return UPLL_RC_ERR_GENERIC;
   }
@@ -905,9 +909,11 @@ upll_rc_t NwMonitorHostMoMgr::ValidateCapability(IpcReqRespHeader *req,
   }
   if (val_nwm_host) {
     if (max_attrs > 0) {
-      return ValNwMonHostAttributeSupportCheck(val_nwm_host, attrs, req->operation);
+      return ValNwMonHostAttributeSupportCheck(
+          val_nwm_host, attrs, req->operation);
     } else {
-      UPLL_LOG_DEBUG("Attribute list is empty for operation %d", req->operation);
+      UPLL_LOG_DEBUG(
+          "Attribute list is empty for operation %d", req->operation);
       return UPLL_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
     }
   }
@@ -924,18 +930,18 @@ upll_rc_t NwMonitorHostMoMgr::GetControllerDomainId(ConfigKeyVal *ikey,
   upll_rc_t result_code = mgr->ReadConfigDB(ikey, dt_type, UNC_OP_READ,
                                             dbop, dmi, MAINTBL);
   if (result_code != UPLL_RC_SUCCESS) {
-    UPLL_LOG_DEBUG("Returning error %d",result_code);
+    UPLL_LOG_DEBUG("Returning error %d", result_code);
     return result_code;
   }
-  GET_USER_DATA_CTRLR_DOMAIN(ikey,*ctrlr_dom);
+  GET_USER_DATA_CTRLR_DOMAIN(ikey, *ctrlr_dom);
   if ((!ctrlr_dom->ctrlr || !ctrlr_dom->domain))
     return UPLL_RC_ERR_GENERIC;
-  UPLL_LOG_DEBUG("ctrlr %s domain %s",ctrlr_dom->ctrlr,ctrlr_dom->domain);
+  UPLL_LOG_DEBUG("ctrlr %s domain %s", ctrlr_dom->ctrlr, ctrlr_dom->domain);
   return UPLL_RC_SUCCESS;
 }
 
-upll_rc_t NwMonitorHostMoMgr::IsReferenced(ConfigKeyVal *ikey,
-                                           upll_keytype_datatype_t dt_type,
+upll_rc_t NwMonitorHostMoMgr::IsReferenced(IpcReqRespHeader *req,
+                                           ConfigKeyVal *ikey,
                                            DalDmlIntf *dmi) {
   return UPLL_RC_SUCCESS;
 }

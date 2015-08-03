@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -34,6 +34,7 @@ class VbrPolicingMapMoMgr : public MoMgrImpl {
     static BindInfo vbr_policingmap_bind_info[];
     static BindInfo key_vbrpm_maintbl_rename_bind_info[];
     static BindInfo key_vbrpm_policyname_maintbl_rename_bind_info[];
+
   public:
     /**
      * @Brief  PolicingProfileMoMgr Class Constructor.
@@ -123,7 +124,7 @@ class VbrPolicingMapMoMgr : public MoMgrImpl {
      * @retval    UPLL_RC_ERR_NO_SUCH_INSTANCE  No Record in DB.
      * @retval    UPLL_RC_ERR_INSTANCE_EXISTS   Record exists in DB.
      */
-    upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
+    upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                            DalDmlIntf *dmi);
 
     /**
@@ -161,7 +162,9 @@ class VbrPolicingMapMoMgr : public MoMgrImpl {
     upll_rc_t UpdateRefCountInPPCtrlr(ConfigKeyVal *ikey,
                                       upll_keytype_datatype_t dt_type,
                                       DalDmlIntf *dmi,
-                                      unc_keytype_operation_t op);
+                                      unc_keytype_operation_t op,
+                                      TcConfigMode config_mode,
+                                      string vtn_name);
 
     /**
      *  @Brief Method used to get ctrlrid .
@@ -476,7 +479,7 @@ class VbrPolicingMapMoMgr : public MoMgrImpl {
      *
      * @retval  UPLL_RC_SUCCESS      Successfull completion.
      * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
-     * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists 
+     * @retval  UPLL_RC_ERR_INSTANCE_EXISTS       Record already exists
      * @retval  UPLL_RC_ERR_GENERIC  Returned Generic Error.
      */
 
@@ -494,7 +497,7 @@ class VbrPolicingMapMoMgr : public MoMgrImpl {
                                           ConfigKeyVal **okey,
                                           controller_domain ctrlr_dom);
 
-    bool IsValidKey(void *key, uint64_t index);
+    bool IsValidKey(void *key, uint64_t index, MoMgrTables tbl = MAINTBL);
 
     upll_rc_t ConstructReadDetailEntryResponse(ConfigKeyVal *ikey,
                                                ConfigKeyVal *dup_key,
@@ -554,12 +557,15 @@ class VbrPolicingMapMoMgr : public MoMgrImpl {
     upll_rc_t CreateAuditMoImpl(ConfigKeyVal *ikey,
                                  DalDmlIntf *dmi,
                                  const char *ctrlr_id);
- 
+
     upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
                                 upll_keytype_datatype_t dt_type,
-                                DalDmlIntf *dmi);
+                                DalDmlIntf *dmi,
+                                TcConfigMode config_mode,
+                                string vtn_name);
 
     upll_rc_t IsPolicingProfileConfigured(const char* policingprofile_name,
+                                          upll_keytype_datatype_t dt_type,
                                           DalDmlIntf *dmi);
 
     upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
@@ -587,7 +593,7 @@ class VbrPolicingMapMoMgr : public MoMgrImpl {
                             DalDmlIntf *dmi,
                             IpcReqRespHeader *req);
 };
-}  // kt_momgr
-}  // upll
-}  // unc
+}  // namespace kt_momgr
+}  // namespace upll
+}  // namespace unc
 #endif  // MODULES_UPLL_VBR_POLICINGMAP_MOMGR_HH_

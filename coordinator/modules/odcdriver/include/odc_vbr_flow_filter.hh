@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -221,10 +221,11 @@ public:
           val_entry.valid[UPLL_IDX_REDIRECT_PORT_FFE]=UNC_VF_VALID;
         }
 
-        if ( entry->filterType_->redirect_->output_ == false )
-          val_entry.redirect_direction=UPLL_FLOWFILTER_DIR_OUT;
-        else
+        if ( (entry->filterType_->redirect_->destination_->bridge_ != "") &&
+            (entry->filterType_->redirect_->destination_->interface_ != ""))
           val_entry.redirect_direction=UPLL_FLOWFILTER_DIR_IN;
+        else
+          val_entry.redirect_direction=UPLL_FLOWFILTER_DIR_OUT;
         val_entry.valid[UPLL_IDX_REDIRECT_DIRECTION_FFE]=UNC_VF_VALID;
 
       }
@@ -453,10 +454,10 @@ public:
 
     out->index_=key_in.sequence_num;
     if (value_new_in.valid[UPLL_IDX_FLOWLIST_NAME_FFE] == UNC_VF_VALID) {
-      out->condition_.assign(reinterpret_cast<char*>(value_new_in.flowlist_name));
-    } else if (value_new_in.valid[UPLL_IDX_FLOWLIST_NAME_FFE] == UNC_VF_INVALID
+    out->condition_.assign(reinterpret_cast<char*>(value_new_in.flowlist_name));
+    } else if (value_new_in.valid[UPLL_IDX_FLOWLIST_NAME_FFE] == UNC_VF_INVALID 
            ||  value_old_in.valid[UPLL_IDX_FLOWLIST_NAME_FFE] == UNC_VF_VALID) {
-      out->condition_.assign(reinterpret_cast<char*>(value_old_in.flowlist_name));
+    out->condition_.assign(reinterpret_cast<char*>(value_old_in.flowlist_name));
     }
     if (value_new_in.valid[UPLL_IDX_ACTION_FFE] == UNC_VF_VALID) {
       out->filterType_=new filterType();
@@ -466,9 +467,9 @@ public:
         out->filterType_->drop_=new drop();
       } else if ( value_new_in.action == UPLL_FLOWFILTER_ACT_REDIRECT ) {
         out->filterType_->redirect_=new redirect();
-        if ( (value_new_in.valid[UPLL_IDX_REDIRECT_NODE_FFE] == UNC_VF_VALID) ||
-            (value_new_in.valid[UPLL_IDX_REDIRECT_NODE_FFE] ==
-                                                 UNC_VF_VALUE_NOT_MODIFIED)) {
+        if ( value_new_in.valid[UPLL_IDX_REDIRECT_NODE_FFE] == UNC_VF_VALID ||
+            value_new_in.valid[UPLL_IDX_REDIRECT_NODE_FFE] ==
+                                                 UNC_VF_VALUE_NOT_MODIFIED) {
           out->filterType_->redirect_->destination_ = new destination();
           std::string redirect_node(reinterpret_cast <char *>(
                                  value_new_in.redirect_node));
@@ -488,9 +489,9 @@ public:
             reinterpret_cast<char*>(key_in.flowfilter_key.
                                     vbr_key.vtn_key.vtn_name));
         }
-        if (( value_new_in.valid[UPLL_IDX_REDIRECT_PORT_FFE] == UNC_VF_VALID) ||
-             (value_new_in.valid[UPLL_IDX_REDIRECT_PORT_FFE] ==
-                                              UNC_VF_VALUE_NOT_MODIFIED)) {
+        if ( value_new_in.valid[UPLL_IDX_REDIRECT_PORT_FFE] == UNC_VF_VALID ||
+             value_new_in.valid[UPLL_IDX_REDIRECT_PORT_FFE] ==
+                                              UNC_VF_VALUE_NOT_MODIFIED) {
           out->filterType_->redirect_->destination_->interface_.assign(
             reinterpret_cast <char *>(value_new_in.redirect_port));
         }
@@ -507,9 +508,9 @@ public:
         out->filterType_->drop_=new drop();
       } else if ( value_old_in.action == UPLL_FLOWFILTER_ACT_REDIRECT ) {
         out->filterType_->redirect_=new redirect();
-        if ( (value_old_in.valid[UPLL_IDX_REDIRECT_NODE_FFE] == UNC_VF_VALID) ||
-                  (value_new_in.valid[UPLL_IDX_REDIRECT_NODE_FFE] ==
-                                             UNC_VF_VALUE_NOT_MODIFIED)) {
+        if ( value_old_in.valid[UPLL_IDX_REDIRECT_NODE_FFE] == UNC_VF_VALID ||
+                  value_new_in.valid[UPLL_IDX_REDIRECT_NODE_FFE] ==
+                                             UNC_VF_VALUE_NOT_MODIFIED) {
           out->filterType_->redirect_->destination_ = new destination();
           std::string redirect_node(reinterpret_cast <char *>
                                                (value_new_in.redirect_node));
@@ -546,7 +547,7 @@ public:
       out->filterType_->pass_=new pass();
     }
 
-    if (value_new_in.valid[UPLL_IDX_DSCP_FFE] == UNC_VF_VALID ) {
+    if (value_new_in.valid[UPLL_IDX_DSCP_FFE] == UNC_VF_VALID) { 
       action *new_action = new action();
       new_action->dscp_ = new dscp();
       new_action->dscp_->dscp_=value_new_in.dscp;
@@ -560,7 +561,7 @@ public:
       } else {
     pfc_log_info("INVALID for new and old value structures of dscp attribute ");
     }
-    if ( value_new_in.valid[UPLL_IDX_PRIORITY_FFE] == UNC_VF_VALID ) {
+    if ( value_new_in.valid[UPLL_IDX_PRIORITY_FFE] == UNC_VF_VALID ){
       action *new_action = new action();
       new_action->vlanpcp_ = new vlanpcp();
       new_action->vlanpcp_->priority_=value_new_in.priority;
@@ -574,9 +575,10 @@ public:
       } else {
         pfc_log_info("INVALID for new and old value structures of PRIORITY ");
     }
-   if (value_new_in.valid[UPLL_IDX_MODIFY_DST_MAC_FFE] == UNC_VF_VALID  ||
-                  (value_new_in.valid[UPLL_IDX_MODIFY_DST_MAC_FFE] ==
-                         UNC_VF_VALUE_NOT_MODIFIED) ){
+   if ((value_new_in.valid[UPLL_IDX_MODIFY_DST_MAC_FFE] == UNC_VF_VALID &&
+              value_old_in.valid[UPLL_IDX_MODIFY_DST_MAC_FFE] == UNC_VF_VALID) ||
+                  value_new_in.valid[UPLL_IDX_MODIFY_DST_MAC_FFE] ==
+                         UNC_VF_VALUE_NOT_MODIFIED ){
       action *new_action = new action();
       new_action->dldst_ = new dldst();
       unc::odcdriver::OdcUtil util_;
@@ -594,9 +596,9 @@ public:
      }else {
       pfc_log_info("INVALID for new and old valstruct of DSTMACADDR attribute");
     }
-   if (value_new_in.valid[UPLL_IDX_MODIFY_SRC_MAC_FFE] == UNC_VF_VALID ||
-         (value_new_in.valid[UPLL_IDX_MODIFY_SRC_MAC_FFE] ==
-                                                UNC_VF_VALUE_NOT_MODIFIED)) {
+   if ((value_new_in.valid[UPLL_IDX_MODIFY_SRC_MAC_FFE] == UNC_VF_VALID) || 
+         value_new_in.valid[UPLL_IDX_MODIFY_SRC_MAC_FFE] ==
+                                                UNC_VF_VALUE_NOT_MODIFIED) {
       action *new_action = new action();
       new_action->dlsrc_ = new dlsrc();
       unc::odcdriver::OdcUtil util_;
@@ -622,6 +624,7 @@ public:
     return UNC_RC_SUCCESS;
   }
 };
+
 }
 }
 
