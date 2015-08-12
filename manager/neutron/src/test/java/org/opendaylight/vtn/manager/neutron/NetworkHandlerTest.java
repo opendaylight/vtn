@@ -33,6 +33,8 @@ import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.VlanMapConfig;
+import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
@@ -40,8 +42,6 @@ import org.opendaylight.vtn.manager.VTerminal;
 import org.opendaylight.vtn.manager.VTerminalConfig;
 import org.opendaylight.vtn.manager.VTerminalPath;
 import org.opendaylight.vtn.manager.VTerminalIfPath;
-import org.opendaylight.vtn.manager.VlanMap;
-import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.flow.DataFlow;
 import org.opendaylight.vtn.manager.flow.DataFlowFilter;
 import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
@@ -75,18 +75,6 @@ public class NetworkHandlerTest extends TestBase {
     // String identifier to have NetworkType-FLAT.
     final String flatNetworkType = "FLAT";
 
-    // String identifier to have NetworkType-vlan.
-    final String vlanNetworkType = "vlan";
-
-    // String identifier to have VlanId in letters.
-    final String vlanIdInString = "ThreeHundred";
-
-    // String identifier to have VlanId-300.
-    final String vlanId300 = "300";
-
-    // String identifier to have VlanId-400.
-    final String vlanId400 = "400";
-
     /**
      * Test method for
      * {@link NetworkHandler#canCreateNetwork(NeutronNetwork)}.
@@ -117,24 +105,6 @@ public class NetworkHandlerTest extends TestBase {
         network.setShared(true);
         assertEquals(HttpURLConnection.HTTP_NOT_ACCEPTABLE,
                      nh.canCreateNetwork(network));
-
-        // Failure Case - By setting ProviderNetworkType as VLAN and setting invalid format of ProviderSegmentationID, and Returns HTTP_BAD_REQUEST
-        network = new NeutronNetwork();
-        network.setTenantID(TENANT_ID_ARRAY[3]);
-        network.setNetworkUUID(NEUTRON_UUID_ARRAY[3]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanIdInString);
-        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
-                     nh.canCreateNetwork(network));
-
-        // Success Case - By setting ProviderNetworkType as VLAN and setting ProviderSegmentationID, and Returns HTTP_CREATED
-        network = new NeutronNetwork();
-        network.setTenantID(TENANT_ID_ARRAY[4]);
-        network.setNetworkUUID(NEUTRON_UUID_ARRAY[4]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        assertEquals(HttpURLConnection.HTTP_CREATED,
-                     nh.canCreateNetwork(network));
     }
 
     /**
@@ -156,40 +126,30 @@ public class NetworkHandlerTest extends TestBase {
         network = new NeutronNetwork();
         network.setTenantID(vtnManagerStubNH.tenantUuid1);
         network.setNetworkUUID(NEUTRON_UUID_ARRAY[0]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
         nh.neutronNetworkCreated(network);
 
         // Failure Case - CreateTenant() recieves HTTP_CONFLICT(CreateTenant failed for tenant)
         network = new NeutronNetwork();
         network.setTenantID(vtnManagerStubNH.tenantUuid3);
         network.setNetworkUUID(NEUTRON_UUID_ARRAY[1]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
         nh.neutronNetworkCreated(network);
 
         // Success Case - Sending the Tenant which does not exist in the VTN
         network = new NeutronNetwork();
         network.setTenantID(TENANT_ID_ARRAY[2]);
         network.setNetworkUUID(NEUTRON_UUID_ARRAY[2]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
         nh.neutronNetworkCreated(network);
 
         // Failure Case - Failed to create network(BAD_REQUEST from isTenantExist())
         network = new NeutronNetwork();
         network.setTenantID(vtnManagerStubNH.tenantUuid2);
         network.setNetworkUUID(NEUTRON_UUID_ARRAY[3]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
         nh.neutronNetworkCreated(network);
 
         // Failure Case - CreateBridge recieves BAD_REQUEST(Sending already existing Tenant which should not be deleted)
         network = new NeutronNetwork();
         network.setTenantID(vtnManagerStubNH.tenantUuid1);
         network.setNetworkUUID(vtnManagerStubNH.bridgeUuid2);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
         network.setNetworkName(defaultNetworkDescription);
         nh.neutronNetworkCreated(network);
 
@@ -197,8 +157,6 @@ public class NetworkHandlerTest extends TestBase {
         network = new NeutronNetwork();
         network.setTenantID(vtnManagerStubNH.tenantUuid4);
         network.setNetworkUUID(vtnManagerStubNH.bridgeUuid2);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
         network.setNetworkName(defaultNetworkDescription);
         nh.neutronNetworkCreated(network);
 
@@ -206,8 +164,6 @@ public class NetworkHandlerTest extends TestBase {
         network = new NeutronNetwork();
         network.setTenantID(vtnManagerStubNH.tenantUuid5);
         network.setNetworkUUID(vtnManagerStubNH.bridgeUuid2);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
         network.setNetworkName(defaultNetworkDescription);
         nh.neutronNetworkCreated(network);
 
@@ -215,17 +171,6 @@ public class NetworkHandlerTest extends TestBase {
         network = new NeutronNetwork();
         network.setTenantID(TENANT_ID_ARRAY[1]);
         network.setNetworkUUID(NEUTRON_UUID_ARRAY[1]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        network.setNetworkName(defaultNetworkDescription);
-        nh.neutronNetworkCreated(network);
-
-        // Failure Case - Failed in CreateVlanMap, Tenant not deleted(Tenant didnt create) and getting failure when deleting created Bridge.
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid1);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid4);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
         network.setNetworkName(defaultNetworkDescription);
         nh.neutronNetworkCreated(network);
 
@@ -233,8 +178,6 @@ public class NetworkHandlerTest extends TestBase {
         network = new NeutronNetwork();
         network.setTenantID(TENANT_ID_ARRAY[0]);
         network.setNetworkUUID(NEUTRON_UUID_ARRAY[0]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
         nh.neutronNetworkCreated(network);
     }
 
@@ -280,19 +223,6 @@ public class NetworkHandlerTest extends TestBase {
         orginal.setTenantID(vtnManagerStubNH.tenantUuid1);
         orginal.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
         assertEquals(HttpURLConnection.HTTP_NOT_ACCEPTABLE,
-                     nh.canUpdateNetwork(delta, orginal));
-
-        // Success Case - isVlanMapExist() returns HTTP_NOT_FOUND
-        // by setting validID in delta.ProviderSegmentationID, delta.ProviderNetworkType is NULL and orginal.ProviderNetworkType is VLAN.
-        delta = new NeutronNetwork();
-        delta.setNetworkName(defaultNetworkDescription);
-        delta.setProviderSegmentationID(vlanId300);
-        orginal = new NeutronNetwork();
-        orginal.setProviderNetworkType(vlanNetworkType);
-        orginal.setTenantID(vtnManagerStubNH.tenantUuid1);
-        orginal.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        orginal.setNetworkName(defaultNetworkDescription);
-        assertEquals(HttpURLConnection.HTTP_OK,
                      nh.canUpdateNetwork(delta, orginal));
     }
 
@@ -340,42 +270,6 @@ public class NetworkHandlerTest extends TestBase {
         network.setTenantID(vtnManagerStubNH.tenantUuid1);
         network.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
         network.setNetworkName(defaultNetworkDescription);
-        nh.neutronNetworkUpdated(network);
-
-        // Failure Case - modifyVlanMap() getting failed
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid2);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        nh.neutronNetworkUpdated(network);
-
-        // Failure Case - modifyVlanMap() getting modified success
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid1);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        network.setNetworkName(defaultNetworkDescription);
-        nh.neutronNetworkUpdated(network);
-
-        // Failure Case - Setting FLAT to network.ProviderNetworkType and 300(in letters to get exception) to network.ProviderSegmentationID.
-        // returns HTTP_NOT_FOUND from isVlanMapExist()
-        vtnManagerStubNH.addVlanMapId = vtnManagerStubNH.httpBadRequestForVlanId;
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid1);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        network.setNetworkName(defaultNetworkDescription);
-        network.setProviderNetworkType(flatNetworkType);
-        network.setProviderSegmentationID(vlanIdInString);
-        nh.neutronNetworkUpdated(network);
-
-        // Success Case - Setting FLAT to network.ProviderNetworkType and 300 to network.ProviderSegmentationID.
-        // Getting HTTP_OK from deleteVlanMaps
-        vtnManagerStubNH.addBridge2ForGetVlanMap = true;
-        vtnManagerStubNH.addVlanMapId = vtnManagerStubNH.httpOkForVlanId;
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid1);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        network.setNetworkName(defaultNetworkDescription);
-        network.setProviderNetworkType(flatNetworkType);
-        network.setProviderSegmentationID(vlanId300);
         nh.neutronNetworkUpdated(network);
     }
 
@@ -542,141 +436,8 @@ public class NetworkHandlerTest extends TestBase {
         network.setNetworkUUID(vtnManagerStubNH.bridgeName2);
         assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
                      nh.canCreateNetwork(network));
-
     }
 
-    /**
-     * Test method for
-     * {@link NetworkHandler#canCreateVlanMap(NeutronNetwork)}.
-     */
-    @Test
-    public void testCanCreateVlanMap() {
-        NetworkHandler nh = new NetworkHandler();
-        VTNManagerStubForNetworkHandler vtnManagerStubNH = VTNManagerStubForNetworkHandler.getInstance();
-        nh.setVTNManager(vtnManagerStubNH);
-        NeutronNetwork network = null;
-
-        // Case - By not setting ProviderNetworkType, and Returns HTTP_CREATED
-        network = new NeutronNetwork();
-        network.setTenantID(TENANT_ID_ARRAY[0]);
-        network.setNetworkUUID(NEUTRON_UUID_ARRAY[0]);
-        assertEquals(HttpURLConnection.HTTP_CREATED,
-                     nh.canCreateNetwork(network));
-
-        // Case - By setting ProviderNetworkType as FLAT, and Returns HTTP_CREATED
-        network = new NeutronNetwork();
-        network.setTenantID(TENANT_ID_ARRAY[1]);
-        network.setNetworkUUID(NEUTRON_UUID_ARRAY[1]);
-        network.setProviderNetworkType(flatNetworkType);
-        assertEquals(HttpURLConnection.HTTP_CREATED,
-                     nh.canCreateNetwork(network));
-
-        // Case - By setting ProviderNetworkType as VLAN and not setting ProviderSegmentationID, and Returns HTTP_BAD_REQUEST
-        network = new NeutronNetwork();
-        network.setTenantID(TENANT_ID_ARRAY[2]);
-        network.setNetworkUUID(NEUTRON_UUID_ARRAY[2]);
-        network.setProviderNetworkType(vlanNetworkType);
-        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
-                     nh.canCreateNetwork(network));
-
-        // Case - By setting ProviderNetworkType as VLAN and setting invalid format of ProviderSegmentationID, and Returns HTTP_BAD_REQUEST
-        network = new NeutronNetwork();
-        network.setTenantID(TENANT_ID_ARRAY[3]);
-        network.setNetworkUUID(NEUTRON_UUID_ARRAY[3]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanIdInString);
-        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
-                     nh.canCreateNetwork(network));
-
-        // Case - By setting ProviderNetworkType as VLAN and setting ProviderSegmentationID, and Returns HTTP_OK
-        network = new NeutronNetwork();
-        network.setTenantID(TENANT_ID_ARRAY[4]);
-        network.setNetworkUUID(NEUTRON_UUID_ARRAY[4]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        assertEquals(HttpURLConnection.HTTP_CREATED,
-                     nh.canCreateNetwork(network));
-
-        // Case - By setting ProviderNetworkType as VLAN and setting ProviderSegmentationID, and Returns HTTP_CONFLICT
-        vtnManagerStubNH.addBridge2ForGetVlanMap = true;
-        network = new NeutronNetwork();
-        network.setTenantID(TENANT_ID_ARRAY[4]);
-        network.setNetworkUUID(NEUTRON_UUID_ARRAY[4]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId400);
-        assertEquals(HttpURLConnection.HTTP_CONFLICT,
-                     nh.canCreateNetwork(network));
-    }
-
-    /**
-     * Test method for
-     * {@link NetworkHandler#isVlanMapExist(String)}.
-     */
-    @Test
-    public void testIsVlanMapExist() {
-        NetworkHandler nh = new NetworkHandler();
-        VTNManagerStubForNetworkHandler vtnManagerStubNH = VTNManagerStubForNetworkHandler.getInstance();
-        nh.setVTNManager(vtnManagerStubNH);
-        NeutronNetwork network = null;
-
-        // Case - By setting ProviderNetworkType as VLAN and setting invalid format of ProviderSegmentationID, and Returns HTTP_BAD_REQUEST
-        network = new NeutronNetwork();
-        network.setTenantID(TENANT_ID_ARRAY[0]);
-        network.setNetworkUUID(NEUTRON_UUID_ARRAY[0]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanIdInString);
-        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
-                     nh.canCreateNetwork(network));
-
-        // Case - By setting boolean variable(VTNManagerStubForNetworkHandler.throwExceptionForGetTenants), and Throws exception
-        vtnManagerStubNH.throwExceptionForGetTenants = true;
-        network = new NeutronNetwork();
-        network.setTenantID(TENANT_ID_ARRAY[1]);
-        network.setNetworkUUID(NEUTRON_UUID_ARRAY[1]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        assertEquals(HttpURLConnection.HTTP_CREATED,
-                     nh.canCreateNetwork(network));
-
-        // Case - By setting boolean variable(VTNManagerStubForNetworkHandler.throwExceptionForGetBridges), and Throws exception
-        vtnManagerStubNH.throwExceptionForGetBridges = true;
-        network = new NeutronNetwork();
-        network.setTenantID(TENANT_ID_ARRAY[2]);
-        network.setNetworkUUID(NEUTRON_UUID_ARRAY[2]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        assertEquals(HttpURLConnection.HTTP_CREATED,
-                     nh.canCreateNetwork(network));
-
-        // Case - By setting ProviderNetworkType as VLAN and setting ProviderSegmentationID, and Returns HTTP_CONFLICT
-        vtnManagerStubNH.addBridge2ForGetVlanMap = true;
-        network = new NeutronNetwork();
-        network.setTenantID(TENANT_ID_ARRAY[3]);
-        network.setNetworkUUID(NEUTRON_UUID_ARRAY[3]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        assertEquals(HttpURLConnection.HTTP_CONFLICT,
-                     nh.canCreateNetwork(network));
-
-        // Case - By setting ProviderNetworkType as VLAN and setting ProviderSegmentationID, and Returns HTTP_BAD_REQUEST
-        vtnManagerStubNH.throwExceptionForGetVlanMap = true;
-        network = new NeutronNetwork();
-        network.setTenantID(TENANT_ID_ARRAY[4]);
-        network.setNetworkUUID(NEUTRON_UUID_ARRAY[4]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
-                     nh.canCreateNetwork(network));
-
-        // Case - By setting ProviderNetworkType as VLAN and setting ProviderSegmentationID, and Returns HTTP_OK
-        network = new NeutronNetwork();
-        network.setTenantID(TENANT_ID_ARRAY[4]);
-        network.setNetworkUUID(NEUTRON_UUID_ARRAY[4]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        assertEquals(HttpURLConnection.HTTP_CREATED,
-                     nh.canCreateNetwork(network));
-    }
 
     /**
      * Test method for
@@ -694,8 +455,6 @@ public class NetworkHandlerTest extends TestBase {
         network = new NeutronNetwork();
         network.setTenantID(TENANT_ID_ARRAY[4]);
         network.setNetworkUUID(NEUTRON_UUID_ARRAY[4]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
         assertEquals(HttpURLConnection.HTTP_CREATED,
                      nh.canCreateNetwork(network));
 
@@ -703,8 +462,6 @@ public class NetworkHandlerTest extends TestBase {
         network = new NeutronNetwork();
         network.setTenantID(TENANT_ID_ARRAY[4]);
         network.setNetworkUUID(NEUTRON_UUID_ARRAY[4]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
         assertEquals(HttpURLConnection.HTTP_CREATED,
                      nh.canCreateNetwork(network));
     }
@@ -725,8 +482,6 @@ public class NetworkHandlerTest extends TestBase {
         network = new NeutronNetwork();
         network.setTenantID(TENANT_ID_ARRAY[4]);
         network.setNetworkUUID(NEUTRON_UUID_ARRAY[4]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
         assertEquals(HttpURLConnection.HTTP_CREATED,
                      nh.canCreateNetwork(network));
 
@@ -734,8 +489,6 @@ public class NetworkHandlerTest extends TestBase {
         network = new NeutronNetwork();
         network.setTenantID(TENANT_ID_ARRAY[4]);
         network.setNetworkUUID(NEUTRON_UUID_ARRAY[4]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
         assertEquals(HttpURLConnection.HTTP_CREATED,
                      nh.canCreateNetwork(network));
     }
@@ -755,16 +508,12 @@ public class NetworkHandlerTest extends TestBase {
         network = new NeutronNetwork();
         network.setTenantID(vtnManagerStubNH.tenantUuid2);
         network.setNetworkUUID(NEUTRON_UUID_ARRAY[0]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
         nh.neutronNetworkCreated(network);
 
         // Case - CreateTenant recieves Success(HTTP_OK)
         network = new NeutronNetwork();
         network.setTenantID(TENANT_ID_ARRAY[1]);
         network.setNetworkUUID(NEUTRON_UUID_ARRAY[1]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
         nh.neutronNetworkCreated(network);
     }
 
@@ -783,8 +532,6 @@ public class NetworkHandlerTest extends TestBase {
         network = new NeutronNetwork();
         network.setTenantID(vtnManagerStubNH.tenantUuid1);
         network.setNetworkUUID(vtnManagerStubNH.bridgeUuid2);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
         network.setNetworkName(defaultNetworkDescription);
         nh.neutronNetworkCreated(network);
 
@@ -792,8 +539,6 @@ public class NetworkHandlerTest extends TestBase {
         network = new NeutronNetwork();
         network.setTenantID(TENANT_ID_ARRAY[1]);
         network.setNetworkUUID(NEUTRON_UUID_ARRAY[1]);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
         network.setNetworkName(defaultNetworkDescription);
         nh.neutronNetworkCreated(network);
     }
@@ -813,8 +558,6 @@ public class NetworkHandlerTest extends TestBase {
         network = new NeutronNetwork();
         network.setTenantID(vtnManagerStubNH.tenantUuid4);
         network.setNetworkUUID(vtnManagerStubNH.bridgeUuid2);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
         network.setNetworkName(defaultNetworkDescription);
         nh.neutronNetworkCreated(network);
 
@@ -822,62 +565,9 @@ public class NetworkHandlerTest extends TestBase {
         network = new NeutronNetwork();
         network.setTenantID(vtnManagerStubNH.tenantUuid5);
         network.setNetworkUUID(vtnManagerStubNH.bridgeUuid2);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
         network.setNetworkName(defaultNetworkDescription);
         nh.neutronNetworkCreated(network);
     }
-
-    /**
-     * Test method for
-     * {@link NetworkHandler#createVlanMap(NeutronNetwork, boolean, boolean)},
-     * {@link NetworkHandler#createVlanMap(String, String, short)},
-     * {@link NetworkHandler#createVlanMap(String, String, String, String)}}.
-     */
-    @Test
-    public void testCreateVlanMap() {
-        NetworkHandler nh = new NetworkHandler();
-        VTNManagerStubForNetworkHandler vtnManagerStubNH = VTNManagerStubForNetworkHandler.getInstance();
-        nh.setVTNManager(vtnManagerStubNH);
-        NeutronNetwork network = null;
-
-        // Case - Returns HTTP_OK from createVlanMap()
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid1);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid3);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        network.setNetworkName(defaultNetworkDescription);
-        nh.neutronNetworkCreated(network);
-
-        // Case - Failed in CreateVlanMap, Tenant not deleted(Tenant didnt create) and getting failure when deleting created Bridge.
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid1);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid4);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        network.setNetworkName(defaultNetworkDescription);
-        nh.neutronNetworkCreated(network);
-
-        // Case - Failed in CreateVlanMap, getting failure when deleting created Tenant and successfully deleted created Bridge.
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid4);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid4);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        network.setNetworkName(defaultNetworkDescription);
-        nh.neutronNetworkCreated(network);
-
-        // Case - Failed in CreateVlanMap, successfully deleted both created Tenant and Bridge.
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid5);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid4);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        network.setNetworkName(defaultNetworkDescription);
-        nh.neutronNetworkCreated(network);
-    }
-
     /**
      * Test method for
      * {@link NetworkHandler#deleteBridge(String, String)}.
@@ -888,159 +578,6 @@ public class NetworkHandlerTest extends TestBase {
         VTNManagerStubForNetworkHandler vtnManagerStubNH = VTNManagerStubForNetworkHandler.getInstance();
         nh.setVTNManager(vtnManagerStubNH);
         NeutronNetwork network = null;
-
-        // Case - Failed in CreateVlanMap, Tenant not deleted(Tenant didnt create) and getting failure when deleting created Bridge.
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid1);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid4);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        network.setNetworkName(defaultNetworkDescription);
-        nh.neutronNetworkCreated(network);
-
-        // Case - Failed in CreateVlanMap, getting failure when deleting created Tenant and successfully deleted created Bridge.
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid4);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid4);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        network.setNetworkName(defaultNetworkDescription);
-        nh.neutronNetworkCreated(network);
-    }
-
-    /**
-     * Test method for
-     * {@link NetworkHandler#canModifyVlanMap(NeutronNetwork, NeutronNetwork)}.
-     */
-    @Test
-    public void testCanModifyVlanMap() {
-        NetworkHandler nh = new NetworkHandler();
-        VTNManagerStubForNetworkHandler vtnManagerStubNH = VTNManagerStubForNetworkHandler.getInstance();
-        nh.setVTNManager(vtnManagerStubNH);
-        NeutronNetwork delta = null;
-        NeutronNetwork orginal = null;
-
-        // Case - delta.ProviderSegmentationID is NULL.
-        delta = new NeutronNetwork();
-        delta.setNetworkName(defaultNetworkDescription);
-        orginal = new NeutronNetwork();
-        orginal.setTenantID(vtnManagerStubNH.tenantUuid1);
-        orginal.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        orginal.setNetworkName(defaultNetworkDescription);
-        assertEquals(HttpURLConnection.HTTP_OK,
-                     nh.canUpdateNetwork(delta, orginal));
-
-        // Case - Set validID in delta.ProviderSegmentationID and delta.ProviderNetworkType is NULL.
-        delta = new NeutronNetwork();
-        delta.setNetworkName(defaultNetworkDescription);
-        delta.setProviderSegmentationID(vlanId300);
-        orginal = new NeutronNetwork();
-        orginal.setTenantID(vtnManagerStubNH.tenantUuid1);
-        orginal.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        orginal.setNetworkName(defaultNetworkDescription);
-        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
-                     nh.canUpdateNetwork(delta, orginal));
-
-        // Case - Set validID in delta.ProviderSegmentationID and delta.ProviderNetworkType is FLAT.
-        delta = new NeutronNetwork();
-        delta.setNetworkName(defaultNetworkDescription);
-        delta.setProviderNetworkType(flatNetworkType);
-        delta.setProviderSegmentationID(vlanId300);
-        orginal = new NeutronNetwork();
-        orginal.setTenantID(vtnManagerStubNH.tenantUuid1);
-        orginal.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        orginal.setNetworkName(defaultNetworkDescription);
-        assertEquals(HttpURLConnection.HTTP_OK,
-                     nh.canUpdateNetwork(delta, orginal));
-
-        // Case - Set validID in delta.ProviderSegmentationID and delta.ProviderNetworkType is VLAN.
-        delta = new NeutronNetwork();
-        delta.setNetworkName(defaultNetworkDescription);
-        delta.setProviderNetworkType(vlanNetworkType);
-        delta.setProviderSegmentationID(vlanId300);
-        orginal = new NeutronNetwork();
-        orginal.setTenantID(vtnManagerStubNH.tenantUuid1);
-        orginal.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        orginal.setNetworkName(defaultNetworkDescription);
-        assertEquals(HttpURLConnection.HTTP_OK,
-                     nh.canUpdateNetwork(delta, orginal));
-
-        // Case - Set validID in delta.ProviderSegmentationID, delta.ProviderNetworkType is NULL and orginal.ProviderNetworkType is FLAT.
-        delta = new NeutronNetwork();
-        delta.setNetworkName(defaultNetworkDescription);
-        delta.setProviderSegmentationID(vlanId300);
-        orginal = new NeutronNetwork();
-        orginal.setProviderNetworkType(flatNetworkType);
-        orginal.setTenantID(vtnManagerStubNH.tenantUuid1);
-        orginal.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        orginal.setNetworkName(defaultNetworkDescription);
-        assertEquals(HttpURLConnection.HTTP_OK,
-                     nh.canUpdateNetwork(delta, orginal));
-
-        // Case - Set validID in delta.ProviderSegmentationID, delta.ProviderNetworkType is NULL and orginal.ProviderNetworkType is VLAN.
-        delta = new NeutronNetwork();
-        delta.setNetworkName(defaultNetworkDescription);
-        delta.setProviderSegmentationID(vlanId300);
-        orginal = new NeutronNetwork();
-        orginal.setProviderNetworkType(vlanNetworkType);
-        orginal.setTenantID(vtnManagerStubNH.tenantUuid1);
-        orginal.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        orginal.setNetworkName(defaultNetworkDescription);
-        assertEquals(HttpURLConnection.HTTP_OK,
-                     nh.canUpdateNetwork(delta, orginal));
-
-        // Case - Set validID in delta.ProviderSegmentationID, delta.ProviderNetworkType is NULL and orginal.ProviderNetworkType is VLAN.
-        delta = new NeutronNetwork();
-        delta.setNetworkName(defaultNetworkDescription);
-        delta.setProviderSegmentationID(vlanId300);
-        orginal = new NeutronNetwork();
-        orginal.setProviderNetworkType(vlanNetworkType);
-        orginal.setTenantID(vtnManagerStubNH.tenantUuid1);
-        orginal.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        orginal.setNetworkName(defaultNetworkDescription);
-        assertEquals(HttpURLConnection.HTTP_OK,
-                     nh.canUpdateNetwork(delta, orginal));
-
-        // Case - isVlanMapExist() returns HTTP_BAD_REQUEST
-        // by setting validID in delta.ProviderSegmentationID, delta.ProviderNetworkType is NULL,
-        // orginal.ProviderSegmentationID is 300(in letters to get exception)and orginal.ProviderNetworkType is VLAN.
-        delta = new NeutronNetwork();
-        delta.setNetworkName(defaultNetworkDescription);
-        delta.setProviderSegmentationID(vlanIdInString);
-        orginal = new NeutronNetwork();
-        orginal.setProviderNetworkType(vlanNetworkType);
-        orginal.setTenantID(vtnManagerStubNH.tenantUuid1);
-        orginal.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        orginal.setNetworkName(defaultNetworkDescription);
-        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
-                     nh.canUpdateNetwork(delta, orginal));
-
-        // Case - isVlanMapExist() returns HTTP_NOT_FOUND
-        // by setting validID in delta.ProviderSegmentationID, delta.ProviderNetworkType is NULL and orginal.ProviderNetworkType is VLAN.
-        delta = new NeutronNetwork();
-        delta.setNetworkName(defaultNetworkDescription);
-        delta.setProviderSegmentationID(vlanId300);
-        orginal = new NeutronNetwork();
-        orginal.setProviderNetworkType(vlanNetworkType);
-        orginal.setTenantID(vtnManagerStubNH.tenantUuid1);
-        orginal.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        orginal.setNetworkName(defaultNetworkDescription);
-        assertEquals(HttpURLConnection.HTTP_OK,
-                     nh.canUpdateNetwork(delta, orginal));
-
-        // Case - isVlanMapExist() returns HTTP_OK
-        // by setting validID in delta.ProviderSegmentationID, delta.ProviderNetworkType is NULL and orginal.ProviderNetworkType is VLAN.
-        vtnManagerStubNH.addBridge2ForGetVlanMap = true;
-        delta = new NeutronNetwork();
-        delta.setNetworkName(defaultNetworkDescription);
-        delta.setProviderSegmentationID(vlanId300);
-        orginal = new NeutronNetwork();
-        orginal.setProviderNetworkType(vlanNetworkType);
-        orginal.setTenantID(vtnManagerStubNH.tenantUuid1);
-        orginal.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        orginal.setNetworkName(defaultNetworkDescription);
-        assertEquals(HttpURLConnection.HTTP_CONFLICT,
-                     nh.canUpdateNetwork(delta, orginal));
     }
 
     /**
@@ -1115,167 +652,6 @@ public class NetworkHandlerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link NetworkHandler#modifyVlanMap(NeutronNetwork)},
-     * {@link NetworkHandler#createVlanMap(String, String, short)},
-     * {@link NetworkHandler#createVlanMap(String, String, String, String)}.
-     */
-    @Test
-    public void testModifyVlanMap() {
-        NetworkHandler nh = new NetworkHandler();
-        VTNManagerStubForNetworkHandler vtnManagerStubNH = VTNManagerStubForNetworkHandler.getInstance();
-        nh.setVTNManager(vtnManagerStubNH);
-        NeutronNetwork network = null;
-
-        // Case - Setting NULL to both network.ProviderNetworkType and network.ProviderSegmentationID.
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid1);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        network.setNetworkName(defaultNetworkDescription);
-        nh.neutronNetworkUpdated(network);
-
-        // Case - Setting FLAT to network.ProviderNetworkType and NULL to network.ProviderSegmentationID.
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid1);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        network.setNetworkName(defaultNetworkDescription);
-        network.setProviderNetworkType(flatNetworkType);
-        nh.neutronNetworkUpdated(network);
-
-        // Case - Setting NULL to network.ProviderNetworkType and 300 to network.ProviderSegmentationID.
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid1);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        network.setNetworkName(defaultNetworkDescription);
-        network.setProviderSegmentationID(vlanId300);
-        nh.neutronNetworkUpdated(network);
-
-        // Case - Setting vlan to network.ProviderNetworkType and 300(in letters to get exception) to network.ProviderSegmentationID.
-        // Getting HTTP_OK from deleteVlanMaps
-        vtnManagerStubNH.addVlanMapId = vtnManagerStubNH.httpOkForVlanId;
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid1);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        network.setNetworkName(defaultNetworkDescription);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        nh.neutronNetworkUpdated(network);
-
-        // Case - Setting vlan to network.ProviderNetworkType and 300 to network.ProviderSegmentationID.
-        // Getting HTTP_NOT_FOUND from deleteVlanMaps
-        vtnManagerStubNH.addVlanMapId = vtnManagerStubNH.httpNotFoundForVlanId;
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid1);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        network.setNetworkName(defaultNetworkDescription);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        nh.neutronNetworkUpdated(network);
-
-        // Case - Setting vlan to network.ProviderNetworkType and 300 to network.ProviderSegmentationID.
-        // Getting HTTP_BAD_REQUEST from deleteVlanMaps
-        vtnManagerStubNH.addVlanMapId = vtnManagerStubNH.httpBadRequestForVlanId;
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid1);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        network.setNetworkName(defaultNetworkDescription);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        nh.neutronNetworkUpdated(network);
-
-        // Case - Setting FLAT to network.ProviderNetworkType and 300(in letters to get exception) to network.ProviderSegmentationID.
-        // returns HTTP_NOT_FOUND from isVlanMapExist()
-        vtnManagerStubNH.addVlanMapId = vtnManagerStubNH.httpBadRequestForVlanId;
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid1);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        network.setNetworkName(defaultNetworkDescription);
-        network.setProviderNetworkType(flatNetworkType);
-        network.setProviderSegmentationID(vlanIdInString);
-        nh.neutronNetworkUpdated(network);
-
-        // Case - Setting FLAT to network.ProviderNetworkType and 300 to network.ProviderSegmentationID.
-        // Getting HTTP_OK from deleteVlanMaps
-        vtnManagerStubNH.addBridge2ForGetVlanMap = true;
-        vtnManagerStubNH.addVlanMapId = vtnManagerStubNH.httpOkForVlanId;
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid1);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        network.setNetworkName(defaultNetworkDescription);
-        network.setProviderNetworkType(flatNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        nh.neutronNetworkUpdated(network);
-    }
-
-    /**
-     * Test method for
-     * {@link NetworkHandler#deleteVlanMaps(String, String)},
-     * {@link NetworkHandler#deleteVlanMap(String, String, String)},
-     * {@link NetworkHandler#getVlanMaps(String, String)}.
-     */
-    @Test
-    public void testDeleteVlanMaps() {
-        NetworkHandler nh = new NetworkHandler();
-        VTNManagerStubForNetworkHandler vtnManagerStubNH = VTNManagerStubForNetworkHandler.getInstance();
-        nh.setVTNManager(vtnManagerStubNH);
-        NeutronNetwork network = null;
-
-        // Case - Setting vlan to network.ProviderNetworkType and 300(in letters to get exception) to network.ProviderSegmentationID.
-        // getVlanMaps() returns NULL(throws Exception from getVlanMaps() in VTNManagerImpl)
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid2);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        network.setNetworkName(defaultVBridgeDescription);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        nh.neutronNetworkUpdated(network);
-
-        // Case - Setting vlan to network.ProviderNetworkType, 300 to network.ProviderSegmentationID.
-        // no entry in list<VlanMap> has been returned from getVlanMaps() in VTNManagerImpl
-        vtnManagerStubNH.addVlanMapId = vtnManagerStubNH.defaultVlanId;
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid1);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        network.setNetworkName(defaultNetworkDescription);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        nh.neutronNetworkUpdated(network);
-
-        // Case - Setting vlan to network.ProviderNetworkType and 300 to network.ProviderSegmentationID.
-        // Getting HTTP_BAD_REQUEST from deleteVlanMaps
-        vtnManagerStubNH.addVlanMapId = vtnManagerStubNH.httpBadRequestForVlanId;
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid1);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        network.setNetworkName(defaultNetworkDescription);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        nh.neutronNetworkUpdated(network);
-
-        // Case - Setting vlan to network.ProviderNetworkType and 300 to network.ProviderSegmentationID.
-        // Getting HTTP_NOT_FOUND from deleteVlanMaps
-        vtnManagerStubNH.addVlanMapId = vtnManagerStubNH.httpNotFoundForVlanId;
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid1);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        network.setNetworkName(defaultNetworkDescription);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        nh.neutronNetworkUpdated(network);
-
-        // Case - Setting vlan to network.ProviderNetworkType and 300 to network.ProviderSegmentationID.
-        // Getting HTTP_OK from deleteVlanMaps
-        vtnManagerStubNH.addVlanMapId = vtnManagerStubNH.httpOkForVlanId;
-        network = new NeutronNetwork();
-        network.setTenantID(vtnManagerStubNH.tenantUuid1);
-        network.setNetworkUUID(vtnManagerStubNH.bridgeUuid1);
-        network.setNetworkName(defaultNetworkDescription);
-        network.setProviderNetworkType(vlanNetworkType);
-        network.setProviderSegmentationID(vlanId300);
-        nh.neutronNetworkUpdated(network);
-    }
-
-    /**
-     * Test method for
      * {@link NetworkHandler#isVbridgesInTenant(String)}.
      */
     @Test
@@ -1324,32 +700,11 @@ class VTNManagerStubForNetworkHandler implements IVTNManager {
     // Boolean identifier for throwing Exception in getBridges() method.
     boolean throwExceptionForGetBridges = false;
 
-    // Boolean identifier for throwing Exception in getVlanMap() method.
-    boolean throwExceptionForGetVlanMap = false;
-
-    // Boolean identifier for adding Bridge2 in getVlanMap() method.
-    boolean addBridge2ForGetVlanMap = false;
-
     // Boolean identifier for returnig null in getBridges() method.
     boolean returnNullForGetBridges = false;
 
     // Boolean identifier for returnig empty in getBridges() method.
     boolean returnEmptyForGetBridges = false;
-
-    // Integer identifier to have the default VlanID.
-    final int defaultVlanId = 0;
-
-    // Integer identifier to have the VlanID for HTTP_NOT_FOUND from list of added VlanMapIds.
-    final int httpNotFoundForVlanId = 500;
-
-    // Integer identifier to have the VlanID for HTTP_OK from list of added VlanMapIds.
-    final int httpOkForVlanId = 600;
-
-    // Integer identifier to have the VlanID for HTTP_BAD_REQUEST from list of added VlanMapIds.
-    final int httpBadRequestForVlanId = 700;
-
-    // Integer identifier to have the VlanID for adding VlanMap.
-    int addVlanMapId = defaultVlanId;
 
     // String identifier to have default VBridge description.
     final String defaultVBridgeDescription = "Bridge";
@@ -1561,46 +916,11 @@ class VTNManagerStubForNetworkHandler implements IVTNManager {
                                          bconf1);
         bridges.add(bridge1);
 
-        // Bridge2
-        if (addBridge2ForGetVlanMap) {
-            VBridgeConfig bconf2 = new VBridgeConfig(null);
-            VBridge bridge2 = new VBridge(bridgeName2,
-                                             VnodeState.UNKNOWN,
-                                             0,
-                                             bconf2);
-            bridges.add(bridge2);
-            addBridge2ForGetVlanMap = false;
-        }
-
-        // Bridge3
-        if (throwExceptionForGetVlanMap) {
-            VBridgeConfig bconf3 = new VBridgeConfig(null);
-            VBridge bridge3 = new VBridge(bridgeName3,
-                                             VnodeState.UNKNOWN,
-                                             0,
-                                             bconf3);
-            bridges.add(bridge3);
-            throwExceptionForGetVlanMap = false;
-        }
         return bridges;
     }
 
     @Override
     public VlanMap getVlanMap(VBridgePath path, VlanMapConfig vlconf) throws VTNException {
-        VBridgePath bridge1 = new VBridgePath(tenantName1,
-                                              bridgeName2);
-
-        VBridgePath bridge2 = new VBridgePath(tenantName1,
-                                              bridgeName3);
-        if (path.equals(bridge1)) {
-            VlanMap vlanMap = new VlanMap(Integer.toString(vlconf.getVlan()), vlconf.getNode(), vlconf.getVlan());
-
-            return vlanMap;
-        } else if (path.equals(bridge2)) {
-            Status status = new Status(StatusCode.BADREQUEST);
-            throw new VTNException(status);
-        }
-
         return null;
     }
 
@@ -1636,83 +956,22 @@ class VTNManagerStubForNetworkHandler implements IVTNManager {
         return new Status(StatusCode.SUCCESS);
     }
 
+    // Following methods are Unused in UnitTest.
     @Override
     public VlanMap addVlanMap(VBridgePath path, VlanMapConfig vlconf) throws VTNException {
-        VBridgePath bridge1 = new VBridgePath(tenantName1,
-                                              bridgeName3);
-        VBridgePath bridge2 = new VBridgePath(tenantName1,
-                                              bridgeName4);
-        VBridgePath bridge3 = new VBridgePath(tenantName4,
-                                              bridgeName4);
-        VBridgePath bridge4 = new VBridgePath(tenantName5,
-                                              bridgeName4);
-        if (path.equals(bridge1)) {
-            VlanMap vlanMap = new VlanMap(Integer.toString(vlconf.getVlan()), vlconf.getNode(), vlconf.getVlan());
-
-            return vlanMap;
-        } else if ((path.equals(bridge2)) || (path.equals(bridge2))
-                    || (path.equals(bridge3)) || (path.equals(bridge4))) {
-            Status status = new Status(StatusCode.BADREQUEST);
-            throw new VTNException(status);
-        }
-
         return null;
     }
 
     @Override
     public List<VlanMap> getVlanMaps(VBridgePath path) throws VTNException {
-        List<VlanMap> vlanMaps = new ArrayList<VlanMap>();
-
-        VBridgePath bridge1 = new VBridgePath(tenantName2,
-                                              bridgeName1);
-        if (path.equals(bridge1)) {
-            Status status = new Status(StatusCode.BADREQUEST);
-            throw new VTNException(status);
-        }
-
-        switch(addVlanMapId) {
-        case defaultVlanId :
-            addVlanMapId = defaultVlanId;
-            return vlanMaps;
-
-        case httpNotFoundForVlanId :
-            addVlanMapId = defaultVlanId;
-            vlanMaps.add(new VlanMap(Integer.toString(httpNotFoundForVlanId), null, (short)httpNotFoundForVlanId));
-            return vlanMaps;
-
-        case httpOkForVlanId :
-            addVlanMapId = defaultVlanId;
-            vlanMaps.add(new VlanMap(Integer.toString(httpOkForVlanId), null, (short)httpOkForVlanId));
-            return vlanMaps;
-
-        case httpBadRequestForVlanId :
-            addVlanMapId = defaultVlanId;
-            vlanMaps.add(new VlanMap(Integer.toString(httpBadRequestForVlanId), null, (short)httpBadRequestForVlanId));
-            return vlanMaps;
-
-        default :
-            return null;
-        }
+       return null;
     }
 
     @Override
     public Status removeVlanMap(VBridgePath path, String mapId) {
-        switch(Integer.parseInt(mapId)) {
-        case httpNotFoundForVlanId :
-            return new Status(StatusCode.NOTFOUND);
-
-        case httpOkForVlanId :
-            return new Status(StatusCode.SUCCESS);
-
-        case httpBadRequestForVlanId :
-            return new Status(StatusCode.BADREQUEST);
-
-        default :
-            return new Status(StatusCode.CONFLICT);
-        }
+       return null;
     }
 
-    // Following methods are Unused in UnitTest.
     @Override
     public VInterface getInterface(VBridgeIfPath path) throws VTNException {
         return null;
