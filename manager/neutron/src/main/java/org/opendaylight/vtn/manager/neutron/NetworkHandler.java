@@ -11,7 +11,6 @@ package org.opendaylight.vtn.manager.neutron;
 
 import java.net.HttpURLConnection;
 import java.util.List;
-import java.util.Iterator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,8 +22,6 @@ import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VBridge;
-import org.opendaylight.vtn.manager.VlanMapConfig;
-import org.opendaylight.vtn.manager.VlanMap;
 
 import org.opendaylight.controller.sal.utils.Status;
 
@@ -46,11 +43,6 @@ public class NetworkHandler extends VTNNeutronUtils
      * VTN identifiers in neutron network object.
      */
     private static final int VTN_IDENTIFIERS_IN_NETWORK = 2;
-
-    /**
-     * Provider segmentation type supported.
-     */
-    private static final String VTN_SUPPORTED_NETWORK_TYPE = "vlan";
 
     /**
      * Invoked when a network creation is requested
@@ -87,14 +79,6 @@ public class NetworkHandler extends VTNNeutronUtils
         if ((shared != null) && (shared)) {
             LOG.error("Network shared attribute not supported");
             return HttpURLConnection.HTTP_NOT_ACCEPTABLE;
-        }
-
-        result = canCreateVlanMap(network);
-        if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error("canCreateVlanMap failed for tenant-id - {}, " +
-                      "bridge-id - {}, result - {}",
-                      tenantID, bridgeID, result);
-            return result;
         }
 
         return HttpURLConnection.HTTP_CREATED;
@@ -156,14 +140,6 @@ public class NetworkHandler extends VTNNeutronUtils
             return;
         }
         bridgeCreated = true;
-
-        // create vlanmap
-        result = createVlanMap(network, tenantCreated, bridgeCreated);
-        if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error("createVlanMap failed for vlan id - {}, result - {}",
-                      network.getProviderSegmentationID(), result);
-
-        }
         return;
     }
 
@@ -208,8 +184,6 @@ public class NetworkHandler extends VTNNeutronUtils
             if ((shared != null) && (shared)) {
                 return HttpURLConnection.HTTP_NOT_ACCEPTABLE;
             }
-
-            result = canModifyVlanMap(delta, original);
         }
 
         return result;
@@ -264,12 +238,6 @@ public class NetworkHandler extends VTNNeutronUtils
                           bridgeID, tenantID, result);
                 return;
             }
-        }
-
-        result = modifyVlanMap(network);
-        if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error("modifyVlanMap failed for vlan id - {}, result - {}",
-                      network.getProviderSegmentationID(), result);
         }
         return;
     }
@@ -621,365 +589,4 @@ public class NetworkHandler extends VTNNeutronUtils
         return result;
     }
 
-    /**
-     * Check if VLAN map configuration exist in vtn manager.
-     *
-     * @param providerID VLAN identifier provided by neutron.
-     * @return  VLAN map exist status in HTTP response status code.
-     */
-    private int isVlanMapExist(String providerID) {
-        int result = HttpURLConnection.HTTP_NOT_FOUND;
-        short vlanID = 0;
-        try {
-            vlanID = Short.parseShort(providerID);
-            List<VTenant> listTenant = getTenants();
-            if (listTenant == null) {
-                LOG.trace("isVlanMapExist listTenant is null");
-                return result;
-            }
-            Iterator itrTenant = listTenant.iterator();
-            while (itrTenant.hasNext()) {
-                VTenant tmpTenant = (VTenant)itrTenant.next();
-                String tenantID = tmpTenant.getName();
-                LOG.trace("tenant-id - {}", tenantID);
-                List<VBridge> listBridge = getBridges(tenantID);
-                if (listBridge == null) {
-                    LOG.trace("isVlanMapExist listBridge is null");
-                    continue;
-                }
-                Iterator itrBridge = listBridge.iterator();
-                while (itrBridge.hasNext()) {
-                    VBridge tmpBridge = (VBridge)itrBridge.next();
-                    String bridgeID = tmpBridge.getName();
-                    LOG.trace("bridge-id - {}", bridgeID);
-
-                    VlanMapConfig conf = new VlanMapConfig(null, vlanID);
-                    VBridgePath path = new VBridgePath(tenantID, bridgeID);
-                    if (getVTNManager().getVlanMap(path, conf) != null) {
-                        result = HttpURLConnection.HTTP_OK;
-                        return result;
-                    }
-                }
-            }
-        } catch (NumberFormatException nfe) {
-            LOG.error("Execption NFE, vlan-id - {}", providerID);
-            return HttpURLConnection.HTTP_BAD_REQUEST;
-        } catch (VTNException e) {
-            LOG.error("Caught VTNException, vlan-id -  " + providerID, e);
-            result = getException(e.getStatus());
-        }
-        return result;
-    }
-
-    /**
-     * Returns a list of all VLAN mappings in a virtual L2 bridge.
-     *
-     * @param tenantID tenant identifier provided by neutron.
-     * @param bridgeID bridge identifier provided by neutron.
-     * @return A list of VLAN mappings in the bridge.
-     */
-    private List<VlanMap> getVlanMaps(String tenantID, String bridgeID) {
-        VBridgePath path = new VBridgePath(tenantID, bridgeID);
-        try {
-            return getVTNManager().getVlanMaps(path);
-        } catch (VTNException e) {
-            LOG.error("getVlanMaps error, path - {}, e - {}", path,
-                      e.toString());
-            return null;
-        }
-    }
-
-    /**
-     * verify if the vlan map can be created.
-     *
-     * @param network  An instance of proposed new Neutron Network object.
-     * @return Create Vlanmap validation status in HTTP response status code.
-     */
-    private int canCreateVlanMap(NeutronNetwork network) {
-        int result = HttpURLConnection.HTTP_NOT_FOUND;
-
-        if (network.getProviderNetworkType() == null) {
-            return HttpURLConnection.HTTP_OK;
-        }
-
-        String networkType = network.getProviderNetworkType();
-        if (!networkType.equals(VTN_SUPPORTED_NETWORK_TYPE)) {
-            return HttpURLConnection.HTTP_OK;
-        }
-
-        // validate vlanmap id
-        if (network.getProviderSegmentationID() == null) {
-            LOG.error("Segmentation ID not provided");
-            return HttpURLConnection.HTTP_BAD_REQUEST;
-        }
-
-        String vlanID = network.getProviderSegmentationID();
-        result = isVlanMapExist(vlanID);
-        if (result == HttpURLConnection.HTTP_NOT_FOUND) {
-            result = HttpURLConnection.HTTP_OK;
-        } else if (result == HttpURLConnection.HTTP_OK) {
-            LOG.error("Vlan-id - {} alreay in use", vlanID);
-            result = HttpURLConnection.HTTP_CONFLICT;
-        }
-        return result;
-    }
-
-    /**
-     * Create a new VLAN mapping to the virtual L2 bridge.
-     *
-     * @param network  An instance of new Neutron Network object.
-     * @param tenantCreated new tenant created flag
-     * @param bridgeCreated new bridge created flag
-     * @return VLAN mapping creation status in HTTP response status code.
-     */
-    private int createVlanMap(NeutronNetwork network,
-                              boolean tenantCreated,
-                              boolean bridgeCreated) {
-
-        if (network == null) {
-            LOG.error("Invalid request for CreateVlanMap");
-            return HttpURLConnection.HTTP_BAD_REQUEST;
-        }
-
-        String providerType = network.getProviderNetworkType();
-        String providerID = network.getProviderSegmentationID();
-        if ((providerType == null) || (providerID == null)) {
-            return HttpURLConnection.HTTP_OK;
-        }
-
-        String tenantID = convertNeutronIDToVTNKey(network.getTenantID());
-        String bridgeID = convertNeutronIDToVTNKey(network.getID());
-
-        int result = createVlanMap(tenantID,
-                                   bridgeID,
-                                   providerType,
-                                   providerID);
-
-        if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error("createVlanMap failed for vlan id - {}, result - {}",
-                      providerID, result);
-
-            // delete bridge, tenant vtn if created
-            if (bridgeCreated) {
-                result = deleteBridge(tenantID, bridgeID);
-                if (result != HttpURLConnection.HTTP_OK) {
-                    LOG.error("deleteBridge failed for tenant-id - {}, " +
-                              "Bridge-id - {}, result - {}",
-                              tenantID, bridgeID, result);
-                }
-            }
-            if (tenantCreated) {
-                result = deleteTenant(tenantID);
-                if (result != HttpURLConnection.HTTP_OK) {
-                    LOG.error("deleteTenant failed for tenant-id - {}, " +
-                              "result - {}", tenantID, result);
-                }
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Create a new VLAN mapping to the virtual L2 bridge.
-     *
-     * @param tenantID tenant identifier provided by neutron.
-     * @param bridgeID bridge identifier provided by neutron.
-     * @param vlanID vlan identifier provided by neutron.
-     * @return VLAN mapping creation status in HTTP response status code.
-     */
-    private int createVlanMap(String tenantID, String bridgeID, short vlanID) {
-        int result = HttpURLConnection.HTTP_NOT_FOUND;
-        VlanMapConfig conf = new VlanMapConfig(null, vlanID);
-        VBridgePath path = new VBridgePath(tenantID, bridgeID);
-        try {
-            getVTNManager().addVlanMap(path, conf);
-            result = HttpURLConnection.HTTP_OK;
-        } catch (VTNException e) {
-            LOG.error("createVlanMap error, path - {}, conf - {}, e - {}",
-                      path, conf, e.toString());
-            result = getException(e.getStatus());
-        }
-        return result;
-    }
-
-    /**
-     * Create a new VLAN mapping to the virtual L2 bridge.
-     *
-     * @param tenantID tenant identifier provided by neutron.
-     * @param bridgeID bridge identifier provided by neutron.
-     * @param providerType provider segmentation type provided by neutron.
-     * @param providerID provider segementation identifier provided by neutron.
-     * @return VLAN mapping creation status in HTTP response status code.
-     */
-    private int createVlanMap(String tenantID,
-                              String bridgeID,
-                              String providerType,
-                              String providerID) {
-        int result = HttpURLConnection.HTTP_NOT_FOUND;
-
-        if (!providerType.equals(VTN_SUPPORTED_NETWORK_TYPE)) {
-            return HttpURLConnection.HTTP_OK;
-        }
-
-        try {
-            short vlanID = 0;
-            if ((providerID != null) && (!providerID.isEmpty())) {
-                vlanID = Short.parseShort(providerID);
-            }
-            result = createVlanMap(tenantID, bridgeID, vlanID);
-        } catch (NumberFormatException nfe) {
-            LOG.error("Exception NFE vlan ID - {}", providerID);
-            result = HttpURLConnection.HTTP_BAD_REQUEST;
-        }
-        return result;
-    }
-
-    /**
-     * verify if the vlan map can be modified.
-     *
-     * @param delta     Updates to the network object using patch semantics.
-     * @param original  An instance of the Neutron Network object
-     *                  to be updated.
-     * @return Modify vlanmap validation status in HTTP response status code.
-     */
-    private int canModifyVlanMap(NeutronNetwork delta,
-                                 NeutronNetwork original) {
-        int result = HttpURLConnection.HTTP_OK;
-        boolean validateVlanMap = false;
-        String deltaProviderID = delta.getProviderSegmentationID();
-        String deltaProviderType = delta.getProviderNetworkType();
-        String orgProviderType = original.getProviderNetworkType();
-
-        if (deltaProviderID != null) {
-            if (deltaProviderType != null) {
-                if (deltaProviderType.equals(VTN_SUPPORTED_NETWORK_TYPE)) {
-                    validateVlanMap = true;
-                }
-            } else if (orgProviderType != null) {
-                if (orgProviderType.equals(VTN_SUPPORTED_NETWORK_TYPE)) {
-                    validateVlanMap = true;
-                }
-            } else {
-                LOG.error("Invalid network type");
-                return HttpURLConnection.HTTP_BAD_REQUEST;
-            }
-
-            if (validateVlanMap) {
-                // validate vlanmap id
-                result = isVlanMapExist(deltaProviderID);
-                if (result == HttpURLConnection.HTTP_NOT_FOUND) {
-                    result = HttpURLConnection.HTTP_OK;
-                } else if (result == HttpURLConnection.HTTP_OK) {
-                    LOG.error("Vlan-id - {} alreay in use", deltaProviderID);
-                    result = HttpURLConnection.HTTP_CONFLICT;
-                }
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Modify existing VLAN mapping configuration in the virtual L2 bridge.
-     *
-     * @param network An instance of modified Neutron Network object.
-     * @return VLAN mapping modification status in HTTP response status code.
-     */
-    private int modifyVlanMap(NeutronNetwork network) {
-        int result = HttpURLConnection.HTTP_OK;
-
-        LOG.trace("modify vlanmap");
-        if (network == null) {
-            LOG.error("Invalid request for modifyVlanMap");
-            return HttpURLConnection.HTTP_BAD_REQUEST;
-        }
-
-        String providerType = network.getProviderNetworkType();
-        String providerID = network.getProviderSegmentationID();
-
-        if ((providerType == null) || (providerID == null)) {
-            LOG.trace("Provider settings not configured return OK");
-            return HttpURLConnection.HTTP_OK;
-        }
-
-        String tenantID = convertNeutronIDToVTNKey(network.getTenantID());
-        String bridgeID = convertNeutronIDToVTNKey(network.getID());
-
-        if (providerType.equals(VTN_SUPPORTED_NETWORK_TYPE)) {
-            result = deleteVlanMaps(tenantID, bridgeID);
-            LOG.trace("modify vlanmap deleteVlanMaps, result - {}", result);
-            if ((result == HttpURLConnection.HTTP_OK) ||
-                   (result == HttpURLConnection.HTTP_NOT_FOUND)) {
-                result = createVlanMap(tenantID,
-                                       bridgeID,
-                                       providerType,
-                                       providerID);
-            }
-        } else {
-            /**
-             *  provider segmentation type modified to non vlan
-             *  delete existing vlan map
-             */
-            if (isVlanMapExist(providerID) == HttpURLConnection.HTTP_OK) {
-                result = deleteVlanMaps(tenantID, bridgeID);
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Delete existing VLAN mapping configuration in the virtual L2 bridge.
-     *
-     * @param tenantID tenant identifier provided by neutron.
-     * @param bridgeID bridge identifier provided by neutron.
-     * @param mapID provider segementation identifier provided by neutron.
-     * @return VLAN mapping deletion status in HTTP response status code.
-     */
-    private int deleteVlanMap(String tenantID,
-                              String bridgeID,
-                              String mapID) {
-        int result = HttpURLConnection.HTTP_NOT_FOUND;
-
-        LOG.trace("tenant-id - {}, bridge-id - {}, map-id - {}",
-                  tenantID, bridgeID,  mapID);
-        VBridgePath path = new VBridgePath(tenantID, bridgeID);
-        Status status = getVTNManager().removeVlanMap(path, mapID);
-        if (status.isSuccess()) {
-            result = HttpURLConnection.HTTP_OK;
-            LOG.trace("deleteVlanMap result - {}", result);
-        } else {
-            result = getException(status);
-            LOG.error("deleteVlanMap error. path - {}, map-id - {}, " +
-                      "result - {}", path, mapID, result);
-        }
-        return result;
-    }
-
-    /**
-     * Delete all VLAN mapping configuration in the virtual L2 bridge.
-     *
-     * @param tenantID tenant identifier provided by neutron.
-     * @param bridgeID bridge identifier provided by neutron.
-     * @return VLAN mapping deletion status in HTTP response status code.
-     */
-    private int deleteVlanMaps(String tenantID, String bridgeID) {
-        int result = HttpURLConnection.HTTP_NOT_FOUND;
-
-        List<VlanMap> list = getVlanMaps(tenantID, bridgeID);
-        if (list == null) {
-            return result;
-        }
-        Iterator itr = list.iterator();
-        while (itr.hasNext()) {
-            VlanMap tmpVlanMap = (VlanMap)itr.next();
-            String mapID = tmpVlanMap.getId();
-            result = deleteVlanMap(tenantID, bridgeID, mapID);
-            if (result != HttpURLConnection.HTTP_OK) {
-                LOG.error("deleteVlanMap failed for tenant-id - {}, " +
-                          "bridge-id - {}, map-id - {}, result - {}",
-                          tenantID, bridgeID, mapID, result);
-                break;
-            }
-        }
-        return result;
-    }
 }
