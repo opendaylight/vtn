@@ -76,7 +76,7 @@ const uint32_t DEFAULT_REQ_TIME_OUT     = 30;
 const uint32_t PING_INTERVAL            = 10;
 const uint32_t PING_RETRY_COUNT         = 5;
 const uint32_t DEFAULT_AGE_INTERVAL     = 600;
-const uint32_t PING_DEFAULT_INTERVAL    = 30;
+const uint32_t PING_DEFAULT_INTERVAL    = 10;
 
 const uint32_t VTN_PARSE_FLAG           = 0;
 const uint32_t VBR_PARSE_FLAG           = 1;

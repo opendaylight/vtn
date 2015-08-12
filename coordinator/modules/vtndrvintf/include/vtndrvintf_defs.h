@@ -23,7 +23,7 @@ namespace driver {
 // Configuration block to read from vtndrvintf.conf to get time interval for
 //    collecting physical data from controller
 const std::string timeinterval_conf_blk = "vtn_driver_paramaters";
-const uint32_t default_time_interval = 70;
+const uint32_t default_time_interval = 15;
 const std::string DEFAULT_DOMAIN_ID = "(DEFAULT)";
 
 typedef enum {
