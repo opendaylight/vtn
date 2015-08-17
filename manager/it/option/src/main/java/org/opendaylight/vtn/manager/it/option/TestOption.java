@@ -83,6 +83,11 @@ public final class TestOption {
     private static final String  GEMINIWEB = "geminiweb";
 
     /**
+     * Group ID for Netty bundles.
+     */
+    private static final String  NETTY = "io.netty";
+
+    /**
      * Group ID for Orbit bundles.
      */
     private static final String  ORBIT = "orbit";
@@ -395,6 +400,13 @@ public final class TestOption {
             mavenBundle(NEUTRON, "neutron-spi"),
             mavenBundle(NEUTRON, "transcriber"),
             mavenBundle(NEUTRON, "model"),
+
+            // Netty bundles.
+            mavenBundle(NETTY, "netty-buffer"),
+            mavenBundle(NETTY, "netty-codec"),
+            mavenBundle(NETTY, "netty-common"),
+            mavenBundle(NETTY, "netty-handler"),
+            mavenBundle(NETTY, "netty-transport"),
 
             // OVSDB bundles.
             mavenBundle(OVSDB, "library"),
