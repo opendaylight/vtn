@@ -4673,19 +4673,20 @@ sub check_pfc_version($)
 			error("Failed to open \"$value\": $!");
 		}
 
-		my $pat = qr,^(\d+)\.(\d+)\.(\d+)\.(\d+)(-.+)?$,;
+		my $pat = qr,^(\d+)\.(\d+)\.(\d+)(\.(\d+))?(-.+)?$,;
 		my ($maj, $min, $rev, $patch, $vstr);
 		while (my $line = $fh->getline()) {
 			if ($line =~ $pat) {
 				($maj, $min, $rev, $patch) =
-					($1, $2, $3, $4);
+					($1, $2, $3, $5);
 				chomp($line);
 				$vstr = $line;
 				last;
 			}
 		}
 
-		unless (defined($patch)) {
+		$patch = 0 unless (defined($patch));
+		unless (defined($maj) and defined($min) and defined($rev)) {
 			print "failed\n";
 			error("Failed to determine software version from ",
 			      "\"$value\".");
