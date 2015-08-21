@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #
-# Copyright (c) 2012-2014 NEC Corporation
+# Copyright (c) 2012-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -2431,23 +2431,26 @@ sub check_version($)
 		error("Unable to open \"$file\": $!");
 	}
 
-	my $pat = qr,^(\d+)\.(\d+)\.(\d+)\.(\d+)(-.+)?$,;
+	my $pat = qr,^(\d+)\.(\d+)\.(\d+)(\.(\d+))?(-.+)?$,;
 	my (%version, $line);
 
 	while ($line = $fh->getline()) {
 		if ($line =~ $pat) {
 			chomp($line);
+			my $patch = $5;
+			$patch = 0 unless (defined($patch));
 			$version{MAJOR} = $1;
 			$version{MINOR} = $2;
 			$version{REVISION} = $3;
-			$version{PATCHLEVEL} = $4;
-			$version{SUFFIX} = $5;
+			$version{PATCHLEVEL} = $patch;
+			$version{SUFFIX} = $6;
 			$version{STRING} = $line;
 			last;
 		}
 	}
 
-	unless (defined($version{PATCHLEVEL})) {
+	unless (defined($version{MAJOR}) and defined($version{MINOR}) and
+		defined($version{REVISION})) {
 		print "failed\n";
 		error("Failed to determine software version from ",
 		      "\"$file\".");
