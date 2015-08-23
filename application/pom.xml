@@ -17,13 +17,13 @@
   <parent>
     <groupId>org.opendaylight.vtn</groupId>
     <artifactId>common</artifactId>
-    <version>0.3.1-Lithium-SR1</version>
+    <version>0.3.2-SNAPSHOT</version>
     <relativePath>../common</relativePath>
   </parent>
 
   <groupId>org.opendaylight.vtn.application</groupId>
   <artifactId>dist</artifactId>
-  <version>1.0.2-Lithium-SR1</version>
+  <version>1.0.3-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>application</name>
 
@@ -61,7 +61,7 @@
           <dependency>
             <groupId>org.opendaylight.vtn</groupId>
             <artifactId>manager.checkstyle</artifactId>
-            <version>0.3.1-Lithium-SR1</version>
+            <version>0.3.2-SNAPSHOT</version>
           </dependency>
         </dependencies>
 
