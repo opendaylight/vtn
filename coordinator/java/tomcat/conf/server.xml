@@ -20,6 +20,7 @@
      Documentation at /docs/config/server.html
  -->
 <Server port="-1">
+  <Listener className="org.apache.catalina.startup.VersionLoggerListener" />
   <!--APR library loader. Documentation at /docs/apr.html -->
   <Listener className="org.apache.catalina.core.AprLifecycleListener" SSLEngine="on" />
 
@@ -69,7 +70,7 @@
         <Valve className="org.apache.catalina.valves.AccessLogValve"
                directory="${vtn.logdir}" prefix="access_log." suffix=".txt"
                fileDateFormat="yyyy-MM" resolveHosts="false"
-               pattern="%{yyyy-MM-dd HH:mm:ss.SSS z}t: %a %u &quot;%r&quot; %s %b %{org.opendaylight.vtn.unc.requestbody}r %{org.opendaylight.vtn.unc.errormessage}" />
+               pattern="%{yyyy-MM-dd HH:mm:ss.SSS z}t: %a %u &quot;%r&quot; %s %b %{org.opendaylight.vtn.unc.requestbody}r %{org.opendaylight.vtn.unc.errormessage}r" />
 
       </Host>
     </Engine>
