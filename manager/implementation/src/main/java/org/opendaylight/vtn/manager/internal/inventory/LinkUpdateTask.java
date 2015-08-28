@@ -23,6 +23,7 @@ import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.LinkEdge;
+import org.opendaylight.vtn.manager.internal.util.inventory.LinkUpdateContext;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 
@@ -39,8 +40,12 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
 
 /**
  * A MD-SAL datastore transaction task that updates VTN topology information.
+ *
+ * <p>
+ *   This task returns a {@link LinkUpdateContext} instance.
+ * </p>
  */
-final class LinkUpdateTask extends AbstractTxTask<Void> {
+final class LinkUpdateTask extends AbstractTxTask<LinkUpdateContext> {
     /**
      * A set of paths to updated inter-switch links.
      */
@@ -83,13 +88,11 @@ final class LinkUpdateTask extends AbstractTxTask<Void> {
      * Add a VTN link information corresponding to the given MD-SAL
      * inter-switch link.
      *
-     * @param tx      A {@link ReadWriteTransaction} instance.
-     * @param reader  An {@link InventoryReader} instance.
-     * @param link    A {@link Link} instance.
+     * @param luctx  A {@link LinkUpdateContext} instance.
+     * @param link   A {@link Link} instance.
      * @throws VTNException  An error occurred.
      */
-    private void add(ReadWriteTransaction tx, InventoryReader reader,
-                     Link link) throws VTNException {
+    private void add(LinkUpdateContext luctx, Link link) throws VTNException {
         LinkEdge le;
         try {
             le = new LinkEdge(link);
@@ -101,10 +104,7 @@ final class LinkUpdateTask extends AbstractTxTask<Void> {
         LinkId lid = link.getLinkId();
         SalPort src = le.getSourcePort();
         SalPort dst = le.getDestinationPort();
-        if (!InventoryUtils.addVtnLink(tx, reader, lid, src, dst)) {
-            logger.warn("Ignore inter-switch link: {}: {} -> {}",
-                        lid.getValue(), src, dst);
-        }
+        luctx.addVtnLink(lid, src, dst);
     }
 
     /**
@@ -127,9 +127,11 @@ final class LinkUpdateTask extends AbstractTxTask<Void> {
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
         InstanceIdentifier<VtnLink> lpath =
             InventoryUtils.toVtnLinkIdentifier(lid);
-        Optional<VtnLink> opt = DataStoreUtils.read(tx, oper, lpath);
-        if (opt.isPresent()) {
-            VtnLink vlink = opt.get();
+        VtnLink vlink = DataStoreUtils.read(tx, oper, lpath).orNull();
+
+        // Note that we should not remove the link if it is configured
+        // as static link.
+        if (vlink != null && !Boolean.TRUE.equals(vlink.isStaticLink())) {
             SalPort src = SalPort.create(vlink.getSource());
             SalPort dst = SalPort.create(vlink.getDestination());
 
@@ -153,23 +155,33 @@ final class LinkUpdateTask extends AbstractTxTask<Void> {
      * {@inheritDoc}
      */
     @Override
-    public Void execute(TxContext ctx) throws VTNException {
+    public LinkUpdateContext execute(TxContext ctx) throws VTNException {
         ReadWriteTransaction tx = ctx.getReadWriteTransaction();
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
         InventoryReader reader = ctx.getInventoryReader();
+        LinkUpdateContext luctx = new LinkUpdateContext(tx, reader);
         for (InstanceIdentifier<Link> path: updated) {
             // Read the notified link.
             Optional<Link> opt = DataStoreUtils.read(tx, oper, path);
             if (opt.isPresent()) {
                 // Add the inter-switch link information.
-                add(tx, reader, opt.get());
+                add(luctx, opt.get());
             } else {
                 // Remove the inter-swtich link information.
                 remove(tx, path);
             }
         }
 
-        return null;
+        return luctx;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void onSuccess(VTNManagerProvider provider,
+                          LinkUpdateContext luctx) {
+        luctx.recordLogs(logger);
     }
 
     /**

@@ -18,6 +18,7 @@ import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.vtn.topology.VtnLink;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.vtn.topology.VtnLinkBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnSwitchLink;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TpId;
@@ -36,7 +37,7 @@ public class LinkEdgeTest extends TestBase {
      * Test case for constructor and getter methods.
      *
      * <ul>
-     *   <li>{@link LinkEdge#LinkEdge(VtnLink)}</li>
+     *   <li>{@link LinkEdge#LinkEdge(VtnSwitchLink)}</li>
      *   <li>{@link LinkEdge#getSourcePort()}</li>
      *   <li>{@link LinkEdge#getDestinationPort()}</li>
      *   <li>{@link LinkEdge#toString()}</li>
@@ -53,7 +54,7 @@ public class LinkEdgeTest extends TestBase {
 
         // Invalid source.
         for (NodeConnectorId inv: invalid) {
-            VtnLink vlink = new VtnLinkBuilder().setSource(inv).
+            VtnSwitchLink vlink = new VtnLinkBuilder().setSource(inv).
                 setDestination(nc).build();
             try {
                 new LinkEdge(vlink);
@@ -66,7 +67,7 @@ public class LinkEdgeTest extends TestBase {
 
         // Invalid destination.
         for (NodeConnectorId inv: invalid) {
-            VtnLink vlink = new VtnLinkBuilder().setSource(nc).
+            VtnSwitchLink vlink = new VtnLinkBuilder().setSource(nc).
                 setDestination(inv).build();
             try {
                 new LinkEdge(vlink);
@@ -94,7 +95,7 @@ public class LinkEdgeTest extends TestBase {
         for (int i = 0; i < source.length; i++) {
             NodeConnectorId src = source[i];
             NodeConnectorId dst = destination[i];
-            VtnLink vlink = new VtnLinkBuilder().setSource(src).
+            VtnSwitchLink vlink = new VtnLinkBuilder().setSource(src).
                 setDestination(dst).build();
             LinkEdge le = new LinkEdge(vlink);
             SalPort srcPort = SalPort.create(src.getValue());

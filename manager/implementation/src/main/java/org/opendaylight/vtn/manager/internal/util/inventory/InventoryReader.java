@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,11 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnNodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.VtnStaticTopology;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology.StaticEdgePorts;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology.StaticSwitchLinks;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static._switch.links.StaticSwitchLink;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnSwitchPort;
 
 /**
@@ -58,6 +64,26 @@ public final class InventoryReader {
     private final Map<SalPort, VtnPort>  portCache = new HashMap<>();
 
     /**
+     * Static inter-switch links indexed by source port.
+     */
+    private final Map<SalPort, SalPort>  staticLinks = new HashMap<>();
+
+    /**
+     * Static inter-switch link indexed by destination port.
+     *
+     * <p>
+     *   A non-NULL map is set to this field if all the static network topology
+     *   configurations are cached.
+     * </p>
+     */
+    private Map<SalPort, Set<SalPort>>  reverseStaticLinks;
+
+    /**
+     * Static edge port configuration.
+     */
+    private final Map<SalPort, Boolean>  staticEdgePorts = new HashMap<>();
+
+    /**
      * Read transaction.
      */
     private final ReadTransaction  readTx;
@@ -65,7 +91,7 @@ public final class InventoryReader {
     /**
      * Set {@code true} if all the nodes are cached.
      */
-    private boolean  allCached;
+    private boolean  allNodesCached;
 
     /**
      * A node cache entry.
@@ -312,13 +338,34 @@ public final class InventoryReader {
     }
 
     /**
+     * Put the given VTN static network topology information into the
+     * static network topology cache.
+     *
+     * @param vstopo  A {@link VtnStaticTopology} instance or {@code null}.
+     */
+    public void prefetch(VtnStaticTopology vstopo) {
+        // Purge the static network topology caches.
+        staticLinks.clear();
+        staticEdgePorts.clear();
+        reverseStaticLinks = new HashMap<>();
+
+        if (vstopo != null) {
+            // Static edge configuration needs to be cached before static link
+            // cache.
+            cacheStaticEdges(vstopo.getStaticEdgePorts());
+            cacheStaticLinks(vstopo.getStaticSwitchLinks());
+        }
+
+    }
+
+    /**
      * Return all node information as a list.
      *
      * @return  A list of {@link VtnNode} instances.
      * @throws VTNException  An error occurred.
      */
     public List<VtnNode> getVtnNodes() throws VTNException {
-        if (allCached) {
+        if (allNodesCached) {
             List<VtnNode> list = new ArrayList<VtnNode>(nodeCache.size());
             for (NodeCacheEntry ent: nodeCache.values()) {
                 list.add(ent.getVtnNode());
@@ -334,7 +381,7 @@ public final class InventoryReader {
 
         nodeCache.clear();
         portCache.clear();
-        allCached = true;
+        allNodesCached = true;
 
         if (opt.isPresent()) {
             VtnNodes nodes = opt.get();
@@ -485,6 +532,115 @@ public final class InventoryReader {
     }
 
     /**
+     * Search for a static inter-switch link configuration by the source port
+     * of the link.
+     *
+     * <p>
+     *   Note that a static inter-switch link is ignored if source or
+     *   destination port of that link is configured as a static edge port.
+     * </p>
+     *
+     * @param src  A {@link SalPort} instance which specifies the source port
+     *             of the link.
+     * @return  A {@link SalPort} which specifies the destination port of the
+     *          link if found. {@code null} if not found.
+     * @throws VTNException
+     *    Failed to reead static inter-switch link configuration.
+     */
+    public SalPort getStaticLink(SalPort src) throws VTNException {
+        SalPort dst = staticLinks.get(src);
+        if (dst == null && reverseStaticLinks == null &&
+            !staticLinks.containsKey(src)) {
+            // Read static inter-switch link configuration.
+            InstanceIdentifier<StaticSwitchLink> path =
+                InventoryUtils.toStaticSwitchLinkIdentifier(src);
+            Optional<StaticSwitchLink> opt = DataStoreUtils.read(
+                readTx, LogicalDatastoreType.CONFIGURATION, path);
+            if (opt.isPresent()) {
+                StaticSwitchLink swlink = opt.get();
+                dst = SalPort.create(swlink.getDestination());
+                if (dst != null) {
+                    // Eliminate broken configuration.
+                    if (src.equals(dst) || isStaticEdgePort(src) ||
+                        isStaticEdgePort(dst)) {
+                        dst = null;
+                    }
+                }
+            }
+
+            // Cache the result.
+            staticLinks.put(src, dst);
+        }
+
+        return dst;
+    }
+
+    /**
+     * Search for static inter-switch link configurations by the destination
+     * port of the link.
+     *
+     * @param dst  A {@link SalPort} instance which specifies the destination
+     *             port of the link.
+     * @return  A {@link Set} which contains source ports of the links.
+     *          Note that an empty set is returned if no static inter-switch
+     *          link configuration is present.
+     * @throws VTNException
+     *    Failed to reead static inter-switch link configuration.
+     */
+    public Set<SalPort> getReverseStaticLinks(SalPort dst) throws VTNException {
+        if (reverseStaticLinks == null) {
+            readStaticTopology();
+        }
+
+        Set<SalPort> srcSet = reverseStaticLinks.get(dst);
+        return (srcSet == null)
+            ? Collections.<SalPort>emptySet()
+            : Collections.unmodifiableSet(srcSet);
+    }
+
+    /**
+     * Determine whether the given switch port is configured as an edge port
+     * or not.
+     *
+     * @param sport  A {@link SalPort} instance which specifies the switch
+     *               port.
+     * @return  {@code true} if the given port should be treated as an edge
+     *          port. Otherwise {@code false}.
+     * @throws VTNException
+     *    Failed to reead static edge port configuration.
+     */
+    public boolean isStaticEdgePort(SalPort sport) throws VTNException {
+        Boolean edge = staticEdgePorts.get(sport);
+        if (edge == null) {
+            if (reverseStaticLinks == null) {
+                // Read static edge port configuration.
+                InstanceIdentifier<StaticEdgePort> path =
+                    InventoryUtils.toStaticEdgePortIdentifier(sport);
+                Optional<StaticEdgePort> opt = DataStoreUtils.read(
+                    readTx, LogicalDatastoreType.CONFIGURATION, path);
+                edge = Boolean.valueOf(opt.isPresent());
+            } else {
+                edge = Boolean.FALSE;
+            }
+
+            // Cache the result.
+            staticEdgePorts.put(sport, edge);
+        }
+
+        return edge.booleanValue();
+    }
+
+    /**
+     * Purge the cached information about the given VTN port.
+     *
+     * @param sport  A {@link SalPort} instance which specifies the switch
+     *               port.
+     */
+    public void purge(SalPort sport) {
+        portCache.remove(sport);
+    }
+
+    /**
      * Return cached node information only for unit test.
      *
      * @return  A map that contains cached node information.
@@ -597,5 +753,118 @@ public final class InventoryReader {
         }
 
         return target;
+    }
+
+    /**
+     * Cache all the static network topology configuration.
+     *
+     * @throws VTNException
+     *    Failed to reead static network topology configuration.
+     */
+    private void readStaticTopology() throws VTNException {
+        InstanceIdentifier<VtnStaticTopology> path =
+            InstanceIdentifier.create(VtnStaticTopology.class);
+        LogicalDatastoreType cstore = LogicalDatastoreType.CONFIGURATION;
+        VtnStaticTopology vstopo = DataStoreUtils.read(readTx, cstore, path).
+            orNull();
+        prefetch(vstopo);
+    }
+
+    /**
+     * Cache all the static inter-switch link configurations.
+     *
+     * <ul>
+     *   <li>
+     *     Note that this method eliminates broken configuration.
+     *     <ul>
+     *       <li>
+     *         Termination point is present in static edge port
+     *         configuration.
+     *       </li>
+     *       <li>
+     *         The destination port of the link is the same as the source.
+     *       </li>
+     *     </ul>
+     *   </li>
+     *   <li>
+     *     This method must be called after all the static edge port
+     *     configuration are cached.
+     *   </li>
+     * </ul>
+     *
+     * @param swlinks  A {@link StaticSwitchLinks} instance which contains
+     *                 all the static inter-switch link configurations.
+     */
+    private void cacheStaticLinks(StaticSwitchLinks swlinks) {
+        if (swlinks != null) {
+            List<StaticSwitchLink> links = swlinks.getStaticSwitchLink();
+            if (links != null) {
+                for (StaticSwitchLink swlink: links) {
+                    cacheStaticLink(swlink);
+                }
+            }
+        }
+    }
+
+    /**
+     * Cache the given static inter-switch link configuration unless the given
+     * configuration is broken.
+     *
+     * <ul>
+     *   <li>
+     *     Note that links configured in static edge port are eliminated.
+     *   </li>
+     *   <li>
+     *     This method must be called after all the static edge port
+     *     configuration are cached.
+     *   </li>
+     * </ul>
+     *
+     * @param swlink  A static inter-switch link configuration to be cached.
+     */
+    private void cacheStaticLink(StaticSwitchLink swlink) {
+        SalPort src = SalPort.create(swlink.getSource());
+        if (src == null || Boolean.TRUE.equals(staticEdgePorts.get(src))) {
+            return;
+        }
+
+        SalPort dst = SalPort.create(swlink.getDestination());
+        if (dst == null || dst.equals(src) ||
+            Boolean.TRUE.equals(staticEdgePorts.get(dst))) {
+            return;
+        }
+
+        Set<SalPort> srcSet = reverseStaticLinks.get(dst);
+        if (srcSet == null) {
+            srcSet = new HashSet<SalPort>();
+            reverseStaticLinks.put(dst, srcSet);
+        }
+        srcSet.add(src);
+
+        staticLinks.put(src, dst);
+    }
+
+    /**
+     * Cache all the static edge port configuration.
+     *
+     * @param edges  A {@link StaticEdgePorts} instance which contains all the
+     *               static edge port configurations.
+     */
+    private void cacheStaticEdges(StaticEdgePorts edges) {
+        if (edges == null) {
+            return;
+        }
+
+        List<StaticEdgePort> eplist = edges.getStaticEdgePort();
+        if (eplist == null) {
+            return;
+        }
+
+        for (StaticEdgePort ep: eplist) {
+            SalPort sport = SalPort.create(ep.getPort());
+            if (sport != null) {
+                staticEdgePorts.put(sport, Boolean.TRUE);
+            }
+        }
     }
 }

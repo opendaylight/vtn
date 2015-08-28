@@ -504,10 +504,10 @@ public class VTNRoutingManagerTest extends TestBase {
         TopologyEventContext ectx = new TopologyEventContext();
         List<VtnLink> expected = new ArrayList<>();
         List<VtnLink> empty = Collections.<VtnLink>emptyList();
-        for (long l = 0; l <= 10; l++) {
-            assertEquals(expected, ectx.getCreated());
-            assertEquals(empty, ectx.getRemoved());
+        assertEquals(expected, ectx.getCreated());
+        assertEquals(empty, ectx.getRemoved());
 
+        for (long l = 0; l <= 10; l++) {
             SalPort src = new SalPort(1L + l, 2L + l);
             SalPort dst = new SalPort(10L + l, 20L + l);
             VtnLink vlink = new VtnLinkBuilder().
@@ -533,11 +533,12 @@ public class VTNRoutingManagerTest extends TestBase {
     @Test
     public void testOnUpdated() {
         TopologyEventContext ectx = new TopologyEventContext();
-        List<VtnLink> empty = Collections.<VtnLink>emptyList();
-        for (long l = 0; l <= 10; l++) {
-            assertEquals(empty, ectx.getCreated());
-            assertEquals(empty, ectx.getRemoved());
+        List<VtnLink> created = new ArrayList<>();
+        List<VtnLink> removed = new ArrayList<>();
+        assertEquals(created, ectx.getCreated());
+        assertEquals(removed, ectx.getRemoved());
 
+        for (long l = 0; l <= 10; l++) {
             SalPort src = new SalPort(1L + l, 2L + l);
             SalPort dst1 = new SalPort(10L + l, 20L + l);
             SalPort dst2 = new SalPort(10L + l, 21L + l);
@@ -551,15 +552,16 @@ public class VTNRoutingManagerTest extends TestBase {
                 setSource(src.getNodeConnectorId()).
                 setDestination(dst2.getNodeConnectorId()).
                 build();
+            created.add(vlink);
+            removed.add(vlinkOld);
             InstanceIdentifier<VtnLink> path =
                 InventoryUtils.toVtnLinkIdentifier(vlink.getLinkId());
             ChangedData<VtnLink> data =
                 new ChangedData<>(path, vlink, vlinkOld);
-            try {
-                routingManager.onUpdated(ectx, data);
-                unexpected();
-            } catch (IllegalStateException e) {
-            }
+            routingManager.onUpdated(ectx, data);
+
+            assertEquals(created, ectx.getCreated());
+            assertEquals(removed, ectx.getRemoved());
         }
     }
 
@@ -572,10 +574,10 @@ public class VTNRoutingManagerTest extends TestBase {
         TopologyEventContext ectx = new TopologyEventContext();
         List<VtnLink> expected = new ArrayList<>();
         List<VtnLink> empty = Collections.<VtnLink>emptyList();
-        for (long l = 0; l <= 10; l++) {
-            assertEquals(empty, ectx.getCreated());
-            assertEquals(expected, ectx.getRemoved());
+        assertEquals(empty, ectx.getCreated());
+        assertEquals(expected, ectx.getRemoved());
 
+        for (long l = 0; l <= 10; l++) {
             SalPort src = new SalPort(1L + l, 2L + l);
             SalPort dst = new SalPort(10L + l, 20L + l);
             VtnLink vlink = new VtnLinkBuilder().
@@ -627,8 +629,9 @@ public class VTNRoutingManagerTest extends TestBase {
         SalNode snode1 = new SalNode(1L);
         SalNode snode2 = new SalNode(2L);
         SalNode snode3 = new SalNode(3L);
+        SalNode snode4 = new SalNode(4L);
         Set<SalNode> nodes = new HashSet<>();
-        Collections.addAll(nodes, snode1, snode2, snode3);
+        Collections.addAll(nodes, snode1, snode2, snode3, snode4);
 
         // openflow:1:1 <-> openflow:2:1
         List<VtnLink> vlinks = new ArrayList<>();
@@ -638,6 +641,11 @@ public class VTNRoutingManagerTest extends TestBase {
         List<VtnLink> deleted = new ArrayList<>();
         createVtnLink(deleted, snode1, 2L, snode3, 1L);
         vlinks.addAll(deleted);
+
+        // openflow:3:2 <-> openflow:4:1
+        List<VtnLink> changed = new ArrayList<>();
+        createVtnLink(changed, snode3, 2L, snode4, 1L);
+        vlinks.addAll(changed);
 
         TopologyGraph topo = getTopologyGraph(routingManager);
         assertEquals(true,
@@ -653,33 +661,34 @@ public class VTNRoutingManagerTest extends TestBase {
         SalPort sport12 = new SalPort(1L, 2L);
         SalPort sport21 = new SalPort(2L, 1L);
         SalPort sport31 = new SalPort(3L, 1L);
+        SalPort sport32 = new SalPort(3L, 2L);
+        SalPort sport41 = new SalPort(4L, 1L);
         checkRoute(snode1, snode2, sport11, sport21);
         checkRoute(snode2, snode1, sport21, sport11);
         checkRoute(snode1, snode3, sport12, sport31);
         checkRoute(snode3, snode1, sport31, sport12);
         checkRoute(snode2, snode3, sport21, sport11, sport12, sport31);
         checkRoute(snode3, snode2, sport31, sport12, sport11, sport21);
+        checkRoute(snode1, snode4, sport12, sport31, sport32, sport41);
+        checkRoute(snode4, snode1, sport41, sport32, sport31, sport12);
 
-        // Create links between openflow:4 and openflow:2.
+        // Create links between openflow:5 and openflow:2.
         Map<InstanceIdentifier<?>, DataObject> created = new HashMap<>();
         List<VtnLink> added = new ArrayList<>();
-        List<AddedLink> addedLinks = new ArrayList<>();
         Set<AddedLink> addedSet = new HashSet<>();
-        SalNode snode4 = new SalNode(4L);
-        createVtnLink(added, snode2, 2L, snode4, 1L);
+        SalNode snode5 = new SalNode(5L);
+        createVtnLink(added, snode2, 2L, snode5, 1L);
         for (VtnLink vlink: added) {
             InstanceIdentifier<VtnLink> path =
                 InventoryUtils.toVtnLinkIdentifier(vlink.getLinkId());
             assertEquals(null, created.put(path, vlink));
             AddedLink al = new AddedLinkBuilder(vlink).build();
-            addedLinks.add(al);
             assertEquals(true, addedSet.add(al));
         }
 
         // Remove links between openflow:1 and openflow:3.
         Map<InstanceIdentifier<?>, DataObject> original = new HashMap<>();
         Set<InstanceIdentifier<?>> removed = new HashSet<>();
-        List<RemovedLink> removedLinks = new ArrayList<>();
         Set<RemovedLink> removedSet = new HashSet<>();
         for (VtnLink vlink: deleted) {
             InstanceIdentifier<VtnLink> path =
@@ -687,24 +696,35 @@ public class VTNRoutingManagerTest extends TestBase {
             assertEquals(true, removed.add(path));
             assertEquals(null, original.put(path, vlink));
             RemovedLink rl = new RemovedLinkBuilder(vlink).build();
-            removedLinks.add(rl);
             assertEquals(true, removedSet.add(rl));
         }
 
-        // Create updated data to be ignored.
-        List<VtnLink> ignored = new ArrayList<>();
-        SalNode snode100 = new SalNode(100L);
-        SalNode snode101 = new SalNode(101L);
-        createVtnLink(ignored, snode100, 1L, snode101, 1L);
+        // Remove link from openflow:3:2 to openflow:4:1.
+        VtnLink vlink1 = changed.get(0);
+        assertEquals("openflow:3:2", vlink1.getLinkId().getValue());
+        InstanceIdentifier<VtnLink> path1 =
+            InventoryUtils.toVtnLinkIdentifier(vlink1.getLinkId());
+        assertEquals(true, removed.add(path1));
+        assertEquals(null, original.put(path1, vlink1));
+        assertTrue(removedSet.add(new RemovedLinkBuilder(vlink1).build()));
+
+        // Create a link from openflow:2:3 to openflow:4:1.
+        vlink1 = createVtnLink(snode2, 3L, snode4, 1L);
+        path1 = InventoryUtils.toVtnLinkIdentifier(vlink1.getLinkId());
+        assertEquals(null, created.put(path1, vlink1));
+        assertTrue(addedSet.add(new AddedLinkBuilder(vlink1).build()));
+
+        // Change link openflow:4:1 to openflow:3:2 as from openflow:4:1
+        // to openflow:2:3.
         Map<InstanceIdentifier<?>, DataObject> updated = new HashMap<>();
-        for (VtnLink vlink: ignored) {
-            InstanceIdentifier<VtnLink> path =
-                InventoryUtils.toVtnLinkIdentifier(vlink.getLinkId());
-            VtnLink old = new VtnLinkBuilder().
-                setLinkId(vlink.getLinkId()).build();
-            assertEquals(null, original.put(path, old));
-            assertEquals(null, updated.put(path, vlink));
-        }
+        vlink1 = changed.get(1);
+        assertEquals("openflow:4:1", vlink1.getLinkId().getValue());
+        VtnLink newLink = createVtnLink(snode4, 1L, snode2, 3L);
+        path1 = InventoryUtils.toVtnLinkIdentifier(vlink1.getLinkId());
+        assertEquals(null, original.put(path1, vlink1));
+        assertEquals(null, updated.put(path1, newLink));
+        assertTrue(removedSet.add(new RemovedLinkBuilder(vlink1).build()));
+        assertTrue(addedSet.add(new AddedLinkBuilder(newLink).build()));
 
         // Construct an AsyncDataChangeEvent.
         AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> event =
@@ -753,10 +773,10 @@ public class VTNRoutingManagerTest extends TestBase {
             verifyZeroInteractions(listeners[i]);
         }
 
-        // openflow:3 should be removed from the topology, and openflow:4
+        // openflow:3 should be removed from the topology, and openflow:5
         // should be added to the topology.
         assertEquals(true, nodes.remove(snode3));
-        assertEquals(true, nodes.add(snode4));
+        assertEquals(true, nodes.add(snode5));
         verts = topo.getVertices();
         assertEquals(nodes.size(), verts.size());
         for (SalNode snode: verts) {
@@ -771,13 +791,18 @@ public class VTNRoutingManagerTest extends TestBase {
         checkRoute(snode1, snode2, sport11, sport21);
         checkRoute(snode2, snode1, sport21, sport11);
 
-        // openflow:4 should be reachable.
+        // openflow:5 should be reachable.
         SalPort sport22 = new SalPort(2L, 2L);
-        SalPort sport41 = new SalPort(4L, 1L);
-        checkRoute(snode2, snode4, sport22, sport41);
-        checkRoute(snode4, snode2, sport41, sport22);
-        checkRoute(snode1, snode4, sport11, sport21, sport22, sport41);
-        checkRoute(snode4, snode1, sport41, sport22, sport21, sport11);
+        SalPort sport51 = new SalPort(5L, 1L);
+        checkRoute(snode2, snode5, sport22, sport51);
+        checkRoute(snode5, snode2, sport51, sport22);
+        checkRoute(snode1, snode5, sport11, sport21, sport22, sport51);
+        checkRoute(snode5, snode1, sport51, sport22, sport21, sport11);
+
+        // openflow:4:1 is now connected to openflow:2:3.
+        SalPort sport23 = new SalPort(2L, 3L);
+        checkRoute(snode1, snode4, sport11, sport21, sport23, sport41);
+        checkRoute(snode4, snode1, sport41, sport23, sport21, sport11);
     }
 
     /**
@@ -786,17 +811,6 @@ public class VTNRoutingManagerTest extends TestBase {
     @Test
     public void testGetWildcardPath() {
         assertEquals(getPath(), routingManager.getWildcardPath());
-    }
-
-    /**
-     * Test case for {@link VTNRoutingManager#getRequiredEvents()}.
-     */
-    @Test
-    public void testGetRequiredEvents() {
-        Set<VtnUpdateType> events = routingManager.getRequiredEvents();
-        assertEquals(2, events.size());
-        assertEquals(true, events.contains(VtnUpdateType.CREATED));
-        assertEquals(true, events.contains(VtnUpdateType.REMOVED));
     }
 
     /**
@@ -1280,6 +1294,26 @@ public class VTNRoutingManagerTest extends TestBase {
         for (int i = 1; i <= 10; i++) {
             assertEquals(null, routingManager.getRouteResolver(i));
         }
+    }
+
+    /**
+     * Create a network topology link.
+     *
+     * @param snode   The source node.
+     * @param sport   The source port number.
+     * @param dnode   The destination node.
+     * @param dport   The destination port number.
+     * @return  A {@link VtnLink} instance.
+     */
+    private VtnLink createVtnLink(SalNode snode, long sport, SalNode dnode,
+                                  long dport) {
+        SalPort src = new SalPort(snode.getNodeNumber(), sport);
+        SalPort dst = new SalPort(dnode.getNodeNumber(), dport);
+        return new VtnLinkBuilder().
+            setLinkId(new LinkId(src.toString())).
+            setSource(src.getNodeConnectorId()).
+            setDestination(dst.getNodeConnectorId()).
+            build();
     }
 
     /**

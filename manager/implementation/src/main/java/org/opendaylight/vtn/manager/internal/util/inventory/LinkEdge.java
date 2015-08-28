@@ -10,7 +10,7 @@ package org.opendaylight.vtn.manager.internal.util.inventory;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.vtn.topology.VtnLink;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnSwitchLink;
 
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Link;
 
@@ -31,13 +31,13 @@ public final class LinkEdge {
     /**
      * Construct a new instance.
      *
-     * @param vlink  A {@link VtnLink} instance.
+     * @param vlink  A {@link VtnSwitchLink} instance.
      * @throws NullPointerException
      *    {@code vlink} is {@code null}.
      * @throws IllegalArgumentException
      *    An invalid instance is specified to {@code vlink}.
      */
-    public LinkEdge(VtnLink vlink) {
+    public LinkEdge(VtnSwitchLink vlink) {
         sourcePort = SalPort.create(vlink.getSource());
         if (sourcePort == null) {
             throw new IllegalArgumentException(

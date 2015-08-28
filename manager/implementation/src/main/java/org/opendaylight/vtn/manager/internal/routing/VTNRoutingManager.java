@@ -9,9 +9,7 @@
 package org.opendaylight.vtn.manager.internal.routing;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 
@@ -28,8 +26,8 @@ import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcFuture;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcUtils;
 
@@ -73,12 +71,6 @@ public final class VTNRoutingManager
      */
     private static final Logger  LOG =
         LoggerFactory.getLogger(VTNRoutingManager.class);
-
-    /**
-     * Required event types.
-     */
-    private static final Set<VtnUpdateType>  REQUIRED_EVENTS =
-        EnumSet.of(VtnUpdateType.CREATED, VtnUpdateType.REMOVED);
 
     /**
      * VTN Manager provider service.
@@ -240,7 +232,10 @@ public final class VTNRoutingManager
     @Override
     protected void onCreated(TopologyEventContext ectx,
                              IdentifiedData<VtnLink> data) {
-        ectx.addCreated(data.getValue());
+        VtnLink vlink = data.getValue();
+        LOG.info("Inter-switch link has been created: {}",
+                 InventoryUtils.toString(vlink));
+        ectx.addCreated(vlink);
     }
 
     /**
@@ -249,7 +244,22 @@ public final class VTNRoutingManager
     @Override
     protected void onUpdated(TopologyEventContext ectx,
                              ChangedData<VtnLink> data) {
-        throw MiscUtils.unexpected();
+        VtnLink old = data.getOldValue();
+        VtnLink vlink = data.getValue();
+        if (old.getSource().equals(vlink.getSource()) &&
+            old.getDestination().equals(vlink.getDestination())) {
+            // Termination points were not changed.
+            // In this case we do not need to update routing table.
+            LOG.info("Inter-switch link attributes have been changed: " +
+                     "old={}, new={}", InventoryUtils.toString(old),
+                     InventoryUtils.toString(vlink));
+        } else {
+            LOG.info("Inter-switch link has been changed: old={}, new={}",
+                     InventoryUtils.toString(old),
+                     InventoryUtils.toString(vlink));
+            ectx.addRemoved(data.getOldValue());
+            ectx.addCreated(data.getValue());
+        }
     }
 
     /**
@@ -258,7 +268,10 @@ public final class VTNRoutingManager
     @Override
     protected void onRemoved(TopologyEventContext ectx,
                              IdentifiedData<VtnLink> data) {
-        ectx.addRemoved(data.getValue());
+        VtnLink vlink = data.getValue();
+        LOG.info("Inter-switch link has been removed: {}",
+                 InventoryUtils.toString(vlink));
+        ectx.addRemoved(vlink);
     }
 
     /**
@@ -268,17 +281,6 @@ public final class VTNRoutingManager
     protected InstanceIdentifier<VtnLink> getWildcardPath() {
         return InstanceIdentifier.builder(VtnTopology.class).
             child(VtnLink.class).build();
-    }
-
-    /**
-     * Return a set of {@link VtnUpdateType} instances that specifies
-     * event types to be listened.
-     *
-     * @return  A set of {@link VtnUpdateType} instances.
-     */
-    @Override
-    protected Set<VtnUpdateType> getRequiredEvents() {
-        return REQUIRED_EVENTS;
     }
 
     // CloseableContainer

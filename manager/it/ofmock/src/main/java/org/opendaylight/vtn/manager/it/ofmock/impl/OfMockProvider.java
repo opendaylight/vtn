@@ -31,6 +31,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.CheckedFuture;
 
+import org.opendaylight.vtn.manager.it.ofmock.DataChangeWaiter;
+import org.opendaylight.vtn.manager.it.ofmock.DataStoreUtils;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockFlow;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockLink;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockService;
@@ -38,15 +40,18 @@ import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
+import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
 import org.opendaylight.controller.sal.binding.api.NotificationProviderService;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 
+import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.binding.Notification;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfig;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.VtnStaticTopology;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnOpenflowVersion;
 
@@ -161,6 +166,11 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
     private VtnConfig  vtnConfig;
 
     /**
+     * A set of data change waiters.
+     */
+    private Set<DataChangeWaiterImpl>  dataChangeWaiters = new HashSet<>();
+
+    /**
      * Construct a new instance.
      *
      * @param broker  A {@link DataBroker} service instance.
@@ -224,6 +234,15 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
         Lock lk = (writer) ? rwLock.writeLock() : rwLock.readLock();
         lk.lock();
         return lk;
+    }
+
+    /**
+     * Remove the given data change waiter.
+     *
+     * @param dcw  A {@link DataChangeWaiterImpl} instance.
+     */
+    void remove(DataChangeWaiterImpl dcw) {
+        dataChangeWaiters.remove(dcw);
     }
 
     /**
@@ -650,6 +669,20 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
      */
     @Override
     public void reset() throws InterruptedException, TimeoutException {
+        // Delete static network topology configuration.
+        InstanceIdentifier<VtnStaticTopology> vsPath = InstanceIdentifier.
+            create(VtnStaticTopology.class);
+        ReadWriteTransaction tx = dataBroker.newReadWriteTransaction();
+        DataStoreUtils.delete(tx, LogicalDatastoreType.CONFIGURATION, vsPath);
+        DataStoreUtils.submit(tx);
+
+        // Clean up data change waiters.
+        Set<DataChangeWaiterImpl> waiters = new HashSet<>(dataChangeWaiters);
+        dataChangeWaiters.clear();
+        for (DataChangeWaiterImpl dcw: waiters) {
+            dcw.close();
+        }
+
         Set<String> removedNodes = new HashSet<>();
         Set<String> edgePorts = new HashSet<>();
         Map<String, String> links = new HashMap<>();
@@ -1127,6 +1160,15 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
      * {@inheritDoc}
      */
     @Override
+    public void awaitTopology(Set<OfMockLink> topo)
+        throws InterruptedException {
+        routingTable.awaitTopology(topo);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public OfMockFlow getFlow(String nid, int table, Match match, int pri) {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
@@ -1214,5 +1256,34 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
     @Override
     public List<OfMockLink> getRoute(String src, String dst) {
         return routingTable.getRoute(src, dst);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ReadOnlyTransaction newReadOnlyTransaction() {
+        return dataBroker.newReadOnlyTransaction();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ReadWriteTransaction newReadWriteTransaction() {
+        return dataBroker.newReadWriteTransaction();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public <T extends DataObject> DataChangeWaiter<T> newDataChangeWaiter(
+        LogicalDatastoreType store, InstanceIdentifier<T> path) {
+        DataChangeWaiterImpl<T> dcw = new DataChangeWaiterImpl<>(
+            this, store, path);
+        dataChangeWaiters.add(dcw);
+
+        return dcw;
     }
 }

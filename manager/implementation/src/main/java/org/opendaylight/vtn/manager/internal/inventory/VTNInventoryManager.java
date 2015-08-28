@@ -120,6 +120,15 @@ public final class VTNInventoryManager
     }
 
     /**
+     * Create a new static network topology manager.
+     *
+     * @return  A {@link StaticTopologyManager} instance.
+     */
+    public StaticTopologyManager newStaticTopologyManager() {
+        return new StaticTopologyManager(vtnProvider, inventoryQueue);
+    }
+
+    /**
      * Start the inventory service.
      */
     public void start() {

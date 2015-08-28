@@ -13,11 +13,10 @@ import java.util.List;
 
 import com.google.common.base.Optional;
 
-import org.slf4j.Logger;
-
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -39,6 +38,14 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.vtn.topology.VtnLink;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.vtn.topology.VtnLinkBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.vtn.topology.VtnLinkKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.VtnStaticTopology;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology.StaticEdgePorts;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology.StaticSwitchLinks;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static._switch.links.StaticSwitchLink;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static._switch.links.StaticSwitchLinkKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePort;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePortKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnSwitchLink;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeConnector;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.port.rev130925.PortConfig;
@@ -222,6 +229,43 @@ public final class InventoryUtils {
     }
 
     /**
+     * Return a string representation of the given link information.
+     *
+     * @param vslink  A {@link VtnSwitchLink} instance.
+     * @return  A string representation of the given link.
+     */
+    public static String toString(VtnSwitchLink vslink) {
+        StringBuilder builder = new StringBuilder("{").
+            append(MiscUtils.getValue(vslink.getSource())).
+            append(" -> ").
+            append(MiscUtils.getValue(vslink.getDestination())).
+            append('}');
+        return builder.toString();
+    }
+
+    /**
+     * Return a string representation of the given VTN link information.
+     *
+     * @param vlink  A {@link VtnLink} instance.
+     * @return  A string representation of the given link.
+     */
+    public static String toString(VtnLink vlink) {
+        NodeConnectorId src = vlink.getSource();
+        NodeConnectorId dst = vlink.getDestination();
+        Boolean st = vlink.isStaticLink();
+        if (st == null) {
+            st = Boolean.FALSE;
+        }
+        StringBuilder builder = new StringBuilder("{id=").
+            append(MiscUtils.getValue(vlink.getLinkId())).
+            append(", src=").append(MiscUtils.getValue(src)).
+            append(", dst=").append(MiscUtils.getValue(dst)).
+            append(", static=").append(st).
+            append('}');
+        return builder.toString();
+    }
+
+    /**
      * Convert a given topology link ID into an instance identifier of
      * VTN topology link.
      *
@@ -244,6 +288,38 @@ public final class InventoryUtils {
         LinkId lid) {
         return InstanceIdentifier.builder(IgnoredLinks.class).
             child(IgnoredLink.class, new IgnoredLinkKey(lid)).build();
+    }
+
+    /**
+     * Convert the given switch port ID into an instance identifier for a
+     * static inter-switch link.
+     *
+     * @param sport  A {@link SalPort} instance.
+     * @return  An instance identifier for a static inter-switch link.
+     */
+    public static InstanceIdentifier<StaticSwitchLink> toStaticSwitchLinkIdentifier(
+        SalPort sport) {
+        NodeConnectorId ncId = sport.getNodeConnectorId();
+        return InstanceIdentifier.builder(VtnStaticTopology.class).
+            child(StaticSwitchLinks.class).
+            child(StaticSwitchLink.class, new StaticSwitchLinkKey(ncId)).
+            build();
+    }
+
+    /**
+     * Convert the given switch port ID into an instance identifier for a
+     * static edge port.
+     *
+     * @param sport  A {@link SalPort} instance.
+     * @return  An instance identifier for a static edge port.
+     */
+    public static InstanceIdentifier<StaticEdgePort> toStaticEdgePortIdentifier(
+        SalPort sport) {
+        NodeConnectorId ncId = sport.getNodeConnectorId();
+        return InstanceIdentifier.builder(VtnStaticTopology.class).
+            child(StaticEdgePorts.class).
+            child(StaticEdgePort.class, new StaticEdgePortKey(ncId)).
+            build();
     }
 
     /**
@@ -506,72 +582,6 @@ public final class InventoryUtils {
     }
 
     /**
-     * Add the given inter-switch link information into the VTN inventory data.
-     *
-     * @param tx      A {@link ReadWriteTransaction} instance.
-     * @param reader  An {@link InventoryReader} instance.
-     * @param lid     The identifier of the created link.
-     * @param src     A {@link SalPort} instance corresponding to the source
-     *                of the created link.
-     * @param dst     A {@link SalPort} instance corresponding to the
-     *                destination of the created link.
-     * @return  {@code true} if the link was added to the vtn-topology list.
-     *          {@code false} if the link was added to the ignored-links list.
-     * @throws VTNException  An error occurred.
-     */
-    public static boolean addVtnLink(ReadWriteTransaction tx,
-                                     InventoryReader reader, LinkId lid,
-                                     SalPort src, SalPort dst)
-        throws VTNException {
-        // Determine whether the VTN port for both termination points are
-        // present or not.
-        boolean ret;
-        if (reader.get(src) != null && reader.get(dst) != null) {
-            // Create link information.
-            createVtnLink(tx, lid, src, dst);
-            ret = true;
-        } else {
-            // Put link information into ignored link list.
-            InstanceIdentifier<IgnoredLink> key = toIgnoredLinkIdentifier(lid);
-            IgnoredLink ilink = toIgnoredLinkBuilder(lid, src, dst).build();
-            tx.merge(LogicalDatastoreType.OPERATIONAL, key, ilink, true);
-            ret = false;
-        }
-
-        return ret;
-    }
-
-
-    /**
-     * Create a VTN link information, and put it into the MD-SAL datastore.
-     *
-     * @param tx   A {@link ReadWriteTransaction} instance.
-     * @param lid  The identifier of the created link.
-     * @param src  A {@link SalPort} instance corresponding to the source
-     *             of the created link.
-     * @param dst  A {@link SalPort} instance corresponding to the destination
-     *             of the created link.
-     */
-    public static void createVtnLink(ReadWriteTransaction tx, LinkId lid,
-                                     SalPort src, SalPort dst) {
-        // Put the link information into vtn-topology list.
-        InstanceIdentifier<VtnLink> key = toVtnLinkIdentifier(lid);
-        VtnLink vlink = toVtnLinkBuilder(lid, src, dst).build();
-        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
-        tx.merge(oper, key, vlink, true);
-
-        // Create source port link.
-        InstanceIdentifier<PortLink> pkey = src.getPortLinkIdentifier(lid);
-        PortLink plink = toPortLinkBuilder(lid, dst).build();
-        tx.merge(oper, pkey, plink, true);
-
-        // Create destination port link.
-        pkey = dst.getPortLinkIdentifier(lid);
-        plink = toPortLinkBuilder(lid, src).build();
-        tx.merge(oper, pkey, plink, true);
-    }
-
-    /**
      * Remove all VTN links affected by the the removed VTN node.
      *
      * @param tx     A {@link ReadWriteTransaction} instance.
@@ -677,6 +687,11 @@ public final class InventoryUtils {
     /**
      * Remove all VTN links affected by the removed VTN port.
      *
+     * <p>
+     *   Note that this method does not remove port links configured in the
+     *   given VTN port.
+     * </p>
+     *
      * @param tx     A {@link ReadWriteTransaction} instance.
      * @param vport  A {@link VtnPort} instance corresponding to the removed
      *               VTN port.
@@ -715,44 +730,35 @@ public final class InventoryUtils {
         DataStoreUtils.delete(tx, LogicalDatastoreType.OPERATIONAL, path);
     }
 
+
     /**
-     * Try to resolve ignored inter-switch links.
+     * Remove all the VTN links configured in the given VTN port.
      *
-     * @param tx      A {@link ReadWriteTransaction} instance.
-     * @param reader  An {@link InventoryReader} instance.
-     * @param log     A {@link Logger} instance.
+     * @param tx     A {@link ReadWriteTransaction} instance.
+     * @param sport  A {@link SalPort} instance which specifies the target
+     *               VTN port.
+     * @param vport  A {@link VtnPort} instance associated with {@code sport}.
      * @throws VTNException  An error occurred.
      */
-    public static void resolveIgnoredLinks(ReadWriteTransaction tx,
-                                           InventoryReader reader,
-                                           Logger log) throws VTNException {
-        // Read all ignored inter-switch links.
-        InstanceIdentifier<IgnoredLinks> igPath =
-            InstanceIdentifier.create(IgnoredLinks.class);
-        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
-        Optional<IgnoredLinks> opt  = DataStoreUtils.read(tx, oper, igPath);
-        if (!opt.isPresent()) {
-            return;
-        }
-
-        List<IgnoredLink> links = opt.get().getIgnoredLink();
+    public static void clearPortLink(ReadWriteTransaction tx, SalPort sport,
+                                     VtnPort vport) throws VTNException {
+        List<PortLink> links = vport.getPortLink();
         if (links == null) {
             return;
         }
 
-        for (IgnoredLink ignored: links) {
-            SalPort src = SalPort.create(ignored.getSource());
-            SalPort dst = SalPort.create(ignored.getDestination());
-            if (reader.get(src) != null && reader.get(dst) != null) {
-                // Move this link to vtn-topology.
-                LinkId lid = ignored.getLinkId();
-                InstanceIdentifier<IgnoredLink> ipath =
-                    toIgnoredLinkIdentifier(lid);
-                tx.delete(oper, ipath);
-                createVtnLink(tx, lid, src, dst);
-                log.info("Inter-switch link has been resolved: {}: {} -> {}",
-                         lid.getValue(), src, dst);
-            }
+        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        for (PortLink plink: links) {
+            LinkId lid = plink.getLinkId();
+            InstanceIdentifier<PortLink> path =
+                sport.getPortLinkIdentifier(lid);
+            tx.delete(oper, path);
+
+            SalPort peer = SalPort.create(plink.getPeer());
+            removePortLink(tx, peer, lid);
+
+            InstanceIdentifier<VtnLink> lpath = toVtnLinkIdentifier(lid);
+            DataStoreUtils.delete(tx, oper, lpath);
         }
     }
 }

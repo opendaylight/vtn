@@ -13,6 +13,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.base.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,8 +27,7 @@ import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
-import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
-import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
+import org.opendaylight.vtn.manager.internal.util.inventory.LinkUpdateContext;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 
@@ -45,7 +46,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.VtnTopologyBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.LinkId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TopologyId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.Topology;
@@ -78,18 +78,17 @@ public final class TopologyListener
     /**
      * MD-SAL transaction task that initializes the VTN topology tree.
      */
-    private static class TopologyInitTask extends AbstractTxTask<Void> {
+    private static class TopologyInitTask
+        extends AbstractTxTask<LinkUpdateContext> {
         /**
          * Initialize VTN network topology.
          *
-         * @param tx        A {@link ReadWriteTransaction} instance.
-         * @param reader    An {@link InventoryReader} instance.
+         * @param luctx     A {@link LinkUpdateContext} instance.
          * @param topology  MD-SAL network topology.
          * @throws VTNException
          *    An error occurred.
          */
-        private void initLinks(ReadWriteTransaction tx, InventoryReader reader,
-                               Topology topology)
+        private void initLinks(LinkUpdateContext luctx, Topology topology)
             throws VTNException {
             if (topology == null) {
                 return;
@@ -106,13 +105,8 @@ public final class TopologyListener
                 if (src == null || dst == null) {
                     LOG.debug("Ignore unsupported inter-switch link: {}",
                               link);
-                    continue;
-                }
-
-                LinkId lid = link.getLinkId();
-                if (!InventoryUtils.addVtnLink(tx, reader, lid, src, dst)) {
-                    LOG.warn("Ignore inter-switch link: {}: {} -> {}",
-                             lid.getValue(), src, dst);
+                } else {
+                    luctx.addVtnLink(link.getLinkId(), src, dst);
                 }
             }
         }
@@ -121,29 +115,46 @@ public final class TopologyListener
          * {@inheritDoc}
          */
         @Override
-        public Void execute(TxContext ctx) throws VTNException {
-            // Read all inter-switch links in the MD-SAL datastore.
-            TopologyKey topoKey = new TopologyKey(new TopologyId(TOPOLOGY_ID));
-            InstanceIdentifier<Topology> topoPath = InstanceIdentifier.
-                builder(NetworkTopology.class).
-                child(Topology.class, topoKey).build();
+        public LinkUpdateContext execute(TxContext ctx) throws VTNException {
+            // Check to see if the vtn-topology container is present.
+            // Initialize topology containers only if it is not present.
             ReadWriteTransaction tx = ctx.getReadWriteTransaction();
             LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
-            Topology topology =
-                DataStoreUtils.read(tx, oper, topoPath).orNull();
-
-            // Initialize vtn-topology and ignored-links.
             InstanceIdentifier<VtnTopology> vtPath =
                 InstanceIdentifier.create(VtnTopology.class);
-            InstanceIdentifier<IgnoredLinks> igPath =
-                InstanceIdentifier.create(IgnoredLinks.class);
-            tx.delete(oper, vtPath);
-            tx.delete(oper, igPath);
-            tx.merge(oper, vtPath, new VtnTopologyBuilder().build(), true);
-            tx.merge(oper, igPath, new IgnoredLinksBuilder().build(), true);
-            initLinks(tx, ctx.getInventoryReader(), topology);
+            Optional<VtnTopology> opt = DataStoreUtils.read(tx, oper, vtPath);
+            LinkUpdateContext luctx = null;
+            if (!opt.isPresent()) {
+                // Read all inter-switch links in the MD-SAL datastore.
+                TopologyKey topoKey =
+                    new TopologyKey(new TopologyId(TOPOLOGY_ID));
+                InstanceIdentifier<Topology> topoPath = InstanceIdentifier.
+                    builder(NetworkTopology.class).
+                    child(Topology.class, topoKey).build();
+                Topology topology =
+                    DataStoreUtils.read(tx, oper, topoPath).orNull();
 
-            return null;
+                // Initialize vtn-topology and ignored-links.
+                InstanceIdentifier<IgnoredLinks> igPath =
+                    InstanceIdentifier.create(IgnoredLinks.class);
+                tx.put(oper, vtPath, new VtnTopologyBuilder().build(), true);
+                tx.put(oper, igPath, new IgnoredLinksBuilder().build(), true);
+                luctx = new LinkUpdateContext(tx, ctx.getInventoryReader());
+                initLinks(luctx, topology);
+            }
+
+            return luctx;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void onSuccess(VTNManagerProvider provider,
+                              LinkUpdateContext luctx) {
+            if (luctx != null) {
+                luctx.recordLogs(LOG);
+            }
         }
 
         /**

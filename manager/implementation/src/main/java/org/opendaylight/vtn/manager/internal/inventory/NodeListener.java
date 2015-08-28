@@ -14,6 +14,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.base.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,20 +112,26 @@ public final class NodeListener
          */
         @Override
         public Void execute(TxContext ctx) throws VTNException {
-            // Read all nodes in the MD-SAL datastore.
-            InstanceIdentifier<Nodes> nodesPath =
-                InstanceIdentifier.create(Nodes.class);
-            LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+            // Check to see if the vtn-nodes container is present.
+            // Initialize it only if it is not present.
             ReadWriteTransaction tx = ctx.getReadWriteTransaction();
-            Nodes nodes = DataStoreUtils.read(tx, oper, nodesPath).orNull();
-            List<VtnNode> vnList = getVtnNodeList(nodes);
-            VtnNodes vnodes = new VtnNodesBuilder().setVtnNode(vnList).build();
-
-            // Initialize VTN node repository.
             InstanceIdentifier<VtnNodes> path =
                 InstanceIdentifier.create(VtnNodes.class);
-            tx.delete(oper, path);
-            tx.merge(oper, path, vnodes, true);
+            LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+            Optional<VtnNodes> opt = DataStoreUtils.read(tx, oper, path);
+            if (!opt.isPresent()) {
+                // Read all the nodes in the MD-SAL datastore.
+                InstanceIdentifier<Nodes> nodesPath =
+                    InstanceIdentifier.create(Nodes.class);
+                Nodes nodes = DataStoreUtils.read(tx, oper, nodesPath).
+                    orNull();
+                List<VtnNode> vnList = getVtnNodeList(nodes);
+                VtnNodes vnodes = new VtnNodesBuilder().
+                    setVtnNode(vnList).build();
+
+                // Initialize vtn-nodes container.
+                tx.put(oper, path, vnodes, true);
+            }
 
             return null;
         }

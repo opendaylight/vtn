@@ -402,4 +402,20 @@ module vtn-types {
             }
         }
     }
+
+    grouping vtn-switch-link {
+        description "Describes an inter-switch link.";
+
+        leaf source {
+            description "The source switch port of the link.";
+            type inv:node-connector-id;
+            mandatory true;
+        }
+
+        leaf destination {
+            description "The destination switch port of the link.";
+            type inv:node-connector-id;
+            mandatory true;
+        }
+    }
 }
