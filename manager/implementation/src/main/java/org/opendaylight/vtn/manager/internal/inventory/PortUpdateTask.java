@@ -18,6 +18,7 @@ import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
+import org.opendaylight.vtn.manager.internal.util.inventory.LinkUpdateContext;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
@@ -28,6 +29,7 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnOpenflowVersion;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPortBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNodeBuilder;
 
@@ -39,6 +41,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.Fl
 final class PortUpdateTask
     extends InventoryUpdateTask<FlowCapableNodeConnector, SalPort> {
     /**
+     * A {@link LinkUpdateContext} instance used to resolve ignored links.
+     */
+    private LinkUpdateContext  linkUpdater;
+
+    /**
      * Construct a new instance.
      *
      * @param log  A {@link Logger} instance.
@@ -48,6 +55,7 @@ final class PortUpdateTask
     }
 
     // InventoryUpdateTask
+
     /**
      * Add a VTN port information corresponding to the given MD-SAL node
      * connector.
@@ -65,11 +73,22 @@ final class PortUpdateTask
     protected void add(TxContext ctx, ReadWriteTransaction tx, SalPort sport,
                        InstanceIdentifier<FlowCapableNodeConnector> path,
                        FlowCapableNodeConnector fcnc) throws VTNException {
-        // Create or update a VTN port.
+        // Read the current value of the VTN port.
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        InstanceIdentifier<VtnPort> vppath = sport.getVtnPortIdentifier();
+        VtnPort old = DataStoreUtils.read(tx, oper, vppath).orNull();
+
+        // Create or update a VTN port.
         VtnPort vport = InventoryUtils.
             toVtnPortBuilder(sport.getNodeConnectorId(), fcnc).build();
         tx.merge(oper, sport.getVtnPortIdentifier(), vport, true);
+
+        if (old != null) {
+            // Inherit port links.
+            vport = new VtnPortBuilder(vport).
+                setPortLink(old.getPortLink()).
+                build();
+        }
 
         // Read VTN node from the datastore.
         SalNode snode = sport.getSalNode();
@@ -86,6 +105,13 @@ final class PortUpdateTask
         // Cache this port into the inventory reader.
         InventoryReader reader = ctx.getInventoryReader();
         reader.prefetch(sport, vport);
+
+        if (old == null ||
+            InventoryUtils.isEnabled(old) != InventoryUtils.isEnabled(vport)) {
+            // Need to update static link on this port because the link state
+            // has been changed.
+            linkUpdater.updateStaticTopology(sport, vport);
+        }
     }
 
     /**
@@ -121,16 +147,32 @@ final class PortUpdateTask
      * {@inheritDoc}
      */
     @Override
+    protected void prepare(TxContext ctx) {
+        ReadWriteTransaction tx = ctx.getReadWriteTransaction();
+        InventoryReader reader = ctx.getInventoryReader();
+        linkUpdater = new LinkUpdateContext(tx, reader);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     protected void fixUp(TxContext ctx, boolean added) throws VTNException {
         if (added) {
             // Resolve ignored inter-switch links.
-            ReadWriteTransaction tx = ctx.getReadWriteTransaction();
-            InventoryReader reader = ctx.getInventoryReader();
-            InventoryUtils.resolveIgnoredLinks(tx, reader, getLogger());
+            linkUpdater.resolveIgnoredLinks();
         }
     }
 
     // TxTask
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void onSuccess(VTNManagerProvider provider, Void result) {
+        linkUpdater.recordLogs(getLogger());
+    }
 
     /**
      * {@inheritDoc}

@@ -129,6 +129,15 @@ abstract class InventoryUpdateTask<T extends DataObject, L>
         throws VTNException;
 
     /**
+     * A pre-event hook which will be invoked just after a new MD-SAL DS
+     * transaction has started.
+     *
+     * @param ctx    A {@link TxContext} instance.
+     * @throws VTNException  An error occurred.
+     */
+    protected abstract void prepare(TxContext ctx) throws VTNException;
+
+    /**
      * A post-event hook which will be invoked after event processing.
      *
      * @param ctx    A {@link TxContext} instance.
@@ -146,6 +155,8 @@ abstract class InventoryUpdateTask<T extends DataObject, L>
      */
     @Override
     public final Void execute(TxContext ctx) throws VTNException {
+        prepare(ctx);
+
         ReadWriteTransaction tx = ctx.getReadWriteTransaction();
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
         boolean added = false;

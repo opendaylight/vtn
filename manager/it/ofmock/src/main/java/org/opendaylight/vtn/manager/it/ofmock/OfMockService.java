@@ -11,7 +11,15 @@ package org.opendaylight.vtn.manager.it.ofmock;
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
+
+import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
+import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
+import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+
+import org.opendaylight.yangtools.yang.binding.DataObject;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match;
 
@@ -406,6 +414,18 @@ public interface OfMockService {
         throws InterruptedException;
 
     /**
+     * Wait for the topology graph to be updated to the given topology.
+     *
+     * @param topo  A set of {@link OfMockLink} instances which indicates the
+     *              expected topology.
+     * @throws InterruptedException
+     *    The calling thread was interrupted.
+     * @throws IllegalStateException
+     *    The topology graph was not updated to the given topology.
+     */
+    void awaitTopology(Set<OfMockLink> topo) throws InterruptedException;
+
+    /**
      * Return the flow entry specified by the given match and priority.
      *
      * @param nid    The identifier of the MD-SAL node.
@@ -477,4 +497,30 @@ public interface OfMockService {
      *             {@code null} is returned if no route was found.
      */
     List<OfMockLink> getRoute(String src, String dst);
+
+    /**
+     * Create a new read-only transaction for the MD-SAL datastore.
+     *
+     * @return  A {@link ReadOnlyTransaction} instance.
+     */
+    ReadOnlyTransaction newReadOnlyTransaction();
+
+    /**
+     * Create a new read-write transaction for the MD-SAL datastore.
+     *
+     * @return  A {@link ReadWriteTransaction} instance.
+     */
+    ReadWriteTransaction newReadWriteTransaction();
+
+    /**
+     * Create a new {@link DataChangeWaiter} instance to detect changes made
+     * to the specified data object.
+     *
+     * @param store  The type of the logical data store.
+     * @param path   Path to the target data object.
+     * @param <T>    The type of the target data object.
+     * @return  A {@link DataChangeWaiter} instance.
+     */
+    <T extends DataObject> DataChangeWaiter<T> newDataChangeWaiter(
+        LogicalDatastoreType store, InstanceIdentifier<T> path);
 }

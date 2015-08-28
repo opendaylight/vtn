@@ -1,0 +1,83 @@
+/*
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this distribution,
+ * and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-static-topology {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:topology:static";
+    prefix vtopo-static;
+
+    import vtn-types {
+        prefix vtype;
+        revision-date 2015-02-09;
+    }
+
+    /* OpenDaylight controller */
+    import opendaylight-inventory {
+        prefix inv;
+        revision-date 2013-08-19;
+    }
+
+    description
+      "The module that describes the static network topology configuration
+       used by the VTN Manager. User can configure inter-switch links
+       statically by configuring config DS containers defined by this module.";
+
+    revision 2015-08-01 {
+        description "Initial revision.";
+    }
+
+    container vtn-static-topology {
+        description
+          "The root container that keeps configuration for static network
+           topology.";
+
+        container static-switch-links {
+            description
+              "The root container of static inter-switch link configuration.";
+
+            list static-switch-link {
+                description
+                  "A list of inter-switch links to be configured statically.
+                   A static link configured in the list will supersede a link
+                   with the same source port detected by topology-manager.
+                   Note that `static-edge-port' is always evaluated prior to
+                   `static-switch-link'. If source or destination port of the
+                   static link is configured in `static-edge-port', that
+                   static link is ignored.";
+                key "source";
+                uses vtype:vtn-switch-link;
+            }
+        }
+
+        container static-edge-ports {
+            description
+              "The root container of static edge port configuration.";
+
+            list static-edge-port {
+                description
+                  "A list of switch ports to be treated as edge port.
+                   If a switch port is configured in this list, it is always
+                   treated as an edge port even if topology-manager detects
+                   inter-switch link on that port.
+                   Note that `static-edge-port' is always evaluated prior to
+                   `static-switch-link'. If the same port is configured in
+                   both `static-edge-port' and `static-switch-port', it is
+                   always treated as an edge port and no static link is
+                   configured on that port.";
+                key "port";
+
+                leaf port {
+                    description
+                      "The switch port identifier which specifies the switch
+                       port to be treated as edge port.";
+                       type inv:node-connector-id;
+                }
+            }
+        }
+    }
+}

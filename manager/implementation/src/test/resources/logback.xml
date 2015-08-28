@@ -37,6 +37,10 @@
   <logger name="org.opendaylight.vtn.manager.internal.config.VTNConfigManager"
           level="OFF"/>
   <logger name="org.opendaylight.vtn.manager.internal.inventory.VTNInventoryManager"
+          level="OFF"/>
+  <logger name="org.opendaylight.vtn.manager.internal.inventory.xml.XmlStaticSwitchLinks"
+          level="ERROR"/>
+  <logger name="org.opendaylight.vtn.manager.internal.inventory.xml.XmlStaticEdgePorts"
           level="ERROR"/>
   <logger name="org.opendaylight.vtn.manager.internal.util.XmlConfigFile"
           level="OFF"/>

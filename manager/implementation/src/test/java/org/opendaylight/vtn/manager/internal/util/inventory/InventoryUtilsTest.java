@@ -9,6 +9,15 @@
 
 package org.opendaylight.vtn.manager.internal.util.inventory;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -18,11 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.slf4j.Logger;
-
 import org.junit.Test;
-
-import org.mockito.Mockito;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
@@ -54,6 +59,15 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.vtn.topology.VtnLink;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.vtn.topology.VtnLinkBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.vtn.topology.VtnLinkKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.VtnStaticTopology;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology.StaticEdgePorts;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePort;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePortKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology.StaticSwitchLinks;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static._switch.links.StaticSwitchLink;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static._switch.links.StaticSwitchLinkBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static._switch.links.StaticSwitchLinkKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnSwitchLink;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeConnector;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeConnectorBuilder;
@@ -236,7 +250,7 @@ public class InventoryUtilsTest extends TestBase {
      * Test case for {@link InventoryUtils#toString(VtnPort)}.
      */
     @Test
-    public void testVtnPortToString() {
+    public void testToStringVtnPort() {
         VtnPort vport = new VtnPortBuilder().build();
         String expected =
             "{id=null, name=null, enabled=null, cost=null, links=none}";
@@ -320,6 +334,88 @@ public class InventoryUtilsTest extends TestBase {
     }
 
     /**
+     * Test case for {@link InventoryUtils#toString(VtnSwitchLink)}.
+     */
+    @Test
+    public void testToStringVtnSwitchLink() {
+        VtnSwitchLink vslink = new StaticSwitchLinkBuilder().build();
+        assertEquals("{null -> null}", InventoryUtils.toString(vslink));
+
+        NodeConnectorId[] srcs = {
+            null,
+            new NodeConnectorId("openflow:1:1"),
+            new NodeConnectorId("openflow:123:456"),
+            new NodeConnectorId("unknown:1:2"),
+        };
+        NodeConnectorId[] dsts = {
+            null,
+            new NodeConnectorId("openflow:2:1"),
+            new NodeConnectorId("openflow:789:012"),
+            new NodeConnectorId("unknown:2:3"),
+        };
+
+        for (NodeConnectorId src: srcs) {
+            String srcId = (src == null) ? "null" : src.getValue();
+            for (NodeConnectorId dst: dsts) {
+                String dstId = (dst == null) ? "null" : dst.getValue();
+                vslink = new StaticSwitchLinkBuilder().
+                    setSource(src).setDestination(dst).build();
+                String expected = "{" + srcId + " -> " + dstId + "}";
+                assertEquals(expected, InventoryUtils.toString(vslink));
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link InventoryUtils#toString(VtnLink)}.
+     */
+    @Test
+    public void testToStringVtnLink() {
+        LinkId[] ids = {
+            null,
+            new LinkId("link:1"),
+            new LinkId("link:2"),
+            new LinkId("link:3"),
+        };
+        NodeConnectorId[] srcs = {
+            null,
+            new NodeConnectorId("openflow:1:1"),
+            new NodeConnectorId("openflow:123:456"),
+            new NodeConnectorId("unknown:1:2"),
+        };
+        NodeConnectorId[] dsts = {
+            null,
+            new NodeConnectorId("openflow:2:1"),
+            new NodeConnectorId("openflow:789:012"),
+            new NodeConnectorId("unknown:2:3"),
+        };
+
+        for (LinkId lid: ids) {
+            String linkId = (lid == null) ? "null" : lid.getValue();
+            for (NodeConnectorId src: srcs) {
+                String srcId = (src == null) ? "null" : src.getValue();
+                for (NodeConnectorId dst: dsts) {
+                    String dstId = (dst == null) ? "null" : dst.getValue();
+                    VtnLinkBuilder vb = new VtnLinkBuilder().
+                        setLinkId(lid).setSource(src).setDestination(dst);
+                    String exp = "{id=" + linkId + ", src=" + srcId +
+                        ", dst=" + dstId + ", static=";
+                    String expected = exp + "false}";
+                    VtnLink vlink = vb.build();
+                    assertEquals(expected, InventoryUtils.toString(vlink));
+
+                    vlink = vb.setStaticLink(Boolean.FALSE).build();
+                    assertEquals(expected, InventoryUtils.toString(vlink));
+
+                    expected = exp + "true}";
+                    vlink = vb.setStaticLink(Boolean.TRUE).build();
+                    assertEquals(expected, InventoryUtils.toString(vlink));
+                }
+            }
+        }
+    }
+
+    /**
      * Test case for {@link InventoryUtils#toVtnLinkIdentifier(LinkId)}.
      */
     @Test
@@ -381,6 +477,84 @@ public class InventoryUtilsTest extends TestBase {
             assertEquals(key, item.getKey());
 
             assertFalse(it.hasNext());
+        }
+    }
+
+    /**
+     * Test case for
+     * {@link InventoryUtils#toStaticSwitchLinkIdentifier(SalPort)}.
+     */
+    @Test
+    public void testToStaticSwitchLinkIdentifier() {
+        for (long dpid = 1L; dpid <= 5L; dpid++) {
+            for (long port = 1L; port <= 20L; port++) {
+                SalPort sport = new SalPort(dpid, port);
+                InstanceIdentifier<StaticSwitchLink> path = InventoryUtils.
+                    toStaticSwitchLinkIdentifier(sport);
+                assertEquals(StaticSwitchLink.class, path.getTargetType());
+                assertEquals(false, path.isWildcarded());
+
+                Iterator<PathArgument> it = path.getPathArguments().iterator();
+                assertTrue(it.hasNext());
+                PathArgument pa = it.next();
+                assertEquals(VtnStaticTopology.class, pa.getType());
+                assertTrue(pa instanceof Item);
+
+                assertTrue(it.hasNext());
+                pa = it.next();
+                assertEquals(StaticSwitchLinks.class, pa.getType());
+                assertTrue(pa instanceof Item);
+
+                assertTrue(it.hasNext());
+                pa = it.next();
+                assertEquals(StaticSwitchLink.class, pa.getType());
+                assertTrue(pa instanceof IdentifiableItem);
+                IdentifiableItem<?, ?> item = (IdentifiableItem<?, ?>)pa;
+                StaticSwitchLinkKey key =
+                    new StaticSwitchLinkKey(sport.getNodeConnectorId());
+                assertEquals(key, item.getKey());
+
+                assertFalse(it.hasNext());
+            }
+        }
+    }
+
+    /**
+     * Test case for
+     * {@link InventoryUtils#toStaticEdgePortIdentifier(SalPort)}.
+     */
+    @Test
+    public void testToStaticEdgePortIdentifier() {
+        for (long dpid = 1L; dpid <= 5L; dpid++) {
+            for (long port = 1L; port <= 20L; port++) {
+                SalPort sport = new SalPort(dpid, port);
+                InstanceIdentifier<StaticEdgePort> path = InventoryUtils.
+                    toStaticEdgePortIdentifier(sport);
+                assertEquals(StaticEdgePort.class, path.getTargetType());
+                assertEquals(false, path.isWildcarded());
+
+                Iterator<PathArgument> it = path.getPathArguments().iterator();
+                assertTrue(it.hasNext());
+                PathArgument pa = it.next();
+                assertEquals(VtnStaticTopology.class, pa.getType());
+                assertTrue(pa instanceof Item);
+
+                assertTrue(it.hasNext());
+                pa = it.next();
+                assertEquals(StaticEdgePorts.class, pa.getType());
+                assertTrue(pa instanceof Item);
+
+                assertTrue(it.hasNext());
+                pa = it.next();
+                assertEquals(StaticEdgePort.class, pa.getType());
+                assertTrue(pa instanceof IdentifiableItem);
+                IdentifiableItem<?, ?> item = (IdentifiableItem<?, ?>)pa;
+                StaticEdgePortKey key =
+                    new StaticEdgePortKey(sport.getNodeConnectorId());
+                assertEquals(key, item.getKey());
+
+                assertFalse(it.hasNext());
+            }
         }
     }
 
@@ -878,117 +1052,6 @@ public class InventoryUtilsTest extends TestBase {
     }
 
     /**
-     * Test case for the following methods.
-     *
-     * <ul>
-     *   <li>{@link InventoryUtils#addVtnLink(ReadWriteTransaction,InventoryReader,LinkId,SalPort,SalPort)}</li>
-     *   <li>{@link InventoryUtils#createVtnLink(ReadWriteTransaction,LinkId,SalPort,SalPort)}</li>
-     * </ul>
-     *
-     * @throws Exception  An error occurred.
-     */
-    @Test
-    public void testAddVtnLink() throws Exception {
-        ReadWriteTransaction tx = Mockito.mock(ReadWriteTransaction.class);
-        InventoryReader reader = new InventoryReader(tx);
-        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
-        SalPort src = new SalPort(1L, 2L);
-        SalPort dst = new SalPort(10L, 20L);
-        LinkId lid = new LinkId(src.toString());
-        InstanceIdentifier<IgnoredLink> ipath = InstanceIdentifier.
-            builder(IgnoredLinks.class).
-            child(IgnoredLink.class, new IgnoredLinkKey(lid)).build();
-        IgnoredLink ignored = new IgnoredLinkBuilder().
-            setLinkId(lid).setSource(src.getNodeConnectorId()).
-            setDestination(dst.getNodeConnectorId()).build();
-        InstanceIdentifier<VtnLink> vpath = InstanceIdentifier.
-            builder(VtnTopology.class).
-            child(VtnLink.class, new VtnLinkKey(lid)).build();
-        VtnLink vlink = new VtnLinkBuilder().
-            setLinkId(lid).setSource(src.getNodeConnectorId()).
-            setDestination(dst.getNodeConnectorId()).build();
-        InstanceIdentifier<PortLink> srcPath = InstanceIdentifier.
-            builder(VtnNodes.class).
-            child(VtnNode.class, src.getVtnNodeKey()).
-            child(VtnPort.class, src.getVtnPortKey()).
-            child(PortLink.class, new PortLinkKey(lid)).build();
-        PortLink srcLink = new PortLinkBuilder().
-            setLinkId(lid).setPeer(dst.getNodeConnectorId()).build();
-        InstanceIdentifier<PortLink> dstPath = InstanceIdentifier.
-            builder(VtnNodes.class).
-            child(VtnNode.class, dst.getVtnNodeKey()).
-            child(VtnPort.class, dst.getVtnPortKey()).
-            child(PortLink.class, new PortLinkKey(lid)).build();
-        PortLink dstLink = new PortLinkBuilder().
-            setLinkId(lid).setPeer(src.getNodeConnectorId()).build();
-
-        // Both source and destination ports are not present.
-        reader.prefetch(src, (VtnPort)null);
-        reader.prefetch(dst, (VtnPort)null);
-        assertEquals(false,
-                     InventoryUtils.addVtnLink(tx, reader, lid, src, dst));
-        Mockito.verify(tx).merge(oper, ipath, ignored, true);
-        Mockito.verify(tx, Mockito.never()).
-            merge(Mockito.eq(oper), Mockito.eq(vpath), Mockito.eq(vlink),
-                  Mockito.anyBoolean());
-        Mockito.verify(tx, Mockito.never()).
-            merge(Mockito.eq(oper), Mockito.eq(srcPath), Mockito.eq(srcLink),
-                  Mockito.anyBoolean());
-        Mockito.verify(tx, Mockito.never()).
-            merge(Mockito.eq(oper), Mockito.eq(dstPath), Mockito.eq(dstLink),
-                  Mockito.anyBoolean());
-        Mockito.reset(tx);
-
-        // Source port is not present.
-        VtnPort dstPort = new VtnPortBuilder().setId(dst.getNodeConnectorId()).
-            build();
-        reader.prefetch(dst, dstPort);
-        assertEquals(false,
-                     InventoryUtils.addVtnLink(tx, reader, lid, src, dst));
-        Mockito.verify(tx).merge(oper, ipath, ignored, true);
-        Mockito.verify(tx, Mockito.never()).
-            merge(Mockito.eq(oper), Mockito.eq(vpath), Mockito.eq(vlink),
-                  Mockito.anyBoolean());
-        Mockito.verify(tx, Mockito.never()).
-            merge(Mockito.eq(oper), Mockito.eq(srcPath), Mockito.eq(srcLink),
-                  Mockito.anyBoolean());
-        Mockito.verify(tx, Mockito.never()).
-            merge(Mockito.eq(oper), Mockito.eq(dstPath), Mockito.eq(dstLink),
-                  Mockito.anyBoolean());
-        Mockito.reset(tx);
-
-        // Destination port is not present.
-        VtnPort srcPort = new VtnPortBuilder().setId(src.getNodeConnectorId()).
-            build();
-        reader.prefetch(src, srcPort);
-        reader.prefetch(dst, (VtnPort)null);
-        assertEquals(false,
-                     InventoryUtils.addVtnLink(tx, reader, lid, src, dst));
-        Mockito.verify(tx).merge(oper, ipath, ignored, true);
-        Mockito.verify(tx, Mockito.never()).
-            merge(Mockito.eq(oper), Mockito.eq(vpath), Mockito.eq(vlink),
-                  Mockito.anyBoolean());
-        Mockito.verify(tx, Mockito.never()).
-            merge(Mockito.eq(oper), Mockito.eq(srcPath), Mockito.eq(srcLink),
-                  Mockito.anyBoolean());
-        Mockito.verify(tx, Mockito.never()).
-            merge(Mockito.eq(oper), Mockito.eq(dstPath), Mockito.eq(dstLink),
-                  Mockito.anyBoolean());
-        Mockito.reset(tx);
-
-        // Both ports are present.
-        reader.prefetch(dst, dstPort);
-        assertEquals(true,
-                     InventoryUtils.addVtnLink(tx, reader, lid, src, dst));
-        Mockito.verify(tx, Mockito.never()).
-            merge(Mockito.eq(oper), Mockito.eq(ipath), Mockito.eq(ignored),
-                  Mockito.anyBoolean());
-        Mockito.verify(tx).merge(oper, vpath, vlink, true);
-        Mockito.verify(tx).merge(oper, srcPath, srcLink, true);
-        Mockito.verify(tx).merge(oper, dstPath, dstLink, true);
-    }
-
-    /**
      * VTN topology for test.
      */
     private final class TopologyLists {
@@ -1120,7 +1183,7 @@ public class InventoryUtilsTest extends TestBase {
                     PortLink plink = new PortLinkBuilder().
                         setLinkId(lid).setPeer(dst.getNodeConnectorId()).
                         build();
-                    Mockito.when(tx.read(oper, ppath)).
+                    when(tx.read(oper, ppath)).
                         thenReturn(getReadResult(plink));
                 }
 
@@ -1133,7 +1196,7 @@ public class InventoryUtilsTest extends TestBase {
                     PortLink plink = new PortLinkBuilder().
                         setLinkId(lid).setPeer(src.getNodeConnectorId()).
                         build();
-                    Mockito.when(tx.read(oper, ppath)).
+                    when(tx.read(oper, ppath)).
                         thenReturn(getReadResult(plink));
                 }
             }
@@ -1142,7 +1205,7 @@ public class InventoryUtilsTest extends TestBase {
                 InstanceIdentifier.create(VtnTopology.class);
             VtnTopology root = new VtnTopologyBuilder().
                 setVtnLink(vtnLinks).build();
-            Mockito.when(tx.read(oper, rpath)).thenReturn(getReadResult(root));
+            when(tx.read(oper, rpath)).thenReturn(getReadResult(root));
 
             vtnLinkPaths = rmLinks;
             portLinkPaths = plinks;
@@ -1165,9 +1228,7 @@ public class InventoryUtilsTest extends TestBase {
                 InstanceIdentifier.create(IgnoredLinks.class);
             IgnoredLinks iroot = new IgnoredLinksBuilder().
                 setIgnoredLink(ignoredLinks).build();
-            Mockito.when(tx.read(oper, irpath)).
-                thenReturn(getReadResult(iroot));
-
+            when(tx.read(oper, irpath)).thenReturn(getReadResult(iroot));
             ignoredLinkPaths = ilinks;
         }
 
@@ -1183,21 +1244,21 @@ public class InventoryUtilsTest extends TestBase {
             InstanceIdentifier<VtnTopology> rpath =
                 InstanceIdentifier.create(VtnTopology.class);
             if (invoked) {
-                Mockito.verify(tx).read(oper, rpath);
+                verify(tx).read(oper, rpath);
             } else {
-                Mockito.verify(tx, Mockito.never()).read(oper, rpath);
+                verify(tx, never()).read(oper, rpath);
             }
 
             for (Map.Entry<InstanceIdentifier<VtnLink>, Boolean> entry:
                      vtnLinkPaths.entrySet()) {
                 InstanceIdentifier<VtnLink> vpath = entry.getKey();
-                Mockito.verify(tx, Mockito.never()).read(oper, vpath);
+                verify(tx, never()).read(oper, vpath);
 
                 Boolean removed = entry.getValue();
                 if (invoked && Boolean.TRUE.equals(removed)) {
-                    Mockito.verify(tx).delete(oper, vpath);
+                    verify(tx).delete(oper, vpath);
                 } else {
-                    Mockito.verify(tx, Mockito.never()).delete(oper, vpath);
+                    verify(tx, never()).delete(oper, vpath);
                 }
             }
 
@@ -1206,11 +1267,11 @@ public class InventoryUtilsTest extends TestBase {
                 InstanceIdentifier<PortLink> ppath = entry.getKey();
                 Boolean removed = entry.getValue();
                 if (invoked && Boolean.TRUE.equals(removed)) {
-                    Mockito.verify(tx).read(oper, ppath);
-                    Mockito.verify(tx).delete(oper, ppath);
+                    verify(tx).read(oper, ppath);
+                    verify(tx).delete(oper, ppath);
                 } else {
-                    Mockito.verify(tx, Mockito.never()).read(oper, ppath);
-                    Mockito.verify(tx, Mockito.never()).delete(oper, ppath);
+                    verify(tx, never()).read(oper, ppath);
+                    verify(tx, never()).delete(oper, ppath);
                 }
             }
         }
@@ -1228,56 +1289,23 @@ public class InventoryUtilsTest extends TestBase {
             InstanceIdentifier<IgnoredLinks> irpath =
                 InstanceIdentifier.create(IgnoredLinks.class);
             if (invoked) {
-                Mockito.verify(tx).read(oper, irpath);
+                verify(tx).read(oper, irpath);
             } else {
-                Mockito.verify(tx, Mockito.never()).read(oper, irpath);
+                verify(tx, never()).read(oper, irpath);
             }
 
             for (Map.Entry<InstanceIdentifier<IgnoredLink>, Boolean> entry:
                      ignoredLinkPaths.entrySet()) {
                 InstanceIdentifier<IgnoredLink> ipath = entry.getKey();
-                Mockito.verify(tx, Mockito.never()).read(oper, ipath);
+                verify(tx, never()).read(oper, ipath);
 
                 Boolean removed = entry.getValue();
                 if (invoked && Boolean.TRUE.equals(removed)) {
-                    Mockito.verify(tx).delete(oper, ipath);
+                    verify(tx).delete(oper, ipath);
                 } else {
-                    Mockito.verify(tx, Mockito.never()).delete(oper, ipath);
+                    verify(tx, never()).delete(oper, ipath);
                 }
             }
-        }
-    }
-
-    /**
-     * Generator of {@link SalPort} instances.
-     */
-    private static final class SalPortGenerator {
-        /**
-         * Node number.
-         */
-        private final long  nodeNumber;
-
-        /**
-         * Port number.
-         */
-        private long  portNumber;
-
-        /**
-         * Construct a new instance.
-         *
-         * @param dpid  A node number.
-         */
-        private SalPortGenerator(long dpid) {
-            nodeNumber = dpid;
-        }
-
-        /**
-         * Construct a new {@link SalPort} instance.
-         *
-         * @return  A {@link SalPort} instance.
-         */
-        private SalPort newInstance() {
-            return new SalPort(nodeNumber, ++portNumber);
         }
     }
 
@@ -1294,7 +1322,7 @@ public class InventoryUtilsTest extends TestBase {
      */
     @Test
     public void testRemoveVtnLinkByNode() throws Exception {
-        ReadWriteTransaction tx = Mockito.mock(ReadWriteTransaction.class);
+        ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
 
         // Root containers are not present.
@@ -1306,58 +1334,58 @@ public class InventoryUtilsTest extends TestBase {
             InstanceIdentifier.create(IgnoredLinks.class);
         VtnTopology root = null;
         IgnoredLinks iroot = null;
-        Mockito.when(tx.read(oper, rpath)).thenReturn(getReadResult(root));
-        Mockito.when(tx.read(oper, irpath)).thenReturn(getReadResult(iroot));
+        when(tx.read(oper, rpath)).thenReturn(getReadResult(root));
+        when(tx.read(oper, irpath)).thenReturn(getReadResult(iroot));
         InventoryUtils.removeVtnLink(tx, snode);
-        Mockito.verify(tx).read(oper, rpath);
-        Mockito.verify(tx).read(oper, irpath);
+        verify(tx).read(oper, rpath);
+        verify(tx).read(oper, irpath);
 
         InventoryUtils.removeVtnTopologyLink(tx, snode);
-        Mockito.verify(tx, Mockito.times(2)).read(oper, rpath);
-        Mockito.verify(tx).read(oper, irpath);
+        verify(tx, times(2)).read(oper, rpath);
+        verify(tx).read(oper, irpath);
 
         InventoryUtils.removeIgnoredLink(tx, snode);
-        Mockito.verify(tx, Mockito.times(2)).read(oper, rpath);
-        Mockito.verify(tx, Mockito.times(2)).read(oper, irpath);
-        Mockito.reset(tx);
+        verify(tx, times(2)).read(oper, rpath);
+        verify(tx, times(2)).read(oper, irpath);
+        reset(tx);
 
         // Root containers contain null list.
         root = new VtnTopologyBuilder().build();
         iroot = new IgnoredLinksBuilder().build();
-        Mockito.when(tx.read(oper, rpath)).thenReturn(getReadResult(root));
-        Mockito.when(tx.read(oper, irpath)).thenReturn(getReadResult(iroot));
+        when(tx.read(oper, rpath)).thenReturn(getReadResult(root));
+        when(tx.read(oper, irpath)).thenReturn(getReadResult(iroot));
         InventoryUtils.removeVtnLink(tx, snode);
-        Mockito.verify(tx).read(oper, rpath);
-        Mockito.verify(tx).read(oper, irpath);
+        verify(tx).read(oper, rpath);
+        verify(tx).read(oper, irpath);
 
         InventoryUtils.removeVtnTopologyLink(tx, snode);
-        Mockito.verify(tx, Mockito.times(2)).read(oper, rpath);
-        Mockito.verify(tx).read(oper, irpath);
+        verify(tx, times(2)).read(oper, rpath);
+        verify(tx).read(oper, irpath);
 
         InventoryUtils.removeIgnoredLink(tx, snode);
-        Mockito.verify(tx, Mockito.times(2)).read(oper, rpath);
-        Mockito.verify(tx, Mockito.times(2)).read(oper, irpath);
-        Mockito.reset(tx);
+        verify(tx, times(2)).read(oper, rpath);
+        verify(tx, times(2)).read(oper, irpath);
+        reset(tx);
 
         // Root containers contain empty list.
         List<VtnLink> vlinks = new ArrayList<>();
         List<IgnoredLink> ilinks = new ArrayList<>();
         root = new VtnTopologyBuilder().setVtnLink(vlinks).build();
         iroot = new IgnoredLinksBuilder().setIgnoredLink(ilinks).build();
-        Mockito.when(tx.read(oper, rpath)).thenReturn(getReadResult(root));
-        Mockito.when(tx.read(oper, irpath)).thenReturn(getReadResult(iroot));
+        when(tx.read(oper, rpath)).thenReturn(getReadResult(root));
+        when(tx.read(oper, irpath)).thenReturn(getReadResult(iroot));
         InventoryUtils.removeVtnLink(tx, snode);
-        Mockito.verify(tx).read(oper, rpath);
-        Mockito.verify(tx).read(oper, irpath);
+        verify(tx).read(oper, rpath);
+        verify(tx).read(oper, irpath);
 
         InventoryUtils.removeVtnTopologyLink(tx, snode);
-        Mockito.verify(tx, Mockito.times(2)).read(oper, rpath);
-        Mockito.verify(tx).read(oper, irpath);
+        verify(tx, times(2)).read(oper, rpath);
+        verify(tx).read(oper, irpath);
 
         InventoryUtils.removeIgnoredLink(tx, snode);
-        Mockito.verify(tx, Mockito.times(2)).read(oper, rpath);
-        Mockito.verify(tx, Mockito.times(2)).read(oper, irpath);
-        Mockito.reset(tx);
+        verify(tx, times(2)).read(oper, rpath);
+        verify(tx, times(2)).read(oper, irpath);
+        reset(tx);
 
         SalPortGenerator gen = new SalPortGenerator(dpid);
         SalPortGenerator gen1 = new SalPortGenerator(dpid + 1L);
@@ -1414,19 +1442,19 @@ public class InventoryUtilsTest extends TestBase {
         InventoryUtils.removeVtnLink(tx, snode);
         topo.verifyVtnLink(tx, true);
         topo.verifyIgnoredLink(tx, true);
-        Mockito.reset(tx);
+        reset(tx);
 
         topo.setUp(tx, snode);
         InventoryUtils.removeVtnTopologyLink(tx, snode);
         topo.verifyVtnLink(tx, true);
         topo.verifyIgnoredLink(tx, false);
-        Mockito.reset(tx);
+        reset(tx);
 
         topo.setUp(tx, snode);
         InventoryUtils.removeIgnoredLink(tx, snode);
         topo.verifyVtnLink(tx, false);
         topo.verifyIgnoredLink(tx, true);
-        Mockito.reset(tx);
+        reset(tx);
     }
 
     /**
@@ -1441,19 +1469,19 @@ public class InventoryUtilsTest extends TestBase {
      */
     @Test
     public void testRemoveVtnLinkByPort() throws Exception {
-        ReadWriteTransaction tx = Mockito.mock(ReadWriteTransaction.class);
+        ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
 
         // Port link is null.
         VtnPort vport = new VtnPortBuilder().build();
         InventoryUtils.removeVtnLink(tx, vport);
-        Mockito.verifyZeroInteractions(tx);
+        verifyZeroInteractions(tx);
 
         // Port link is empty.
         List<PortLink> plist = new ArrayList<>();
         vport = new VtnPortBuilder().setPortLink(plist).build();
         InventoryUtils.removeVtnLink(tx, vport);
-        Mockito.verifyZeroInteractions(tx);
+        verifyZeroInteractions(tx);
 
         Map<InstanceIdentifier<VtnLink>, VtnLink> vtnLinks = new HashMap<>();
         Map<InstanceIdentifier<PortLink>, PortLink> peerLinks =
@@ -1502,25 +1530,25 @@ public class InventoryUtilsTest extends TestBase {
             setPortLink(plinks).build();
 
         // No link information is present.
-        Mockito.when(tx.read(oper, peerPath1)).
+        when(tx.read(oper, peerPath1)).
             thenReturn(getReadResult((PortLink)null));
-        Mockito.when(tx.read(oper, peerPath2)).
+        when(tx.read(oper, peerPath2)).
             thenReturn(getReadResult((PortLink)null));
-        Mockito.when(tx.read(oper, vpath1)).
+        when(tx.read(oper, vpath1)).
             thenReturn(getReadResult((VtnLink)null));
-        Mockito.when(tx.read(oper, vpath2)).
+        when(tx.read(oper, vpath2)).
             thenReturn(getReadResult((VtnLink)null));
 
         InventoryUtils.removeVtnLink(tx, vport);
-        Mockito.verify(tx).read(oper, peerPath1);
-        Mockito.verify(tx).read(oper, peerPath2);
-        Mockito.verify(tx).read(oper, vpath1);
-        Mockito.verify(tx).read(oper, vpath2);
-        Mockito.verify(tx, Mockito.never()).delete(oper, peerPath1);
-        Mockito.verify(tx, Mockito.never()).delete(oper, peerPath2);
-        Mockito.verify(tx, Mockito.never()).delete(oper, vpath1);
-        Mockito.verify(tx, Mockito.never()).delete(oper, vpath2);
-        Mockito.reset(tx);
+        verify(tx).read(oper, peerPath1);
+        verify(tx).read(oper, peerPath2);
+        verify(tx).read(oper, vpath1);
+        verify(tx).read(oper, vpath2);
+        verify(tx, never()).delete(oper, peerPath1);
+        verify(tx, never()).delete(oper, peerPath2);
+        verify(tx, never()).delete(oper, vpath1);
+        verify(tx, never()).delete(oper, vpath2);
+        reset(tx);
 
         // Link information is present.
         PortLink peerLink1 = new PortLinkBuilder().
@@ -1533,311 +1561,138 @@ public class InventoryUtilsTest extends TestBase {
         VtnLink vlink2 = new VtnLinkBuilder().
             setLinkId(lid2).setSource(peer.getNodeConnectorId()).
             setDestination(sport.getNodeConnectorId()).build();
-        Mockito.when(tx.read(oper, peerPath1)).
-            thenReturn(getReadResult(peerLink1));
-        Mockito.when(tx.read(oper, peerPath2)).
-            thenReturn(getReadResult(peerLink2));
-        Mockito.when(tx.read(oper, vpath1)).thenReturn(getReadResult(vlink1));
-        Mockito.when(tx.read(oper, vpath2)).thenReturn(getReadResult(vlink2));
+        when(tx.read(oper, peerPath1)).thenReturn(getReadResult(peerLink1));
+        when(tx.read(oper, peerPath2)).thenReturn(getReadResult(peerLink2));
+        when(tx.read(oper, vpath1)).thenReturn(getReadResult(vlink1));
+        when(tx.read(oper, vpath2)).thenReturn(getReadResult(vlink2));
 
         InventoryUtils.removeVtnLink(tx, vport);
-        Mockito.verify(tx).read(oper, peerPath1);
-        Mockito.verify(tx).read(oper, peerPath2);
-        Mockito.verify(tx).read(oper, vpath1);
-        Mockito.verify(tx).read(oper, vpath2);
-        Mockito.verify(tx).delete(oper, peerPath1);
-        Mockito.verify(tx).delete(oper, peerPath2);
-        Mockito.verify(tx).delete(oper, vpath1);
-        Mockito.verify(tx).delete(oper, vpath2);
-    }
-
-    /**
-     * Test environment for {@link #testResolveIgnoredLinks()}.
-     */
-    private final class ResolveLinkEnv {
-        /**
-         * The mock-up of MD-SAL datastore transaction.
-         */
-        private final ReadWriteTransaction  transaction =
-            Mockito.mock(ReadWriteTransaction.class);
-
-        /**
-         * The mock-up of logger instance.
-         */
-        private final Logger  logger = Mockito.mock(Logger.class);
-
-        /**
-         * Inventory reader.
-         */
-        private final InventoryReader  reader =
-            new InventoryReader(transaction);
-
-        /**
-         * A list of {@link IgnoredLink} instances.
-         */
-        private final List<IgnoredLink>  ignoredLinks = new ArrayList<>();
-
-        /**
-         * VTN ignored links to be removed.
-         */
-        private final Set<InstanceIdentifier<IgnoredLink>> removedLinks =
-            new HashSet<>();
-
-        /**
-         * VTN links to be created.
-         */
-        private final Map<InstanceIdentifier<VtnLink>, VtnLink> vtnLinks =
-            new HashMap<>();
-
-        /**
-         * VTN port links to be created.
-         */
-        private final Map<InstanceIdentifier<PortLink>, PortLink> portLinks =
-            new HashMap<>();
-
-        /**
-         * Return the mock-up of MD-SAL transaction.
-         *
-         * @return  A {@link ReadWriteTransaction} instance.
-         */
-        private ReadWriteTransaction getTransaction() {
-            return transaction;
-        }
-
-        /**
-         * Return the mock-up of logger instance.
-         *
-         * @return  A {@link Logger} instance.
-         */
-        private Logger getLogger() {
-            return logger;
-        }
-
-        /**
-         * Return the inventory reader for test.
-         *
-         * @return  An {@link InventoryReader} instance.
-         */
-        private InventoryReader getInventoryReader() {
-            return reader;
-        }
-
-        /**
-         * Add the given link information.
-         *
-         * @param src         The source port.
-         * @param srcPresent  {@code true} means that the source port is
-         *                    present.
-         * @param dst         The destination port.
-         * @param dstPresent  {@code true} means that the destination port is
-         *                    present.
-         */
-        private void add(SalPort src, boolean srcPresent, SalPort dst,
-                         boolean dstPresent) {
-            LinkId lid = new LinkId(src.toString());
-            IgnoredLink ilink = new IgnoredLinkBuilder().
-                setLinkId(lid).setSource(src.getNodeConnectorId()).
-                setDestination(dst.getNodeConnectorId()).build();
-            ignoredLinks.add(ilink);
-
-            VtnPort vport;
-            if (srcPresent) {
-                vport = new VtnPortBuilder().
-                    setId(src.getNodeConnectorId()).build();
-            } else {
-                vport = null;
-            }
-            reader.prefetch(src, vport);
-
-            if (dstPresent) {
-                vport = new VtnPortBuilder().
-                    setId(dst.getNodeConnectorId()).build();
-            } else {
-                vport = null;
-            }
-            reader.prefetch(dst, vport);
-
-            InstanceIdentifier<IgnoredLink> ipath = InstanceIdentifier.
-                builder(IgnoredLinks.class).
-                child(IgnoredLink.class, new IgnoredLinkKey(lid)).build();
-            InstanceIdentifier<VtnLink> vpath = InstanceIdentifier.
-                builder(VtnTopology.class).
-                child(VtnLink.class, new VtnLinkKey(lid)).build();
-            InstanceIdentifier<PortLink> spath = InstanceIdentifier.
-                builder(VtnNodes.class).
-                child(VtnNode.class, src.getVtnNodeKey()).
-                child(VtnPort.class, src.getVtnPortKey()).
-                child(PortLink.class, new PortLinkKey(lid)).build();
-            InstanceIdentifier<PortLink> dpath = InstanceIdentifier.
-                builder(VtnNodes.class).
-                child(VtnNode.class, dst.getVtnNodeKey()).
-                child(VtnPort.class, dst.getVtnPortKey()).
-                child(PortLink.class, new PortLinkKey(lid)).build();
-            assertEquals(false, vtnLinks.containsKey(vpath));
-            assertEquals(false, portLinks.containsKey(spath));
-            assertEquals(false, portLinks.containsKey(dpath));
-
-            VtnLink vlink = null;
-            PortLink splink = null;
-            PortLink dplink = null;
-            if (srcPresent && dstPresent) {
-                assertEquals(true, removedLinks.add(ipath));
-                NodeConnectorId sncid = src.getNodeConnectorId();
-                NodeConnectorId dncid = dst.getNodeConnectorId();
-                vlink = new VtnLinkBuilder().setLinkId(lid).
-                    setSource(sncid).setDestination(dncid).build();
-                splink = new PortLinkBuilder().setLinkId(lid).setPeer(dncid).
-                    build();
-                dplink = new PortLinkBuilder().setLinkId(lid).setPeer(sncid).
-                    build();
-            }
-
-            assertEquals(null, vtnLinks.put(vpath, vlink));
-            assertEquals(null, portLinks.put(spath, splink));
-            assertEquals(null, portLinks.put(dpath, dplink));
-        }
-
-        /**
-         * Run the test.
-         *
-         * @throws Exception  An error occurred.
-         */
-        private void runTest() throws Exception {
-            ReadWriteTransaction tx = transaction;
-            LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
-            InstanceIdentifier<IgnoredLinks> irpath =
-                InstanceIdentifier.create(IgnoredLinks.class);
-            IgnoredLinks iroot = new IgnoredLinksBuilder().
-                setIgnoredLink(ignoredLinks).build();
-            Mockito.when(tx.read(oper, irpath)).
-                thenReturn(getReadResult(iroot));
-            InventoryUtils.resolveIgnoredLinks(tx, reader, logger);
-
-            for (IgnoredLink ilink: ignoredLinks) {
-                LinkId lid = ilink.getLinkId();
-                InstanceIdentifier<IgnoredLink> ipath = InstanceIdentifier.
-                    builder(IgnoredLinks.class).
-                    child(IgnoredLink.class, new IgnoredLinkKey(lid)).build();
-                String linkId = lid.getValue();
-                SalPort src = SalPort.create(ilink.getSource());
-                SalPort dst = SalPort.create(ilink.getDestination());
-                String msg =
-                    "Inter-switch link has been resolved: {}: {} -> {}";
-                if (removedLinks.contains(ipath)) {
-                    Mockito.verify(tx).delete(oper, ipath);
-                    Mockito.verify(logger).info(msg, linkId, src, dst);
-                } else {
-                    Mockito.verify(tx, Mockito.never()).delete(oper, ipath);
-                    Mockito.verify(logger, Mockito.never()).
-                        info(msg, linkId, src, dst);
-                }
-            }
-
-            for (Map.Entry<InstanceIdentifier<VtnLink>, VtnLink> entry:
-                     vtnLinks.entrySet()) {
-                InstanceIdentifier<VtnLink> vpath = entry.getKey();
-                VtnLink vlink = entry.getValue();
-                if (vlink == null) {
-                    Mockito.verify(tx, Mockito.never()).
-                        merge(Mockito.any(LogicalDatastoreType.class),
-                              Mockito.eq(vpath), Mockito.any(VtnLink.class),
-                              Mockito.anyBoolean());
-                } else {
-                    Mockito.verify(tx).merge(oper, vpath, vlink, true);
-                }
-            }
-
-            for (Map.Entry<InstanceIdentifier<PortLink>, PortLink> entry:
-                     portLinks.entrySet()) {
-                InstanceIdentifier<PortLink> ppath = entry.getKey();
-                PortLink plink = entry.getValue();
-                if (plink == null) {
-                    Mockito.verify(tx, Mockito.never()).
-                        merge(Mockito.any(LogicalDatastoreType.class),
-                              Mockito.eq(ppath), Mockito.any(PortLink.class),
-                              Mockito.anyBoolean());
-                } else {
-                    Mockito.verify(tx).merge(oper, ppath, plink, true);
-                }
-            }
-        }
+        verify(tx).read(oper, peerPath1);
+        verify(tx).read(oper, peerPath2);
+        verify(tx).read(oper, vpath1);
+        verify(tx).read(oper, vpath2);
+        verify(tx).delete(oper, peerPath1);
+        verify(tx).delete(oper, peerPath2);
+        verify(tx).delete(oper, vpath1);
+        verify(tx).delete(oper, vpath2);
     }
 
     /**
      * Test case for
-     * {@link InventoryUtils#resolveIgnoredLinks(ReadWriteTransaction,InventoryReader,Logger)}.
+     * {@link InventoryUtils#clearPortLink(ReadWriteTransaction,SalPort,VtnPort)}.
      *
      * @throws Exception  An error occurred.
      */
     @Test
-    public void testResolveIgnoredLinks() throws Exception {
-        ResolveLinkEnv env = new ResolveLinkEnv();
-        ReadWriteTransaction tx = env.getTransaction();
-        Logger log = env.getLogger();
-        InventoryReader reader = env.getInventoryReader();
+    public void testClearPortLink() throws Exception {
+        ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        SalPort sport = new SalPort(10L, 20L);
 
-        // Root container is not present.
-        InstanceIdentifier<IgnoredLinks> irpath =
-            InstanceIdentifier.create(IgnoredLinks.class);
-        IgnoredLinks iroot = null;
-        Mockito.when(tx.read(oper, irpath)).thenReturn(getReadResult(iroot));
-        InventoryUtils.resolveIgnoredLinks(tx, reader, log);
-        Mockito.verify(tx).read(oper, irpath);
-        Mockito.verifyZeroInteractions(log);
-        Mockito.reset(tx, log);
+        // Port link is null.
+        VtnPort vport = new VtnPortBuilder().
+            setId(sport.getNodeConnectorId()).build();
+        InventoryUtils.clearPortLink(tx, sport, vport);
+        verifyZeroInteractions(tx);
 
-        // Ignored link list is null.
-        iroot = new IgnoredLinksBuilder().build();
-        Mockito.when(tx.read(oper, irpath)).thenReturn(getReadResult(iroot));
-        InventoryUtils.resolveIgnoredLinks(tx, reader, log);
-        Mockito.verify(tx).read(oper, irpath);
-        Mockito.verifyZeroInteractions(log);
-        Mockito.reset(tx, log);
+        // Port link is empty.
+        List<PortLink> plist = new ArrayList<>();
+        vport = new VtnPortBuilder().setId(sport.getNodeConnectorId()).
+            setPortLink(plist).build();
+        InventoryUtils.clearPortLink(tx, sport, vport);
+        verifyZeroInteractions(tx);
 
-        // Ignored link list is empty.
-        List<IgnoredLink> ilinks = new ArrayList<>();
-        iroot = new IgnoredLinksBuilder().setIgnoredLink(ilinks).build();
-        Mockito.when(tx.read(oper, irpath)).thenReturn(getReadResult(iroot));
-        InventoryUtils.resolveIgnoredLinks(tx, reader, log);
-        Mockito.verify(tx).read(oper, irpath);
-        Mockito.verifyZeroInteractions(log);
-        Mockito.reset(tx, log);
+        Map<InstanceIdentifier<VtnLink>, VtnLink> vtnLinks = new HashMap<>();
+        Map<InstanceIdentifier<PortLink>, PortLink> peerLinks =
+            new HashMap<>();
+        Set<InstanceIdentifier<PortLink>> portLinks = new HashSet<>();
+        final SalPort peer = new SalPort(20L, 30L);
 
-        SalPortGenerator[] generators = {
-            new SalPortGenerator(10L),
-            new SalPortGenerator(11L),
-            new SalPortGenerator(20L),
-        };
+        LinkId lid1 = new LinkId(sport.toString());
+        InstanceIdentifier<PortLink> portPath1 = InstanceIdentifier.
+            builder(VtnNodes.class).
+            child(VtnNode.class, sport.getVtnNodeKey()).
+            child(VtnPort.class, sport.getVtnPortKey()).
+            child(PortLink.class, new PortLinkKey(lid1)).build();
+        PortLink portLink1 = new PortLinkBuilder().
+            setLinkId(lid1).setPeer(peer.getNodeConnectorId()).build();
+        InstanceIdentifier<PortLink> peerPath1 = InstanceIdentifier.
+            builder(VtnNodes.class).
+            child(VtnNode.class, peer.getVtnNodeKey()).
+            child(VtnPort.class, peer.getVtnPortKey()).
+            child(PortLink.class, new PortLinkKey(lid1)).build();
+        InstanceIdentifier<VtnLink> vpath1 = InstanceIdentifier.
+            builder(VtnTopology.class).
+            child(VtnLink.class, new VtnLinkKey(lid1)).build();
 
-        for (SalPortGenerator gen1: generators) {
-            for (SalPortGenerator gen2: generators) {
-                if (gen1.equals(gen2)) {
-                    continue;
-                }
+        LinkId lid2 = new LinkId(peer.toString());
+        InstanceIdentifier<PortLink> portPath2 = InstanceIdentifier.
+            builder(VtnNodes.class).
+            child(VtnNode.class, sport.getVtnNodeKey()).
+            child(VtnPort.class, sport.getVtnPortKey()).
+            child(PortLink.class, new PortLinkKey(lid2)).build();
+        PortLink portLink2 = new PortLinkBuilder().
+            setLinkId(lid2).setPeer(peer.getNodeConnectorId()).build();
+        InstanceIdentifier<PortLink> peerPath2 = InstanceIdentifier.
+            builder(VtnNodes.class).
+            child(VtnNode.class, peer.getVtnNodeKey()).
+            child(VtnPort.class, peer.getVtnPortKey()).
+            child(PortLink.class, new PortLinkKey(lid2)).build();
+        InstanceIdentifier<VtnLink> vpath2 = InstanceIdentifier.
+            builder(VtnTopology.class).
+            child(VtnLink.class, new VtnLinkKey(lid2)).build();
+        List<PortLink> plinks = new ArrayList<>();
+        Collections.addAll(plinks, portLink1, portLink2);
+        vport = new VtnPortBuilder().setId(sport.getNodeConnectorId()).
+            setPortLink(plinks).build();
 
-                // Both source and destination ports are not present.
-                SalPort src = gen1.newInstance();
-                SalPort dst = gen2.newInstance();
-                env.add(src, false, dst, false);
+        // No link information is present.
+        when(tx.read(oper, peerPath1)).
+            thenReturn(getReadResult((PortLink)null));
+        when(tx.read(oper, peerPath2)).
+            thenReturn(getReadResult((PortLink)null));
+        when(tx.read(oper, vpath1)).
+            thenReturn(getReadResult((VtnLink)null));
+        when(tx.read(oper, vpath2)).
+            thenReturn(getReadResult((VtnLink)null));
 
-                // Only source port is present.
-                src = gen1.newInstance();
-                dst = gen2.newInstance();
-                env.add(src, true, dst, false);
+        InventoryUtils.clearPortLink(tx, sport, vport);
+        verify(tx).read(oper, peerPath1);
+        verify(tx).read(oper, peerPath2);
+        verify(tx).read(oper, vpath1);
+        verify(tx).read(oper, vpath2);
+        verify(tx).delete(oper, portPath1);
+        verify(tx).delete(oper, portPath2);
+        verifyNoMoreInteractions(tx);
+        reset(tx);
 
-                // Only destination port is present.
-                src = gen1.newInstance();
-                dst = gen2.newInstance();
-                env.add(src, false, dst, true);
+        // Link information is present.
+        PortLink peerLink1 = new PortLinkBuilder().
+            setLinkId(lid1).setPeer(sport.getNodeConnectorId()).build();
+        PortLink peerLink2 = new PortLinkBuilder().
+            setLinkId(lid2).setPeer(sport.getNodeConnectorId()).build();
+        VtnLink vlink1 = new VtnLinkBuilder().
+            setLinkId(lid1).setSource(sport.getNodeConnectorId()).
+            setDestination(peer.getNodeConnectorId()).build();
+        VtnLink vlink2 = new VtnLinkBuilder().
+            setLinkId(lid2).setSource(peer.getNodeConnectorId()).
+            setDestination(sport.getNodeConnectorId()).build();
+        when(tx.read(oper, peerPath1)).thenReturn(getReadResult(peerLink1));
+        when(tx.read(oper, peerPath2)).thenReturn(getReadResult(peerLink2));
+        when(tx.read(oper, vpath1)).thenReturn(getReadResult(vlink1));
+        when(tx.read(oper, vpath2)).thenReturn(getReadResult(vlink2));
 
-                // Both source and destination ports are present.
-                src = gen1.newInstance();
-                dst = gen2.newInstance();
-                env.add(src, true, dst, true);
-            }
-        }
-
-        env.runTest();
+        InventoryUtils.clearPortLink(tx, sport, vport);
+        verify(tx).read(oper, peerPath1);
+        verify(tx).read(oper, peerPath2);
+        verify(tx).read(oper, vpath1);
+        verify(tx).read(oper, vpath2);
+        verify(tx).delete(oper, portPath1);
+        verify(tx).delete(oper, portPath2);
+        verify(tx).delete(oper, peerPath1);
+        verify(tx).delete(oper, peerPath2);
+        verify(tx).delete(oper, vpath1);
+        verify(tx).delete(oper, vpath2);
+        verifyNoMoreInteractions(tx);
     }
 }

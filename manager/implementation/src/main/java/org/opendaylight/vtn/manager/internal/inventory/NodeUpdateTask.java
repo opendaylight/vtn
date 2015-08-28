@@ -104,6 +104,14 @@ final class NodeUpdateTask
      * {@inheritDoc}
      */
     @Override
+    protected void prepare(TxContext ctx) {
+        // Nothing to do here.
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     protected void fixUp(TxContext ctx, boolean added) {
         // Nothing to do here.
     }

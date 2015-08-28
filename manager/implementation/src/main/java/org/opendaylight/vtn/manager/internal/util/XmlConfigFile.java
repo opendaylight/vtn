@@ -79,7 +79,12 @@ public final class XmlConfigFile {
         /**
          * Indicates the configuration for the flow condition.
          */
-        FLOWCOND;
+        FLOWCOND,
+
+        /**
+         * Indicates the configuratoin for the static network topology.
+         */
+        TOPOLOGY;
     }
 
     /**

@@ -18,7 +18,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -491,5 +493,59 @@ public final class MiscUtils {
         }
 
         return Objects.equals(u1.getValue(), u2.getValue());
+    }
+
+    /**
+     * Return a string configured in the given URI.
+     *
+     * @param uri  An {@link Uri} instance.
+     * @return  A string configured in the given URI.
+     *          Note that {@code null} is returned if {@code uri} is
+     *          {@code null}.
+     */
+    public static String getValue(Uri uri) {
+        return (uri == null) ? null : uri.getValue();
+    }
+
+    /**
+     * Return an unmodifiable list equivalent to the given list.
+     *
+     * @param src  The source list.
+     * @param <T>  The type of elements in the list.
+     * @return  An unmodifiable list. An empty list is returned if
+     *          {@code src} is {@code null}.
+     */
+    public static <T> List<T> unmodifiableList(List<T> src) {
+        return (src == null)
+            ? Collections.<T>emptyList()
+            : Collections.unmodifiableList(src);
+    }
+
+    /**
+     * Return an unmodifiable set equivalent to the given set.
+     *
+     * @param src  The source set.
+     * @param <T>  The type of elements in the set.
+     * @return  An unmodifiable set. An empty set is returned if
+     *          {@code src} is {@code null}.
+     */
+    public static <T> Set<T> unmodifiableSet(Set<T> src) {
+        return (src == null)
+            ? Collections.<T>emptySet()
+            : Collections.unmodifiableSet(src);
+    }
+
+    /**
+     * Return an unmodifiable set equivalent to the key set in the given map.
+     *
+     * @param src  The source map.
+     * @param <T>  The type of keys in the map.
+     * @return  An unmodifiable set. An empty set is returned if
+     *          {@code src} is {@code null}.
+     */
+    public static <T> Set<T> unmodifiableKeySet(Map<T, ?> src) {
+        return (src == null)
+            ? Collections.<T>emptySet()
+            : Collections.unmodifiableSet(src.keySet());
     }
 }

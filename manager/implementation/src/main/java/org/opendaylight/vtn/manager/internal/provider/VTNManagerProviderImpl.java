@@ -187,6 +187,7 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
         try {
             vfm = new VTNFlowManager(this, nsv);
             subSystems.add(vfm).
+                add(vim.newStaticTopologyManager()).
                 add(new VTenantManager(this)).
                 add(new VTNRoutingManager(this)).
                 add(new FlowCondManager(this)).
@@ -197,9 +198,7 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
             throw e;
         }
 
-        // Start inventory service.
         vim.addListener(vfm);
-        vim.start();
 
         // Resume configurations.
         List<VTNFuture<?>> futures = subSystems.initConfig(master);
@@ -220,6 +219,9 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
             subSystems.close();
             throw new IllegalStateException(msg, e);
         }
+
+        // Start inventory service.
+        vim.start();
 
         // Register RPC services.
         try {

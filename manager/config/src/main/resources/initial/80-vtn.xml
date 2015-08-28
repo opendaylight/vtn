@@ -84,6 +84,9 @@
       urn:opendaylight:vtn:pathpolicy?module=vtn-path-policy&amp;revision=2015-02-09
     </capability>
     <capability>
+      urn:opendaylight:vtn:topology:static?module=vtn-static-topology&amp;revision=2015-08-01
+    </capability>
+    <capability>
       urn:opendaylight:vtn:impl:flow?module=vtn-flow-impl&amp;revision=2015-03-13
     </capability>
     <capability>

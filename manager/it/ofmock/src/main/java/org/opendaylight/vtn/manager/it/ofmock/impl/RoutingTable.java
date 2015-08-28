@@ -11,7 +11,10 @@ package org.opendaylight.vtn.manager.it.ofmock.impl;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
@@ -168,6 +171,38 @@ public final class RoutingTable extends SparseMultigraph<String, OfMockLink>
     public boolean awaitLinkUp(String src, String dst, long timeout)
         throws InterruptedException {
         return awaitLinkImpl(src, dst, true, timeout);
+    }
+
+    /**
+     * Wait for the topology graph to be updated to the given topology.
+     *
+     * @param topo  A set of {@link OfMockLink} instances which indicates the
+     *              expected topology.
+     * @throws InterruptedException
+     *    The calling thread was interrupted.
+     * @throws IllegalStateException
+     *    The topology graph was not updated to the given topology.
+     */
+    public synchronized void awaitTopology(Set<OfMockLink> topo)
+        throws InterruptedException {
+        if (equalsTopology(topo)) {
+            return;
+        }
+
+        long timeout = OfMockProvider.TASK_TIMEOUT;
+        long deadline = System.currentTimeMillis() + timeout;
+        do {
+            wait(timeout);
+            if (equalsTopology(topo)) {
+                return;
+            }
+            timeout = deadline - System.currentTimeMillis();
+        } while (timeout > 0);
+
+        // Check difference.
+        if (logDifference(topo)) {
+            throw new IllegalStateException("Unexpected topology.");
+        }
     }
 
     /**
@@ -348,6 +383,61 @@ public final class RoutingTable extends SparseMultigraph<String, OfMockLink>
         return (containsEdge(link) == state);
     }
 
+    /**
+     * Determine whether the current network topology is equal to the given
+     * topology or not.
+     *
+     * @param topo  A set of {@link OfMockLink} instances which indicates the
+     *              expected topology.
+     * @return  {@code true} only if the given topology is equal to the current
+     *          topology.
+     */
+    private synchronized boolean equalsTopology(Set<OfMockLink> topo) {
+        if (topo.size() != getEdgeCount()) {
+            return false;
+        }
+
+        for (OfMockLink link: getEdges()) {
+            if (!topo.contains(link)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Record logs which indicates the difference between the current topology
+     * and the given topology.
+     *
+     * @param topo  A set of {@link OfMockLink} instances which indicates the
+     *              expected topology.
+     * @return  {@code true} if at least one log is recorded.
+     *          {@code false} if the given topology is equal to the current.
+     */
+    private synchronized boolean logDifference(Set<OfMockLink> topo) {
+        Set<OfMockLink> cur = new HashSet<>(getEdges());
+        Set<OfMockLink> expected = new HashSet<>(topo);
+        for (Iterator<OfMockLink> it = cur.iterator(); it.hasNext();) {
+            OfMockLink link = it.next();
+            if (expected.remove(link)) {
+                it.remove();
+            }
+        }
+
+        boolean logged = false;
+        for (OfMockLink link: expected) {
+            LOG.error("Expected link is not present: {}", link);
+            logged = true;
+        }
+        for (OfMockLink link: cur) {
+            LOG.error("Unexpected link is present: {}", link);
+            logged = true;
+        }
+
+        return logged;
+    }
+
     // AutoCloseable
 
     /**
@@ -383,8 +473,11 @@ public final class RoutingTable extends SparseMultigraph<String, OfMockLink>
         }
 
         synchronized (this) {
-            boolean updated = addLinks(notification.getAddedLink());
-            if (removeLinks(notification.getRemovedLink())) {
+            // Removed links needs to be processed before added links because
+            // changed links are represented by a pair of removed and added
+            // links.
+            boolean updated = removeLinks(notification.getRemovedLink());
+            if (addLinks(notification.getAddedLink())) {
                 updated = true;
             }
 

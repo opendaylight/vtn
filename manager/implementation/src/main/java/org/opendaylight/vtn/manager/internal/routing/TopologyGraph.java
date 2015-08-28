@@ -323,14 +323,14 @@ final class TopologyGraph extends SparseMultigraph<SalNode, LinkEdge> {
      */
     synchronized boolean update(List<VtnLink> added, List<VtnLink> removed) {
         boolean updated = false;
-        for (VtnLink vlink: added) {
-            if (addLink(vlink)) {
+        for (VtnLink vlink: removed) {
+            if (removeLink(vlink)) {
                 updated = true;
             }
         }
 
-        for (VtnLink vlink: removed) {
-            if (removeLink(vlink)) {
+        for (VtnLink vlink: added) {
+            if (addLink(vlink)) {
                 updated = true;
             }
         }

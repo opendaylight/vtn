@@ -97,10 +97,15 @@ import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.common.RpcError.ErrorType;
 import org.opendaylight.yangtools.yang.common.RpcError;
 import org.opendaylight.yangtools.yang.common.RpcResult;
+import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPortBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.port.info.PortLink;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.port.info.PortLinkBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology.StaticEdgePorts;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology.StaticSwitchLinks;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static._switch.links.StaticSwitchLink;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePort;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketReceivedBuilder;
@@ -2414,6 +2419,62 @@ public abstract class TestBase extends Assert {
     }
 
     /**
+     * Ensure that the given two {@link StaticSwitchLinks} instances are
+     * identical.
+     *
+     * @param expected  A {@link StaticSwitchLinks} instance which contains
+     *                  expected values.
+     * @param swlinks   A {@link StaticSwitchLinks} instance to be tested.
+     */
+    public static void assertEqualsStaticSwitchLinks(
+        StaticSwitchLinks expected, StaticSwitchLinks swlinks) {
+        if (expected == null) {
+            assertEquals(null, swlinks);
+            return;
+        }
+
+        List<StaticSwitchLink> elinks = expected.getStaticSwitchLink();
+        List<StaticSwitchLink> links = swlinks.getStaticSwitchLink();
+        Set<StaticSwitchLink> eset = new HashSet<>();
+        Set<StaticSwitchLink> lset = new HashSet<>();
+        if (elinks != null) {
+            eset.addAll(elinks);
+        }
+        if (links != null) {
+            lset.addAll(links);
+        }
+        assertEquals(eset, lset);
+    }
+
+    /**
+     * Ensure that the given two {@link StaticEdgePorts} instances are
+     * identical.
+     *
+     * @param expected  A {@link StaticEdgePorts} instance which contains
+     *                  expected values.
+     * @param edges     A {@link StaticEdgePorts} instance to be tested.
+     */
+    public static void assertEqualsStaticEdgePorts(StaticEdgePorts expected,
+                                                   StaticEdgePorts edges) {
+        if (expected == null) {
+            assertEquals(null, edges);
+            return;
+        }
+
+        List<StaticEdgePort> elist = expected.getStaticEdgePort();
+        List<StaticEdgePort> list = edges.getStaticEdgePort();
+        Set<StaticEdgePort> eset = new HashSet<>();
+        Set<StaticEdgePort> lset = new HashSet<>();
+        if (elist != null) {
+            eset.addAll(elist);
+        }
+        if (list != null) {
+            lset.addAll(list);
+        }
+        assertEquals(eset, lset);
+    }
+
+    /**
      * check a Ethernet packet whether expected parameters are set.
      * (for IPv4 packet)
      *
@@ -2444,6 +2505,24 @@ public abstract class TestBase extends Assert {
         Optional<T> opt = Optional.fromNullable(obj);
         return Futures.<Optional<T>, ReadFailedException>
             immediateCheckedFuture(opt);
+    }
+
+    /**
+     * Create an error response of read request on a MD-SAL transaction.
+     *
+     * @param type   A class which indicates the type of the return value.
+     * @param cause  A throwable which indicates the cause of error.
+     * @return  A {@link CheckedFuture} instance.
+     * @param <T>  The type of the return value.
+     */
+    protected static <T extends DataObject> CheckedFuture<Optional<T>, ReadFailedException> getReadFailure(
+        Class<T> type, Throwable cause) {
+        String msg = "DS read failed";
+        RpcError err = RpcResultBuilder.newError(
+            ErrorType.APPLICATION, "failed", msg, null, null, cause);
+        ReadFailedException rfe = new ReadFailedException(msg, cause, err);
+        return Futures.<Optional<T>, ReadFailedException>
+            immediateFailedCheckedFuture(rfe);
     }
 
     /**

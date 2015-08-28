@@ -12,6 +12,11 @@ module vtn-topology {
     namespace "urn:opendaylight:vtn:impl:topology";
     prefix vtopo;
 
+    import vtn-types {
+        prefix vtype;
+        revision-date 2015-02-09;
+    }
+
     import opendaylight-inventory {
         prefix inv;
         revision-date 2013-08-19;
@@ -38,15 +43,7 @@ module vtn-topology {
             type topo:link-id;
         }
 
-        leaf source {
-            description "The source switch port of the link.";
-            type inv:node-connector-id;
-        }
-
-        leaf destination {
-            description "The destination switch port of the link.";
-            type inv:node-connector-id;
-        }
+        uses vtype:vtn-switch-link;
     }
 
     container vtn-topology {
@@ -62,6 +59,13 @@ module vtn-topology {
               "A list of inter-switch links recognized by the VTN Manager.";
             key "link-id";
             uses vtn-link-info;
+
+            leaf static-link {
+                description
+                  "True is set if this link is configured by static
+                   network topology configuration.";
+                type boolean;
+            }
         }
     }
 

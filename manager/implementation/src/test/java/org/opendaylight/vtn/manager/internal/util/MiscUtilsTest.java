@@ -58,6 +58,8 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.Counter64;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
+
 /**
  * JUnit test for {@link MiscUtils}.
  */
@@ -739,6 +741,132 @@ public class MiscUtilsTest extends TestBase {
                 boolean expected = s1.equals(s2);
                 assertEquals(expected, MiscUtils.equalsUri(u1, u2));
                 assertEquals(expected, MiscUtils.equalsUri(u2, u1));
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link MiscUtils#getValue(Uri)}.
+     */
+    @Test
+    public void testGetValueUri() {
+        assertEquals(null, MiscUtils.getValue((Uri)null));
+        assertEquals(null, MiscUtils.getValue((NodeConnectorId)null));
+
+        String[] strings = {
+            "uri:1",
+            "uri:2",
+            "uri:2.1",
+            "uri:3",
+        };
+
+        for (String s: strings) {
+            assertEquals(s, MiscUtils.getValue(new Uri(s)));
+            assertEquals(s, MiscUtils.getValue(new NodeConnectorId(s)));
+        }
+    }
+
+    /**
+     * Test case for {@link MiscUtils#unmodifiableList(List)}.
+     */
+    @Test
+    public void testUnmodifiableList() {
+        List<Integer> src = null;
+        List<Integer> list = MiscUtils.unmodifiableList(src);
+        assertTrue(list.isEmpty());
+        try {
+            list.add(1);
+            unexpected();
+        } catch (UnsupportedOperationException e) {
+        }
+
+        src = new ArrayList<>();
+        list = MiscUtils.unmodifiableList(src);
+        assertTrue(list.isEmpty());
+        try {
+            list.add(1);
+            unexpected();
+        } catch (UnsupportedOperationException e) {
+        }
+
+        for (int i = 0; i <= 10; i++) {
+            assertTrue(src.add(i));
+            list = MiscUtils.unmodifiableList(src);
+            assertEquals(src, list);
+            try {
+                list.add(1);
+                unexpected();
+            } catch (UnsupportedOperationException e) {
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link MiscUtils#unmodifiableSet(Set)}.
+     */
+    @Test
+    public void testUnmodifiableSet() {
+        Set<Integer> src = null;
+        Set<Integer> set = MiscUtils.unmodifiableSet(src);
+        assertTrue(set.isEmpty());
+        try {
+            set.add(1);
+            unexpected();
+        } catch (UnsupportedOperationException e) {
+        }
+
+        src = new HashSet<>();
+        set = MiscUtils.unmodifiableSet(src);
+        assertTrue(set.isEmpty());
+        try {
+            set.add(1);
+            unexpected();
+        } catch (UnsupportedOperationException e) {
+        }
+
+        for (int i = 0; i <= 10; i++) {
+            assertTrue(src.add(i));
+            set = MiscUtils.unmodifiableSet(src);
+            assertEquals(src, set);
+            try {
+                set.add(1);
+                unexpected();
+            } catch (UnsupportedOperationException e) {
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link MiscUtils#unmodifiableKeySet(Map)}.
+     */
+    @Test
+    public void testUnmodifiableKeySet() {
+        Map<Integer, Boolean> src = null;
+        Set<Integer> set = MiscUtils.unmodifiableKeySet(src);
+        assertTrue(set.isEmpty());
+        try {
+            set.add(1);
+            unexpected();
+        } catch (UnsupportedOperationException e) {
+        }
+
+        src = new HashMap<>();
+        set = MiscUtils.unmodifiableKeySet(src);
+        assertTrue(set.isEmpty());
+        try {
+            set.add(1);
+            unexpected();
+        } catch (UnsupportedOperationException e) {
+        }
+
+        for (int i = 0; i <= 10; i++) {
+            assertEquals(null, src.put(i, Boolean.TRUE));
+            set = MiscUtils.unmodifiableKeySet(src);
+            assertEquals(src.keySet(), set);
+            try {
+                set.add(1);
+                unexpected();
+            } catch (UnsupportedOperationException e) {
             }
         }
     }
