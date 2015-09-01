@@ -47,7 +47,6 @@
 
     <!-- Sonar properties -->
     <sonar.host.url>https://sonar.opendaylight.org/</sonar.host.url>
-    <sonar.branch>${user.name}-private-view</sonar.branch>
     <sonar.language>java</sonar.language>
 
     <!-- All modules have to share a single IT code coverage report file.  -->
