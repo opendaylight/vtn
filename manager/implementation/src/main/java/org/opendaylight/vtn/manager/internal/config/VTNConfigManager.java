@@ -11,6 +11,8 @@ package org.opendaylight.vtn.manager.internal.config;
 
 import java.net.NetworkInterface;
 import java.util.Enumeration;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -232,48 +234,56 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
      */
     private static EtherAddress getMacAddress(
         Enumeration<NetworkInterface> nifs) {
-        EtherAddress result = null;
-        if (nifs != null) {
-            NetworkInterface altIf = null;
-            EtherAddress altAddr = null;
-            while (nifs.hasMoreElements()) {
-                NetworkInterface nif = nifs.nextElement();
-                try {
-                    if (nif.isLoopback()) {
-                        continue;
-                    }
+        if (nifs == null) {
+            return null;
+        }
 
-                    byte[] mac = nif.getHardwareAddress();
-                    if (mac == null) {
-                        continue;
-                    }
+        // Sort interfaces by index.
+        // This code expects that lower index is assigned to physical network
+        // interface.
+        Map<Integer, NetworkInterface> niMap = new TreeMap<>();
+        while (nifs.hasMoreElements()) {
+            NetworkInterface nif = nifs.nextElement();
+            niMap.put(nif.getIndex(), nif);
+        }
 
-                    EtherAddress ea = new EtherAddress(mac);
-                    if (nif.isUp()) {
-                        LOG.debug("Use HW address of {} as local address: {}",
-                                  nif.getName(), ea.getText());
-                        result = ea;
-                        break;
-                    }
-
-                    if (altIf == null) {
-                        altIf = nif;
-                        altAddr = ea;
-                    }
-                } catch (Exception e) {
-                    LOG.debug("Ignore network interface: " + nif.getName(),
-                              e);
+        NetworkInterface altIf = null;
+        EtherAddress altAddr = null;
+        for (NetworkInterface nif: niMap.values()) {
+            try {
+                if (nif.isLoopback() || nif.isVirtual() ||
+                    nif.isPointToPoint()) {
+                    continue;
                 }
-            }
 
-            if (altAddr != null) {
-                LOG.debug("Use inactive HW address of {} as local address: ",
-                          altIf.getName(), altAddr.getText());
-                result = altAddr;
+                byte[] mac = nif.getHardwareAddress();
+                if (mac == null) {
+                    continue;
+                }
+
+                EtherAddress ea = new EtherAddress(mac);
+                if (nif.isUp()) {
+                    LOG.debug("Use HW address of {} as local address: {}",
+                              nif.getName(), ea.getText());
+                    return ea;
+                }
+
+                if (altIf == null) {
+                    altIf = nif;
+                    altAddr = ea;
+                }
+            } catch (Exception e) {
+                LOG.debug("Ignore network interface: " + nif.getName(), e);
             }
         }
 
-        return result;
+        if (altAddr != null) {
+            LOG.debug("Use inactive HW address of {} as local address: ",
+                      altIf.getName(), altAddr.getText());
+            return altAddr;
+        }
+
+        return null;
     }
 
     /**
