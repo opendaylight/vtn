@@ -61,15 +61,15 @@
 
     <!-- OpenDaylight YANG Tools -->
     <dependency>
-      <groupId>org.opendaylight.yangtools.model</groupId>
+      <groupId>org.opendaylight.mdsal.model</groupId>
       <artifactId>ietf-yang-types</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.opendaylight.yangtools.model</groupId>
+      <groupId>org.opendaylight.mdsal.model</groupId>
       <artifactId>opendaylight-l2-types</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.opendaylight.yangtools.model</groupId>
+      <groupId>org.opendaylight.mdsal.model</groupId>
       <artifactId>ietf-inet-types</artifactId>
     </dependency>
 

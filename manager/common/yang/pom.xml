@@ -108,7 +108,7 @@
               <version>${odl.config.version}</version>
             </dependency>
             <dependency>
-              <groupId>org.opendaylight.yangtools</groupId>
+              <groupId>org.opendaylight.mdsal</groupId>
               <artifactId>maven-sal-api-gen-plugin</artifactId>
               <version>${odl.yangtools.version}</version>
             </dependency>
@@ -152,7 +152,7 @@
   <dependencies>
     <!-- OpenDaylight YANG Tools -->
     <dependency>
-      <groupId>org.opendaylight.yangtools</groupId>
+      <groupId>org.opendaylight.mdsal</groupId>
       <artifactId>yang-binding</artifactId>
     </dependency>
   </dependencies>
