@@ -25,6 +25,8 @@ import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 
+import org.opendaylight.yangtools.yang.binding.RpcService;
+
 /**
  * {@code SubSystemRegistry} keeps instances that manage subsystems in the
  * VTN Manager.
@@ -146,6 +148,19 @@ public final class SubSystemRegistry {
             }
             vss.initRpcServices(rpcReg, rpcServices);
         }
+    }
+
+    /**
+     * Add the given RPC registration to this instance.
+     *
+     * @param rpcReg  A {@link RpcProviderRegistry} service instance.
+     * @param type    A class which specifies the type of RPC service.
+     * @param impl    An object which implements the RPC service.
+     * @param <T>     Type of RPC service.
+     */
+    public <T extends RpcService> void addRpcService(
+        RpcProviderRegistry rpcReg, Class<T> type, T impl) {
+        rpcServices.add(rpcReg.addRpcImplementation(type, impl));
     }
 
     /**
