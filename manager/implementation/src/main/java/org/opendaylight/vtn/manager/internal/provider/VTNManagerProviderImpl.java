@@ -21,6 +21,10 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.osgi.framework.Bundle;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.Version;
+
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.FlowRemover;
@@ -42,6 +46,7 @@ import org.opendaylight.vtn.manager.internal.util.VTNTimer;
 import org.opendaylight.vtn.manager.internal.util.concurrent.CanceledFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.FutureCallbackTask;
 import org.opendaylight.vtn.manager.internal.util.concurrent.FutureCanceller;
+import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNThreadPool;
 import org.opendaylight.vtn.manager.internal.util.flow.VTNFlowBuilder;
@@ -61,18 +66,31 @@ import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yangtools.yang.binding.Notification;
 import org.opendaylight.yangtools.yang.binding.RpcService;
+import org.opendaylight.yangtools.yang.common.RpcResult;
+import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnFlowId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.GetManagerVersionOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.GetManagerVersionOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.VtnVersionService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.get.manager.version.output.BundleVersion;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.get.manager.version.output.BundleVersionBuilder;
 
 /**
  * MD-SAL service provider of the VTN Manager.
  */
-public final class VTNManagerProviderImpl implements VTNManagerProvider {
+public final class VTNManagerProviderImpl
+    implements VTNManagerProvider, VtnVersionService {
     /**
      * Logger instance.
      */
     private static final Logger  LOG =
         LoggerFactory.getLogger(VTNManagerProviderImpl.class);
+
+    /**
+     * Current API version of the VTN Manager.
+     */
+    public static final long  API_VERSION = 2;
 
     /**
      * The maximum number of threads in the global thread pool for
@@ -224,6 +242,9 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
 
         // Register RPC services.
         try {
+            // Register vtn-version service.
+            subSystems.addRpcService(rpcReg, VtnVersionService.class, this);
+
             subSystems.initRpcServices(rpcReg);
         } catch (RuntimeException e) {
             LOG.error("Failed to initialize RPC service.", e);
@@ -261,6 +282,31 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
         }
 
         return alive;
+    }
+
+    /**
+     * Create an output for get-manager-version RPC.
+     *
+     * @return  A {@link GetManagerVersionOutput} instance.
+     */
+    private GetManagerVersionOutput getManagerVersionOutput() {
+        GetManagerVersionOutputBuilder builder =
+            new GetManagerVersionOutputBuilder();
+
+        // Determine OSGi bundle version.
+        Bundle bundle = FrameworkUtil.getBundle(VTNManagerProviderImpl.class);
+        if (bundle != null) {
+            Version ver = bundle.getVersion();
+            BundleVersion bv = new BundleVersionBuilder().
+                setMajor((long)ver.getMajor()).
+                setMinor((long)ver.getMinor()).
+                setMicro((long)ver.getMicro()).
+                setQualifier(ver.getQualifier()).
+                build();
+            builder.setBundleVersion(bv);
+        }
+
+        return builder.setApiVersion(API_VERSION).build();
     }
 
     // VTNManagerProvider
@@ -565,5 +611,27 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
     public <T> VTNFuture<T> postFirst(TxTask<T> task) {
         TxQueueImpl txq = globalQueue.get();
         return (txq == null) ? new CanceledFuture<T>() : txq.postFirst(task);
+    }
+
+    // VtnVersionService
+
+    /**
+     * Return the version information of the VTN Manager.
+     *
+     * @return  A {@link Future} associated with the RPC task.
+     */
+    @Override
+    public Future<RpcResult<GetManagerVersionOutput>> getManagerVersion() {
+        SettableVTNFuture<RpcResult<GetManagerVersionOutput>> future =
+            new SettableVTNFuture<>();
+        try {
+            GetManagerVersionOutput output = getManagerVersionOutput();
+            future.set(RpcResultBuilder.success(output).build());
+        } catch (RuntimeException e) {
+            // This should never happen.
+            future.setException(e);
+        }
+
+        return future;
     }
 }

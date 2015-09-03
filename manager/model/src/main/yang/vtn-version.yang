@@ -1,0 +1,85 @@
+/*
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this distribution,
+ * and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-version {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:version";
+    prefix vver;
+
+    description
+      "The module that describes the version information of the VTN Manager.";
+
+    revision 2015-09-01 {
+        description "Initial revision.";
+    }
+
+    /*
+     * RPC definitions
+     */
+
+    rpc get-manager-version {
+        description
+          "Return the version information of the VTN Manager.";
+
+        output {
+            leaf api-version {
+                description
+                  "A numerical value which represents API version of the
+                   VTN Manager.
+
+                   API version is a numerical value equal to or greater
+                   than 1, and it is incremented if API of the VTN manager
+                   is changed.
+
+                   Current VTN Manager returns 2 as API version.";
+                type uint32 {
+                    range "1 .. max";
+                }
+            }
+
+            container bundle-version {
+                description
+                  "Describes OSGi bundle version of the VTN Manager.
+
+                   Note that this container will be omitted if OSGi bundle
+                   version is not available.";
+
+                leaf major {
+                    description
+                      "The major component of the OSGi bundle version
+                       identifier.";
+                    type uint32;
+                }
+
+                leaf minor {
+                    description
+                      "The minor component of the OSGi bundle version
+                       identifier.";
+                    type uint32;
+                }
+
+                leaf micro {
+                    description
+                      "The micro component of the OSGi bundle version
+                       identifier.";
+                    type uint32;
+                }
+
+                leaf qualifier {
+                    description
+                      "The qualifier component of the OSGi bundle version
+                       identifier.
+
+                       This field is omitted if the qualifier component is
+                       not set in the OSGi bundle version identifier.";
+                    type string;
+                }
+            }
+        }
+    }
+}
