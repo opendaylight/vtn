@@ -40,6 +40,12 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.vtn.topology.VtnLinkBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.LinkId;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TopologyId;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.Topology;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.TopologyKey;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Link;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.LinkKey;
 
 /**
  * {@code LinkUpdateContext} describes runtime information for updating
@@ -51,6 +57,13 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
  */
 public final class LinkUpdateContext {
     /**
+     * A MD-SAL topology key which specifies the network topology for
+     * OpenFlow network.
+     */
+    public static final TopologyKey  OF_TOPOLOGY_KEY =
+        new TopologyKey(new TopologyId("flow:1"));
+
+    /**
      * A MD-SAL datastore transaction.
      */
     private final ReadWriteTransaction  transaction;
@@ -59,6 +72,11 @@ public final class LinkUpdateContext {
      * An {@link InventoryReader} instance.
      */
     private final InventoryReader  inventoryReader;
+
+    /**
+     * A map which keeps links restored from the MD-SAL network topology.
+     */
+    private Map<SalPort, SalPort>  restoredLinks;
 
     /**
      * A map which keeps links added to ignored-links container.
@@ -242,11 +260,83 @@ public final class LinkUpdateContext {
     }
 
     /**
+     * Restore inter-switch links on the given switch port from the MD-SAL
+     * network topology.
+     *
+     * <p>
+     *   The caller must guarantee that all the following conditions are met.
+     * </p>
+     * <ul>
+     *   <li>The given port is in UP state.</li>
+     *   <li>
+     *     No inter-switch link is configured in the given {@link VtnPort}.
+     *   </li>
+     * </ul>
+     *
+     * @param sport  A {@link SalPort} instance which indicates the target
+     *               switch port.
+     * @param vport  A {@link VtnPort} associated with {@code sport}.
+     * @return  A {@link VtnPort} instance which contains the latest
+     *          information about the port specified by {@code sport}.
+     * @throws VTNException  An error occurred.
+     */
+    public VtnPort restoreVtnLinks(SalPort sport, VtnPort vport)
+        throws VTNException {
+        // Search for a MD-SAL link which starts from the given port.
+        VtnPort ret = vport;
+        Link link = readMdLink(sport);
+        if (link != null) {
+            // Check to see if the peer port is in UP state.
+            SalPort peer = SalPort.create(link.getDestination());
+            if (peer != null) {
+                LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+                InstanceIdentifier<VtnPort> ppath =
+                    peer.getVtnPortIdentifier();
+                VtnPort vpeer = DataStoreUtils.read(transaction, oper, ppath).
+                    orNull();
+                if (vpeer != null && InventoryUtils.isEnabled(vpeer)) {
+                    // Restore the link.
+                    restoreVtnLink(link.getLinkId(), sport, peer);
+
+                    // Check to see if the reverse link is present in the
+                    // MD-SAL network topology.
+                    Link rlink = readMdLink(peer);
+                    if (rlink != null &&
+                        sport.equals(SalPort.create(rlink.getDestination()))) {
+                        // Restore the reverse link.
+                        restoreVtnLink(rlink.getLinkId(), peer, sport);
+                    }
+
+                    // Purge port caches.
+                    inventoryReader.purge(sport);
+                    inventoryReader.purge(peer);
+
+                    // Return the current value of VtnPort.
+                    ppath = sport.getVtnPortIdentifier();
+                    ret = DataStoreUtils.read(transaction, oper, ppath).
+                        orNull();
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    /**
      * Record logs for updated links.
      *
      * @param log  A {@link Logger} instance.
      */
     public void recordLogs(Logger log) {
+        if (restoredLinks != null) {
+            for (Map.Entry<SalPort, SalPort> entry: restoredLinks.entrySet()) {
+                SalPort src = entry.getKey();
+                SalPort dst = entry.getValue();
+                log.info("VTN link has been restored from the MD-SAL " +
+                         "network topology: {} -> {}", src, dst);
+            }
+        }
+
         if (staticEdgePorts != null) {
             for (SalPort sport: staticEdgePorts) {
                 log.info("{}: Port has been updated as a static edge port.",
@@ -653,6 +743,47 @@ public final class LinkUpdateContext {
             }
             moved.add(vlink);
         }
+    }
+
+    /**
+     * Restore the VTN link associated with the given MD-SAL link.
+     *
+     * @param linkId  Identifier for a MD-SAL link to be restored.
+     * @param src     A {@link SalPort} instance which specifies the source
+     *                port of the link.
+     * @param dst     A {@link SalPort} instance which specifies the
+     *                destination port of the link.
+     * @throws VTNException  An error occurred.
+     */
+    private void restoreVtnLink(LinkId linkId, SalPort src, SalPort dst)
+        throws VTNException {
+        Map<SalPort, SalPort> restored = restoredLinks;
+        if (restored == null) {
+            restored = new HashMap<>();
+            restoredLinks = restored;
+        }
+        restored.put(src, dst);
+        addVtnLink(linkId, src, dst);
+    }
+
+    /**
+     * Read a MD-SAL link which starts from the given port.
+     *
+     * @param sport  A {@link SalPort} instance.
+     * @return  A {@link Link} instance if found. {@code null} if not found.
+     * @throws VTNException  An error occurred.
+     */
+    private Link readMdLink(SalPort sport)
+        throws VTNException {
+        // The source port ID is used as the MD-SAL link ID.
+        LinkId linkId = new LinkId(sport.toString());
+        InstanceIdentifier<Link> path = InstanceIdentifier.
+            builder(NetworkTopology.class).
+            child(Topology.class, OF_TOPOLOGY_KEY).
+            child(Link.class, new LinkKey(linkId)).
+            build();
+        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        return DataStoreUtils.read(transaction, oper, path).orNull();
     }
 
     /**

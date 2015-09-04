@@ -21,6 +21,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,7 +42,6 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnNodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPortBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.port.info.PortLink;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.port.info.PortLinkBuilder;
@@ -71,6 +71,19 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.LinkId;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TopologyId;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TpId;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.link.attributes.Destination;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.link.attributes.DestinationBuilder;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.link.attributes.Source;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.link.attributes.SourceBuilder;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.Topology;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.TopologyKey;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Link;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.LinkBuilder;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.LinkKey;
 
 /**
  * JUnit test for {@link LinkUpdateContext}.
@@ -112,6 +125,51 @@ public class LinkUpdateContextTest extends TestBase {
 
         return new StaticEdgePortsBuilder().
             setStaticEdgePort(eplist).build();
+    }
+
+    /**
+     * Create a new MD-SAL link.
+     *
+     * @param lid   Link identifier.
+     * @param snid  Source node idenfifier.
+     * @param src   Source port identifier.
+     * @param dnid  Destination node identifier.
+     * @param dst   Destination port identifier.
+     * @return  A {@link Link} instance.
+     */
+    public static Link newMdLink(String lid, String snid, String src,
+                                 String dnid, String dst) {
+        Source source = new SourceBuilder().
+            setSourceNode(new NodeId(snid)).
+            setSourceTp(new TpId(src)).
+            build();
+        Destination destination = new DestinationBuilder().
+            setDestNode(new NodeId(dnid)).
+            setDestTp(new TpId(dst)).
+            build();
+
+        return new LinkBuilder().
+            setLinkId(new LinkId(lid)).
+            setSource(source).
+            setDestination(destination).
+            build();
+    }
+
+    /**
+     * Create a new MD-SAL link.
+     *
+     * @param src  A {@link SalPort} instance which specifies the source port
+     *             of the link.
+     * @param dst  A {@link SalPort} instance which specifies the destination
+     *             port of the link.
+     * @return  A {@link Link} instance.
+     */
+    public static Link newMdLink(SalPort src, SalPort dst) {
+        String srcNode = src.toNodeString();
+        String srcId = src.toString();
+        String dstNode = dst.toNodeString();
+        String dstId = dst.toString();
+        return newMdLink(srcId, srcNode, srcId, dstNode, dstId);
     }
 
     /**
@@ -218,8 +276,7 @@ public class LinkUpdateContextTest extends TestBase {
         reset(log);
 
         // Source port is not present.
-        VtnPort dstPort = new VtnPortBuilder().setId(dst.getNodeConnectorId()).
-            build();
+        VtnPort dstPort = createVtnPortBuilder(dst, null, true).build();
         reader.prefetch(dst, dstPort);
         luctx = new LinkUpdateContext(tx, reader);
         assertEquals(null, luctx.addVtnLink(lid, src, dst));
@@ -246,8 +303,7 @@ public class LinkUpdateContextTest extends TestBase {
         reset(log);
 
         // Destination port is not present.
-        VtnPort srcPort = new VtnPortBuilder().setId(src.getNodeConnectorId()).
-            build();
+        VtnPort srcPort = createVtnPortBuilder(src, null, true).build();
         reader.prefetch(src, srcPort);
         reader.prefetch(dst, (VtnPort)null);
         luctx = new LinkUpdateContext(tx, reader);
@@ -521,16 +577,14 @@ public class LinkUpdateContextTest extends TestBase {
 
             VtnPort vport;
             if (srcPresent) {
-                vport = new VtnPortBuilder().
-                    setId(src.getNodeConnectorId()).build();
+                vport = createVtnPortBuilder(src, null, true).build();
             } else {
                 vport = null;
             }
             reader.prefetch(src, vport);
 
             if (dstPresent) {
-                vport = new VtnPortBuilder().
-                    setId(dst.getNodeConnectorId()).build();
+                vport = createVtnPortBuilder(dst, null, true).build();
             } else {
                 vport = null;
             }
@@ -926,8 +980,8 @@ public class LinkUpdateContextTest extends TestBase {
         Collections.addAll(plinks, isl1.getSourceLink(),
                            isl2.getDestinationLink(),
                            isl3.getDestinationLink());
-        VtnPort vport = new VtnPortBuilder().
-            setId(sport.getNodeConnectorId()).setPortLink(plinks).build();
+        VtnPort vport = createVtnPortBuilder(sport, null, true).
+            setPortLink(plinks).build();
 
         // All the links in the given port should be removed.
         InstanceIdentifier<VtnLink> path1 = isl1.getVtnLinkPath();
@@ -985,8 +1039,7 @@ public class LinkUpdateContextTest extends TestBase {
 
         // In case where no link is configured.
         reset(tx, log);
-        vport = new VtnPortBuilder().
-            setId(sport.getNodeConnectorId()).build();
+        vport = createVtnPortBuilder(sport, null, true).build();
         luctx.updateStaticTopology(sport, vport);
         verifyZeroInteractions(tx);
 
@@ -1024,9 +1077,8 @@ public class LinkUpdateContextTest extends TestBase {
         Collections.addAll(plinks, isl1.getSourceLink(),
                            isl2.getDestinationLink(),
                            isl3.getDestinationLink());
-        VtnPort vport = new VtnPortBuilder().
-            setId(sport.getNodeConnectorId()).
-            setEnabled(true).setPortLink(plinks).build();
+        VtnPort vport = createVtnPortBuilder(sport).
+            setPortLink(plinks).build();
 
         // All the links in the given port should be removed.
         InstanceIdentifier<VtnLink> path1 = isl1.getVtnLinkPath();
@@ -1120,8 +1172,7 @@ public class LinkUpdateContextTest extends TestBase {
 
         // In case where no link is configured.
         reset(tx, log);
-        vport = new VtnPortBuilder().
-            setId(sport.getNodeConnectorId()).setEnabled(true).build();
+        vport = createVtnPortBuilder(sport).build();
         luctx = new LinkUpdateContext(tx, reader);
         luctx.updateStaticTopology(sport, vport);
         verifyZeroInteractions(tx);
@@ -1157,9 +1208,8 @@ public class LinkUpdateContextTest extends TestBase {
         List<PortLink> plinks = new ArrayList<>();
         Collections.addAll(plinks, isl1.getSourceLink(),
                            isl2.getDestinationLink());
-        VtnPort vport = new VtnPortBuilder().
-            setId(sport.getNodeConnectorId()).
-            setEnabled(true).setPortLink(plinks).build();
+        VtnPort vport = createVtnPortBuilder(sport).
+            setPortLink(plinks).build();
 
         // No static network topology is configured.
         reader.prefetch((VtnStaticTopology)null);
@@ -1186,8 +1236,7 @@ public class LinkUpdateContextTest extends TestBase {
 
         // In case where no link is configured.
         reset(tx, log);
-        vport = new VtnPortBuilder().
-            setId(sport.getNodeConnectorId()).setEnabled(true).build();
+        vport = createVtnPortBuilder(sport).build();
         luctx.updateStaticTopology(sport, vport);
         verifyZeroInteractions(tx);
 
@@ -1225,9 +1274,8 @@ public class LinkUpdateContextTest extends TestBase {
         Collections.addAll(plinks, isl1.getSourceLink(),
                            isl2.getDestinationLink(),
                            isl3.getDestinationLink());
-        VtnPort vport = new VtnPortBuilder().
-            setId(sport.getNodeConnectorId()).
-            setEnabled(true).setPortLink(plinks).build();
+        VtnPort vport = createVtnPortBuilder(sport).
+            setPortLink(plinks).build();
 
         // No static network topology is configured.
         reader.prefetch((VtnStaticTopology)null);
@@ -1269,8 +1317,7 @@ public class LinkUpdateContextTest extends TestBase {
 
         // In case where no link is configured.
         reset(tx, log);
-        vport = new VtnPortBuilder().
-            setId(sport.getNodeConnectorId()).setEnabled(true).build();
+        vport = createVtnPortBuilder(sport).build();
         luctx = new LinkUpdateContext(tx, reader);
         luctx.updateStaticTopology(sport, vport);
         verifyZeroInteractions(tx);
@@ -1309,22 +1356,18 @@ public class LinkUpdateContextTest extends TestBase {
         Collections.addAll(plinks, isl1.getSourceLink(),
                            isl2.getDestinationLink(),
                            isl3.getDestinationLink());
-        VtnPort vport = new VtnPortBuilder().
-            setId(sport.getNodeConnectorId()).
-            setEnabled(true).setPortLink(plinks).build();
+        VtnPort vport = createVtnPortBuilder(sport).
+            setPortLink(plinks).build();
 
         List<PortLink> stSrcLinks = new ArrayList<>();
         stSrcLinks.add(isl3.getSourceLink());
-        VtnPort stSrcPort = new VtnPortBuilder().
-            setId(stSrc.getNodeConnectorId()).
+        VtnPort stSrcPort = createVtnPortBuilder(stSrc, false, true).
             setEnabled(false).setPortLink(stSrcLinks).build();
         reader.prefetch(stSrc, stSrcPort);
 
         // stSrcPort in inventory reader will be purged by
         // removeObsoleteStaticLink().
-        VtnPort stSrcPort1 = new VtnPortBuilder().
-            setId(stSrc.getNodeConnectorId()).
-            setEnabled(false).build();
+        VtnPort stSrcPort1 = createVtnPortBuilder(stSrc, false, true).build();
         InstanceIdentifier<VtnPort> stSrcPath = stSrc.getVtnPortIdentifier();
         when(tx.read(oper, stSrcPath)).thenReturn(getReadResult(stSrcPort1));
 
@@ -1374,8 +1417,7 @@ public class LinkUpdateContextTest extends TestBase {
 
         // In case where no link is configured.
         reset(tx, log);
-        vport = new VtnPortBuilder().
-            setId(sport.getNodeConnectorId()).setEnabled(true).build();
+        vport = createVtnPortBuilder(sport).build();
         luctx = new LinkUpdateContext(tx, reader);
         luctx.updateStaticTopology(sport, vport);
         verifyZeroInteractions(tx);
@@ -1409,13 +1451,8 @@ public class LinkUpdateContextTest extends TestBase {
         SalPort peer = new SalPort(200L, 300L);
         InterSwitchLink isl1 = new InterSwitchLink(sport, peer, true);
         InterSwitchLink isl2 = new InterSwitchLink(peer, sport, true);
-        VtnPort vport = new VtnPortBuilder().
-            setId(sport.getNodeConnectorId()).
-            setEnabled(true).build();
-
-        VtnPort vpeer = new VtnPortBuilder().
-            setId(peer.getNodeConnectorId()).
-            setEnabled(false).build();
+        VtnPort vport = createVtnPortBuilder(sport).build();
+        VtnPort vpeer = createVtnPortBuilder(peer, false, true).build();
         reader.prefetch(peer, vpeer);
 
         // Configure the static link.
@@ -1460,9 +1497,7 @@ public class LinkUpdateContextTest extends TestBase {
         SalPort peer = new SalPort(200L, 300L);
         InterSwitchLink isl1 = new InterSwitchLink(sport, peer, true);
         InterSwitchLink isl2 = new InterSwitchLink(peer, sport, true);
-        VtnPort vport = new VtnPortBuilder().
-            setId(sport.getNodeConnectorId()).
-            setEnabled(true).build();
+        VtnPort vport = createVtnPortBuilder(sport).build();
         reader.prefetch(peer, (VtnPort)null);
 
         // Configure the static link.
@@ -1512,17 +1547,15 @@ public class LinkUpdateContextTest extends TestBase {
         Collections.addAll(plinks, isl1.getSourceLink(),
                            isl2.getDestinationLink(),
                            isl3.getDestinationLink());
-        VtnPort vport = new VtnPortBuilder().
-            setId(sport.getNodeConnectorId()).
-            setEnabled(true).setPortLink(plinks).build();
+        VtnPort vport = createVtnPortBuilder(sport).
+            setPortLink(plinks).build();
         reader.prefetch(sport, vport);
 
         List<PortLink> peerLinks = new ArrayList<>();
         Collections.addAll(peerLinks, isl1.getDestinationLink(),
                            isl2.getSourceLink());
-        VtnPort vpeer = new VtnPortBuilder().
-            setId(peer.getNodeConnectorId()).
-            setEnabled(true).setPortLink(peerLinks).build();
+        VtnPort vpeer = createVtnPortBuilder(peer).
+            setPortLink(peerLinks).build();
         reader.prefetch(peer, vpeer);
 
         // Configure the static link.
@@ -1587,38 +1620,32 @@ public class LinkUpdateContextTest extends TestBase {
         List<PortLink> plinks = new ArrayList<>();
         Collections.addAll(plinks, isl1.getSourceLink(),
                            isl2.getDestinationLink());
-        VtnPort vport = new VtnPortBuilder().
-            setId(sport.getNodeConnectorId()).
-            setEnabled(true).setPortLink(plinks).build();
+        VtnPort vport = createVtnPortBuilder(sport).
+            setPortLink(plinks).build();
         reader.prefetch(sport, vport);
 
         List<PortLink> peerLinks = new ArrayList<>();
         Collections.addAll(peerLinks, isl1.getDestinationLink(),
                            isl2.getSourceLink());
-        VtnPort vpeer = new VtnPortBuilder().
-            setId(peer.getNodeConnectorId()).
-            setEnabled(true).setPortLink(peerLinks).build();
+        VtnPort vpeer = createVtnPortBuilder(peer).
+            setPortLink(peerLinks).build();
         reader.prefetch(peer, vpeer);
 
-        VtnPort vstPeer = new VtnPortBuilder().
-            setId(stPeer.getNodeConnectorId()).
-            setEnabled(true).build();
+        VtnPort vstPeer = createVtnPortBuilder(stPeer).build();
         reader.prefetch(stPeer, vstPeer);
 
         // addStaticLink() for isl3 will purge inventory caches.
         plinks = new ArrayList<>(plinks);
         plinks.add(isl4.getDestinationLink());
-        VtnPort vportNew = new VtnPortBuilder().
-            setId(sport.getNodeConnectorId()).
-            setEnabled(true).setPortLink(plinks).build();
+        VtnPort vportNew = createVtnPortBuilder(sport).
+            setPortLink(plinks).build();
         InstanceIdentifier<VtnPort> vportPath = sport.getVtnPortIdentifier();
         when(tx.read(oper, vportPath)).thenReturn(getReadResult(vportNew));
 
         List<PortLink> vstPeerLink = new ArrayList<>();
         vstPeerLink.add(isl4.getSourceLink());
-        VtnPort vstPeerNew = new VtnPortBuilder().
-            setId(stPeer.getNodeConnectorId()).
-            setEnabled(true).setPortLink(vstPeerLink).build();
+        VtnPort vstPeerNew = createVtnPortBuilder(stPeer).
+            setPortLink(vstPeerLink).build();
         InstanceIdentifier<VtnPort> stPeerPath = stPeer.getVtnPortIdentifier();
         when(tx.read(oper, stPeerPath)).thenReturn(getReadResult(vstPeerNew));
 
@@ -1696,6 +1723,501 @@ public class LinkUpdateContextTest extends TestBase {
                  vlink1.getLinkId().getValue(),
                  vlink1.getSource().getValue(),
                  vlink1.getDestination().getValue());
+        verifyNoMoreInteractions(log);
+    }
+
+    /**
+     * Test case for
+     * {@link LinkUpdateContext#restoreVtnLinks(SalPort, VtnPort)}.
+     *
+     * <p>
+     *   No MD-SAL link is preserved.
+     * </p>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testRestoreVtnLinksNoLink() throws Exception {
+        ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
+        InventoryReader reader = new InventoryReader(tx);
+        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        TopologyKey topoKey = new TopologyKey(new TopologyId("flow:1"));
+        LinkUpdateContext luctx = new LinkUpdateContext(tx, reader);
+
+        SalPort sport = new SalPort(100L, 200L);
+        VtnPort vport = createVtnPortBuilder(sport).build();
+        LinkId linkId = new LinkId(sport.toString());
+        InstanceIdentifier<Link> lpath = InstanceIdentifier.
+            builder(NetworkTopology.class).
+            child(Topology.class, topoKey).
+            child(Link.class, new LinkKey(linkId)).
+            build();
+        Link link = null;
+        when(tx.read(oper, lpath)).thenReturn(getReadResult(link));
+
+        assertSame(vport, luctx.restoreVtnLinks(sport, vport));
+        verify(tx).read(oper, lpath);
+        verifyNoMoreInteractions(tx);
+
+        Logger log = mock(Logger.class);
+        when(log.isDebugEnabled()).thenReturn(true);
+        luctx.recordLogs(log);
+        verify(log).isDebugEnabled();
+        verifyNoMoreInteractions(log);
+    }
+
+    /**
+     * Test case for
+     * {@link LinkUpdateContext#restoreVtnLinks(SalPort, VtnPort)}.
+     *
+     * <p>
+     *   Peer port ID in the MD-SAL link is invalid.
+     * </p>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testRestoreVtnLinksInvalidPeer() throws Exception {
+        ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
+        InventoryReader reader = new InventoryReader(tx);
+        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        TopologyKey topoKey = new TopologyKey(new TopologyId("flow:1"));
+        LinkUpdateContext luctx = new LinkUpdateContext(tx, reader);
+
+        SalPort sport = new SalPort(100L, 200L);
+        VtnPort vport = createVtnPortBuilder(sport).build();
+        String srcId = sport.toString();
+        String srcNode = sport.toNodeString();
+        Link link = newMdLink(srcId, srcNode, srcId, "unknown:1",
+                              "unknown:1:2");
+        LinkId linkId = link.getLinkId();
+        InstanceIdentifier<Link> lpath = InstanceIdentifier.
+            builder(NetworkTopology.class).
+            child(Topology.class, topoKey).
+            child(Link.class, link.getKey()).
+            build();
+        when(tx.read(oper, lpath)).thenReturn(getReadResult(link));
+
+        assertSame(vport, luctx.restoreVtnLinks(sport, vport));
+        verify(tx).read(oper, lpath);
+        verifyNoMoreInteractions(tx);
+
+        Logger log = mock(Logger.class);
+        when(log.isDebugEnabled()).thenReturn(true);
+        luctx.recordLogs(log);
+        verify(log).isDebugEnabled();
+        verifyNoMoreInteractions(log);
+    }
+
+    /**
+     * Test case for
+     * {@link LinkUpdateContext#restoreVtnLinks(SalPort, VtnPort)}.
+     *
+     * <p>
+     *   Peer port is not present or in DOWN state.
+     * </p>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testRestoreVtnLinksPeerDown() throws Exception {
+        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        TopologyKey topoKey = new TopologyKey(new TopologyId("flow:1"));
+
+        SalPort sport = new SalPort(100L, 200L);
+        VtnPort vport = createVtnPortBuilder(sport).build();
+        SalPort peer = new SalPort(300L, 400L);
+        VtnPort[] vpeers = {
+            null,
+            createVtnPortBuilder(peer, false, true).build(),
+        };
+        Link link = newMdLink(sport, peer);
+        LinkId linkId = link.getLinkId();
+        InstanceIdentifier<Link> lpath = InstanceIdentifier.
+            builder(NetworkTopology.class).
+            child(Topology.class, topoKey).
+            child(Link.class, link.getKey()).
+            build();
+        InstanceIdentifier<VtnPort> peerPath = peer.getVtnPortIdentifier();
+        for (VtnPort vpeer: vpeers) {
+            ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
+            InventoryReader reader = new InventoryReader(tx);
+            LinkUpdateContext luctx = new LinkUpdateContext(tx, reader);
+            when(tx.read(oper, lpath)).thenReturn(getReadResult(link));
+            when(tx.read(oper, peerPath)).thenReturn(getReadResult(vpeer));
+
+            assertSame(vport, luctx.restoreVtnLinks(sport, vport));
+            verify(tx).read(oper, lpath);
+            verify(tx).read(oper, peerPath);
+            verifyNoMoreInteractions(tx);
+
+            Logger log = mock(Logger.class);
+            when(log.isDebugEnabled()).thenReturn(true);
+            luctx.recordLogs(log);
+            verify(log).isDebugEnabled();
+            verifyNoMoreInteractions(log);
+        }
+    }
+
+    /**
+     * Test case for
+     * {@link LinkUpdateContext#restoreVtnLinks(SalPort, VtnPort)}.
+     *
+     * <p>
+     *   No reverse MD-SAL link is present.
+     * </p>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testRestoreVtnLinksNoReverse() throws Exception {
+        ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
+        InventoryReader reader = new InventoryReader(tx);
+        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        TopologyKey topoKey = new TopologyKey(new TopologyId("flow:1"));
+        LinkUpdateContext luctx = new LinkUpdateContext(tx, reader);
+
+        SalPort sport = new SalPort(100L, 200L);
+        VtnPort vport = createVtnPortBuilder(sport).build();
+        SalPort peer = new SalPort(300L, 400L);
+        VtnPort vpeer = createVtnPortBuilder(peer).build();
+        reader.prefetch(sport, vport);
+        reader.prefetch(peer, vpeer);
+
+        InstanceIdentifier<VtnPort> peerPath = peer.getVtnPortIdentifier();
+        when(tx.read(oper, peerPath)).thenReturn(getReadResult(vpeer));
+
+        // No static topology configuration.
+        reader.prefetch((VtnStaticTopology)null);
+
+        Link link = newMdLink(sport, peer);
+        LinkId linkId = link.getLinkId();
+        InstanceIdentifier<Link> lpath = InstanceIdentifier.
+            builder(NetworkTopology.class).
+            child(Topology.class, topoKey).
+            child(Link.class, link.getKey()).
+            build();
+        when(tx.read(oper, lpath)).thenReturn(getReadResult(link));
+
+        Link rlink = newMdLink(peer, sport);
+        LinkId rlinkId = rlink.getLinkId();
+        InstanceIdentifier<Link> rlpath = InstanceIdentifier.
+            builder(NetworkTopology.class).
+            child(Topology.class, topoKey).
+            child(Link.class, rlink.getKey()).
+            build();
+        rlink = null;
+        when(tx.read(oper, rlpath)).thenReturn(getReadResult(rlink));
+
+        // Only one link should be restored.
+        InterSwitchLink isl = new InterSwitchLink(sport, peer);
+        InstanceIdentifier<VtnLink> vlpath = isl.getVtnLinkPath();
+        InstanceIdentifier<PortLink> spath = isl.getSourceLinkPath();
+        InstanceIdentifier<PortLink> dpath = isl.getDestinationLinkPath();
+        List<PortLink> plinks = Collections.singletonList(isl.getSourceLink());
+        VtnPort expected = createVtnPortBuilder(sport).
+            setPortLink(plinks).build();
+        InstanceIdentifier<VtnPort> ppath = sport.getVtnPortIdentifier();
+        when(tx.read(oper, ppath)).thenReturn(getReadResult(expected));
+
+        assertEquals(expected, luctx.restoreVtnLinks(sport, vport));
+        verify(tx).read(oper, lpath);
+        verify(tx).read(oper, peerPath);
+        verify(tx).read(oper, rlpath);
+        verify(tx).read(oper, ppath);
+        verify(tx).put(oper, vlpath, isl.getVtnLink(), true);
+        verify(tx).put(oper, spath, isl.getSourceLink(), true);
+        verify(tx).put(oper, dpath, isl.getDestinationLink(), true);
+        verifyNoMoreInteractions(tx);
+
+        Map<SalPort, VtnPort> cache = reader.getCachedPorts();
+        assertEquals(null, cache.get(sport));
+        assertEquals(null, cache.get(peer));
+
+        Logger log = mock(Logger.class);
+        String msg = "VTN link has been restored from the MD-SAL " +
+            "network topology: {} -> {}";
+        when(log.isDebugEnabled()).thenReturn(true);
+        luctx.recordLogs(log);
+        verify(log).isDebugEnabled();
+        verify(log).info(msg, sport, peer);
+        verifyNoMoreInteractions(log);
+    }
+
+    /**
+     * Test case for
+     * {@link LinkUpdateContext#restoreVtnLinks(SalPort, VtnPort)}.
+     *
+     * <p>
+     *   Reverse MD-SAL link does not point to the target port.
+     * </p>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testRestoreVtnLinksReverseBroken() throws Exception {
+        ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
+        InventoryReader reader = new InventoryReader(tx);
+        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        TopologyKey topoKey = new TopologyKey(new TopologyId("flow:1"));
+        LinkUpdateContext luctx = new LinkUpdateContext(tx, reader);
+
+        SalPort sport = new SalPort(100L, 200L);
+        VtnPort vport = createVtnPortBuilder(sport).build();
+        SalPort peer = new SalPort(300L, 400L);
+        VtnPort vpeer = createVtnPortBuilder(peer).build();
+        reader.prefetch(sport, vport);
+        reader.prefetch(peer, vpeer);
+
+        InstanceIdentifier<VtnPort> peerPath = peer.getVtnPortIdentifier();
+        when(tx.read(oper, peerPath)).thenReturn(getReadResult(vpeer));
+
+        // No static topology configuration.
+        reader.prefetch((VtnStaticTopology)null);
+
+        Link link = newMdLink(sport, peer);
+        LinkId linkId = link.getLinkId();
+        InstanceIdentifier<Link> lpath = InstanceIdentifier.
+            builder(NetworkTopology.class).
+            child(Topology.class, topoKey).
+            child(Link.class, link.getKey()).
+            build();
+        when(tx.read(oper, lpath)).thenReturn(getReadResult(link));
+
+        Link rlink = newMdLink(peer, new SalPort(100L, 201L));
+        LinkId rlinkId = rlink.getLinkId();
+        InstanceIdentifier<Link> rlpath = InstanceIdentifier.
+            builder(NetworkTopology.class).
+            child(Topology.class, topoKey).
+            child(Link.class, rlink.getKey()).
+            build();
+        when(tx.read(oper, rlpath)).thenReturn(getReadResult(rlink));
+
+        // Only one link should be restored.
+        InterSwitchLink isl = new InterSwitchLink(sport, peer);
+        InstanceIdentifier<VtnLink> vlpath = isl.getVtnLinkPath();
+        InstanceIdentifier<PortLink> spath = isl.getSourceLinkPath();
+        InstanceIdentifier<PortLink> dpath = isl.getDestinationLinkPath();
+        List<PortLink> plinks = Collections.singletonList(isl.getSourceLink());
+        VtnPort expected = createVtnPortBuilder(sport).
+            setPortLink(plinks).build();
+        InstanceIdentifier<VtnPort> ppath = sport.getVtnPortIdentifier();
+        when(tx.read(oper, ppath)).thenReturn(getReadResult(expected));
+
+        assertEquals(expected, luctx.restoreVtnLinks(sport, vport));
+        verify(tx).read(oper, lpath);
+        verify(tx).read(oper, peerPath);
+        verify(tx).read(oper, rlpath);
+        verify(tx).read(oper, ppath);
+        verify(tx).put(oper, vlpath, isl.getVtnLink(), true);
+        verify(tx).put(oper, spath, isl.getSourceLink(), true);
+        verify(tx).put(oper, dpath, isl.getDestinationLink(), true);
+        verifyNoMoreInteractions(tx);
+
+        Map<SalPort, VtnPort> cache = reader.getCachedPorts();
+        assertEquals(null, cache.get(sport));
+        assertEquals(null, cache.get(peer));
+
+        Logger log = mock(Logger.class);
+        String msg = "VTN link has been restored from the MD-SAL " +
+            "network topology: {} -> {}";
+        when(log.isDebugEnabled()).thenReturn(true);
+        luctx.recordLogs(log);
+        verify(log).isDebugEnabled();
+        verify(log).info(msg, sport, peer);
+        verifyNoMoreInteractions(log);
+    }
+
+    /**
+     * Test case for
+     * {@link LinkUpdateContext#restoreVtnLinks(SalPort, VtnPort)}.
+     *
+     * <p>
+     *   Both links are restored to vtn-topology.
+     * </p>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testRestoreVtnLinksRestored() throws Exception {
+        ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
+        InventoryReader reader = new InventoryReader(tx);
+        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        TopologyKey topoKey = new TopologyKey(new TopologyId("flow:1"));
+        LinkUpdateContext luctx = new LinkUpdateContext(tx, reader);
+
+        SalPort sport = new SalPort(100L, 200L);
+        VtnPort vport = createVtnPortBuilder(sport).build();
+        SalPort peer = new SalPort(300L, 400L);
+        VtnPort vpeer = createVtnPortBuilder(peer).build();
+        reader.prefetch(sport, vport);
+        reader.prefetch(peer, vpeer);
+
+        InstanceIdentifier<VtnPort> peerPath = peer.getVtnPortIdentifier();
+        when(tx.read(oper, peerPath)).thenReturn(getReadResult(vpeer));
+
+        // No static topology configuration.
+        reader.prefetch((VtnStaticTopology)null);
+
+        Link link = newMdLink(sport, peer);
+        LinkId linkId = link.getLinkId();
+        InstanceIdentifier<Link> lpath = InstanceIdentifier.
+            builder(NetworkTopology.class).
+            child(Topology.class, topoKey).
+            child(Link.class, link.getKey()).
+            build();
+        when(tx.read(oper, lpath)).thenReturn(getReadResult(link));
+
+        Link rlink = newMdLink(peer, sport);
+        LinkId rlinkId = rlink.getLinkId();
+        InstanceIdentifier<Link> rlpath = InstanceIdentifier.
+            builder(NetworkTopology.class).
+            child(Topology.class, topoKey).
+            child(Link.class, rlink.getKey()).
+            build();
+        when(tx.read(oper, rlpath)).thenReturn(getReadResult(rlink));
+
+        // Both links should be restored.
+        InterSwitchLink isl1 = new InterSwitchLink(sport, peer);
+        InterSwitchLink isl2 = new InterSwitchLink(peer, sport);
+        InstanceIdentifier<VtnLink> vlpath1 = isl1.getVtnLinkPath();
+        InstanceIdentifier<VtnLink> vlpath2 = isl2.getVtnLinkPath();
+        InstanceIdentifier<PortLink> spath1 = isl1.getSourceLinkPath();
+        InstanceIdentifier<PortLink> spath2 = isl2.getSourceLinkPath();
+        InstanceIdentifier<PortLink> dpath1 = isl1.getDestinationLinkPath();
+        InstanceIdentifier<PortLink> dpath2 = isl2.getDestinationLinkPath();
+        List<PortLink> plinks = Arrays.asList(
+            isl1.getSourceLink(), isl2.getDestinationLink());
+        VtnPort expected = createVtnPortBuilder(sport).
+            setPortLink(plinks).build();
+        InstanceIdentifier<VtnPort> ppath = sport.getVtnPortIdentifier();
+        when(tx.read(oper, ppath)).thenReturn(getReadResult(expected));
+
+        assertEquals(expected, luctx.restoreVtnLinks(sport, vport));
+        verify(tx).read(oper, lpath);
+        verify(tx).read(oper, peerPath);
+        verify(tx).read(oper, rlpath);
+        verify(tx).read(oper, ppath);
+        verify(tx).put(oper, vlpath1, isl1.getVtnLink(), true);
+        verify(tx).put(oper, spath1, isl1.getSourceLink(), true);
+        verify(tx).put(oper, dpath1, isl1.getDestinationLink(), true);
+        verify(tx).put(oper, vlpath2, isl2.getVtnLink(), true);
+        verify(tx).put(oper, spath2, isl2.getSourceLink(), true);
+        verify(tx).put(oper, dpath2, isl2.getDestinationLink(), true);
+        verifyNoMoreInteractions(tx);
+
+        Map<SalPort, VtnPort> cache = reader.getCachedPorts();
+        assertEquals(null, cache.get(sport));
+        assertEquals(null, cache.get(peer));
+
+        Logger log = mock(Logger.class);
+        String msg = "VTN link has been restored from the MD-SAL " +
+            "network topology: {} -> {}";
+        when(log.isDebugEnabled()).thenReturn(true);
+        luctx.recordLogs(log);
+        verify(log).isDebugEnabled();
+        verify(log).info(msg, sport, peer);
+        verify(log).info(msg, peer, sport);
+        verifyNoMoreInteractions(log);
+    }
+
+    /**
+     * Test case for
+     * {@link LinkUpdateContext#restoreVtnLinks(SalPort, VtnPort)}.
+     *
+     * <p>
+     *   Both links are restored to ignored-links.
+     * </p>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testRestoreVtnLinksIgnored() throws Exception {
+        ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
+        InventoryReader reader = new InventoryReader(tx);
+        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        TopologyKey topoKey = new TopologyKey(new TopologyId("flow:1"));
+        LinkUpdateContext luctx = new LinkUpdateContext(tx, reader);
+
+        SalPort sport = new SalPort(100L, 200L);
+        VtnPort vport = createVtnPortBuilder(sport).build();
+        SalPort peer = new SalPort(300L, 400L);
+        VtnPort vpeer = createVtnPortBuilder(peer).build();
+        reader.prefetch(sport, vport);
+        reader.prefetch(peer, vpeer);
+
+        InstanceIdentifier<VtnPort> peerPath = peer.getVtnPortIdentifier();
+        when(tx.read(oper, peerPath)).thenReturn(getReadResult(vpeer));
+
+        // Peer is configured as static edge port.
+        VtnStaticTopology vstopo = new VtnStaticTopologyBuilder().
+            setStaticEdgePorts(newStaticEdgePorts(peer)).
+            build();
+        reader.prefetch(vstopo);
+
+        Link link = newMdLink(sport, peer);
+        LinkId linkId = link.getLinkId();
+        InstanceIdentifier<Link> lpath = InstanceIdentifier.
+            builder(NetworkTopology.class).
+            child(Topology.class, topoKey).
+            child(Link.class, link.getKey()).
+            build();
+        when(tx.read(oper, lpath)).thenReturn(getReadResult(link));
+
+        Link rlink = newMdLink(peer, sport);
+        LinkId rlinkId = rlink.getLinkId();
+        InstanceIdentifier<Link> rlpath = InstanceIdentifier.
+            builder(NetworkTopology.class).
+            child(Topology.class, topoKey).
+            child(Link.class, rlink.getKey()).
+            build();
+        when(tx.read(oper, rlpath)).thenReturn(getReadResult(rlink));
+
+        // Both links should be restored to ignored-links.
+        InterSwitchLink isl1 = new InterSwitchLink(sport, peer);
+        InterSwitchLink isl2 = new InterSwitchLink(peer, sport);
+        InstanceIdentifier<IgnoredLink> igpath1 = isl1.getIgnoredLinkPath();
+        InstanceIdentifier<IgnoredLink> igpath2 = isl2.getIgnoredLinkPath();
+        InstanceIdentifier<VtnPort> ppath = sport.getVtnPortIdentifier();
+        when(tx.read(oper, ppath)).thenReturn(getReadResult(vport));
+
+        assertEquals(vport, luctx.restoreVtnLinks(sport, vport));
+        verify(tx).read(oper, lpath);
+        verify(tx).read(oper, peerPath);
+        verify(tx).read(oper, rlpath);
+        verify(tx).read(oper, ppath);
+        verify(tx).put(oper, igpath1, isl1.getIgnoredLink(), true);
+        verify(tx).put(oper, igpath2, isl2.getIgnoredLink(), true);
+        verifyNoMoreInteractions(tx);
+
+        Map<SalPort, VtnPort> cache = reader.getCachedPorts();
+        assertEquals(null, cache.get(sport));
+        assertEquals(null, cache.get(peer));
+
+        Logger log = mock(Logger.class);
+        String msg = "VTN link has been restored from the " +
+            "MD-SAL network topology: {} -> {}";
+        when(log.isDebugEnabled()).thenReturn(true);
+        luctx.recordLogs(log);
+        verify(log).isDebugEnabled();
+        verify(log).info(msg, sport, peer);
+        verify(log).info(msg, peer, sport);
+
+        msg = "Ignore inter-switch link";
+        String cause = "Destination port is configured as static edge port.";
+        VtnLink vlink1 = isl1.getVtnLink();
+        VtnLink vlink2 = isl2.getVtnLink();
+        verify(log).
+            info("{}: {}: {} -> {}: cause={}", msg,
+                 vlink1.getLinkId().getValue(),
+                 vlink1.getSource().getValue(),
+                 vlink1.getDestination().getValue(), cause);
+        cause = "Source port is configured as static edge port.";
+        verify(log).
+            info("{}: {}: {} -> {}: cause={}", msg,
+                 vlink2.getLinkId().getValue(),
+                 vlink2.getSource().getValue(),
+                 vlink2.getDestination().getValue(), cause);
         verifyNoMoreInteractions(log);
     }
 }

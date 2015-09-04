@@ -47,9 +47,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TopologyId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.Topology;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.TopologyKey;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Link;
 
 /**
@@ -62,11 +60,6 @@ public final class TopologyListener
      */
     private static final Logger  LOG =
         LoggerFactory.getLogger(TopologyListener.class);
-
-    /**
-     * Network topology identifier to listen.
-     */
-    private static final String TOPOLOGY_ID = "flow:1";
 
     /**
      * Required event types.
@@ -126,11 +119,10 @@ public final class TopologyListener
             LinkUpdateContext luctx = null;
             if (!opt.isPresent()) {
                 // Read all inter-switch links in the MD-SAL datastore.
-                TopologyKey topoKey =
-                    new TopologyKey(new TopologyId(TOPOLOGY_ID));
                 InstanceIdentifier<Topology> topoPath = InstanceIdentifier.
                     builder(NetworkTopology.class).
-                    child(Topology.class, topoKey).build();
+                    child(Topology.class, LinkUpdateContext.OF_TOPOLOGY_KEY).
+                    build();
                 Topology topology =
                     DataStoreUtils.read(tx, oper, topoPath).orNull();
 
@@ -228,9 +220,9 @@ public final class TopologyListener
      */
     @Override
     protected InstanceIdentifier<Link> getWildcardPath() {
-        TopologyKey topoKey = new TopologyKey(new TopologyId(TOPOLOGY_ID));
         return InstanceIdentifier.builder(NetworkTopology.class).
-            child(Topology.class, topoKey).child(Link.class).build();
+            child(Topology.class, LinkUpdateContext.OF_TOPOLOGY_KEY).
+            child(Link.class).build();
     }
 
     /**

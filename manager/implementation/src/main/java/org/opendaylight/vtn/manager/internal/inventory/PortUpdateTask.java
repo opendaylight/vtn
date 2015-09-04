@@ -87,6 +87,15 @@ final class PortUpdateTask
             vport = new VtnPortBuilder(vport).
                 setPortLink(old.getPortLink()).
                 build();
+
+            if (!InventoryUtils.isEnabled(old) &&
+                InventoryUtils.isEnabledEdge(vport)) {
+                // Obsolete inter-switch link may be still present in
+                // network-topology container. We need to restore links here
+                // otherwise link information will be lost.
+                vport = linkUpdater.restoreVtnLinks(sport, vport);
+                assert vport != null;
+            }
         }
 
         // Read VTN node from the datastore.
