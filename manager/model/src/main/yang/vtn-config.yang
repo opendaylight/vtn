@@ -31,10 +31,13 @@ module vtn-config {
         description
           "The global configuration of the VTN Manager.";
 
-        leaf node-edge-wait {
+        leaf topology-wait {
             description
-              "The number of milliseconds to wait for node edges to be
-               detected.";
+              "The number of milliseconds to wait for completion of
+               inter-switch link detection by topology-manager.
+               When a physical switch port is changed to UP state,
+               the VTN Manager will ignore packets on that port for the
+               specified number of milliseconds.";
             type int32 {
                 range "0 .. 600000";
             }

@@ -15,11 +15,13 @@ import org.opendaylight.vtn.manager.util.EtherAddress;
  */
 public interface VTNConfig {
     /**
-     * Return the number of milliseconds to wait for node edges to be detected.
+     * Return the number of milliseconds to wait for completion of inter-switch
+     * link detection by topology-manager.
      *
-     * @return  The number of milliseconds to wait for node edges.
+     * @return  The number of milliseconds to wait for completion of
+     *          inter-switch link detection.
      */
-    int getNodeEdgeWait();
+    int getTopologyWait();
 
     /**
      * Return priority value for layer 2 flow entries.

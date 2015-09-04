@@ -44,9 +44,9 @@ public final class VTNConfigImpl implements VTNConfig {
     private static final int  UNDEFINED = -1;
 
     /**
-     * Default value for "node-edge-wait".
+     * Default value for "topology-wait".
      */
-    private static final int  DEFAULT_NODE_EDGE_WAIT = 3000;
+    private static final int  DEFAULT_TOPOLOGY_WAIT = 3000;
 
     /**
      * Default value for "l2-flow-priority".
@@ -85,9 +85,10 @@ public final class VTNConfigImpl implements VTNConfig {
     private static final String  RIGHT_ARROW = "->";
 
     /**
-     * The number of milliseconds to wait for node edges to be detected.
+     * The number of milliseconds to wait for completion of inter-switch link
+     * detection by topology-manager.
      */
-    private int  nodeEdgeWait;
+    private int  topologyWait;
 
     /**
      * Priority value of layer 2 flow entries.
@@ -140,8 +141,8 @@ public final class VTNConfigImpl implements VTNConfig {
      */
     public static VtnConfigBuilder fillDefault(VtnConfigBuilder builder,
                                                EtherAddress mac) {
-        if (builder.getNodeEdgeWait() == null) {
-            builder.setNodeEdgeWait(DEFAULT_NODE_EDGE_WAIT);
+        if (builder.getTopologyWait() == null) {
+            builder.setTopologyWait(DEFAULT_TOPOLOGY_WAIT);
         }
 
         if (builder.getL2FlowPriority() == null) {
@@ -208,7 +209,7 @@ public final class VTNConfigImpl implements VTNConfig {
         if (vcfg != null) {
             // This code can be more simplified if RESTCONF implements
             // value restriction check.
-            b.setNodeEdgeWait(vcfg.getNodeEdgeWait()).
+            b.setTopologyWait(vcfg.getTopologyWait()).
                 setL2FlowPriority(vcfg.getL2FlowPriority()).
                 setFlowModTimeout(vcfg.getFlowModTimeout()).
                 setBulkFlowModTimeout(vcfg.getBulkFlowModTimeout()).
@@ -231,8 +232,8 @@ public final class VTNConfigImpl implements VTNConfig {
     public static String diff(VTNConfig oldConf, VTNConfig newConf) {
         List<String> list = new ArrayList<>();
 
-        diff(list, "node-edge-wait", oldConf.getNodeEdgeWait(),
-             newConf.getNodeEdgeWait());
+        diff(list, "topology-wait", oldConf.getTopologyWait(),
+             newConf.getTopologyWait());
         diff(list, "l2-flow-priority", oldConf.getL2FlowPriority(),
              newConf.getL2FlowPriority());
         diff(list, "flow-mod-timeout", oldConf.getFlowModTimeout(),
@@ -284,7 +285,7 @@ public final class VTNConfigImpl implements VTNConfig {
      * </p>
      */
     public VTNConfigImpl() {
-        nodeEdgeWait = UNDEFINED;
+        topologyWait = UNDEFINED;
         l2FlowPriority = UNDEFINED;
         flowModTimeout = UNDEFINED;
         bulkFlowModTimeout = UNDEFINED;
@@ -321,7 +322,7 @@ public final class VTNConfigImpl implements VTNConfig {
      *              {@code vcfg}.
      */
     public VTNConfigImpl(VtnConfig vcfg, EtherAddress mac) {
-        nodeEdgeWait = decode(vcfg.getNodeEdgeWait());
+        topologyWait = decode(vcfg.getTopologyWait());
         l2FlowPriority = decode(vcfg.getL2FlowPriority());
         flowModTimeout = decode(vcfg.getFlowModTimeout());
         bulkFlowModTimeout = decode(vcfg.getBulkFlowModTimeout());
@@ -340,7 +341,7 @@ public final class VTNConfigImpl implements VTNConfig {
      */
     public VtnConfig toVtnConfig() {
         VtnConfigBuilder builder = new VtnConfigBuilder();
-        builder.setNodeEdgeWait(encode(nodeEdgeWait)).
+        builder.setTopologyWait(encode(topologyWait)).
             setL2FlowPriority(encode(l2FlowPriority)).
             setFlowModTimeout(encode(flowModTimeout)).
             setBulkFlowModTimeout(encode(bulkFlowModTimeout)).
@@ -395,7 +396,7 @@ public final class VTNConfigImpl implements VTNConfig {
         boolean result = false;
         if (o != null && getClass().equals(o.getClass())) {
             VTNConfigImpl vconf = (VTNConfigImpl)o;
-            if (nodeEdgeWait == vconf.nodeEdgeWait &&
+            if (topologyWait == vconf.topologyWait &&
                 initTimeout == vconf.initTimeout &&
                 maxRedirections == vconf.maxRedirections) {
                 result = (equalsFlowParams(vconf) &&
@@ -414,7 +415,7 @@ public final class VTNConfigImpl implements VTNConfig {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(nodeEdgeWait, l2FlowPriority, flowModTimeout,
+        return Objects.hash(topologyWait, l2FlowPriority, flowModTimeout,
                             bulkFlowModTimeout, initTimeout,
                             maxRedirections, controllerMacAddress);
     }
@@ -423,20 +424,20 @@ public final class VTNConfigImpl implements VTNConfig {
 
     /**
      * Return an {@link Integer} instance which represents the current value
-     * of "node-edge-wait".
+     * of "topology-wait".
      *
      * @return  An {@link Integer} value or {@code null}.
      * @deprecated
-     *     Only for JAXB. Use {@link #getNodeEdgeWait()} instead.
+     *     Only for JAXB. Use {@link #getTopologyWait()} instead.
      */
-    @XmlElement(name = "node-edge-wait")
-    public Integer getJaxbNodeEdgeWait() {
-        return encode(nodeEdgeWait);
+    @XmlElement(name = "topology-wait")
+    public Integer getJaxbTopologyWait() {
+        return encode(topologyWait);
     }
 
     /**
      * Set an {@link Integer} instance which represents the value of
-     * "node-edge-wait".
+     * "topology-wait".
      *
      * <p>
      *   This method is called by JAXB.
@@ -444,12 +445,12 @@ public final class VTNConfigImpl implements VTNConfig {
      *
      * @param value  An {@link Integer} value.
      */
-    void setJaxbNodeEdgeWait(Integer value) {
+    void setJaxbTopologyWait(Integer value) {
         if (value == null) {
-            nodeEdgeWait = UNDEFINED;
+            topologyWait = UNDEFINED;
         } else {
-            nodeEdgeWait = value.intValue();
-            createJaxbValue().setNodeEdgeWait(value);
+            topologyWait = value.intValue();
+            createJaxbValue().setTopologyWait(value);
         }
     }
 
@@ -699,8 +700,8 @@ public final class VTNConfigImpl implements VTNConfig {
      * {@inheritDoc}
      */
     @Override
-    public int getNodeEdgeWait() {
-        return intValue(nodeEdgeWait, DEFAULT_NODE_EDGE_WAIT);
+    public int getTopologyWait() {
+        return intValue(topologyWait, DEFAULT_TOPOLOGY_WAIT);
     }
 
     /**

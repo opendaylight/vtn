@@ -462,7 +462,7 @@ public class VTNInventoryManagerTest extends TestBase {
         SalPort sport = new SalPort(123L, 456L);
         VtnPort vportOld = new VtnPortBuilder().
             setId(sport.getNodeConnectorId()).
-            setEnabled(true).
+            setEnabled(false).
             setCost(1000L).
             build();
         VtnPort vportNew = new VtnPortBuilder().
@@ -490,6 +490,7 @@ public class VTNInventoryManagerTest extends TestBase {
             assertEquals(sport, ev.getSalPort());
             assertEquals(vportNew, ev.getVtnPort());
             assertEquals(null, ev.getInterSwitchLinkChange());
+            assertEquals(Boolean.TRUE, ev.getStateChange());
             assertEquals(VtnUpdateType.CHANGED, ev.getUpdateType());
             assertEquals(false, ev.isDisabled());
             verifyZeroInteractions(listeners[i]);
@@ -533,6 +534,7 @@ public class VTNInventoryManagerTest extends TestBase {
             assertEquals(sport, ev.getSalPort());
             assertEquals(vportNew, ev.getVtnPort());
             assertEquals(Boolean.TRUE, ev.getInterSwitchLinkChange());
+            assertEquals(null, ev.getStateChange());
             assertEquals(VtnUpdateType.CHANGED, ev.getUpdateType());
             assertEquals(false, ev.isDisabled());
             verifyZeroInteractions(listeners[i]);
@@ -571,6 +573,7 @@ public class VTNInventoryManagerTest extends TestBase {
             assertEquals(sport, ev.getSalPort());
             assertEquals(vportNew, ev.getVtnPort());
             assertEquals(Boolean.FALSE, ev.getInterSwitchLinkChange());
+            assertEquals(Boolean.FALSE, ev.getStateChange());
             assertEquals(VtnUpdateType.CHANGED, ev.getUpdateType());
             assertEquals(true, ev.isDisabled());
             verifyZeroInteractions(listeners[i]);
@@ -735,7 +738,8 @@ public class VTNInventoryManagerTest extends TestBase {
                     setCost(1000L).
                     build();
                 VtnPortEvent pev = new VtnPortEvent(
-                    null, vport, Boolean.FALSE, VtnUpdateType.CREATED);
+                    null, vport, Boolean.TRUE, Boolean.FALSE,
+                    VtnUpdateType.CREATED);
                 assertNull(createdPorts.put(sport, pev));
                 assertNull(created.put(sport.getVtnPortIdentifier(), vport));
             }
@@ -751,7 +755,8 @@ public class VTNInventoryManagerTest extends TestBase {
                     setCost(1000L).
                     build();
                 VtnPortEvent pev = new VtnPortEvent(
-                    null, vport, Boolean.TRUE, VtnUpdateType.CREATED);
+                    null, vport, Boolean.TRUE, Boolean.TRUE,
+                    VtnUpdateType.CREATED);
                 assertNull(createdPorts.put(sport, pev));
                 assertNull(created.put(sport.getVtnPortIdentifier(), vport));
             }
@@ -770,7 +775,8 @@ public class VTNInventoryManagerTest extends TestBase {
             setEnabled(true).
             build();
         VtnPortEvent pev =
-            new VtnPortEvent(null, vport, null, VtnUpdateType.CHANGED);
+            new VtnPortEvent(null, vport, Boolean.TRUE, null,
+                             VtnUpdateType.CHANGED);
         InstanceIdentifier<VtnPort> vpPath = sport.getVtnPortIdentifier();
         assertNull(changedPorts.put(sport, pev));
         assertNull(original.put(vpPath, vportOld));
@@ -787,7 +793,8 @@ public class VTNInventoryManagerTest extends TestBase {
         vport = new VtnPortBuilder(vportOld).
             setEnabled(false).
             build();
-        pev = new VtnPortEvent(null, vport, null, VtnUpdateType.CHANGED);
+        pev = new VtnPortEvent(null, vport, Boolean.FALSE, null,
+                               VtnUpdateType.CHANGED);
         vpPath = sport.getVtnPortIdentifier();
         assertNull(changedPorts.put(sport, pev));
         assertNull(original.put(vpPath, vportOld));
@@ -804,7 +811,7 @@ public class VTNInventoryManagerTest extends TestBase {
         vport = new VtnPortBuilder(vportOld).
             setPortLink(plinks).
             build();
-        pev = new VtnPortEvent(null, vport, Boolean.TRUE,
+        pev = new VtnPortEvent(null, vport, null, Boolean.TRUE,
                                VtnUpdateType.CHANGED);
         vpPath = sport.getVtnPortIdentifier();
         assertNull(changedPorts.put(sport, pev));
@@ -823,7 +830,7 @@ public class VTNInventoryManagerTest extends TestBase {
         vport = new VtnPortBuilder(vportOld).
             setPortLink(null).
             build();
-        pev = new VtnPortEvent(null, vport, Boolean.FALSE,
+        pev = new VtnPortEvent(null, vport, null, Boolean.FALSE,
                                VtnUpdateType.CHANGED);
         vpPath = sport.getVtnPortIdentifier();
         assertNull(changedPorts.put(sport, pev));
@@ -840,8 +847,7 @@ public class VTNInventoryManagerTest extends TestBase {
             setPortLink(plinks).
             setCost(1000L).
             build();
-        pev = new VtnPortEvent(null, vport, Boolean.TRUE,
-                               VtnUpdateType.REMOVED);
+        pev = new VtnPortEvent(null, vport, null, null, VtnUpdateType.REMOVED);
         vpPath = sport.getVtnPortIdentifier();
         assertNull(removedPorts.put(sport, pev));
         assertTrue(removed.add(sport.getVtnPortIdentifier()));
@@ -854,8 +860,7 @@ public class VTNInventoryManagerTest extends TestBase {
             setEnabled(true).
             setCost(1000L).
             build();
-        pev = new VtnPortEvent(null, vport, Boolean.FALSE,
-                               VtnUpdateType.REMOVED);
+        pev = new VtnPortEvent(null, vport, null, null, VtnUpdateType.REMOVED);
         vpPath = sport.getVtnPortIdentifier();
         assertNull(removedPorts.put(sport, pev));
         assertTrue(removed.add(sport.getVtnPortIdentifier()));
@@ -868,8 +873,7 @@ public class VTNInventoryManagerTest extends TestBase {
             setEnabled(false).
             setCost(10000L).
             build();
-        pev = new VtnPortEvent(null, vport, Boolean.FALSE,
-                               VtnUpdateType.REMOVED);
+        pev = new VtnPortEvent(null, vport, null, null, VtnUpdateType.REMOVED);
         vpPath = sport.getVtnPortIdentifier();
         assertNull(removedPorts.put(sport, pev));
         assertTrue(removed.add(sport.getVtnPortIdentifier()));
@@ -950,6 +954,7 @@ public class VTNInventoryManagerTest extends TestBase {
                 assertSame(expected.getVtnPort(), pev.getVtnPort());
                 assertEquals(expected.getInterSwitchLinkChange(),
                              pev.getInterSwitchLinkChange());
+                assertEquals(expected.getStateChange(), pev.getStateChange());
                 assertEquals(VtnUpdateType.CREATED, pev.getUpdateType());
                 assertEquals(expected.isDisabled(), pev.isDisabled());
             }
@@ -978,6 +983,7 @@ public class VTNInventoryManagerTest extends TestBase {
                 assertSame(expected.getVtnPort(), pev.getVtnPort());
                 assertEquals(expected.getInterSwitchLinkChange(),
                              pev.getInterSwitchLinkChange());
+                assertEquals(expected.getStateChange(), pev.getStateChange());
                 assertEquals(VtnUpdateType.CHANGED, pev.getUpdateType());
                 assertEquals(expected.isDisabled(), pev.isDisabled());
             }
@@ -1006,6 +1012,7 @@ public class VTNInventoryManagerTest extends TestBase {
                 assertSame(expected.getVtnPort(), pev.getVtnPort());
                 assertEquals(expected.getInterSwitchLinkChange(),
                              pev.getInterSwitchLinkChange());
+                assertEquals(expected.getStateChange(), pev.getStateChange());
                 assertEquals(VtnUpdateType.REMOVED, pev.getUpdateType());
                 assertEquals(true, pev.isDisabled());
             }
@@ -1150,7 +1157,17 @@ public class VTNInventoryManagerTest extends TestBase {
                                        "listener"));
             assertEquals(esport, ev.getSalPort());
             assertSame(evport, ev.getVtnPort());
-            assertEquals(Boolean.FALSE, ev.getInterSwitchLinkChange());
+            Boolean exIsl;
+            Boolean exState;
+            if (created) {
+                exIsl = Boolean.FALSE;
+                exState = Boolean.TRUE;
+            } else {
+                exIsl = null;
+                exState = null;
+            }
+            assertEquals(exIsl, ev.getInterSwitchLinkChange());
+            assertEquals(exState, ev.getStateChange());
             assertEquals(utype, ev.getUpdateType());
             assertEquals(!created, ev.isDisabled());
             verifyZeroInteractions(listeners[i]);
@@ -1192,9 +1209,64 @@ public class VTNInventoryManagerTest extends TestBase {
                                        "listener"));
             assertEquals(isport, ev.getSalPort());
             assertSame(ivport, ev.getVtnPort());
-            assertEquals(Boolean.TRUE, ev.getInterSwitchLinkChange());
+            Boolean exIsl;
+            Boolean exState;
+            if (created) {
+                exIsl = Boolean.TRUE;
+                exState = Boolean.TRUE;
+            } else {
+                exIsl = null;
+                exState = null;
+            }
+            assertEquals(exIsl, ev.getInterSwitchLinkChange());
+            assertEquals(exState, ev.getStateChange());
             assertEquals(utype, ev.getUpdateType());
             assertEquals(!created, ev.isDisabled());
+            verifyZeroInteractions(listeners[i]);
+        }
+        reset(vtnProvider);
+
+        // In case of inactive port event.
+        SalPort dsport = new SalPort(4444L, 123L);
+        VtnPort dvport = createVtnPortBuilder(dsport).
+            setEnabled(false).
+            setName("port-DOWN").
+            build();
+        IdentifiedData<VtnPort> dpdata =
+            new IdentifiedData<>(dsport.getVtnPortIdentifier(), dvport);
+        if (created) {
+            inventoryManager.onCreated(null, dpdata);
+        } else {
+            inventoryManager.onRemoved(null, dpdata);
+        }
+
+        // Verify delivered events.
+        ArgumentCaptor<VtnPortEvent> dpcaptor =
+            ArgumentCaptor.forClass(VtnPortEvent.class);
+        verify(vtnProvider, never()).post(isA(VtnNodeEvent.class));
+        verify(vtnProvider, times(nlisteners)).post(dpcaptor.capture());
+        pdelivered = dpcaptor.getAllValues();
+        assertEquals(listeners.length, pdelivered.size());
+        for (int i = 0; i < nlisteners; i++) {
+            VtnPortEvent ev = pdelivered.get(i);
+            assertEquals(listeners[i],
+                         getFieldValue(ev, VTNInventoryListener.class,
+                                       "listener"));
+            assertEquals(dsport, ev.getSalPort());
+            assertSame(dvport, ev.getVtnPort());
+            Boolean exIsl;
+            Boolean exState;
+            if (created) {
+                exIsl = Boolean.FALSE;
+                exState = Boolean.FALSE;
+            } else {
+                exIsl = null;
+                exState = null;
+            }
+            assertEquals(exIsl, ev.getInterSwitchLinkChange());
+            assertEquals(exState, ev.getStateChange());
+            assertEquals(utype, ev.getUpdateType());
+            assertEquals(true, ev.isDisabled());
             verifyZeroInteractions(listeners[i]);
         }
         reset(vtnProvider);

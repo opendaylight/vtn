@@ -65,9 +65,9 @@ public class VTNConfigManagerTest extends TestBase {
     private static final long  TASK_TIMEOUT = 5000;
 
     /**
-     * Default value for "node-edge-wait".
+     * Default value for "topology-wait".
      */
-    private static final int  DEFAULT_NODE_EDGE_WAIT = 3000;
+    private static final int  DEFAULT_TOPOLOGY_WAIT = 3000;
 
     /**
      * Default value for "l2-flow-priority".
@@ -221,7 +221,7 @@ public class VTNConfigManagerTest extends TestBase {
         int initTimeout = 6000;
         int maxRedirections = 1000;
         VtnConfig vcfg = new VtnConfigBuilder().
-            setNodeEdgeWait(nodeEdgeWait).
+            setTopologyWait(nodeEdgeWait).
             setL2FlowPriority(l2Priority).
             setFlowModTimeout(flowModTimeout).
             setBulkFlowModTimeout(bulkFlowModTimeout).
@@ -233,7 +233,7 @@ public class VTNConfigManagerTest extends TestBase {
         initProvider(vconf);
         assertEquals(true, configManager.isConfigProvider());
 
-        assertEquals(nodeEdgeWait, configManager.getNodeEdgeWait());
+        assertEquals(nodeEdgeWait, configManager.getTopologyWait());
         assertEquals(l2Priority, configManager.getL2FlowPriority());
         assertEquals(flowModTimeout, configManager.getFlowModTimeout());
         assertEquals(bulkFlowModTimeout,
@@ -262,7 +262,7 @@ public class VTNConfigManagerTest extends TestBase {
         initConsumer(vcfg, true);
         assertEquals(false, configManager.isConfigProvider());
 
-        assertEquals(DEFAULT_NODE_EDGE_WAIT, configManager.getNodeEdgeWait());
+        assertEquals(DEFAULT_TOPOLOGY_WAIT, configManager.getTopologyWait());
         assertEquals(DEFAULT_L2_FLOW_PRIORITY,
                      configManager.getL2FlowPriority());
         assertEquals(flowModTimeout, configManager.getFlowModTimeout());
@@ -295,7 +295,7 @@ public class VTNConfigManagerTest extends TestBase {
         initConsumer(vcfg, true);
         assertEquals(false, configManager.isConfigProvider());
 
-        assertEquals(DEFAULT_NODE_EDGE_WAIT, configManager.getNodeEdgeWait());
+        assertEquals(DEFAULT_TOPOLOGY_WAIT, configManager.getTopologyWait());
         assertEquals(DEFAULT_L2_FLOW_PRIORITY,
                      configManager.getL2FlowPriority());
         assertEquals(DEFAULT_FLOW_MOD_TIMEOUT,
@@ -514,22 +514,22 @@ public class VTNConfigManagerTest extends TestBase {
     }
 
     /**
-     * Test case for {@link VTNConfigManager#getNodeEdgeWait()}.
+     * Test case for {@link VTNConfigManager#getTopologyWait()}.
      */
     @Test
-    public void testGetNodeEdgeWait() {
+    public void testGetTopologyWait() {
         initProvider();
-        assertEquals(DEFAULT_NODE_EDGE_WAIT, configManager.getNodeEdgeWait());
+        assertEquals(DEFAULT_TOPOLOGY_WAIT, configManager.getTopologyWait());
 
         getOperationalListener();
         VTNConfigImpl vconf = currentConfig.get();
         VtnConfigBuilder builder = new VtnConfigBuilder(vconf.toVtnConfig());
         int[] values = {0, 10, 3000, 5000, 100000, 600000};
         for (int v: values) {
-            VtnConfig vcfg = builder.setNodeEdgeWait(v).build();
+            VtnConfig vcfg = builder.setTopologyWait(v).build();
             vconf = new VTNConfigImpl(vcfg);
             currentConfig.set(vconf);
-            assertEquals(v, configManager.getNodeEdgeWait());
+            assertEquals(v, configManager.getTopologyWait());
         }
     }
 

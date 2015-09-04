@@ -420,8 +420,8 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
      * {@inheritDoc}
      */
     @Override
-    public int getNodeEdgeWait() {
-        return current.get().getNodeEdgeWait();
+    public int getTopologyWait() {
+        return current.get().getTopologyWait();
     }
 
     /**

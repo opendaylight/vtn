@@ -38,6 +38,12 @@ public final class VtnPortEvent extends TxEvent {
     private final VtnPort  vtnPort;
 
     /**
+     * A {@link Boolean} value which describes the change of port running
+     * state.
+     */
+    private final Boolean  stateChange;
+
+    /**
      * A {@link Boolean} value which describes the change of inter-switch link
      * state.
      */
@@ -53,15 +59,27 @@ public final class VtnPortEvent extends TxEvent {
      *
      * @param l      A {@link VTNInventoryListener} instance.
      * @param vport  A {@link VtnPort} instance.
+     * @param state  A {@link Boolean} instance which describes the change of
+     *               running state of the given port.
+     *               Note that this argument is ignored if {@code type} is
+     *               {@link VtnUpdateType#REMOVED}.
      * @param isl    A {@link Boolean} instance which describes the change of
      *               inter-switch link state.
+     *               Note that this argument is ignored if {@code type} is
+     *               {@link VtnUpdateType#REMOVED}.
      * @param type   A {@link VtnUpdateType} instance.
      */
-    VtnPortEvent(VTNInventoryListener l, VtnPort vport, Boolean isl,
-                 VtnUpdateType type) {
+    VtnPortEvent(VTNInventoryListener l, VtnPort vport, Boolean state,
+                 Boolean isl, VtnUpdateType type) {
         listener = l;
         vtnPort = vport;
-        islChange = isl;
+        if (type == VtnUpdateType.REMOVED) {
+            stateChange = null;
+            islChange = null;
+        } else {
+            stateChange = state;
+            islChange = isl;
+        }
         updateType = type;
         salPort = SalPort.create(vport.getId());
     }
@@ -75,6 +93,7 @@ public final class VtnPortEvent extends TxEvent {
     VtnPortEvent(VTNInventoryListener l, VtnPortEvent ev) {
         listener = l;
         vtnPort = ev.vtnPort;
+        stateChange = ev.stateChange;
         islChange = ev.islChange;
         updateType = ev.updateType;
         salPort = ev.salPort;
@@ -101,6 +120,29 @@ public final class VtnPortEvent extends TxEvent {
 
     /**
      * Return a {@link Boolean} value which describes the change of
+     * running state of the switch port.
+     *
+     * @return
+     *   <ul>
+     *     <li>
+     *       {@link Boolean#TRUE} if the port status has been changed to UP
+     *       state.
+     *     </li>
+     *     <li>
+     *       {@link Boolean#FALSE} if the port status has been changed to DOWN
+     *       state.
+     *     </li>
+     *     <li>
+     *       {@code null} if the port status was not changed.
+     *     </li>
+     *   </ul>
+     */
+    public Boolean getStateChange() {
+        return stateChange;
+    }
+
+    /**
+     * Return a {@link Boolean} value which describes the change of
      * inter-switch link state.
      *
      * @return
@@ -113,7 +155,7 @@ public final class VtnPortEvent extends TxEvent {
      *       switch port.
      *     </li>
      *     <li>
-     *       {@code null} if the inter-switch link state did not changed.
+     *       {@code null} if the inter-switch link state was not changed.
      *     </li>
      *   </ul>
      */
