@@ -1,13 +1,14 @@
 /*
- * Copyright (c) 2013-2015 NEC Corporation
- * All rights reserved.
+ * Copyright (c) 2013, 2015 NEC Corporation.  All rights reserved.
  *
  * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License v1.0 which accompanies this
- * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+ * terms of the Eclipse Public License v1.0 which accompanies this distribution,
+ * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
 package org.opendaylight.vtn.manager.neutron;
+
+import java.util.ArrayList;
 
 import org.apache.felix.dm.Component;
 
@@ -19,6 +20,8 @@ import org.opendaylight.neutron.spi.INeutronNetworkAware;
 import org.opendaylight.neutron.spi.INeutronPortAware;
 import org.opendaylight.neutron.spi.INeutronPortCRUD;
 import org.opendaylight.neutron.spi.INeutronSubnetAware;
+import org.opendaylight.neutron.spi.INeutronSecurityGroupAware;
+import org.opendaylight.neutron.spi.INeutronSecurityRuleAware;
 
 import org.opendaylight.ovsdb.compatibility.plugin.api.OvsdbConfigurationService;
 import org.opendaylight.ovsdb.compatibility.plugin.api.OvsdbConnectionService;
@@ -59,6 +62,7 @@ public class Activator extends ComponentActivatorAbstractBase {
         Object[] res = {NetworkHandler.class,
                         PortHandler.class,
                         SubnetHandler.class,
+                        SecurityGroupHandler.class,
                         OVSDBPluginEventHandler.class};
         return res;
     }
@@ -102,6 +106,19 @@ public class Activator extends ComponentActivatorAbstractBase {
         if (imp.equals(SubnetHandler.class)) {
             // Export the services.
             c.setInterface(INeutronSubnetAware.class.getName(), null);
+
+            // Create service dependencies.
+            c.add(createServiceDependency().
+                  setService(IVTNManager.class).
+                  setCallbacks("setVTNManager", "unsetVTNManager").
+                  setRequired(true));
+        }
+        if (imp.equals(SecurityGroupHandler.class)) {
+            // Export the services.
+            ArrayList<String> list = new ArrayList<String>();
+            list.add(INeutronSecurityGroupAware.class.getName());
+            list.add(INeutronSecurityRuleAware.class.getName());
+            c.setInterface(list.toArray(new String[list.size()]), null);
 
             // Create service dependencies.
             c.add(createServiceDependency().
