@@ -80,11 +80,6 @@ public class VTNConfigManagerTest extends TestBase {
     private static final int  DEFAULT_FLOW_MOD_TIMEOUT = 3000;
 
     /**
-     * Default value for "remote-flow-mod-timeout".
-     */
-    private static final int  DEFAULT_REMOTE_FLOW_MOD_TIMEOUT = 5000;
-
-    /**
      * Default value for "bulk-flow-mod-timeout".
      */
     private static final int  DEFAULT_BULK_FLOW_MOD_TIMEOUT = 10000;
@@ -93,11 +88,6 @@ public class VTNConfigManagerTest extends TestBase {
      * Default value for "init-timeout".
      */
     private static final int  DEFAULT_INIT_TIMEOUT = 3000;
-
-    /**
-     * Default value for "cache-transaction-timeout".
-     */
-    private static final int  DEFAULT_CACHE_TRANSACTION_TIMEOUT = 10000;
 
     /**
      * Default value for "max-redirections".
@@ -227,19 +217,15 @@ public class VTNConfigManagerTest extends TestBase {
         int nodeEdgeWait = 5000;
         int l2Priority = 100;
         int flowModTimeout = 5000;
-        int remoteFlowModTimeout = 10000;
         int bulkFlowModTimeout = 20000;
         int initTimeout = 6000;
-        int cacheTimeout = 20000;
         int maxRedirections = 1000;
         VtnConfig vcfg = new VtnConfigBuilder().
             setNodeEdgeWait(nodeEdgeWait).
             setL2FlowPriority(l2Priority).
             setFlowModTimeout(flowModTimeout).
-            setRemoteFlowModTimeout(remoteFlowModTimeout).
             setBulkFlowModTimeout(bulkFlowModTimeout).
             setInitTimeout(initTimeout).
-            setCacheTransactionTimeout(cacheTimeout).
             setMaxRedirections(maxRedirections).
             setControllerMacAddress(ea.getMacAddress()).
             build();
@@ -250,12 +236,9 @@ public class VTNConfigManagerTest extends TestBase {
         assertEquals(nodeEdgeWait, configManager.getNodeEdgeWait());
         assertEquals(l2Priority, configManager.getL2FlowPriority());
         assertEquals(flowModTimeout, configManager.getFlowModTimeout());
-        assertEquals(remoteFlowModTimeout,
-                     configManager.getRemoteFlowModTimeout());
         assertEquals(bulkFlowModTimeout,
                      configManager.getBulkFlowModTimeout());
         assertEquals(initTimeout, configManager.getInitTimeout());
-        assertEquals(cacheTimeout, configManager.getCacheTransactionTimeout());
         assertEquals(maxRedirections, configManager.getMaxRedirections());
         assertEquals(ea, configManager.getControllerMacAddress());
     }
@@ -283,13 +266,9 @@ public class VTNConfigManagerTest extends TestBase {
         assertEquals(DEFAULT_L2_FLOW_PRIORITY,
                      configManager.getL2FlowPriority());
         assertEquals(flowModTimeout, configManager.getFlowModTimeout());
-        assertEquals(DEFAULT_REMOTE_FLOW_MOD_TIMEOUT,
-                     configManager.getRemoteFlowModTimeout());
         assertEquals(DEFAULT_BULK_FLOW_MOD_TIMEOUT,
                      configManager.getBulkFlowModTimeout());
         assertEquals(initTimeout, configManager.getInitTimeout());
-        assertEquals(DEFAULT_CACHE_TRANSACTION_TIMEOUT,
-                     configManager.getCacheTransactionTimeout());
         assertEquals(DEFAULT_MAX_REDIRECTIONS,
                      configManager.getMaxRedirections());
         assertEquals(getDefaultMacAddress(),
@@ -321,13 +300,9 @@ public class VTNConfigManagerTest extends TestBase {
                      configManager.getL2FlowPriority());
         assertEquals(DEFAULT_FLOW_MOD_TIMEOUT,
                      configManager.getFlowModTimeout());
-        assertEquals(DEFAULT_REMOTE_FLOW_MOD_TIMEOUT,
-                     configManager.getRemoteFlowModTimeout());
         assertEquals(DEFAULT_BULK_FLOW_MOD_TIMEOUT,
                      configManager.getBulkFlowModTimeout());
         assertEquals(DEFAULT_INIT_TIMEOUT, configManager.getInitTimeout());
-        assertEquals(DEFAULT_CACHE_TRANSACTION_TIMEOUT,
-                     configManager.getCacheTransactionTimeout());
         assertEquals(maxRedirections, configManager.getMaxRedirections());
         assertEquals(ea, configManager.getControllerMacAddress());
     }
@@ -601,27 +576,6 @@ public class VTNConfigManagerTest extends TestBase {
     }
 
     /**
-     * Test case for {@link VTNConfigManager#getRemoteFlowModTimeout()}.
-     */
-    @Test
-    public void testGetRemoteFlowModTimeout() {
-        initProvider();
-        assertEquals(DEFAULT_REMOTE_FLOW_MOD_TIMEOUT,
-                     configManager.getRemoteFlowModTimeout());
-
-        getOperationalListener();
-        VTNConfigImpl vconf = currentConfig.get();
-        VtnConfigBuilder builder = new VtnConfigBuilder(vconf.toVtnConfig());
-        int[] values = {1000, 2000, 40000, 60000};
-        for (int v: values) {
-            VtnConfig vcfg = builder.setRemoteFlowModTimeout(v).build();
-            vconf = new VTNConfigImpl(vcfg);
-            currentConfig.set(vconf);
-            assertEquals(v, configManager.getRemoteFlowModTimeout());
-        }
-    }
-
-    /**
      * Test case for {@link VTNConfigManager#getBulkFlowModTimeout()}.
      */
     @Test
@@ -659,27 +613,6 @@ public class VTNConfigManagerTest extends TestBase {
             vconf = new VTNConfigImpl(vcfg);
             currentConfig.set(vconf);
             assertEquals(v, configManager.getInitTimeout());
-        }
-    }
-
-    /**
-     * Test case for {@link VTNConfigManager#getCacheTransactionTimeout()}.
-     */
-    @Test
-    public void testGetCacheTransactionTimeout() {
-        initProvider();
-        assertEquals(DEFAULT_CACHE_TRANSACTION_TIMEOUT,
-                     configManager.getCacheTransactionTimeout());
-
-        getOperationalListener();
-        VTNConfigImpl vconf = currentConfig.get();
-        VtnConfigBuilder builder = new VtnConfigBuilder(vconf.toVtnConfig());
-        int[] values = {100, 200, 1000, 44444, 500000, 600000};
-        for (int v: values) {
-            VtnConfig vcfg = builder.setCacheTransactionTimeout(v).build();
-            vconf = new VTNConfigImpl(vcfg);
-            currentConfig.set(vconf);
-            assertEquals(v, configManager.getCacheTransactionTimeout());
         }
     }
 

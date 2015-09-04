@@ -59,17 +59,6 @@ module vtn-config {
             default 3000;
         }
 
-        leaf remote-flow-mod-timeout {
-            description
-              "The number of milliseconds to wait for remote cluster nodes
-               to finish modifying flow entries in a VTN flow.
-               *** Note that this parameter is obsolete and will be removed.";
-            type int32 {
-                range "1000 .. 60000";
-            }
-            default 5000;
-        }
-
         leaf bulk-flow-mod-timeout {
             description
               "The number of milliseconds to wait for completion of bulk
@@ -88,17 +77,6 @@ module vtn-config {
                 range "100 .. 600000";
             }
             default 3000;
-        }
-
-        leaf cache-transaction-timeout {
-            description
-              "The number of milliseconds to wait for cluster cache
-               transaction to be established.
-               *** Note that this parameter is obsolete and will be removed.";
-            type int32 {
-                range "100 .. 600000";
-            }
-            default 10000;
         }
 
         leaf max-redirections {

@@ -186,6 +186,12 @@ public class GlobalResourceManager
      */
     private abstract class ConfigTrans<T> extends CacheTransaction<T> {
         /**
+         * The number of milliseconds to wait for cluster cache transaction
+         * to be established.
+         */
+        private static final long  TX_TIMEOUT = 10000L;
+
+        /**
          * Determine whether the configuration was changed or not.
          */
         private boolean  changed = false;
@@ -196,7 +202,7 @@ public class GlobalResourceManager
          * @param config  A {@link VTNConfig} object.
          */
         private ConfigTrans(VTNConfig config) {
-            super(clusterService, config.getCacheTransactionTimeout());
+            super(clusterService, TX_TIMEOUT);
         }
 
         /**

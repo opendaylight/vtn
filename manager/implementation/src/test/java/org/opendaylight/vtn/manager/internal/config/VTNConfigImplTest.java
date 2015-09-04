@@ -95,20 +95,6 @@ public class VTNConfigImplTest extends TestBase {
         all.setFlowModTimeout(value);
         allTest.set(ConfigType.FLOW_MOD_TIMEOUT, value);
 
-        // Set remote-flow-mod-timeout.
-        value = 60000;
-        builder = new VtnConfigBuilder().setRemoteFlowModTimeout(value);
-        assertSame(builder, VTNConfigImpl.fillDefault(builder, mac));
-        new TestVtnConfigBuilder().
-            set(ConfigType.REMOTE_FLOW_MOD_TIMEOUT, value).
-            set(ConfigType.CONTROLLER_MAC_ADDRESS, defMac).fillDefault().
-            verify(builder);
-        assertEquals(null, builder.isInitState());
-
-        value = 1000;
-        all.setRemoteFlowModTimeout(value);
-        allTest.set(ConfigType.REMOTE_FLOW_MOD_TIMEOUT, value);
-
         // Set bulk-flow-mod-timeout.
         value = 600000;
         builder = new VtnConfigBuilder().setBulkFlowModTimeout(value);
@@ -135,20 +121,6 @@ public class VTNConfigImplTest extends TestBase {
         value = 100;
         all.setInitTimeout(value);
         allTest.set(ConfigType.INIT_TIMEOUT, value);
-
-        // Set cache-transaction-timeout.
-        value = 600000;
-        builder = new VtnConfigBuilder().setCacheTransactionTimeout(value);
-        assertSame(builder, VTNConfigImpl.fillDefault(builder, mac));
-        new TestVtnConfigBuilder().
-            set(ConfigType.CACHE_TRANSACTION_TIMEOUT, value).
-            set(ConfigType.CONTROLLER_MAC_ADDRESS, defMac).fillDefault().
-            verify(builder);
-        assertEquals(null, builder.isInitState());
-
-        value = 100;
-        all.setCacheTransactionTimeout(value);
-        allTest.set(ConfigType.CACHE_TRANSACTION_TIMEOUT, value);
 
         // Set max-redirections.
         value = 100000;
@@ -244,20 +216,6 @@ public class VTNConfigImplTest extends TestBase {
         all.setFlowModTimeout(value);
         allTest.set(ConfigType.FLOW_MOD_TIMEOUT, value);
 
-        // Set remote-flow-mod-timeout.
-        value = 60000;
-        vcfg = new VtnConfigBuilder().setRemoteFlowModTimeout(value).build();
-        builder = VTNConfigImpl.builder(vcfg, mac);
-        new TestVtnConfigBuilder().
-            set(ConfigType.REMOTE_FLOW_MOD_TIMEOUT, value).
-            set(ConfigType.CONTROLLER_MAC_ADDRESS, defMac).fillDefault().
-            verify(builder);
-        assertEquals(null, builder.isInitState());
-
-        value = 1000;
-        all.setRemoteFlowModTimeout(value);
-        allTest.set(ConfigType.REMOTE_FLOW_MOD_TIMEOUT, value);
-
         // Set bulk-flow-mod-timeout.
         value = 600000;
         vcfg = new VtnConfigBuilder().setBulkFlowModTimeout(value).build();
@@ -284,21 +242,6 @@ public class VTNConfigImplTest extends TestBase {
         value = 100;
         all.setInitTimeout(value);
         allTest.set(ConfigType.INIT_TIMEOUT, value);
-
-        // Set cache-transaction-timeout.
-        value = 600000;
-        vcfg = new VtnConfigBuilder().setCacheTransactionTimeout(value).
-            build();
-        builder = VTNConfigImpl.builder(vcfg, mac);
-        new TestVtnConfigBuilder().
-            set(ConfigType.CACHE_TRANSACTION_TIMEOUT, value).
-            set(ConfigType.CONTROLLER_MAC_ADDRESS, defMac).fillDefault().
-            verify(builder);
-        assertEquals(null, builder.isInitState());
-
-        value = 100;
-        all.setCacheTransactionTimeout(value);
-        allTest.set(ConfigType.CACHE_TRANSACTION_TIMEOUT, value);
 
         // Set max-redirections.
         value = 100000;
@@ -382,19 +325,6 @@ public class VTNConfigImplTest extends TestBase {
         all2.setFlowModTimeout(nv1);
         diffList.add("flow-mod-timeout=(" + nv + "->" + nv1 + ")");
 
-        // Change remote-flow-mod-timeout.
-        ov = vconfOld.getRemoteFlowModTimeout();
-        nv = 60000;
-        vcfg = new VtnConfigBuilder().setRemoteFlowModTimeout(nv).build();
-        vconfNew = new VTNConfigImpl(vcfg);
-        expected = "remote-flow-mod-timeout=(" + ov + "->" + nv + ")";
-        assertEquals(expected, VTNConfigImpl.diff(vconfOld, vconfNew));
-
-        nv1 = 44444;
-        all1.setRemoteFlowModTimeout(nv);
-        all2.setRemoteFlowModTimeout(nv1);
-        diffList.add("remote-flow-mod-timeout=(" + nv + "->" + nv1 + ")");
-
         // Change bulk-flow-mod-timeout.
         ov = vconfOld.getBulkFlowModTimeout();
         nv = 600000;
@@ -420,19 +350,6 @@ public class VTNConfigImplTest extends TestBase {
         all1.setInitTimeout(nv);
         all2.setInitTimeout(nv1);
         diffList.add("init-timeout=(" + nv + "->" + nv1 + ")");
-
-        // Change cache-transaction-timeout.
-        ov = vconfOld.getCacheTransactionTimeout();
-        nv = 600000;
-        vcfg = new VtnConfigBuilder().setCacheTransactionTimeout(nv).build();
-        vconfNew = new VTNConfigImpl(vcfg);
-        expected = "cache-transaction-timeout=(" + ov + "->" + nv + ")";
-        assertEquals(expected, VTNConfigImpl.diff(vconfOld, vconfNew));
-
-        nv1 = 7777;
-        all1.setCacheTransactionTimeout(nv);
-        all2.setCacheTransactionTimeout(nv1);
-        diffList.add("cache-transaction-timeout=(" + nv + "->" + nv1 + ")");
 
         // Change max-redirections.
         ov = vconfOld.getMaxRedirections();
@@ -556,19 +473,6 @@ public class VTNConfigImplTest extends TestBase {
             all.setFlowModTimeout(value);
             allTest.set(type, value);
 
-            // Set remote-flow-mod-timeout.
-            type = ConfigType.REMOTE_FLOW_MOD_TIMEOUT;
-            value = 60000;
-            vcfg = new VtnConfigBuilder().setRemoteFlowModTimeout(value).
-                build();
-            vconf = (mac == null)
-                ? new VTNConfigImpl(vcfg) : new VTNConfigImpl(vcfg, mac);
-            test.resetIntegers().set(type, value).verify(vconf);
-
-            value = 1200;
-            all.setRemoteFlowModTimeout(value);
-            allTest.set(type, value);
-
             // Set bulk-flow-mod-timeout.
             type = ConfigType.BULK_FLOW_MOD_TIMEOUT;
             value = 60000;
@@ -591,19 +495,6 @@ public class VTNConfigImplTest extends TestBase {
 
             value = 200;
             all.setInitTimeout(value);
-            allTest.set(type, value);
-
-            // Set cache-transaction-timeout.
-            type = ConfigType.CACHE_TRANSACTION_TIMEOUT;
-            value = 600000;
-            vcfg = new VtnConfigBuilder().setCacheTransactionTimeout(value).
-                build();
-            vconf = (mac == null)
-                ? new VTNConfigImpl(vcfg) : new VTNConfigImpl(vcfg, mac);
-            test.resetIntegers().set(type, value).verify(vconf);
-
-            value = 150;
-            all.setCacheTransactionTimeout(value);
             allTest.set(type, value);
 
             // Set max-redirections.
@@ -684,18 +575,6 @@ public class VTNConfigImplTest extends TestBase {
         all.setFlowModTimeout(value);
         allTest.set(ConfigType.FLOW_MOD_TIMEOUT, value);
 
-        // Set remote-flow-mod-timeout.
-        value = 60000;
-        vcfg = new VtnConfigBuilder().setRemoteFlowModTimeout(value).build();
-        vcfg = new VTNConfigImpl(vcfg).toVtnConfig();
-        new TestVtnConfigBuilder().
-            set(ConfigType.REMOTE_FLOW_MOD_TIMEOUT, value).verify(vcfg);
-        assertEquals(null, vcfg.isInitState());
-
-        value = 1000;
-        all.setRemoteFlowModTimeout(value);
-        allTest.set(ConfigType.REMOTE_FLOW_MOD_TIMEOUT, value);
-
         // Set bulk-flow-mod-timeout.
         value = 600000;
         vcfg = new VtnConfigBuilder().setBulkFlowModTimeout(value).build();
@@ -719,19 +598,6 @@ public class VTNConfigImplTest extends TestBase {
         value = 100;
         all.setInitTimeout(value);
         allTest.set(ConfigType.INIT_TIMEOUT, value);
-
-        // Set cache-transaction-timeout.
-        value = 600000;
-        vcfg = new VtnConfigBuilder().setCacheTransactionTimeout(value).
-            build();
-        vcfg = new VTNConfigImpl(vcfg).toVtnConfig();
-        new TestVtnConfigBuilder().
-            set(ConfigType.CACHE_TRANSACTION_TIMEOUT, value).verify(vcfg);
-        assertEquals(null, vcfg.isInitState());
-
-        value = 100;
-        all.setCacheTransactionTimeout(value);
-        allTest.set(ConfigType.CACHE_TRANSACTION_TIMEOUT, value);
 
         // Set max-redirections.
         value = 100000;
@@ -811,20 +677,6 @@ public class VTNConfigImplTest extends TestBase {
             testEquals(set, vconf1, vconf2);
         }
 
-        Integer[] remoteFlowModTimeouts = {
-            Integer.valueOf(1000), Integer.valueOf(1001),
-            Integer.valueOf(1002), Integer.valueOf(22222),
-            Integer.valueOf(44444), Integer.valueOf(59998),
-            Integer.valueOf(59999), Integer.valueOf(60000),
-        };
-        for (Integer v: remoteFlowModTimeouts) {
-            builder.setRemoteFlowModTimeout(v);
-            VTNConfigImpl vconf1 = new VTNConfigImpl(builder.build());
-            VTNConfigImpl vconf2 = new VTNConfigImpl(builder.build());
-            assertEquals(v.intValue(), vconf1.getRemoteFlowModTimeout());
-            testEquals(set, vconf1, vconf2);
-        }
-
         Integer[] bulkFlowModTimeouts = {
             Integer.valueOf(3000), Integer.valueOf(3001),
             Integer.valueOf(3002), Integer.valueOf(12345),
@@ -850,20 +702,6 @@ public class VTNConfigImplTest extends TestBase {
             VTNConfigImpl vconf1 = new VTNConfigImpl(builder.build());
             VTNConfigImpl vconf2 = new VTNConfigImpl(builder.build());
             assertEquals(v.intValue(), vconf1.getInitTimeout());
-            testEquals(set, vconf1, vconf2);
-        }
-
-        Integer[] cacheTimeouts = {
-            Integer.valueOf(100), Integer.valueOf(101), Integer.valueOf(102),
-            Integer.valueOf(22222), Integer.valueOf(333333),
-            Integer.valueOf(444555), Integer.valueOf(599998),
-            Integer.valueOf(599999), Integer.valueOf(600000),
-        };
-        for (Integer v: cacheTimeouts) {
-            builder.setCacheTransactionTimeout(v);
-            VTNConfigImpl vconf1 = new VTNConfigImpl(builder.build());
-            VTNConfigImpl vconf2 = new VTNConfigImpl(builder.build());
-            assertEquals(v.intValue(), vconf1.getCacheTransactionTimeout());
             testEquals(set, vconf1, vconf2);
         }
 
@@ -897,10 +735,8 @@ public class VTNConfigImplTest extends TestBase {
         }
 
         int expected = neWaits.length + l2Priorities.length +
-            flowModTimeouts.length + remoteFlowModTimeouts.length +
-            bulkFlowModTimeouts.length + initTimeouts.length +
-            cacheTimeouts.length + maxRedirections.length +
-            addrs.length + 1;
+            flowModTimeouts.length + bulkFlowModTimeouts.length +
+            initTimeouts.length + maxRedirections.length + addrs.length + 1;
         assertEquals(expected, set.size());
     }
 
@@ -938,6 +774,8 @@ public class VTNConfigImplTest extends TestBase {
             allTest.set(type, v).verify(vconf);
             assertEquals(all, vconf.getJaxbValue().build());
         }
+        vconf.setJaxbNodeEdgeWait(null);
+        assertEquals(null, vconf.getJaxbNodeEdgeWait());
 
         type = ConfigType.L2_FLOW_PRIORITY;
         Integer[] l2Priorities = {
@@ -960,6 +798,8 @@ public class VTNConfigImplTest extends TestBase {
             allTest.set(type, v).verify(vconf);
             assertEquals(all, vconf.getJaxbValue().build());
         }
+        vconf.setJaxbL2FlowPriority(null);
+        assertEquals(null, vconf.getJaxbL2FlowPriority());
 
         type = ConfigType.FLOW_MOD_TIMEOUT;
         Integer[] flowModTimeouts = {
@@ -983,29 +823,8 @@ public class VTNConfigImplTest extends TestBase {
             allTest.set(type, v).verify(vconf);
             assertEquals(all, vconf.getJaxbValue().build());
         }
-
-        type = ConfigType.REMOTE_FLOW_MOD_TIMEOUT;
-        Integer[] remoteFlowModTimeouts = {
-            Integer.valueOf(1000), Integer.valueOf(1001),
-            Integer.valueOf(1002), Integer.valueOf(22222),
-            Integer.valueOf(44444), Integer.valueOf(59998),
-            Integer.valueOf(59999), Integer.valueOf(60000),
-        };
-        for (Integer v: remoteFlowModTimeouts) {
-            VtnConfig vcfg = new VtnConfigBuilder().setRemoteFlowModTimeout(v).
-                build();
-            vconf = jaxbTest(new VTNConfigImpl(vcfg), VTNConfigImpl.class,
-                             XML_ROOT);
-            test.resetIntegers().set(type, v).verify(vconf);
-            assertEquals(vcfg, vconf.getJaxbValue().build());
-
-            allBuilder.setRemoteFlowModTimeout(v);
-            VtnConfig all = allBuilder.build();
-            vconf = jaxbTest(new VTNConfigImpl(all), VTNConfigImpl.class,
-                             XML_ROOT);
-            allTest.set(type, v).verify(vconf);
-            assertEquals(all, vconf.getJaxbValue().build());
-        }
+        vconf.setJaxbFlowModTimeout(null);
+        assertEquals(null, vconf.getJaxbFlowModTimeout());
 
         type = ConfigType.BULK_FLOW_MOD_TIMEOUT;
         Integer[] bulkFlowModTimeouts = {
@@ -1029,6 +848,8 @@ public class VTNConfigImplTest extends TestBase {
             allTest.set(type, v).verify(vconf);
             assertEquals(all, vconf.getJaxbValue().build());
         }
+        vconf.setJaxbBulkFlowModTimeout(null);
+        assertEquals(null, vconf.getJaxbBulkFlowModTimeout());
 
         type = ConfigType.INIT_TIMEOUT;
         Integer[] initTimeouts = {
@@ -1051,29 +872,8 @@ public class VTNConfigImplTest extends TestBase {
             allTest.set(type, v).verify(vconf);
             assertEquals(all, vconf.getJaxbValue().build());
         }
-
-        type = ConfigType.CACHE_TRANSACTION_TIMEOUT;
-        Integer[] cacheTimeouts = {
-            Integer.valueOf(100), Integer.valueOf(101), Integer.valueOf(102),
-            Integer.valueOf(22222), Integer.valueOf(333333),
-            Integer.valueOf(444555), Integer.valueOf(599998),
-            Integer.valueOf(599999), Integer.valueOf(600000),
-        };
-        for (Integer v: cacheTimeouts) {
-            VtnConfig vcfg = new VtnConfigBuilder().
-                setCacheTransactionTimeout(v).build();
-            vconf = jaxbTest(new VTNConfigImpl(vcfg), VTNConfigImpl.class,
-                             XML_ROOT);
-            test.resetIntegers().set(type, v).verify(vconf);
-            assertEquals(vcfg, vconf.getJaxbValue().build());
-
-            allBuilder.setCacheTransactionTimeout(v);
-            VtnConfig all = allBuilder.build();
-            vconf = jaxbTest(new VTNConfigImpl(all), VTNConfigImpl.class,
-                             XML_ROOT);
-            allTest.set(type, v).verify(vconf);
-            assertEquals(all, vconf.getJaxbValue().build());
-        }
+        vconf.setJaxbInitTimeout(null);
+        assertEquals(null, vconf.getJaxbInitTimeout());
 
         type = ConfigType.MAX_REDIRECTIONS;
         Integer[] maxRedirections = {
@@ -1097,6 +897,8 @@ public class VTNConfigImplTest extends TestBase {
             allTest.set(type, v).verify(vconf);
             assertEquals(all, vconf.getJaxbValue().build());
         }
+        vconf.setJaxbMaxRedirections(null);
+        assertEquals(null, vconf.getJaxbMaxRedirections());
 
         type = ConfigType.CONTROLLER_MAC_ADDRESS;
         String[] addrs = {
@@ -1163,14 +965,10 @@ public class VTNConfigImplTest extends TestBase {
                       add(XML_ROOT),
                       new XmlValueType("flow-mod-timeout", Integer.class).
                       add(XML_ROOT),
-                      new XmlValueType("remote-flow-mod-timeout",
-                                       Integer.class).add(XML_ROOT),
                       new XmlValueType("bulk-flow-mod-timeout", Integer.class).
                       add(XML_ROOT),
                       new XmlValueType("init-timeout", Integer.class).
                       add(XML_ROOT),
-                      new XmlValueType("cache-transaction-timeout",
-                                       Integer.class).add(XML_ROOT),
                       new XmlValueType("max-redirections", Integer.class).
                       add(XML_ROOT));
     }

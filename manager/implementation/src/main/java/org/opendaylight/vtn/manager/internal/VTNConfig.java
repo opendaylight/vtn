@@ -37,15 +37,6 @@ public interface VTNConfig {
     int getFlowModTimeout();
 
     /**
-     * Return the number of milliseconds to wait for remote cluster nodes to
-     * finish modifying flow entries in a VTN flow.
-     * Note that this parameter is obsolete and will be removed.
-     *
-     * @return  The number of milliseconds to wait.
-     */
-    int getRemoteFlowModTimeout();
-
-    /**
      * Return the number of milliseconds to wait for completion of bulk
      * FLOW_MOD requests.
      *
@@ -60,15 +51,6 @@ public interface VTNConfig {
      * @return  The number of milliseconds to wait.
      */
     int getInitTimeout();
-
-    /**
-     * Return the number of milliseconds to wait for cluster cache transaction
-     * to be established.
-     * Note that this parameter is obsolete and will be removed.
-     *
-     * @return  The number of milliseconds to wait.
-     */
-    int getCacheTransactionTimeout();
 
     /**
      * Return the maximum number of packet redirections per a flow.

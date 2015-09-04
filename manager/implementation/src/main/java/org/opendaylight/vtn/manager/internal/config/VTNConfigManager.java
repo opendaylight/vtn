@@ -444,14 +444,6 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
      * {@inheritDoc}
      */
     @Override
-    public int getRemoteFlowModTimeout() {
-        return current.get().getRemoteFlowModTimeout();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public int getBulkFlowModTimeout() {
         return current.get().getBulkFlowModTimeout();
     }
@@ -462,14 +454,6 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
     @Override
     public int getInitTimeout() {
         return current.get().getInitTimeout();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getCacheTransactionTimeout() {
-        return current.get().getCacheTransactionTimeout();
     }
 
     /**

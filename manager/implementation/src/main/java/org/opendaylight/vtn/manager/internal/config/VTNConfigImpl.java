@@ -59,11 +59,6 @@ public final class VTNConfigImpl implements VTNConfig {
     private static final int  DEFAULT_FLOW_MOD_TIMEOUT = 3000;
 
     /**
-     * Default value for "remote-flow-mod-timeout".
-     */
-    private static final int  DEFAULT_REMOTE_FLOW_MOD_TIMEOUT = 5000;
-
-    /**
      * Default value for "bulk-flow-mod-timeout".
      */
     private static final int  DEFAULT_BULK_FLOW_MOD_TIMEOUT = 10000;
@@ -72,11 +67,6 @@ public final class VTNConfigImpl implements VTNConfig {
      * Default value for "init-timeout".
      */
     private static final int  DEFAULT_INIT_TIMEOUT = 3000;
-
-    /**
-     * Default value for "cache-transaction-timeout".
-     */
-    private static final int  DEFAULT_CACHE_TRANSACTION_TIMEOUT = 10000;
 
     /**
      * Default value for "max-redirections".
@@ -111,13 +101,6 @@ public final class VTNConfigImpl implements VTNConfig {
     private int  flowModTimeout;
 
     /**
-     * The number of milliseconds to wait for remote cluster nodes to finish
-     * modifying flow entries in a VTN flow.
-     * Note that this parameter is obsolete and will be removed.
-     */
-    private int  remoteFlowModTimeout;
-
-    /**
      * The number of milliseconds to wait for completion of bulk FLOW_MOD
      * requests.
      */
@@ -128,13 +111,6 @@ public final class VTNConfigImpl implements VTNConfig {
      * to complete initialization.
      */
     private int  initTimeout;
-
-    /**
-     * The number of milliseconds to wait for cluster cache transaction to be
-     * established.
-     * Note that this parameter is obsolete and will be removed.
-     */
-    private int  cacheTransactionTimeout;
 
     /**
      * The maximum number of virtual node hops per a flow.
@@ -176,21 +152,12 @@ public final class VTNConfigImpl implements VTNConfig {
             builder.setFlowModTimeout(DEFAULT_FLOW_MOD_TIMEOUT);
         }
 
-        if (builder.getRemoteFlowModTimeout() == null) {
-            builder.setRemoteFlowModTimeout(DEFAULT_REMOTE_FLOW_MOD_TIMEOUT);
-        }
-
         if (builder.getBulkFlowModTimeout() == null) {
             builder.setBulkFlowModTimeout(DEFAULT_BULK_FLOW_MOD_TIMEOUT);
         }
 
         if (builder.getInitTimeout() == null) {
             builder.setInitTimeout(DEFAULT_INIT_TIMEOUT);
-        }
-
-        if (builder.getCacheTransactionTimeout() == null) {
-            builder.setCacheTransactionTimeout(
-                DEFAULT_CACHE_TRANSACTION_TIMEOUT);
         }
 
         if (builder.getMaxRedirections() == null) {
@@ -244,10 +211,8 @@ public final class VTNConfigImpl implements VTNConfig {
             b.setNodeEdgeWait(vcfg.getNodeEdgeWait()).
                 setL2FlowPriority(vcfg.getL2FlowPriority()).
                 setFlowModTimeout(vcfg.getFlowModTimeout()).
-                setRemoteFlowModTimeout(vcfg.getRemoteFlowModTimeout()).
                 setBulkFlowModTimeout(vcfg.getBulkFlowModTimeout()).
                 setInitTimeout(vcfg.getInitTimeout()).
-                setCacheTransactionTimeout(vcfg.getCacheTransactionTimeout()).
                 setMaxRedirections(vcfg.getMaxRedirections()).
                 setControllerMacAddress(vcfg.getControllerMacAddress());
         }
@@ -272,16 +237,10 @@ public final class VTNConfigImpl implements VTNConfig {
              newConf.getL2FlowPriority());
         diff(list, "flow-mod-timeout", oldConf.getFlowModTimeout(),
              newConf.getFlowModTimeout());
-        diff(list, "remote-flow-mod-timeout",
-             oldConf.getRemoteFlowModTimeout(),
-             newConf.getRemoteFlowModTimeout());
         diff(list, "bulk-flow-mod-timeout",
              oldConf.getBulkFlowModTimeout(), newConf.getBulkFlowModTimeout());
         diff(list, "init-timeout", oldConf.getInitTimeout(),
              newConf.getInitTimeout());
-        diff(list, "cache-transaction-timeout",
-             oldConf.getCacheTransactionTimeout(),
-             newConf.getCacheTransactionTimeout());
         diff(list, "max-redirections", oldConf.getMaxRedirections(),
              newConf.getMaxRedirections());
 
@@ -328,10 +287,8 @@ public final class VTNConfigImpl implements VTNConfig {
         nodeEdgeWait = UNDEFINED;
         l2FlowPriority = UNDEFINED;
         flowModTimeout = UNDEFINED;
-        remoteFlowModTimeout = UNDEFINED;
         bulkFlowModTimeout = UNDEFINED;
         initTimeout = UNDEFINED;
-        cacheTransactionTimeout = UNDEFINED;
         maxRedirections = UNDEFINED;
     }
 
@@ -367,10 +324,8 @@ public final class VTNConfigImpl implements VTNConfig {
         nodeEdgeWait = decode(vcfg.getNodeEdgeWait());
         l2FlowPriority = decode(vcfg.getL2FlowPriority());
         flowModTimeout = decode(vcfg.getFlowModTimeout());
-        remoteFlowModTimeout = decode(vcfg.getRemoteFlowModTimeout());
         bulkFlowModTimeout = decode(vcfg.getBulkFlowModTimeout());
         initTimeout = decode(vcfg.getInitTimeout());
-        cacheTransactionTimeout = decode(vcfg.getCacheTransactionTimeout());
         maxRedirections = decode(vcfg.getMaxRedirections());
         controllerMacAddress = decode(vcfg.getControllerMacAddress());
         if (mac != null && controllerMacAddress == null) {
@@ -388,10 +343,8 @@ public final class VTNConfigImpl implements VTNConfig {
         builder.setNodeEdgeWait(encode(nodeEdgeWait)).
             setL2FlowPriority(encode(l2FlowPriority)).
             setFlowModTimeout(encode(flowModTimeout)).
-            setRemoteFlowModTimeout(encode(remoteFlowModTimeout)).
             setBulkFlowModTimeout(encode(bulkFlowModTimeout)).
             setInitTimeout(encode(initTimeout)).
-            setCacheTransactionTimeout(encode(cacheTransactionTimeout)).
             setMaxRedirections(encode(maxRedirections)).
             setControllerMacAddress(encode(controllerMacAddress));
 
@@ -412,6 +365,22 @@ public final class VTNConfigImpl implements VTNConfig {
     }
 
     /**
+     * Determine whether flow related parameters in the given configuration
+     * are identical to parameters in this instance.
+     *
+     * @param vconf  A {@link VTNConfigImpl} instance to be compared.
+     * @return  {@code true} only if flow related parameters in {@code vconf}
+     *          are identical to parameters in this instance.
+     */
+    private boolean equalsFlowParams(VTNConfigImpl vconf) {
+        return (l2FlowPriority == vconf.l2FlowPriority &&
+                flowModTimeout == vconf.flowModTimeout &&
+                bulkFlowModTimeout == vconf.bulkFlowModTimeout);
+    }
+
+    // Object
+
+    /**
      * Determine whether the given object is identical to this object.
      *
      * @param o  An object to be compared.
@@ -422,21 +391,20 @@ public final class VTNConfigImpl implements VTNConfig {
         if (o == this) {
             return true;
         }
-        if (o == null || !getClass().equals(o.getClass())) {
-            return false;
+
+        boolean result = false;
+        if (o != null && getClass().equals(o.getClass())) {
+            VTNConfigImpl vconf = (VTNConfigImpl)o;
+            if (nodeEdgeWait == vconf.nodeEdgeWait &&
+                initTimeout == vconf.initTimeout &&
+                maxRedirections == vconf.maxRedirections) {
+                result = (equalsFlowParams(vconf) &&
+                          Objects.equals(controllerMacAddress,
+                                         vconf.controllerMacAddress));
+            }
         }
 
-        VTNConfigImpl vconf = (VTNConfigImpl)o;
-        return (nodeEdgeWait == vconf.nodeEdgeWait &&
-                l2FlowPriority == vconf.l2FlowPriority &&
-                flowModTimeout == vconf.flowModTimeout &&
-                remoteFlowModTimeout == vconf.remoteFlowModTimeout &&
-                bulkFlowModTimeout == vconf.bulkFlowModTimeout &&
-                initTimeout == vconf.initTimeout &&
-                cacheTransactionTimeout == vconf.cacheTransactionTimeout &&
-                maxRedirections == vconf.maxRedirections &&
-                Objects.equals(controllerMacAddress,
-                               vconf.controllerMacAddress));
+        return result;
     }
 
     /**
@@ -447,8 +415,7 @@ public final class VTNConfigImpl implements VTNConfig {
     @Override
     public int hashCode() {
         return Objects.hash(nodeEdgeWait, l2FlowPriority, flowModTimeout,
-                            remoteFlowModTimeout, bulkFlowModTimeout,
-                            initTimeout, cacheTransactionTimeout,
+                            bulkFlowModTimeout, initTimeout,
                             maxRedirections, controllerMacAddress);
     }
 
@@ -477,8 +444,7 @@ public final class VTNConfigImpl implements VTNConfig {
      *
      * @param value  An {@link Integer} value.
      */
-    @SuppressWarnings("unused")
-    private void setJaxbNodeEdgeWait(Integer value) {
+    void setJaxbNodeEdgeWait(Integer value) {
         if (value == null) {
             nodeEdgeWait = UNDEFINED;
         } else {
@@ -510,8 +476,7 @@ public final class VTNConfigImpl implements VTNConfig {
      *
      * @param value  An {@link Integer} value.
      */
-    @SuppressWarnings("unused")
-    private void setJaxbL2FlowPriority(Integer value) {
+    void setJaxbL2FlowPriority(Integer value) {
         if (value == null) {
             l2FlowPriority = UNDEFINED;
         } else {
@@ -543,46 +508,12 @@ public final class VTNConfigImpl implements VTNConfig {
      *
      * @param value  An {@link Integer} value.
      */
-    @SuppressWarnings("unused")
-    private void setJaxbFlowModTimeout(Integer value) {
+    void setJaxbFlowModTimeout(Integer value) {
         if (value == null) {
             flowModTimeout = UNDEFINED;
         } else {
             flowModTimeout = value.intValue();
             createJaxbValue().setFlowModTimeout(value);
-        }
-    }
-
-    /**
-     * Return an {@link Integer} instance which represents the current value
-     * of "remote-flow-mod-timeout".
-     *
-     * @return  An {@link Integer} value or {@code null}.
-     * @deprecated
-     *     Only for JAXB. Use {@link #getRemoteFlowModTimeout()} instead.
-     */
-    @XmlElement(name = "remote-flow-mod-timeout")
-    public Integer getJaxbRemoteFlowModTimeout() {
-        return encode(remoteFlowModTimeout);
-    }
-
-    /**
-     * Set an {@link Integer} instance which represents the value of
-     * "remote-flow-mod-timeout".
-     *
-     * <p>
-     *   This method is called by JAXB.
-     * </p>
-     *
-     * @param value  An {@link Integer} value.
-     */
-    @SuppressWarnings("unused")
-    private void setJaxbRemoteFlowModTimeout(Integer value) {
-        if (value == null) {
-            remoteFlowModTimeout = UNDEFINED;
-        } else {
-            remoteFlowModTimeout = value.intValue();
-            createJaxbValue().setRemoteFlowModTimeout(value);
         }
     }
 
@@ -609,8 +540,7 @@ public final class VTNConfigImpl implements VTNConfig {
      *
      * @param value  An {@link Integer} value.
      */
-    @SuppressWarnings("unused")
-    private void setJaxbBulkFlowModTimeout(Integer value) {
+    void setJaxbBulkFlowModTimeout(Integer value) {
         if (value == null) {
             bulkFlowModTimeout = UNDEFINED;
         } else {
@@ -642,46 +572,12 @@ public final class VTNConfigImpl implements VTNConfig {
      *
      * @param value  An {@link Integer} value.
      */
-    @SuppressWarnings("unused")
-    private void setJaxbInitTimeout(Integer value) {
+    void setJaxbInitTimeout(Integer value) {
         if (value == null) {
             initTimeout = UNDEFINED;
         } else {
             initTimeout = value.intValue();
             createJaxbValue().setInitTimeout(value);
-        }
-    }
-
-    /**
-     * Return an {@link Integer} instance which represents the current value
-     * of "cache-transaction-timeout".
-     *
-     * @return  An {@link Integer} value or {@code null}.
-     * @deprecated
-     *     Only for JAXB. Use {@link #getCacheTransactionTimeout()} instead.
-     */
-    @XmlElement(name = "cache-transaction-timeout")
-    public Integer getJaxbCacheTransactionTimeout() {
-        return encode(cacheTransactionTimeout);
-    }
-
-    /**
-     * Set an {@link Integer} instance which represents the value of
-     * "cache-transaction-timeout".
-     *
-     * <p>
-     *   This method is called by JAXB.
-     * </p>
-     *
-     * @param value  An {@link Integer} value.
-     */
-    @SuppressWarnings("unused")
-    private void setJaxbCacheTransactionTimeout(Integer value) {
-        if (value == null) {
-            cacheTransactionTimeout = UNDEFINED;
-        } else {
-            cacheTransactionTimeout = value.intValue();
-            createJaxbValue().setCacheTransactionTimeout(value);
         }
     }
 
@@ -708,8 +604,7 @@ public final class VTNConfigImpl implements VTNConfig {
      *
      * @param value  An {@link Integer} value.
      */
-    @SuppressWarnings("unused")
-    private void setJaxbMaxRedirections(Integer value) {
+    void setJaxbMaxRedirections(Integer value) {
         if (value == null) {
             maxRedirections = UNDEFINED;
         } else {
@@ -828,14 +723,6 @@ public final class VTNConfigImpl implements VTNConfig {
      * {@inheritDoc}
      */
     @Override
-    public int getRemoteFlowModTimeout() {
-        return intValue(remoteFlowModTimeout, DEFAULT_REMOTE_FLOW_MOD_TIMEOUT);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public int getBulkFlowModTimeout() {
         return intValue(bulkFlowModTimeout, DEFAULT_BULK_FLOW_MOD_TIMEOUT);
     }
@@ -846,15 +733,6 @@ public final class VTNConfigImpl implements VTNConfig {
     @Override
     public int getInitTimeout() {
         return intValue(initTimeout, DEFAULT_INIT_TIMEOUT);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getCacheTransactionTimeout() {
-        return intValue(cacheTransactionTimeout,
-                        DEFAULT_CACHE_TRANSACTION_TIMEOUT);
     }
 
     /**

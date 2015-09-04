@@ -44,14 +44,6 @@ public enum ConfigType {
 
     /**
      * A symbol which indicates the value returned by
-     * {@link org.opendaylight.vtn.manager.internal.VTNConfig#getRemoteFlowModTimeout()}.
-     */
-    REMOTE_FLOW_MOD_TIMEOUT("getRemoteFlowModTimeout",
-                            "remote-flow-mod-timeout", Integer.valueOf(5000),
-                            Integer.valueOf(1000), Integer.valueOf(60000)),
-
-    /**
-     * A symbol which indicates the value returned by
      * {@link org.opendaylight.vtn.manager.internal.VTNConfig#getBulkFlowModTimeout()}.
      */
     BULK_FLOW_MOD_TIMEOUT("getBulkFlowModTimeout", "bulk-flow-mod-timeout",
@@ -64,15 +56,6 @@ public enum ConfigType {
      */
     INIT_TIMEOUT("getInitTimeout", "init-timeout", Integer.valueOf(3000),
                  Integer.valueOf(100), Integer.valueOf(600000)),
-
-    /**
-     * A symbol which indicates the value returned by
-     * {@link org.opendaylight.vtn.manager.internal.VTNConfig#getCacheTransactionTimeout()}.
-     */
-    CACHE_TRANSACTION_TIMEOUT("getCacheTransactionTimeout",
-                              "cache-transaction-timeout",
-                              Integer.valueOf(10000), Integer.valueOf(100),
-                              Integer.valueOf(600000)),
 
     /**
      * A symbol which indicates the value returned by
