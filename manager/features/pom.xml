@@ -188,13 +188,14 @@
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
-      <artifactId>features-restconf</artifactId>
+      <artifactId>features-nsf</artifactId>
       <classifier>features</classifier>
       <type>xml</type>
     </dependency>
+
     <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>features-nsf</artifactId>
+      <groupId>org.opendaylight.netconf</groupId>
+      <artifactId>features-restconf</artifactId>
       <classifier>features</classifier>
       <type>xml</type>
     </dependency>

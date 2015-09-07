@@ -16,8 +16,8 @@
    xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.2.0 http://karaf.apache.org/xmlns/features/v1.2.0">
 
   <repository>mvn:org.opendaylight.controller/features-mdsal/${odl.mdsal.version}/xml/features</repository>
-  <repository>mvn:org.opendaylight.controller/features-restconf/${odl.mdsal.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.controller/features-nsf/${feature.nsf.version}/xml/features</repository>
+  <repository>mvn:org.opendaylight.netconf/features-restconf/${odl.netconf.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.neutron/features-neutron/${feature.neutron.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.ovsdb/features-ovsdb/${feature.ovsdb.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.openflowplugin/features-openflowplugin/${feature.openflowplugin.version}/xml/features</repository>
@@ -43,7 +43,7 @@
       description="OpenDaylight :: VTN Manager :: REST API"
       version='${project.version}'>
     <feature version="${project.version}">odl-vtn-manager</feature>
-    <feature version="${odl.mdsal.version}">odl-restconf</feature>
+    <feature version="${odl.netconf.version}">odl-restconf</feature>
     <bundle>mvn:org.opendaylight.vtn/manager.northbound/${project.version}</bundle>
   </feature>
 
