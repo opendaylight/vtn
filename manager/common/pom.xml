@@ -72,9 +72,6 @@
 
     <!-- Karaf features -->
     <feature.nsf.version>0.6.0-SNAPSHOT</feature.nsf.version>
-    <feature.ovsdb.version>1.2.0-SNAPSHOT</feature.ovsdb.version>
-    <feature.neutron.version>0.6.0-SNAPSHOT</feature.neutron.version>
-    <feature.test.version>0.8.0-SNAPSHOT</feature.test.version>
 
     <!-- ODL Branding -->
     <branding.version>1.2.0-SNAPSHOT</branding.version>
@@ -88,6 +85,8 @@
     <odl.yangtools.version>0.8.0-SNAPSHOT</odl.yangtools.version>
     <odl.netconf.version>1.3.0-SNAPSHOT</odl.netconf.version>
     <odl.openflowplugin.version>0.2.0-SNAPSHOT</odl.openflowplugin.version>
+    <odl.neutron.version>0.6.0-SNAPSHOT</odl.neutron.version>
+    <odl.ovsdb.version>1.2.1-SNAPSHOT</odl.ovsdb.version>
   </properties>
 
   <profiles>
@@ -743,13 +742,6 @@
       </dependency>
 
       <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>opendaylight-karaf-empty</artifactId>
-        <version>${karaf.empty.version}</version>
-        <type>zip</type>
-      </dependency>
-
-      <dependency>
         <groupId>org.opendaylight.controller.thirdparty</groupId>
         <artifactId>net.sf.jung2</artifactId>
         <version>2.0.1</version>
@@ -802,44 +794,44 @@
       <dependency>
         <groupId>org.opendaylight.neutron</groupId>
         <artifactId>neutron-spi</artifactId>
-        <version>0.6.0-SNAPSHOT</version>
+        <version>${odl.neutron.version}</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.neutron</groupId>
         <artifactId>transcriber</artifactId>
-        <version>0.6.0-SNAPSHOT</version>
+        <version>${odl.neutron.version}</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.neutron</groupId>
         <artifactId>model</artifactId>
-        <version>0.6.0-SNAPSHOT</version>
+        <version>${odl.neutron.version}</version>
       </dependency>
 
       <!-- OpenDaylight OVSDB project -->
       <dependency>
         <groupId>org.opendaylight.ovsdb</groupId>
         <artifactId>plugin</artifactId>
-        <version>1.2.0-SNAPSHOT</version>
+        <version>${odl.ovsdb.version}</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.ovsdb</groupId>
         <artifactId>ovsdb-plugin-compatibility-layer</artifactId>
-        <version>1.2.0-SNAPSHOT</version>
+        <version>${odl.ovsdb.version}</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.ovsdb</groupId>
         <artifactId>library</artifactId>
-        <version>1.2.0-SNAPSHOT</version>
+        <version>${odl.ovsdb.version}</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.ovsdb</groupId>
         <artifactId>schema.openvswitch</artifactId>
-        <version>1.2.0-SNAPSHOT</version>
+        <version>${odl.ovsdb.version}</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.ovsdb</groupId>
         <artifactId>schema.hardwarevtep</artifactId>
-        <version>1.2.0-SNAPSHOT</version>
+        <version>${odl.ovsdb.version}</version>
       </dependency>
 
       <!-- Karaf features -->
@@ -883,6 +875,13 @@
         <artifactId>opendaylight-karaf-resources</artifactId>
         <version>${karaf.resources.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.opendaylight.controller</groupId>
+        <artifactId>opendaylight-karaf-empty</artifactId>
+        <version>${karaf.empty.version}</version>
+        <type>zip</type>
+        <scope>test</scope>
+      </dependency>
 
       <dependency>
         <groupId>org.opendaylight.netconf</groupId>
@@ -895,7 +894,7 @@
       <dependency>
         <groupId>org.opendaylight.neutron</groupId>
         <artifactId>features-neutron</artifactId>
-        <version>${feature.neutron.version}</version>
+        <version>${odl.neutron.version}</version>
         <classifier>features</classifier>
         <type>xml</type>
       </dependency>
@@ -903,7 +902,7 @@
       <dependency>
         <groupId>org.opendaylight.ovsdb</groupId>
         <artifactId>features-ovsdb</artifactId>
-        <version>${feature.ovsdb.version}</version>
+        <version>${odl.ovsdb.version}</version>
         <classifier>features</classifier>
         <type>xml</type>
       </dependency>

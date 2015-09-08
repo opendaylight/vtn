@@ -233,6 +233,7 @@
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>opendaylight-karaf-empty</artifactId>
       <type>zip</type>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>
