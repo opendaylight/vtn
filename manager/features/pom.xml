@@ -214,6 +214,15 @@
       <type>xml</type>
     </dependency>
 
+    <!-- Tentative fix for missing dependency in features-ovsdb. -->
+    <dependency>
+      <groupId>org.opendaylight.ovsdb</groupId>
+      <artifactId>library-features</artifactId>
+      <version>${odl.ovsdb.version}</version>
+      <classifier>features</classifier>
+      <type>xml</type>
+    </dependency>
+
     <dependency>
       <groupId>org.opendaylight.openflowplugin</groupId>
       <artifactId>features-openflowplugin</artifactId>
@@ -233,6 +242,7 @@
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>opendaylight-karaf-empty</artifactId>
       <type>zip</type>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>
