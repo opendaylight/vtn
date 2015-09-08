@@ -207,11 +207,6 @@
       <artifactId>forwardingrules-manager</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.opendaylight.openflowplugin.legacy</groupId>
-      <artifactId>sal-compatibility</artifactId>
-    </dependency>
-
     <!-- OpenDaylight neutron project -->
     <dependency>
       <groupId>org.opendaylight.neutron</groupId>
