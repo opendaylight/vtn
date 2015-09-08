@@ -18,8 +18,8 @@
   <repository>mvn:org.opendaylight.controller/features-mdsal/${odl.mdsal.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.controller/features-nsf/${feature.nsf.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.netconf/features-restconf/${odl.netconf.version}/xml/features</repository>
-  <repository>mvn:org.opendaylight.neutron/features-neutron/${feature.neutron.version}/xml/features</repository>
-  <repository>mvn:org.opendaylight.ovsdb/features-ovsdb/${feature.ovsdb.version}/xml/features</repository>
+  <repository>mvn:org.opendaylight.neutron/features-neutron/${odl.neutron.version}/xml/features</repository>
+  <repository>mvn:org.opendaylight.ovsdb/features-ovsdb/${odl.ovsdb.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.openflowplugin/features-openflowplugin/${odl.openflowplugin.version}/xml/features</repository>
 
   <feature
@@ -49,15 +49,15 @@
       name='odl-vtn-manager-neutron'
       description="OpenDaylight :: VTN Manager :: Neutron Interface"
       version='${project.version}'>
-    <feature version='${feature.neutron.version}'>odl-neutron-northbound-api</feature>
-    <feature version="${feature.neutron.version}">odl-neutron-service</feature>
-    <feature version='${feature.neutron.version}'>odl-neutron-spi</feature>
-    <feature version='${feature.neutron.version}'>odl-neutron-transcriber</feature>
-    <feature version='${feature.ovsdb.version}'>odl-ovsdb-all</feature>
+    <feature version='${odl.neutron.version}'>odl-neutron-northbound-api</feature>
+    <feature version="${odl.neutron.version}">odl-neutron-service</feature>
+    <feature version='${odl.neutron.version}'>odl-neutron-spi</feature>
+    <feature version='${odl.neutron.version}'>odl-neutron-transcriber</feature>
+    <feature version='${odl.ovsdb.version}'>odl-ovsdb-all</feature>
     <feature version="${project.version}">odl-vtn-manager</feature>
     <bundle>mvn:org.opendaylight.vtn/manager.neutron/${project.version}</bundle>
 
     <!-- TODO: Remove the following bundle, since this bundle is not supported in Beryllium -->
-    <bundle>mvn:org.opendaylight.ovsdb/ovsdb-plugin-compatibility-layer/1.2.0-SNAPSHOT</bundle>
+    <bundle>mvn:org.opendaylight.ovsdb/ovsdb-plugin-compatibility-layer/${odl.ovsdb.version}</bundle>
   </feature>
 </features>
