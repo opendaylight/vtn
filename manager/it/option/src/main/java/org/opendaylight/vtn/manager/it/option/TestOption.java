@@ -156,12 +156,6 @@ public final class TestOption {
         "org.opendaylight.openflowplugin.applications";
 
     /**
-     * Group ID for legacy applications provided by openflowplugin.
-     */
-    private static final String  OPENFLOW_LEGACY =
-        "org.opendaylight.openflowplugin.legacy";
-
-    /**
      * Group ID for neutron bundles.
      */
     private static final String  NEUTRON = "org.opendaylight.neutron";
@@ -223,34 +217,10 @@ public final class TestOption {
             mavenBundle(TestHelper.CONTROLLER,
                         "clustering.services-implementation"),
             mavenBundle(TestHelper.CONTROLLER, "sal"),
-            mavenBundle(TestHelper.CONTROLLER, "sal.implementation"),
-            mavenBundle(TestHelper.CONTROLLER, "sal.connection"),
-            mavenBundle(TestHelper.CONTROLLER, "sal.connection.implementation"),
-            mavenBundle(TestHelper.CONTROLLER, "sal.networkconfiguration"),
-            mavenBundle(TestHelper.CONTROLLER,
-                        "sal.networkconfiguration.implementation"),
-            mavenBundle(TestHelper.CONTROLLER, "connectionmanager"),
-            mavenBundle(TestHelper.CONTROLLER,
-                        "connectionmanager.implementation"),
-            mavenBundle(TestHelper.CONTROLLER, "switchmanager"),
-            mavenBundle(TestHelper.CONTROLLER, "switchmanager.implementation"),
-            mavenBundle(TestHelper.CONTROLLER, "forwardingrulesmanager"),
-            mavenBundle(TestHelper.CONTROLLER,
-                        "forwardingrulesmanager.implementation"),
-            mavenBundle(TestHelper.CONTROLLER,
-                        "routing.dijkstra_implementation"),
-            mavenBundle(TestHelper.CONTROLLER, "topologymanager"),
             mavenBundle(TestHelper.CONTROLLER, "clustering.stub"),
-            mavenBundle(TestHelper.CONTROLLER, "forwarding.staticrouting"),
-            mavenBundle(TestHelper.CONTROLLER, "statisticsmanager"),
-            mavenBundle(TestHelper.CONTROLLER,
-                        "statisticsmanager.implementation"),
 
             // hosttracker.implementation is not mandatory.
             mavenBundle(TestHelper.CONTROLLER, "hosttracker"),
-
-            // AD-SAL requires MD-SAL compatibility bundle.
-            mavenBundle(OPENFLOW_LEGACY, "sal-compatibility"),
 
             mavenBundle(CONTROLLER_THIRD_PARTY, "net.sf.jung2"),
 
@@ -505,6 +475,7 @@ public final class TestOption {
             mavenBundle(ECLIPSELINK, "javax.persistence"),
 
             // AD-SAL NorthBound API bundles.
+            mavenBundle(TestHelper.CONTROLLER, "switchmanager"),
             mavenBundle(TestHelper.CONTROLLER, "usermanager"),
             mavenBundle(TestHelper.CONTROLLER, "usermanager.implementation"),
             mavenBundle(TestHelper.CONTROLLER, "security").noStart(),

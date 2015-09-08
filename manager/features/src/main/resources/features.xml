@@ -20,17 +20,15 @@
   <repository>mvn:org.opendaylight.netconf/features-restconf/${odl.netconf.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.neutron/features-neutron/${feature.neutron.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.ovsdb/features-ovsdb/${feature.ovsdb.version}/xml/features</repository>
-  <repository>mvn:org.opendaylight.openflowplugin/features-openflowplugin/${feature.openflowplugin.version}/xml/features</repository>
-  <repository>mvn:org.opendaylight.openflowplugin.legacy/features-legacy/${feature.openflowplugin.version}/xml/features</repository>
+  <repository>mvn:org.opendaylight.openflowplugin/features-openflowplugin/${odl.openflowplugin.version}/xml/features</repository>
 
   <feature
       name='odl-vtn-manager'
       description="OpenDaylight :: VTN Manager :: Java API"
       version='${project.version}'>
     <feature version="${odl.mdsal.version}">odl-mdsal-broker</feature>
-    <feature version="${feature.openflowplugin.version}">odl-openflowplugin-adsal-compatibility-all</feature>
-    <feature version="${feature.openflowplugin.version}">odl-openflowplugin-flow-services</feature>
-    <feature version="${feature.openflowplugin.version}">odl-openflowplugin-nsf-model</feature>
+    <feature version="${odl.openflowplugin.version}">odl-openflowplugin-flow-services</feature>
+    <feature version="${odl.openflowplugin.version}">odl-openflowplugin-nsf-model</feature>
     <feature version="${feature.nsf.version}">odl-nsf-service</feature>
     <bundle>mvn:org.opendaylight.vtn/manager/${project.version}</bundle>
     <bundle>mvn:org.opendaylight.vtn/manager.model/${project.version}</bundle>

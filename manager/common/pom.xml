@@ -73,7 +73,6 @@
     <!-- Karaf features -->
     <feature.nsf.version>0.6.0-SNAPSHOT</feature.nsf.version>
     <feature.ovsdb.version>1.2.0-SNAPSHOT</feature.ovsdb.version>
-    <feature.openflowplugin.version>0.2.0-SNAPSHOT</feature.openflowplugin.version>
     <feature.neutron.version>0.6.0-SNAPSHOT</feature.neutron.version>
     <feature.test.version>0.8.0-SNAPSHOT</feature.test.version>
 
@@ -88,6 +87,7 @@
     <odl.config.version>0.4.0-SNAPSHOT</odl.config.version>
     <odl.yangtools.version>0.8.0-SNAPSHOT</odl.yangtools.version>
     <odl.netconf.version>1.3.0-SNAPSHOT</odl.netconf.version>
+    <odl.openflowplugin.version>0.2.0-SNAPSHOT</odl.openflowplugin.version>
   </properties>
 
   <profiles>
@@ -793,7 +793,7 @@
       <dependency>
         <groupId>org.opendaylight.openflowplugin</groupId>
         <artifactId>openflowplugin-artifacts</artifactId>
-        <version>0.2.0-SNAPSHOT</version>
+        <version>${odl.openflowplugin.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -904,14 +904,6 @@
         <groupId>org.opendaylight.ovsdb</groupId>
         <artifactId>features-ovsdb</artifactId>
         <version>${feature.ovsdb.version}</version>
-        <classifier>features</classifier>
-        <type>xml</type>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.openflowplugin.legacy</groupId>
-        <artifactId>features-legacy</artifactId>
-        <version>${feature.openflowplugin.version}</version>
         <classifier>features</classifier>
         <type>xml</type>
       </dependency>

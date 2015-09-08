@@ -104,38 +104,6 @@
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
-      <artifactId>sal.implementation</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>sal.connection</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>sal.connection.implementation</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>sal.networkconfiguration</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>sal.networkconfiguration.implementation</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>connectionmanager</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>connectionmanager.implementation</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>forwarding.staticrouting</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
       <artifactId>clustering.services</artifactId>
     </dependency>
     <dependency>
@@ -160,23 +128,7 @@
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
-      <artifactId>routing.dijkstra_implementation</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>forwardingrulesmanager</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>forwardingrulesmanager.implementation</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
       <artifactId>hosttracker</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>hosttracker.implementation</artifactId>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
@@ -192,22 +144,6 @@
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
-      <artifactId>switchmanager.implementation</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>statisticsmanager</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>statisticsmanager.implementation</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>topologymanager</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
       <artifactId>usermanager</artifactId>
     </dependency>
     <dependency>
@@ -219,6 +155,7 @@
       <artifactId>security</artifactId>
     </dependency>
 
+    <!-- OpenDaylight third-party modules -->
     <dependency>
       <groupId>org.opendaylight.controller.thirdparty</groupId>
       <artifactId>net.sf.jung2</artifactId>
@@ -226,10 +163,6 @@
     <dependency>
       <groupId>org.opendaylight.controller.thirdparty</groupId>
       <artifactId>com.sun.jersey.jersey-servlet</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>protocol_plugins.stub</artifactId>
     </dependency>
 
     <!-- OpenDaylight YANG Tools -->

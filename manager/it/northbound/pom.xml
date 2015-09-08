@@ -68,10 +68,6 @@
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
-      <artifactId>protocol_plugins.stub</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
       <artifactId>bundlescanner</artifactId>
     </dependency>
     <dependency>

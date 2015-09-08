@@ -220,12 +220,6 @@
       <classifier>features</classifier>
       <type>xml</type>
     </dependency>
-    <dependency>
-      <groupId>org.opendaylight.openflowplugin.legacy</groupId>
-      <artifactId>features-legacy</artifactId>
-      <classifier>features</classifier>
-      <type>xml</type>
-    </dependency>
 
     <!-- test to validate features.xml -->
     <dependency>
