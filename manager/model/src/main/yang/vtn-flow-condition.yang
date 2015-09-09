@@ -283,10 +283,10 @@ module vtn-flow-condition {
 
            `status' in RPC output descripts the result of the operation.
 
-           CREATED indicates that the specified flow condition has been newly
-           created.
+           `CREATED' indicates that the specified flow condition has been
+           newly created.
 
-           CHANGED indicates that existing flow condition configuraiton has
+           `CHANGED' indicates that existing flow condition configuraiton has
            been successfully changed.
 
            Null indicates that existing flow condition configuration has not
@@ -311,16 +311,17 @@ module vtn-flow-condition {
                   "Describes how to update the specified flow condition if it
                    already exists.
 
-                   If SET is specified, the given flow condition configuration
-                   will be applied as specified. In other words, existing
-                   flow condition configuration will be removed, and the given
-                   flow condition will be created.
+                   If `SET' is specified, the given flow condition
+                   configuration will be applied as specified. In other words,
+                   existing flow condition configuration will be removed, and
+                   the given flow condition will be created.
 
-                   If ADD is specified, the given flow condition configuration
-                   will be merged with existing configuration. The target
-                   flow condition will be created if it is not present.
+                   If `ADD' is specified, the given flow condition
+                   configuration will be merged with existing configuration.
+                   The target flow condition will be created if it is not
+                   present.
 
-                   Null will be treated as if ADD is specified.
+                   Null will be treated as if `ADD' is specified.
 
                    Note that the operation will fail if true is set to
                    `present' field and the target flow condition is not
@@ -377,10 +378,10 @@ module vtn-flow-condition {
            RPC output, and `status' field in `vtn-flow-match-result' describes
            the result of the operation.
 
-           CREATED indicates that the flow match configuration specified by
+           `CREATED` indicates that the flow match configuration specified by
            the index value has been newly created.
 
-           CHANGED indicates that the flow match configuration specified by
+           `CHANGED' indicates that the flow match configuration specified by
            the index value has been successfully changed.
 
            Null indicates that the flow match configuration specified by
@@ -430,7 +431,7 @@ module vtn-flow-condition {
            output, and `status' field in `vtn-flow-match-result' describes
            the result of the operation.
 
-           REMOVED indicates that the flow match associated with the match
+           `REMOVED' indicates that the flow match associated with the match
            index has been successfully removed.
 
            Null indicates that the flow match is not associated with the
@@ -477,7 +478,7 @@ module vtn-flow-condition {
 
            `status' in RPC output descripts the result of the operation.
 
-           REMOVED indicates that at least one flow condition has been
+           `REMOVED' indicates that at least one flow condition has been
            removed.
 
            Null indicates that no flow condition is present.

@@ -1,0 +1,189 @@
+/*
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this distribution,
+ * and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-mac-table {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:vbridge:mac";
+    prefix mactable;
+
+    import vtn-types {
+        prefix vtype;
+        revision-date 2015-02-09;
+    }
+
+    /* OpenDaylight controller */
+    import opendaylight-inventory {
+        prefix inv;
+        revision-date 2013-08-19;
+    }
+
+    /* OpenDaylight yangtools */
+    import ietf-yang-types {
+        prefix yang;
+        revision-date 2010-09-24;
+    }
+    import ietf-inet-types {
+        prefix inet;
+        revision-date 2010-09-24;
+    }
+
+    description
+      "The module that describes the data models for MAC address table,
+       which keeps MAC addresses learned inside vBridge.";
+
+    revision 2015-09-07 {
+        description "Initial revision.";
+    }
+
+    grouping vtn-mac-entry {
+        description
+          "Describes information about a MAC address learned inside vBridge.";
+
+        leaf mac-address {
+            description
+              "A string representation of a learned MAC address.";
+            type yang:mac-address;
+        }
+
+        leaf vlan-id {
+            description
+              "A VLAN ID detected inside Ethernet frame where the MAC address
+               was detected. Zero implies that VLAN tag was not detected.";
+            type uint16;
+        }
+
+        /*
+         * Describes a physical switch port where the MAC address was
+         * detected.
+         */
+        uses vtype:vtn-port-location;
+
+        leaf-list ip-addresses {
+            description
+              "A set of IP addresses detected inside Ethernet frame where the
+               MAC address was detected.";
+            type inet:ip-address;
+        }
+    }
+
+    grouping vtn-mac-table-list {
+        description "A list of MAC address tables.";
+
+        list mac-address-table {
+            description
+              "MAC address table keeps MAC address information learned by
+               a vBridge.";
+            key "name";
+
+            leaf name {
+                description
+                  "The name of the vBridge associated with this MAC address
+                   table.";
+                type string;
+            }
+
+            list mac-table-entry {
+                description "MAC address information learned by a vBridge.";
+                key "mac-address";
+                uses vtn-mac-entry;
+
+                leaf entry-id {
+                    description
+                      "An opaque identifier assigned to this entry.
+                       This field is only for internal use.";
+                    type string;
+                }
+            }
+        }
+    }
+
+    container mac-tables {
+        description
+          "The root container of all the MAC address tables for vBridges.
+           Do not edit this container directly.";
+        config false;
+        presence
+          "Indicates that the MAC address table management is active.";
+
+        list tenant-mac-table {
+            description
+              "Keeps a list of MAC address tables for all the vBridges in
+               the VTN.";
+            key "name";
+
+            leaf name {
+                description "The name of the VTN.";
+                type string;
+            }
+
+            uses vtn-mac-table-list;
+        }
+    }
+
+    /*
+     * RPC definitions
+     */
+
+    rpc remove-mac-entry {
+        description
+          "Remove the specified MAC address information from the MAC address
+           table in the specified vBridge.
+
+           MAC addresses passed to `mac-addresses' list will be copied to the
+           RPC output, and `status' field in the RPC output descripes the
+           result of the operation.
+
+           `REMOVED' indicates that the MAC address specified by `mac-address'
+           field in the RPC output has been successfully removed.
+
+           Null indicates that the MAC address specified by `mac-address'
+           field in the RPC output is not learned by the vBridge specified by
+           the RPC input.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the VTN or the vBridge specified by the RPC
+           input is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            /* The location of the vBridge. */
+            uses vtype:vbridge-path-fields;
+
+            leaf-list mac-addresses {
+                description
+                  "A list of MAC addresses to be removed from the MAC address
+                   table in the specified vBridge. If this field is omitted or
+                   an empty list is specified, all the learned MAC addresses
+                   by the specified vBridge will be removed.
+                   Duplicates in this list will be eliminated automatically.";
+                type yang:mac-address;
+            }
+        }
+
+        output {
+            list remove-mac-entry-result {
+                description
+                  "Describes pairs of MAC addresses and operation results.";
+
+                leaf mac-address {
+                    description
+                      "One of the MAC address specified by the RPC input.";
+                    type yang:mac-address;
+                }
+
+                uses vtype:vtn-rpc-result;
+            }
+        }
+    }
+}

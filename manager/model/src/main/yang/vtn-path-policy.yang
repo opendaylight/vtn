@@ -132,11 +132,11 @@ module vtn-path-policy {
 
            `status' in RPC output describes the result of the operation.
 
-           CREATED indicates that the specified path policy has been newly
+           `CREATED' indicates that the specified path policy has been newly
            created.
 
-           CHANGED indicates that existing path policy configuration has been
-           successfully changed.
+           `CHANGED' indicates that existing path policy configuration has
+           been successfully changed.
 
            Null indicates that existing path policy configuration was not
            changed.
@@ -160,16 +160,16 @@ module vtn-path-policy {
                   "Describes how to update the specified path policy if it
                    already exists.
 
-                   If SET is specified, the given path policy configuration
+                   If `SET' is specified, the given path policy configuration
                    will be applied as specified. In other words, existing
                    path policy configuration will be removed, and the given
                    path policy will be created.
 
-                   If ADD is specified, the given path policy configuration
+                   If `ADD' is specified, the given path policy configuration
                    will be merged with existing configuration. The target
                    path policy will be created if it is not present.
 
-                   Null will be treated as if ADD is specified.
+                   Null will be treated as if `ADD' is specified.
 
                    Note that the operation will fail if true is set to
                    `present' field and the target path policy is not
@@ -225,11 +225,11 @@ module vtn-path-policy {
            to the RPC output, and `status' field in `vtn-port-desc-result'
            describes the result of the opration.
 
-           CREATED indicates that the link cost configuration for the switch
-           port specified by `port-desc' has been newly created.
+           `CREATED' indicates that the link cost configuration for the
+           switch port specified by `port-desc' has been newly created.
 
-           CHANGED indicates that the link cost configuration for the switch
-           port specified by `port-desc' has been successfully changed.
+           'CHANGED' indicates that the link cost configuration for the
+           switch port specified by `port-desc' has been successfully changed.
 
            Null indicates that the link cost configuration for the switch
            port specified by `port-desc' was not changed.
@@ -279,7 +279,7 @@ module vtn-path-policy {
            and `status' field in `vtn-port-desc-result' describes the result
            of the opration.
 
-           REMOVED indicates that the link cost configuration for the switch
+           `REMOVED' indicates that the link cost configuration for the switch
            port associated with the `vtn-port-desc' value has been
            successfully removed.
 
@@ -328,7 +328,7 @@ module vtn-path-policy {
 
            `status' in RPC output descripts the result of the operation.
 
-           REMOVED indicates that at least one path policy has been removed.
+           `REMOVED' indicates that at least one path policy has been removed.
 
            Null indicates that no path policy is present.
 

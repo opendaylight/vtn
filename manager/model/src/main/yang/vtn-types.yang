@@ -49,6 +49,38 @@ module vtn-types {
         }
     }
 
+    grouping vbridge-path-fields {
+        description
+          "Describes a set of fields which specify the location of the
+           vBridge inside the VTN.";
+
+        leaf tenant-name {
+            description "The name of the VTN.";
+            type string;
+        }
+
+        leaf bridge-name {
+            description "The name of the vBridge.";
+            type string;
+        }
+    }
+
+    grouping vterminal-path-fields {
+        description
+          "Describes a set of fields which specify the location of the
+           vTerminal inside the VTN.";
+
+        leaf tenant-name {
+            description "The name of the VTN.";
+            type string;
+        }
+
+        leaf terminal-name {
+            description "The name of the vTerminal.";
+            type string;
+        }
+    }
+
     grouping vnode-path-fields {
         description
           "Describes a set of fields which specify the location of the
@@ -71,7 +103,6 @@ module vtn-types {
         leaf router-name {
             description
               "The name of the vRouter.
-               This field is ignored if `bridge-name' field is configured.
                Currently the VTN Manager never uses this field because the
                virtual router is not yet supported.";
             type string;
@@ -80,8 +111,7 @@ module vtn-types {
         leaf terminal-name {
             description
               "The name of the vTerminal.
-               This field is ignored if either `bridge-name' or `router-name'
-               field is configured.
+               This field is ignored if `bridge-name' field is configured.
                This field is omitted if the virtual node specified by this
                model is neither a vTerminal nor a virtual node attached to
                the vTerminal.";
@@ -95,9 +125,6 @@ module vtn-types {
                - If the virtual interface specified by this model is attached
                  to a vBridge, the name of the vBridge is set to `bridge-name'
                  field.
-               - If the virtual interface specified by this model is attached
-                 to a vRouter, the name of the vRouter is set to
-                 `router-name' field.
                - If the virtual interface specified by this model is attached
                  to a vTerminal, the name of the vTerminal is set to
                  `terminal-name' field.
@@ -125,6 +152,36 @@ module vtn-types {
             enum UP {
                 description "Indicates the virtual node is in up state.";
                 value 1;
+            }
+        }
+    }
+
+    typedef vnode-update-mode {
+        description "Describes how to update a virtual node.";
+
+        type enumeration {
+            enum UPDATE {
+                description
+                  "Indicates that the specified virtual node needs to be
+                   created if it is not present. The specified virtual node
+                   will be modified if it is present.";
+                value 0;
+            }
+
+            enum CREATE {
+                description
+                  "Indicates that a new virtual node needs to be created.
+                   Operation will fail if the specified virtual node is
+                   present.";
+                value 1;
+            }
+
+            enum MODIFY {
+                description
+                  "Indicates that existing virtual node needs to be modified.
+                   Operation will fail if the specified virtual node is not
+                   present.";
+                value 2;
             }
         }
     }
@@ -316,6 +373,18 @@ module vtn-types {
         uses vtn-switch-port;
     }
 
+    grouping vtn-vlan-id-field {
+        description "Describes a field which specifies the VLAN ID.";
+
+        leaf vlan-id {
+            description
+              "Specifies the VLAN ID.
+               Zero implies untagged Ethernet frame.
+               If omitted, it will be treated as zero is specified.";
+            type l2:vlan-id;
+        }
+    }
+
     grouping vlan-host {
         description
           "Describes the host in VLAN.
@@ -326,11 +395,26 @@ module vtn-types {
             type yang:mac-address;
         }
 
-        leaf vlan-id {
-            description
-              "VLAN ID that specifies the VLAN to which the host belongs.
-               Zero means the untagged network.";
-            type l2:vlan-id;
+        uses vtn-vlan-id-field;
+    }
+
+    typedef vlan-host-desc {
+        description
+          "Describes the host in VLAN.
+           The value must be a pair of MAC address and VLAN ID joined with
+           `@'.
+
+           The first element must be a string representation of MAC
+           address in lower-case hex format (e.g. 00:11:22:33:aa) or an
+           empty string. An empty string implies that the MAC address is
+           not specified.
+
+           The second element must be a string representation of VLAN ID
+           in decimal format. Zero means the untagged Ethernet frame.
+           Note that VLAN ID is mandatory.";
+
+        type string {
+            pattern "([0-9a-f]{2}(:[0-9a-f]{2}){5})?@[0-9]+";
         }
     }
 
@@ -416,6 +500,22 @@ module vtn-types {
             description "The destination switch port of the link.";
             type inv:node-connector-id;
             mandatory true;
+        }
+    }
+
+    grouping vlan-host-desc-set {
+        description
+          "Describes a set of `vlan-host-desc' values.";
+
+        list vlan-host-desc-list {
+            description
+              "Describes a list of unique `vlan-host-desc' values.";
+
+            key "host";
+            leaf host {
+                description "A pair of MAC address and VLAN ID.";
+                type vlan-host-desc;
+            }
         }
     }
 }
