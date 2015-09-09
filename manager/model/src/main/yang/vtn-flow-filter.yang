@@ -1,0 +1,374 @@
+/*
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this distribution,
+ * and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-flow-filter {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:flow:filter";
+    prefix vfilter;
+
+    import vtn-types {
+        prefix vtype;
+        revision-date 2015-02-09;
+    }
+    import vtn-flow-action {
+        prefix vaction;
+        revision-date 2015-04-10;
+    }
+
+    description
+      "The module that describes the data models for flow filter, which
+       provides packet filtering feature for packets forwarded in VTN.";
+
+    revision 2015-09-07 {
+        description "Initial revision.";
+    }
+
+    grouping vtn-flow-filter-type-fields {
+        description "Describes the type of flow filter.";
+
+        choice vtn-flow-filter-type {
+            description "Describes the abstract type of flow filter.";
+
+            case vtn-drop-filter-case {
+                description
+                  "The branch of the `vtn-flow-filter-type' choice for the
+                   `vtn-drop-filter'.";
+
+                container vtn-drop-filter {
+                    description
+                      "Describes the DROP flow filter which discards the
+                       specified packet.";
+                }
+            }
+
+            case vtn-pass-filter-case {
+                description
+                  "The branch of the `vtn-flow-filter-type' choice for the
+                   `vtn-pass-filter'.";
+
+                container vtn-pass-filter {
+                    description
+                      "Describes the PASS flow filter which lets the
+                       specified packet through the virtual node in the VTN.";
+                }
+            }
+
+            case vtn-redirect-filter-case {
+                description
+                  "The branch of the `vtn-flow-filter-type' choice for the
+                   `vtn-redirect-filter'.";
+
+                container vtn-redirect-filter {
+                    description
+                      "Describes the REDIRECT flow filter which forwards
+                       the specified packet to another virtual interface
+                       in the VTN.";
+
+                    container redirect-destination {
+                        description
+                          "Describes the path to the virtual interface where
+                           the specified packets are forwarded.
+
+                           - The VTN name configured in `tenant-name' field
+                             is always ignored. The VTN name is always
+                             determined by the location of the virtual node
+                             that contains the flow filter.
+
+                           - The path to the virtual interface that contains
+                             this flow filter cannot be specified.
+
+                           - Note that every packet redirected by the flow
+                             filter is discarded if the virtual interface
+                             specified by this field is not present in the
+                             VTN.
+
+                           Packet redirection should be configured not to
+                           cause the packet loop. The number of virtual node
+                           hops per a flow (the number of packet redirections)
+                           is limited to 100. If the number of virtual node
+                           hops exceeds the limit, it is treated as the packet
+                           loop and then the packet is discarded.";
+                        uses vtype:vnode-path-fields;
+                    }
+
+                    leaf output {
+                        description
+                          "Determine the direction of the packet redirection.
+
+                             - If true is specified, the packet is redirected
+                               as outgoing packet.
+                                 + The redirected packet will be treated as if
+                                   it is transmitted from the virtual
+                                   interface specified by
+                                   `redirect-destination'.
+                                 + A list of flow filters for outgoing packets
+                                   configured in the virtual interface
+                                   specified by `redirect-destination' wil be
+                                   evaluated against the redirected packet.
+                                   If the packet is passed by the flow filter,
+                                   it is transmitted to the physical network
+                                   mapped to the virtual interface by port
+                                   mapping. The packet will be discarded if
+                                   port mapping is not configured to the
+                                   virtual interface.
+
+                             - If false is specified or omitted, the packet is
+                               redirected as incoming packet.
+                                 + The redirected packet will be treated as if
+                                   it is received from the virtual interface
+                                   specified by `redirect-destination'.
+                                   The packet is redirected even if no
+                                   physical network is mapped to the
+                                   destination virtual interface by port
+                                   mapping.
+                                 + A list of flow filters for incoming packets
+                                   configured in the virtual interface
+                                   specified by `redirect-destination' will be
+                                   evaluated against the redirected packet.
+                                   If the packet is passed by the flow filter,
+                                   it is forwarded to the virtual node that
+                                   contains the virtual interface.";
+                        type boolean;
+                    }
+                }
+            }
+        }
+    }
+
+    grouping vtn-flow-filter-config {
+        description
+          "Describes a rule of a packet filter applied to packets
+           forwarded in VTN. If a flow condition configured in a flow
+           filter matches a packet, flow actions configured in `actions'
+           are applied to the packet in ascending order of `order' field
+           in each action.
+
+             - If `actions' is omitted or it is empty, the flow filter is
+               applied to the packet without modifying the packet.
+
+             - Actions in `actions' field will be evaluated in ascending order
+               of `order' value.
+
+             - Note that the VLAN ID of the packet cannot be modified by
+               flow action because it is always determined by the virtual
+               mapping configuration, such as port mapping.
+
+             - `actions' is ignored if the type of the flow filter is `drop'.
+
+           Only the following flow actions can be configured into `actions'.
+
+              - `vtn-set-dl-src-action'
+              - `vtn-set-dl-dst-action'
+              - `vtn-set-vlan-pcp-action'
+              - `vtn-set-inet-src-action'
+              - `vtn-set-inet-dst-action'
+              - `vtn-set-inet-dscp-action'
+              - `vtn-set-port-src-action'
+              - `vtn-set-port-dst-action'
+              - `vtn-set-icmp-type-action'
+              - `vtn-set-icmp-code-action'";
+
+        /* An index value assigned to the flow filter. */
+        uses vtype:vtn-index;
+
+        leaf condition {
+            description
+              "The name of the flow condition that selects packets.
+               This flow filter is invalidated if the flow condition
+               specified by this field is not present.";
+            type vtype:vnode-name;
+            mandatory true;
+        }
+
+        /* The type of this flow filter. */
+        uses vtn-flow-filter-type-fields;
+
+        /*
+         * A list of flow actions that modifies the packet when this flow
+         * filter is applied to the packet.
+         */
+        uses vaction:vtn-flow-action-list;
+    }
+
+    grouping vtn-flow-filter-list {
+        description "Describes a list of flow filters.";
+
+        list vtn-flow-filter {
+            description
+              "Describes a list of flow filters configured in a virtual node
+               in VTN. Each flow filter in this list needs to have a unique
+               index in `index' field. `index' value is used to determine
+               order of flow filter evaluation. Flow filters in this list are
+               evaluated against packet in ascending order of `index' value,
+               and only the first matched flow filter is applied to the
+               packet.";
+
+            key "index";
+            uses vtn-flow-filter-config;
+        }
+    }
+
+    /*
+     * RPC definitions
+     */
+
+    grouping vtn-flow-filter-id {
+        description
+          "Specifies the target flow filter for RPC.
+
+           If `tenant-name', `bridge-name', and `interface-name' is
+           configured, the flow filter in the virtual interface attached
+           to the vBridge is targeted. `output' field determines the
+           flow direction for the flow filter.
+
+           If `tenant-name' and `bridge-name' is configured and
+           `interface-name' is omitted, the flow filter in the specified
+           vBridge is targeted. `output' field determines the flow direction
+           for the flow filter.
+
+           If `tenant-name', `terminal-name', and `interface-name' is
+           configured, the flow filter in the virtual interface attached to
+           the vTerminal is targeted. `output' field determines the flow
+           direction for the flow filter.
+
+           If `tenant-name' is configured and `bridge-name', `terminal-name',
+           and `interface-name' are omitted, the flow filter in the VTN is
+           targeted. In this case `output' field is ignored because the VTN
+           has a flow filter only for incoming packets.
+
+           Otherwise RPC will fail.";
+
+        /* The location of the virtual node. */
+        uses vtype:vnode-path-fields;
+
+        leaf output {
+            description
+              "Describes the flow direction for the flow filter.
+
+               If true, the flow filter for outgoing packets is targeted.
+               If false or omitted, the flow filter for incoming packets is
+               targeted.";
+            type boolean;
+        }
+    }
+
+    grouping vtn-flow-filter-result {
+        description
+          "Describes pairs of flow filter indices and `vtn-update-type'
+           values.
+
+           This grouping is used as output of RPC that modifies the flow
+           filter configuration.";
+
+        list flow-filter-result {
+            description
+              "Describes a pair of flow filter index and `vtn-update-type'
+               value.";
+
+            leaf index {
+                description
+                  "One of flow filter indicies specified by the RPC input.";
+                type int32;
+            }
+
+            uses vtype:vtn-rpc-result;
+        }
+    }
+
+    rpc set-flow-filter {
+        description
+          "Create or modify the flow filter.
+
+           This operation takes a list of `vtn-flow-filter-config', and
+           put all configurations into the flow filter list specified by
+           `vtn-flow-filter-id' in the RPC input.
+
+           Flow filter indices specified in the RPC input will be copied to
+           the RPC output, and `status' field in `vtn-flow-filter-result'
+           describes the result of the operation. Note that a duplicate flow
+           filter index in the RPC input will cause a `BADREQUEST' error.
+
+           `CREATED' indicates that new flow filter has been associated with
+           the given index number in the specified flow filter list.
+
+           `CHANGED' indicates that the flow filter specified by the given
+           index number has been modified as specified by the RPC input.
+
+           Null indicates that the flow filter specified by the given index
+           was not changed.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the virtual node which contains the specified
+           flow filter list is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            /* Specifies the target flow filter list. */
+            uses vtn-flow-filter-id;
+
+            /* Flow filter configuration. */
+            uses vtn-flow-filter-list;
+        }
+
+        output {
+            uses vtn-flow-filter-result;
+        }
+    }
+
+    rpc remove-flow-filter {
+        description
+          "Remove the specified flow filters.
+
+           Index numbers for flow filters passed to `indices' list in the RPC
+           input will be copied to the RPC output, and `status' field in the
+           RPC output describes the result of the operation.
+
+           `REMOVED' indicates that the flow filter specified by `index' field
+           in the RPC output has been removed.
+
+           Null indicates that the flow filter specified by `index' field is
+           not present in the flow filter list specified by the RPC input.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the virtual node which contains the specified
+           flow filter list is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            /* Specifies the flow filter to be set. */
+            uses vtn-flow-filter-id;
+
+            leaf-list indices {
+                description
+                  "A list of flow filter index numbers to be removed from the
+                   flow filter list specified by the RPC input.
+                   If this field is omitted or an empty list is specified,
+                   all the flow filters present in the specified flow filter
+                   list will be removed.
+                   Duplicates in this list will be eliminated automatically.";
+                type int32;
+            }
+        }
+
+        output {
+            uses vtn-flow-filter-result;
+        }
+    }
+}

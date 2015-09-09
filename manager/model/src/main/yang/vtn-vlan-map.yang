@@ -1,0 +1,230 @@
+/*
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this distribution,
+ * and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-vlan-map {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:mapping:vlan";
+    prefix vlanmap;
+
+    import vtn-types {
+        prefix vtype;
+        revision-date 2015-02-09;
+    }
+
+    /* OpenDaylight controller */
+    import opendaylight-inventory {
+        prefix inv;
+        revision-date 2013-08-19;
+    }
+
+    description
+      "The module that describes the data models for VLAN mapping, which
+       associates a VLAN with a vBridge in VTN.";
+
+    revision 2015-09-07 {
+        description "Initial revision.";
+    }
+
+    grouping vtn-vlan-map-config {
+        description "Describes configuration for a VLAN mapping.";
+
+        leaf node {
+            description
+              "Identifier for a physical switch to be mapped.
+
+               If this field is specified, only the VLAN specified by
+               `vlan-id' on the specified physical switch is mapped to
+               vBridge.
+               If this field is omitted, the VLAN specified by `vlan-id'
+               on all the switches managed by the OpenDaylight controller
+               are mapped to vBridge.";
+            type inv:node-id;
+        }
+
+        /* VLAN ID to be mapped. */
+        uses vtype:vtn-vlan-id-field;
+    }
+
+    grouping vtn-vlan-map-info {
+        description
+          "Describes information about VLAN mapping, which associates
+           a VLAN with a vBridge in VTN.";
+
+        leaf map-id {
+            description
+              "The identifier assigned to the VLAN mapping, which is
+               unique in the vBridge.";
+            type string;
+        }
+
+        container vlan-map-config {
+            description
+              "The container which contains configuration for VLAN mapping.";
+            uses vtn-vlan-map-config;
+        }
+    }
+
+    grouping vtn-vlan-mappable {
+        description
+          "Describes the data model which can contain VLAN mapping
+           configuration.";
+
+        list vlan-map {
+            description
+              "A list of VLAN mappings configured in this data model.";
+            key "map-id";
+            uses vtn-vlan-map-info;
+        }
+    }
+
+    /*
+     * RPC definitions
+     */
+
+    rpc add-vlan-map {
+        description
+          "Configure VLAN mapping in the specified vBridge.
+
+           VLAN specified by the RPC input will get mapped to the specified
+           vBridge.
+
+           Upon successful completion, the identifier assigned to the
+           configured VLAN mapping is set into the RPC output.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the VTN specified by `tenant-name' is not
+           present.
+
+           `NOTFOUND' is set if the vBridge specified by `tenant-name' and
+           `bridge-name' is not present.
+
+           `CONFLICT' is set if the VLAN network speccified by the RPC input
+           is already mapped to the specified vBridge or another vBridge.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            /* The location of the vBridge. */
+            uses vtype:vbridge-path-fields;
+
+            /* VLAN mapping configuration. */
+            uses vtn-vlan-map-config;
+        }
+
+        output {
+            leaf map-id {
+                description
+                  "The identifier assigned to newly configured VLAN mapping.";
+                type string;
+            }
+        }
+    }
+
+    rpc remove-vlan-map {
+        description
+          "Remove the specified VLAN mappings from the vBridge.
+
+           IDs for VLAN mappings passed to `map-ids' list will be copied to
+           the RPC output, and `status' field in the RPC output describes the
+           result of the operation.
+
+           `REMOVED' indicates that the VLAN mapping specified by `map-id'
+           field in the RPC output has been removed.
+
+           Null indicates that the VLAN mapping specified by `map-id' field
+           in the RPC output is not present.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the VTN specified by `tenant-name' is not
+           present.
+
+           `NOTFOUND' is set if the vBridge specified by `tenant-name' and
+           `bridge-name' is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            leaf-list map-ids {
+                description
+                  "A list of VLAN mapping IDs to be removed from the specified
+                   vBridge. If this field is omitted or an empty list is
+                   specified, all the VLAN mappings present in the specified
+                   vBridge will be removed.
+                   Duplicates in this list will be eliminated automatically.";
+                type string;
+            }
+        }
+
+        output {
+            list remove-vlan-map-result {
+                description
+                  "Describes pairs of VLAN mapping IDs and operation
+                   results.";
+
+                leaf map-id {
+                    description
+                      "One of VLAN mapping ID specified by the RPC input.";
+                    type string;
+                }
+
+                uses vtype:vtn-rpc-result;
+            }
+        }
+    }
+
+    rpc get-vlan-map {
+        description
+          "Search for a VLAN mapping with the specified VLAN mapping
+           configuration in the specified vBridge.
+
+           If a VLAN mapping with the VLAN mapping configuration that
+           exactly matches with the configuration specified by the RPC
+           input is present in the specified vBridge, identifier assigned
+           to that VLAN mapping is set to the RPC output. The RPC output
+           will be empty if not found.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the VTN or the vBridge specified by the RPC
+           input is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            /* The location of the vBridge. */
+            uses vtype:vbridge-path-fields;
+
+            /* VLAN mapping configuration. */
+            uses vtn-vlan-map-config;
+        }
+
+        output {
+            leaf map-id {
+                description
+                  "The identifier assigned to the VLAN mapping whose
+                   configuration exactly matches the configuration specified
+                   by the RPC input. Null is set if not found.";
+                type string;
+            }
+        }
+    }
+}
