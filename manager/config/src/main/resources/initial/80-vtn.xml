@@ -87,6 +87,9 @@
       urn:opendaylight:vtn:topology:static?module=vtn-static-topology&amp;revision=2015-08-01
     </capability>
     <capability>
+      urn:opendaylight:vtn:version?module=vtn-version&amp;revision=2015-09-01
+    </capability>
+    <capability>
       urn:opendaylight:vtn:impl:flow?module=vtn-flow-impl&amp;revision=2015-03-13
     </capability>
     <capability>

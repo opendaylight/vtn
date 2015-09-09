@@ -20,17 +20,13 @@ import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.felix.dm.Component;
 
-import org.osgi.framework.Bundle;
-import org.osgi.framework.FrameworkUtil;
-import org.osgi.framework.Version;
-
-import org.opendaylight.vtn.manager.BundleVersion;
 import org.opendaylight.vtn.manager.IVTNGlobal;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VInterfacePath;
@@ -47,13 +43,20 @@ import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
 
+import org.opendaylight.yangtools.yang.common.RpcResult;
+
 import org.opendaylight.controller.clustering.services.CacheConfigException;
 import org.opendaylight.controller.clustering.services.CacheExistException;
 import org.opendaylight.controller.clustering.services.IClusterGlobalServices;
 import org.opendaylight.controller.clustering.services.IClusterServices;
 import org.opendaylight.controller.clustering.services.ICoordinatorChangeAware;
 import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.StatusCode;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.GetManagerVersionOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.VtnVersionService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.get.manager.version.output.BundleVersion;
 
 /**
  * {@code GlobalResourceManager} class manages global resources used by the
@@ -177,6 +180,16 @@ public class GlobalResourceManager
      */
     private ConcurrentMap<String, VTNManagerImpl>  vtnManagers =
         new ConcurrentHashMap<String, VTNManagerImpl>();
+
+    /**
+     * Cached API version of the VTN Manager.
+     */
+    private int  apiVersion;
+
+    /**
+     * Cached OSGi bundle version of the VTN Manager.
+     */
+    private org.opendaylight.vtn.manager.BundleVersion  bundleVersion;
 
     /**
      * This class is used to update virtual network mapping in a cluster
@@ -1693,6 +1706,58 @@ public class GlobalResourceManager
         return true;
     }
 
+    /**
+     * Get VTN Manager's version information and cache it.
+     */
+    private void cacheManagerVersion() {
+        if (bundleVersion != null) {
+            // Already cached.
+            return;
+        }
+
+        VTNManagerImpl mgr =
+            vtnManagers.get(GlobalConstants.DEFAULT.toString());
+        assert mgr != null;
+
+        VTNManagerProvider provider = mgr.getVTNProvider();
+        assert provider != null;
+
+        Throwable cause = null;
+        String errmsg = null;
+        try {
+            VtnVersionService rpc =
+                provider.getVtnRpcService(VtnVersionService.class);
+            Future<RpcResult<GetManagerVersionOutput>> f =
+                rpc.getManagerVersion();
+            RpcResult<GetManagerVersionOutput> res = f.get();
+            if (res.isSuccessful()) {
+                GetManagerVersionOutput output = res.getResult();
+                apiVersion = output.getApiVersion().intValue();
+                BundleVersion bv = output.getBundleVersion();
+                if (bv != null) {
+                    bundleVersion = new org.opendaylight.vtn.manager.
+                        BundleVersion(bv.getMajor().intValue(),
+                                      bv.getMinor().intValue(),
+                                      bv.getMicro().intValue(),
+                                      bv.getQualifier());
+                }
+
+                return;
+            } else {
+                // This should never happen.
+                errmsg = "get-manager-version RPC failed";
+                LOG.error("{}: {}", errmsg, res.getErrors());
+            }
+        } catch (Exception e) {
+            // This should never happen.
+            errmsg = "get-manager-exception RPC failed due to exception.";
+            LOG.error(errmsg, e);
+            cause = e;
+        }
+
+        throw new IllegalStateException(errmsg, cause);
+    }
+
     // IVTNGlobal
 
     /**
@@ -1707,28 +1772,24 @@ public class GlobalResourceManager
      */
     @Override
     public int getApiVersion() {
-        return API_VERSION;
+        cacheManagerVersion();
+        return apiVersion;
     }
 
     /**
      * Return the version information of the OSGi bundle which implements
      * the VTN Manager.
      *
-     * @return  A {@link BundleVersion} object which represents the version
-     *          of the OSGi bundle which implements the VTN Manager.
+     * @return  A {@link org.opendaylight.vtn.manager.BundleVersion} object
+     *          which represents the version of the OSGi bundle which
+     *          implements the VTN Manager.
      *          {@code null} is returned if the VTN Manager is not loaded by
      *          an OSGi bundle class loader.
      */
     @Override
-    public BundleVersion getBundleVersion() {
-        Bundle bundle = FrameworkUtil.getBundle(GlobalResourceManager.class);
-        if (bundle == null) {
-            return null;
-        }
-
-        Version ver = bundle.getVersion();
-        return new BundleVersion(ver.getMajor(), ver.getMinor(),
-                                 ver.getMicro(), ver.getQualifier());
+    public org.opendaylight.vtn.manager.BundleVersion getBundleVersion() {
+        cacheManagerVersion();
+        return bundleVersion;
     }
 
     // IVTNResourceManager
