@@ -20,6 +20,18 @@ module vtn {
         prefix pathmap;
         revision-date 2015-03-28;
     }
+    import vtn-vbridge {
+        prefix vbr;
+        revision-date 2015-09-07;
+    }
+    import vtn-vterminal {
+        prefix vterm;
+        revision-date 2015-09-07;
+    }
+    import vtn-flow-filter {
+        prefix vfilter;
+        revision-date 2015-09-07;
+    }
 
     description
       "The module that describes the configuration of the VTN
@@ -29,6 +41,23 @@ module vtn {
         description "Initial revision.";
     }
 
+    grouping vtn-vtenant-config {
+        description
+          "Describes configuration for a VTN.
+
+           If flow timeout configuration is missing, the default value will
+           be applied. Default value for `idle-timeout' and `hard-timeout'
+           are 300 and 0 respectively.";
+
+        leaf description {
+            description "An arbitrary description about the VTN.";
+            type string;
+        }
+
+        /* Timeout configuration for flow entries configured by the VTN. */
+        uses vtype:vtn-flow-timeout-config;
+    }
+
     grouping vtn-info {
         description "Describes information about a VTN.";
 
@@ -36,6 +65,19 @@ module vtn {
             description "The name of the VTN.";
             type vtype:vnode-name;
         }
+
+        container vtenant-config {
+            description
+              "The container which contains configuration for the Virtual
+               Tenant Network (VTN).";
+            uses vtn-vtenant-config;
+        }
+
+        /* A list of vBridges. */
+        uses vbr:vtn-vbridge-list;
+
+        /* A list of vTerminals. */
+        uses vterm:vtn-vterminal-list;
 
         container vtn-path-maps {
             description
@@ -49,22 +91,158 @@ module vtn {
                is configured.";
             uses pathmap:vtn-path-map-list;
         }
+
+        container vtn-input-filter {
+            description
+              "A list of flow filters applied to incoming packet.
+               Flow filters in this container are evaluated when an incoming
+               packet is mapped to this VTN. Flow filters in this list are
+               evaluated only once before other flow filter lists are
+               evaluated.
+               Note that this container may not be present if no flow
+               filter is configured in this VTN.";
+            uses vfilter:vtn-flow-filter-list;
+        }
     }
 
     container vtns {
         description
           "The root container of all VTNs (Virtual Tenant Network).
            Note that the VTN configuration must be modified by RPC.
-           Do not edit this container directly.
+           Do not edit this container directly.";
 
-           Remarks: This model is still in development.";
         config false;
         presence "Indicates the VTN management is active.";
 
         list vtn {
-            description  "A list of VTNs.";
+            description
+              "VTN is a virtual network environment that gets created inside
+               the OpenDaylight controller. The VTN Manager manages the
+               virtual network at VTN level. At least one VTN should be
+               created for setting up virtual network using the VTN Manager.";
             key "name";
             uses vtn-info;
+        }
+    }
+
+    /*
+     * RPC definitions
+     */
+
+    rpc update-vtn {
+        description
+          "Create or modify the VTN specified by the name.
+
+           Upon successful completion, the result of this operation will be
+           set to the `status' field in the RPC output.
+
+           `CREATED' indicates that the specified VTN has been newly created.
+
+           `CHANGED' indicates that the configuration for the specified VTN
+           has been changed.
+
+           Null indicates that the configuration for the specified VTN was not
+           changed.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `CONFLICT' is set if `update-mode' field in the RPC input is
+           `CREATE' and the specified VTN is present.
+
+           `NOTFOUND' is set if `update-mode' field in the RPC input is
+           `MODIFY' and the specified VTN is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            leaf tenant-name {
+                description "The name of the VTN to be created or modified.";
+                type string;
+            }
+
+            leaf update-mode {
+                description
+                  "Describes how to update the VTN specified by `tenant-name'.
+
+                   If `UPDATE' is specified, the specified VTN is created if
+                   it is not present. Otherwise the specified VTN
+                   configuration is applied to the specified VTN.
+
+                   If `CREATE' is specified, the specified VTN is created
+                   only if it is not present. If the specified VTN is present,
+                   this operation will cause a `CONFLICT' error.
+
+                   If `MODIFY' is specified, the specified VTN configuration
+                   is applied to the specified VTN only if it is present.
+                   If the specified VTN is not present, this operation will
+                   cause a `NOTFOUND' error.";
+
+                type vtype:vnode-update-mode;
+                default UPDATE;
+            }
+
+            leaf apply-all {
+                description
+                  "Describes how to update the existing VTN specified by
+                   `tenant-name'. This field will be ignored if the specified
+                   VTN is not present.
+
+                   If `false' is specified, omitted fields will not be
+                   modified. For example, `description' field is not modified
+                   if `description' field is omitted. This is the default
+                   behavior.
+
+                   If `true' is specified, all the fields defined by
+                   `vtn-vtenant-config' will be applied to the VTN
+                   configuration as-is.
+                     - If `description' field is omitted, `description' field
+                       will be removed from the configuration.
+                     - If `idle-timeout' field is omitted, `idle-timeout'
+                       field in the VTN configuration will be reset to the
+                       default value (300).
+                     - If `hard-timeout' field is omitted, `hard-timeout'
+                       field in the VTN configuration will be reset to the
+                       default value (0).";
+
+                type boolean;
+                default false;
+            }
+
+            /* VTN configuration. */
+            uses vtn-vtenant-config;
+        }
+
+        output {
+            uses vtype:vtn-rpc-result;
+        }
+    }
+
+    rpc remove-tenant {
+        description
+          "Remove the VTN specified by the name.
+
+           All the virtual networking node in the specified VTN, such as
+           vBridge, will also be removed.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the specified VTN is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            leaf tenant-name {
+                description "The name of the VTN to be removed.";
+                type string;
+            }
         }
     }
 }

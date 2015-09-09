@@ -1,0 +1,352 @@
+/*
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this distribution,
+ * and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-vbridge {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:vbridge";
+    prefix vbr;
+
+    import vtn-types {
+        prefix vtype;
+        revision-date 2015-02-09;
+    }
+    import vtn-vinterface {
+        prefix vif;
+        revision-date 2015-09-07;
+    }
+    import vtn-vlan-map {
+        prefix vlanmap;
+        revision-date 2015-09-07;
+    }
+    import vtn-mac-map {
+        prefix macmap;
+        revision-date 2015-09-07;
+    }
+    import vtn-flow-filter {
+        prefix vfilter;
+        revision-date 2015-09-07;
+    }
+
+    /* OpenDaylight controller */
+    import opendaylight-inventory {
+        prefix inv;
+        revision-date 2013-08-19;
+    }
+
+    description
+      "The module that describes the data models for vBridge, which
+       represents a virtual broadcast domain in VTN.";
+
+    revision 2015-09-07 {
+        description "Initial revision.";
+    }
+
+    grouping vtn-bridge-status {
+        description
+          "Describes runtime status information about a virtual bridge node
+           in the VTN.";
+
+        leaf state {
+            description
+              "State of the virtual bridge node.
+
+               `UNKNOWN' indicates that no physical network is mapped to
+               the virtual bridge node.
+
+               `DOWN' indicates that the physical network mapped to the
+               virtual bridge node is not operating correctly.
+
+               `UP' indicates that the physical network mapped to the
+               virtual bridge node is operating correctly.";
+            type vtype:vnode-state;
+            default UNKNOWN;
+        }
+
+        leaf path-faults {
+            description
+              "The number of path faults detected inside the virtual bridge
+               node. The number of elements in `faulted-paths' will be set
+               to this field.
+
+               This shows the number of paths between the switches,
+               constituting a virtual bridge node, that could not be
+               configured by the VTN Manager because the paths were broken.
+               Zero is set when no path fault has been detected.
+
+               The number of path faults is counted for each direction of
+               path. For example, if switch A and switch B are separated, then
+               the path from switch A to switch B and path from switch B to
+               switch A are treated as different and both are counted.";
+            type int32 {
+                range "0 .. max";
+            }
+            default 0;
+        }
+
+        list faulted-paths {
+            description "A set of faulted paths.";
+            key "source destination";
+
+            leaf source {
+                description "The source node of the faulted path.";
+                type inv:node-id;
+            }
+
+            leaf destination {
+                description "The destination node of the faulted path.";
+                type inv:node-id;
+            }
+        }
+    }
+
+    grouping vtn-port-mappable-bridge {
+        description
+          "Describes a virtual node in the VTN, which contains a list of
+           port-mappable virtual interfaces.";
+
+        container bridge-status {
+            description
+              "The container which contains runtime information about
+               this virtual bridge.";
+            uses vtn-bridge-status;
+        }
+
+        /* A list of virtual interfaces. */
+        uses vif:vtn-mappable-vinterface-list;
+    }
+
+    grouping vtn-vbridge-config {
+        description "Describes configuration for a vBridge.";
+
+        leaf description {
+            description "An arbitrary description about the vBridge.";
+            type string;
+        }
+
+        leaf age-interval {
+            description
+              "The number of seconds between MAC address table aging.
+               The default value is 600.";
+            type int32 {
+                range "10 .. 1000000";
+            }
+        }
+    }
+
+    grouping vtn-vbridge-info {
+        description
+          "Describes information about vBridge.
+
+           `state' field indicates the state of the vBridge.
+           If all the following conditions are met, the vBridge status will be
+           `UNKNOWN':
+             - Neigher VLAN mapping nor MAC mapping is configured in the
+               vBridge.
+             - Port mapping is not set for all the enabled virtual interfaces
+               inside the vBridge.
+
+           `DOWN' indicates that the physical network mapped to the vBridge
+           is not operating correctly. If any of the following conditions are
+           met, then the vBridge status will be `DOWN':
+             - VLAN mapping with specifying physical switch is configured in
+               the vBridge, and that physical switch is meeting any one of the
+               following conditions:
+               + Physical switch does not exist.
+               + All the ports of the physical switch are connected to some
+                 other physical switch.
+               + Except for the ports that connect two physical switches,
+                 no other ports are operational.
+
+             - MAC mapping is configured in the vBridge, and the target host
+               for MAC mapping is not yet detected.
+
+             - One or more than one interface out of the enabled virtual
+               interfaces inside the vBridge is in `DOWN' state.
+
+             - There is no reachable route available while configuring network
+               routes mapped to the vBridge.
+
+           `UP' indicates that the physical network mapped to the vBridge is
+           operating correctly.";
+
+        leaf name {
+            description "The name of the vBridge.";
+            type vtype:vnode-name;
+        }
+
+        container vbridge-config {
+            description
+              "The container which contains configuration for vBridge.";
+            uses vtn-vbridge-config;
+        }
+
+        /* Virtual interface list and runtime information. */
+        uses vtn-port-mappable-bridge;
+
+        /* VLAN mapping. */
+        uses vlanmap:vtn-vlan-mappable;
+
+        /* MAC mapping. */
+        uses macmap:vtn-mac-mappable;
+
+        container vbridge-input-filter {
+            description
+              "A list of flow filters applied to packets forwarded to the
+               vBridge.
+               Note that this container may not be present if no input flow
+               filter is configured in this vBridge.";
+            uses vfilter:vtn-flow-filter-list;
+        }
+
+        container vbridge-output-filter {
+            description
+              "A list of flow filters applied to packets transmitted to the
+               physical network mapped to the vBridge by VLAN mapping or
+               MAC mapping. This flow filter list is not evaluated when a
+               packet is forwarded to the virtual interface in the same
+               vBridge.
+               Note that this container may not be present if no output flow
+               filter is configured in this vBridge.";
+            uses vfilter:vtn-flow-filter-list;
+        }
+    }
+
+    grouping vtn-vbridge-list {
+        description "Describes a list of vBridges.";
+
+        list vbridge {
+            description
+              "vBridge is a virtual layer 2 switch inside VTN, and it
+               represents one virtual broadcast domain.";
+            key "name";
+            uses vtn-vbridge-info;
+        }
+    }
+
+    /*
+     * RPC definitions
+     */
+
+    rpc update-vbridge {
+        description
+          "Create or modify the specified vBridge.
+
+           Upon successful completion, the result of this operation will be
+           set to the `status' field in the RPC output.
+
+           `CREATED' indicates that the specified vBridge has been newly
+           created.
+
+           `CHANGED' indicates that the configuration for the specified
+           vBridge has been changed.
+
+           Null indicates that the configuration for the specified vBridge was
+           not changed.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the VTN specified by `tenant-name' is not
+           present.
+
+           `NOTFOUND' is set if `update-mode' field in the RPC input is
+           `MODIFY' and the specified vBridge is not present.
+
+           `CONFLICT' is set if `update-mode' field in the RPC input is
+           `CREATE' and the specified vBridge is present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+         input {
+            /* The location of the vBridge. */
+            uses vtype:vbridge-path-fields;
+
+            leaf update-mode {
+                description
+                  "Describes how to update the vBridge specified by
+                   `tenant-name' and `bridge-name';
+
+                   If `UPDATE' is specified, the specified vBridge is created
+                   if it is not present. Otherwise the specified vBridge
+                   configuration is applied to the specified vBridge.
+
+                   If `CREATE' is specified, the specified vBridge is created
+                   only if it is not present. If the specified vBridge is
+                   present, this operation will cause a `CONFLICT' error.
+
+                   If `MODIFY' is specified, the specified vBridge
+                   configuration is applied to the specified vBridge only if
+                   it is present. If the specified vBridge is not present,
+                   this operation will cause a `NOTFOUND' error.";
+
+                type vtype:vnode-update-mode;
+                default UPDATE;
+            }
+
+            leaf apply-all {
+                description
+                  "Describes how to update the existing vBridge specified by
+                   `tenant-name' and `bridge-name'. This field will be ignored
+                   if the specified vBridge is not present.
+
+                   If `false' is specified, omitted fields will not be
+                   modified. For example, `description' field is not modified
+                   if `description' field is omitted. This is the default
+                   behavior.
+
+                   If `true' is specified, all the fields defined by
+                   `vtn-vbridge-config' will be applied to the vBridge
+                   configuration as-is.
+                     - If `description' field is omitted, `description' field
+                       will be removed from the configuration.
+                     - If `age-interval' field is omitted, `age-interval'
+                       field in the vBridge configuration will be reset to the
+                       default value (600).";
+
+                type boolean;
+                default false;
+            }
+
+            /* vBridge configuration. */
+            uses vtn-vbridge-config;
+         }
+
+         output {
+            uses vtype:vtn-rpc-result;
+         }
+    }
+
+    rpc remove-vbridge {
+        description
+          "Remove the specified vBridge.
+
+           All the virtual interfaces inside the specified vBridge will also
+           be removed.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the VTN specified by `tenant-name' is not
+           present.
+
+           `NOTFOUND' is set if the specified vBridge is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            /* The location of the vBridge. */
+            uses vtype:vbridge-path-fields;
+        }
+    }
+}

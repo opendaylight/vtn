@@ -1,0 +1,218 @@
+/*
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this distribution,
+ * and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-vterminal {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:vterminal";
+    prefix vterm;
+
+    import vtn-types {
+        prefix vtype;
+        revision-date 2015-02-09;
+    }
+    import vtn-vbridge {
+        prefix vbr;
+        revision-date 2015-09-07;
+    }
+    import vtn-vinterface {
+        prefix vif;
+        revision-date 2015-09-07;
+    }
+
+    description
+      "The module that describes the data models for vTerminal, which is
+       isolated input and output terminal inside VTN.";
+
+    revision 2015-09-07 {
+        description "Initial revision.";
+    }
+
+    grouping vtn-vterminal-config {
+        description "Describes configuration for a vTerminal.";
+
+        leaf description {
+            description "An arbitrary description about the vTerminal.";
+            type string;
+        }
+    }
+
+    grouping vtn-vterminal-info {
+        description
+          "Describes information about vTerminal.
+           Unlike vBridge, vTerminal can have only one virtual interface.
+           vTerminal is always used in conjunction with redirection by
+           flow filter.
+
+          `state' field indicates the state of the vTerminal.
+          If any of the following conditions are met, the vTerminal status
+          will be `UNKNOWN':
+            - No virtual interface is configured in the vTerminal.
+            - A virtual interface inside the vTerminal is disabled.
+            - Port mapping is not configured in a virtual interface inside
+              the vTerminal.
+
+          `DOWN' indicates that the physical network mapped to the
+          vTerminal is not operating correctly. If an enabled virtual
+          interface inside the vTerminal is in `DOWN' state, then the
+          vTerminal status will be `DOWN'.
+
+          `UP indicates that the physical network mapped to the vTerminal
+          is operating correctly.";
+
+        leaf name {
+            description "The name of the vTerminal.";
+            type vtype:vnode-name;
+        }
+
+        container vterminal-config {
+            description
+              "The container which contains configuration for vTerminal.";
+            uses vtn-vterminal-config;
+        }
+
+        /*
+         * Virtual interface list and runtime information.
+         * Note that only one virtual interface can be configured.
+         */
+        uses vbr:vtn-port-mappable-bridge;
+    }
+
+    grouping vtn-vterminal-list {
+        description "Describes a list of vTerminals.";
+
+        list vterminal {
+            description
+              "vTerminal is isolated input and output terminal inside VTN.
+               vTerminal can have only one virtual interface, and it can
+               map a physical switch port by port mapping.";
+            key "name";
+            uses vtn-vterminal-info;
+        }
+    }
+
+    /*
+     * RPC definitions
+     */
+
+    rpc update-vterminal {
+        description
+          "Create or modify the specified vTerminal.
+
+           Upon successful completion, the result of this operation will be
+           set to the `status' field in the RPC output.
+
+           `CREATED' indicates that the specified vTerminal has been newly
+           created.
+
+           `CHANGED' indicates that the configuration for the specified
+           vTerminal has been changed.
+
+           Null indicates that the configuration for the specified vTerminal
+           was not changed.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the VTN specified by `tenant-name' is not
+           present.
+
+           `NOTFOUND' is set if `update-mode' field in the RPC input is
+           `MODIFY' and the specified vTerminal is not present.
+
+           `CONFLICT' is set if `update-mode' field in the RPC input is
+           `CREATE' and the specified vTerminal is present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+         input {
+            /* The location of the vTerminal. */
+            uses vtype:vterminal-path-fields;
+
+            leaf update-mode {
+                description
+                  "Describes how to update the vTerminal specified by
+                   `tenant-name' and `terminal-name';
+
+                   If `UPDATE' is specified, the specified vTerminal is
+                   created if it is not present. Otherwise the specified
+                   vTerminal configuration is applied to the specified
+                   vTerminal.
+
+                   If `CREATE' is specified, the specified vTerminal is
+                   created only if it is not present. If the specified
+                   vTerminal is present, this operation will cause a
+                   `CONFLICT' error.
+
+                   If `MODIFY' is specified, the specified vTerminal
+                   configuration is applied to the specified vTerminal only
+                   if it is present. If the specified vTerminal is not
+                   present, this operation will cause a `NOTFOUND' error.";
+
+                type vtype:vnode-update-mode;
+                default UPDATE;
+            }
+
+            leaf apply-all {
+                description
+                  "Describes how to update the existing vTerminal specified
+                   by `tenant-name' and `terminal-name'. This field will be
+                   ignored if the specified vTerminal is not present.
+
+                   If `false' is specified, omitted fields will not be
+                   modified. For example, `description' field is not modified
+                   if `description' field is omitted. This is the default
+                   behavior.
+
+                   If `true' is specified, all the fields defined by
+                   `vtn-vterminal-config' will be applied to the vTerminal
+                   configuration as-is. If `description' field is omitted,
+                   `description' field will be removed from the
+                   configuration.";
+
+                type boolean;
+                default false;
+            }
+
+            /* vTerminal configuration. */
+            uses vtn-vterminal-config;
+         }
+
+         output {
+            uses vtype:vtn-rpc-result;
+         }
+    }
+
+    rpc remove-vterminal {
+        description
+          "Remove the specified vTerminal.
+
+           All the virtual interfaces inside the specified vTerminal will
+           also be removed.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the VTN specified by `tenant-name' is not
+           present.
+
+           `NOTFOUND' is set if the specified vTerminal is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            /* The location of the vTerminal. */
+            uses vtype:vterminal-path-fields;
+        }
+    }
+}

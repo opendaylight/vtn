@@ -1,0 +1,311 @@
+/*
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this distribution,
+ * and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-vinterface {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:vinterface";
+    prefix vif;
+
+    import vtn-types {
+        prefix vtype;
+        revision-date 2015-02-09;
+    }
+    import vtn-port-map {
+        prefix portmap;
+        revision-date 2015-09-07;
+    }
+    import vtn-flow-filter {
+        prefix vfilter;
+        revision-date 2015-09-07;
+    }
+
+    /* OpenDaylight controller */
+    import opendaylight-inventory {
+        prefix inv;
+        revision-date 2013-08-19;
+    }
+
+    description
+      "The module that describes the data models for virtual interface,
+       which is an input and output interface that could be set in virtual
+       node in VTN.";
+
+    revision 2015-09-07 {
+        description "Initial revision.";
+    }
+
+    grouping vtn-vinterface-config {
+        description
+          "Describes configuration for a virtual interface.";
+
+        leaf description {
+            description
+              "An arbitrary description about the virtual interface.";
+            type string;
+        }
+
+        leaf enabled {
+            description
+              "A boolean value which determines whether the virtual
+               interface is to be enabled or not. True means that the
+               virtual interface is enabled.
+               If a virtual interface is disabled, then all the inputs
+               from that virtual interface will be ignored. Also, there
+               will be no output against that virtual interface.
+
+               If this field is omitted, it will be treated as true is
+               specified.";
+            type boolean;
+        }
+    }
+
+    grouping vtn-vinterface-info {
+        description
+          "Describes information about virtual interface.";
+
+        leaf name {
+            description "The name of the virtual interface.";
+            type vtype:vnode-name;
+        }
+
+        container vinterface-config {
+            description
+              "The container which contains configuration for virtual
+               interface.";
+            uses vtn-vinterface-config;
+        }
+
+        container vinterface-input-filter {
+            description
+              "A list of flow filters applied to packets received from this
+               virtual interface.
+               Note that this container may not be present if no input flow
+               filter is configured in this virtual interface.";
+            uses vfilter:vtn-flow-filter-list;
+        }
+
+        container vinterface-output-filter {
+            description
+              "A list of flow filters applied to packets transmitted from
+               this virtual interface.
+               Note that this container may not be present if no output flow
+               filter is configured in this virtual interface.";
+            uses vfilter:vtn-flow-filter-list;
+        }
+    }
+
+    grouping vtn-mappable-vinterface-status {
+        description
+          "Describes runtime status information about a virtual interface
+           which can contain port mapping configuration.";
+
+        leaf state {
+            description
+              "State of the virtual interface.
+
+               `UNKNOWN' indicates that other network element is not mapped
+               to the virtual interface.
+
+               `DOWN' indicates that the network element mapped to the
+               virtual interface is not operating. It will be in `DOWN'
+               state even when the virtual interface is disabled.
+
+               `UP' indicates that the network element mapped to the
+               virtual interface is operating.";
+            type vtype:vnode-state;
+        }
+
+        leaf entity-state {
+            description
+              "State of the network element mapped to this virtual
+               interface.";
+            type vtype:vnode-state;
+        }
+
+        leaf mapped-port {
+            description
+              "A physical switch port actually mapped by this port mapping.
+               This field is omitted if no physical switch port meets the
+               condition specified by the port mapping configuration.";
+            type inv:node-connector-id;
+        }
+    }
+
+    grouping vtn-mappable-vinterface {
+        description
+          "Describes information about a virtual interface which can
+           contain port mapping configuration.";
+        uses vtn-vinterface-info;
+
+        container vinterface-status {
+            description
+              "The container which contains runtime status information about
+               the virtual interface which can contain port mapping
+               configuration.";
+            uses vtn-mappable-vinterface-status;
+        }
+
+        /* Port mapping configuration. */
+        uses portmap:vtn-port-mappable;
+    }
+
+    grouping vtn-mappable-vinterface-list {
+        description
+          "Describes a list of virtual interfaces which can have port
+           mapping confuguration.";
+
+        list vinterface {
+            description
+              "Describes virtual interface which can contain port mapping
+               configuration.";
+            key "name";
+            uses vtn-mappable-vinterface;
+        }
+    }
+
+    /*
+     * RPC definitions
+     */
+
+    rpc update-vinterface {
+        description
+          "Create or modify the specified virtual interface.
+
+           If `bridge-name' field in the RPC input is configured, the virtual
+           interface inside the specified vBridge will be creted or modified.
+           If `bridge-name field is omitted and `terminal-name' field in the
+           RPC input is configured, the virtual interface inside the
+           specified vTerminal will be created or modified.
+
+           Upon successful completion, the result of this operation will be
+           set to the `status' field in the RPC output.
+
+           `CREATED' indicates that the specified virtual interface has
+           been newly created.
+
+           `CHANGED' indicates that the configuration for the specified
+           virtual interface has been changed.
+
+           Null indicates that the configuration for the specified virtual
+           interface was not changed.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the VTN specified by `tenant-name' is not
+           present.
+
+           `NOTFOUND' is set if the vBridge specified by `tenant-name' and
+           `bridge-name' is not present.
+
+           `NOTFOUND' is set if the vTerminal specified by `tenant-name' and
+           `terminal-name' is not present.
+
+           `NOTFOUND' is set if `update-mode' field in the RPC input is
+           `MODIFY' and the specified virtual interface is not present.
+
+           `CONFLICT' is set if `update-mode' field in the RPC input is
+           `CREATE' and the specified virtual interface is present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+         input {
+            /* The location of the virtual interface. */
+            uses vtype:vnode-path-fields;
+
+            leaf update-mode {
+                description
+                  "Describes how to update the virtual interface specified by
+                   the RPC input.
+
+                   If `UPDATE' is specified, the specified virtual interface
+                   is created if it is not present. Otherwise the specified
+                   virtual interface configuration is applied to the
+                   specified virtual interface.
+
+                   If `CREATE' is specified, the specified virtual interface
+                   is created only if it is not present. If the specified
+                   virtual interface is present, this operation will cause a
+                   `CONFLICT' error.
+
+                   If `MODIFY' is specified, the specified virtual interface
+                   configuration is applied to the specified virtual
+                   interface only if it is present. If the specified virtual
+                   interface  is not present, this operation will cause a
+                   `NOTFOUND' error.";
+
+                type vtype:vnode-update-mode;
+                default UPDATE;
+            }
+
+            leaf apply-all {
+                description
+                  "Describes how to update the existing virtual interface
+                   specified by the RPC input. This field will be ignored
+                   if the specified virtual interface is not present.
+
+                   If `false' is specified, omitted fields will not be
+                   modified. For example, `description' field is not modified
+                   if `description' field is omitted. This is the default
+                   behavior.
+
+                   If `true' is specified, all the fields defined by
+                   `vtn-vinterface-config' will be applied to the virtual
+                   interface configuration as-is.
+                     - If `description' field is omitted, `description' field
+                       will be removed from the configuration.
+                     - If `enabled' field is omitted, `enabled' field in the
+                       virtual interface configuration will be reset to the
+                       default value (true).";
+
+                type boolean;
+                default false;
+            }
+
+            /* Virtual interface configuration. */
+            uses vtn-vinterface-config;
+         }
+
+         output {
+            uses vtype:vtn-rpc-result;
+         }
+    }
+
+    rpc remove-vinterface {
+        description
+          "Remove the specified virtual interface.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the VTN specified by `tenant-name' is not
+           present.
+
+           `NOTFOUND' is set if the vBridge specified by `tenant-name' and
+           `bridge-name' is not present.
+
+           `NOTFOUND' is set if the vTerminal specified by `tenant-name' and
+           `terminal-name' is not present.
+
+           `NOTFOUND' is set if the virtual interface specified by the RPC
+           input is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            /* The location of the virtual interface. */
+            uses vtype:vnode-path-fields;
+        }
+    }
+}
