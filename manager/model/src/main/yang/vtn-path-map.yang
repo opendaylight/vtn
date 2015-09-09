@@ -122,10 +122,10 @@ module vtn-path-map {
            RPC output, and `status' field in `vtn-path-map-result' describes
            the result of the operation.
 
-           CREATED indicates that the path map configuration specified by
+           `CREATED' indicates that the path map configuration specified by
            the index value has been newly created.
 
-           CHANGED indicates that the path map configuration specified by
+           `CHANGED' indicates that the path map configuration specified by
            the index value has been successfully changed.
 
            Null indicates that the path map configuration specified by the
@@ -178,7 +178,7 @@ module vtn-path-map {
            output, and `status' field in `vtn-path-map-result' describes
            the result of the operation.
 
-           REMOVED indicates that the path map associated with the map index
+           `REMOVED' indicates that the path map associated with the map index
            has been successfully removed.
 
            Null indicates that the path map is not associated with the map
@@ -232,7 +232,7 @@ module vtn-path-map {
 
            `status' in RPC output descripts the result of the operation.
 
-           REMOVED indicates that at least one path map in the specified
+           `REMOVED' indicates that at least one path map in the specified
            path map container has been removed.
 
            Null indicates that no configuration is present in the specified
