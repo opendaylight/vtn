@@ -1,0 +1,373 @@
+/*
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this distribution,
+ * and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-mac-map {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:mapping:mac";
+    prefix macmap;
+
+    import vtn-types {
+        prefix vtype;
+        revision-date 2015-02-09;
+    }
+    import vtn-mac-table {
+        prefix mactable;
+        revision-date 2015-09-07;
+    }
+
+    /* OpenDaylight yangtools */
+    import ietf-yang-types {
+        prefix yang;
+        revision-date 2010-09-24;
+    }
+
+    description
+      "The module that describes the data models for MAC mapping, which
+       associates a host with a vBridge in VTN.";
+
+    revision 2015-09-07 {
+        description "Initial revision.";
+    }
+
+    grouping vtn-mac-map-config {
+        description
+          "Describes configuration for a MAC mapping.";
+
+        container allowed-hosts {
+            description
+              "A set of hosts to be mapped by MAC mapping.
+               If a host in this container does not specify a MAC address,
+               all the hosts detected over the specified VLAN will be mapped.
+               For example, if \"@10\" is configured in this container,
+               all hosts detected on VLAN 10 will be mapped.
+
+               Note that zero, broadcast address, and multicast address
+               cannot be specified as MAC address. In addition, multiple host
+               information with the same MAC address cannot be configured in
+               this set.";
+            uses vtype:vlan-host-desc-set;
+        }
+
+        container denied-hosts {
+            description
+              "A set of hosts not to be mapped by MAC mapping.
+               This container is used to exclude specific hosts from mapping
+               when host information in `allowed-hosts' does not specify any
+               MAC address. Unlike `allowed-hosts', every hosts in this
+               container must specify a MAC address.
+
+               The hosts in this container is evaluated before
+               `allowed-hosts'. If the same host information is specified in
+               both `allowed-hosts' and this container, that host will not be
+               mapped by this MAC mapping.
+
+               Note that zero, broadcast address, and multicast address
+               cannot be specified as MAC address.";
+            uses vtype:vlan-host-desc-set;
+        }
+    }
+
+    grouping vtn-mac-map-status {
+        description
+          "Describes runtime status information about MAC mapping.";
+
+        list mapped-hosts {
+            description
+              "A list of MAC addresses actually mapped to the vBridge.";
+            key "mac-address";
+
+            leaf mac-address {
+                description "MAC address actually mapped to the vBridge.";
+                type yang:mac-address;
+            }
+        }
+    }
+
+    grouping vtn-mac-map-info {
+        description
+          "Describes information about MAC mapping, which maps hosts
+           specified by MAC address and VLAN ID to a vBridge.";
+
+        container mac-map-config {
+            description
+              "The container which contains configuration for MAC mapping.";
+            uses vtn-mac-map-config;
+        }
+
+        container mac-map-status {
+            description
+              "The container which contains runtime status information about
+               MAC mapping.";
+            uses vtn-mac-map-status;
+        }
+    }
+
+    grouping vtn-mac-mappable {
+        description
+          "Describes the data model which can contain MAC mapping
+           configuration.";
+
+        container mac-map {
+            description
+              "Describes information about MAC mapping, which maps hosts
+               specified by MAC address and VLAN ID to a vBridge.";
+            uses vtn-mac-map-info;
+        }
+    }
+
+    /*
+     * RPC definitions
+     */
+
+    rpc set-mac-map {
+        description
+          "Configure MAC mapping in the specified vBridge.
+
+           This operation changes the MAC addresses to be mapped and not to
+           be mapped at the same time.
+
+           Upon successful completion, the result of this operation will
+           be set to the `status' field in the RPC output.
+
+           `CREATED' indicates that new MAC mapping configuration has been
+           created in the specified vBridge.
+
+           `CHANGED' indicates that existing MAC mapping configuration has
+           been changed.
+
+           `REMOVED' indicates that MAC mapping configuration has been removed
+           from the specified vBridge.
+
+           Null indicates that MAC mapping configuration in the specified
+           vBridge was not changed.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the VTN specified by `tenant-name' is not
+           present.
+
+           `NOTFOUND' is set if the vBridge specified by `tenant-name' and
+           `bridge-name' is not present.
+
+           `CONFLICT' is set if this operation tries to map a host already
+           mapped by another MAC mapping.
+
+           `CONFLICT' is set if this operation tries to add a MAC address
+           into `allowed-hosts' in the MAC mapping configuration, and that
+           MAC address is already configured in `allowed-hosts'.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            /* The location of the vBridge. */
+            uses vtype:vbridge-path-fields;
+
+            leaf operation {
+                description
+                  "Describes how to update the specified MAC mapping.
+
+                   If `SET' is specified, the given MAC mapping configuration
+                   will be applied as specified. In other words, existing
+                   MAC mapping configuration will be removed, and then the
+                   given MAC mapping will be created. Note that MAC mapping
+                   will be removed if both `allowed-hosts' and `denied-hosts'
+                   fields in the RPC input are empty.
+
+                   If `ADD' is specified, the given MAC mapping configuration
+                   will be merged with existing configuration. Hosts configured
+                   in `allowed-hosts' and `denied-hosts' fields in the RPC
+                   input will be added to `allowed-hosts' and `denied-hosts'
+                   container in the MAC mapping configuration respectively.
+
+                   If `REMOVE' is specified, the given MAC mapping
+                   configuration will be removed from existing configuration.
+                   Hosts configured in `allowed-hosts' and `denied-hosts'
+                   fields in the RPC input will be removed from `allowed-hosts'
+                   and `denied-hosts' container in the MAC mapping
+                   configuration respectively.
+                   Note that MAC mapping will be removed if both
+                   `allowed-hosts' and `denied-hosts' container in the MAC
+                   mapping configuration become empty.
+
+                   Null will be treated as if `ADD' is specified.";
+                type vtype:vtn-update-operation-type;
+            }
+
+            leaf-list allowed-hosts {
+                description
+                  "A set of hosts to be added to or removed from
+                  `allowed-hosts' container in the MAC mapping configuration.
+                   Duplicate hosts will be eliminated automatically.
+                   Note that multiple host information with the same MAC
+                   address cannot be specified in this list.";
+                type vtype:vlan-host-desc;
+            }
+
+            leaf-list denied-hosts {
+                description
+                  "A set of hosts to be added to or removed from `denied-hosts'
+                   container in the MAC mapping configuration.
+                   Duplicate hosts will be eliminated automatically.";
+                type vtype:vlan-host-desc;
+            }
+        }
+
+        output {
+            uses vtype:vtn-rpc-result;
+        }
+    }
+
+    rpc set-mac-map-acl {
+        description
+          "Configure MAC mapping in the specified vBridge.
+
+           This operation changes the specified access control list of the
+           MAC mapping.
+
+           Upon successful completion, the result of this operation will
+           be set to the `status' field in the RPC output.
+
+           `CREATED' indicates that new MAC mapping configuration has been
+           created in the specified vBridge.
+
+           `CHANGED' indicates that existing MAC mapping configuration has
+           been changed.
+
+           `REMOVED' indicates that MAC mapping configuration has been removed
+           from the specified vBridge.
+
+           Null indicates that MAC mapping configuration in the specified
+           vBridge was not changed.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the VTN specified by `tenant-name' is not
+           present.
+
+           `NOTFOUND' is set if the vBridge specified by `tenant-name' and
+           `bridge-name' is not present.
+
+           `CONFLICT' is set if this operation tries to map a host already
+           mapped by another MAC mapping.
+
+           `CONFLICT' is set if this operation tries to add a MAC address
+           into `allowed-hosts' in the MAC mapping configuration, and that
+           MAC address is already configured in `allowed-hosts'.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            /* The location of the vBridge. */
+            uses vtype:vbridge-path-fields;
+
+            leaf acl-type {
+                description
+                  "The type of the target access control list.
+                   `ALLOW' indicates that the `allowed-hosts' container in the
+                   MAC mapping configuration should be modified.
+                   `DENY' indicates that the `denied-hosts' container in the
+                   MAC mapping configuration should be modified.
+
+                   Null is treated as if `ALLOW' is specified.";
+                type vtype:vtn-acl-type;
+            }
+
+            leaf operation {
+                description
+                  "Describes how to update the specified access control list
+                   in the MAC mapping configuration.
+
+                   If `SET' is specified, the given list of host information
+                   will be applied to the specified access control list as
+                   specified. In other words, the specified access control
+                   list is cleared, and then the given host information will
+                   be added to the specified access control list.
+                   Note that MAC mapping will be removed if both
+                   `allowed-hosts' and `denied-hosts' container in the MAC
+                   mapping configuration become empty.
+
+                   If `ADD' is specified, the given list of host information
+                   will be added to the specified access control list in the
+                   MAC mapping configuration.
+
+                   If `REMOVE' is specified, the host information configured
+                   in the RPC input will be removed from the specified access
+                   conrol list in the MAC mapping configuration.
+                   Note that MAC mapping will be removed if both
+                   `allowed-hosts' and `denied-hosts' container in the MAC
+                   mapping configuration become empty.
+
+                   Null will be treated as if `ADD' is specified.";
+                type vtype:vtn-update-operation-type;
+            }
+
+            leaf-list hosts {
+                description
+                  "A set of host information to be added to or removed from
+                   the access control list in the MAC mapping configuration.
+                   Duplicate hosts will be eliminated automatically.";
+                type vtype:vlan-host-desc;
+            }
+        }
+    }
+
+    rpc get-mac-mapped-host {
+        description
+          "Get a list of hosts where mapping is actually active based on MAC
+           mapping configured in the specified vBridge.
+
+           Upon successful completion, a list of host information is will be
+           set to the RPC output.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the VTN specified by `tenant-name' is not
+           present.
+
+           `NOTFOUND' is set if the vBridge specified by `tenant-name' and
+           `bridge-name' is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            /* The location of the vBridge. */
+            uses vtype:vbridge-path-fields;
+
+            leaf-list mac-addresses {
+                description
+                  "A list of MAC addresses to be searched.
+                   If this field is omitted or an empty list is specified,
+                   all the host information mapped to the specified vBridge by
+                   the MAC mapping will be set to the RPC output.
+                   Duplicates in this list will be eliminated automatically.";
+                type yang:mac-address;
+            }
+        }
+
+        output {
+            list mac-mapped-hosts {
+                description
+                  "A list of host information mapped to the specified vBridge
+                   by MAC mapping.";
+                uses mactable:vtn-mac-entry;
+            }
+        }
+    }
+}

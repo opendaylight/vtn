@@ -1,0 +1,199 @@
+/*
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this distribution,
+ * and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-port-map {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:mapping:port";
+    prefix portmap;
+
+    import vtn-types {
+        prefix vtype;
+        revision-date 2015-02-09;
+    }
+
+    description
+      "The module that describes the data models for port mapping, which
+       associates a physical switch port with a virtual interface in VTN.";
+
+    revision 2015-09-07 {
+        description "Initial revision.";
+    }
+
+    grouping vtn-port-map-config {
+        description
+          "Describes configuration for a port mapping.
+
+           Actual physical port of switch that gets mapped to a virtual
+           interface is decided as follows:
+
+             - If `port-name' field is configured, then out of physical ports
+               in the switch specified by `node' field, the physical port that
+               has the specified port name will get mapped.
+
+             - If `port-id' field is configured, the out of the physical ports
+               in the switch specified by `node' field, the physical port
+               corresponding to the specified port ID will get mapped.
+
+             - If both `port-name' and `port-id' are configured, the out of
+               the physical ports in the switch specified by `node' field,
+               the physical port that has the specified port name and port ID
+               will get mapped.";
+
+        uses vtype:vtn-port-location;
+
+        /* VLAN ID to be mapped. */
+        uses vtype:vtn-vlan-id-field;
+    }
+
+    grouping vtn-port-mappable {
+        description
+          "Describes the data model which can contain port mapping
+           configuration.";
+
+        container port-map-config {
+            description
+              "The container which contains port mapping configuration,
+               which maps a physical switch port to a virtual interface in
+               a virtual node.";
+            uses vtn-port-map-config;
+        }
+    }
+
+    /*
+     * RPC definitions
+     */
+
+    rpc set-port-map {
+        description
+          "Configure port mapping in the specified virtual interface.
+
+           The target virtual interface is determined by the RPC input.
+           If `bridge-name' field in the RPC input is configured, port
+           mapping is configured in the virtual interface attached to the
+           vBridge specified by `tenant-name' and `bridge-name'.
+           If `bridge-name' field is omitted and `terminal-name' field in
+           the RPC input is configured, port mapping is configured in the
+           virtual interface attached to the vTerminal specified by
+           `tenant-name' and `terminal-name'.
+
+           If port mapping is already configured in the specified virtual
+           interface, the specified settins are applied after old
+           configuration is deleted.
+
+           Upon successful completion, the result of this operation will
+           be set to the `status' field in the RPC output.
+
+           `CREATED' indicates that new port mapping configuration has been
+           created successfully.
+
+           `CHANGED' indicates that old port mapping configuration has been
+           replaced with the configuration specified by the RPC input.
+
+           Null indicates that the port mapping configuration specified by
+           the RPC input is already applied to the specified virtual
+           interface.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the VTN specified by `tenant-name' is not
+           present.
+
+           `NOTFOUND' is set if the vBridge specified by `tenant-name' and
+           `bridge-name' is not present.
+
+           `NOTFOUND' is set if the vTerminal specified by `tenant-name' and
+           `terminal-name' is not present.
+
+           `NOTFOUND' is set if the vBridge specified by `tenant-name' and
+           `bridge-name' is not present.
+
+           `NOTFOUND' is set if the virtual interface specified by
+           `tenant-name' and `bridge-name' (or `terminal-name') and
+           `interface-name' is not present.
+
+           `CONFLICT' is set if the specified combination of physical
+           switch port and VLAN ID is mapped to another virtual interface.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            /* The location of the virtual interface. */
+            uses vtype:vnode-path-fields;
+
+            /* Port mapping configuration. */
+            uses vtn-port-map-config;
+        }
+
+        output {
+            uses vtype:vtn-rpc-result;
+        }
+    }
+
+    rpc remove-port-map {
+        description
+          "Remove port mapping configuration from the specified virtual
+           interface.
+
+           The target virtual interface is determined by the RPC input.
+           If `bridge-name' field in the RPC input is configured, port
+           mapping configured in the virtual interface attached to the
+           vBridge specified by `tenant-name' and `bridge-name' will be
+           removed.
+           If `bridge-name' field is omitted and `terminal-name' field in
+           the RPC input is configured, port mapping configured in the
+           virtual interface attached to the vTerminal specified by
+           `tenant-name' and `terminal-name' will be removed.
+
+           Upon successful completion, the result of this operation will
+           be set to the `status' field in the RPC output.
+
+           `REMOVED' indicates that port mapping configuration has been
+           removed successfully from the virtual interface specified by the
+           RPC input.
+
+           Null indicates that port mapping configuration is not present in
+           the virtual interface specified by the RPC input.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the VTN specified by `tenant-name' is not
+           present.
+
+           `NOTFOUND' is set if the vBridge specified by `tenant-name' and
+           `bridge-name' is not present.
+
+           `NOTFOUND' is set if the vTerminal specified by `tenant-name' and
+           `terminal-name' is not present.
+
+           `NOTFOUND' is set if the vBridge specified by `tenant-name' and
+           `bridge-name' is not present.
+
+           `NOTFOUND' is set if the virtual interface specified by
+           `tenant-name' and `bridge-name' (or `terminal-name') and
+           `interface-name' is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            /* The location of the virtual interface. */
+            uses vtype:vnode-path-fields;
+        }
+
+        output {
+            uses vtype:vtn-rpc-result;
+        }
+    }
+}
