@@ -21,6 +21,9 @@ import java.util.Map;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
+
 /**
  * {@code XmlDataType} describes the data type of the XML node value or
  * attribute.
@@ -128,6 +131,26 @@ public abstract class XmlDataType {
             "10.1.2.3/1/2/3",
         };
         map.put(Ip4Network.class, forIp4);
+
+        String[] forVnodeName = {
+            "",
+            "bad name",
+            "vtn-1",
+            "@vtn",
+            "_vtn",
+            "/vbridge",
+            "a123456789B123456789c123456789D1",
+        };
+        map.put(VnodeName.class, forVnodeName);
+
+        String[] forVtnPortDesc = {
+            "",
+            "bad port desc",
+            "openflow:1:1,",
+            "openflow:1:2",
+            ",1,eth1",
+        };
+        map.put(VtnPortDesc.class, forVtnPortDesc);
     }
 
     /**

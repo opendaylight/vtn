@@ -53,13 +53,13 @@
   </build>
 
   <dependencies>
-    <!-- OpenDaylight MD-SAL -->
+    <!-- OpenDaylight controller (MD-SAL) -->
     <dependency>
       <groupId>org.opendaylight.controller.model</groupId>
       <artifactId>model-inventory</artifactId>
     </dependency>
 
-    <!-- OpenDaylight YANG Tools -->
+    <!-- OpenDaylight MD-SAL -->
     <dependency>
       <groupId>org.opendaylight.mdsal.model</groupId>
       <artifactId>ietf-yang-types</artifactId>

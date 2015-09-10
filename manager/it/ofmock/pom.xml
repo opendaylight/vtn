@@ -74,7 +74,7 @@
       <artifactId>org.osgi.core</artifactId>
     </dependency>
 
-    <!-- OpenDaylight MD-SAL -->
+    <!-- OpenDaylight controller (MD-SAL) -->
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>sal-common-api</artifactId>
@@ -104,6 +104,8 @@
       <groupId>org.opendaylight.yangtools</groupId>
       <artifactId>concepts</artifactId>
     </dependency>
+
+    <!-- OpenDaylight MD-SAL -->
     <dependency>
       <groupId>org.opendaylight.mdsal</groupId>
       <artifactId>yang-binding</artifactId>

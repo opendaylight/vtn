@@ -8,8 +8,7 @@
 
 package org.opendaylight.vtn.manager.internal.routing;
 
-import org.opendaylight.vtn.manager.PathPolicy;
-
+import org.opendaylight.vtn.manager.internal.routing.xml.XmlPathPolicy;
 import org.opendaylight.vtn.manager.internal.util.AbstractConfigFileUpdater;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
 
@@ -22,7 +21,7 @@ import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
  * </p>
  */
 final class PathPolicyChange
-    extends AbstractConfigFileUpdater<Integer, PathPolicy> {
+    extends AbstractConfigFileUpdater<Integer, XmlPathPolicy> {
     /**
      * The network topology graph.
      */
@@ -44,7 +43,7 @@ final class PathPolicyChange
      * {@inheritDoc}
      */
     @Override
-    protected boolean onUpdated(Integer key, PathPolicy value) {
+    protected boolean onUpdated(Integer key, XmlPathPolicy value) {
         // Update the route resolver for the given path policy.
         return topology.updateResolver(key);
     }

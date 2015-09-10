@@ -8,15 +8,20 @@
 
 package org.opendaylight.vtn.manager.internal.routing;
 
+import static org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtilsTest.PATH_POLICY_MIN;
+import static org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtilsTest.PATH_POLICY_MAX;
+
 import org.junit.Test;
 
 import org.mockito.Mockito;
 
-import org.opendaylight.vtn.manager.PathPolicy;
-
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
+import org.opendaylight.vtn.manager.internal.routing.xml.XmlPathPolicy;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicy;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicyBuilder;
 
 /**
  * JUnit test for {@link PathPolicyChange}
@@ -26,7 +31,7 @@ public class PathPolicyChangeTest extends TestBase {
      * Test case for the following methods.
      *
      * <ul>
-     *   <li>{@link PathPolicyChange#onUpdated(Integer,PathPolicy)}</li>
+     *   <li>{@link PathPolicyChange#onUpdated(Integer,XmlPathPolicy)}</li>
      *   <li>{@link PathPolicyChange#onRemoved(Integer)}</li>
      * </ul>
      */
@@ -35,12 +40,13 @@ public class PathPolicyChangeTest extends TestBase {
         VTNManagerProvider provider = Mockito.mock(VTNManagerProvider.class);
         TopologyGraph topo = new TopologyGraph(provider);
         PathPolicyChange change = new PathPolicyChange(topo);
-        Integer[] policies = {1, 2, 3};
-        for (Integer id: policies) {
-            PathPolicy pp = new PathPolicy(id, 0L, null);
-            assertEquals(true, change.onUpdated(id, pp));
-            assertEquals(false, change.onUpdated(id, pp));
-            assertEquals(false, change.onUpdated(id, pp));
+        for (int id = PATH_POLICY_MIN; id <= PATH_POLICY_MAX; id++) {
+            Integer pid = Integer.valueOf(id);
+            VtnPathPolicy vpp = new VtnPathPolicyBuilder().setId(pid).build();
+            XmlPathPolicy xpp = new XmlPathPolicy(vpp);
+            assertEquals(true, change.onUpdated(id, xpp));
+            assertEquals(false, change.onUpdated(id, xpp));
+            assertEquals(false, change.onUpdated(id, xpp));
             change.onRemoved(id);
         }
     }

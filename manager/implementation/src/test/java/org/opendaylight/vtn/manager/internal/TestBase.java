@@ -45,9 +45,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.EthernetHost;
-import org.opendaylight.vtn.manager.PathCost;
-import org.opendaylight.vtn.manager.PathMap;
-import org.opendaylight.vtn.manager.PathPolicy;
 import org.opendaylight.vtn.manager.PortLocation;
 import org.opendaylight.vtn.manager.SwitchPort;
 import org.opendaylight.vtn.manager.VBridgeConfig;
@@ -205,6 +202,19 @@ public abstract class TestBase extends Assert {
             i = new Integer(i.intValue());
         }
         return i;
+    }
+
+    /**
+     * Create a copy of the specified {@link Long} object.
+     *
+     * @param num  An {@link Long} object to be copied.
+     * @return     A copied boolean object.
+     */
+    protected static Long copy(Long num) {
+        if (num != null) {
+            num = new Long(num.longValue());
+        }
+        return num;
     }
 
     /**
@@ -2151,94 +2161,6 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * Common Method to create PathMap.
-     *  @return PathMap list object.
-     */
-    public List<PathMap> createPathMaps() {
-        List<PathMap> pathmaplist = new ArrayList<PathMap>();
-
-        try {
-            PathMap pathmap = null;
-            pathmaplist.add(null);
-            pathmaplist.add(pathmap);
-
-            // PathMap with ConditionName and PolicyId
-            for (String conditionName : TENANT_NAME) {
-                for (int policyId: createIntegers(-1, 4, false)) {
-                    pathmap = new PathMap(conditionName, policyId);
-                    pathmaplist.add(pathmap);
-                }
-            }
-
-            // PathMap with Index, ConditionName and PolicyId
-            pathmaplist.addAll(createPathMapsWithIndex());
-
-            // PathMap with Index, ConditionName, PolicyId, IdleTimeout and HardTimeout
-            pathmaplist.addAll(createPathMapsWithAllParameters());
-
-            return pathmaplist;
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            return null;
-        }
-    }
-
-    /**
-     * Common Method to create PathMap with Index, ConditionName, PolicyId.
-     *  @return PathMap list object.
-     */
-    public List<PathMap> createPathMapsWithIndex() {
-        List<PathMap> pathmaplist = new ArrayList<PathMap>();
-
-        try {
-            // PathMap with Index, ConditionName and PolicyId
-            for (int policyId : createIntegers(1, 1, false)) {
-                for (int idx : createIntegers(5, 3, false)) {
-                    PathMap pathmap = new PathMap(idx, TENANT_NAME[0], policyId);
-                    pathmaplist.add(pathmap);
-                }
-            }
-
-            return pathmaplist;
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            return null;
-        }
-    }
-
-    /**
-     * Common Method to create PathMap with Index, ConditionName, PolicyId, IdleTimeout and HardTimeout.
-     *  @return PathMap list object.
-     */
-    public List<PathMap> createPathMapsWithAllParameters() {
-        List<PathMap> pathmaplist = new ArrayList<PathMap>();
-
-        try {
-            PathMap pathmap = null;
-            // PathMap with Index, ConditionName, PolicyId, IdleTimeout and HardTimeout
-            for (String conditionName : TENANT_NAME) {
-                for (int policyId : createIntegers(0, 2, false)) {
-                    for (int idx : INDEX_ARRAY) {
-                        // VTenantConfig.idleTimeout List
-                        for (Integer idleTimeout: createIntegers(-1, 3, false)) {
-                            // VTenantConfig.hardTimeout List
-                            for (Integer hardTimeout: createIntegers(-1, 3, false)) {
-                                pathmap = new PathMap(idx, conditionName, policyId, idleTimeout, hardTimeout);
-                                pathmaplist.add(pathmap);
-                            }
-                        }
-                    }
-                }
-            }
-
-            return pathmaplist;
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            return null;
-        }
-    }
-
-    /**
      * Common Method to create VTenantImpl.
      *
      *  @param description      The description of the VTN.
@@ -2288,50 +2210,6 @@ public abstract class TestBase extends Assert {
                 }
             }
             return portLocation;
-        } catch (Exception ex) {
-            //ex.printStackTrace();
-            return null;
-        }
-    }
-
-    /**
-     * Create lists of {@link PathPolicy} instances for test.
-     *
-     * @return A list of {@link PathPolicy} lists.
-     */
-    public List<PathPolicy> createPathPolicy() {
-        try {
-            int[] ids = {0, 1, 30};
-
-            ArrayList<List<PathCost>> list = new ArrayList<List<PathCost>>();
-            ArrayList<PathPolicy> pathPolicyList = new ArrayList<PathPolicy>();
-            list.add(new ArrayList<PathCost>());
-            ArrayList<PathCost> pathCostList = new ArrayList<PathCost>();
-
-            for (Node node : createNodes(2)) {
-                for (SwitchPort port : createSwitchPorts(2)) {
-                    for (long cost : COST) {
-                        PortLocation ploc = new PortLocation(node, port);
-                        PathCost pc = new PathCost(ploc, cost);
-                        pathCostList.add(pc);
-                        list.add(new ArrayList<PathCost>(pathCostList));
-                    }
-                }
-            }
-
-            PathPolicy ppolicy = null;
-            pathPolicyList.add(null);
-            pathPolicyList.add(ppolicy);
-
-            for (int id : ids) {
-                for (long cost : COST) {
-                    for (List<PathCost> pathCost : list) {
-                        ppolicy = new PathPolicy(cost, pathCost);
-                        pathPolicyList.add(ppolicy);
-                    }
-                }
-            }
-            return pathPolicyList;
         } catch (Exception ex) {
             //ex.printStackTrace();
             return null;

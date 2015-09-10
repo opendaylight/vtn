@@ -8,8 +8,7 @@
 
 package org.opendaylight.vtn.manager.internal.routing;
 
-import org.opendaylight.vtn.manager.PathMap;
-
+import org.opendaylight.vtn.manager.internal.routing.xml.XmlPathMap;
 import org.opendaylight.vtn.manager.internal.util.ConfigFileUpdater;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
 
@@ -21,7 +20,7 @@ import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
  *   Note that this class is not synchronized.
  * </p>
  */
-final class GlobalPathMapChange extends ConfigFileUpdater<Integer, PathMap> {
+final class GlobalPathMapChange extends ConfigFileUpdater<Integer, XmlPathMap> {
     /**
      * Construct a new instance.
      */

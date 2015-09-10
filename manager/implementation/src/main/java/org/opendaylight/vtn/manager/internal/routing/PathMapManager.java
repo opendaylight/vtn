@@ -18,13 +18,13 @@ import java.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opendaylight.vtn.manager.PathMap;
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxTask;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.VTNSubSystem;
+import org.opendaylight.vtn.manager.internal.routing.xml.XmlPathMap;
 import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
@@ -99,11 +99,11 @@ public final class PathMapManager
          *                resumed configuration.
          * @param loaded  A set of loaded path path map indices.
          * @param key     A string representation of the map index.
-         * @param pmap    A {@link PathMap} instance.
+         * @param xpm     A {@link XmlPathMap} instance.
          */
         private void resume(List<VtnPathMap> vlist, Set<Integer> loaded,
-                            String key, PathMap pmap) {
-            Integer index = pmap.getIndex();
+                            String key, XmlPathMap xpm) {
+            Integer index = xpm.getIndex();
             try {
                 if (!key.equals(String.valueOf(index))) {
                     String msg = new StringBuilder("Unexpected index: ").
@@ -111,14 +111,14 @@ public final class PathMapManager
                         toString();
                     throw new IllegalArgumentException(msg);
                 }
-                VtnPathMap vpm = PathMapUtils.toVtnPathMapBuilder(pmap).
+                VtnPathMap vpm = PathMapUtils.toVtnPathMapBuilder(xpm).
                     build();
                 vlist.add(vpm);
                 loaded.add(index);
             } catch (RpcException | RuntimeException e) {
                 String msg = MiscUtils.joinColon(
                     "Ignore invalid path map configuration",
-                    pmap, e.getMessage());
+                    xpm, e.getMessage());
                 LOG.warn(msg, e);
             }
         }
@@ -135,9 +135,10 @@ public final class PathMapManager
             XmlConfigFile.Type ftype = XmlConfigFile.Type.PATHMAP;
             List<VtnPathMap> vlist = new ArrayList<>();
             for (String key: XmlConfigFile.getKeys(ftype)) {
-                PathMap pmap = XmlConfigFile.load(ftype, key, PathMap.class);
-                if (pmap != null) {
-                    resume(vlist, loaded, key, pmap);
+                XmlPathMap xpm =
+                    XmlConfigFile.load(ftype, key, XmlPathMap.class);
+                if (xpm != null) {
+                    resume(vlist, loaded, key, xpm);
                 }
             }
 
@@ -236,9 +237,9 @@ public final class PathMapManager
                 for (VtnPathMap vpm: vlist) {
                     // Save configuration into a file.
                     try {
-                        PathMap pmap = PathMapUtils.toPathMap(vpm);
-                        String index = pmap.getIndex().toString();
-                        XmlConfigFile.save(ftype, index, pmap);
+                        XmlPathMap xpm = new XmlPathMap(vpm);
+                        String index = xpm.getIndex().toString();
+                        XmlConfigFile.save(ftype, index, xpm);
                         indices.add(index);
                     } catch (Exception e) {
                         LOG.warn("Ignore broken path map: " + vpm, e);
@@ -278,8 +279,8 @@ public final class PathMapManager
                            IdentifiedData<VtnPathMap> data, boolean created) {
         VtnPathMap vpm = data.getValue();
         try {
-            PathMap pmap = PathMapUtils.toPathMap(vpm);
-            ectx.addUpdated(pmap.getIndex(), pmap, created);
+            XmlPathMap xpm = new XmlPathMap(vpm);
+            ectx.addUpdated(xpm.getIndex(), xpm, created);
         } catch (Exception e) {
             FixedLogger logger = new FixedLogger.Warn(LOG);
             logger.log(e, "Ignore broken %s event: path=%s, value=%s",

@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -216,6 +217,30 @@ public final class FlowUtils {
                 throw RpcException.getBadArgumentException(msg);
             }
         }
+    }
+
+    /**
+     * Determine whether the given two {@link VtnFlowTimeoutConfig} instances
+     * contain the same configuration or not.
+     *
+     * @param vftc1  The first instance to be compared.
+     * @param vftc2  The second instance to be compared.
+     * @return  {@code true} only if the given instances contains the same
+     *          configuration.
+     */
+    public static boolean equalsFlowTimeoutConfig(
+        VtnFlowTimeoutConfig vftc1, VtnFlowTimeoutConfig vftc2) {
+        Integer idle1 = vftc1.getIdleTimeout();
+        Integer idle2 = vftc2.getIdleTimeout();
+        boolean ret;
+        if (Objects.equals(idle1, idle2)) {
+            ret = Objects.equals(vftc1.getHardTimeout(),
+                                 vftc2.getHardTimeout());
+        } else {
+            ret = false;
+        }
+
+        return ret;
     }
 
     /**
