@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3a79b1b5_0911dd04",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/SecurityGroupHandler.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-09-11T01:14:51Z",
+      "side": 1,
+      "message": "Please  check if the security group is \"default\"",
+      "revId": "8c94b53da4eac1d772f9a4b157fe28078ce2366c",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3a79b1b5_2914d9f3",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/SecurityGroupHandler.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 45,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-09-11T01:14:51Z",
+      "side": 1,
+      "message": "Is it okay to return  FAILURE here?, we don\u0027t support update anyway",
+      "revId": "8c94b53da4eac1d772f9a4b157fe28078ce2366c",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3a79b1b5_c9fa05bd",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/SecurityGroupHandler.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 60,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-09-11T01:14:51Z",
+      "side": 1,
+      "message": "I don\u0027t think VTN handles this TODO",
+      "revId": "8c94b53da4eac1d772f9a4b157fe28078ce2366c",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
