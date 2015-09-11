@@ -2,6 +2,23 @@
   "comments": [
     {
       "key": {
+        "uuid": "3a79b1b5_698df130",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-09-11T02:14:40Z",
+      "side": 1,
+      "message": "Please edit as Fix for the Bug that mentions this issue with Kilo",
+      "revId": "8c94b53da4eac1d772f9a4b157fe28078ce2366c",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "3a79b1b5_0911dd04",
         "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/SecurityGroupHandler.java",
         "patchSetId": 1
