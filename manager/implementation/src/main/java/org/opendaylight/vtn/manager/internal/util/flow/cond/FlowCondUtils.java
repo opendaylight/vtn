@@ -109,6 +109,18 @@ public final class FlowCondUtils {
     }
 
     /**
+     * Ensure the given vnode-name is not null.
+     *
+     * @param vname  A {@link VnodeName} instance.
+     * @throws RpcException  {@code vname} is {@code null}.
+     */
+    public static void checkPresent(VnodeName vname) throws RpcException {
+        if (vname == null) {
+            throw MiscUtils.getNullArgumentException(DESC_FLOW_COND + " name");
+        }
+    }
+
+    /**
      * Create the instance identifier for the flow condition specified by the
      * given name.
      *

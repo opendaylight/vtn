@@ -59,7 +59,7 @@ public final class VTNFlowCondition implements VTNIdentifiable<String> {
      * The name of the flow condition.
      */
     @XmlElement(required = true)
-    private String  name;
+    private VnodeName  name;
 
     /**
      * A list of {@link VTNFlowMatch} instances sorted by match index.
@@ -67,12 +67,6 @@ public final class VTNFlowCondition implements VTNIdentifiable<String> {
     @XmlElementWrapper(name = "vtn-flow-matches")
     @XmlElement(name = "vtn-flow-match")
     private List<VTNFlowMatch>  matches;
-
-    /**
-     * A {@link VnodeName} instance that contains the name of this flow
-     * condition.
-     */
-    private VnodeName  nodeName;
 
     /**
      * {@code MatchInitializer} initializes the list of {@link VTNFlowMatch}
@@ -286,8 +280,7 @@ public final class VTNFlowCondition implements VTNIdentifiable<String> {
      */
     public VTNFlowCondition(String nm, FlowCondition fcond)
         throws RpcException {
-        nodeName = FlowCondUtils.checkName(nm);
-        name = nm;
+        name = FlowCondUtils.checkName(nm);
 
         List<FlowMatch> list = (fcond == null)
             ? null : fcond.getMatches();
@@ -302,8 +295,8 @@ public final class VTNFlowCondition implements VTNIdentifiable<String> {
      * @throws RpcException   An error occurred.
      */
     public VTNFlowCondition(VtnFlowCondConfig vfconf) throws RpcException {
-        nodeName = vfconf.getName();
-        name = FlowCondUtils.checkName(nodeName);
+        name = vfconf.getName();
+        FlowCondUtils.checkName(name);
 
         List<VtnFlowMatch> list = vfconf.getVtnFlowMatch();
         matches = new VtnFlowMatchConverter().initialize(list);
@@ -325,7 +318,7 @@ public final class VTNFlowCondition implements VTNIdentifiable<String> {
             }
         }
 
-        return new FlowCondition(name, list);
+        return new FlowCondition(name.getValue(), list);
     }
 
     /**
@@ -336,7 +329,7 @@ public final class VTNFlowCondition implements VTNIdentifiable<String> {
      */
     public VtnFlowConditionBuilder toVtnFlowConditionBuilder() {
         VtnFlowConditionBuilder builder = new VtnFlowConditionBuilder().
-            setName(nodeName);
+            setName(name);
 
         List<VtnFlowMatch> list;
         if (matches != null && !matches.isEmpty()) {
@@ -369,7 +362,7 @@ public final class VTNFlowCondition implements VTNIdentifiable<String> {
      */
     public InstanceIdentifier<VtnFlowCondition> getPath() {
         return InstanceIdentifier.builder(VtnFlowConditions.class).
-            child(VtnFlowCondition.class, new VtnFlowConditionKey(nodeName)).
+            child(VtnFlowCondition.class, new VtnFlowConditionKey(name)).
             build();
     }
 
@@ -379,7 +372,7 @@ public final class VTNFlowCondition implements VTNIdentifiable<String> {
      * @throws RpcException  Verifycation failed.
      */
     public void verify() throws RpcException {
-        nodeName = FlowCondUtils.checkName(name);
+        FlowCondUtils.checkPresent(name);
         matches = new MatchVerifier().initialize(matches);
     }
 
@@ -419,7 +412,7 @@ public final class VTNFlowCondition implements VTNIdentifiable<String> {
      */
     private void traceMatch(FlowMatchContext ctx, String msg) {
         if (LOG.isTraceEnabled()) {
-            LOG.trace("{}: {}: packet=[{}]", name, msg,
+            LOG.trace("{}: {}: packet=[{}]", name.getValue(), msg,
                       ctx.getHeaderDescription());
         }
     }
@@ -434,7 +427,7 @@ public final class VTNFlowCondition implements VTNIdentifiable<String> {
     private void traceMatch(FlowMatchContext ctx, String msg,
                             VTNFlowMatch vfmatch) {
         if (LOG.isTraceEnabled()) {
-            LOG.trace("{}: {}: match=[{}], packet=[{}]", name, msg,
+            LOG.trace("{}: {}: match=[{}], packet=[{}]", name.getValue(), msg,
                       vfmatch.getConditionKey(), ctx.getHeaderDescription());
         }
     }
@@ -448,7 +441,7 @@ public final class VTNFlowCondition implements VTNIdentifiable<String> {
      */
     @Override
     public String getIdentifier() {
-        return name;
+        return name.getValue();
     }
 
     // Object

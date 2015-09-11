@@ -35,6 +35,7 @@ import org.opendaylight.vtn.manager.internal.DataGenerator;
 import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
 import org.opendaylight.vtn.manager.internal.XmlNode;
+import org.opendaylight.vtn.manager.internal.XmlValueType;
 import org.opendaylight.vtn.manager.internal.util.flow.match.EtherMatchParams;
 import org.opendaylight.vtn.manager.internal.util.flow.match.IcmpMatchParams;
 import org.opendaylight.vtn.manager.internal.util.flow.match.Inet4MatchParams;
@@ -75,6 +76,8 @@ public class VTNFlowConditionTest extends TestBase {
         String[] p = XmlDataType.addPath(
             "vtn-flow-matches", XmlDataType.addPath(name, parent));
         List<XmlDataType> dlist = new ArrayList<>();
+        dlist.add(new XmlValueType("name", VnodeName.class).
+                  add(name).prepend(parent));
         dlist.addAll(VTNFlowMatchTest.getXmlDataTypes("vtn-flow-match", p));
         return dlist;
     }
@@ -388,60 +391,13 @@ public class VTNFlowConditionTest extends TestBase {
             assertEquals(msg, st.getDescription());
         }
 
-        // Empty name
-        msg = "Flow condition name cannot be empty";
-        etag = RpcErrorTag.BAD_ELEMENT;
-        xml = new XmlNode(XML_ROOT).add(new XmlNode("name")).toString();
-        vfcond = unmarshal(um, xml, type);
-        try {
-            vfcond.verify();
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
-            assertEquals(msg, st.getDescription());
-        }
-
-        // Invalid name
-        msg = "Flow condition name is invalid";
-        String[] invalidNames = {
-            // Too long name.
-            "01234567890123456789012345678901",
-            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-
-            // Starts with an invalid character.
-            "_abc",
-            ";abc",
-            "/abc",
-            "%abc",
-
-            // Invalid character.
-            "abcde-0123",
-            "abcde.0123",
-            "abcde:0123",
-        };
-        for (String name: invalidNames) {
-            xml = new XmlNode(XML_ROOT).
-                add(new XmlNode("name", name)).toString();
-            vfcond = unmarshal(um, xml, type);
-            try {
-                vfcond.verify();
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals(msg, st.getDescription());
-            }
-        }
-
         // Duplicate index.
         int badIndex = 31;
         XmlNode xn = new XmlNode(XML_ROOT).add(new XmlNode("name", "fcond"));
         XmlNode xmatches = new XmlNode("vtn-flow-matches").
             add(new FlowMatchParams(badIndex).toXmlNode("vtn-flow-match"));
         msg = "Duplicate match index: " + badIndex;
+        etag = RpcErrorTag.BAD_ELEMENT;
         for (int i = 1; i <= badIndex + 20; i++) {
             FlowMatchParams fmp = new FlowMatchParams().setIndex(i);
             xmatches.add(fmp.toXmlNode("vtn-flow-match"));
@@ -457,6 +413,9 @@ public class VTNFlowConditionTest extends TestBase {
             assertEquals(StatusCode.BADREQUEST, st.getCode());
             assertEquals(msg, st.getDescription());
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(um, type, getXmlDataTypes(XML_ROOT));
     }
 
     /**
