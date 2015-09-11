@@ -18,9 +18,7 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.opendaylight.vtn.manager.PathMap;
-
-import org.opendaylight.vtn.manager.internal.util.pathmap.PathMapUtils;
+import org.opendaylight.vtn.manager.internal.routing.xml.XmlPathMap;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.vnode.VTenantUtils;
 
@@ -40,7 +38,7 @@ public final class XmlVTenant extends XmlVNode {
      */
     @XmlElementWrapper(name = "vtn-path-maps")
     @XmlElement(name = "vtn-path-map")
-    private List<PathMap>  pathMaps;
+    private List<XmlPathMap>  pathMaps;
 
     /**
      * Private constructor only for JAXB.
@@ -76,9 +74,9 @@ public final class XmlVTenant extends XmlVNode {
     /**
      * Return a list of VTN path map configurations.
      *
-     * @return  A list of {@link PathMap} instances or {@code null}.
+     * @return  A list of {@link XmlPathMap} instances or {@code null}.
      */
-    public List<PathMap> getPathMaps() {
+    public List<XmlPathMap> getPathMaps() {
         return pathMaps;
     }
 
@@ -99,10 +97,10 @@ public final class XmlVTenant extends XmlVNode {
             return;
         }
 
-        List<PathMap> list = new ArrayList<>(vlist.size());
+        List<XmlPathMap> list = new ArrayList<>(vlist.size());
         pathMaps = list;
         for (VtnPathMap vpm: vlist) {
-            list.add(PathMapUtils.toPathMap(vpm));
+            list.add(new XmlPathMap(vpm));
         }
     }
 

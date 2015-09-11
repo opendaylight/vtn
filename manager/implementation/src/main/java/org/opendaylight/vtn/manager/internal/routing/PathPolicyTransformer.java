@@ -8,6 +8,8 @@
 
 package org.opendaylight.vtn.manager.internal.routing;
 
+import static org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils.COST_UNDEF;
+
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -15,7 +17,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.commons.collections15.Transformer;
 
-import org.opendaylight.vtn.manager.PathPolicy;
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
@@ -213,7 +214,7 @@ final class PathPolicyTransformer implements Transformer<LinkEdge, Long> {
     private Long getDefaultCost(VtnPathPolicy vpp, SalPort sport,
                                 VtnPort vport) {
         Long cost = vpp.getDefaultCost();
-        if (cost == null || cost.longValue() == PathPolicy.COST_UNDEF) {
+        if (cost == null || cost.longValue() == COST_UNDEF) {
             cost = vport.getCost();
             LOG.trace("{}: Use link cost in VTN port: port={}, cost={}",
                       policyId, sport, cost);

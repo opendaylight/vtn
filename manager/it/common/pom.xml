@@ -82,7 +82,7 @@
       <artifactId>org.osgi.core</artifactId>
     </dependency>
 
-    <!-- OpenDaylight MD-SAL -->
+    <!-- OpenDaylight controller (MD-SAL) -->
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>sal-binding-it</artifactId>
@@ -97,7 +97,7 @@
       <artifactId>model-topology</artifactId>
     </dependency>
 
-    <!-- OpenDaylight AD-SAL -->
+    <!-- OpenDaylight controller (AD-SAL) -->
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>sal</artifactId>
@@ -165,7 +165,7 @@
       <artifactId>com.sun.jersey.jersey-servlet</artifactId>
     </dependency>
 
-    <!-- OpenDaylight YANG Tools -->
+    <!-- OpenDaylight MD-SAL -->
     <dependency>
       <groupId>org.opendaylight.mdsal.model</groupId>
       <artifactId>ietf-topology</artifactId>

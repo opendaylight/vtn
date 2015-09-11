@@ -53,6 +53,11 @@ public final class PathPolicyUtils {
     public static final Long  DEFAULT_LINK_COST = Long.valueOf(1L);
 
     /**
+     * The pseudo link cost value which represents the cost is not defined.
+     */
+    public static final long  COST_UNDEF = 0L;
+
+    /**
      * Private constructor that protects this class from instantiating.
      */
     private PathPolicyUtils() {}
@@ -253,7 +258,7 @@ public final class PathPolicyUtils {
      */
     public static PathPolicy toPathPolicy(VtnPathPolicy vpp) {
         Long c = vpp.getDefaultCost();
-        long defc = (c == null) ? PathPolicy.COST_UNDEF : c.longValue();
+        long defc = (c == null) ? COST_UNDEF : c.longValue();
         List<PathCost> costs = new ArrayList<>();
         List<VtnPathCost> vlist = vpp.getVtnPathCost();
         if (vlist != null) {

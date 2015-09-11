@@ -150,7 +150,7 @@
   </build>
 
   <dependencies>
-    <!-- OpenDaylight YANG Tools -->
+    <!-- OpenDaylight MD-SAL -->
     <dependency>
       <groupId>org.opendaylight.mdsal</groupId>
       <artifactId>yang-binding</artifactId>

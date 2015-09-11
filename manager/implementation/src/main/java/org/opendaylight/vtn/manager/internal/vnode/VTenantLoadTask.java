@@ -16,11 +16,11 @@ import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opendaylight.vtn.manager.PathMap;
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
+import org.opendaylight.vtn.manager.internal.routing.xml.XmlPathMap;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.FixedLogger;
 import org.opendaylight.vtn.manager.internal.util.LogRecord;
@@ -145,31 +145,31 @@ class VTenantLoadTask extends AbstractTxTask<Vtns> {
      * Resume VTN path map configuration.
      *
      * @param vname  A {@link VnodeName} instance that contains the VTN name.
-     * @param pmaps  A list of {@link PathMap} instances.
+     * @param xpms   A list of {@link XmlPathMap} instances.
      * @return  A list of {@link VtnPathMap} instances if at least one VTN
      *          path map is present. {@code null} if no path map is present.
      */
     private List<VtnPathMap> resumePathMaps(VnodeName vname,
-                                            List<PathMap> pmaps) {
-        if (pmaps == null || pmaps.isEmpty()) {
+                                            List<XmlPathMap> xpms) {
+        if (xpms == null || xpms.isEmpty()) {
             return null;
         }
 
-        List<VtnPathMap> vlist = new ArrayList<>(pmaps.size());
-        for (PathMap pmap: pmaps) {
+        List<VtnPathMap> vlist = new ArrayList<>(xpms.size());
+        for (XmlPathMap xpm: xpms) {
+            Integer index = xpm.getIndex();
             try {
-                vlist.add(PathMapUtils.toVtnPathMapBuilder(pmap).build());
-                Integer index = pmap.getIndex();
+                vlist.add(PathMapUtils.toVtnPathMapBuilder(xpm).build());
                 addLoadedPath(PathMapUtils.getIdentifier(vname, index),
                               "%s.%s: VTN path map has been loaded: " +
                               "cond=%s, policy=%s, idle=%s, hard=%s",
-                              vname.getValue(), pmap.getIndex(),
-                              pmap.getFlowConditionName(),
-                              pmap.getPathPolicyId(), pmap.getIdleTimeout(),
-                              pmap.getHardTimeout());
+                              vname.getValue(), index,
+                              xpm.getCondition(),
+                              xpm.getPolicy(), xpm.getIdleTimeout(),
+                              xpm.getHardTimeout());
             } catch (Exception e) {
                 String msg = new StringBuilder(vname.getValue()).
-                    append('.').append(pmap.getIndex()).
+                    append('.').append(index).
                     append(": Ignore broken VTN path map.").toString();
                 logger.warn(msg, e);
             }

@@ -93,7 +93,7 @@
       <artifactId>manager.model</artifactId>
     </dependency>
 
-    <!-- OpenDaylight YANG Tools -->
+    <!-- OpenDaylight MD-SAL -->
     <dependency>
       <groupId>org.opendaylight.mdsal.model</groupId>
       <artifactId>ietf-yang-types</artifactId>

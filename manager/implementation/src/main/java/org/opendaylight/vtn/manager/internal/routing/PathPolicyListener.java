@@ -17,12 +17,12 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opendaylight.vtn.manager.PathPolicy;
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxTask;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
+import org.opendaylight.vtn.manager.internal.routing.xml.XmlPathPolicy;
 import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
@@ -31,7 +31,6 @@ import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyConfigBuilder;
-import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 
@@ -84,11 +83,11 @@ final class PathPolicyListener
          *                resumed configuration.
          * @param loaded  A set of loaded path policy IDs.
          * @param key     A string representation of the policy ID.
-         * @param pp      A {@link PathPolicy} instance.
+         * @param xpp     A {@link XmlPathPolicy} instance.
          */
         private void resume(List<VtnPathPolicy> vlist, Set<Integer> loaded,
-                            String key, PathPolicy pp) {
-            Integer pid = pp.getPolicyId();
+                            String key, XmlPathPolicy xpp) {
+            Integer pid = xpp.getId();
             try {
                 if (!key.equals(String.valueOf(pid))) {
                     String msg = new StringBuilder("Unexpected ID: ").
@@ -97,13 +96,13 @@ final class PathPolicyListener
                     throw new IllegalArgumentException(msg);
                 }
                 VtnPathPolicy vpp = new PathPolicyConfigBuilder.Data().
-                    set(pp).getBuilder().build();
+                    set(xpp).getBuilder().build();
                 vlist.add(vpp);
                 loaded.add(pid);
             } catch (RpcException | RuntimeException e) {
                 String msg = MiscUtils.joinColon(
                     "Ignore invalid path policy configuration",
-                    pp, e.getMessage());
+                    xpp, e.getMessage());
                 LOG.warn(msg, e);
             }
         }
@@ -120,10 +119,10 @@ final class PathPolicyListener
             XmlConfigFile.Type ftype = XmlConfigFile.Type.PATHPOLICY;
             List<VtnPathPolicy> vlist = new ArrayList<>();
             for (String key: XmlConfigFile.getKeys(ftype)) {
-                PathPolicy pp = XmlConfigFile.load(
-                    ftype, key, PathPolicy.class);
-                if (pp != null) {
-                    resume(vlist, loaded, key, pp);
+                XmlPathPolicy xpp = XmlConfigFile.load(
+                    ftype, key, XmlPathPolicy.class);
+                if (xpp != null) {
+                    resume(vlist, loaded, key, xpp);
                 }
             }
 
@@ -222,9 +221,9 @@ final class PathPolicyListener
             if (vlist != null) {
                 for (VtnPathPolicy vpp: vlist) {
                     // Save configuration into a file.
-                    PathPolicy pp = PathPolicyUtils.toPathPolicy(vpp);
-                    String key = pp.getPolicyId().toString();
-                    XmlConfigFile.save(ftype, key, pp);
+                    XmlPathPolicy xpp = new XmlPathPolicy(vpp);
+                    String key = xpp.getId().toString();
+                    XmlConfigFile.save(ftype, key, xpp);
                     names.add(key);
                 }
             }
@@ -314,8 +313,7 @@ final class PathPolicyListener
             // setup.
             Set<Integer> loaded = loadedPolicies;
             if (loaded == null || !loaded.remove(id)) {
-                VtnPathPolicy vpp = data.getValue();
-                ectx.addUpdated(id, PathPolicyUtils.toPathPolicy(vpp));
+                ectx.addUpdated(id, new XmlPathPolicy(data.getValue()));
             } else if (loaded.isEmpty()) {
                 LOG.debug("All loaded path policies have been notified.");
                 loadedPolicies = null;
@@ -336,7 +334,7 @@ final class PathPolicyListener
             LOG.warn("Ignore broken update event: path={}, old={}, new={}",
                      path, vpp, data.getOldValue());
         } else {
-            ectx.addUpdated(id, PathPolicyUtils.toPathPolicy(vpp));
+            ectx.addUpdated(id, new XmlPathPolicy(vpp));
         }
     }
 
