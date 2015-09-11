@@ -139,6 +139,16 @@ public final class TestOption {
         TestHelper.CONTROLLER + ".thirdparty";
 
     /**
+     * Group ID for MD-SAL bundles.
+     */
+    private static final String  MDSAL = "org.opendaylight.mdsal";
+
+    /**
+     * Group ID for YANG modules provided by MD-SAL.
+     */
+    private static final String  MDSAL_MODEL = MDSAL + ".model";
+
+    /**
      * Group ID for openflowplugin.
      */
     private static final String  OPENFLOW = "org.opendaylight.openflowplugin";
@@ -345,9 +355,8 @@ public final class TestOption {
             TestHelper.baseModelBundles(),
             mavenBundle(TestHelper.CONTROLLER_MODELS, "model-inventory"),
             mavenBundle(TestHelper.CONTROLLER_MODELS, "model-topology"),
-            mavenBundle(TestHelper.YANGTOOLS_MODELS, "ietf-topology"),
-            mavenBundle(TestHelper.YANGTOOLS_MODELS,
-                        "ietf-yang-types-20130715"),
+            mavenBundle(MDSAL_MODEL, "ietf-topology"),
+            mavenBundle(MDSAL_MODEL, "ietf-yang-types-20130715"),
             mavenBundle(OPENFLOW_MODEL, "model-flow-base"),
             mavenBundle(OPENFLOW_MODEL, "model-flow-service"),
             mavenBundle(OPENFLOW_MODEL, "model-flow-statistics"),
