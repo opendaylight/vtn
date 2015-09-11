@@ -56,18 +56,18 @@ public class VTNConfigImplTest extends TestBase {
         VtnConfigBuilder all = new VtnConfigBuilder();
         TestVtnConfigBuilder allTest = new TestVtnConfigBuilder();
 
-        // Set node-edge-wait.
+        // Set topology-wait.
         Integer value = 600000;
-        builder = new VtnConfigBuilder().setNodeEdgeWait(value);
+        builder = new VtnConfigBuilder().setTopologyWait(value);
         assertSame(builder, VTNConfigImpl.fillDefault(builder, mac));
-        new TestVtnConfigBuilder().set(ConfigType.NODE_EDGE_WAIT, value).
+        new TestVtnConfigBuilder().set(ConfigType.TOPOLOGY_WAIT, value).
             set(ConfigType.CONTROLLER_MAC_ADDRESS, defMac).fillDefault().
             verify(builder);
         assertEquals(null, builder.isInitState());
 
         value = 0;
-        all.setNodeEdgeWait(value);
-        allTest.set(ConfigType.NODE_EDGE_WAIT, value);
+        all.setTopologyWait(value);
+        allTest.set(ConfigType.TOPOLOGY_WAIT, value);
 
         // Set l2-flow-priority.
         value = 999;
@@ -176,19 +176,19 @@ public class VTNConfigImplTest extends TestBase {
         VtnConfigBuilder all = new VtnConfigBuilder();
         TestVtnConfigBuilder allTest = new TestVtnConfigBuilder();
 
-        // Set node-edge-wait.
+        // Set topology-wait.
         Integer value = 600000;
         VtnConfig vcfg = new VtnConfigBuilder().
-            setNodeEdgeWait(value).build();
+            setTopologyWait(value).build();
         builder = VTNConfigImpl.builder(vcfg, mac);
-        new TestVtnConfigBuilder().set(ConfigType.NODE_EDGE_WAIT, value).
+        new TestVtnConfigBuilder().set(ConfigType.TOPOLOGY_WAIT, value).
             set(ConfigType.CONTROLLER_MAC_ADDRESS, defMac).fillDefault().
             verify(builder);
         assertEquals(null, builder.isInitState());
 
         value = 0;
-        all.setNodeEdgeWait(value);
-        allTest.set(ConfigType.NODE_EDGE_WAIT, value);
+        all.setTopologyWait(value);
+        allTest.set(ConfigType.TOPOLOGY_WAIT, value);
 
         // Set l2-flow-priority.
         value = 999;
@@ -286,18 +286,18 @@ public class VTNConfigImplTest extends TestBase {
         VtnConfigBuilder all2 = new VtnConfigBuilder();
         List<String> diffList = new ArrayList<>();
 
-        // Change node-edge-wait.
-        int ov = vconfOld.getNodeEdgeWait();
+        // Change topology-wait.
+        int ov = vconfOld.getTopologyWait();
         int nv = 600000;
-        VtnConfig vcfg = new VtnConfigBuilder().setNodeEdgeWait(nv).build();
+        VtnConfig vcfg = new VtnConfigBuilder().setTopologyWait(nv).build();
         vconfNew = new VTNConfigImpl(vcfg);
-        String expected = "node-edge-wait=(" + ov + "->" + nv + ")";
+        String expected = "topology-wait=(" + ov + "->" + nv + ")";
         assertEquals(expected, VTNConfigImpl.diff(vconfOld, vconfNew));
 
         int nv1 = 11111;
-        all1.setNodeEdgeWait(nv);
-        all2.setNodeEdgeWait(nv1);
-        diffList.add("node-edge-wait=(" + nv + "->" + nv1 + ")");
+        all1.setTopologyWait(nv);
+        all2.setTopologyWait(nv1);
+        diffList.add("topology-wait=(" + nv + "->" + nv1 + ")");
 
         // Change l2-flow-priority.
         ov = vconfOld.getL2FlowPriority();
@@ -437,16 +437,16 @@ public class VTNConfigImplTest extends TestBase {
             }
             test.verify(vconf);
 
-            // Set node-edge-wait.
-            ConfigType type = ConfigType.NODE_EDGE_WAIT;
+            // Set topology-wait.
+            ConfigType type = ConfigType.TOPOLOGY_WAIT;
             Integer value = 600000;
-            vcfg = new VtnConfigBuilder().setNodeEdgeWait(value).build();
+            vcfg = new VtnConfigBuilder().setTopologyWait(value).build();
             vconf = (mac == null)
                 ? new VTNConfigImpl(vcfg) : new VTNConfigImpl(vcfg, mac);
             test.resetIntegers().set(type, value).verify(vconf);
 
             value = 1;
-            all.setNodeEdgeWait(value);
+            all.setTopologyWait(value);
             allTest.set(type, value);
 
             // Set l2-flow-priority.
@@ -539,17 +539,17 @@ public class VTNConfigImplTest extends TestBase {
         VtnConfigBuilder all = new VtnConfigBuilder();
         TestVtnConfigBuilder allTest = new TestVtnConfigBuilder();
 
-        // Set node-edge-wait.
+        // Set topology-wait.
         Integer value = 600000;
-        VtnConfig vcfg = new VtnConfigBuilder().setNodeEdgeWait(value).build();
+        VtnConfig vcfg = new VtnConfigBuilder().setTopologyWait(value).build();
         vcfg = new VTNConfigImpl(vcfg).toVtnConfig();
-        new TestVtnConfigBuilder().set(ConfigType.NODE_EDGE_WAIT, value).
+        new TestVtnConfigBuilder().set(ConfigType.TOPOLOGY_WAIT, value).
             verify(vcfg);
         assertEquals(null, vcfg.isInitState());
 
         value = 0;
-        all.setNodeEdgeWait(value);
-        allTest.set(ConfigType.NODE_EDGE_WAIT, value);
+        all.setTopologyWait(value);
+        allTest.set(ConfigType.TOPOLOGY_WAIT, value);
 
         // Set l2-flow-priority.
         value = 999;
@@ -643,10 +643,10 @@ public class VTNConfigImplTest extends TestBase {
             Integer.valueOf(600000),
         };
         for (Integer v: neWaits) {
-            builder.setNodeEdgeWait(v);
+            builder.setTopologyWait(v);
             VTNConfigImpl vconf1 = new VTNConfigImpl(builder.build());
             VTNConfigImpl vconf2 = new VTNConfigImpl(builder.build());
-            assertEquals(v.intValue(), vconf1.getNodeEdgeWait());
+            assertEquals(v.intValue(), vconf1.getTopologyWait());
             testEquals(set, vconf1, vconf2);
         }
 
@@ -754,28 +754,28 @@ public class VTNConfigImplTest extends TestBase {
         TestVTNConfig allTest = new TestVTNConfig();
         assertEquals(allBuilder.build(), vconf.getJaxbValue().build());
 
-        ConfigType type = ConfigType.NODE_EDGE_WAIT;
+        ConfigType type = ConfigType.TOPOLOGY_WAIT;
         Integer[] neWaits = {
             Integer.valueOf(0), Integer.valueOf(1), Integer.valueOf(2),
             Integer.valueOf(1000), Integer.valueOf(599999),
             Integer.valueOf(600000),
         };
         for (Integer v: neWaits) {
-            VtnConfig vcfg = new VtnConfigBuilder().setNodeEdgeWait(v).build();
+            VtnConfig vcfg = new VtnConfigBuilder().setTopologyWait(v).build();
             vconf = jaxbTest(new VTNConfigImpl(vcfg), VTNConfigImpl.class,
                              XML_ROOT);
             test.resetIntegers().set(type, v).verify(vconf);
             assertEquals(vcfg, vconf.getJaxbValue().build());
 
-            allBuilder.setNodeEdgeWait(v);
+            allBuilder.setTopologyWait(v);
             VtnConfig all = allBuilder.build();
             vconf = jaxbTest(new VTNConfigImpl(all), VTNConfigImpl.class,
                              XML_ROOT);
             allTest.set(type, v).verify(vconf);
             assertEquals(all, vconf.getJaxbValue().build());
         }
-        vconf.setJaxbNodeEdgeWait(null);
-        assertEquals(null, vconf.getJaxbNodeEdgeWait());
+        vconf.setJaxbTopologyWait(null);
+        assertEquals(null, vconf.getJaxbTopologyWait());
 
         type = ConfigType.L2_FLOW_PRIORITY;
         Integer[] l2Priorities = {
@@ -959,7 +959,7 @@ public class VTNConfigImplTest extends TestBase {
         jaxbErrorTest(VTNConfigImpl.class,
                       new XmlValueType("controller-mac-address",
                                        EtherAddress.class).add(XML_ROOT),
-                      new XmlValueType("node-edge-wait", Integer.class).
+                      new XmlValueType("topology-wait", Integer.class).
                       add(XML_ROOT),
                       new XmlValueType("l2-flow-priority", Integer.class).
                       add(XML_ROOT),

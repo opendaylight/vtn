@@ -9,6 +9,8 @@
 package org.opendaylight.vtn.manager.internal.packet;
 
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -19,18 +21,22 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.opendaylight.vtn.manager.VTNException;
+
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.inventory.VTNInventoryListener;
 import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
 import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
 import org.opendaylight.vtn.manager.internal.util.SalNotificationListener;
-import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorCallback;
 
 import org.opendaylight.controller.sal.binding.api.NotificationService;
 
 import org.opendaylight.yangtools.yang.common.RpcResult;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingListener;
@@ -70,15 +76,16 @@ public final class VTNPacketService extends SalNotificationListener
         new CopyOnWriteArrayList<VTNPacketListener>();
 
     /**
-     * Keep nodes which are not in service yet.
+     * A set of physical switch ports waiting for completion of topology
+     * detection.
      *
      * <p>
-     *   If a node is contained in this map, any packet from the node is
-     *   ignored, and no packet is sent to the node.
+     *   If a port is contained in this map, any packet from that port is
+     *   ignored, and no packet is sent to that port.
      * </p>
      */
-    private ConcurrentMap<SalNode, TimerTask>  disabledNodes =
-        new ConcurrentHashMap<SalNode, TimerTask>();
+    private ConcurrentMap<SalPort, TimerTask>  topologyWaiting =
+        new ConcurrentHashMap<SalPort, TimerTask>();
 
     /**
      * Construct a new instance.
@@ -128,6 +135,12 @@ public final class VTNPacketService extends SalNotificationListener
             return;
         }
 
+        if (topologyWaiting.containsKey(egress)) {
+            LOG.trace("Ignore packet transmission due to topology " +
+                      "detection: {}", egress);
+            return;
+        }
+
         byte[] payload;
         try {
             payload = packet.serialize();
@@ -148,45 +161,67 @@ public final class VTNPacketService extends SalNotificationListener
     }
 
     /**
-     * Add the given node to {@link #disabledNodes}.
+     * Add the given port to {@link #topologyWaiting}.
      *
      * <p>
-     *   Neighbor node discovery may not be completed on a newly detected node.
-     *   If a PACKET_OUT is sent to a port in a newly detected node, it may
-     *   cause broadcast packet storm because the controller can not
-     *   determine internal port in a node yet.
+     *   Inter-switch link detection may be still running on a port when that
+     *   port status has been changed to UP state. If a PACKET_OUT is sent to
+     *   that port, it may cause broadcast packet storm because the controller
+     *   can not determine ISL port yet.
      * </p>
      * <p>
-     *   That is why we should disable any packet service on a newly detected
-     *   node for a while.
+     *   That is why we should disable any packet service on a newly enabled
+     *   port for a while.
      * </p>
      *
-     * @param snode  A newly detected node.
+     * @param sport  A newly enabled port.
      */
-    private void addDisabledNode(final SalNode snode) {
-        int edgeWait = vtnProvider.getVTNConfig().getNodeEdgeWait();
-        if (edgeWait <= 0) {
+    private void addTopologyWaiting(final SalPort sport) {
+        int topoWait = vtnProvider.getVTNConfig().getTopologyWait();
+        if (topoWait <= 0) {
+            // Topology wait is disabled.
             return;
         }
 
-        if (packetService.get() == null) {
-            // Packet service is already closed.
-            return;
-        }
-
-        // Create a timer task to remove the node from disabledNodes.
+        // Create a timer task to remove the port from topologyWaiting.
         TimerTask task = new TimerTask() {
             @Override
             public void run() {
-                if (disabledNodes.remove(snode) != null) {
-                    LOG.info("{}: Start packet service", snode);
+                if (topologyWaiting.remove(sport) != null) {
+                    LOG.info("{}: Start packet service.", sport);
                 }
             }
         };
 
-        if (disabledNodes.putIfAbsent(snode, task) == null) {
-            vtnProvider.getTimer().schedule(task, edgeWait);
+        if (topologyWaiting.putIfAbsent(sport, task) == null) {
+            if (packetService.get() == null) {
+                // Packet service is already closed.
+                topologyWaiting.remove(sport);
+            } else {
+                LOG.debug("{}: Wait for completion of topology detection.",
+                          sport);
+                vtnProvider.getTimer().schedule(task, topoWait);
+            }
         }
+    }
+
+    /**
+     * Determine whether the topology waiting on the given port should be
+     * terminated or not.
+     *
+     * @param ev  A {@link VtnPortEvent} instance which notifies the port
+     *            change.
+     * @return  {@code true} only if the topology waiting on the port specified
+     *          by {@code ev} should be terminated.
+     */
+    private boolean shouldStopTopologyWait(VtnPortEvent ev) {
+        // Topology wait should be terminated when the port is disabled.
+        if (ev.getUpdateType() == VtnUpdateType.REMOVED ||
+            Boolean.FALSE.equals(ev.getStateChange())) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -222,6 +257,37 @@ public final class VTNPacketService extends SalNotificationListener
         return ev;
     }
 
+    /**
+     * Determine whether the topology wait on the port specified by the
+     * given port event should terminate or not.
+     *
+     * @param ev  A {@link VtnPortEvent} instance which notifies the port
+     *            change.
+     * @return  A string which indicates the reason why the topology wait
+     *          should terminate. {@code null} if the topology wait should not
+     *          terminate.
+     * @throws VTNException  An error occurred.
+     */
+    private String shouldTopologyWaitTerminate(VtnPortEvent ev)
+        throws VTNException {
+        if (ev.getUpdateType() == VtnUpdateType.REMOVED) {
+            return "port has been removed";
+        }
+
+        if (Boolean.FALSE.equals(ev.getStateChange())) {
+            return "port is down";
+        }
+
+        if (Boolean.TRUE.equals(ev.getInterSwitchLinkChange())) {
+            return "inter-switch link has been detected";
+        }
+
+        InventoryReader reader = ev.getTxContext().getInventoryReader();
+        SalPort sport = ev.getSalPort();
+        return (reader.isStaticEdgePort(sport))
+            ? "static edge port" : null;
+    }
+
     // AutoCloseable
 
     /**
@@ -233,7 +299,7 @@ public final class VTNPacketService extends SalNotificationListener
         super.close();
         packetService.set(null);
 
-        for (Iterator<TimerTask> it = disabledNodes.values().iterator();
+        for (Iterator<TimerTask> it = topologyWaiting.values().iterator();
              it.hasNext();) {
             TimerTask task = it.next();
             task.cancel();
@@ -262,9 +328,9 @@ public final class VTNPacketService extends SalNotificationListener
             return;
         }
 
-        SalNode snode = ingress.getSalNode();
-        if (disabledNodes.containsKey(snode)) {
-            LOG.trace("Ignore packet from disabled node: {}", snode);
+        if (topologyWaiting.containsKey(ingress)) {
+            LOG.trace("Ignore received packet due to topology detection: {}",
+                      ingress);
             return;
         }
 
@@ -294,24 +360,28 @@ public final class VTNPacketService extends SalNotificationListener
     // VTNInventoryListener
 
     /**
-     * {@inheritDoc}
+     * Invoked when a node information has been added or removed.
+     *
+     * @param ev  A {@link VtnNodeEvent} instance.
      */
     @Override
     public void notifyVtnNode(VtnNodeEvent ev) {
-        switch (ev.getUpdateType()) {
-        case CREATED:
-            addDisabledNode(ev.getSalNode());
-            break;
-
-        case REMOVED:
-            TimerTask task = disabledNodes.get(ev.getSalNode());
-            if (task != null) {
-                task.cancel();
+        if (ev.getUpdateType() == VtnUpdateType.REMOVED) {
+            // Terminate topology waits on ports contained by the removed node.
+            long num = ev.getSalNode().getNodeNumber();
+            Set<Map.Entry<SalPort, TimerTask>> eset =
+                topologyWaiting.entrySet();
+            for (Iterator<Map.Entry<SalPort, TimerTask>> it = eset.iterator();
+                 it.hasNext();) {
+                Map.Entry<SalPort, TimerTask> ent = it.next();
+                SalPort sport = ent.getKey();
+                if (sport.getNodeNumber() == num) {
+                    LOG.debug("{}: Terminate topology wait on removed node.",
+                              sport);
+                    TimerTask task = ent.getValue();
+                    task.cancel();
+                }
             }
-            break;
-
-        default:
-            break;
         }
     }
 
@@ -319,7 +389,19 @@ public final class VTNPacketService extends SalNotificationListener
      * {@inheritDoc}
      */
     @Override
-    public void notifyVtnPort(VtnPortEvent ev) {
-        // Nothing to do.
+    public void notifyVtnPort(VtnPortEvent ev) throws VTNException {
+        String reason = shouldTopologyWaitTerminate(ev);
+        if (reason != null) {
+            SalPort sport = ev.getSalPort();
+            TimerTask task = topologyWaiting.remove(sport);
+            if (task != null) {
+                LOG.debug("{}: Terminate topology wait: reason={}",
+                          sport, reason);
+                task.cancel();
+            }
+        } else if (Boolean.TRUE.equals(ev.getStateChange())) {
+            // Wait for completion of topology detection on this port.
+            addTopologyWaiting(ev.getSalPort());
+        }
     }
 }

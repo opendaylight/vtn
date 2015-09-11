@@ -21,10 +21,10 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.
 public enum ConfigType {
     /**
      * A symbol which indicates the value returned by
-     * {@link org.opendaylight.vtn.manager.internal.VTNConfig#getNodeEdgeWait()}.
+     * {@link org.opendaylight.vtn.manager.internal.VTNConfig#getTopologyWait()}.
      */
-    NODE_EDGE_WAIT("getNodeEdgeWait", "node-edge-wait", Integer.valueOf(3000),
-                   Integer.valueOf(0), Integer.valueOf(600000)),
+    TOPOLOGY_WAIT("getTopologyWait", "topology-wait", Integer.valueOf(3000),
+                  Integer.valueOf(0), Integer.valueOf(600000)),
 
     /**
      * A symbol which indicates the value returned by

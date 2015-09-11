@@ -13,6 +13,6 @@
 
 <!-- VTN Manager configuration for integration tests. -->
 <vtn-config>
-  <!-- There is no need to wait for edge detection. -->
-  <node-edge-wait>0</node-edge-wait>
+  <!-- There is no need to wait for completion of topology detection. -->
+  <topology-wait>0</topology-wait>
 </vtn-config>

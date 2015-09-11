@@ -183,11 +183,12 @@ public final class VTNInventoryManager
         IdentifiedData<VtnPort> portData = data.checkType(VtnPort.class);
         if (portData != null) {
             VtnPort vport = portData.getValue();
+            Boolean state = Boolean.valueOf(InventoryUtils.isEnabled(vport));
             Boolean isl = Boolean.valueOf(InventoryUtils.hasPortLink(vport));
             LOG.info("Port has been {}: {}",
                      MiscUtils.toLowerCase(type.name()),
                      InventoryUtils.toString(vport));
-            postVtnPortEvent(vport, isl, type);
+            postVtnPortEvent(vport, state, isl, type);
             return;
         }
 
@@ -218,6 +219,10 @@ public final class VTNInventoryManager
      * @param newPort  An updated {@link VtnPort} instance.
      */
     private void onChanged(VtnPort oldPort, VtnPort newPort) {
+        boolean oldState = InventoryUtils.isEnabled(oldPort);
+        boolean newState = InventoryUtils.isEnabled(newPort);
+        Boolean state = (oldState == newState)
+            ? null : Boolean.valueOf(newState);
         boolean oldIsl = InventoryUtils.hasPortLink(oldPort);
         boolean newIsl = InventoryUtils.hasPortLink(newPort);
         Boolean isl = (oldIsl == newIsl)
@@ -225,7 +230,7 @@ public final class VTNInventoryManager
         LOG.info("Port has been changed: old={}, new={}",
                  InventoryUtils.toString(oldPort),
                  InventoryUtils.toString(newPort));
-        postVtnPortEvent(newPort, isl, VtnUpdateType.CHANGED);
+        postVtnPortEvent(newPort, state, isl, VtnUpdateType.CHANGED);
     }
 
     /**
@@ -248,16 +253,18 @@ public final class VTNInventoryManager
      * Post a VTN port event.
      *
      * @param vport  A {@link VtnPort} instance.
+     * @param state  A {@link Boolean} instance which describes the change of
+     *               running state of the given port.
      * @param isl    A {@link Boolean} instance which describes the change of
      *               inter-switch link state.
      * @param type   A {@link VtnUpdateType} instance.
      */
-    private void postVtnPortEvent(VtnPort vport, Boolean isl,
+    private void postVtnPortEvent(VtnPort vport, Boolean state, Boolean isl,
                                   VtnUpdateType type) {
         VtnPortEvent ev = null;
         for (VTNInventoryListener l: vtnListeners) {
             ev = (ev == null)
-                ? new VtnPortEvent(l, vport, isl, type)
+                ? new VtnPortEvent(l, vport, state, isl, type)
                 : new VtnPortEvent(l, ev);
             vtnProvider.post(ev);
         }
