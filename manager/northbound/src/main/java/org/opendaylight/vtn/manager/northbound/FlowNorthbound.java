@@ -16,7 +16,6 @@ import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 
-import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -24,7 +23,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import org.codehaus.enunciate.jaxrs.ResponseCode;
 import org.codehaus.enunciate.jaxrs.StatusCodes;
@@ -32,9 +30,7 @@ import org.codehaus.enunciate.jaxrs.TypeHint;
 import org.opendaylight.controller.sal.authorization.Privilege;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.vtn.manager.EthernetHost;
-import org.opendaylight.vtn.manager.IVTNFlowDebugger;
 import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.SwitchPort;
 import org.opendaylight.vtn.manager.VTNException;
@@ -589,48 +585,6 @@ public class FlowNorthbound extends VTNNorthBoundBase {
         } catch (VTNException e) {
             throw getException(e);
         }
-    }
-
-    /**
-     * Remove all data flows in the specified VTN.
-     *
-     * <p>
-     *   This API is provided only for debugging purpose, and is available
-     *   only if the system property <strong>vtn.debug</strong> is defined as
-     *   <strong>true</strong>.
-     * </p>
-     *
-     * @param tenantName  The name of the VTN.
-     * @return Response as dictated by the HTTP Response Status code.
-     */
-    @DELETE
-    @TypeHint(TypeHint.NO_CONTENT.class)
-    @StatusCodes({
-        @ResponseCode(code = HTTP_OK,
-                      condition = "Operation completed successfully."),
-        @ResponseCode(code = HTTP_UNAUTHORIZED,
-                      condition = "User is not authorized to perform this " +
-                      "operation."),
-        @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "The specified VTN does not exist."),
-        @ResponseCode(code = HTTP_INTERNAL_ERROR,
-                      condition = "Fatal internal error occurred in the " +
-                      "VTN Manager."),
-        @ResponseCode(code = HTTP_UNAVAILABLE,
-                      condition = "One or more of mandatory controller " +
-                      "services, such as the VTN Manager, are unavailable.")})
-    public Response removeAllFlows(
-            @PathParam("tenantName") String tenantName) {
-        checkPrivilege(Privilege.WRITE);
-
-        IVTNFlowDebugger debugger = getVTNFlowDebugger();
-        VTenantPath path = new VTenantPath(tenantName);
-        Status status = debugger.removeAllFlows(path);
-        if (status.isSuccess()) {
-            return Response.ok().build();
-        }
-
-        throw getException(status);
     }
 
     /**

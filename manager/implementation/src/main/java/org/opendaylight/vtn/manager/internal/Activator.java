@@ -16,11 +16,9 @@ import java.util.HashSet;
 
 import org.apache.felix.dm.Component;
 
-import org.opendaylight.vtn.manager.IVTNFlowDebugger;
 import org.opendaylight.vtn.manager.IVTNGlobal;
 import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.IVTNManagerAware;
-import org.opendaylight.vtn.manager.IVTNModeListener;
 
 import org.opendaylight.controller.clustering.services.ICacheUpdateAware;
 import org.opendaylight.controller.clustering.services.
@@ -152,13 +150,6 @@ public class Activator extends ComponentActivatorAbstractBase {
                       setRequired(true));
             }
 
-            // Export IVTNFlowDebugger only if "vtn.debug" system property
-            // is defined as "true".
-            String debug = System.getProperty("vtn.debug");
-            if (debug != null && Boolean.parseBoolean(debug)) {
-                list.add(IVTNFlowDebugger.class.getName());
-            }
-
             c.setInterface(list.toArray(new String[list.size()]), props);
 
             // Create service dependencies.
@@ -170,11 +161,6 @@ public class Activator extends ComponentActivatorAbstractBase {
             c.add(createContainerServiceDependency(containerName).
                   setService(IVTNManagerAware.class).
                   setCallbacks("addVTNManagerAware", "removeVTNManagerAware").
-                  setRequired(false));
-
-            c.add(createContainerServiceDependency(containerName).
-                  setService(IVTNModeListener.class).
-                  setCallbacks("addVTNModeListener", "removeVTNModeListener").
                   setRequired(false));
 
             c.add(createContainerServiceDependency(containerName).
