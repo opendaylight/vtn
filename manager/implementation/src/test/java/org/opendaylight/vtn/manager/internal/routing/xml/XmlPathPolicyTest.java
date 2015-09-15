@@ -372,6 +372,7 @@ public class XmlPathPolicyTest extends TestBase {
                     assertEquals(id, xpp.getId());
                     assertEquals(cost, xpp.getDefaultCost());
                     assertEquals(vpcs, xpp.getVtnPathCost());
+                    jaxbTest(xpp, type, XML_ROOT);
                 }
             }
         }

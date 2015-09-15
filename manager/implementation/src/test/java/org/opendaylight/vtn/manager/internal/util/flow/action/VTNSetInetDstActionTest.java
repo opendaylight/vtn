@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
@@ -553,11 +554,9 @@ public class VTNSetInetDstActionTest extends TestBase {
      */
     @Test
     public void testJAXB() throws Exception {
-        Unmarshaller[] unmarshallers = {
-            createUnmarshaller(VTNSetInetDstAction.class),
-            createUnmarshaller(VTNInetAddrAction.class),
-            createUnmarshaller(FlowFilterAction.class),
-        };
+        List<Class<?>> jaxbClasses = new ArrayList<>();
+        Collections.addAll(jaxbClasses, VTNSetInetDstAction.class,
+                           VTNInetAddrAction.class, FlowFilterAction.class);
 
         IpNetwork[] addresses = {
             new Ip4Network("10.20.30.40"),
@@ -570,20 +569,31 @@ public class VTNSetInetDstActionTest extends TestBase {
             0, 1, 2, 32000, Integer.MAX_VALUE,
         };
 
+        VtnSetInetDstActionCaseBuilder vacBuilder =
+            new VtnSetInetDstActionCaseBuilder();
         Class<VTNSetInetDstAction> type = VTNSetInetDstAction.class;
         List<XmlDataType> dlist = getXmlDataTypes(XML_ROOT);
-        for (Unmarshaller um: unmarshallers) {
-            for (Integer order: orders) {
-                for (IpNetwork iaddr: addresses) {
-                    String xml = new XmlNode(XML_ROOT).
-                        add(new XmlNode("order", order)).
-                        add(new XmlNode("ipv4-address",
-                                        iaddr.getHostAddress())).
-                        toString();
-                    VTNSetInetDstAction va = unmarshal(um, xml, type);
-                    va.verify();
-                    assertEquals(order, va.getIdentifier());
-                    assertEquals(iaddr, va.getAddress());
+        for (Class<?> cls: jaxbClasses) {
+            Marshaller m = createMarshaller(cls);
+            Unmarshaller um = createUnmarshaller(cls);
+
+            for (IpNetwork iaddr: addresses) {
+                Address mdaddr = new Ipv4Builder().
+                    setIpv4Address(new Ipv4Prefix(iaddr.getCidrText())).
+                    build();
+                VtnSetInetDstAction vact = new VtnSetInetDstActionBuilder().
+                    setAddress(mdaddr).build();
+                VtnSetInetDstActionCase vac = vacBuilder.
+                    setVtnSetInetDstAction(vact).build();
+                for (Integer order: orders) {
+                    VTNSetInetDstAction va =
+                        new VTNSetInetDstAction(vac, order);
+                    String xml = marshal(m, va, type, XML_ROOT);
+                    VTNSetInetDstAction va1 = unmarshal(um, xml, type);
+                    va1.verify();
+                    assertEquals(order, va1.getIdentifier());
+                    assertEquals(iaddr, va1.getAddress());
+                    assertEquals(va, va1);
                 }
             }
 
@@ -592,7 +602,7 @@ public class VTNSetInetDstActionTest extends TestBase {
         }
 
         // No action order.
-        Unmarshaller um = unmarshallers[0];
+        Unmarshaller um = createUnmarshaller(type);
         IpNetwork iaddr = addresses[0];
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
         StatusCode ecode = StatusCode.BADREQUEST;

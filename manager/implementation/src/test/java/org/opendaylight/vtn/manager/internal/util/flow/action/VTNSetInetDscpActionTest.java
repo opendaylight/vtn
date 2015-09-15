@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
@@ -478,10 +479,9 @@ public class VTNSetInetDscpActionTest extends TestBase {
      */
     @Test
     public void testJAXB() throws Exception {
-        Unmarshaller[] unmarshallers = {
-            createUnmarshaller(VTNSetInetDscpAction.class),
-            createUnmarshaller(FlowFilterAction.class),
-        };
+        List<Class<?>> jaxbClasses = new ArrayList<>();
+        Collections.addAll(jaxbClasses, VTNSetInetDscpAction.class,
+                           FlowFilterAction.class);
 
         Integer[] orders = {
             Integer.MIN_VALUE, -1000, -1,
@@ -491,22 +491,33 @@ public class VTNSetInetDscpActionTest extends TestBase {
             0, 1, 2, 11, 22, 33, 44, 55, 60, 62, 63,
         };
 
+        VtnSetInetDscpActionCaseBuilder vacBuilder =
+            new VtnSetInetDscpActionCaseBuilder();
         Class<VTNSetInetDscpAction> type = VTNSetInetDscpAction.class;
         List<XmlDataType> dlist = getXmlDataTypes(XML_ROOT);
-        for (Unmarshaller um: unmarshallers) {
-            for (Integer order: orders) {
-                for (short dscp: dscps) {
-                    String xml = new XmlNode(XML_ROOT).
-                        add(new XmlNode("order", order)).
-                        add(new XmlNode("dscp", dscp)).
-                        toString();
-                    VTNSetInetDscpAction va = unmarshal(um, xml, type);
-                    va.verify();
-                    assertEquals(order, va.getIdentifier());
-                    assertEquals(dscp, va.getDscp());
-                }
+        for (Class<?> cls: jaxbClasses) {
+            Marshaller m = createMarshaller(cls);
+            Unmarshaller um = createUnmarshaller(cls);
 
-                // Default DSCP value test.
+            for (short dscp: dscps) {
+                VtnSetInetDscpAction vact = new VtnSetInetDscpActionBuilder().
+                    setDscp(new Dscp(dscp)).build();
+                VtnSetInetDscpActionCase vac = vacBuilder.
+                    setVtnSetInetDscpAction(vact).build();
+                for (Integer order: orders) {
+                    VTNSetInetDscpAction va =
+                        new VTNSetInetDscpAction(vac, order);
+                    String xml = marshal(m, va, type, XML_ROOT);
+                    VTNSetInetDscpAction va1 = unmarshal(um, xml, type);
+                    va1.verify();
+                    assertEquals(order, va1.getIdentifier());
+                    assertEquals(dscp, va1.getDscp());
+                    assertEquals(va, va1);
+                }
+            }
+
+            // Default DSCP value test.
+            for (Integer order: orders) {
                 String xml = new XmlNode(XML_ROOT).
                     add(new XmlNode("order", order)).toString();
                 VTNSetInetDscpAction va = unmarshal(um, xml, type);
@@ -520,7 +531,7 @@ public class VTNSetInetDscpActionTest extends TestBase {
         }
 
         // No action order.
-        Unmarshaller um = unmarshallers[0];
+        Unmarshaller um = createUnmarshaller(type);
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
         StatusCode ecode = StatusCode.BADREQUEST;
         String emsg = "VTNSetInetDscpAction: Action order cannot be null";

@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
@@ -613,11 +614,9 @@ public class VTNSetDlSrcActionTest extends TestBase {
      */
     @Test
     public void testJAXB() throws Exception {
-        Unmarshaller[] unmarshallers = {
-            createUnmarshaller(VTNSetDlSrcAction.class),
-            createUnmarshaller(VTNDlAddrAction.class),
-            createUnmarshaller(FlowFilterAction.class),
-        };
+        List<Class<?>> jaxbClasses = new ArrayList<>();
+        Collections.addAll(jaxbClasses, VTNSetDlSrcAction.class,
+                           VTNDlAddrAction.class, FlowFilterAction.class);
 
         EtherAddress[] addresses = {
             new EtherAddress(0x001122334455L),
@@ -630,19 +629,27 @@ public class VTNSetDlSrcActionTest extends TestBase {
             0, 1, 2, 32000, Integer.MAX_VALUE,
         };
 
+        VtnSetDlSrcActionCaseBuilder vacBuilder =
+            new VtnSetDlSrcActionCaseBuilder();
         Class<VTNSetDlSrcAction> type = VTNSetDlSrcAction.class;
         List<XmlDataType> dlist = getXmlDataTypes(XML_ROOT);
-        for (Unmarshaller um: unmarshallers) {
-            for (Integer order: orders) {
-                for (EtherAddress eaddr: addresses) {
-                    String xml = new XmlNode(XML_ROOT).
-                        add(new XmlNode("order", order)).
-                        add(new XmlNode("address", eaddr.getText())).
-                        toString();
-                    VTNSetDlSrcAction va = unmarshal(um, xml, type);
-                    va.verify();
-                    assertEquals(order, va.getIdentifier());
-                    assertEquals(eaddr, va.getAddress());
+        for (Class<?> cls: jaxbClasses) {
+            Marshaller m = createMarshaller(cls);
+            Unmarshaller um = createUnmarshaller(cls);
+
+            for (EtherAddress eaddr: addresses) {
+                VtnSetDlSrcAction vact = new VtnSetDlSrcActionBuilder().
+                    setAddress(eaddr.getMacAddress()).build();
+                VtnSetDlSrcActionCase vac = vacBuilder.
+                    setVtnSetDlSrcAction(vact).build();
+                for (Integer order: orders) {
+                    VTNSetDlSrcAction va = new VTNSetDlSrcAction(vac, order);
+                    String xml = marshal(m, va, type, XML_ROOT);
+                    VTNSetDlSrcAction va1 = unmarshal(um, xml, type);
+                    va1.verify();
+                    assertEquals(order, va1.getIdentifier());
+                    assertEquals(eaddr, va1.getAddress());
+                    assertEquals(va, va1);
                 }
             }
 
@@ -651,7 +658,7 @@ public class VTNSetDlSrcActionTest extends TestBase {
         }
 
         // No action order.
-        Unmarshaller um = unmarshallers[0];
+        Unmarshaller um = createUnmarshaller(type);
         EtherAddress eaddr = addresses[0];
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
         StatusCode ecode = StatusCode.BADREQUEST;

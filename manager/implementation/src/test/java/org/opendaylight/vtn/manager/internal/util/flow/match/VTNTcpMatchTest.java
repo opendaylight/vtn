@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
@@ -296,6 +297,10 @@ public class VTNTcpMatchTest extends TestBase {
         };
 
         Class<VTNTcpMatch> type = VTNTcpMatch.class;
+        Marshaller[] marshallers = {
+            createMarshaller(type),
+            createMarshaller(VTNLayer4Match.class),
+        };
         Unmarshaller um = createUnmarshaller(type);
         Unmarshaller um4 = createUnmarshaller(VTNLayer4Match.class);
         TcpMatchParams params = new TcpMatchParams();
@@ -319,6 +324,13 @@ public class VTNTcpMatchTest extends TestBase {
                 VTNTcpMatch tmatch1 = unmarshal(um4, xml, type);
                 tmatch1.verify();
                 assertEquals(tmatch, tmatch1);
+
+                for (Marshaller m: marshallers) {
+                    xml = marshal(m, tmatch, type, XML_ROOT);
+                    tmatch1 = unmarshal(um, xml, type);
+                    tmatch1.verify();
+                    assertEquals(tmatch, tmatch1);
+                }
             }
         }
 

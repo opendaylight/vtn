@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
@@ -476,32 +477,42 @@ public class VTNSetVlanPcpActionTest extends TestBase {
      */
     @Test
     public void testJAXB() throws Exception {
-        Unmarshaller[] unmarshallers = {
-            createUnmarshaller(VTNSetVlanPcpAction.class),
-            createUnmarshaller(FlowFilterAction.class),
-        };
+        List<Class<?>> jaxbClasses = new ArrayList<>();
+        Collections.addAll(jaxbClasses, VTNSetVlanPcpAction.class,
+                           FlowFilterAction.class);
 
         Integer[] orders = {
             Integer.MIN_VALUE, -1000, -1,
             0, 1, 2, 32000, Integer.MAX_VALUE,
         };
 
+        VtnSetVlanPcpActionCaseBuilder vacBuilder =
+            new VtnSetVlanPcpActionCaseBuilder();
         Class<VTNSetVlanPcpAction> type = VTNSetVlanPcpAction.class;
         List<XmlDataType> dlist = getXmlDataTypes(XML_ROOT);
-        for (Unmarshaller um: unmarshallers) {
-            for (Integer order: orders) {
-                for (short pcp = 0; pcp <= 7; pcp++) {
-                    String xml = new XmlNode(XML_ROOT).
-                        add(new XmlNode("order", order)).
-                        add(new XmlNode("priority", pcp)).
-                        toString();
-                    VTNSetVlanPcpAction va = unmarshal(um, xml, type);
-                    va.verify();
-                    assertEquals(order, va.getIdentifier());
-                    assertEquals(pcp, va.getPriority());
-                }
+        for (Class<?> cls: jaxbClasses) {
+            Marshaller m = createMarshaller(cls);
+            Unmarshaller um = createUnmarshaller(cls);
 
-                // Default priority test.
+            for (short pcp = 0; pcp <= 7; pcp++) {
+                VtnSetVlanPcpAction vact = new VtnSetVlanPcpActionBuilder().
+                    setVlanPcp(new VlanPcp(pcp)).build();
+                VtnSetVlanPcpActionCase vac = vacBuilder.
+                    setVtnSetVlanPcpAction(vact).build();
+                for (Integer order: orders) {
+                    VTNSetVlanPcpAction va =
+                        new VTNSetVlanPcpAction(vac, order);
+                    String xml = marshal(m, va, type, XML_ROOT);
+                    VTNSetVlanPcpAction va1 = unmarshal(um, xml, type);
+                    va1.verify();
+                    assertEquals(order, va1.getIdentifier());
+                    assertEquals(pcp, va1.getPriority());
+                    assertEquals(va, va1);
+                }
+            }
+
+            // Default priority test.
+            for (Integer order: orders) {
                 String xml = new XmlNode(XML_ROOT).
                     add(new XmlNode("order", order)).toString();
                 VTNSetVlanPcpAction va = unmarshal(um, xml, type);
@@ -515,7 +526,7 @@ public class VTNSetVlanPcpActionTest extends TestBase {
         }
 
         // No action order.
-        Unmarshaller um = unmarshallers[0];
+        Unmarshaller um = createUnmarshaller(type);
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
         StatusCode ecode = StatusCode.BADREQUEST;
         String emsg = "VTNSetVlanPcpAction: Action order cannot be null";

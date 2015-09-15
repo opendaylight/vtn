@@ -240,6 +240,7 @@ public class XmlPathCostTest extends TestBase {
                 XmlPathCost xpc = unmarshal(um, xml, type);
                 assertEquals(vpdesc, xpc.getPortDesc());
                 assertEquals(cost, xpc.getCost());
+                jaxbTest(xpc, type, XML_ROOT);
             }
         }
 

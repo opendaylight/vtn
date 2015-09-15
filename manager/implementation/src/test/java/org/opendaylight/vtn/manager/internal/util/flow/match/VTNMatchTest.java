@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
@@ -301,6 +302,7 @@ public class VTNMatchTest extends TestBase {
     public void testJAXB() throws Exception {
         // Normal case.
         Class<VTNMatch> type = VTNMatch.class;
+        Marshaller m = createMarshaller(type);
         Unmarshaller um = createUnmarshaller(type);
         Map<MatchParams, MatchParams> cases = MatchParams.createMatches();
         for (Map.Entry<MatchParams, MatchParams> entry: cases.entrySet()) {
@@ -313,6 +315,11 @@ public class VTNMatchTest extends TestBase {
 
             xml = expected.toXmlNode(XML_ROOT).toString();
             VTNMatch vmatch1 = unmarshal(um, xml, type);
+            vmatch1.verify();
+            assertEquals(vmatch, vmatch1);
+
+            xml = marshal(m, vmatch, type, XML_ROOT);
+            vmatch1 = unmarshal(um, xml, type);
             vmatch1.verify();
             assertEquals(vmatch, vmatch1);
         }

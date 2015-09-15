@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
@@ -296,6 +297,10 @@ public class VTNUdpMatchTest extends TestBase {
         };
 
         Class<VTNUdpMatch> type = VTNUdpMatch.class;
+        Marshaller[] marshallers = {
+            createMarshaller(type),
+            createMarshaller(VTNLayer4Match.class),
+        };
         Unmarshaller um = createUnmarshaller(type);
         Unmarshaller um4 = createUnmarshaller(VTNLayer4Match.class);
         UdpMatchParams params = new UdpMatchParams();
@@ -319,6 +324,13 @@ public class VTNUdpMatchTest extends TestBase {
                 VTNUdpMatch umatch1 = unmarshal(um4, xml, type);
                 umatch1.verify();
                 assertEquals(umatch, umatch1);
+
+                for (Marshaller m: marshallers) {
+                    xml = marshal(m, umatch, type, XML_ROOT);
+                    umatch1 = unmarshal(um, xml, type);
+                    umatch1.verify();
+                    assertEquals(umatch, umatch1);
+                }
             }
         }
 

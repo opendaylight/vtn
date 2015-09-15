@@ -1713,6 +1713,34 @@ public abstract class TestBase extends Assert {
     }
 
     /**
+     * Marshal the given instance into XML.
+     *
+     * @param m         A {@link Marshaller} instance.
+     * @param o         An object to be tested.
+     * @param cls       A class which specifies the type of the given object.
+     * @param rootName  The name of expected root element.
+     * @return  A string which contains converted XML.
+     * @throws JAXBException  Failed to marshal.
+     */
+    protected static String marshal(Marshaller m, Object o, Class<?> cls,
+                                    String rootName) throws JAXBException {
+        // Ensure that the class of the given class has XmlRootElement
+        // annotation.
+        XmlRootElement xmlRoot = cls.getAnnotation(XmlRootElement.class);
+        assertNotNull(xmlRoot);
+        assertEquals(rootName, xmlRoot.name());
+
+        // Marshal the given object into XML.
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        m.marshal(o, out);
+
+        String xml = out.toString();
+        assertFalse(xml.isEmpty());
+
+        return xml;
+    }
+
+    /**
      * Unmarshal the given XML using the given unmarshaller.
      *
      * @param um   An {@link Unmarshaller} instance.

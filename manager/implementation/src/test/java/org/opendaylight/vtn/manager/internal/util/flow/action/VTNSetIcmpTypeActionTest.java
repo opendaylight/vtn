@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
@@ -477,10 +478,9 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
      */
     @Test
     public void testJAXB() throws Exception {
-        Unmarshaller[] unmarshallers = {
-            createUnmarshaller(VTNSetIcmpTypeAction.class),
-            createUnmarshaller(FlowFilterAction.class),
-        };
+        List<Class<?>> jaxbClasses = new ArrayList<>();
+        Collections.addAll(jaxbClasses, VTNSetIcmpTypeAction.class,
+                           FlowFilterAction.class);
 
         short[] types = {
             0, 1, 10, 33, 127, 128, 200, 254, 255,
@@ -490,21 +490,33 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
             0, 1, 2, 32000, Integer.MAX_VALUE,
         };
 
+        VtnSetIcmpTypeActionCaseBuilder vacBuilder =
+            new VtnSetIcmpTypeActionCaseBuilder();
         Class<VTNSetIcmpTypeAction> type = VTNSetIcmpTypeAction.class;
         List<XmlDataType> dlist = getXmlDataTypes(XML_ROOT);
-        for (Unmarshaller um: unmarshallers) {
-            for (Integer order: orders) {
-                for (short itype: types) {
-                    String xml = new XmlNode(XML_ROOT).
-                        add(new XmlNode("order", order)).
-                        add(new XmlNode("type", itype)).toString();
-                    VTNSetIcmpTypeAction va = unmarshal(um, xml, type);
-                    va.verify();
-                    assertEquals(order, va.getIdentifier());
-                    assertEquals(itype, va.getType());
-                }
+        for (Class<?> cls: jaxbClasses) {
+            Marshaller m = createMarshaller(cls);
+            Unmarshaller um = createUnmarshaller(cls);
 
-                // Default ICMP type test.
+            for (short itype: types) {
+                VtnSetIcmpTypeAction vact = new VtnSetIcmpTypeActionBuilder().
+                    setType(itype).build();
+                VtnSetIcmpTypeActionCase vac = vacBuilder.
+                    setVtnSetIcmpTypeAction(vact).build();
+                for (Integer order: orders) {
+                    VTNSetIcmpTypeAction va =
+                        new VTNSetIcmpTypeAction(vac, order);
+                    String xml = marshal(m, va, type, XML_ROOT);
+                    VTNSetIcmpTypeAction va1 = unmarshal(um, xml, type);
+                    va1.verify();
+                    assertEquals(order, va1.getIdentifier());
+                    assertEquals(itype, va1.getType());
+                    assertEquals(va, va1);
+                }
+            }
+
+            // Default ICMP type test.
+            for (Integer order: orders) {
                 String xml = new XmlNode(XML_ROOT).
                     add(new XmlNode("order", order)).toString();
                 VTNSetIcmpTypeAction va = unmarshal(um, xml, type);
@@ -518,7 +530,7 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
         }
 
         // No action order.
-        Unmarshaller um = unmarshallers[0];
+        Unmarshaller um = createUnmarshaller(type);
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
         StatusCode ecode = StatusCode.BADREQUEST;
         String emsg = "VTNSetIcmpTypeAction: Action order cannot be null";

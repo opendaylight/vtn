@@ -369,6 +369,7 @@ public class XmlPathMapTest extends TestBase {
                             assertEquals(pid, xpm.getPolicy());
                             assertEquals(idle, xpm.getIdleTimeout());
                             assertEquals(hard, xpm.getHardTimeout());
+                            jaxbTest(xpm, type, XML_ROOT);
                         }
                     }
                 }

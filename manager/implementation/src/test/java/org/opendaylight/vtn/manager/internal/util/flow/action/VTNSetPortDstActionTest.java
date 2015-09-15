@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
@@ -476,11 +477,9 @@ public class VTNSetPortDstActionTest extends TestBase {
      */
     @Test
     public void testJAXB() throws Exception {
-        Unmarshaller[] unmarshallers = {
-            createUnmarshaller(VTNSetPortDstAction.class),
-            createUnmarshaller(VTNPortAction.class),
-            createUnmarshaller(FlowFilterAction.class),
-        };
+        List<Class<?>> jaxbClasses = new ArrayList<>();
+        Collections.addAll(jaxbClasses, VTNSetPortDstAction.class,
+                           VTNPortAction.class, FlowFilterAction.class);
 
         int[] ports = {
             0, 1, 10, 33, 1234, 32767, 32768, 40000, 55555, 65535,
@@ -490,21 +489,33 @@ public class VTNSetPortDstActionTest extends TestBase {
             0, 1, 2, 32000, Integer.MAX_VALUE,
         };
 
+        VtnSetPortDstActionCaseBuilder vacBuilder =
+            new VtnSetPortDstActionCaseBuilder();
         Class<VTNSetPortDstAction> type = VTNSetPortDstAction.class;
         List<XmlDataType> dlist = getXmlDataTypes(XML_ROOT);
-        for (Unmarshaller um: unmarshallers) {
-            for (Integer order: orders) {
-                for (int port: ports) {
-                    String xml = new XmlNode(XML_ROOT).
-                        add(new XmlNode("order", order)).
-                        add(new XmlNode("port", port)).toString();
-                    VTNSetPortDstAction va = unmarshal(um, xml, type);
-                    va.verify();
-                    assertEquals(order, va.getIdentifier());
-                    assertEquals(port, va.getPort());
-                }
+        for (Class<?> cls: jaxbClasses) {
+            Marshaller m = createMarshaller(cls);
+            Unmarshaller um = createUnmarshaller(cls);
 
-                // Default port number test.
+            for (int port: ports) {
+                VtnSetPortDstAction vact = new VtnSetPortDstActionBuilder().
+                    setPort(new PortNumber(port)).build();
+                VtnSetPortDstActionCase vac = vacBuilder.
+                    setVtnSetPortDstAction(vact).build();
+                for (Integer order: orders) {
+                    VTNSetPortDstAction va =
+                        new VTNSetPortDstAction(vac, order);
+                    String xml = marshal(m, va, type, XML_ROOT);
+                    VTNSetPortDstAction va1 = unmarshal(um, xml, type);
+                    va1.verify();
+                    assertEquals(order, va1.getIdentifier());
+                    assertEquals(port, va1.getPort());
+                    assertEquals(va, va1);
+                }
+            }
+
+            // Default port number test.
+            for (Integer order: orders) {
                 String xml = new XmlNode(XML_ROOT).
                     add(new XmlNode("order", order)).toString();
                 VTNSetPortDstAction va = unmarshal(um, xml, type);
@@ -518,7 +529,7 @@ public class VTNSetPortDstActionTest extends TestBase {
         }
 
         // No action order.
-        Unmarshaller um = unmarshallers[0];
+        Unmarshaller um = createUnmarshaller(type);
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
         StatusCode ecode = StatusCode.BADREQUEST;
         String emsg = "VTNSetPortDstAction: Action order cannot be null";

@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
@@ -217,6 +218,7 @@ public class VTNIcmpMatchTest extends TestBase {
         };
 
         Class<VTNIcmpMatch> xmlType = VTNIcmpMatch.class;
+        Marshaller m = createMarshaller(xmlType);
         Unmarshaller um = createUnmarshaller(xmlType);
         IcmpMatchParams params = new IcmpMatchParams();
         for (Short type: types) {
@@ -235,6 +237,11 @@ public class VTNIcmpMatchTest extends TestBase {
                 VTNIcmpMatch imatch = unmarshal(um, xml, xmlType);
                 imatch.verify();
                 params.verify(imatch);
+
+                xml = marshal(m, imatch, xmlType, XML_ROOT);
+                VTNIcmpMatch imatch1 = unmarshal(um, xml, xmlType);
+                imatch1.verify();
+                assertEquals(imatch, imatch1);
             }
         }
 

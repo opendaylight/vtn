@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
@@ -193,6 +194,7 @@ public class VTNFlowMatchTest extends TestBase {
     public void testJAXB() throws Exception {
         // Normal case.
         Class<VTNFlowMatch> type = VTNFlowMatch.class;
+        Marshaller m = createMarshaller(type);
         Unmarshaller um = createUnmarshaller(type);
         Map<FlowMatchParams, FlowMatchParams> cases =
             FlowMatchParams.createFlowMatches();
@@ -207,6 +209,11 @@ public class VTNFlowMatchTest extends TestBase {
 
             xml = expected.toXmlNode(XML_ROOT).toString();
             VTNFlowMatch vfmatch1 = unmarshal(um, xml, type);
+            vfmatch1.verify();
+            assertEquals(vfmatch, vfmatch1);
+
+            xml = marshal(m, vfmatch, type, XML_ROOT);
+            vfmatch1 = unmarshal(um, xml, type);
             vfmatch1.verify();
             assertEquals(vfmatch, vfmatch1);
         }

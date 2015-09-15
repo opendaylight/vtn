@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
@@ -351,6 +352,7 @@ public class VTNPortRangeTest extends TestBase {
     public void testJAXB() throws Exception {
         // Normal case.
         Class<VTNPortRange> type = VTNPortRange.class;
+        Marshaller m = createMarshaller(type);
         Unmarshaller um = createUnmarshaller(type);
         Integer[] ports = {
             0, 1, 100, 2000, 30000, 65535,
@@ -370,6 +372,11 @@ public class VTNPortRangeTest extends TestBase {
             vr.verify();
             assertEquals(from, vr.getPortFrom());
             assertEquals(from, vr.getPortTo());
+
+            xml = marshal(m, vr, type, XML_ROOT);
+            VTNPortRange vr1 = unmarshal(um, xml, type);
+            vr1.verify();
+            assertEquals(vr, vr1);
 
             int f = from.intValue();
             if (f != 65535) {

@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
@@ -304,6 +305,7 @@ public class VTNFlowConditionTest extends TestBase {
     public void testJAXB() throws Exception {
         // Normal case.
         Class<VTNFlowCondition> type = VTNFlowCondition.class;
+        Marshaller m = createMarshaller(type);
         Unmarshaller um = createUnmarshaller(type);
         Map<FlowCondParams, FlowCondParams> cases =
             FlowCondParams.createFlowConditions();
@@ -318,6 +320,11 @@ public class VTNFlowConditionTest extends TestBase {
 
             xml = expected.toXmlNode(XML_ROOT).toString();
             VTNFlowCondition vfcond1 = unmarshal(um, xml, type);
+            vfcond1.verify();
+            assertEquals(vfcond, vfcond1);
+
+            xml = marshal(m, vfcond, type, XML_ROOT);
+            vfcond1 = unmarshal(um, xml, type);
             vfcond1.verify();
             assertEquals(vfcond, vfcond1);
         }
