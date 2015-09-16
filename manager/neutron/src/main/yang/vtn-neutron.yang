@@ -1,0 +1,54 @@
+/*
+ * Copyright (c) 2015 NEC Corporation
+ * All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-neutron {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:manager:neutron";
+    prefix vtn-neutron;
+
+    import config {
+        prefix config;
+        revision-date 2013-04-05;
+    }
+    import opendaylight-md-sal-binding {
+        prefix mdsal;
+        revision-date 2013-10-28;
+    }
+    description
+      "This module contains the base YANG definition for the VTN Renderer
+       implementation.";
+
+    revision 2015-05-08 {
+        description "Initial revision.";
+    }
+
+    identity vtn-neutron {
+        base config:module-type;
+
+        // Specifies the prefix for generated Java classes.
+        config:java-name-prefix VTNNeutron;
+    }
+
+    // Augments the 'configuration' choice node under modules/module.
+    augment "/config:modules/config:module/config:configuration" {
+        case vtn-neutron {
+            when "/config:modules/config:module/config:type = 'vtn-neutron'";
+
+            container data-broker {
+                uses config:service-ref {
+                    refine type {
+                        mandatory true;
+                        config:required-identity
+                          mdsal:binding-async-data-broker;
+                    }
+                }
+            }
+        }
+    }
+}

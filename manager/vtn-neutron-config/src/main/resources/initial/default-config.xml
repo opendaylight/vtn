@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--#
+# Copyright (c) 2015 NEC Corporation
+# All rights reserved.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+-->
+
+<!-- Configuration for VTN Renderer module. -->
+<snapshot>
+  <configuration>
+    <data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+      <modules xmlns="urn:opendaylight:params:xml:ns:yang:controller:config">
+        <module>
+          <type xmlns:neutron="urn:opendaylight:vtn:manager:neutron">
+            neutron:vtn-neutron
+          </type>
+
+          <name>vtn-neutron</name>
+
+          <data-broker>
+            <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">
+              binding:binding-async-data-broker
+            </type>
+            <name>binding-data-broker</name>
+          </data-broker>
+
+        </module>
+      </modules>
+    </data>
+  </configuration>
+
+  <required-capabilities>
+    <capability>
+      urn:opendaylight:vtn:manager:neutron?module=vtn-neutron&amp;revision=2015-05-08
+    </capability>
+    <capability>urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding?module=opendaylight-md-sal-binding&amp;revision=2013-10-28</capability>
+    <capability>urn:opendaylight:params:xml:ns:yang:southbound:impl?module=southbound-impl&amp;revision=2015-01-05</capability>
+  </required-capabilities>
+</snapshot>

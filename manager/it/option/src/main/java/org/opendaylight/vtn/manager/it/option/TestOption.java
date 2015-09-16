@@ -408,11 +408,11 @@ public final class TestOption {
             mavenBundle(NETTY, "netty-transport"),
 
             // OVSDB bundles.
-            mavenBundle(OVSDB, "library"),
-            mavenBundle(OVSDB, "plugin"),
-            mavenBundle(OVSDB, "ovsdb-plugin-compatibility-layer"),
-            mavenBundle(OVSDB, "schema.openvswitch"),
-            mavenBundle(OVSDB, "schema.hardwarevtep"),
+           // mavenBundle(OVSDB, "library"),
+           // mavenBundle(OVSDB, "plugin"),
+           // mavenBundle(OVSDB, "ovsdb-plugin-compatibility-layer"),
+           // mavenBundle(OVSDB, "schema.openvswitch"),
+           // mavenBundle(OVSDB, "schema.hardwarevtep"),
 
             // Load JUnit and Mockito bundles.
             TestHelper.junitAndMockitoBundles());

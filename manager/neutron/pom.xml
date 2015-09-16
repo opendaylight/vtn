@@ -13,12 +13,12 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>org.opendaylight.vtn</groupId>
-    <artifactId>manager.common.java</artifactId>
-    <version>0.4.0-SNAPSHOT</version>
-    <relativePath>../common/java</relativePath>
-  </parent>
+ <parent>
+  <groupId>org.opendaylight.controller</groupId>
+  <artifactId>config-parent</artifactId>
+  <version>0.4.0-SNAPSHOT</version>
+  <relativePath />
+ </parent>
 
   <artifactId>manager.neutron</artifactId>
   <packaging>bundle</packaging>
@@ -32,6 +32,11 @@
 
   <properties>
     <vtn.manager.dir>..</vtn.manager.dir>
+    <networkconfig.neutron.version>0.6.0-SNAPSHOT</networkconfig.neutron.version>
+    <powermock.version>1.5.2</powermock.version>
+    <sonar-jacoco-listeners.version>2.4</sonar-jacoco-listeners.version>
+    <root.directory>${env.PWD}</root.directory>
+    <sonar.jacoco.itReportPath>${root.directory}/target/code-coverage/jacoco-it.exec</sonar.jacoco.itReportPath>  
   </properties>
 
   <build>
@@ -45,20 +50,13 @@
             <Import-Package>
               org.opendaylight.controller.sal.core,
               org.opendaylight.controller.sal.utils,
-              org.opendaylight.neutron.spi,
-              org.opendaylight.ovsdb.lib.notation,
-              org.opendaylight.ovsdb.plugin.api,
-              org.opendaylight.ovsdb.compatibility.plugin,
-              org.opendaylight.ovsdb.compatibility.plugin.api,
-              org.opendaylight.ovsdb.schema.openvswitch,
-              org.opendaylight.ovsdb.lib.schema,
               org.opendaylight.vtn.manager,
               org.apache.felix.dm,
-              org.slf4j
+              org.slf4j,
+              org.opendaylight.ovsdb.lib.notation,
+              org.opendaylight.ovsdb.lib.table,
+              org.opendaylight.ovsdb.lib.table.internal
             </Import-Package>
-            <Bundle-Activator>
-              org.opendaylight.vtn.manager.neutron.Activator
-            </Bundle-Activator>
           </instructions>
         </configuration>
       </plugin>
@@ -69,31 +67,29 @@
     <dependency>
       <groupId>org.opendaylight.neutron</groupId>
       <artifactId>neutron-spi</artifactId>
+      <version>0.6.0-SNAPSHOT</version>
     </dependency>
-
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>sal</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opendaylight.ovsdb</groupId>
-      <artifactId>ovsdb-plugin-compatibility-layer</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.ovsdb</groupId>
-      <artifactId>library</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.ovsdb</groupId>
-      <artifactId>schema.openvswitch</artifactId>
-    </dependency>
-
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
       <artifactId>manager</artifactId>
+      <version>0.4.0-SNAPSHOT</version>
     </dependency>
-
+      <!-- OpenDaylight YANG Tools -->
+    <dependency>
+       <groupId>org.opendaylight.yangtools</groupId>
+       <artifactId>yang-common</artifactId>
+    </dependency>
+    
+    <!-- OpenDaylight Controller -->
+     <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>sal-binding-api</artifactId>
+     </dependency>
+     <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>sal-binding-config</artifactId>
+     </dependency>
+  
     <dependency>
       <groupId>org.apache.felix</groupId>
       <artifactId>org.apache.felix.dependencymanager</artifactId>
@@ -102,6 +98,103 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.ovsdb</groupId>
+      <artifactId>southbound-api</artifactId>
+      <version>1.2.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+        <groupId>org.opendaylight.ovsdb</groupId>
+        <artifactId>library</artifactId>
+        <version>1.2.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.opendaylight.ovsdb</groupId>
+        <artifactId>schema.openvswitch</artifactId>
+        <version>1.2.0-SNAPSHOT</version>
+      </dependency>      
+     <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>config-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>sal-common-api</artifactId>
+    </dependency>
+   
+    <dependency>
+      <groupId>org.opendaylight.yangtools</groupId>
+      <artifactId>yang-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.yangtools</groupId>
+      <artifactId>concepts</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.yangtools.model</groupId>
+      <artifactId>ietf-inet-types</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.yangtools.model</groupId>
+      <artifactId>ietf-topology</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.yangtools.model</groupId>
+      <artifactId>opendaylight-l2-types</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.yangtools.model</groupId>
+      <artifactId>ietf-yang-types-20130715</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.yangtools.model</groupId>
+      <artifactId>ietf-yang-types</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.powermock</groupId>
+      <artifactId>powermock-core</artifactId>
+      <version>${powermock.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.powermock</groupId>
+      <artifactId>powermock-module-junit4</artifactId>
+      <version>${powermock.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.powermock</groupId>
+      <artifactId>powermock-api-mockito</artifactId>
+      <version>${powermock.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.powermock</groupId>
+      <artifactId>powermock-api-support</artifactId>
+      <version>${powermock.version}</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>
