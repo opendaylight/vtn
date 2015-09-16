@@ -1,0 +1,50 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3a79b1b5_6147364c",
+        "filename": "manager/features/pom.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 168,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-09-16T17:34:47Z",
+      "side": 0,
+      "message": "I think we need this dependency. The manage.neutron is used in \"manager/features/src/main/resources/features.xml\".",
+      "range": {
+        "startLine": 168,
+        "startChar": 6,
+        "endLine": 168,
+        "endChar": 46
+      },
+      "revId": "36e6bbe8b4a3293c5473f89b6d778177a8e95e34",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3a79b1b5_21793e93",
+        "filename": "manager/features/pom.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 214,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-09-16T17:34:47Z",
+      "side": 0,
+      "message": "I think we need this dependency. The features-ovsdb is used in \"manager/features/src/main/resources/features.xml\".",
+      "range": {
+        "startLine": 209,
+        "startChar": 0,
+        "endLine": 214,
+        "endChar": 17
+      },
+      "revId": "36e6bbe8b4a3293c5473f89b6d778177a8e95e34",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}

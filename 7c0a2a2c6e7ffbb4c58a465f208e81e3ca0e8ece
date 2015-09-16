@@ -1,0 +1,142 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3a79b1b5_61b5f62f",
+        "filename": "manager/common/pom.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 242,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-09-16T17:34:47Z",
+      "side": 1,
+      "message": "Please do not disable the check style.",
+      "range": {
+        "startLine": 242,
+        "startChar": 6,
+        "endLine": 242,
+        "endChar": 17
+      },
+      "revId": "7c0a2a2c6e7ffbb4c58a465f208e81e3ca0e8ece",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3a79b1b5_e1802648",
+        "filename": "manager/features/src/main/resources/features.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-09-16T17:34:47Z",
+      "side": 1,
+      "message": "Why are these features needed?\nI don\u0027t think the feature \"odl-vtn-manger-neutron\" depends on these features.",
+      "range": {
+        "startLine": 55,
+        "startChar": 0,
+        "endLine": 56,
+        "endChar": 95
+      },
+      "revId": "7c0a2a2c6e7ffbb4c58a465f208e81e3ca0e8ece",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3a79b1b5_615e5614",
+        "filename": "manager/vtn-neutron-config/pom.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-09-16T17:34:47Z",
+      "side": 1,
+      "message": "The parent should not be an artifact of the NIC project, since any features don\u0027t depend on the artifact of the NIC project.",
+      "range": {
+        "startLine": 16,
+        "startChar": 0,
+        "endLine": 21,
+        "endChar": 11
+      },
+      "revId": "7c0a2a2c6e7ffbb4c58a465f208e81e3ca0e8ece",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3a79b1b5_41631adc",
+        "filename": "manager/vtn-neutron-config/pom.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-09-16T17:34:47Z",
+      "side": 1,
+      "message": "Since that is not for VTN Renderer, we should change the file name.",
+      "range": {
+        "startLine": 42,
+        "startChar": 63,
+        "endLine": 42,
+        "endChar": 82
+      },
+      "revId": "7c0a2a2c6e7ffbb4c58a465f208e81e3ca0e8ece",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3a79b1b5_c1a64a10",
+        "filename": "manager/vtn-neutron-config/src/main/resources/initial/default-config.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-09-16T17:34:47Z",
+      "side": 1,
+      "message": "Please change the comment. VTN Renderer is not related here.",
+      "range": {
+        "startLine": 13,
+        "startChar": 23,
+        "endLine": 13,
+        "endChar": 35
+      },
+      "revId": "7c0a2a2c6e7ffbb4c58a465f208e81e3ca0e8ece",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3a79b1b5_81b05244",
+        "filename": "pom.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 69,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-09-16T17:34:47Z",
+      "side": 1,
+      "message": "Please do not disable the IT.",
+      "range": {
+        "startLine": 69,
+        "startChar": 8,
+        "endLine": 69,
+        "endChar": 40
+      },
+      "revId": "7c0a2a2c6e7ffbb4c58a465f208e81e3ca0e8ece",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
