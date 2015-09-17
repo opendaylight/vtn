@@ -56,11 +56,6 @@ public final class MiscUtils {
         LoggerFactory.getLogger("ODL-VTN-Manager-verbose");
 
     /**
-     * A prime number used to calculate hash code.
-     */
-    public static final int  HASH_PRIME = 31;
-
-    /**
      * The minimum value of the order value for the first element in the
      * ordered list.
      */

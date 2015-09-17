@@ -8,6 +8,8 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow.action;
 
+import static org.opendaylight.vtn.manager.util.NumberUtils.HASH_PRIME;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
@@ -273,6 +275,6 @@ public final class VTNSetIcmpCodeAction extends FlowFilterAction {
      */
     @Override
     public int hashCode() {
-        return super.hashCode() * MiscUtils.HASH_PRIME + (int)code;
+        return super.hashCode() * HASH_PRIME + (int)code;
     }
 }

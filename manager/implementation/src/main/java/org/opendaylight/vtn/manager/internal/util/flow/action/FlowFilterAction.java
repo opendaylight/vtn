@@ -8,6 +8,8 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow.action;
 
+import static org.opendaylight.vtn.manager.util.NumberUtils.HASH_PRIME;
+
 import java.util.Objects;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -144,7 +146,7 @@ public abstract class FlowFilterAction extends VTNFlowAction
     public int hashCode() {
         int h = super.hashCode();
         if (order != null) {
-            h = h * MiscUtils.HASH_PRIME + order.intValue();
+            h = h * HASH_PRIME + order.intValue();
         }
 
         return h;

@@ -8,6 +8,8 @@
 
 package org.opendaylight.vtn.manager.internal.util;
 
+import static org.opendaylight.vtn.manager.util.NumberUtils.HASH_PRIME;
+
 import java.io.Serializable;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -138,7 +140,6 @@ public final class IdentifierTargetComparator
      */
     @Override
     public int hashCode() {
-        return targetOrder.hashCode() +
-            (getClass().hashCode() * MiscUtils.HASH_PRIME);
+        return targetOrder.hashCode() + (getClass().hashCode() * HASH_PRIME);
     }
 }

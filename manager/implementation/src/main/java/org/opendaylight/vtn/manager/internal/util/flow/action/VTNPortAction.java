@@ -8,6 +8,8 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow.action;
 
+import static org.opendaylight.vtn.manager.util.NumberUtils.HASH_PRIME;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
@@ -16,7 +18,6 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 
 import org.opendaylight.vtn.manager.flow.action.TpPortAction;
 
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
@@ -203,6 +204,6 @@ public abstract class VTNPortAction extends FlowFilterAction {
      */
     @Override
     public final int hashCode() {
-        return super.hashCode() * MiscUtils.HASH_PRIME + port;
+        return super.hashCode() * HASH_PRIME + port;
     }
 }

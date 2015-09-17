@@ -8,11 +8,12 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow.action;
 
+import static org.opendaylight.vtn.manager.util.NumberUtils.HASH_PRIME;
+
 import java.util.Objects;
 
 import org.opendaylight.vtn.manager.flow.action.FlowAction;
 
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
@@ -213,7 +214,7 @@ public final class VTNPushVlanAction extends VTNFlowAction {
     public int hashCode() {
         int h = super.hashCode();
         if (vlanType != null) {
-            h = h * MiscUtils.HASH_PRIME + vlanType.hashCode();
+            h = h * HASH_PRIME + vlanType.hashCode();
         }
 
         return h;

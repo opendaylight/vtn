@@ -8,6 +8,8 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow.action;
 
+import static org.opendaylight.vtn.manager.util.NumberUtils.HASH_PRIME;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
@@ -16,7 +18,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 import org.opendaylight.vtn.manager.flow.action.FlowAction;
 import org.opendaylight.vtn.manager.flow.action.SetDscpAction;
 
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.packet.InetHeader;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
@@ -279,6 +280,6 @@ public final class VTNSetInetDscpAction extends FlowFilterAction {
      */
     @Override
     public int hashCode() {
-        return super.hashCode() * MiscUtils.HASH_PRIME + (int)dscp;
+        return super.hashCode() * HASH_PRIME + (int)dscp;
     }
 }

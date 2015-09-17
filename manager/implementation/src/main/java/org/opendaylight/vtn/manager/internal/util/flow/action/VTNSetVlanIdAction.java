@@ -8,9 +8,10 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow.action;
 
+import static org.opendaylight.vtn.manager.util.NumberUtils.HASH_PRIME;
+
 import org.opendaylight.vtn.manager.flow.action.FlowAction;
 
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
@@ -188,6 +189,6 @@ public final class VTNSetVlanIdAction extends VTNFlowAction {
      */
     @Override
     public int hashCode() {
-        return super.hashCode() * MiscUtils.HASH_PRIME + vlanId;
+        return super.hashCode() * HASH_PRIME + vlanId;
     }
 }

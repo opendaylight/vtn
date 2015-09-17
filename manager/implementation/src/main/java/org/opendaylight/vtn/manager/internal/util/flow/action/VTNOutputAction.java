@@ -8,6 +8,8 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow.action;
 
+import static org.opendaylight.vtn.manager.util.NumberUtils.HASH_PRIME;
+
 import org.opendaylight.vtn.manager.flow.action.FlowAction;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
@@ -179,6 +181,6 @@ public final class VTNOutputAction extends VTNFlowAction {
      */
     @Override
     public int hashCode() {
-        return super.hashCode() * MiscUtils.HASH_PRIME + outputPort.hashCode();
+        return super.hashCode() * HASH_PRIME + outputPort.hashCode();
     }
 }

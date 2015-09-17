@@ -8,6 +8,8 @@
 
 package org.opendaylight.vtn.manager.internal.util;
 
+import static org.opendaylight.vtn.manager.util.NumberUtils.HASH_PRIME;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -93,8 +95,7 @@ public final class DataObjectIdentity {
             throw new IllegalStateException(msg, e);
         }
 
-        hash = dataType.getName().hashCode() +
-            dataMap.hashCode() * MiscUtils.HASH_PRIME;
+        hash = dataType.getName().hashCode() + dataMap.hashCode() * HASH_PRIME;
     }
 
     /**
