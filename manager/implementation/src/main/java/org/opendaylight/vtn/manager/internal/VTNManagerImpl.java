@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2013, 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -36,10 +36,8 @@ import org.slf4j.LoggerFactory;
 import org.apache.felix.dm.Component;
 
 import org.opendaylight.vtn.manager.DataLinkHost;
-import org.opendaylight.vtn.manager.IVTNFlowDebugger;
 import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.IVTNManagerAware;
-import org.opendaylight.vtn.manager.IVTNModeListener;
 import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.MacMap;
 import org.opendaylight.vtn.manager.MacMapConfig;
@@ -220,8 +218,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpda
  * Implementation of VTN Manager service.
  */
 public class VTNManagerImpl
-    implements IVTNManager, IVTNFlowDebugger,
-               ICacheUpdateAware<ClusterEventId, Object>,
+    implements IVTNManager, ICacheUpdateAware<ClusterEventId, Object>,
                VTNInventoryListener, VTNRoutingListener, VTNPacketListener,
                IConfigurationContainerAware, IHostFinder {
     /**
@@ -322,12 +319,6 @@ public class VTNManagerImpl
         new CopyOnWriteArrayList<IVTNManagerAware>();
 
     /**
-     * VTN mode listeners.
-     */
-    private final CopyOnWriteArrayList<IVTNModeListener>  vtnModeListeners =
-        new CopyOnWriteArrayList<IVTNModeListener>();
-
-    /**
      * Container name associated with this service.
      */
     private String  containerName;
@@ -347,11 +338,6 @@ public class VTNManagerImpl
      * Single-threaded task queue runner.
      */
     private TaskQueueThread  taskQueueThread;
-
-    /**
-     * True if VTN is active.
-     */
-    private boolean  vtnMode;
 
     /**
      * True if the VTN Manager service is available.
@@ -530,8 +516,6 @@ public class VTNManagerImpl
 
         // Initialize MAC address tables.
         initMacAddressTable();
-
-        vtnMode = !tenantDB.isEmpty();
 
         resourceManager.addManager(this);
         if (vtnProvider != null) {
@@ -908,31 +892,6 @@ public class VTNManagerImpl
     void removeVTNManagerAware(IVTNManagerAware service) {
         if (vtnManagerAware.remove(service)) {
             LOG.trace("{}: Remove VTN manager listener: {}", containerName,
-                      service);
-        }
-    }
-
-    /**
-     * Invoked when a VTN mode listener service is registered.
-     *
-     * @param listener  VTN mode listener service.
-     */
-    void addVTNModeListener(IVTNModeListener listener) {
-        if (vtnModeListeners.addIfAbsent(listener)) {
-            LOG.trace("{}: Add VTN mode listener: {}", containerName,
-                      listener);
-            notifyChange(listener, isActive());
-        }
-    }
-
-    /**
-     * Invoked when a VTN mode listener service is unregistered.
-     *
-     * @param service  VTN mode listener service.
-     */
-    void removeVTNModeListener(IVTNModeListener service) {
-        if (vtnModeListeners.remove(service)) {
-            LOG.trace("{}: Remove VTN mode listener: {}", containerName,
                       service);
         }
     }
@@ -1539,64 +1498,6 @@ public class VTNManagerImpl
     }
 
     /**
-     * Call VTN mode listeners on the calling thread.
-     *
-     * @param active  {@code true} if the VTN has been activated.
-     *                {@code false} if the VTN has been inactivated.
-     */
-    public void notifyListeners(boolean active) {
-        if (LOG.isInfoEnabled()) {
-            String m = (active) ? "Enter" : "Exit";
-            LOG.info("{}: {} VTN mode", containerName, m);
-        }
-
-        for (IVTNModeListener listener: vtnModeListeners) {
-            try {
-                listener.vtnModeChanged(active);
-            } catch (Exception e) {
-                StringBuilder builder = new StringBuilder(containerName);
-                builder.append(": Unhandled exception in mode listener: ").
-                    append(listener).append(": ").append(e.toString());
-                LOG.error(builder.toString(), e);
-            }
-        }
-    }
-
-    /**
-     * Notify the VTN mode change.
-     *
-     * @param active  {@code true} if the VTN has been activated.
-     *                {@code false} if the VTN has been inactivated.
-     */
-    public void notifyChange(final boolean active) {
-        Runnable r = new Runnable() {
-            @Override
-            public void run() {
-                notifyListeners(active);
-            }
-        };
-        postTask(r);
-    }
-
-    /**
-     * Notify the specified listener of the VTN mode change.
-     *
-     * @param listener VTN mode listener service.
-     * @param active   {@code true} if the VTN has been activated.
-     *                 {@code false} if the VTN has been inactivated.
-     */
-    public void notifyChange(final IVTNModeListener listener,
-                             final boolean active) {
-        Runnable r = new Runnable() {
-            @Override
-            public void run() {
-                listener.vtnModeChanged(active);
-            }
-        };
-        postTask(r);
-    }
-
-    /**
      * Call virtual tenant listeners on the calling thread.
      *
      * @param path    Path to the tenant.
@@ -2146,16 +2047,12 @@ public class VTNManagerImpl
         wrlock.lock();
         try {
             if (type == UpdateType.ADDED) {
-                // Save configurations, and update VTN mode.
+                // Save configurations.
                 saveTenantConfigLocked(tenantName);
-                updateVTNMode(true);
             } else {
                 // Delete the virtual tenant configuration file.
                 ContainerConfig cfg = new ContainerConfig(containerName);
                 cfg.delete(ContainerConfig.Type.TENANT, tenantName);
-
-                // Save tenant names, and update VTN mode.
-                updateVTNMode(false);
 
                 if (vtnProvider != null) {
                     // Purge canceled timer tasks.
@@ -2168,61 +2065,13 @@ public class VTNManagerImpl
     }
 
     /**
-     * Change VTN mode if needed.
-     *
-     * <p>
-     *   This method must be called with holding writer lock of
-     *   {@link #rwLock}.
-     * </p>
-     *
-     * @param sync  If {@code true} is specified, mode listeners are invoked
-     *              on the calling thread.
-     *              If {@code false} is specified, mode listeners are invoked
-     *              on the VTN task thread.
-     */
-    private void updateVTNMode(boolean sync) {
-        if (!tenantDB.isEmpty()) {
-            // Activate VTN.
-            if (!vtnMode) {
-                vtnMode = true;
-                if (sync) {
-                    notifyListeners(true);
-                } else {
-                    notifyChange(true);
-                }
-            }
-        } else if (vtnMode) {
-            // Inactivate VTN.
-            vtnMode = false;
-            if (sync) {
-                notifyListeners(false);
-            } else {
-                notifyChange(false);
-            }
-        }
-    }
-
-    /**
      * Flush pending cluster events, and then unlock the given lock object.
      *
      * @param lock  A lock object.
      */
-    private void unlock(Lock lock) {
-        unlock(lock, false);
-    }
-
-    /**
-     * Flush pending cluster events, and then unlock the given lock object.
-     *
-     * @param lock    A lock object.
-     * @param update  {@code true} means that the VTN mode should be updated.
-     */
-    void unlock(Lock lock, boolean update) {
+    void unlock(Lock lock) {
         try {
             flushEventQueue();
-            if (update) {
-                updateVTNMode(false);
-            }
         } finally {
             lock.unlock();
         }
@@ -2671,7 +2520,7 @@ public class VTNManagerImpl
      */
     @Override
     public boolean isActive() {
-        return vtnMode;
+        return !tenantDB.isEmpty();
     }
 
     /**
@@ -2841,7 +2690,6 @@ public class VTNManagerImpl
 
             status = vtn.saveConfig(null);
             VTenant vtenant = vtn.getVTenant();
-            updateVTNMode(false);
             enqueueEvent(path, vtenant, UpdateType.ADDED);
 
             return status;
@@ -2923,8 +2771,6 @@ public class VTNManagerImpl
 
             // Purge all VTN flows in this tenant.
             VTNThreadData.removeFlows(this, tenantName);
-
-            data.setModeChanged();
             enqueueEvent(path, vtenant, UpdateType.REMOVED);
         } catch (VTNException e) {
             return e.getStatus();
@@ -5343,20 +5189,6 @@ public class VTNManagerImpl
         }
     }
 
-    // IVTNFlowDebugger
-
-    /**
-     * Remove all flow entries in the specified virtual tenant.
-     *
-     * @param path   Path to the virtual tenant.
-     * @return  "Success" or failure reason.
-     */
-    @Override
-    public Status removeAllFlows(VTenantPath path) {
-        return new Status(StatusCode.UNSUPPORTED,
-                          "Flow debugger is not supported.");
-    }
-
     // ICacheUpdateAware
 
     /**
@@ -5652,7 +5484,7 @@ public class VTNManagerImpl
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            if (vtnMode) {
+            if (isActive()) {
                 findHost(networkAddress, null);
             }
         } finally {
@@ -5671,7 +5503,7 @@ public class VTNManagerImpl
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            if (vtnMode) {
+            if (isActive()) {
                 probeHost(host);
             }
         } finally {

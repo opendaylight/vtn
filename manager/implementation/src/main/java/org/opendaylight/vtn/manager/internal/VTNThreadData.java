@@ -54,11 +54,6 @@ public final class VTNThreadData {
     private List<VTNFuture<?>>  futureList;
 
     /**
-     * Determine whether the VTN mode has been changed or not.
-     */
-    private boolean  modeChanged;
-
-    /**
      * Create a thread-local variable for the calling thread.
      *
      * <p>
@@ -226,18 +221,6 @@ public final class VTNThreadData {
     }
 
     /**
-     * Schedule the VTN mode check.
-     *
-     * <p>
-     *   The VTN mode check will be executed by
-     *   {@link #cleanUp(VTNManagerImpl)}.
-     * </p>
-     */
-    void setModeChanged() {
-        modeChanged = true;
-    }
-
-    /**
      * Add the specified future to the task list to wait.
      *
      * @param future  A future associated with the task to wait.
@@ -273,7 +256,7 @@ public final class VTNThreadData {
     void cleanUp(VTNManagerImpl mgr) {
         try {
             // Unlock the lock, and flush pending events.
-            mgr.unlock(theLock, modeChanged);
+            mgr.unlock(theLock);
         } finally {
             // Unbind this object from the calling thread.
             THREAD_LOCAL.remove();

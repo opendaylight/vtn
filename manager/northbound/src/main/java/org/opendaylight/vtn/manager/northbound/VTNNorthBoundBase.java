@@ -16,7 +16,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 
-import org.opendaylight.vtn.manager.IVTNFlowDebugger;
 import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
@@ -176,26 +175,6 @@ public abstract class VTNNorthBoundBase {
         }
 
         return mgr;
-    }
-
-    /**
-     * Return the VTN flow debugger service associated with the default
-     * container.
-     *
-     * @return  The VTN flow debugger service associated with the default
-     *          container.
-     * @throws ServiceUnavailableException
-     *    Unable to get VTN manager service.
-     */
-    protected final IVTNFlowDebugger getVTNFlowDebugger() {
-        String cname = GlobalConstants.DEFAULT.toString();
-        IVTNFlowDebugger debugger = (IVTNFlowDebugger)ServiceHelper.
-            getInstance(IVTNFlowDebugger.class, cname, this);
-        if (debugger == null) {
-            throw serviceUnavailable("VTN Flow Debugger");
-        }
-
-        return debugger;
     }
 
     /**
