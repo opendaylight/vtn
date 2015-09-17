@@ -19,7 +19,6 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 import org.opendaylight.vtn.manager.util.VTNIdentifiable;
 
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNEtherMatch;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNInetMatch;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNLayer4Match;
@@ -65,7 +64,7 @@ public class VTNFlowMatch extends VTNMatch
      */
     public VTNFlowMatch(FlowMatch fmatch) throws RpcException {
         if (fmatch == null) {
-            throw MiscUtils.getNullArgumentException("Flow match");
+            throw RpcException.getNullArgumentException("Flow match");
         }
 
         index = fmatch.getIndex();
@@ -83,7 +82,7 @@ public class VTNFlowMatch extends VTNMatch
      */
     public VTNFlowMatch(VtnFlowMatchConfig vfmatch) throws RpcException {
         if (vfmatch == null) {
-            throw MiscUtils.getNullArgumentException("VTN flow match");
+            throw RpcException.getNullArgumentException("VTN flow match");
         }
 
         index = vfmatch.getIndex();

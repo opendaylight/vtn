@@ -37,9 +37,6 @@ import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtilsTest
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.GlobalPathMaps;
@@ -58,6 +55,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.Vtn;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.VtnBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.VtnKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * JUnit test for {@link PathMapUtils}.
@@ -81,17 +79,15 @@ public class PathMapUtilsTest extends TestBase {
         RpcException e = PathMapUtils.getNullMapIndexException();
         assertEquals(null, e.getCause());
         assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
-        Status st = e.getStatus();
-        assertEquals(StatusCode.BADREQUEST, st.getCode());
-        assertEquals("Path map index cannot be null", st.getDescription());
+        assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+        assertEquals("Path map index cannot be null", e.getMessage());
 
         for (int i = 0; i <= 10; i++) {
             e = PathMapUtils.getInvalidMapIndexException(i);
             assertEquals(null, e.getCause());
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-            st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
-            assertEquals("Invalid path map index: " + i, st.getDescription());
+            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+            assertEquals("Invalid path map index: " + i, e.getMessage());
         }
     }
 
@@ -151,7 +147,7 @@ public class PathMapUtilsTest extends TestBase {
         // Null PathMap.
         PathMap pmap = null;
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
-        StatusCode code = StatusCode.BADREQUEST;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         String msg = "PathMap cannot be null";
         try {
             PathMapUtils.toVtnPathMapBuilder(pmap);
@@ -159,9 +155,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         try {
@@ -170,9 +165,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         // Null VtnPathMapConfig.
@@ -184,9 +178,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         assertEquals(null, PathMapUtils.toPathMap(vpmc));
@@ -202,9 +195,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         try {
@@ -213,9 +205,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         vpmc = new VtnPathMapBuilder().
@@ -226,9 +217,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         try {
@@ -237,9 +227,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         // Invalid map index.
@@ -257,9 +246,8 @@ public class PathMapUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertTrue(e.getCause() instanceof IllegalArgumentException);
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
 
             pmap = new PathMap(1, condition, 0);
@@ -269,9 +257,8 @@ public class PathMapUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertTrue(e.getCause() instanceof IllegalArgumentException);
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
         }
 
@@ -285,9 +272,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         try {
@@ -296,9 +282,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         vpmc = new VtnPathMapBuilder().setIndex(1).build();
@@ -308,9 +293,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         try {
@@ -319,9 +303,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         // Empty flow condition.
@@ -334,9 +317,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         try {
@@ -345,9 +327,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         // Invalid flow condition name.
@@ -370,9 +351,8 @@ public class PathMapUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertTrue(e.getCause() instanceof IllegalArgumentException);
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
 
             try {
@@ -381,9 +361,8 @@ public class PathMapUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertTrue(e.getCause() instanceof IllegalArgumentException);
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
         }
 
@@ -403,9 +382,8 @@ public class PathMapUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertTrue(e.getCause() instanceof IllegalArgumentException);
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
 
             try {
@@ -414,9 +392,8 @@ public class PathMapUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertTrue(e.getCause() instanceof IllegalArgumentException);
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
         }
 
@@ -434,9 +411,8 @@ public class PathMapUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
 
             try {
@@ -445,9 +421,8 @@ public class PathMapUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
 
             msg = "Invalid hard-timeout: " + timeout;
@@ -458,9 +433,8 @@ public class PathMapUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
 
             try {
@@ -469,9 +443,8 @@ public class PathMapUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
         }
 
@@ -489,9 +462,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         try {
@@ -500,9 +472,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         vpmc = new VtnPathMapBuilder().setIndex(1).setCondition(vcondition).
@@ -513,9 +484,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         try {
@@ -524,9 +494,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         xml = new XmlNode("pathmap").
@@ -541,9 +510,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         try {
@@ -552,9 +520,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         vpmc = new VtnPathMapBuilder().setIndex(1).setCondition(vcondition).
@@ -565,9 +532,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         try {
@@ -576,9 +542,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         timeouts = new Integer[]{
@@ -611,9 +576,8 @@ public class PathMapUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
 
             try {
@@ -622,9 +586,8 @@ public class PathMapUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
         }
 
@@ -635,9 +598,8 @@ public class PathMapUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
 
             try {
@@ -646,9 +608,8 @@ public class PathMapUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
         }
     }
@@ -669,7 +630,7 @@ public class PathMapUtilsTest extends TestBase {
         }
 
         RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
-        StatusCode code = StatusCode.BADREQUEST;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         for (int i = 1; i <= 100; i++) {
             String msg = "Duplicate map index: " + i;
             try {
@@ -678,9 +639,8 @@ public class PathMapUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
         }
         for (int i = 65500; i <= 65535; i++) {
@@ -691,9 +651,8 @@ public class PathMapUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
         }
     }
@@ -724,7 +683,7 @@ public class PathMapUtilsTest extends TestBase {
             "vtn_1", "vtn_2", "vtn_3",
         };
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
-        StatusCode code = StatusCode.BADREQUEST;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         String msg = "Path map index cannot be null";
 
         for (Integer index: indices) {
@@ -742,9 +701,8 @@ public class PathMapUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
 
             // VTN path map identifier test.
@@ -766,9 +724,8 @@ public class PathMapUtilsTest extends TestBase {
                 } catch (RpcException e) {
                     assertEquals(null, e.getCause());
                     assertEquals(etag, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(code, st.getCode());
-                    assertEquals(msg, st.getDescription());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(msg, e.getMessage());
                 }
 
                 try {
@@ -777,9 +734,8 @@ public class PathMapUtilsTest extends TestBase {
                 } catch (RpcException e) {
                     assertEquals(null, e.getCause());
                     assertEquals(etag, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(code, st.getCode());
-                    assertEquals(msg, st.getDescription());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(msg, e.getMessage());
                 }
             }
         }
@@ -804,9 +760,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         // Invalid VTN name.
@@ -822,7 +777,7 @@ public class PathMapUtilsTest extends TestBase {
             "\u3042",
         };
         etag = RpcErrorTag.DATA_MISSING;
-        code = StatusCode.NOTFOUND;
+        vtag = VtnErrorTag.NOTFOUND;
         for (String name: invalidNames) {
             msg = name + ": Tenant does not exist.";
             try {
@@ -830,24 +785,21 @@ public class PathMapUtilsTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
 
                 Throwable cause = e.getCause();
                 assertTrue(cause instanceof RpcException);
                 RpcException re = (RpcException)cause;
                 assertEquals(RpcErrorTag.BAD_ELEMENT, re.getErrorTag());
-                st = re.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals(VtnErrorTag.BADREQUEST, re.getVtnErrorTag());
                 cause = re.getCause();
                 if (name.isEmpty()) {
                     assertEquals("Tenant name cannot be empty",
-                                 st.getDescription());
+                                 re.getMessage());
                     assertEquals(null, cause);
                 } else {
-                    assertEquals("Tenant name is invalid",
-                                 st.getDescription());
+                    assertEquals("Tenant name is invalid", re.getMessage());
                     assertTrue(cause instanceof IllegalArgumentException);
                 }
             }
@@ -960,9 +912,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
             assertEquals(null, e.getCause());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
-            assertEquals("Path map index cannot be null", st.getDescription());
+            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+            assertEquals("Path map index cannot be null", e.getMessage());
         }
         Mockito.verify(rtx, Mockito.never()).
             read(Mockito.any(LogicalDatastoreType.class),
@@ -1036,7 +987,7 @@ public class PathMapUtilsTest extends TestBase {
         Mockito.when(rtx.read(oper, path)).thenReturn(getReadResult(root));
         Mockito.when(rtx.read(oper, vtnPath)).thenReturn(getReadResult(vtn));
         RpcErrorTag etag = RpcErrorTag.DATA_MISSING;
-        StatusCode code = StatusCode.NOTFOUND;
+        VtnErrorTag vtag = VtnErrorTag.NOTFOUND;
         String msg = "vtn1: Tenant does not exist.";
         try {
             PathMapUtils.readPathMaps(rtx, vname);
@@ -1044,9 +995,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
         Mockito.verify(rtx).read(oper, path);
         Mockito.verify(rtx).read(oper, vtnPath);
@@ -1125,9 +1075,8 @@ public class PathMapUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
             assertEquals(null, e.getCause());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
-            assertEquals("Path map index cannot be null", st.getDescription());
+            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+            assertEquals("Path map index cannot be null", e.getMessage());
         }
         Mockito.verify(rtx, Mockito.never()).
             read(Mockito.any(LogicalDatastoreType.class),
@@ -1192,7 +1141,7 @@ public class PathMapUtilsTest extends TestBase {
 
         // Run tests.
         RpcErrorTag etag = RpcErrorTag.DATA_MISSING;
-        StatusCode code = StatusCode.NOTFOUND;
+        VtnErrorTag vtag = VtnErrorTag.NOTFOUND;
         String msg = "vtn2: Tenant does not exist.";
         for (Integer index: maps.keySet()) {
             VtnPathMap expected = maps.get(index);
@@ -1206,9 +1155,8 @@ public class PathMapUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
         }
         for (InstanceIdentifier<VtnPathMap> path: pathList1) {

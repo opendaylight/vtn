@@ -16,7 +16,6 @@ import java.util.Set;
 import org.opendaylight.vtn.manager.PathCost;
 import org.opendaylight.vtn.manager.PathPolicy;
 
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.SetPathPolicyInputBuilder;
@@ -65,7 +64,7 @@ public abstract class PathPolicyConfigBuilder<T> {
     public final PathPolicyConfigBuilder<T> set(PathPolicy pp, Integer pid)
         throws RpcException {
         if (pp == null) {
-            throw MiscUtils.getNullArgumentException("PathPolicy");
+            throw RpcException.getNullArgumentException("PathPolicy");
         }
 
         Integer id = pid;

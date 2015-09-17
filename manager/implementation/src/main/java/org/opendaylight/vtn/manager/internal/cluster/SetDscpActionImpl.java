@@ -16,8 +16,7 @@ import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.packet.cache.Inet4Packet;
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetDscpAction;
-
-import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 /**
  * Implementation of flow action that modifies DSCP field value in IP header.
@@ -52,7 +51,7 @@ public final class SetDscpActionImpl extends FlowActionImpl {
         dscp = act.getDscp();
         if (!ProtocolUtils.isDscpValid(dscp)) {
             String msg = getErrorMessage(act, "Invalid DSCP value: ", dscp);
-            throw new VTNException(StatusCode.BADREQUEST, msg);
+            throw RpcException.getBadArgumentException(msg);
         }
     }
 

@@ -14,10 +14,9 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.DlAddrAction;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
  * Implementation of flow action that modifies MAC address in Ethernet frame.
@@ -57,24 +56,23 @@ public abstract class DlAddrActionImpl extends FlowActionImpl {
         address = act.getEtherAddress();
         if (address == null) {
             String msg = getErrorMessage(act, "MAC address");
-            st = MiscUtils.argumentIsNull(msg);
-            throw new VTNException(st);
+            throw RpcException.getNullArgumentException(msg);
         }
 
         if (address.isBroadcast()) {
             String msg = getErrorMessage(
                 act, "Broadcast address cannot be specified");
-            throw new VTNException(StatusCode.BADREQUEST, msg);
+            throw RpcException.getBadArgumentException(msg);
         }
         if (!address.isUnicast()) {
             String msg = getErrorMessage(
                 act, "Multicast address cannot be specified: ",
                 address.getText());
-            throw new VTNException(StatusCode.BADREQUEST, msg);
+            throw RpcException.getBadArgumentException(msg);
         }
         if (address.getAddress() == 0L) {
             String msg = getErrorMessage(act, "Zero cannot be specified");
-            throw new VTNException(StatusCode.BADREQUEST, msg);
+            throw RpcException.getBadArgumentException(msg);
         }
     }
 

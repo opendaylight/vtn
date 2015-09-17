@@ -33,9 +33,6 @@ import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
 import org.opendaylight.vtn.manager.internal.XmlValueType;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlDstActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlSrcActionCase;
@@ -43,6 +40,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.v
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.dl.src.action._case.VtnSetDlSrcAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.dl.src.action._case.VtnSetDlSrcActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.SetDlDstActionCaseBuilder;
@@ -178,16 +176,15 @@ public class VTNSetDlSrcActionTest extends TestBase {
 
             vaction = VTNSetDlDstAction.newVtnAction(mac);
             RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
-            StatusCode ecode = StatusCode.BADREQUEST;
+            VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
             String emsg = "VTNSetDlSrcAction: Unexpected type: " + vaction;
             try {
                 va.toFlowAction(vaction);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             etag = RpcErrorTag.MISSING_ELEMENT;
@@ -199,9 +196,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             vaction = vacBuilder.
@@ -213,9 +209,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             // toFlowAction() should never affect instance variables.
@@ -237,9 +232,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             try {
@@ -247,9 +241,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             etag = RpcErrorTag.MISSING_ELEMENT;
@@ -260,9 +253,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             action = new SetDlSrcActionCaseBuilder().
@@ -274,9 +266,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             // toVtnAction() should never affect instance variables.
@@ -304,7 +295,7 @@ public class VTNSetDlSrcActionTest extends TestBase {
 
         // Null order.
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
-        StatusCode ecode = StatusCode.BADREQUEST;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         EtherAddress eaddr = new EtherAddress(1L);
         String emsg = "VTNSetDlSrcAction: Action order cannot be null";
         VtnSetDlSrcAction vact = new VtnSetDlSrcActionBuilder().
@@ -316,9 +307,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         // Null MAC address.
@@ -330,9 +320,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         vact = new VtnSetDlSrcActionBuilder().build();
@@ -342,9 +331,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         vac = vacBuilder.setVtnSetDlSrcAction(null).build();
@@ -353,9 +341,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         // Broken MAC address.
@@ -368,9 +355,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         // Broadcast MAC address.
@@ -383,9 +369,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         vact = new VtnSetDlSrcActionBuilder().
@@ -396,9 +381,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         // Multicast MAC address.
@@ -412,9 +396,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         vact = new VtnSetDlSrcActionBuilder().
@@ -425,9 +408,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         // Zero MAC address.
@@ -440,9 +422,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         vact = new VtnSetDlSrcActionBuilder().
@@ -453,9 +434,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
     }
 
@@ -661,7 +641,7 @@ public class VTNSetDlSrcActionTest extends TestBase {
         Unmarshaller um = createUnmarshaller(type);
         EtherAddress eaddr = addresses[0];
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
-        StatusCode ecode = StatusCode.BADREQUEST;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         String emsg = "VTNSetDlSrcAction: Action order cannot be null";
         String xml = new XmlNode(XML_ROOT).
             add(new XmlNode("address", eaddr.getText())).toString();
@@ -671,9 +651,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         // No MAC address.
@@ -687,9 +666,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         Map<EtherAddress, String> cases = new HashMap<>();
@@ -721,9 +699,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
         }
     }

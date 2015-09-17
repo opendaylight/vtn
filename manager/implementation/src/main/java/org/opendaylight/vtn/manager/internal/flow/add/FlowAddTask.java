@@ -30,8 +30,7 @@ import org.opendaylight.vtn.manager.internal.util.flow.VTNFlowBuilder;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorCallback;
-
-import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yangtools.yang.common.RpcResult;
 
@@ -127,7 +126,7 @@ public final class FlowAddTask implements Runnable {
             if (reader.get(snode) == null) {
                 String msg = "Target node is not present: " + snode;
                 FlowAddContext.LOG.error(msg);
-                throw new VTNException(StatusCode.NOTFOUND, msg);
+                throw RpcException.getNotFoundException(msg);
             }
         }
     }

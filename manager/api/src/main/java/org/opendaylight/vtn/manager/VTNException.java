@@ -11,6 +11,8 @@ package org.opendaylight.vtn.manager;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
+
 /**
  * {@code VTNException} is an exception for notifying errors that occur in
  *  OSGi services provided by the VTN Manager.
@@ -24,62 +26,38 @@ public class VTNException extends Exception {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -7988902574477146543L;
+    private static final long serialVersionUID = -1262222199567926358L;
 
     /**
-     * The {@link Status} object which indicates the result of the operation.
+     * The {@link VtnErrorTag} object which indicates the result of the
+     * operation.
      */
-    private final Status  status;
+    private final VtnErrorTag  errorTag;
 
     /**
-     * Construct a new {@code VTNException} object that internally stores
-     * the {@link Status} object specified by {@code status}.
+     * Consturct a new {@code VTNException} instance that internally stores
+     * the given message and {@link VtnErrorTag}.
      *
-     * <p>
-     *   The message configured in {@code status} will get configured in
-     *   the message of the exception.
-     * </p>
-     *
-     * @param status   A {@code Status} object to be delivered as exception.
+     * @param etag  The error tag which indicates the cause of error.
+     * @param msg   The detailed message.
      */
-    public VTNException(Status status) {
-        super((status == null) ? null : status.toString());
-        this.status = status;
+    public VTNException(VtnErrorTag etag, String msg) {
+        super(msg);
+        errorTag = (etag == null) ? VtnErrorTag.INTERNALERROR : etag;
     }
 
     /**
-     * Consturct a new {@code VTNException} object that indicates the
-     * VTN Manager has caught an unexpected exception specified by
-     * {@code cause}.
+     * Consturct a new {@code VTNException} instance that internally stores
+     * the given message {@link VtnErrorTag}.
      *
-     * <p>
-     *   The message configured in {@code status} will get configured in
-     *   the message of the exception.
-     * </p>
-     *
-     * @param status   A {@code Status} object to be delivered as exception.
-     * @param cause    The {@link Throwable} object which indicates the cause
-     *                 of an error.
+     * @param etag   The error tag which indicates the cause of error.
+     * @param msg    The detailed message.
+     * @param cause  The {@link Throwable} object which indicates the cause
+     *               of error.
      */
-    public VTNException(Status status, Throwable cause) {
-        super((status == null) ? null : status.toString(), cause);
-        this.status = status;
-    }
-
-    /**
-     * Consturct a new {@code VTNException} object that internally stores
-     * the {@link Status} object created from {@code code} and {@code desc}.
-     *
-     * <p>
-     *   A string specified by {@code desc} will get configured in
-     *   the message of the exception.
-     * </p>
-     *
-     * @param code  The status code which indicates the cause of error.
-     * @param desc  Description about the status.
-     */
-    public VTNException(StatusCode code, String desc) {
-        this(new Status(code, desc));
+    public VTNException(VtnErrorTag etag, String msg, Throwable cause) {
+        super(msg, cause);
+        errorTag = (etag == null) ? VtnErrorTag.INTERNALERROR : etag;
     }
 
     /**
@@ -87,21 +65,15 @@ public class VTNException extends Exception {
      *
      * <ul>
      *   <li>
-     *     The {@link Status} object for a new exception is created from
-     *     {@link StatusCode#INTERNALERROR} and the message specified by
-     *     {@code message}.
-     *   </li>
-     *   <li>
-     *     A string specified by {@code message} will get configured in
-     *     the message of the exception.
+     *     A new exception internally stores {@link VtnErrorTag#INTERNALERROR}.
      *   </li>
      * </ul>
      *
-     * @param message  The detailed message.
+     * @param msg  The detailed message.
      * @since  Lithium
      */
-    public VTNException(String message) {
-        this(new Status(StatusCode.INTERNALERROR, message));
+    public VTNException(String msg) {
+        this(null, msg);
     }
 
     /**
@@ -109,22 +81,36 @@ public class VTNException extends Exception {
      *
      * <ul>
      *   <li>
-     *     The {@link Status} object for a new exception is created from
-     *     {@link StatusCode#INTERNALERROR} and the message specified by
-     *     {@code message}.
-     *   </li>
-     *   <li>
-     *     A string specified by {@code message} will get configured in
-     *     the message of the exception.
+     *     A new exception internally stores {@link VtnErrorTag#INTERNALERROR}.
      *   </li>
      * </ul>
      *
-     * @param message  The detailed message.
-     * @param cause    The {@link Throwable} object which indicates the cause
-     *                 of error.
+     * @param msg    The detailed message.
+     * @param cause  The {@link Throwable} object which indicates the cause
+     *               of error.
      */
-    public VTNException(String message, Throwable cause) {
-        this(new Status(StatusCode.INTERNALERROR, message), cause);
+    public VTNException(String msg, Throwable cause) {
+        this(null, msg, cause);
+    }
+
+    /**
+     * Construct a new instance from the given {@link Status} instance.
+     *
+     * @param status  A {@link Status} instance.
+     */
+    public VTNException(Status status) {
+        super(status.getDescription());
+        errorTag = toVtnErrorTag(status.getCode());
+    }
+
+    /**
+     * Return the {@link VtnErrorTag} instance which indicates the result of
+     * the operation.
+     *
+     * @return  A {@link VtnErrorTag} instance.
+     */
+    public final VtnErrorTag getVtnErrorTag() {
+        return errorTag;
     }
 
     /**
@@ -134,7 +120,29 @@ public class VTNException extends Exception {
      * @return  The {@link Status} object which indicates the result of the
      *          operation.
      */
-    public Status getStatus() {
-        return status;
+    public final Status getStatus() {
+        StatusCode code;
+        try {
+            code = StatusCode.valueOf(errorTag.name());
+        } catch (Exception e) {
+            // This should never happen.
+            code = StatusCode.UNDEFINED;
+        }
+
+        return new Status(code, getMessage());
+    }
+
+    /**
+     * Convert the given {@link StatusCode} into a {@link VtnErrorTag}.
+     *
+     * @param code  A {@link StatusCode}.
+     * @return  A {@link VtnErrorTag} instance associated with {@code code}.
+     */
+    private VtnErrorTag toVtnErrorTag(StatusCode code) {
+        try {
+            return VtnErrorTag.valueOf(code.name());
+        } catch (Exception e) {
+            return VtnErrorTag.INTERNALERROR;
+        }
     }
 }

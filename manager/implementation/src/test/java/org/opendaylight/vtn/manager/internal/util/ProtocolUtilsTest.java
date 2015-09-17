@@ -15,8 +15,7 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * JUnit test for {@link ProtocolUtils}.
@@ -57,10 +56,8 @@ public class ProtocolUtilsTest extends TestBase {
                 ProtocolUtils.checkEtherType(type);
                 unexpected();
             } catch (RpcException e) {
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("Invalid Ethernet type: " + type,
-                             st.getDescription());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                assertEquals("Invalid Ethernet type: " + type, e.getMessage());
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
             }
         }
@@ -87,9 +84,8 @@ public class ProtocolUtilsTest extends TestBase {
                 ProtocolUtils.checkVlan(vid);
                 unexpected();
             } catch (RpcException e) {
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("Invalid VLAN ID: " + vid, st.getDescription());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                assertEquals("Invalid VLAN ID: " + vid, e.getMessage());
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
             }
         }
@@ -118,10 +114,8 @@ public class ProtocolUtilsTest extends TestBase {
                 ProtocolUtils.checkVlanPriority(pcp);
                 unexpected();
             } catch (RpcException e) {
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("Invalid VLAN priority: " + pcp,
-                             st.getDescription());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                assertEquals("Invalid VLAN priority: " + pcp, e.getMessage());
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
             }
         }

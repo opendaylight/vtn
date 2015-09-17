@@ -50,12 +50,11 @@ import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.Ethernet;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
@@ -219,9 +218,8 @@ public abstract class PortInterface extends AbstractInterface
         try {
             ref = resMgr.registerPortMap(mgr, path, pvlan, rmlan, true);
         } catch (VTNException e) {
-            Status status = e.getStatus();
-            if (status == null ||
-                status.getCode().equals(StatusCode.INTERNALERROR)) {
+            VtnErrorTag etag = e.getVtnErrorTag();
+            if (etag == VtnErrorTag.INTERNALERROR) {
                 mgr.logException(getLogger(), (VNodePath)path, e, pvlan,
                                  rmlan);
             }
@@ -231,9 +229,8 @@ public abstract class PortInterface extends AbstractInterface
         if (ref != null) {
             assert ref.getMapType() == MapType.PORT;
 
-            throw new VTNException(StatusCode.CONFLICT,
-                                   "Specified port is mapped to " +
-                                   ref.getAbsolutePath());
+            throw RpcException.getDataExistsException(
+                "Specified port is mapped to " + ref.getAbsolutePath());
         }
 
         // Update the state of this node.

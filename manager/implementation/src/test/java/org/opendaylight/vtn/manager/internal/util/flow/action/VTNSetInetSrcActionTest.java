@@ -34,9 +34,6 @@ import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
 import org.opendaylight.vtn.manager.internal.XmlValueType;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDstActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetSrcActionCase;
@@ -44,6 +41,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.v
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.inet.src.action._case.VtnSetInetSrcAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.inet.src.action._case.VtnSetInetSrcActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.SetNwDstActionCaseBuilder;
@@ -187,16 +185,15 @@ public class VTNSetInetSrcActionTest extends TestBase {
 
             vaction = VTNSetInetDstAction.newVtnAction(mdaddr);
             RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
-            StatusCode ecode = StatusCode.BADREQUEST;
+            VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
             String emsg = "VTNSetInetSrcAction: Unexpected type: " + vaction;
             try {
                 va.toFlowAction(vaction);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             etag = RpcErrorTag.MISSING_ELEMENT;
@@ -210,9 +207,8 @@ public class VTNSetInetSrcActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             vaction = vacBuilder.setVtnSetInetSrcAction(null).build();
@@ -222,9 +218,8 @@ public class VTNSetInetSrcActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             // toFlowAction() should never affect instance variables.
@@ -246,9 +241,8 @@ public class VTNSetInetSrcActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             try {
@@ -256,9 +250,8 @@ public class VTNSetInetSrcActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             etag = RpcErrorTag.MISSING_ELEMENT;
@@ -269,9 +262,8 @@ public class VTNSetInetSrcActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             action = new SetNwSrcActionCaseBuilder().
@@ -283,9 +275,8 @@ public class VTNSetInetSrcActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             // toVtnAction() should never affect instance variables.
@@ -341,7 +332,7 @@ public class VTNSetInetSrcActionTest extends TestBase {
 
         // Null order.
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
-        StatusCode ecode = StatusCode.BADREQUEST;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         IpNetwork iaddr = new Ip4Network(0x0a0b0c0d);
         String emsg = "VTNSetInetSrcAction: Action order cannot be null";
         VtnSetInetSrcAction vact = new VtnSetInetSrcActionBuilder().
@@ -353,9 +344,8 @@ public class VTNSetInetSrcActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         // Null IP address.
@@ -366,9 +356,8 @@ public class VTNSetInetSrcActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         vact = new VtnSetInetSrcActionBuilder().build();
@@ -378,9 +367,8 @@ public class VTNSetInetSrcActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         vac = vacBuilder.setVtnSetInetSrcAction(null).build();
@@ -389,9 +377,8 @@ public class VTNSetInetSrcActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         vact = new VtnSetInetSrcActionBuilder().
@@ -402,9 +389,8 @@ public class VTNSetInetSrcActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         // Specifying netmask.
@@ -421,9 +407,8 @@ public class VTNSetInetSrcActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
         }
     }
@@ -671,7 +656,7 @@ public class VTNSetInetSrcActionTest extends TestBase {
         Unmarshaller um = createUnmarshaller(type);
         IpNetwork iaddr = addresses[0];
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
-        StatusCode ecode = StatusCode.BADREQUEST;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         String emsg = "VTNSetInetSrcAction: Action order cannot be null";
         String xml = new XmlNode(XML_ROOT).
             add(new XmlNode("ipv4-address", iaddr.getHostAddress())).
@@ -682,9 +667,8 @@ public class VTNSetInetSrcActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         // No IP address.
@@ -698,9 +682,8 @@ public class VTNSetInetSrcActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         // Specifying netmask.
@@ -720,9 +703,8 @@ public class VTNSetInetSrcActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
         }
     }

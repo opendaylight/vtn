@@ -17,15 +17,13 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanIdActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanIdActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.vlan.id.action._case.VtnSetVlanIdAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.vlan.id.action._case.VtnSetVlanIdActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.PushVlanActionCaseBuilder;
@@ -103,16 +101,15 @@ public class VTNSetVlanIdActionTest extends TestBase {
 
             vaction = VTNPopVlanAction.newVtnAction();
             RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
-            StatusCode ecode = StatusCode.BADREQUEST;
+            VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
             String emsg = "VTNSetVlanIdAction: Unexpected type: " + vaction;
             try {
                 va.toFlowAction(vaction);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             etag = RpcErrorTag.MISSING_ELEMENT;
@@ -123,9 +120,8 @@ public class VTNSetVlanIdActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             vaction = vacBuilder.
@@ -137,9 +133,8 @@ public class VTNSetVlanIdActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             // toFlowAction() should never affect instance variables.
@@ -158,9 +153,8 @@ public class VTNSetVlanIdActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             try {
@@ -168,9 +162,8 @@ public class VTNSetVlanIdActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             etag = RpcErrorTag.MISSING_ELEMENT;
@@ -181,9 +174,8 @@ public class VTNSetVlanIdActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             action = new SetVlanIdActionCaseBuilder().
@@ -195,9 +187,8 @@ public class VTNSetVlanIdActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             // toVtnAction() should never affect instance variables.

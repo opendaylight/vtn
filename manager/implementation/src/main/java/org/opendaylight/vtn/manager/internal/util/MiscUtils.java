@@ -28,13 +28,10 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
-import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.Packet;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
@@ -110,7 +107,7 @@ public final class MiscUtils {
     public static VnodeName checkName(String desc, String name)
         throws RpcException {
         if (name == null) {
-            throw getNullArgumentException(desc + " name");
+            throw RpcException.getNullArgumentException(desc + " name");
         }
 
         if (name.isEmpty()) {
@@ -141,30 +138,6 @@ public final class MiscUtils {
         String name = (vname == null) ? null : vname.getValue();
         checkName(desc, name);
         return name;
-    }
-
-    /**
-     * Return a failure status which represents a {@code null} is specified
-     * unexpectedly.
-     *
-     * @param desc  Brief description of the argument.
-     * @return  A failure reason.
-     */
-    public static Status argumentIsNull(String desc) {
-        String msg = desc + " cannot be null";
-        return new Status(StatusCode.BADREQUEST, msg);
-    }
-
-    /**
-     * Return a new {@link RpcException} which indicates a {@code null} is
-     * specified as argument unexpectedly.
-     *
-     * @param desc  Brief description of the argument.
-     * @return  An {@link RpcException}.
-     */
-    public static RpcException getNullArgumentException(String desc) {
-        Status st = argumentIsNull(desc);
-        return new RpcException(RpcErrorTag.MISSING_ELEMENT, st);
     }
 
     /**

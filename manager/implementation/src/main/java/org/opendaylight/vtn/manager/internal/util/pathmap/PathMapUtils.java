@@ -59,7 +59,7 @@ public final class PathMapUtils {
      * @return  An {@link RpcException}.
      */
     public static RpcException getNullMapIndexException() {
-        return MiscUtils.getNullArgumentException("Path map index");
+        return RpcException.getNullArgumentException("Path map index");
     }
 
     /**
@@ -107,7 +107,8 @@ public final class PathMapUtils {
     public static VtnPathMapBuilder toVtnPathMapBuilder(VtnPathMapConfig vpmc)
         throws RpcException {
         if (vpmc == null) {
-            throw MiscUtils.getNullArgumentException("Path map configuration");
+            throw RpcException.getNullArgumentException(
+                "Path map configuration");
         }
 
         VtnPathMapBuilder builder =
@@ -406,7 +407,7 @@ public final class PathMapUtils {
                                                          PathMap pmap)
         throws RpcException {
         if (pmap == null) {
-            throw MiscUtils.getNullArgumentException("PathMap");
+            throw RpcException.getNullArgumentException("PathMap");
         }
 
         Integer idx = (index == null) ? pmap.getIndex() : index;

@@ -33,6 +33,7 @@ import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
@@ -40,11 +41,10 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev15020
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.Ethernet;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * Implementation of VLAN mapping to the virtual L2 bridge.
@@ -407,9 +407,7 @@ public final class VlanMapImpl implements VBridgeNode {
         try {
             ref = resMgr.registerVlanMap(mgr, mapPath, nvlan, true);
         } catch (VTNException e) {
-            Status status = e.getStatus();
-            if (status == null ||
-                status.getCode().equals(StatusCode.INTERNALERROR)) {
+            if (e.getVtnErrorTag() == VtnErrorTag.INTERNALERROR) {
                 mgr.logException(LOG, mapPath, e, nvlan);
             }
             throw e;
@@ -428,7 +426,7 @@ public final class VlanMapImpl implements VBridgeNode {
                     append(ref.getAbsolutePath());
                 msg = builder.toString();
             }
-            throw new VTNException(StatusCode.CONFLICT, msg);
+            throw RpcException.getDataExistsException(msg);
         }
 
         // Initialize the state of the VLAN mapping.
@@ -459,9 +457,7 @@ public final class VlanMapImpl implements VBridgeNode {
             resMgr.unregisterVlanMap(mgr, mapPath, nvlan, retain);
         } catch (VTNException e) {
             if (retain) {
-                Status status = e.getStatus();
-                if (status == null ||
-                    status.getCode().equals(StatusCode.INTERNALERROR)) {
+                if (e.getVtnErrorTag() == VtnErrorTag.INTERNALERROR) {
                     mgr.logException(LOG, bpath, e, nvlan);
                 }
                 throw e;

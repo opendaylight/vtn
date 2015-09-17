@@ -43,8 +43,8 @@ import org.opendaylight.vtn.manager.internal.XmlDataType;
 
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.IPProtocols;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.Match;
 
@@ -125,6 +125,7 @@ public class VTNMatchTest extends TestBase {
         new MatchParams().verify(params.toVTNMatch());
 
         // Inconsistent Ethernet type.
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         int etype = 0x806;
         EtherMatchParams eparams = new EtherMatchParams().
             setEtherType(Integer.valueOf(etype));
@@ -141,9 +142,8 @@ public class VTNMatchTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         VTNEtherMatch em = new VTNEtherMatch(null, null, etype, null, null);
@@ -153,9 +153,8 @@ public class VTNMatchTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         // Inconsistent IP protocol number.
@@ -173,9 +172,8 @@ public class VTNMatchTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         im = new VTNInet4Match(null, null, proto, null);
@@ -185,9 +183,8 @@ public class VTNMatchTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
     }
 
@@ -325,6 +322,7 @@ public class VTNMatchTest extends TestBase {
         }
 
         // Inconsistent Ethernet type.
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         int etype = 0x806;
         EtherMatchParams eparams = new EtherMatchParams().
             setEtherType(Integer.valueOf(etype));
@@ -339,12 +337,11 @@ public class VTNMatchTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
+            assertEquals(vtag, e.getVtnErrorTag());
             String msg = "Ethernet type conflict: type=0x" +
                 Integer.toHexString(etype) + ", expected=0x" +
                 Integer.toHexString(EtherTypes.IPv4.intValue());
-            assertEquals(msg, st.getDescription());
+            assertEquals(msg, e.getMessage());
         }
 
         // Inconsistent IP protocol number.
@@ -361,11 +358,10 @@ public class VTNMatchTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
+            assertEquals(vtag, e.getVtnErrorTag());
             String msg = "IP protocol conflict: proto=" + proto +
                 ", expected=" + IPProtocols.TCP.shortValue();
-            assertEquals(msg, st.getDescription());
+            assertEquals(msg, e.getMessage());
         }
 
         // Ensure that broken values in XML can be detected.

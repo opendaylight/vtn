@@ -66,12 +66,12 @@ import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
 import org.opendaylight.vtn.manager.internal.routing.PathMapEvaluator;
 import org.opendaylight.vtn.manager.internal.routing.RoutingEvent;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnAclType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateOperationType;
@@ -219,12 +219,10 @@ public final class VTenantImpl implements FlowFilterNode {
      *               {@code tconf} is interpreted as default value.
      *               If {@code false} is specified, an attribute is not
      *               modified if its value in {@code tconf} is {@code null}.
-     * @return  A {@link Status} instance which indicates the result of the
-     *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status setVTenantConfig(VTNManagerImpl mgr, VTenantPath path,
-                                   VTenantConfig tconf, boolean all)
+    public void setVTenantConfig(VTNManagerImpl mgr, VTenantPath path,
+                                 VTenantConfig tconf, boolean all)
         throws VTNException {
         VTenantConfig cf;
         Lock wrlock = rwLock.writeLock();
@@ -236,7 +234,7 @@ public final class VTenantImpl implements FlowFilterNode {
                 cf = merge(tconf);
             }
             if (cf.equals(tenantConfig)) {
-                return new Status(StatusCode.SUCCESS, MSG_NOT_MODIFIED);
+                return;
             }
 
             checkConfig(cf);
@@ -245,7 +243,7 @@ public final class VTenantImpl implements FlowFilterNode {
             mgr.enqueueEvent(path, vtenant, UpdateType.CHANGED);
 
             mgr.export(this);
-            return saveConfigImpl(null);
+            saveConfigImpl(null);
         } finally {
             wrlock.unlock();
         }
@@ -258,18 +256,16 @@ public final class VTenantImpl implements FlowFilterNode {
      * @param path   Path to the bridge.
      * @param bconf  Bridge configuration.
      * @throws VTNException  An error occurred.
-     * @return  A {@link Status} instance which indicates the result of the
-     *          operation.
      */
-    public Status addBridge(VTNManagerImpl mgr, VBridgePath path,
-                            VBridgeConfig bconf) throws VTNException {
+    public void addBridge(VTNManagerImpl mgr, VBridgePath path,
+                          VBridgeConfig bconf) throws VTNException {
         // Ensure the given bridge name is valid.
         String bridgeName = path.getBridgeName();
         MiscUtils.checkName("Bridge", bridgeName);
 
         if (bconf == null) {
-            Status status = MiscUtils.argumentIsNull("Bridge configuration");
-            throw new VTNException(status);
+            throw RpcException.getNullArgumentException(
+                "Bridge configuration");
         }
 
         VBridgeImpl vbr = new VBridgeImpl(this, bridgeName, bconf);
@@ -280,7 +276,7 @@ public final class VTenantImpl implements FlowFilterNode {
             if (old != null) {
                 vBridges.put(bridgeName, old);
                 String msg = bridgeName + ": Bridge name already exists";
-                throw new VTNException(StatusCode.CONFLICT, msg);
+                throw RpcException.getDataExistsException(msg);
             }
 
             VBridge vbridge = vbr.getVBridge(mgr);
@@ -290,7 +286,7 @@ public final class VTenantImpl implements FlowFilterNode {
             vbr.initMacTableAging(mgr);
 
             mgr.export(this);
-            return saveConfigImpl(null);
+            saveConfigImpl(null);
         } finally {
             wrlock.unlock();
         }
@@ -307,16 +303,14 @@ public final class VTenantImpl implements FlowFilterNode {
      *               {@code bconf} is interpreted as default value.
      *               If {@code false} is specified, an attribute is not
      *               modified if its value in {@code bconf} is {@code null}.
-     * @return  A {@link Status} instance which indicates the result of the
-     *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status modifyBridge(VTNManagerImpl mgr, VBridgePath path,
-                               VBridgeConfig bconf, boolean all)
+    public void modifyBridge(VTNManagerImpl mgr, VBridgePath path,
+                             VBridgeConfig bconf, boolean all)
         throws VTNException {
         if (bconf == null) {
-            Status status = MiscUtils.argumentIsNull("Bridge configuration");
-            throw new VTNException(status);
+            throw RpcException.getNullArgumentException(
+                "Bridge configuration");
         }
 
         Lock rdlock = rwLock.readLock();
@@ -325,10 +319,8 @@ public final class VTenantImpl implements FlowFilterNode {
             VBridgeImpl vbr = getBridgeImpl(path);
             if (vbr.setVBridgeConfig(mgr, bconf, all)) {
                 mgr.export(this);
-                return saveConfigImpl(null);
+                saveConfigImpl(null);
             }
-
-            return new Status(StatusCode.SUCCESS, MSG_NOT_MODIFIED);
         } finally {
             rdlock.unlock();
         }
@@ -339,31 +331,27 @@ public final class VTenantImpl implements FlowFilterNode {
      *
      * @param mgr   VTN Manager service.
      * @param path  Path to the virtual bridge.
-     * @return  A {@link Status} instance which indicates the result of the
-     *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status removeBridge(VTNManagerImpl mgr, VBridgePath path)
+    public void removeBridge(VTNManagerImpl mgr, VBridgePath path)
         throws VTNException {
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
             String bridgeName = path.getBridgeName();
             if (bridgeName == null) {
-                Status status = MiscUtils.argumentIsNull("Bridge name");
-                throw new VTNException(status);
+                throw RpcException.getNullArgumentException("Bridge name");
             }
 
             VBridgeImpl vbr = vBridges.remove(bridgeName);
             if (vbr == null) {
-                Status status = bridgeNotFound(bridgeName);
-                throw new VTNException(status);
+                throw getBridgeNotFoundException(bridgeName);
             }
 
             vbr.destroy(mgr, true);
 
             mgr.export(this);
-            return saveConfigImpl(null);
+            saveConfigImpl(null);
         } finally {
             wrlock.unlock();
         }
@@ -419,18 +407,16 @@ public final class VTenantImpl implements FlowFilterNode {
      * @param path    Path to the vTerminal.
      * @param vtconf  vTerminal configuration.
      * @throws VTNException  An error occurred.
-     * @return  A {@link Status} instance which indicates the result of the
-     *          operation.
      */
-    public Status addTerminal(VTNManagerImpl mgr, VTerminalPath path,
-                              VTerminalConfig vtconf) throws VTNException {
+    public void addTerminal(VTNManagerImpl mgr, VTerminalPath path,
+                            VTerminalConfig vtconf) throws VTNException {
         // Ensure the given terminal name is valid.
         String termName = path.getTerminalName();
         MiscUtils.checkName("vTerminal", termName);
 
         if (vtconf == null) {
-            Status status = MiscUtils.argumentIsNull("vTerminal configuration");
-            throw new VTNException(status);
+            throw RpcException.getNullArgumentException(
+                "vTerminal configuration");
         }
 
         VTerminalImpl vtm = new VTerminalImpl(this, termName, vtconf);
@@ -441,13 +427,13 @@ public final class VTenantImpl implements FlowFilterNode {
             if (old != null) {
                 vTerminals.put(termName, old);
                 String msg = termName + ": vTerminal name already exists";
-                throw new VTNException(StatusCode.CONFLICT, msg);
+                throw RpcException.getDataExistsException(msg);
             }
 
             VTerminal vterm = vtm.getVTerminal(mgr);
             VTerminalEvent.added(mgr, path, vterm);
             mgr.export(this);
-            return saveConfigImpl(null);
+            saveConfigImpl(null);
         } finally {
             wrlock.unlock();
         }
@@ -464,12 +450,10 @@ public final class VTenantImpl implements FlowFilterNode {
      *                {@code vtconf} is interpreted as default value.
      *                If {@code false} is specified, an attribute is not
      *                modified if its value in {@code vtconf} is {@code null}.
-     * @return  A {@link Status} instance which indicates the result of the
-     *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status modifyTerminal(VTNManagerImpl mgr, VTerminalPath path,
-                                 VTerminalConfig vtconf, boolean all)
+    public void modifyTerminal(VTNManagerImpl mgr, VTerminalPath path,
+                               VTerminalConfig vtconf, boolean all)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
@@ -477,10 +461,8 @@ public final class VTenantImpl implements FlowFilterNode {
             VTerminalImpl vtm = getTerminalImpl(path);
             if (vtm.setVTerminalConfig(mgr, vtconf, all)) {
                 mgr.export(this);
-                return saveConfigImpl(null);
+                saveConfigImpl(null);
             }
-
-            return new Status(StatusCode.SUCCESS, MSG_NOT_MODIFIED);
         } finally {
             rdlock.unlock();
         }
@@ -491,30 +473,26 @@ public final class VTenantImpl implements FlowFilterNode {
      *
      * @param mgr   VTN Manager service.
      * @param path  Path to the vTerminal.
-     * @return  A {@link Status} instance which indicates the result of the
-     *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status removeTerminal(VTNManagerImpl mgr, VTerminalPath path)
+    public void removeTerminal(VTNManagerImpl mgr, VTerminalPath path)
         throws VTNException {
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
             String termName = path.getTerminalName();
             if (termName == null) {
-                Status status = MiscUtils.argumentIsNull("vTerminal name");
-                throw new VTNException(status);
+                throw RpcException.getNullArgumentException("vTerminal name");
             }
 
             VTerminalImpl vtm = vTerminals.remove(termName);
             if (vtm == null) {
-                Status status = terminalNotFound(termName);
-                throw new VTNException(status);
+                throw getTerminalNotFoundException(termName);
             }
 
             vtm.destroy(mgr, true);
             mgr.export(this);
-            return saveConfigImpl(null);
+            saveConfigImpl(null);
         } finally {
             wrlock.unlock();
         }
@@ -568,12 +546,10 @@ public final class VTenantImpl implements FlowFilterNode {
      * @param mgr    VTN Manager service.
      * @param path   Path to the interface to be added.
      * @param iconf  Interface configuration.
-     * @return  A {@link Status} instance which indicates the result of the
-     *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status addInterface(VTNManagerImpl mgr, VBridgeIfPath path,
-                               VInterfaceConfig iconf)
+    public void addInterface(VTNManagerImpl mgr, VBridgeIfPath path,
+                             VInterfaceConfig iconf)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
@@ -582,7 +558,7 @@ public final class VTenantImpl implements FlowFilterNode {
             vbr.addInterface(mgr, path, iconf);
 
             mgr.export(this);
-            return saveConfigImpl(null);
+            saveConfigImpl(null);
         } finally {
             rdlock.unlock();
         }
@@ -600,13 +576,11 @@ public final class VTenantImpl implements FlowFilterNode {
      *               {@code iconf} is interpreted as default value.
      *               If {@code false} is specified, an attribute is not
      *               modified if its value in {@code iconf} is {@code null}.
-     * @return  A {@link Status} instance which indicates the result of the
-     *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status modifyInterface(VTNManagerImpl mgr, TxContext ctx,
-                                  VBridgeIfPath path, VInterfaceConfig iconf,
-                                  boolean all)
+    public void modifyInterface(VTNManagerImpl mgr, TxContext ctx,
+                                VBridgeIfPath path, VInterfaceConfig iconf,
+                                boolean all)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
@@ -614,10 +588,8 @@ public final class VTenantImpl implements FlowFilterNode {
             VBridgeImpl vbr = getBridgeImpl(path);
             if (vbr.modifyInterface(mgr, ctx, path, iconf, all)) {
                 mgr.export(this);
-                return saveConfigImpl(null);
+                saveConfigImpl(null);
             }
-
-            return new Status(StatusCode.SUCCESS, MSG_NOT_MODIFIED);
         } finally {
             rdlock.unlock();
         }
@@ -628,11 +600,9 @@ public final class VTenantImpl implements FlowFilterNode {
      *
      * @param mgr   VTN Manager service.
      * @param path  Path to the interface.
-     * @return  A {@link Status} instance which indicates the result of the
-     *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status removeInterface(VTNManagerImpl mgr, VBridgeIfPath path)
+    public void removeInterface(VTNManagerImpl mgr, VBridgeIfPath path)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
@@ -641,7 +611,7 @@ public final class VTenantImpl implements FlowFilterNode {
             vbr.removeInterface(mgr, path);
 
             mgr.export(this);
-            return saveConfigImpl(null);
+            saveConfigImpl(null);
         } finally {
             rdlock.unlock();
         }
@@ -695,12 +665,10 @@ public final class VTenantImpl implements FlowFilterNode {
      * @param mgr    VTN Manager service.
      * @param path   Path to the interface to be added.
      * @param iconf  Interface configuration.
-     * @return  A {@link Status} instance which indicates the result of the
-     *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status addInterface(VTNManagerImpl mgr, VTerminalIfPath path,
-                               VInterfaceConfig iconf)
+    public void addInterface(VTNManagerImpl mgr, VTerminalIfPath path,
+                             VInterfaceConfig iconf)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
@@ -709,7 +677,7 @@ public final class VTenantImpl implements FlowFilterNode {
             vtm.addInterface(mgr, path, iconf);
 
             mgr.export(this);
-            return saveConfigImpl(null);
+            saveConfigImpl(null);
         } finally {
             rdlock.unlock();
         }
@@ -727,13 +695,11 @@ public final class VTenantImpl implements FlowFilterNode {
      *               {@code iconf} is interpreted as default value.
      *               If {@code false} is specified, an attribute is not
      *               modified if its value in {@code iconf} is {@code null}.
-     * @return  A {@link Status} instance which indicates the result of the
-     *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status modifyInterface(VTNManagerImpl mgr, TxContext ctx,
-                                  VTerminalIfPath path, VInterfaceConfig iconf,
-                                  boolean all)
+    public void modifyInterface(VTNManagerImpl mgr, TxContext ctx,
+                                VTerminalIfPath path, VInterfaceConfig iconf,
+                                boolean all)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
@@ -741,10 +707,8 @@ public final class VTenantImpl implements FlowFilterNode {
             VTerminalImpl vtm = getTerminalImpl(path);
             if (vtm.modifyInterface(mgr, ctx, path, iconf, all)) {
                 mgr.export(this);
-                return saveConfigImpl(null);
+                saveConfigImpl(null);
             }
-
-            return new Status(StatusCode.SUCCESS, MSG_NOT_MODIFIED);
         } finally {
             rdlock.unlock();
         }
@@ -755,11 +719,9 @@ public final class VTenantImpl implements FlowFilterNode {
      *
      * @param mgr   VTN Manager service.
      * @param path  Path to the interface.
-     * @return  A {@link Status} instance which indicates the result of the
-     *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status removeInterface(VTNManagerImpl mgr, VTerminalIfPath path)
+    public void removeInterface(VTNManagerImpl mgr, VTerminalIfPath path)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
@@ -768,7 +730,7 @@ public final class VTenantImpl implements FlowFilterNode {
             vtm.removeInterface(mgr, path);
 
             mgr.export(this);
-            return saveConfigImpl(null);
+            saveConfigImpl(null);
         } finally {
             rdlock.unlock();
         }
@@ -837,11 +799,7 @@ public final class VTenantImpl implements FlowFilterNode {
             VlanMap vlmap = vbr.addVlanMap(mgr, ctx, vlconf);
 
             mgr.export(this);
-            Status status = saveConfigImpl(null);
-            if (!status.isSuccess()) {
-                throw new VTNException(status);
-            }
-
+            saveConfigImpl(null);
             return vlmap;
         } finally {
             rdlock.unlock();
@@ -854,12 +812,10 @@ public final class VTenantImpl implements FlowFilterNode {
      * @param mgr    VTN Manager service.
      * @param path   Path to the bridge.
      * @param mapId  The identifier of the VLAN mapping.
-     * @return  A {@link Status} instance which indicates the result of the
-     *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status removeVlanMap(VTNManagerImpl mgr, VBridgePath path,
-                                String mapId) throws VTNException {
+    public void removeVlanMap(VTNManagerImpl mgr, VBridgePath path,
+                              String mapId) throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -867,7 +823,7 @@ public final class VTenantImpl implements FlowFilterNode {
             vbr.removeVlanMap(mgr, mapId);
 
             mgr.export(this);
-            return saveConfigImpl(null);
+            saveConfigImpl(null);
         } finally {
             rdlock.unlock();
         }
@@ -987,12 +943,10 @@ public final class VTenantImpl implements FlowFilterNode {
      * @param pmconf  Port mapping configuration to be set.
      *                If {@code null} is specified, port mapping on the
      *                specified interface is destroyed.
-     * @return  A {@link Status} instance which indicates the result of the
-     *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status setPortMap(VTNManagerImpl mgr, TxContext ctx,
-                             VBridgeIfPath path, PortMapConfig pmconf)
+    public void setPortMap(VTNManagerImpl mgr, TxContext ctx,
+                           VBridgeIfPath path, PortMapConfig pmconf)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
@@ -1000,10 +954,8 @@ public final class VTenantImpl implements FlowFilterNode {
             VBridgeImpl vbr = getBridgeImpl(path);
             if (vbr.setPortMap(mgr, ctx, path, pmconf)) {
                 mgr.export(this);
-                return saveConfigImpl(null);
+                saveConfigImpl(null);
             }
-
-            return new Status(StatusCode.SUCCESS, MSG_NOT_MODIFIED);
         } finally {
             rdlock.unlock();
         }
@@ -1019,12 +971,10 @@ public final class VTenantImpl implements FlowFilterNode {
      * @param pmconf  Port mapping configuration to be set.
      *                If {@code null} is specified, port mapping on the
      *                specified interface is destroyed.
-     * @return  A {@link Status} instance which indicates the result of the
-     *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status setPortMap(VTNManagerImpl mgr, TxContext ctx,
-                             VTerminalIfPath path, PortMapConfig pmconf)
+    public void setPortMap(VTNManagerImpl mgr, TxContext ctx,
+                           VTerminalIfPath path, PortMapConfig pmconf)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
@@ -1032,10 +982,8 @@ public final class VTenantImpl implements FlowFilterNode {
             VTerminalImpl vtm = getTerminalImpl(path);
             if (vtm.setPortMap(mgr, ctx, path, pmconf)) {
                 mgr.export(this);
-                return saveConfigImpl(null);
+                saveConfigImpl(null);
             }
-
-            return new Status(StatusCode.SUCCESS, MSG_NOT_MODIFIED);
         } finally {
             rdlock.unlock();
         }
@@ -1175,10 +1123,7 @@ public final class VTenantImpl implements FlowFilterNode {
             UpdateType result = vbr.setMacMap(mgr, op, mcconf);
             if (result != null) {
                 mgr.export(this);
-                Status status = saveConfigImpl(null);
-                if (!status.isSuccess()) {
-                    throw new VTNException(status);
-                }
+                saveConfigImpl(null);
             }
 
             return result;
@@ -1214,10 +1159,7 @@ public final class VTenantImpl implements FlowFilterNode {
             UpdateType result = vbr.setMacMap(mgr, op, aclType, dlhosts);
             if (result != null) {
                 mgr.export(this);
-                Status status = saveConfigImpl(null);
-                if (!status.isSuccess()) {
-                    throw new VTNException(status);
-                }
+                saveConfigImpl(null);
             }
 
             return result;
@@ -1321,13 +1263,13 @@ public final class VTenantImpl implements FlowFilterNode {
      * @param mgr  VTN Manager service.
      *             If a non-{@code null} value is specified, this method checks
      *             whether the current configuration is applied correctly.
-     * @return  "Success" or failure reason.
+     * @throws VTNException  An error occurred.
      */
-    public Status saveConfig(VTNManagerImpl mgr) {
+    public void saveConfig(VTNManagerImpl mgr) throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            return saveConfigImpl(mgr);
+            saveConfigImpl(mgr);
         } finally {
             rdlock.unlock();
         }
@@ -1658,8 +1600,7 @@ public final class VTenantImpl implements FlowFilterNode {
     public FlowFilterMap getFlowFilterMap(LockStack lstack, FlowFilterId fid,
                                           boolean writer) throws VTNException {
         if (fid == null) {
-            Status status = MiscUtils.argumentIsNull("FlowFilterId");
-            throw new VTNException(status);
+            throw RpcException.getNullArgumentException("FlowFilterId");
         }
 
         VTenantPath path = fid.getPath();
@@ -1677,8 +1618,7 @@ public final class VTenantImpl implements FlowFilterNode {
         }
 
         if (path == null) {
-            Status status = MiscUtils.argumentIsNull("Virtual node path");
-            throw new VTNException(status);
+            throw RpcException.getNullArgumentException("Virtual node path");
         }
 
         Lock lock = (writer) ? rwLock.writeLock() : rwLock.readLock();
@@ -1885,16 +1825,14 @@ public final class VTenantImpl implements FlowFilterNode {
         int idle = tconf.getIdleTimeout();
         int hard = tconf.getHardTimeout();
         if (idle > MAX_FLOW_TIMEOUT) {
-            throw new VTNException(StatusCode.BADREQUEST,
-                                   "Invalid idle timeout");
+            throw RpcException.getBadArgumentException("Invalid idle timeout");
         }
         if (hard > MAX_FLOW_TIMEOUT) {
-            throw new VTNException(StatusCode.BADREQUEST,
-                                   "Invalid hard timeout");
+            throw RpcException.getBadArgumentException("Invalid hard timeout");
         }
         if (idle != 0 && hard != 0 && idle >= hard) {
-            String msg = "Idle timeout must be less than hard timeout";
-            throw new VTNException(StatusCode.BADREQUEST, msg);
+            throw RpcException.getBadArgumentException(
+                "Idle timeout must be less than hard timeout");
         }
     }
 
@@ -1993,27 +1931,27 @@ public final class VTenantImpl implements FlowFilterNode {
     }
 
     /**
-     * Return a failure status that indicates the specified bridge does not
+     * Return an exception that indicates the specified bridge does not
      * exist.
      *
      * @param bridgeName  The name of the bridge.
-     * @return  A failure status.
+     * @return  A {@link RpcException} instance.
      */
-    private Status bridgeNotFound(String bridgeName) {
+    private RpcException getBridgeNotFoundException(String bridgeName) {
         String msg = bridgeName + ": Bridge does not exist";
-        return new Status(StatusCode.NOTFOUND, msg);
+        return RpcException.getNotFoundException(msg);
     }
 
     /**
-     * Return a failure status that indicates the specified vTerminal does not
-     * exist.
+     * Return an exception status that indicates the specified vTerminal does
+     * not exist.
      *
      * @param termName  The name of the vTerminal.
-     * @return  A failure status.
+     * @return  A {@link RpcException} instance.
      */
-    private Status terminalNotFound(String termName) {
+    private RpcException getTerminalNotFoundException(String termName) {
         String msg = termName + ": vTerminal does not exist";
-        return new Status(StatusCode.NOTFOUND, msg);
+        return RpcException.getNotFoundException(msg);
     }
 
     /**
@@ -2031,14 +1969,12 @@ public final class VTenantImpl implements FlowFilterNode {
     private VBridgeImpl getBridgeImpl(VBridgePath path) throws VTNException {
         String bridgeName = path.getBridgeName();
         if (bridgeName == null) {
-            Status status = MiscUtils.argumentIsNull("Bridge name");
-            throw new VTNException(status);
+            throw RpcException.getNullArgumentException("Bridge name");
         }
 
         VBridgeImpl vbr = vBridges.get(bridgeName);
         if (vbr == null) {
-            Status status = bridgeNotFound(bridgeName);
-            throw new VTNException(status);
+            throw getBridgeNotFoundException(bridgeName);
         }
 
         return vbr;
@@ -2060,14 +1996,12 @@ public final class VTenantImpl implements FlowFilterNode {
         throws VTNException {
         String termName = path.getTerminalName();
         if (termName == null) {
-            Status status = MiscUtils.argumentIsNull("vTerminal name");
-            throw new VTNException(status);
+            throw RpcException.getNullArgumentException("vTerminal name");
         }
 
         VTerminalImpl vtm = vTerminals.get(termName);
         if (vtm == null) {
-            Status status = terminalNotFound(termName);
-            throw new VTNException(status);
+            throw getTerminalNotFoundException(termName);
         }
 
         return vtm;
@@ -2095,11 +2029,11 @@ public final class VTenantImpl implements FlowFilterNode {
         }
 
         String bridgeName = path.getBridgeName();
-        Status status = (bridgeName == null)
-            ? MiscUtils.argumentIsNull("Bridge name")
-            : bridgeNotFound(bridgeName);
+        RpcException e = (bridgeName == null)
+            ? RpcException.getNullArgumentException("Bridge name")
+            : getBridgeNotFoundException(bridgeName);
 
-        throw new VTNException(status);
+        throw e;
     }
 
     /**
@@ -2112,9 +2046,9 @@ public final class VTenantImpl implements FlowFilterNode {
      * @param mgr  VTN Manager service.
      *             If a non-{@code null} value is specified, this method checks
      *             whether the current configuration is applied correctly.
-     * @return  "Success" or failure reason.
+     * @throws VTNException  An error occurred.
      */
-    public Status saveConfigImpl(VTNManagerImpl mgr) {
+    public void saveConfigImpl(VTNManagerImpl mgr) throws VTNException {
         ContainerConfig cfg = new ContainerConfig(containerName);
         if (mgr != null) {
             // Adjust interval of MAC address table aging.
@@ -2130,12 +2064,12 @@ public final class VTenantImpl implements FlowFilterNode {
                 LOG.trace("{}:{}: Tenant was saved",
                           containerName, tenantName);
             }
-            return status;
+            return;
         }
 
         String msg = "Failed to save tenant configuration";
         LOG.error("{}:{}: {}: {}", containerName, tenantName, msg, status);
-        return new Status(StatusCode.INTERNALERROR, msg);
+        throw new VTNException(msg);
     }
 
     /**
@@ -2219,7 +2153,7 @@ public final class VTenantImpl implements FlowFilterNode {
                 throw new DropFlowException();
             }
         } catch (VTNException e) {
-            String emsg = e.getStatus().getDescription();
+            String emsg = e.getMessage();
             rex.destinationNotFound(pctx, emsg);
             throw new DropFlowException(e);
         }

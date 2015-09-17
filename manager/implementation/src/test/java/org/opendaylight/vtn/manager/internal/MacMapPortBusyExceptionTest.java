@@ -51,10 +51,7 @@ public class MacMapPortBusyExceptionTest extends TestBase {
 
             String msg = "VLAN on a switch port is reserved";
             assertEquals(msg, st.getDescription());
-
-            StringBuilder builder = new StringBuilder(code.toString());
-            builder.append(": ").append(msg).append(" (0)");
-            assertEquals(builder.toString(), e.getMessage());
+            assertEquals(msg, e.getMessage());
         }
     }
 }

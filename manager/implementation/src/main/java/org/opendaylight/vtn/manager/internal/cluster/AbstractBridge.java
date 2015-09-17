@@ -32,10 +32,8 @@ import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
-
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 
@@ -99,9 +97,8 @@ public abstract class AbstractBridge<T extends AbstractInterface>
         MiscUtils.checkName("Interface", ifName);
 
         if (iconf == null) {
-            Status status = MiscUtils.
-                argumentIsNull("Interface configuration");
-            throw new VTNException(status);
+            throw RpcException.getNullArgumentException(
+                "Interface configuration");
         }
 
         Lock wrlock = writeLock();
@@ -111,7 +108,7 @@ public abstract class AbstractBridge<T extends AbstractInterface>
             if (old != null) {
                 vInterfaces.put(ifName, old);
                 String msg = ifName + ": Interface name already exists";
-                throw new VTNException(StatusCode.CONFLICT, msg);
+                throw RpcException.getDataExistsException(msg);
             }
 
             VInterface viface = vif.getVInterface(mgr);
@@ -143,9 +140,8 @@ public abstract class AbstractBridge<T extends AbstractInterface>
                                   boolean all)
         throws VTNException {
         if (iconf == null) {
-            Status status = MiscUtils.
-                argumentIsNull("Interface configuration");
-            throw new VTNException(status);
+            throw RpcException.getNullArgumentException(
+                "Interface configuration");
         }
 
         // Write lock is needed because this code determines the state of
@@ -176,14 +172,12 @@ public abstract class AbstractBridge<T extends AbstractInterface>
         try {
             String ifName = path.getInterfaceName();
             if (ifName == null) {
-                Status status = MiscUtils.argumentIsNull("Interface name");
-                throw new VTNException(status);
+                throw RpcException.getNullArgumentException("Interface name");
             }
 
             T vif = vInterfaces.remove(ifName);
             if (vif == null) {
-                Status status = interfaceNotFound(ifName);
-                throw new VTNException(status);
+                throw getInterfaceNotFoundException(ifName);
             }
 
             vif.destroy(mgr, true);
@@ -296,14 +290,12 @@ public abstract class AbstractBridge<T extends AbstractInterface>
         throws VTNException {
         String ifName = path.getInterfaceName();
         if (ifName == null) {
-            Status status = MiscUtils.argumentIsNull("Interface name");
-            throw new VTNException(status);
+            throw RpcException.getNullArgumentException("Interface name");
         }
 
         T vif = vInterfaces.get(ifName);
         if (vif == null) {
-            Status status = interfaceNotFound(ifName);
-            throw new VTNException(status);
+            throw getInterfaceNotFoundException(ifName);
         }
 
         return vif;
@@ -589,15 +581,15 @@ public abstract class AbstractBridge<T extends AbstractInterface>
     }
 
     /**
-     * Return a failure status that indicates the specified interface does not
+     * Return an exception that indicates the specified interface does not
      * exist.
      *
      * @param ifName  The name of the interface.
-     * @return  A failure status.
+     * @return  A {@link RpcException} instance.
      */
-    private Status interfaceNotFound(String ifName) {
+    private RpcException getInterfaceNotFoundException(String ifName) {
         String msg = ifName + ": Interface does not exist";
-        return new Status(StatusCode.NOTFOUND, msg);
+        return RpcException.getNotFoundException(msg);
     }
 
     /**

@@ -20,7 +20,6 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 
 import org.opendaylight.vtn.manager.util.VTNIdentifiable;
 
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 /**
@@ -72,7 +71,7 @@ public abstract class FlowFilterAction extends VTNFlowAction
     public final void verify() throws RpcException {
         if (getIdentifier() == null) {
             String msg = getErrorMessage("Action order");
-            throw MiscUtils.getNullArgumentException(msg);
+            throw RpcException.getNullArgumentException(msg);
         }
 
         verifyImpl();

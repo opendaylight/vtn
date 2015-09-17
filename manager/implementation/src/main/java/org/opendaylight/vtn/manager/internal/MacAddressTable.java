@@ -34,14 +34,13 @@ import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
 import org.opendaylight.vtn.manager.internal.cluster.VBridgeNode;
 import org.opendaylight.vtn.manager.internal.util.FixedLogger;
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.Status;
 
 /**
  * {@code MacAddressTable} class represents a MAC address table in a virtual
@@ -1027,8 +1026,7 @@ public class MacAddressTable {
     private Long getTableKey(DataLinkAddress dladdr) throws VTNException {
         if (!(dladdr instanceof EthernetAddress)) {
             if (dladdr == null) {
-                Status status = MiscUtils.argumentIsNull("MAC address");
-                throw new VTNException(status);
+                throw RpcException.getNullArgumentException("MAC address");
             }
             return null;
         }

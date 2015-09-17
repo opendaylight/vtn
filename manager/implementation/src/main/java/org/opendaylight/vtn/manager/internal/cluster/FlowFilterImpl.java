@@ -25,11 +25,9 @@ import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondReader;
 import org.opendaylight.vtn.manager.internal.util.flow.cond.VTNFlowCondition;
-
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
  * This class provides base implementation of flow filter.
@@ -100,14 +98,12 @@ public abstract class FlowFilterImpl implements Serializable {
                                         FlowFilter filter)
         throws VTNException {
         if (filter == null) {
-            Status st = MiscUtils.argumentIsNull("Flow filter");
-            throw new VTNException(st);
+            throw RpcException.getNullArgumentException("Flow filter");
         }
 
         FilterType type = filter.getFilterType();
         if (type == null) {
-            Status st = MiscUtils.argumentIsNull("Flow filter type");
-            throw new VTNException(st);
+            throw RpcException.getNullArgumentException("Flow filter type");
         }
 
         if (type instanceof PassFilter) {
@@ -120,8 +116,8 @@ public abstract class FlowFilterImpl implements Serializable {
             return new RedirectFlowFilterImpl(fnode, idx, filter);
         }
 
-        String msg = "Unexpected flow filter type: " + type;
-        throw new VTNException(StatusCode.BADREQUEST, msg);
+        throw RpcException.getBadArgumentException(
+            "Unexpected flow filter type: " + type);
     }
 
     /**
@@ -134,8 +130,8 @@ public abstract class FlowFilterImpl implements Serializable {
      */
     protected FlowFilterImpl(int idx, FlowFilter filter) throws VTNException {
         if (idx < INDEX_MIN || idx > INDEX_MAX) {
-            String msg = "Invalid index: " + idx;
-            throw new VTNException(StatusCode.BADREQUEST, msg);
+            throw RpcException.getBadArgumentException(
+                "Invalid index: " + idx);
         }
 
         index = idx;

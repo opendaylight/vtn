@@ -19,8 +19,7 @@ import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.controller.md.sal.common.api.data.OptimisticLockFailedException;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * An abstract implementation of {@link VTNFuture}.
@@ -53,27 +52,27 @@ public abstract class AbstractVTNFuture<T> implements VTNFuture<T> {
         if (cause instanceof VTNException) {
             converted = (VTNException)cause;
         } else {
-            Status status;
+            String msg;
+            VtnErrorTag etag = null;
 
             if (cause instanceof OptimisticLockFailedException) {
-                status = new Status(StatusCode.CONFLICT, cause.getMessage());
+                etag = VtnErrorTag.CONFLICT;
+                msg = cause.getMessage();
             } else if (cause instanceof TimeoutException) {
-                status = new Status(StatusCode.TIMEOUT, cause.getMessage());
+                etag = VtnErrorTag.TIMEOUT;
+                msg = cause.getMessage();
             } else if (cause instanceof InterruptedException) {
-                String msg = cause.getMessage();
+                msg = cause.getMessage();
                 if (msg == null) {
                     msg = "Interrupted.";
                 }
-                status = new Status(StatusCode.INTERNALERROR, msg);
             } else if (cause != null) {
-                status = new Status(StatusCode.INTERNALERROR,
-                                    cause.getMessage());
+                msg = cause.getMessage();
             } else {
-                status = new Status(StatusCode.INTERNALERROR,
-                                    "Failed to wait for the computation.");
+                msg = "Failed to wait for the computation.";
             }
 
-            converted = new VTNException(status, cause);
+            converted = new VTNException(etag, msg, cause);
         }
 
         return converted;

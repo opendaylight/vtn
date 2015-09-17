@@ -11,7 +11,7 @@ package org.opendaylight.vtn.manager.internal;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 
-import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * An exception which indicates the specified VLAN network on a switch port is
@@ -46,7 +46,7 @@ public class MacMapPortBusyException extends MacMapException {
      */
     public MacMapPortBusyException(MacVlan mvlan, MapReference ref,
                                    MapReference map) {
-        super(StatusCode.CONFLICT, "VLAN on a switch port is reserved",
+        super(VtnErrorTag.CONFLICT, "VLAN on a switch port is reserved",
               mvlan, ref);
         anotherMapping = map;
     }

@@ -27,14 +27,12 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePath;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePathBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.BridgeMapInfo;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.BridgeMapInfoBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodePathFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * JUnit test for {@link VTenantUtils}.
@@ -241,10 +239,9 @@ public class VNodeUtilsTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(StatusCode.BADREQUEST, st.getCode());
+                    assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
                     assertEquals("Unexpected virtual node path: " + path,
-                                 st.getDescription());
+                                 e.getMessage());
                 }
             }
         }
@@ -332,10 +329,9 @@ public class VNodeUtilsTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(StatusCode.BADREQUEST, st.getCode());
+                    assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
                     assertEquals("Unexpected virtual node path: " + path,
-                                 st.getDescription());
+                                 e.getMessage());
                 }
             }
         }

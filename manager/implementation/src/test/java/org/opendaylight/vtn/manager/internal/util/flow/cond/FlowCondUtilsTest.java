@@ -27,9 +27,6 @@ import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnFlowConditions;
@@ -40,6 +37,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.flow.conditions.VtnFlowConditionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.flow.conditions.VtnFlowConditionKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * JUnit test for {@link FlowCondUtils}.
@@ -68,24 +66,21 @@ public class FlowCondUtilsTest extends TestBase {
             RpcException e = FlowCondUtils.getNotFoundException(name);
             assertEquals(null, e.getCause());
             assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.NOTFOUND, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
 
             e = FlowCondUtils.getNotFoundException(name, cause);
             assertSame(cause, e.getCause());
             assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-            st = e.getStatus();
-            assertEquals(StatusCode.NOTFOUND, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         String msg = "Match index cannot be null";
         RpcException e = FlowCondUtils.getMatchIndexMissingException();
         assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
-        Status st = e.getStatus();
-        assertEquals(StatusCode.BADREQUEST, st.getCode());
-        assertEquals(msg, st.getDescription());
+        assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+        assertEquals(msg, e.getMessage());
         assertEquals(null, e.getCause());
     }
 
@@ -158,9 +153,8 @@ public class FlowCondUtilsTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
                 assertEquals(null, e.getCause());
             }
 
@@ -169,9 +163,8 @@ public class FlowCondUtilsTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
                 assertEquals(null, e.getCause());
             }
         }
@@ -179,15 +172,14 @@ public class FlowCondUtilsTest extends TestBase {
         // Null name.
         String msg = "Flow condition name cannot be null";
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
-        StatusCode code = StatusCode.BADREQUEST;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         try {
             FlowCondUtils.checkName((String)null);
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
             assertEquals(null, e.getCause());
         }
 
@@ -196,9 +188,8 @@ public class FlowCondUtilsTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
             assertEquals(null, e.getCause());
         }
 
@@ -207,9 +198,8 @@ public class FlowCondUtilsTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
             assertEquals(null, e.getCause());
         }
 
@@ -218,9 +208,8 @@ public class FlowCondUtilsTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
             assertEquals(null, e.getCause());
         }
 
@@ -229,9 +218,8 @@ public class FlowCondUtilsTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
             assertEquals(null, e.getCause());
         }
 
@@ -243,9 +231,8 @@ public class FlowCondUtilsTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
             assertEquals(null, e.getCause());
         }
 
@@ -254,18 +241,15 @@ public class FlowCondUtilsTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.NOTFOUND, st.getCode());
-            assertEquals(": Flow condition does not exist.",
-                         st.getDescription());
+            assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
+            assertEquals(": Flow condition does not exist.", e.getMessage());
 
             Throwable cause = e.getCause();
             assertTrue(cause instanceof RpcException);
             RpcException re = (RpcException)cause;
             assertEquals(etag, re.getErrorTag());
-            st = re.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, re.getVtnErrorTag());
+            assertEquals(msg, re.getMessage());
             assertEquals(null, re.getCause());
         }
 
@@ -274,18 +258,15 @@ public class FlowCondUtilsTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.NOTFOUND, st.getCode());
-            assertEquals(": Flow condition does not exist.",
-                         st.getDescription());
+            assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
+            assertEquals(": Flow condition does not exist.", e.getMessage());
 
             Throwable cause = e.getCause();
             assertTrue(cause instanceof RpcException);
             RpcException re = (RpcException)cause;
             assertEquals(etag, re.getErrorTag());
-            st = re.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, re.getVtnErrorTag());
+            assertEquals(msg, re.getMessage());
             assertEquals(null, re.getCause());
         }
 
@@ -294,18 +275,15 @@ public class FlowCondUtilsTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.NOTFOUND, st.getCode());
-            assertEquals(": Flow condition does not exist.",
-                         st.getDescription());
+            assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
+            assertEquals(": Flow condition does not exist.", e.getMessage());
 
             Throwable cause = e.getCause();
             assertTrue(cause instanceof RpcException);
             RpcException re = (RpcException)cause;
             assertEquals(etag, re.getErrorTag());
-            st = re.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, re.getVtnErrorTag());
+            assertEquals(msg, re.getMessage());
             assertEquals(null, re.getCause());
         }
 
@@ -327,9 +305,8 @@ public class FlowCondUtilsTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
                 Throwable cause = e.getCause();
                 assertTrue(cause instanceof IllegalArgumentException);
             }
@@ -339,18 +316,16 @@ public class FlowCondUtilsTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.NOTFOUND, st.getCode());
+                assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
                 assertEquals(name + ": Flow condition does not exist.",
-                             st.getDescription());
+                             e.getMessage());
 
                 Throwable cause = e.getCause();
                 assertTrue(cause instanceof RpcException);
                 RpcException re = (RpcException)cause;
                 assertEquals(etag, re.getErrorTag());
-                st = re.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, re.getVtnErrorTag());
+                assertEquals(msg, re.getMessage());
                 cause = re.getCause();
                 assertTrue(cause instanceof IllegalArgumentException);
             }
@@ -360,18 +335,16 @@ public class FlowCondUtilsTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.NOTFOUND, st.getCode());
+                assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
                 assertEquals(name + ": Flow condition does not exist.",
-                             st.getDescription());
+                             e.getMessage());
 
                 Throwable cause = e.getCause();
                 assertTrue(cause instanceof RpcException);
                 RpcException re = (RpcException)cause;
                 assertEquals(etag, re.getErrorTag());
-                st = re.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, re.getVtnErrorTag());
+                assertEquals(msg, re.getMessage());
                 cause = re.getCause();
                 assertTrue(cause instanceof IllegalArgumentException);
             }
@@ -381,18 +354,16 @@ public class FlowCondUtilsTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.NOTFOUND, st.getCode());
+                assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
                 assertEquals(name + ": Flow condition does not exist.",
-                             st.getDescription());
+                             e.getMessage());
 
                 Throwable cause = e.getCause();
                 assertTrue(cause instanceof RpcException);
                 RpcException re = (RpcException)cause;
                 assertEquals(etag, re.getErrorTag());
-                st = re.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, re.getVtnErrorTag());
+                assertEquals(msg, re.getMessage());
                 cause = re.getCause();
                 assertTrue(cause instanceof IllegalArgumentException);
             }
@@ -448,15 +419,14 @@ public class FlowCondUtilsTest extends TestBase {
         // Index is null.
         String msg = "Match index cannot be null";
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
-        StatusCode code = StatusCode.BADREQUEST;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         try {
             FlowCondUtils.verifyMatchIndex(null);
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
             assertEquals(null, e.getCause());
         }
 
@@ -473,9 +443,8 @@ public class FlowCondUtilsTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
 
                 Throwable cause = e.getCause();
                 assertTrue(cause instanceof IllegalArgumentException);
@@ -490,9 +459,8 @@ public class FlowCondUtilsTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
                 assertEquals(null, e.getCause());
             }
         }
@@ -567,11 +535,10 @@ public class FlowCondUtilsTest extends TestBase {
                 assertEquals(false, present.contains(vname));
                 assertEquals(null, e.getCause());
                 assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.NOTFOUND, st.getCode());
+                assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
                 String msg = vname.getValue() +
                     ": Flow condition does not exist.";
-                assertEquals(msg, st.getDescription());
+                assertEquals(msg, e.getMessage());
             }
         }
 
@@ -650,10 +617,8 @@ public class FlowCondUtilsTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
-            assertEquals("Flow condition name cannot be null",
-                         st.getDescription());
+            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+            assertEquals("Flow condition name cannot be null", e.getMessage());
         }
 
         // Invalid name should be treated as if the specified flow condition
@@ -675,10 +640,9 @@ public class FlowCondUtilsTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.NOTFOUND, st.getCode());
+                assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
                 String msg = name + ": Flow condition does not exist.";
-                assertEquals(msg, st.getDescription());
+                assertEquals(msg, e.getMessage());
             }
         }
         Mockito.verify(rtx, Mockito.never()).
@@ -699,10 +663,9 @@ public class FlowCondUtilsTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.NOTFOUND, st.getCode());
+                assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
                 String msg = name + ": Flow condition does not exist.";
-                assertEquals(msg, st.getDescription());
+                assertEquals(msg, e.getMessage());
             }
             Mockito.verify(rtx).read(oper, path);
         }
@@ -738,10 +701,8 @@ public class FlowCondUtilsTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
-            assertEquals("Flow condition name cannot be null",
-                         st.getDescription());
+            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+            assertEquals("Flow condition name cannot be null", e.getMessage());
         }
 
         // Invalid name should be treated as if the specified flow condition
@@ -763,10 +724,9 @@ public class FlowCondUtilsTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.NOTFOUND, st.getCode());
+                assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
                 String msg = name + ": Flow condition does not exist.";
-                assertEquals(msg, st.getDescription());
+                assertEquals(msg, e.getMessage());
             }
         }
         Mockito.verify(rtx, Mockito.never()).
@@ -803,9 +763,8 @@ public class FlowCondUtilsTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.NOTFOUND, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
 
             fcCount++;

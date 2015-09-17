@@ -31,15 +31,13 @@ import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
 import org.opendaylight.vtn.manager.internal.XmlValueType;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanPcpActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanPcpActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.vlan.pcp.action._case.VtnSetVlanPcpAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.vlan.pcp.action._case.VtnSetVlanPcpActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.SetTpDstActionCaseBuilder;
@@ -183,16 +181,15 @@ public class VTNSetVlanPcpActionTest extends TestBase {
 
             vac = VTNSetIcmpTypeAction.newVtnAction(pcp);
             RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
-            StatusCode ecode = StatusCode.BADREQUEST;
+            VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
             String emsg = "VTNSetVlanPcpAction: Unexpected type: " + vac;
             try {
                 va.toFlowAction(vac);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             // toFlowAction() should never affect instance variables.
@@ -213,9 +210,8 @@ public class VTNSetVlanPcpActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             try {
@@ -223,9 +219,8 @@ public class VTNSetVlanPcpActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             etag = RpcErrorTag.MISSING_ELEMENT;
@@ -237,9 +232,8 @@ public class VTNSetVlanPcpActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             action = new SetVlanPcpActionCaseBuilder().
@@ -251,9 +245,8 @@ public class VTNSetVlanPcpActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             // toVtnAction() should never affect instance variables.
@@ -282,7 +275,7 @@ public class VTNSetVlanPcpActionTest extends TestBase {
 
         // Null order.
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
-        StatusCode ecode = StatusCode.BADREQUEST;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         VlanPcp vpcp = new VlanPcp((short)0);
         String emsg = "VTNSetVlanPcpAction: Action order cannot be null";
         VtnSetVlanPcpAction vact = new VtnSetVlanPcpActionBuilder().
@@ -294,9 +287,8 @@ public class VTNSetVlanPcpActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         // Invalid VLAN PCP.
@@ -314,9 +306,8 @@ public class VTNSetVlanPcpActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
         }
 
@@ -528,7 +519,7 @@ public class VTNSetVlanPcpActionTest extends TestBase {
         // No action order.
         Unmarshaller um = createUnmarshaller(type);
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
-        StatusCode ecode = StatusCode.BADREQUEST;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         String emsg = "VTNSetVlanPcpAction: Action order cannot be null";
         String xml = new XmlNode(XML_ROOT).
             add(new XmlNode("priority", (short)7)).toString();
@@ -538,9 +529,8 @@ public class VTNSetVlanPcpActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         // Invalid VLAN PCP.
@@ -561,9 +551,8 @@ public class VTNSetVlanPcpActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
         }
     }

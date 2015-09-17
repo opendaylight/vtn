@@ -27,9 +27,6 @@ import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.Vtns;
@@ -37,6 +34,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.Vtn;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.VtnBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.VtnKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * JUnit test for {@link VTenantUtils}.
@@ -65,24 +63,21 @@ public class VTenantUtilsTest extends TestBase {
             RpcException e = VTenantUtils.getNotFoundException(name);
             assertEquals(null, e.getCause());
             assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.NOTFOUND, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
 
             e = VTenantUtils.getNotFoundException(name, cause);
             assertSame(cause, e.getCause());
             assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-            st = e.getStatus();
-            assertEquals(StatusCode.NOTFOUND, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
 
             msg = name + ": Tenant name already exists.";
             e = VTenantUtils.getNameConflictException(name);
             assertEquals(null, e.getCause());
             assertEquals(RpcErrorTag.DATA_EXISTS, e.getErrorTag());
-            st = e.getStatus();
-            assertEquals(StatusCode.CONFLICT, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(VtnErrorTag.CONFLICT, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
     }
 
@@ -145,16 +140,15 @@ public class VTenantUtilsTest extends TestBase {
         // Null VTenantPath.
         String msg = "VTenantPath cannot be null";
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
-        StatusCode code = StatusCode.BADREQUEST;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         try {
             VTenantUtils.getName((VTenantPath)null);
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
             assertEquals(null, e.getCause());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         try {
@@ -163,9 +157,8 @@ public class VTenantUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
             assertEquals(null, e.getCause());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         // Null VTN name.
@@ -176,9 +169,8 @@ public class VTenantUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
             assertEquals(null, e.getCause());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         try {
@@ -187,9 +179,8 @@ public class VTenantUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
             assertEquals(null, e.getCause());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         try {
@@ -198,9 +189,8 @@ public class VTenantUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
             assertEquals(null, e.getCause());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         try {
@@ -209,9 +199,8 @@ public class VTenantUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
             assertEquals(null, e.getCause());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         try {
@@ -220,9 +209,8 @@ public class VTenantUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
             assertEquals(null, e.getCause());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         // Empty VTN name.
@@ -234,9 +222,8 @@ public class VTenantUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
             assertEquals(null, e.getCause());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         String emsg = ": Tenant does not exist.";
@@ -245,16 +232,14 @@ public class VTenantUtilsTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.NOTFOUND, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
             Throwable cause = e.getCause();
             assertTrue(cause instanceof RpcException);
             RpcException re = (RpcException)cause;
             assertEquals(etag, re.getErrorTag());
-            st = re.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, re.getVtnErrorTag());
+            assertEquals(msg, re.getMessage());
             assertEquals(null, re.getCause());
         }
 
@@ -263,16 +248,14 @@ public class VTenantUtilsTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.NOTFOUND, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
             Throwable cause = e.getCause();
             assertTrue(cause instanceof RpcException);
             RpcException re = (RpcException)cause;
             assertEquals(etag, re.getErrorTag());
-            st = re.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, re.getVtnErrorTag());
+            assertEquals(msg, re.getMessage());
             assertEquals(null, re.getCause());
         }
 
@@ -281,16 +264,14 @@ public class VTenantUtilsTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.NOTFOUND, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
             Throwable cause = e.getCause();
             assertTrue(cause instanceof RpcException);
             RpcException re = (RpcException)cause;
             assertEquals(etag, re.getErrorTag());
-            st = re.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, re.getVtnErrorTag());
+            assertEquals(msg, re.getMessage());
             cause = re.getCause();
             assertEquals(null, re.getCause());
         }
@@ -314,9 +295,8 @@ public class VTenantUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
                 assertTrue(e.getCause() instanceof IllegalArgumentException);
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
 
             emsg = name + ": Tenant does not exist.";
@@ -325,16 +305,14 @@ public class VTenantUtilsTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.NOTFOUND, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
                 Throwable cause = e.getCause();
                 assertTrue(cause instanceof RpcException);
                 RpcException re = (RpcException)cause;
                 assertEquals(etag, re.getErrorTag());
-                st = re.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, re.getVtnErrorTag());
+                assertEquals(msg, re.getMessage());
                 cause = re.getCause();
                 assertTrue(cause instanceof IllegalArgumentException);
             }
@@ -344,16 +322,14 @@ public class VTenantUtilsTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.NOTFOUND, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
                 Throwable cause = e.getCause();
                 assertTrue(cause instanceof RpcException);
                 RpcException re = (RpcException)cause;
                 assertEquals(etag, re.getErrorTag());
-                st = re.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, re.getVtnErrorTag());
+                assertEquals(msg, re.getMessage());
                 cause = re.getCause();
                 assertTrue(cause instanceof IllegalArgumentException);
             }
@@ -363,16 +339,14 @@ public class VTenantUtilsTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.NOTFOUND, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
                 Throwable cause = e.getCause();
                 assertTrue(cause instanceof RpcException);
                 RpcException re = (RpcException)cause;
                 assertEquals(etag, re.getErrorTag());
-                st = re.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, re.getVtnErrorTag());
+                assertEquals(msg, re.getMessage());
                 cause = re.getCause();
                 assertTrue(cause instanceof IllegalArgumentException);
             }
@@ -427,10 +401,9 @@ public class VTenantUtilsTest extends TestBase {
                 assertEquals(null, expected);
                 assertEquals(null, e.getCause());
                 assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.NOTFOUND, st.getCode());
+                assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
                 String msg = vname.getValue() + ": Tenant does not exist.";
-                assertEquals(msg, st.getDescription());
+                assertEquals(msg, e.getMessage());
             }
         }
 

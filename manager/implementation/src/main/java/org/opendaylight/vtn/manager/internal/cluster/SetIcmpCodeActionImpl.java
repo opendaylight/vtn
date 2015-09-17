@@ -17,8 +17,7 @@ import org.opendaylight.vtn.manager.internal.packet.cache.IcmpPacket;
 import org.opendaylight.vtn.manager.internal.packet.cache.L4Packet;
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetIcmpCodeAction;
-
-import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 /**
  * Implementation of flow action that modifies ICMP code field value in
@@ -54,7 +53,7 @@ public final class SetIcmpCodeActionImpl extends FlowActionImpl {
         code = act.getCode();
         if (!ProtocolUtils.isIcmpValueValid(code)) {
             String msg = getErrorMessage(act, "Invalid ICMP code: ", code);
-            throw new VTNException(StatusCode.BADREQUEST, msg);
+            throw RpcException.getBadArgumentException(msg);
         }
     }
 

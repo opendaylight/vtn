@@ -12,7 +12,7 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.InetAddressAction;
 import org.opendaylight.vtn.manager.util.IpNetwork;
 
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.controller.sal.utils.Status;
 
@@ -55,8 +55,7 @@ public abstract class InetAddressActionImpl extends FlowActionImpl {
         address = act.getIpNetwork();
         if (address == null) {
             String msg = getErrorMessage(act, "IP address");
-            st = MiscUtils.argumentIsNull(msg);
-            throw new VTNException(st);
+            throw RpcException.getNullArgumentException(msg);
         }
     }
 

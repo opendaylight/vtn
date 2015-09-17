@@ -48,10 +48,7 @@ public class MacMapDuplicateExceptionTest extends TestBase {
 
             String msg = "Duplicate MAC address found";
             assertEquals(msg, st.getDescription());
-
-            StringBuilder builder = new StringBuilder(code.toString());
-            builder.append(": ").append(msg).append(" (0)");
-            assertEquals(builder.toString(), e.getMessage());
+            assertEquals(msg, e.getMessage());
         }
     }
 }

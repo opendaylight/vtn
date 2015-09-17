@@ -49,13 +49,12 @@ import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
@@ -215,7 +214,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
                 // Change configuration as specified exactly.
                 set(dlhosts);
             } else if (op == null) {
-                throw new VTNException(operationCannotBeNull());
+                throw getOperationCannotBeNullException();
             } else {
                 if (dlhosts == null || dlhosts.isEmpty()) {
                     return;
@@ -377,7 +376,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
                 } else {
                     long mac = mvlan.getMacAddress();
                     if (mac != MacVlan.UNDEFINED && !macSet.add(mac)) {
-                        throw new VTNException(duplicatedMacAddress(mac));
+                        throw getDuplicatedMacAddressException(mac);
                     }
                     added.add(mvlan);
                 }
@@ -388,7 +387,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
                 if (retained.contains(mvlan)) {
                     long mac = mvlan.getMacAddress();
                     if (mac != MacVlan.UNDEFINED && !macSet.add(mac)) {
-                        throw new VTNException(alreadyMapped(mac));
+                        throw getAlreadyMappedException(mac);
                     }
                 } else {
                     removed.add(mvlan);
@@ -410,10 +409,10 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
                     long mac = mvlan.getMacAddress();
                     if (mac != MacVlan.UNDEFINED) {
                         if (!macSet.add(mac)) {
-                            throw new VTNException(duplicatedMacAddress(mac));
+                            throw getDuplicatedMacAddressException(mac);
                         }
                         if (containsMacAddress(allowedHosts, mac)) {
-                            throw new VTNException(alreadyMapped(mac));
+                            throw getAlreadyMappedException(mac);
                         }
                     }
                     added.add(mvlan);
@@ -532,8 +531,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
             throws VTNException {
             MacVlan mvlan = new MacVlan(dlhost);
             if (mvlan.getMacAddress() == MacVlan.UNDEFINED) {
-                throw new VTNException(
-                    StatusCode.BADREQUEST,
+                throw RpcException.getBadArgumentException(
                     "MAC address cannot be null in denied hosts: " + dlhost);
             }
 
@@ -584,7 +582,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
                 allowedContext.set(allow);
                 deniedContext.set(deny);
             } else if (op == null) {
-                throw new VTNException(operationCannotBeNull());
+                throw getOperationCannotBeNullException();
             } else {
                 if (mcconf == null) {
                     return;
@@ -730,7 +728,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
         }
 
         assert aclType == null;
-        throw new VTNException(aclCannotBeNull());
+        throw getAclCannotBeNullException();
     }
 
     /**
@@ -1172,8 +1170,10 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
             MacVlan host = e.getHost();
             MapReference ref = e.getMapReference();
             assert ref.getMapType() == MapType.MAC;
-            throw new VTNException(alreadyMapped(host, ref.getAbsolutePath()),
-                                   e);
+            RpcException re = getAlreadyMappedException(
+                host, ref.getAbsolutePath());
+            re.initCause(e);
+            throw re;
         }
 
         return removing;
@@ -1196,7 +1196,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
         }
 
         assert aclType == null;
-        throw new VTNException(aclCannotBeNull());
+        throw getAclCannotBeNullException();
     }
 
     /**
@@ -1231,67 +1231,67 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
     }
 
     /**
-     * Create an error status that indicates {@link VtnUpdateOperationType}
+     * Create an exception that indicates {@link VtnUpdateOperationType}
      * cannot be null.
      *
-     * @return  An error status.
+     * @return  A {@link RpcException} instance.
      */
-    private Status operationCannotBeNull() {
-        return MiscUtils.argumentIsNull("Operation");
+    private RpcException getOperationCannotBeNullException() {
+        return RpcException.getNullArgumentException("Operation");
     }
 
     /**
-     * Create an error status that indicates {@link VtnAclType} cannot be null.
+     * Create an exception that indicates {@link VtnAclType} cannot be null.
      *
-     * @return  An error status.
+     * @return  A {@link RpcException} instance.
      */
-    private Status aclCannotBeNull() {
-        return MiscUtils.argumentIsNull("ACL type");
+    private RpcException getAclCannotBeNullException() {
+        return RpcException.getNullArgumentException("ACL type");
     }
 
     /**
-     * Create an error status that indicates the same MAC addresses cannot
+     * Create an exception that indicates the same MAC addresses cannot
      * be specified to allowed hosts.
      *
      * @param mac  A MAC address.
-     * @return  An error status.
+     * @return  A {@link RpcException} instance.
      */
-    private Status duplicatedMacAddress(long mac) {
+    private RpcException getDuplicatedMacAddressException(long mac) {
         String maddr = MiscUtils.formatMacAddress(mac);
         StringBuilder builder = new StringBuilder("MAC address(");
         builder.append(maddr).append(" is duplicated in allowed set");
-        return new Status(StatusCode.BADREQUEST, builder.toString());
+        return RpcException.getBadArgumentException(builder.toString());
     }
 
     /**
-     * Create an error status that indicates the specified host is
+     * Create an exception that indicates the specified host is
      * already mapped to this vBridge.
      *
      * @param mvlan  A {@link MacVlan} instance.
      * @param path   A string representaiton of path to the MAC mapping
      *               which maps the specified host.
      *               {@code null} means this MAC mapping.
-     * @return  An error status.
+     * @return  A {@link RpcException} instance.
      */
-    private Status alreadyMapped(MacVlan mvlan, String path) {
+    private RpcException getAlreadyMappedException(MacVlan mvlan, String path) {
         StringBuilder builder = new StringBuilder("Host(");
         mvlan.appendContents(builder);
         builder.append(") is already mapped to ").append(path);
-        return new Status(StatusCode.CONFLICT, builder.toString());
+        return RpcException.getDataExistsException(builder.toString());
     }
 
     /**
-     * Create an error status that indicates the specified MAC address is
+     * Create an exception that indicates the specified MAC address is
      * already mapped to this vBridge.
      *
      * @param mac  A MAC address.
-     * @return  An error status.
+     * @return  A {@link RpcException} instance.
      */
-    private Status alreadyMapped(long mac) {
+    private RpcException getAlreadyMappedException(long mac) {
         String maddr = MiscUtils.formatMacAddress(mac);
         StringBuilder builder = new StringBuilder("MAC address(");
         builder.append(maddr).append(") is already mapped to this vBridge");
-        return new Status(StatusCode.CONFLICT, builder.toString());
+        return RpcException.getDataExistsException(builder.toString());
     }
 
     /**

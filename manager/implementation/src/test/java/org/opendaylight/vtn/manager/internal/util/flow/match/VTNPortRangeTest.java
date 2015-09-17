@@ -28,10 +28,8 @@ import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
 import org.opendaylight.vtn.manager.internal.XmlValueType;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnPortRange;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 
@@ -125,6 +123,7 @@ public class VTNPortRangeTest extends TestBase {
         }
 
         // port-from is missing.
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         ArrayList<PortMatch> pmList = new ArrayList<>();
         ArrayList<VtnPortRange> vprList = new ArrayList<>();
         PortRangeParams params = new PortRangeParams();
@@ -138,9 +137,8 @@ public class VTNPortRangeTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("port-from cannot be null", st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals("port-from cannot be null", e.getMessage());
             }
         }
         for (VtnPortRange vpr: vprList) {
@@ -149,9 +147,8 @@ public class VTNPortRangeTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("port-from cannot be null", st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals("port-from cannot be null", e.getMessage());
             }
         }
 
@@ -160,9 +157,8 @@ public class VTNPortRangeTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
-            assertEquals("port-from cannot be null", st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals("port-from cannot be null", e.getMessage());
         }
 
         // Invalid port number.
@@ -183,10 +179,9 @@ public class VTNPortRangeTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(StatusCode.BADREQUEST, st.getCode());
+                    assertEquals(vtag, e.getVtnErrorTag());
                     assertEquals("Invalid port number: " + port,
-                                 st.getDescription());
+                                 e.getMessage());
                 }
             }
 
@@ -194,10 +189,8 @@ public class VTNPortRangeTest extends TestBase {
                 new VTNPortRange(port);
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("Invalid port number: " + port,
-                             st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals("Invalid port number: " + port, e.getMessage());
             }
         }
 
@@ -213,11 +206,10 @@ public class VTNPortRangeTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals(vtag, e.getVtnErrorTag());
                 String msg = "Invalid port range: from=" + from +
                     ", to=" + to;
-                assertEquals(msg, st.getDescription());
+                assertEquals(msg, e.getMessage());
             }
 
             VtnPortRange vpr = params.toTcpSourceRange();
@@ -226,11 +218,10 @@ public class VTNPortRangeTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals(vtag, e.getVtnErrorTag());
                 String msg = "Invalid port range: from=" + from +
                     ", to=" + to;
-                assertEquals(msg, st.getDescription());
+                assertEquals(msg, e.getMessage());
             }
 
             from = port;
@@ -241,10 +232,9 @@ public class VTNPortRangeTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals(vtag, e.getVtnErrorTag());
                 String msg = "Invalid port range: from=" + from + ", to=" + to;
-                assertEquals(msg, st.getDescription());
+                assertEquals(msg, e.getMessage());
             }
 
             vpr = params.toTcpSourceRange();
@@ -253,10 +243,9 @@ public class VTNPortRangeTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals(vtag, e.getVtnErrorTag());
                 String msg = "Invalid port range: from=" + from + ", to=" + to;
-                assertEquals(msg, st.getDescription());
+                assertEquals(msg, e.getMessage());
             }
         }
     }
@@ -397,6 +386,7 @@ public class VTNPortRangeTest extends TestBase {
         }
 
         // port-from is missing.
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         String[] missings = {
             new XmlNode(XML_ROOT).toString(),
             new XmlNode(XML_ROOT).add(new XmlNode("port-to", 10)).toString(),
@@ -408,9 +398,8 @@ public class VTNPortRangeTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("port-from cannot be null", st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals("port-from cannot be null", e.getMessage());
             }
         }
 
@@ -430,11 +419,10 @@ public class VTNPortRangeTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals(vtag, e.getVtnErrorTag());
                 String msg = "Invalid port range: from=" + from +
                     ", to=" + to;
-                assertEquals(msg, st.getDescription());
+                assertEquals(msg, e.getMessage());
             }
 
             from = port;
@@ -448,10 +436,9 @@ public class VTNPortRangeTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals(vtag, e.getVtnErrorTag());
                 String msg = "Invalid port range: from=" + from + ", to=" + to;
-                assertEquals(msg, st.getDescription());
+                assertEquals(msg, e.getMessage());
             }
         }
 

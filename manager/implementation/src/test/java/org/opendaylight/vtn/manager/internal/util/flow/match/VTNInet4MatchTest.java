@@ -30,10 +30,8 @@ import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
 import org.opendaylight.vtn.manager.internal.XmlValueType;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.VtnInetMatch;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.Match;
@@ -89,6 +87,7 @@ public class VTNInet4MatchTest extends TestBase {
         assertEquals(null, imatch.getProtocol());
         assertEquals(null, imatch.getDscp());
 
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         Short[] protocols = {
             0, 1, 30, 63, 64, 127, 128, 254, 255,
         };
@@ -112,11 +111,10 @@ public class VTNInet4MatchTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(StatusCode.BADREQUEST, st.getCode());
+                    assertEquals(vtag, e.getVtnErrorTag());
                     String msg = "IP protocol conflict: proto=" + proto +
                         ", expected=" + p;
-                    assertEquals(msg, st.getDescription());
+                    assertEquals(msg, e.getMessage());
                 }
             }
         }
@@ -200,6 +198,7 @@ public class VTNInet4MatchTest extends TestBase {
         }
 
         // Create broken Inet4Match.
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         String v6addr = "::1";
         String[] badAddrs = {
             "", "192.168.100.256", v6addr, "bad_address",
@@ -215,9 +214,8 @@ public class VTNInet4MatchTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                String desc = st.getDescription();
+                assertEquals(vtag, e.getVtnErrorTag());
+                String desc = e.getMessage();
                 if (addr.isEmpty()) {
                     assertEquals("Empty source address.", desc);
                 } else if (addr.equals(v6addr)) {
@@ -248,9 +246,8 @@ public class VTNInet4MatchTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                String msg = st.getDescription();
+                assertEquals(vtag, e.getVtnErrorTag());
+                String msg = e.getMessage();
                 assertTrue(msg.startsWith("Invalid source IP address: "));
             }
 
@@ -263,9 +260,8 @@ public class VTNInet4MatchTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                String msg = st.getDescription();
+                assertEquals(vtag, e.getVtnErrorTag());
+                String msg = e.getMessage();
                 assertTrue(msg.startsWith("Invalid destination IP address: "));
             }
         }
@@ -284,10 +280,9 @@ public class VTNInet4MatchTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals(vtag, e.getVtnErrorTag());
                 assertEquals("Invalid IP protocol number: " + proto,
-                             st.getDescription());
+                             e.getMessage());
             }
 
             try {
@@ -295,10 +290,9 @@ public class VTNInet4MatchTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals(vtag, e.getVtnErrorTag());
                 assertEquals("Invalid IP protocol number: " + proto,
-                             st.getDescription());
+                             e.getMessage());
             }
         }
 
@@ -317,10 +311,9 @@ public class VTNInet4MatchTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals(vtag, e.getVtnErrorTag());
                 assertEquals("Invalid IP DSCP field value: " + dscp,
-                             st.getDescription());
+                             e.getMessage());
             }
 
             try {
@@ -328,10 +321,9 @@ public class VTNInet4MatchTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals(vtag, e.getVtnErrorTag());
                 assertEquals("Invalid IP DSCP field value: " + dscp,
-                             st.getDescription());
+                             e.getMessage());
             }
         }
 
@@ -344,16 +336,14 @@ public class VTNInet4MatchTest extends TestBase {
         mb.setLayer3Match(new ArpMatchBuilder().build());
         match = mb.build();
         RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
-        StatusCode code = StatusCode.BADREQUEST;
         String msg = "Unsupported layer 3 match: " + mb.getLayer3Match();
         try {
             VTNInetMatch.create(match);
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
     }
 
@@ -429,6 +419,7 @@ public class VTNInet4MatchTest extends TestBase {
         Unmarshaller um = createUnmarshaller(VTNInet4Match.class);
 
         // Invalid protocol numbers.
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         Short[] badProtocols = {
             Short.MIN_VALUE, -30000, -10000, -0x100, -3, -2, -1,
             256, 257, 999, 0x1f00, Short.MAX_VALUE - 1, Short.MAX_VALUE,
@@ -442,10 +433,9 @@ public class VTNInet4MatchTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals(vtag, e.getVtnErrorTag());
                 assertEquals("Invalid IP protocol number: " + proto,
-                             st.getDescription());
+                             e.getMessage());
             }
         }
 
@@ -463,10 +453,9 @@ public class VTNInet4MatchTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals(vtag, e.getVtnErrorTag());
                 assertEquals("Invalid IP DSCP field value: " + dscp,
-                             st.getDescription());
+                             e.getMessage());
             }
         }
     }

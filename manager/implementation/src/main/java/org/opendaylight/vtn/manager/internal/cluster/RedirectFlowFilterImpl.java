@@ -22,9 +22,9 @@ import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * This class describes REDIRECT flow filter, which forwards packet to
@@ -82,13 +82,12 @@ public final class RedirectFlowFilterImpl extends FlowFilterImpl {
 
         VInterfacePath path = redirect.getDestination();
         if (path == null) {
-            Status st =
-                MiscUtils.argumentIsNull("RedirectFilter: Destination");
-            throw new VTNException(st);
+            throw RpcException.getNullArgumentException(
+                "RedirectFilter: Destination");
         }
         if (path instanceof ErrorVNodePath) {
             ErrorVNodePath epath = (ErrorVNodePath)path;
-            throw new VTNException(StatusCode.BADREQUEST, epath.getError());
+            throw RpcException.getBadArgumentException(epath.getError());
         }
 
         // Set null as the VTN name because the VTN name is always determined
@@ -100,12 +99,10 @@ public final class RedirectFlowFilterImpl extends FlowFilterImpl {
             MiscUtils.checkName("Virtual node", path.getTenantNodeName());
             MiscUtils.checkName("Interface", path.getInterfaceName());
         } catch (VTNException e) {
-            Status st = e.getStatus();
-            StringBuilder builder =
-                new StringBuilder("RedirectFilter: Invalid destination: ");
-            builder.append(st.getDescription());
-            Status newst = new Status(st.getCode(), builder.toString());
-            throw new VTNException(newst, e);
+            VtnErrorTag etag = e.getVtnErrorTag();
+            String msg = "RedirectFilter: Invalid destination: " +
+                e.getMessage();
+            throw new VTNException(etag, msg, e);
         }
 
         // Reject self-redirection.
@@ -113,10 +110,8 @@ public final class RedirectFlowFilterImpl extends FlowFilterImpl {
         String tenant = ppath.getTenantName();
         VNodePath dst = (VNodePath)path.replaceTenantName(tenant);
         if (ppath instanceof VInterfacePath && ppath.contains(dst)) {
-            StringBuilder builder =
-                new StringBuilder("RedirectFilter: Self-redirection: ");
-            builder.append(dst);
-            throw new VTNException(StatusCode.BADREQUEST, builder.toString());
+            String msg = "RedirectFilter: Self-redirection: " + dst;
+            throw RpcException.getBadArgumentException(msg);
         }
 
         destination = path;

@@ -98,8 +98,6 @@ import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcResult;
@@ -163,6 +161,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.flows.VtnFlowTableKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNodeBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnFlowTimeoutConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnSwitchPort;
 
@@ -281,7 +280,7 @@ public class FlowUtilsTest extends TestBase {
             null, 0, 1, 2, 10, 300, 5555, 65534, 65535,
         };
         RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
-        StatusCode code = StatusCode.BADREQUEST;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         for (Integer tmout: timeouts) {
             if (tmout == null) {
                 tc.setIdleTimeout(tmout).setHardTimeout(tmout);
@@ -307,9 +306,8 @@ public class FlowUtilsTest extends TestBase {
                 } catch (RpcException e) {
                     assertEquals(null, e.getCause());
                     assertEquals(etag, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(code, st.getCode());
-                    assertEquals(msg, st.getDescription());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(msg, e.getMessage());
                 }
 
                 try {
@@ -318,9 +316,8 @@ public class FlowUtilsTest extends TestBase {
                 } catch (RpcException e) {
                     assertEquals(null, e.getCause());
                     assertEquals(etag, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(code, st.getCode());
-                    assertEquals(msg, st.getDescription());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(msg, e.getMessage());
                 }
             }
             if (tm > 1) {
@@ -336,9 +333,8 @@ public class FlowUtilsTest extends TestBase {
                 } catch (RpcException e) {
                     assertEquals(null, e.getCause());
                     assertEquals(etag, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(code, st.getCode());
-                    assertEquals(msg, st.getDescription());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(msg, e.getMessage());
                 }
 
                 try {
@@ -347,9 +343,8 @@ public class FlowUtilsTest extends TestBase {
                 } catch (RpcException e) {
                     assertEquals(null, e.getCause());
                     assertEquals(etag, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(code, st.getCode());
-                    assertEquals(msg, st.getDescription());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(msg, e.getMessage());
                 }
             }
 
@@ -362,9 +357,8 @@ public class FlowUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
 
             try {
@@ -373,9 +367,8 @@ public class FlowUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
 
             msg = "hard-timeout must be specified.";
@@ -386,9 +379,8 @@ public class FlowUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
 
             try {
@@ -397,9 +389,8 @@ public class FlowUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
         }
 
@@ -417,9 +408,8 @@ public class FlowUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
 
             try {
@@ -428,9 +418,8 @@ public class FlowUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
 
             msg = "Invalid hard-timeout: " + tmout;
@@ -441,9 +430,8 @@ public class FlowUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
 
             try {
@@ -452,9 +440,8 @@ public class FlowUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
         }
     }
@@ -497,10 +484,9 @@ public class FlowUtilsTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
+            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
             assertEquals("Unsupported address type: " + dlhost,
-                         st.getDescription());
+                         e.getMessage());
         }
     }
 

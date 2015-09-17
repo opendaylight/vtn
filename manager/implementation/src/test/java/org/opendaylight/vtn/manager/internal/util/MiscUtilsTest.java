@@ -47,10 +47,9 @@ import org.opendaylight.controller.sal.packet.TCP;
 import org.opendaylight.controller.sal.packet.UDP;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.IPProtocols;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.Counter32;
@@ -198,18 +197,6 @@ public class MiscUtilsTest extends TestBase {
     }
 
     /**
-     * Test case for {@link MiscUtils#argumentIsNull(String)}.
-     */
-    @Test
-    public void testArgumentIsNull() {
-        String[] descriptions = {"desc-1", "desc-2", "desc-3"};
-        for (String desc: descriptions) {
-            Status st = MiscUtils.argumentIsNull(desc);
-            checkStatus(st, desc + " cannot be null");
-        }
-    }
-
-    /**
      * Test case for {@link MiscUtils#toInetAddress(int)} and
      * {@link MiscUtils#toInteger(InetAddress)}.
      */
@@ -261,7 +248,7 @@ public class MiscUtilsTest extends TestBase {
             unexpected();
         } catch (VTNException e) {
             checkException(e, "Failed to copy the packet.",
-                           StatusCode.INTERNALERROR);
+                           VtnErrorTag.INTERNALERROR);
             assertTrue(e.getCause() instanceof NullPointerException);
         }
 
@@ -874,7 +861,7 @@ public class MiscUtilsTest extends TestBase {
      * Verify the contents of the given {@link VTNException}.
      *
      * <p>
-     *   This method expects that {@link StatusCode#BADREQUEST} is configured
+     *   This method expects that {@link VtnErrorTag#BADREQUEST} is configured
      *   in the given exception.
      * </p>
      *
@@ -882,7 +869,7 @@ public class MiscUtilsTest extends TestBase {
      * @param desc  An expected description.
      */
     private void checkException(VTNException e, String desc) {
-        checkException(e, desc, StatusCode.BADREQUEST);
+        checkException(e, desc, VtnErrorTag.BADREQUEST);
     }
 
     /**
@@ -890,37 +877,11 @@ public class MiscUtilsTest extends TestBase {
      *
      * @param e     A {@link VTNException} to be tested.
      * @param desc  An expected description.
-     * @param code  An expected status code.
+     * @param vtag  An expected error tag.
      */
-    private void checkException(VTNException e, String desc, StatusCode code) {
-        checkStatus(e.getStatus(), desc, code);
-    }
-
-    /**
-     * Verify the contents of the given {@link Status}.
-     *
-     * <p>
-     *   This method expects that {@link StatusCode#BADREQUEST} is configured
-     *   in the given status.
-     * </p>
-     *
-     * @param st    A {@link Status} instance to be tested.
-     * @param desc  An expected description.
-     */
-    private void checkStatus(Status st, String desc) {
-        checkStatus(st, desc, StatusCode.BADREQUEST);
-    }
-
-    /**
-     * Verify the contents of the given {@link Status}.
-     *
-     * @param st    A {@link Status} instance to be tested.
-     * @param desc  An expected description.
-     * @param code  An expected status code.
-     */
-    private void checkStatus(Status st, String desc, StatusCode code) {
-        assertEquals(desc, st.getDescription());
-        assertEquals(code, st.getCode());
+    private void checkException(VTNException e, String desc, VtnErrorTag vtag) {
+        assertEquals(desc, e.getMessage());
+        assertEquals(vtag, e.getVtnErrorTag());
     }
 
     /**

@@ -21,9 +21,6 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier.InstanceIdentifierBuilder;
 
@@ -83,8 +80,7 @@ public final class VTenantUtils {
     public static RpcException getNameConflictException(String name) {
         String msg =
             MiscUtils.joinColon(name, "Tenant name already exists.");
-        Status st = new Status(StatusCode.CONFLICT, msg);
-        return new RpcException(RpcErrorTag.DATA_EXISTS, st);
+        return RpcException.getDataExistsException(msg);
     }
 
     /**
@@ -186,12 +182,12 @@ public final class VTenantUtils {
      */
     public static String getName(VTenantPath path) throws RpcException {
         if (path == null) {
-            throw MiscUtils.getNullArgumentException("VTenantPath");
+            throw RpcException.getNullArgumentException("VTenantPath");
         }
 
         String name = path.getTenantName();
         if (name == null) {
-            throw MiscUtils.getNullArgumentException(DESC_TENANT + " name");
+            throw RpcException.getNullArgumentException(DESC_TENANT + " name");
         }
 
         return name;

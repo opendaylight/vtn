@@ -148,7 +148,7 @@ public abstract class VTNDlAddrAction extends FlowFilterAction {
     protected final void verifyImpl() throws RpcException {
         if (address == null) {
             String msg = getErrorMessage("MAC address");
-            throw MiscUtils.getNullArgumentException(msg);
+            throw RpcException.getNullArgumentException(msg);
         }
 
         if (address.isBroadcast()) {

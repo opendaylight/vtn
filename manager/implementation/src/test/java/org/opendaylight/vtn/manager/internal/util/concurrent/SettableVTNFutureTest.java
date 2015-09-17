@@ -30,9 +30,7 @@ import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.md.sal.common.api.data.OptimisticLockFailedException;
 import org.opendaylight.controller.md.sal.common.api.data.TransactionCommitFailedException;
-
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * JUnit test for {@link SettableVTNFuture}.
@@ -588,18 +586,18 @@ public class SettableVTNFutureTest extends TestBase {
             return;
         }
 
-        Status st = ((VTNException)cause).getStatus();
-        StatusCode code;
+        VTNException ve = (VTNException)cause;
+        VtnErrorTag etag;
         if (actual instanceof OptimisticLockFailedException) {
-            code = StatusCode.CONFLICT;
+            etag = VtnErrorTag.CONFLICT;
         } else if (actual instanceof TimeoutException) {
-            code = StatusCode.TIMEOUT;
+            etag = VtnErrorTag.TIMEOUT;
         } else {
-            code = StatusCode.INTERNALERROR;
+            etag = VtnErrorTag.INTERNALERROR;
         }
 
-        assertEquals(code, st.getCode());
-        assertEquals(actual.getMessage(), st.getDescription());
+        assertEquals(etag, ve.getVtnErrorTag());
+        assertEquals(actual.getMessage(), ve.getMessage());
         assertSame(actual, cause.getCause());
     }
 
@@ -624,9 +622,8 @@ public class SettableVTNFutureTest extends TestBase {
         verifyCanceled(c);
 
         assertTrue(cause instanceof VTNException);
-        Status st = ((VTNException)cause).getStatus();
-        assertEquals(StatusCode.INTERNALERROR, st.getCode());
-        assertEquals(c.getMessage(), st.getDescription());
+        VTNException ve = (VTNException)cause;
+        assertEquals(VtnErrorTag.INTERNALERROR, ve.getVtnErrorTag());
 
     }
 
@@ -652,9 +649,9 @@ public class SettableVTNFutureTest extends TestBase {
         verifyInterrupted(c);
 
         assertTrue(cause instanceof VTNException);
-        Status st = ((VTNException)cause).getStatus();
-        assertEquals(StatusCode.INTERNALERROR, st.getCode());
-        assertEquals("Interrupted.", st.getDescription());
+        VTNException ve = (VTNException)cause;
+        assertEquals(VtnErrorTag.INTERNALERROR, ve.getVtnErrorTag());
+        assertEquals("Interrupted.", ve.getMessage());
 
     }
 
@@ -692,9 +689,8 @@ public class SettableVTNFutureTest extends TestBase {
             future.checkedGet(timeout, TimeUnit.NANOSECONDS);
             unexpected();
         } catch (VTNException e) {
-            Status st = e.getStatus();
-            assertEquals(StatusCode.TIMEOUT, st.getCode());
-            assertEquals(timeoutMsg, st.getDescription());
+            assertEquals(VtnErrorTag.TIMEOUT, e.getVtnErrorTag());
+            assertEquals(timeoutMsg, e.getMessage());
         }
     }
 
@@ -948,8 +944,8 @@ public class SettableVTNFutureTest extends TestBase {
             new TransactionCommitFailedException("Transaction abort", null),
             new TimeoutException("Operation timed out."),
             new InterruptedException("Thread was interrupted."),
-            new VTNException(StatusCode.BADREQUEST, "Bad request"),
-            new VTNException(StatusCode.TIMEOUT, "Timed out"));
+            new VTNException(VtnErrorTag.BADREQUEST, "Bad request"),
+            new VTNException(VtnErrorTag.TIMEOUT, "Timed out"));
 
         for (Throwable cause: causes) {
             TestFuture<Integer> future = new TestFuture<>();
@@ -986,8 +982,8 @@ public class SettableVTNFutureTest extends TestBase {
             new TransactionCommitFailedException("Transaction abort", null),
             new TimeoutException("Operation timed out."),
             new InterruptedException("Thread was interrupted."),
-            new VTNException(StatusCode.BADREQUEST, "Bad request"),
-            new VTNException(StatusCode.TIMEOUT, "Timed out"));
+            new VTNException(VtnErrorTag.BADREQUEST, "Bad request"),
+            new VTNException(VtnErrorTag.TIMEOUT, "Timed out"));
 
         // Create threads that try to get future results.
         List<TestEnv<Integer>> testEnvs = new ArrayList<>();

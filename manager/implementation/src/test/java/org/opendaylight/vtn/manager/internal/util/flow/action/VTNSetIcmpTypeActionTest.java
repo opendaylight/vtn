@@ -33,15 +33,13 @@ import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
 import org.opendaylight.vtn.manager.internal.XmlValueType;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpTypeActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpTypeActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.icmp.type.action._case.VtnSetIcmpTypeAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.icmp.type.action._case.VtnSetIcmpTypeActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.SetTpDstActionCaseBuilder;
@@ -183,16 +181,15 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
 
             vaction = VTNSetIcmpCodeAction.newVtnAction(type);
             RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
-            StatusCode ecode = StatusCode.BADREQUEST;
+            VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
             String emsg = "VTNSetIcmpTypeAction: Unexpected type: " + vaction;
             try {
                 va.toFlowAction(vaction);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             // toFlowAction() should never affect instance variables.
@@ -213,9 +210,8 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             etag = RpcErrorTag.MISSING_ELEMENT;
@@ -226,9 +222,8 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             action = new SetTpSrcActionCaseBuilder().
@@ -240,9 +235,8 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
 
             // toVtnAction() should never affect instance variables.
@@ -261,7 +255,7 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
 
         // Null order.
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
-        StatusCode ecode = StatusCode.BADREQUEST;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         String emsg = "VTNSetIcmpTypeAction: Action order cannot be null";
         VtnSetIcmpTypeAction vact = new VtnSetIcmpTypeActionBuilder().
             setType((short)0).build();
@@ -272,9 +266,8 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         // Invalid ICMP type.
@@ -291,9 +284,8 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
         }
 
@@ -532,7 +524,7 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
         // No action order.
         Unmarshaller um = createUnmarshaller(type);
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
-        StatusCode ecode = StatusCode.BADREQUEST;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         String emsg = "VTNSetIcmpTypeAction: Action order cannot be null";
         String xml = new XmlNode(XML_ROOT).
             add(new XmlNode("type", 1)).toString();
@@ -542,9 +534,8 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(ecode, st.getCode());
-            assertEquals(emsg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
         }
 
         // Invalid ICMP type.
@@ -564,9 +555,8 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(ecode, st.getCode());
-                assertEquals(emsg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
             }
         }
     }

@@ -62,7 +62,6 @@ import org.opendaylight.controller.sal.binding.api.NotificationProviderService;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 
 import org.opendaylight.controller.sal.packet.Packet;
-import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yangtools.yang.binding.Notification;
 import org.opendaylight.yangtools.yang.binding.RpcService;
@@ -70,6 +69,7 @@ import org.opendaylight.yangtools.yang.common.RpcResult;
 import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnFlowId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.GetManagerVersionOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.GetManagerVersionOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.VtnVersionService;
@@ -502,7 +502,7 @@ public final class VTNManagerProviderImpl
         if (impl == null) {
             // This should never happen.
             String msg = "RPC service not found: " + type.getSimpleName();
-            throw new VTNException(StatusCode.NOSERVICE, msg);
+            throw new VTNException(VtnErrorTag.NOSERVICE, msg);
         }
 
         return impl;
@@ -516,7 +516,7 @@ public final class VTNManagerProviderImpl
         throws VTNException {
         if (subSystems.isRpcClosed()) {
             String msg = "VTN service is already closed.";
-            throw new VTNException(StatusCode.NOSERVICE, msg);
+            throw new VTNException(VtnErrorTag.NOSERVICE, msg);
         }
 
         return getRpcService(type);

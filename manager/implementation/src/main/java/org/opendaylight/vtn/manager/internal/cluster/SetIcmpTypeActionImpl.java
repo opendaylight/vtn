@@ -17,8 +17,7 @@ import org.opendaylight.vtn.manager.internal.packet.cache.IcmpPacket;
 import org.opendaylight.vtn.manager.internal.packet.cache.L4Packet;
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetIcmpTypeAction;
-
-import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 /**
  * Implementation of flow action that modifies ICMP type field value in
@@ -54,7 +53,7 @@ public final class SetIcmpTypeActionImpl extends FlowActionImpl {
         type = act.getType();
         if (!ProtocolUtils.isIcmpValueValid(type)) {
             String msg = getErrorMessage(act, "Invalid ICMP type: ", type);
-            throw new VTNException(StatusCode.BADREQUEST, msg);
+            throw RpcException.getBadArgumentException(msg);
         }
     }
 

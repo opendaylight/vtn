@@ -8,18 +8,16 @@
 
 package org.opendaylight.vtn.manager.internal.util.rpc;
 
-import java.util.Collections;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
+
+import com.google.common.collect.ImmutableMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.VTNException;
-
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yangtools.yang.common.RpcError.ErrorType;
 import org.opendaylight.yangtools.yang.common.RpcError;
@@ -35,20 +33,20 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpda
  */
 public final class RpcUtils {
     /**
-     * A map that represents the rule for conversion from {@link StatusCode}
+     * A map that represents the rule for conversion from {@link VtnErrorTag}
      * to {@link RpcErrorTag}.
      */
-    private static final Map<StatusCode, RpcErrorTag>  RPC_ERROR_TAGS;
+    private static final Map<VtnErrorTag, RpcErrorTag>  RPC_ERROR_TAGS;
 
     /**
      * Initialize static fields.
      */
     static {
-        Map<StatusCode, RpcErrorTag> map = new HashMap<>();
-        map.put(StatusCode.BADREQUEST, RpcErrorTag.INVALID_VALUE);
-        map.put(StatusCode.NOTFOUND, RpcErrorTag.DATA_MISSING);
-        map.put(StatusCode.CONFLICT, RpcErrorTag.DATA_EXISTS);
-        RPC_ERROR_TAGS = Collections.unmodifiableMap(map);
+        Map<VtnErrorTag, RpcErrorTag> map = new EnumMap<>(VtnErrorTag.class);
+        map.put(VtnErrorTag.BADREQUEST, RpcErrorTag.INVALID_VALUE);
+        map.put(VtnErrorTag.NOTFOUND, RpcErrorTag.DATA_MISSING);
+        map.put(VtnErrorTag.CONFLICT, RpcErrorTag.DATA_EXISTS);
+        RPC_ERROR_TAGS = ImmutableMap.copyOf(map);
     }
 
     /**
@@ -63,9 +61,9 @@ public final class RpcUtils {
      * @return  An {@link RpcException} instance.
      */
     public static RpcException getNullInputException() {
-        Status st = new Status(StatusCode.BADREQUEST,
-                               "RPC input cannot be null");
-        return new RpcException(RpcErrorTag.MISSING_ELEMENT, st);
+        return new RpcException(RpcErrorTag.MISSING_ELEMENT,
+                                VtnErrorTag.BADREQUEST,
+                                "RPC input cannot be null");
     }
 
     /**
@@ -119,19 +117,16 @@ public final class RpcUtils {
 
         if (e instanceof VTNException) {
             VTNException ve = (VTNException)e;
-            Status st = ve.getStatus();
-            StatusCode code = st.getCode();
-            msg = st.getDescription();
-            vtnTag = toVtnErrorTag(code);
+            msg = ve.getMessage();
+            vtnTag = ve.getVtnErrorTag();
             if (e instanceof RpcException) {
                 RpcException re = (RpcException)e;
                 tag = re.getErrorTag();
             } else {
-                tag = RPC_ERROR_TAGS.get(code);
+                tag = RPC_ERROR_TAGS.get(vtnTag);
             }
         } else {
             msg = "Caught unexpected exception: " + e;
-            vtnTag = VtnErrorTag.INTERNALERROR;
             Logger logger = LoggerFactory.getLogger(RpcUtils.class);
             logger.error(msg, e);
         }
@@ -139,22 +134,11 @@ public final class RpcUtils {
         if (tag == null) {
             tag = RpcErrorTag.OPERATION_FAILED;
         }
+        if (vtnTag == null) {
+            vtnTag = VtnErrorTag.INTERNALERROR;
+        }
 
         return getErrorBuilder(type, tag, msg, vtnTag, null);
-    }
-
-    /**
-     * Convert the given {@link StatusCode} into a {@link VtnErrorTag}.
-     *
-     * @param code  A {@link StatusCode}.
-     * @return  A {@link VtnErrorTag} instance associated with {@code code}.
-     */
-    public static VtnErrorTag toVtnErrorTag(StatusCode code) {
-        try {
-            return VtnErrorTag.valueOf(code.name());
-        } catch (Exception e) {
-            return VtnErrorTag.INTERNALERROR;
-        }
     }
 
     /**

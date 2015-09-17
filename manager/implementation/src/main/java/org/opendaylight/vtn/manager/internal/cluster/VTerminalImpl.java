@@ -39,11 +39,11 @@ import org.opendaylight.vtn.manager.internal.VTNThreadData;
 import org.opendaylight.vtn.manager.internal.util.FixedLogger;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
-import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 
@@ -394,8 +394,8 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
         throws VTNException {
         // Ensure that this vTerminal has no interface.
         if (!getInterfaceMap().isEmpty()) {
-            String msg = "vTerminal can have only one interface";
-            throw new VTNException(StatusCode.CONFLICT, msg);
+            throw RpcException.getDataExistsException(
+                "vTerminal can have only one interface");
         }
 
         return new VTerminalIfImpl(this, name, iconf);

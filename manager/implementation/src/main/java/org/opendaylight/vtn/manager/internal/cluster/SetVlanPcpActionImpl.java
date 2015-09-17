@@ -16,8 +16,7 @@ import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.packet.cache.EtherPacket;
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetVlanPcpAction;
-
-import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 /**
  * Implementation of flow action that modifies VLAN priority value in VLAN tag.
@@ -53,7 +52,7 @@ public final class SetVlanPcpActionImpl extends FlowActionImpl {
         if (!ProtocolUtils.isVlanPriorityValid(priority)) {
             String msg = getErrorMessage(act, "Invalid VLAN priority: ",
                                          priority);
-            throw new VTNException(StatusCode.BADREQUEST, msg);
+            throw RpcException.getBadArgumentException(msg);
         }
     }
 

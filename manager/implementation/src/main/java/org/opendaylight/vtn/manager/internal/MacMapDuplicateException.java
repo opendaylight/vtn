@@ -11,7 +11,7 @@ package org.opendaylight.vtn.manager.internal;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 
-import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * An exception which indicates the same MAC address as the specified host
@@ -46,7 +46,7 @@ public class MacMapDuplicateException extends MacMapException {
      */
     public MacMapDuplicateException(MacVlan mvlan, MapReference ref,
                                     MacVlan dup) {
-        super(StatusCode.CONFLICT, "Duplicate MAC address found",
+        super(VtnErrorTag.CONFLICT, "Duplicate MAC address found",
               mvlan, ref);
         duplicate = dup;
     }

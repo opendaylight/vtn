@@ -11,14 +11,16 @@ package org.opendaylight.vtn.manager.internal.util.tx;
 import java.util.EnumSet;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
+
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
-import org.opendaylight.controller.sal.utils.StatusCode;
-
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * An abstract implementation of
@@ -32,12 +34,10 @@ public abstract class AbstractDataTask<D extends DataObject, V>
     extends AbstractTxTask<V> {
 
     /**
-     * A set of {@link StatusCode} that indicate an error caused by a
+     * A set of {@link VtnErrorTag} that indicate an error caused by a
      * bad request.
      */
-    private static final Set<StatusCode>  BAD_REQUEST_STATUS =
-        EnumSet.of(StatusCode.BADREQUEST, StatusCode.NOTFOUND,
-                   StatusCode.CONFLICT);
+    private static final Set<VtnErrorTag>  BAD_REQUEST_TAGS;
 
     /**
      * The target type of the MD-SAL datastore.
@@ -49,6 +49,16 @@ public abstract class AbstractDataTask<D extends DataObject, V>
      * in the MD-SAL datastore.
      */
     private final InstanceIdentifier<D>  targetPath;
+
+    /**
+     * Initialize static fields.
+     */
+    static {
+        Set<VtnErrorTag> set = EnumSet.of(
+            VtnErrorTag.BADREQUEST, VtnErrorTag.NOTFOUND,
+            VtnErrorTag.CONFLICT);
+        BAD_REQUEST_TAGS = ImmutableSet.copyOf(set);
+    }
 
     /**
      * Construct a new instance.
@@ -100,8 +110,7 @@ public abstract class AbstractDataTask<D extends DataObject, V>
     public boolean needErrorLog(Throwable t) {
         if (t instanceof VTNException) {
             VTNException e = (VTNException)t;
-            StatusCode code = e.getStatus().getCode();
-            return !BAD_REQUEST_STATUS.contains(code);
+            return !BAD_REQUEST_TAGS.contains(e.getVtnErrorTag());
         }
 
         return true;

@@ -12,8 +12,7 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.TpPortAction;
 
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
-
-import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 /**
  * Implementation of flow action that modifies port number in transport
@@ -49,7 +48,7 @@ public abstract class TpPortActionImpl extends FlowActionImpl {
         port = act.getPort();
         if (!ProtocolUtils.isPortNumberValid(port)) {
             String msg = getErrorMessage(act, "Invalid port number: ", port);
-            throw new VTNException(StatusCode.BADREQUEST, msg);
+            throw RpcException.getBadArgumentException(msg);
         }
     }
 

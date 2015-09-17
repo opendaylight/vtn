@@ -21,11 +21,10 @@ import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * {@code DataStoreUtils} class is a collection of utility class methods
@@ -80,9 +79,8 @@ public final class DataStoreUtils {
         try {
             return future.checkedGet(READ_TIMEOUT, TimeUnit.SECONDS);
         } catch (TimeoutException e) {
-            Status st = new Status(StatusCode.TIMEOUT,
-                                   "Datastore read timed out.");
-            throw new VTNException(st, e);
+            throw new VTNException(VtnErrorTag.TIMEOUT,
+                                   "Datastore read timed out.", e);
         } catch (Exception e) {
             throw new VTNException("Failed to read data from datastore.", e);
         }

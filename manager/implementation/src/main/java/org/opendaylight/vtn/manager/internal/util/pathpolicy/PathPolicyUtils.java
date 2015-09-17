@@ -129,7 +129,7 @@ public final class PathPolicyUtils {
      * @return  An {@link RpcException}.
      */
     public static RpcException getNullPolicyIdException() {
-        return MiscUtils.getNullArgumentException("Path policy ID");
+        return RpcException.getNullArgumentException("Path policy ID");
     }
 
     /**
@@ -139,7 +139,7 @@ public final class PathPolicyUtils {
      * @return  An {@link RpcException}.
      */
     public static RpcException getNullPathCostException() {
-        return MiscUtils.getNullArgumentException("Path cost");
+        return RpcException.getNullArgumentException("Path cost");
     }
 
     /**
@@ -149,7 +149,7 @@ public final class PathPolicyUtils {
      * @return  An {@link RpcException}.
      */
     public static RpcException getNullPortDescException() {
-        return MiscUtils.getNullArgumentException("Port descriptor");
+        return RpcException.getNullArgumentException("Port descriptor");
     }
 
     /**

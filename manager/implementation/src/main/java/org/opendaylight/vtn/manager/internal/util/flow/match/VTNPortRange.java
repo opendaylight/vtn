@@ -17,7 +17,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import org.opendaylight.vtn.manager.flow.cond.PortMatch;
 
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
@@ -283,7 +282,7 @@ public final class VTNPortRange {
      */
     private void checkPortFrom() throws RpcException {
         if (portFrom == null) {
-            throw MiscUtils.getNullArgumentException("port-from");
+            throw RpcException.getNullArgumentException("port-from");
         }
     }
 

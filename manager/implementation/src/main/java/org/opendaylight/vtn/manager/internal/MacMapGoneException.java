@@ -11,7 +11,7 @@ package org.opendaylight.vtn.manager.internal;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 
-import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * An exception which indicates the specified host is no longer mapped by the
@@ -37,7 +37,7 @@ public class MacMapGoneException extends MacMapException {
      * @param ref    A reference to the target MAC mapping.
      */
     public MacMapGoneException(MacVlan mvlan, MapReference ref) {
-        super(StatusCode.GONE, "No longer mapped by MAC mapping",
+        super(VtnErrorTag.GONE, "No longer mapped by MAC mapping",
               mvlan, ref);
     }
 }

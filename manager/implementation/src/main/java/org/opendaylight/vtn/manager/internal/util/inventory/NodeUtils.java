@@ -11,7 +11,6 @@ package org.opendaylight.vtn.manager.internal.util.inventory;
 import org.opendaylight.vtn.manager.PortLocation;
 import org.opendaylight.vtn.manager.SwitchPort;
 
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.controller.sal.core.Node;
@@ -45,7 +44,7 @@ public final class NodeUtils {
      * @return  An {@link RpcException}.
      */
     public static RpcException getNullPortLocationException() {
-        return MiscUtils.getNullArgumentException("Port location");
+        return RpcException.getNullArgumentException("Port location");
     }
 
     /**
@@ -73,7 +72,7 @@ public final class NodeUtils {
     public static void checkNode(Node node, boolean checkType)
         throws RpcException {
         if (node == null) {
-            throw MiscUtils.getNullArgumentException("Node");
+            throw RpcException.getNullArgumentException("Node");
         }
 
         String type = node.getType();
@@ -114,7 +113,7 @@ public final class NodeUtils {
     public static void checkNodeConnector(NodeConnector nc, boolean checkType)
         throws RpcException {
         if (nc == null) {
-            throw MiscUtils.getNullArgumentException("Node connector");
+            throw RpcException.getNullArgumentException("Node connector");
         }
 
         String type = nc.getType();
@@ -172,7 +171,7 @@ public final class NodeUtils {
     public static void checkSwitchPort(SwitchPort port, Node node)
         throws RpcException {
         if (port == null) {
-            throw MiscUtils.getNullArgumentException("Switch port");
+            throw RpcException.getNullArgumentException("Switch port");
         }
 
         // Check a pair of the port type and ID.

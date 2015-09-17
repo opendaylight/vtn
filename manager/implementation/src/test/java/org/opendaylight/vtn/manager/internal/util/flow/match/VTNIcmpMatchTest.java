@@ -30,8 +30,7 @@ import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
 import org.opendaylight.vtn.manager.internal.XmlValueType;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * JUnit test for {@link VTNIcmpMatch}.
@@ -95,6 +94,7 @@ public class VTNIcmpMatchTest extends TestBase {
         }
 
         // Invalid type/code.
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         Short[] invalidValues = {
             Short.MIN_VALUE, Short.MIN_VALUE + 1, -0x7000, -0x5000, -0xf00,
             -100, -55, -33, -22, -3, -2, -1,
@@ -109,10 +109,8 @@ public class VTNIcmpMatchTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("Invalid ICMP type: " + value,
-                             st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals("Invalid ICMP type: " + value, e.getMessage());
             }
 
             try {
@@ -120,10 +118,8 @@ public class VTNIcmpMatchTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("Invalid ICMP type: " + value,
-                             st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals("Invalid ICMP type: " + value, e.getMessage());
             }
 
             params.reset().setCode(value);
@@ -133,10 +129,8 @@ public class VTNIcmpMatchTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("Invalid ICMP code: " + value,
-                             st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals("Invalid ICMP code: " + value, e.getMessage());
             }
 
             try {
@@ -144,10 +138,8 @@ public class VTNIcmpMatchTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("Invalid ICMP code: " + value,
-                             st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals("Invalid ICMP code: " + value, e.getMessage());
             }
         }
 
@@ -246,6 +238,7 @@ public class VTNIcmpMatchTest extends TestBase {
         }
 
         // Invalid type/code.
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         Short[] invalidValues = {
             Short.MIN_VALUE, Short.MIN_VALUE + 1, -0x7000, -0x5000, -0xf00,
             -100, -55, -33, -22, -3, -2, -1,
@@ -261,10 +254,8 @@ public class VTNIcmpMatchTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("Invalid ICMP type: " + value,
-                             st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals("Invalid ICMP type: " + value, e.getMessage());
             }
 
             xml = new XmlNode(XML_ROOT).add(new XmlNode("code", value)).
@@ -275,10 +266,8 @@ public class VTNIcmpMatchTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("Invalid ICMP code: " + value,
-                             st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals("Invalid ICMP code: " + value, e.getMessage());
             }
         }
 

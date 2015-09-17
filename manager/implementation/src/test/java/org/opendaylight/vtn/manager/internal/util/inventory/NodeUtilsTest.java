@@ -26,8 +26,6 @@ import org.opendaylight.controller.sal.core.Node.NodeIDType;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
 import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
 
 import static org.opendaylight.vtn.manager.internal.util.inventory.NodeUtils.checkNodeType;
 import static org.opendaylight.vtn.manager.internal.util.inventory.NodeUtils.checkNodeConnectorType;
@@ -36,6 +34,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.physical
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataIngressPortBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPortBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortLocation;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnSwitchPort;
@@ -102,9 +101,8 @@ public class NodeUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
             assertEquals(null, e.getCause());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
-            assertEquals("Port location cannot be null", st.getDescription());
+            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+            assertEquals("Port location cannot be null", e.getMessage());
         }
 
         Node[] invalidNodes = {
@@ -124,12 +122,11 @@ public class NodeUtilsTest extends TestBase {
                     : RpcErrorTag.BAD_ELEMENT;
                 assertEquals(etag, e.getErrorTag());
                 assertEquals(null, e.getCause());
-                Status status = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, status.getCode());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
                 String msg = (node == null)
                     ? "Node cannot be null"
                     : "Unsupported node: type=" + node.getType();
-                assertEquals(msg, status.getDescription());
+                assertEquals(msg, e.getMessage());
             }
         }
 
@@ -162,9 +159,8 @@ public class NodeUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
                 assertEquals(null, e.getCause());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
         }
 
@@ -264,9 +260,8 @@ public class NodeUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
             assertEquals(null, e.getCause());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
-            assertEquals("Port location cannot be null", st.getDescription());
+            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+            assertEquals("Port location cannot be null", e.getMessage());
         }
 
         Node[] invalidNodes = {
@@ -287,12 +282,11 @@ public class NodeUtilsTest extends TestBase {
                     : RpcErrorTag.BAD_ELEMENT;
                 assertEquals(etag, e.getErrorTag());
                 assertEquals(null, e.getCause());
-                Status status = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, status.getCode());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
                 String msg = (node == null)
                     ? "Node cannot be null"
                     : "Unsupported node: type=" + node.getType();
-                assertEquals(msg, status.getDescription());
+                assertEquals(msg, e.getMessage());
             }
         }
 
@@ -324,9 +318,8 @@ public class NodeUtilsTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
                 assertEquals(null, e.getCause());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
         }
 
@@ -494,10 +487,9 @@ public class NodeUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
             assertEquals(null, e.getCause());
-            Status status = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, status.getCode());
+            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
             String msg = "Unsupported node: type=" + type;
-            assertEquals(msg, status.getDescription());
+            assertEquals(msg, e.getMessage());
         }
     }
 
@@ -514,10 +506,9 @@ public class NodeUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
             assertEquals(null, e.getCause());
-            Status status = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, status.getCode());
+            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
             String msg = "Unsupported node connector: type=" + type;
-            assertEquals(msg, status.getDescription());
+            assertEquals(msg, e.getMessage());
         }
     }
 

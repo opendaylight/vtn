@@ -31,10 +31,8 @@ import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlValueType;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNMatchTest;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnFlowMatchConfig;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * JUnit test for {@link VTNFlowMatch}.
@@ -106,9 +104,8 @@ public class VTNFlowMatchTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
-            assertEquals("Flow match cannot be null", st.getDescription());
+            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+            assertEquals("Flow match cannot be null", e.getMessage());
         }
 
         try {
@@ -116,9 +113,8 @@ public class VTNFlowMatchTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
-            assertEquals("VTN flow match cannot be null", st.getDescription());
+            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+            assertEquals("VTN flow match cannot be null", e.getMessage());
         }
 
         // Invalid index.
@@ -144,9 +140,8 @@ public class VTNFlowMatchTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
         }
     }
@@ -242,9 +237,8 @@ public class VTNFlowMatchTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
         }
 

@@ -23,11 +23,11 @@ import org.opendaylight.vtn.manager.flow.action.InetAddressAction;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.IpNetwork;
 
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.controller.sal.utils.Status;
+
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.VtnIpaddrActionFields;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.Address;
@@ -181,7 +181,7 @@ public abstract class VTNInetAddrAction extends FlowFilterAction {
     protected final void verifyImpl() throws RpcException {
         if (address == null) {
             String msg = getErrorMessage("IP address");
-            throw MiscUtils.getNullArgumentException(msg);
+            throw RpcException.getNullArgumentException(msg);
         }
         if (!address.isAddress()) {
             String msg = getErrorMessage("Netmask cannot be specified",

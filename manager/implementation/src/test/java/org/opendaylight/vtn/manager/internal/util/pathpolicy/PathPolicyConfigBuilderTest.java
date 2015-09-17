@@ -26,8 +26,6 @@ import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.SetPathPolicyInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.SetPathPolicyInputBuilder;
@@ -36,6 +34,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vt
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicyBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policy.config.VtnPathCost;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policy.config.VtnPathCostBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
 
 /**
@@ -204,9 +203,8 @@ public class PathPolicyConfigBuilderTest extends TestBase {
                 ppcb.set(pp);
                 unexpected();
             } catch (RpcException e) {
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("PathPolicy cannot be null", st.getDescription());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                assertEquals("PathPolicy cannot be null", e.getMessage());
                 assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
                 assertEquals(null, e.getCause());
             }
@@ -230,9 +228,8 @@ public class PathPolicyConfigBuilderTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     String msg = "Invalid default cost: " + defCost;
-                    Status st = e.getStatus();
-                    assertEquals(StatusCode.BADREQUEST, st.getCode());
-                    assertEquals(msg, st.getDescription());
+                    assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                    assertEquals(msg, e.getMessage());
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
                     Throwable t = e.getCause();
                     assertTrue("Unexpected cause: " + t,
@@ -244,9 +241,8 @@ public class PathPolicyConfigBuilderTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     String msg = "Invalid default cost: " + defCost;
-                    Status st = e.getStatus();
-                    assertEquals(StatusCode.BADREQUEST, st.getCode());
-                    assertEquals(msg, st.getDescription());
+                    assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                    assertEquals(msg, e.getMessage());
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
                     Throwable t = e.getCause();
                     assertTrue("Unexpected cause: " + t,
@@ -273,16 +269,15 @@ public class PathPolicyConfigBuilderTest extends TestBase {
                                    t instanceof IllegalArgumentException);
                     }
 
-                    Status st = e.getStatus();
-                    assertEquals(StatusCode.BADREQUEST, st.getCode());
+                    assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
                     if (badId == null) {
                         assertEquals("Path policy ID cannot be null",
-                                     st.getDescription());
+                                     e.getMessage());
                         assertEquals(RpcErrorTag.MISSING_ELEMENT,
                                      e.getErrorTag());
                     } else {
                         assertEquals("Invalid path policy ID: " + badId,
-                                     st.getDescription());
+                                     e.getMessage());
                         assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
                     }
                 }
@@ -299,16 +294,15 @@ public class PathPolicyConfigBuilderTest extends TestBase {
                                    t instanceof IllegalArgumentException);
                     }
 
-                    Status st = e.getStatus();
-                    assertEquals(StatusCode.BADREQUEST, st.getCode());
+                    assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
                     if (badId == null) {
                         assertEquals("Path policy ID cannot be null",
-                                     st.getDescription());
+                                     e.getMessage());
                         assertEquals(RpcErrorTag.MISSING_ELEMENT,
                                      e.getErrorTag());
                     } else {
                         assertEquals("Invalid path policy ID: " + badId,
-                                     st.getDescription());
+                                     e.getMessage());
                         assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
                     }
                 }
@@ -341,9 +335,8 @@ public class PathPolicyConfigBuilderTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     String msg = "Duplicate port descriptor: " + ploc;
-                    Status st = e.getStatus();
-                    assertEquals(StatusCode.BADREQUEST, st.getCode());
-                    assertEquals(msg, st.getDescription());
+                    assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                    assertEquals(msg, e.getMessage());
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
                     assertEquals(null, e.getCause());
                 }
@@ -359,9 +352,8 @@ public class PathPolicyConfigBuilderTest extends TestBase {
                 ppcb.set(pp);
                 unexpected();
             } catch (RpcException e) {
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("PathCost cannot be null", st.getDescription());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                assertEquals("PathCost cannot be null", e.getMessage());
                 assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
                 assertEquals(null, e.getCause());
             }
@@ -373,10 +365,8 @@ public class PathPolicyConfigBuilderTest extends TestBase {
                 ppcb.set(pp);
                 unexpected();
             } catch (RpcException e) {
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("Port location cannot be null",
-                             st.getDescription());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                assertEquals("Port location cannot be null", e.getMessage());
                 assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
                 assertEquals(null, e.getCause());
             }

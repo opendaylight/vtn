@@ -210,6 +210,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.Vtn;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.VtnBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnAclType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateOperationType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
@@ -1072,7 +1073,11 @@ public class VTNManagerImpl
     private VTenantImpl saveTenantConfigLocked(String tenantName) {
         VTenantImpl vtn = tenantDB.get(tenantName);
         if (vtn != null) {
-            vtn.saveConfig(this);
+            try {
+                vtn.saveConfig(this);
+            } catch (VTNException e) {
+                LOG.warn("Failed to save VTN configuration: " + tenantName, e);
+            }
         }
 
         return vtn;
@@ -1230,8 +1235,8 @@ public class VTNManagerImpl
      */
     private void checkTenantConfig(VTenantConfig tconf) throws VTNException {
         if (tconf == null) {
-            throw new VTNException(MiscUtils.
-                                   argumentIsNull("Tenant configuration"));
+            throw RpcException.getNullArgumentException(
+                "Tenant configuration");
         }
     }
 
@@ -1243,7 +1248,7 @@ public class VTNManagerImpl
      */
     private void checkDefault() throws VTNException {
         if (nonDefault) {
-            throw new VTNException(StatusCode.NOTACCEPTABLE,
+            throw new VTNException(VtnErrorTag.NOTACCEPTABLE,
                                    "Non-default container is not supported.");
         }
     }
@@ -1259,7 +1264,7 @@ public class VTNManagerImpl
 
         VTNManagerProvider provider = vtnProvider;
         if (provider == null || !serviceAvailable) {
-            throw new VTNException(StatusCode.NOSERVICE,
+            throw new VTNException(VtnErrorTag.NOSERVICE,
                                    "VTN service is not available");
         }
 
@@ -1267,15 +1272,14 @@ public class VTNManagerImpl
     }
 
     /**
-     * Return a failure status that indicates the specified tenant does not
-     * exist.
+     * Return an exception that indicates the specified tenant does not exist.
      *
      * @param tenantName  The name of the tenant.
-     * @return  A failure status.
+     * @return  A {@link RpcException} instance.
      */
-    private Status tenantNotFound(String tenantName) {
+    private RpcException getTenantNotFoundException(String tenantName) {
         String msg = tenantName + ": Tenant does not exist";
-        return new Status(StatusCode.NOTFOUND, msg);
+        return RpcException.getNotFoundException(msg);
     }
 
     /**
@@ -1292,7 +1296,7 @@ public class VTNManagerImpl
      */
     private VTenantImpl getTenantImpl(FlowFilterId fid) throws VTNException {
         if (fid == null) {
-            throw new VTNException(MiscUtils.argumentIsNull("Flow filter ID"));
+            throw RpcException.getNullArgumentException("Flow filter ID");
         }
 
         return getTenantImpl(fid.getPath());
@@ -1313,8 +1317,7 @@ public class VTNManagerImpl
         String tenantName = VTenantUtils.getName(path);
         VTenantImpl vtn = tenantDB.get(tenantName);
         if (vtn == null) {
-            Status status = tenantNotFound(tenantName);
-            throw new VTNException(status);
+            throw getTenantNotFoundException(tenantName);
         }
 
         return vtn;
@@ -2177,15 +2180,15 @@ public class VTNManagerImpl
             throw new VTNException(msg);
         }
 
-        // StatusCode should be encoded in application tag.
+        // VtnErrorTag should be encoded in application tag.
         RpcError rerr = errors.iterator().next();
         String msg = rerr.getMessage();
         String appTag = rerr.getApplicationTag();
-        StatusCode code;
+        VtnErrorTag etag;
         try {
-            code = StatusCode.valueOf(appTag);
+            etag = VtnErrorTag.valueOf(appTag);
         } catch (Exception e) {
-            LOG.trace("Unknown status code in RpcError.", e);
+            LOG.trace("Unknown application error tag in RpcError.", e);
 
             Throwable cause = rerr.getCause();
             String m = "RPC failed due to unexpected error: type=";
@@ -2202,7 +2205,7 @@ public class VTNManagerImpl
             throw new VTNException(emsg, cause);
         }
 
-        throw new VTNException(code, msg);
+        throw new VTNException(etag, msg);
     }
 
     /**
@@ -2688,11 +2691,11 @@ public class VTNManagerImpl
                 throw VTenantUtils.getNameConflictException(tenantName);
             }
 
-            status = vtn.saveConfig(null);
+            vtn.saveConfig(null);
             VTenant vtenant = vtn.getVTenant();
             enqueueEvent(path, vtenant, UpdateType.ADDED);
 
-            return status;
+            return new Status(StatusCode.SUCCESS, null);
         } catch (VTNException e) {
             InstanceIdentifier<Vtn> vpath = VTenantUtils.getIdentifier(vname);
             RemoveTenantTask task = new RemoveTenantTask(vpath);
@@ -2732,7 +2735,8 @@ public class VTNManagerImpl
             checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
-            return vtn.setVTenantConfig(this, path, tconf, all);
+            vtn.setVTenantConfig(this, path, tconf, all);
+            return new Status(StatusCode.SUCCESS, null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -2757,7 +2761,7 @@ public class VTNManagerImpl
             // Make the specified tenant invisible.
             VTenantImpl vtn = tenantDB.remove(tenantName);
             if (vtn == null) {
-                return tenantNotFound(tenantName);
+                throw getTenantNotFoundException(tenantName);
             }
 
             // Remove the specified VTN from the MD-SAL datastore.
@@ -2843,7 +2847,8 @@ public class VTNManagerImpl
             checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
-            return vtn.addBridge(this, path, bconf);
+            vtn.addBridge(this, path, bconf);
+            return new Status(StatusCode.SUCCESS, null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -2871,7 +2876,8 @@ public class VTNManagerImpl
             checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
-            return vtn.modifyBridge(this, path, bconf, all);
+            vtn.modifyBridge(this, path, bconf, all);
+            return new Status(StatusCode.SUCCESS, null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -2894,7 +2900,8 @@ public class VTNManagerImpl
             checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
-            return vtn.removeBridge(this, path);
+            vtn.removeBridge(this, path);
+            return new Status(StatusCode.SUCCESS, null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -2960,7 +2967,8 @@ public class VTNManagerImpl
             checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
-            return vtn.addTerminal(this, path, vtconf);
+            vtn.addTerminal(this, path, vtconf);
+            return new Status(StatusCode.SUCCESS, null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -2988,7 +2996,8 @@ public class VTNManagerImpl
             checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
-            return vtn.modifyTerminal(this, path, vtconf, all);
+            vtn.modifyTerminal(this, path, vtconf, all);
+            return new Status(StatusCode.SUCCESS, null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -3011,7 +3020,8 @@ public class VTNManagerImpl
             checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
-            return vtn.removeTerminal(this, path);
+            vtn.removeTerminal(this, path);
+            return new Status(StatusCode.SUCCESS, null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -3079,7 +3089,8 @@ public class VTNManagerImpl
             checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
-            return vtn.addInterface(this, path, iconf);
+            vtn.addInterface(this, path, iconf);
+            return new Status(StatusCode.SUCCESS, null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -3109,7 +3120,8 @@ public class VTNManagerImpl
             VTNManagerProvider provider = checkService();
             VTenantImpl vtn = getTenantImpl(path);
             ctx = provider.newTxContext();
-            return vtn.modifyInterface(this, ctx, path, iconf, all);
+            vtn.modifyInterface(this, ctx, path, iconf, all);
+            return new Status(StatusCode.SUCCESS, null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -3135,7 +3147,8 @@ public class VTNManagerImpl
             checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
-            return vtn.removeInterface(this, path);
+            vtn.removeInterface(this, path);
+            return new Status(StatusCode.SUCCESS, null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -3202,7 +3215,8 @@ public class VTNManagerImpl
             checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
-            return vtn.addInterface(this, path, iconf);
+            vtn.addInterface(this, path, iconf);
+            return new Status(StatusCode.SUCCESS, null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -3232,7 +3246,8 @@ public class VTNManagerImpl
             VTNManagerProvider provider = checkService();
             VTenantImpl vtn = getTenantImpl(path);
             ctx = provider.newTxContext();
-            return vtn.modifyInterface(this, ctx, path, iconf, all);
+            vtn.modifyInterface(this, ctx, path, iconf, all);
+            return new Status(StatusCode.SUCCESS, null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -3258,7 +3273,8 @@ public class VTNManagerImpl
             checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
-            return vtn.removeInterface(this, path);
+            vtn.removeInterface(this, path);
+            return new Status(StatusCode.SUCCESS, null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -3379,7 +3395,8 @@ public class VTNManagerImpl
             checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
-            return vtn.removeVlanMap(this, path, mapId);
+            vtn.removeVlanMap(this, path, mapId);
+            return new Status(StatusCode.SUCCESS, null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -3455,7 +3472,8 @@ public class VTNManagerImpl
             VTNManagerProvider provider = checkService();
             VTenantImpl vtn = getTenantImpl(path);
             ctx = provider.newTxContext();
-            return vtn.setPortMap(this, ctx, path, pmconf);
+            vtn.setPortMap(this, ctx, path, pmconf);
+            return new Status(StatusCode.SUCCESS, null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -3486,7 +3504,8 @@ public class VTNManagerImpl
             VTNManagerProvider provider = checkService();
             VTenantImpl vtn = getTenantImpl(path);
             ctx = provider.newTxContext();
-            return vtn.setPortMap(this, ctx, path, pmconf);
+            vtn.setPortMap(this, ctx, path, pmconf);
+            return new Status(StatusCode.SUCCESS, null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -5105,10 +5124,7 @@ public class VTNManagerImpl
             UpdateType result = ffmap.set(this, index, filter);
             if (result != null) {
                 export(vtn);
-                Status status = vtn.saveConfigImpl(null);
-                if (!status.isSuccess()) {
-                    throw new VTNException(status);
-                }
+                vtn.saveConfigImpl(null);
             }
             return result;
         } finally {
@@ -5140,10 +5156,7 @@ public class VTNManagerImpl
             Status result = ffmap.remove(this, index);
             if (result != null) {
                 export(vtn);
-                Status svres = vtn.saveConfigImpl(null);
-                if (!svres.isSuccess()) {
-                    return svres;
-                }
+                vtn.saveConfigImpl(null);
             }
             return result;
         } catch (VTNException e) {
@@ -5175,10 +5188,7 @@ public class VTNManagerImpl
             Status result = ffmap.clear(this);
             if (result != null) {
                 export(vtn);
-                Status svres = vtn.saveConfigImpl(null);
-                if (!svres.isSuccess()) {
-                    return svres;
-                }
+                vtn.saveConfigImpl(null);
             }
             return result;
         } catch (VTNException e) {
@@ -5309,17 +5319,14 @@ public class VTNManagerImpl
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            Status status = new Status(StatusCode.SUCCESS, null);
-
             // Save VTN configurations.
             for (VTenantImpl vtn: tenantDB.values()) {
-                Status st = vtn.saveConfig(null);
-                if (!st.isSuccess()) {
-                    status = st;
-                }
+                vtn.saveConfig(null);
             }
 
-            return status;
+            return new Status(StatusCode.SUCCESS, null);
+        } catch (VTNException e) {
+            return e.getStatus();
         } finally {
             unlock(rdlock);
         }

@@ -42,6 +42,7 @@ import org.opendaylight.vtn.manager.internal.cluster.NodeVlan;
 import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yangtools.yang.common.RpcResult;
 
@@ -52,7 +53,6 @@ import org.opendaylight.controller.clustering.services.IClusterServices;
 import org.opendaylight.controller.clustering.services.ICoordinatorChangeAware;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
-import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.GetManagerVersionOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.VtnVersionService;
@@ -839,7 +839,7 @@ public class GlobalResourceManager
                 StringBuilder bulder =
                     new StringBuilder("Trying to unmap unexpected host: ");
                 mvlan.appendContents(bulder);
-                throw new VTNException(StatusCode.NOTFOUND, bulder.toString());
+                throw RpcException.getNotFoundException(bulder.toString());
             }
 
             addUnmappedHost(ref, mvlan);
@@ -911,8 +911,7 @@ public class GlobalResourceManager
                 StringBuilder bulder = new StringBuilder("Host(");
                 mvlan.appendContents(bulder);
                 bulder.append(") is not found in the denied set");
-                throw new VTNException(StatusCode.NOTFOUND,
-                                       bulder.toString());
+                throw RpcException.getNotFoundException(bulder.toString());
             }
             if (!set.isEmpty()) {
                 macMapDenied.put(mvlan, set);
@@ -1242,8 +1241,7 @@ public class GlobalResourceManager
                 "MAC mapping did not reserve port: map=");
             builder.append(ref.toString()).
                 append(", port=").append(pvlan.toString());
-            throw new VTNException(StatusCode.INTERNALERROR,
-                                   builder.toString());
+            throw new VTNException(builder.toString());
         }
     }
 
@@ -1280,7 +1278,7 @@ public class GlobalResourceManager
             StringBuilder builder = new StringBuilder(ref.toString());
             builder.append(": Trying to unmap unexpected VLAN: nvlan=").
                 append(nvlan).append(", old=").append(old);
-            throw new VTNException(StatusCode.NOTFOUND, builder.toString());
+            throw RpcException.getNotFoundException(builder.toString());
         }
     }
 
@@ -1311,8 +1309,7 @@ public class GlobalResourceManager
                 StringBuilder builder = new StringBuilder(ref.toString());
                 builder.append(": Trying to unmap unexpected port: rmlan=").
                     append(rmlan).append(", old=").append(old);
-                throw new VTNException(StatusCode.NOTFOUND,
-                                       builder.toString());
+                throw RpcException.getNotFoundException(builder.toString());
             }
         }
 
@@ -1521,8 +1518,7 @@ public class GlobalResourceManager
             builder.append(ref.toString()).append(", host={");
             mvlan.appendContents(builder);
             builder.append("}, pvlan=").append(pvlan.toString());
-            throw new VTNException(StatusCode.INTERNALERROR,
-                                   builder.toString());
+            throw new VTNException(builder.toString());
         }
 
         return result;

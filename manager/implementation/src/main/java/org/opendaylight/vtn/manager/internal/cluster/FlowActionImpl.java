@@ -32,10 +32,7 @@ import org.opendaylight.vtn.manager.flow.action.SetTpDstAction;
 import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
 import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
 
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
-
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 /**
  * Implementation of flow action.
@@ -109,16 +106,15 @@ public abstract class FlowActionImpl implements Serializable {
      */
     public static FlowActionImpl create(FlowAction act) throws VTNException {
         if (act == null) {
-            Status st = MiscUtils.argumentIsNull("Flow action");
-            throw new VTNException(st);
+            throw RpcException.getNullArgumentException("Flow action");
         }
 
         // Determine implementation class.
         Class<?> actClass = act.getClass();
         Constructor<?> ctor = CONSTRUCTORS.get(actClass);
         if (ctor == null) {
-            String msg = "Unsupported action: " + actClass.getSimpleName();
-            throw new VTNException(StatusCode.BADREQUEST, msg);
+            throw RpcException.getBadArgumentException(
+                "Unsupported action: " + actClass.getSimpleName());
         }
 
         // Instantiate implementation.
@@ -173,8 +169,7 @@ public abstract class FlowActionImpl implements Serializable {
      */
     protected FlowActionImpl(FlowAction act) throws VTNException {
         if (act == null) {
-            Status st = MiscUtils.argumentIsNull("Flow action");
-            throw new VTNException(st);
+            throw RpcException.getNullArgumentException("Flow action");
         }
     }
 

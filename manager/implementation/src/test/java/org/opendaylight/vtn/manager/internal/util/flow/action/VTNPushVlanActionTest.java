@@ -19,9 +19,6 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPushVlanActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPushVlanActionCaseBuilder;
@@ -29,6 +26,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.v
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.push.vlan.action._case.VtnPushVlanActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VlanType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.PopVlanActionCaseBuilder;
@@ -101,16 +99,15 @@ public class VTNPushVlanActionTest extends TestBase {
             VtnAction vaction = vac;
             if (vtype == null) {
                 RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
-                StatusCode ecode = StatusCode.BADREQUEST;
+                VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
                 String emsg = "VTNPushVlanAction: No VLAN type: " + vaction;
                 try {
                     va.toFlowAction(vaction);
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(etag, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(ecode, st.getCode());
-                    assertEquals(emsg, st.getDescription());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(emsg, e.getMessage());
                 }
 
                 vaction = vacBuilder.
@@ -123,23 +120,20 @@ public class VTNPushVlanActionTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(etag, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(ecode, st.getCode());
-                    assertEquals(emsg, st.getDescription());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(emsg, e.getMessage());
                 }
 
                 vaction = VTNPopVlanAction.newVtnAction();
                 etag = RpcErrorTag.BAD_ELEMENT;
-                ecode = StatusCode.BADREQUEST;
                 emsg = "VTNPushVlanAction: Unexpected type: " + vaction;
                 try {
                     va.toFlowAction(vaction);
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(etag, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(ecode, st.getCode());
-                    assertEquals(emsg, st.getDescription());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(emsg, e.getMessage());
                 }
             } else {
                 org.opendaylight.vtn.manager.flow.action.PushVlanAction vad =
@@ -156,16 +150,15 @@ public class VTNPushVlanActionTest extends TestBase {
             Action action = mact;
             if (etype == null) {
                 RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
-                StatusCode ecode = StatusCode.BADREQUEST;
+                VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
                 String emsg = "VTNPushVlanAction: No VLAN type: " + action;
                 try {
                     va.toVtnAction(action);
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(etag, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(ecode, st.getCode());
-                    assertEquals(emsg, st.getDescription());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(emsg, e.getMessage());
                 }
 
                 action = new PushVlanActionCaseBuilder().build();
@@ -175,9 +168,8 @@ public class VTNPushVlanActionTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(etag, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(ecode, st.getCode());
-                    assertEquals(emsg, st.getDescription());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(emsg, e.getMessage());
                 }
 
                 Integer badType = 0x88a8;
@@ -192,9 +184,8 @@ public class VTNPushVlanActionTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(etag, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(ecode, st.getCode());
-                    assertEquals(emsg, st.getDescription());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(emsg, e.getMessage());
                 }
 
                 action = new PopVlanActionCaseBuilder().build();
@@ -204,9 +195,8 @@ public class VTNPushVlanActionTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(etag, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(ecode, st.getCode());
-                    assertEquals(emsg, st.getDescription());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(emsg, e.getMessage());
                 }
 
                 try {
@@ -214,9 +204,8 @@ public class VTNPushVlanActionTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(etag, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(ecode, st.getCode());
-                    assertEquals(emsg, st.getDescription());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(emsg, e.getMessage());
                 }
             } else {
                 assertEquals(vac, va.toVtnAction(action));

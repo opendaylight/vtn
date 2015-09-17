@@ -43,12 +43,12 @@ public abstract class PathCostConfigBuilder<T> {
     public final PathCostConfigBuilder<T> set(PathCost pc)
         throws RpcException {
         if (pc == null) {
-            throw MiscUtils.getNullArgumentException("PathCost");
+            throw RpcException.getNullArgumentException("PathCost");
         }
 
         Long cost = pc.getCost();
         if (cost == null) {
-            throw MiscUtils.getNullArgumentException("Cost in PathCost");
+            throw RpcException.getNullArgumentException("Cost in PathCost");
         }
         setCost(cost);
 

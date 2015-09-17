@@ -51,18 +51,16 @@ import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
 import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
 import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.NodeUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
@@ -220,9 +218,8 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
     VlanMap addVlanMap(VTNManagerImpl mgr, TxContext ctx, VlanMapConfig vlconf)
         throws VTNException {
         if (vlconf == null) {
-            Status status = MiscUtils.
-                argumentIsNull("VLAN mapping configiguration");
-            throw new VTNException(status);
+            throw RpcException.getNullArgumentException(
+                "VLAN mapping configiguration");
         }
 
         short vlan = vlconf.getVlan();
@@ -269,16 +266,14 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
     void removeVlanMap(VTNManagerImpl mgr, String mapId)
         throws VTNException {
         if (mapId == null) {
-            Status status = MiscUtils.argumentIsNull("Mapping ID");
-            throw new VTNException(status);
+            throw RpcException.getNullArgumentException("Mapping ID");
         }
 
         Lock wrlock = writeLock();
         try {
             VlanMapImpl vmap = vlanMaps.remove(mapId);
             if (vmap == null) {
-                Status status = vlanMapNotFound(mapId);
-                throw new VTNException(status);
+                throw getVlanMapNotFoundException(mapId);
             }
 
             // Destroy VLAN mapping.
@@ -322,16 +317,14 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      */
     VlanMap getVlanMap(String mapId) throws VTNException {
         if (mapId == null) {
-            Status status = MiscUtils.argumentIsNull("Mapping ID");
-            throw new VTNException(status);
+            throw RpcException.getNullArgumentException("Mapping ID");
         }
 
         Lock rdlock = readLock();
         try {
             VlanMapImpl vmap = vlanMaps.get(mapId);
             if (vmap == null) {
-                Status status = vlanMapNotFound(mapId);
-                throw new VTNException(status);
+                throw getVlanMapNotFoundException(mapId);
             }
 
             VlanMapConfig vlconf = vmap.getVlanMapConfig();
@@ -354,9 +347,8 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      */
     VlanMap getVlanMap(VlanMapConfig vlconf) throws VTNException {
         if (vlconf == null) {
-            Status status = MiscUtils.
-                argumentIsNull("VLAN map configiguration");
-            throw new VTNException(status);
+            throw RpcException.getNullArgumentException(
+                "VLAN map configiguration");
         }
 
         Node node = vlconf.getNode();
@@ -647,8 +639,8 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
     private void checkConfig(VBridgeConfig bconf) throws VTNException {
         int ival = bconf.getAgeInterval();
         if (ival < MIN_AGE_INTERVAL || ival > MAX_AGE_INTERVAL) {
-            throw new VTNException(StatusCode.BADREQUEST,
-                                   "Invalid MAC address aging interval");
+            throw RpcException.getBadArgumentException(
+                "Invalid MAC address aging interval");
         }
     }
 
@@ -751,15 +743,15 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
     }
 
     /**
-     * Return a failure status that indicates the specified VLAN mapping does
+     * Return an exception that indicates the specified VLAN mapping does
      * not exist.
      *
      * @param id      The identifier of the VLAN mapping.
-     * @return  A failure status.
+     * @return  A {@link RpcException} instance.
      */
-    private Status vlanMapNotFound(String id) {
+    private RpcException getVlanMapNotFoundException(String id) {
         String msg = id + ": VLAN mapping does not exist";
-        return new Status(StatusCode.NOTFOUND, msg);
+        return RpcException.getNotFoundException(msg);
     }
 
     /**

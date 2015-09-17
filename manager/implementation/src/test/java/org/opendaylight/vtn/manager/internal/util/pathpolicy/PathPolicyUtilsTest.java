@@ -33,8 +33,6 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier.IdentifiableItem;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier.Item;
@@ -50,6 +48,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vt
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policy.config.VtnPathCost;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policy.config.VtnPathCostBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policy.config.VtnPathCostKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateOperationType;
 
@@ -90,17 +89,15 @@ public class PathPolicyUtilsTest extends TestBase {
             assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
             assertEquals(null, e.getCause());
             String msg = i + ": Path policy does not exist.";
-            Status st = e.getStatus();
-            assertEquals(StatusCode.NOTFOUND, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
 
             // getNotFoundException(int, Throwable)
             e = PathPolicyUtils.getNotFoundException(i, cause);
             assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
             assertSame(cause, e.getCause());
-            st = e.getStatus();
-            assertEquals(StatusCode.NOTFOUND, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         // getInvalidPolicyIdException(int)
@@ -109,9 +106,8 @@ public class PathPolicyUtilsTest extends TestBase {
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
             assertEquals(null, e.getCause());
             String msg = "Invalid path policy ID: " + i;
-            Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         // getInvalidDefaultCostException(Long)
@@ -120,34 +116,30 @@ public class PathPolicyUtilsTest extends TestBase {
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
             assertEquals(null, e.getCause());
             String msg = "Invalid default cost: " + c;
-            Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         // getNullPolicyIdException()
         RpcException e = PathPolicyUtils.getNullPolicyIdException();
         assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
         assertEquals(null, e.getCause());
-        Status st = e.getStatus();
-        assertEquals(StatusCode.BADREQUEST, st.getCode());
-        assertEquals("Path policy ID cannot be null", st.getDescription());
+        assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+        assertEquals("Path policy ID cannot be null", e.getMessage());
 
         // getNullPathCostException()
         e = PathPolicyUtils.getNullPathCostException();
         assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
         assertEquals(null, e.getCause());
-        st = e.getStatus();
-        assertEquals(StatusCode.BADREQUEST, st.getCode());
-        assertEquals("Path cost cannot be null", st.getDescription());
+        assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+        assertEquals("Path cost cannot be null", e.getMessage());
 
         // getNullPortDescException()
         e = PathPolicyUtils.getNullPortDescException();
         assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
         assertEquals(null, e.getCause());
-        st = e.getStatus();
-        assertEquals(StatusCode.BADREQUEST, st.getCode());
-        assertEquals("Port descriptor cannot be null", st.getDescription());
+        assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+        assertEquals("Port descriptor cannot be null", e.getMessage());
 
         // getDuplicatePortException()
         SalPort sport = new SalPort(1L, 2L);
@@ -159,10 +151,8 @@ public class PathPolicyUtilsTest extends TestBase {
             e = PathPolicyUtils.getDuplicatePortException(loc);
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
             assertEquals(null, e.getCause());
-            st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
-            assertEquals("Duplicate port descriptor: " + loc,
-                         st.getDescription());
+            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+            assertEquals("Duplicate port descriptor: " + loc, e.getMessage());
         }
     }
 
@@ -544,10 +534,9 @@ public class PathPolicyUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
             assertEquals(null, e.getCause());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.NOTFOUND, st.getCode());
+            assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
             String msg = "3: Path policy does not exist.";
-            assertEquals(msg, st.getDescription());
+            assertEquals(msg, e.getMessage());
         }
 
         Mockito.verify(rtx, Mockito.times(1)).read(store, path1);
@@ -758,10 +747,9 @@ public class PathPolicyUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
             assertEquals(null, e.getCause());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.NOTFOUND, st.getCode());
+            assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
             String msg = "3: Path policy does not exist.";
-            assertEquals(msg, st.getDescription());
+            assertEquals(msg, e.getMessage());
         }
 
         Mockito.verify(rtx, Mockito.times(1)).read(store, path1);
@@ -783,10 +771,9 @@ public class PathPolicyUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
             assertEquals(null, e.getCause());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.NOTFOUND, st.getCode());
+            assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
             String msg = "3: Path policy does not exist.";
-            assertEquals(msg, st.getDescription());
+            assertEquals(msg, e.getMessage());
         }
 
         Mockito.verify(rtx, Mockito.times(1)).read(store, path1);
@@ -808,10 +795,9 @@ public class PathPolicyUtilsTest extends TestBase {
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
             assertEquals(null, e.getCause());
-            Status st = e.getStatus();
-            assertEquals(StatusCode.NOTFOUND, st.getCode());
+            assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
             String msg = "3: Path policy does not exist.";
-            assertEquals(msg, st.getDescription());
+            assertEquals(msg, e.getMessage());
         }
 
         Mockito.verify(rtx, Mockito.times(1)).read(store, path1);
@@ -858,19 +844,18 @@ public class PathPolicyUtilsTest extends TestBase {
                     // This error should be treated as if the target path
                     // policy is not present.
                     String msg = i + ": Path policy does not exist.";
-                    Status st = e.getStatus();
-                    assertEquals(StatusCode.NOTFOUND, st.getCode());
-                    assertEquals(msg, st.getDescription());
+                    assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
+                    assertEquals(msg, e.getMessage());
                     assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
 
                     Throwable t = e.getCause();
                     assertTrue(t instanceof RpcException);
                     RpcException cause = (RpcException)t;
                     assertEquals(RpcErrorTag.BAD_ELEMENT, cause.getErrorTag());
-                    st = cause.getStatus();
                     msg = "Invalid path policy ID: " + i;
-                    assertEquals(StatusCode.BADREQUEST, st.getCode());
-                    assertEquals(msg, st.getDescription());
+                    assertEquals(VtnErrorTag.BADREQUEST,
+                                 cause.getVtnErrorTag());
+                    assertEquals(msg, cause.getMessage());
 
                     t = cause.getCause();
                     assertTrue("Unexpected cause: " + t,

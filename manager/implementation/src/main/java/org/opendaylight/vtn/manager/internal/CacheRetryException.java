@@ -10,8 +10,6 @@ package org.opendaylight.vtn.manager.internal;
 
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.controller.sal.utils.Status;
-
 /**
  * An exception which indicates the cluster cache operation should be
  * retried.
@@ -21,7 +19,7 @@ public class CacheRetryException extends VTNException {
      * Construct a new instance.
      */
     public CacheRetryException() {
-        super((Status)null);
+        super((String)null);
     }
 
     /**
@@ -31,6 +29,6 @@ public class CacheRetryException extends VTNException {
      *               an error.
      */
     public CacheRetryException(Throwable cause) {
-        super((Status)null, cause);
+        super((String)null, cause);
     }
 }

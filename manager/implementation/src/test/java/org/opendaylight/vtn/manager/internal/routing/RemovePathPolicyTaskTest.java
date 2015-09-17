@@ -25,13 +25,11 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.RemovePathPolicyInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.RemovePathPolicyInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicy;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicyBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
@@ -54,16 +52,15 @@ public class RemovePathPolicyTaskTest extends TestBase {
     @Test
     public void testCreate() throws Exception {
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
-        StatusCode code = StatusCode.BADREQUEST;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         String msg = "RPC input cannot be null";
         try {
             RemovePathPolicyTask.create(null, null);
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         RemovePathPolicyInputBuilder builder =
@@ -74,9 +71,8 @@ public class RemovePathPolicyTaskTest extends TestBase {
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
-            Status st = e.getStatus();
-            assertEquals(code, st.getCode());
-            assertEquals(msg, st.getDescription());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
         }
 
         for (int id = 1; id <= 3; id++) {
@@ -129,16 +125,15 @@ public class RemovePathPolicyTaskTest extends TestBase {
             assertNotNull(task);
 
             RpcErrorTag etag = RpcErrorTag.DATA_MISSING;
-            StatusCode code = StatusCode.NOTFOUND;
+            VtnErrorTag vtag = VtnErrorTag.NOTFOUND;
             String msg = id + ": Path policy does not exist.";
             try {
                 task.onStarted(ctx, null);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(code, st.getCode());
-                assertEquals(msg, st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
 
             VtnPathPolicy vpp = new VtnPathPolicyBuilder().

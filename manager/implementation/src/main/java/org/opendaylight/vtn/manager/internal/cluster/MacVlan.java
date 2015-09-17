@@ -105,12 +105,12 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
      */
     public MacVlan(VlanHost vh) throws RpcException {
         if (vh == null) {
-            throw MiscUtils.getNullArgumentException("vlan-host");
+            throw RpcException.getNullArgumentException("vlan-host");
         }
 
         Integer vid = ProtocolUtils.getVlanId(vh.getVlanId());
         if (vid == null) {
-            throw MiscUtils.getNullArgumentException("VLAN ID");
+            throw RpcException.getNullArgumentException("VLAN ID");
         }
 
         EtherAddress eaddr = EtherAddress.create(vh.getMacAddress());
@@ -158,7 +158,8 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
      */
     public MacVlan(DataLinkHost dlhost) throws RpcException {
         if (dlhost == null) {
-            throw MiscUtils.getNullArgumentException("Data link layer host");
+            throw RpcException.getNullArgumentException(
+                "Data link layer host");
         }
 
         if (!(dlhost instanceof EthernetHost)) {

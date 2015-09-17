@@ -32,9 +32,6 @@ import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
@@ -43,6 +40,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.vtn.path.map.list.VtnPathMap;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * JUnit test for {@link DataStoreUtils}.
@@ -94,8 +92,7 @@ public class DataStoreUtilsTest extends TestBase {
             DataStoreUtils.read(rtx, oper, path);
             unexpected();
         } catch (VTNException e) {
-            Status st = e.getStatus();
-            assertEquals(StatusCode.INTERNALERROR, st.getCode());
+            assertEquals(VtnErrorTag.INTERNALERROR, e.getVtnErrorTag());
             assertEquals(rfe, e.getCause());
         }
         Mockito.verify(rtx, Mockito.times(1)).read(oper, path);
@@ -110,8 +107,7 @@ public class DataStoreUtilsTest extends TestBase {
             DataStoreUtils.read(rtx, oper, path);
             unexpected();
         } catch (VTNException e) {
-            Status st = e.getStatus();
-            assertEquals(StatusCode.TIMEOUT, st.getCode());
+            assertEquals(VtnErrorTag.TIMEOUT, e.getVtnErrorTag());
             assertEquals(te, e.getCause());
         }
         Mockito.verify(rtx, Mockito.times(1)).read(oper, path);
@@ -149,8 +145,7 @@ public class DataStoreUtilsTest extends TestBase {
             DataStoreUtils.read(f);
             unexpected();
         } catch (VTNException e) {
-            Status st = e.getStatus();
-            assertEquals(StatusCode.INTERNALERROR, st.getCode());
+            assertEquals(VtnErrorTag.INTERNALERROR, e.getVtnErrorTag());
             assertEquals(rfe, e.getCause());
         }
         verifyFutureMock(f);
@@ -162,8 +157,7 @@ public class DataStoreUtilsTest extends TestBase {
             DataStoreUtils.read(f);
             unexpected();
         } catch (VTNException e) {
-            Status st = e.getStatus();
-            assertEquals(StatusCode.TIMEOUT, st.getCode());
+            assertEquals(VtnErrorTag.TIMEOUT, e.getVtnErrorTag());
             assertEquals(te, e.getCause());
         }
         verifyFutureMock(f);
@@ -209,8 +203,7 @@ public class DataStoreUtilsTest extends TestBase {
             DataStoreUtils.delete(tx, oper, path);
             unexpected();
         } catch (VTNException e) {
-            Status st = e.getStatus();
-            assertEquals(StatusCode.INTERNALERROR, st.getCode());
+            assertEquals(VtnErrorTag.INTERNALERROR, e.getVtnErrorTag());
             assertEquals(rfe, e.getCause());
         }
         Mockito.verify(tx, Mockito.times(1)).read(oper, path);
@@ -226,8 +219,7 @@ public class DataStoreUtilsTest extends TestBase {
             DataStoreUtils.delete(tx, oper, path);
             unexpected();
         } catch (VTNException e) {
-            Status st = e.getStatus();
-            assertEquals(StatusCode.TIMEOUT, st.getCode());
+            assertEquals(VtnErrorTag.TIMEOUT, e.getVtnErrorTag());
             assertEquals(te, e.getCause());
         }
         Mockito.verify(tx, Mockito.times(1)).read(oper, path);

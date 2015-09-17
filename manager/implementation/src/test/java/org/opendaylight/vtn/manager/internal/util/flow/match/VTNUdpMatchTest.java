@@ -30,8 +30,8 @@ import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
 
 import org.opendaylight.controller.sal.utils.IPProtocols;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpVersion;
 
@@ -115,6 +115,7 @@ public class VTNUdpMatchTest extends TestBase {
         }
 
         // port-from is missing.
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         ArrayList<UdpMatch> list = new ArrayList<>();
         params.reset().setSourcePortTo(Integer.valueOf(0));
         list.add(params.toL4Match());
@@ -127,9 +128,8 @@ public class VTNUdpMatchTest extends TestBase {
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("port-from cannot be null", st.getDescription());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals("port-from cannot be null", e.getMessage());
             }
         }
 
@@ -162,10 +162,9 @@ public class VTNUdpMatchTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(StatusCode.BADREQUEST, st.getCode());
+                    assertEquals(vtag, e.getVtnErrorTag());
                     assertEquals("Invalid port number: " + port,
-                                 st.getDescription());
+                                 e.getMessage());
                 }
             }
         }
@@ -189,11 +188,10 @@ public class VTNUdpMatchTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(StatusCode.BADREQUEST, st.getCode());
+                    assertEquals(vtag, e.getVtnErrorTag());
                     String msg = "Invalid port range: from=" + from +
                         ", to=" + to;
-                    assertEquals(msg, st.getDescription());
+                    assertEquals(msg, e.getMessage());
                 }
             }
 
@@ -213,11 +211,10 @@ public class VTNUdpMatchTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(StatusCode.BADREQUEST, st.getCode());
+                    assertEquals(vtag, e.getVtnErrorTag());
                     String msg = "Invalid port range: from=" + from +
                         ", to=" + to;
-                    assertEquals(msg, st.getDescription());
+                    assertEquals(msg, e.getMessage());
                 }
             }
         }
@@ -335,6 +332,7 @@ public class VTNUdpMatchTest extends TestBase {
         }
 
         // Invalid port numbers.
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         Integer[] badPorts = {
             Integer.MIN_VALUE, Integer.MIN_VALUE + 1, -0x70000000,
             -0x10000000, -0x1000, -100, -10, -3, -2, -1,
@@ -361,10 +359,9 @@ public class VTNUdpMatchTest extends TestBase {
                         unexpected();
                     } catch (RpcException e) {
                         assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                        Status st = e.getStatus();
-                        assertEquals(StatusCode.BADREQUEST, st.getCode());
+                        assertEquals(vtag, e.getVtnErrorTag());
                         assertEquals("Invalid port number: " + port,
-                                     st.getDescription());
+                                     e.getMessage());
                     }
                 }
             }
@@ -387,10 +384,9 @@ public class VTNUdpMatchTest extends TestBase {
                     } catch (RpcException e) {
                         assertEquals(RpcErrorTag.MISSING_ELEMENT,
                                      e.getErrorTag());
-                        Status st = e.getStatus();
-                        assertEquals(StatusCode.BADREQUEST, st.getCode());
+                        assertEquals(vtag, e.getVtnErrorTag());
                         assertEquals("port-from cannot be null",
-                                     st.getDescription());
+                                     e.getMessage());
                     }
                 }
             }
@@ -415,11 +411,10 @@ public class VTNUdpMatchTest extends TestBase {
                         unexpected();
                     } catch (RpcException e) {
                         assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                        Status st = e.getStatus();
-                        assertEquals(StatusCode.BADREQUEST, st.getCode());
+                        assertEquals(vtag, e.getVtnErrorTag());
                         String msg = "Invalid port range: from=" + from +
                             ", to=" + to;
-                        assertEquals(msg, st.getDescription());
+                        assertEquals(msg, e.getMessage());
                     }
                 }
             }

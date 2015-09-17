@@ -83,7 +83,7 @@ public final class FlowCondUtils {
      * @return  An {@link RpcException}.
      */
     public static RpcException getMatchIndexMissingException() {
-        return MiscUtils.getNullArgumentException("Match index");
+        return RpcException.getNullArgumentException("Match index");
     }
 
     /**
@@ -116,7 +116,8 @@ public final class FlowCondUtils {
      */
     public static void checkPresent(VnodeName vname) throws RpcException {
         if (vname == null) {
-            throw MiscUtils.getNullArgumentException(DESC_FLOW_COND + " name");
+            throw RpcException.getNullArgumentException(
+                DESC_FLOW_COND + " name");
         }
     }
 

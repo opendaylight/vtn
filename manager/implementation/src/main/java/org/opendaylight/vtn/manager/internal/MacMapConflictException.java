@@ -11,7 +11,7 @@ package org.opendaylight.vtn.manager.internal;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 
-import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * An exception which indicates the specified host is already mapped by the
@@ -38,7 +38,7 @@ public class MacMapConflictException extends MacMapException {
      *               host specified by {@code mvlan}.
      */
     public MacMapConflictException(MacVlan mvlan, MapReference ref) {
-        super(StatusCode.CONFLICT, "Already mapped by MAC mapping",
+        super(VtnErrorTag.CONFLICT, "Already mapped by MAC mapping",
               mvlan, ref);
     }
 }

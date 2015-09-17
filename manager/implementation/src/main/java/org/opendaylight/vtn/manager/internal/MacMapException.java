@@ -12,7 +12,7 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 
-import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * A base class of exception which indicates invalid state of the MAC mapping.
@@ -32,16 +32,16 @@ public abstract class MacMapException extends VTNException {
     /**
      * Construct a new instance.
      *
-     * @param code   A {@link StatusCode} for this exception.
+     * @param etag   A {@link VtnErrorTag} for this exception.
      * @param msg    An error message.
      * @param mvlan  A {@link MacVlan} instance corresponding to the host
      *               to be mapped by MAC mapping.
      * @param ref    A reference to the MAC mapping which maps the host
      *               specified by {@code mvlan}.
      */
-    protected MacMapException(StatusCode code, String msg, MacVlan mvlan,
+    protected MacMapException(VtnErrorTag etag, String msg, MacVlan mvlan,
                               MapReference ref) {
-        super(code, msg);
+        super(etag, msg);
         host = mvlan;
         reference = ref;
     }

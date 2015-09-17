@@ -31,14 +31,13 @@ import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.controller.sal.core.Node.NodeIDType;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.VtnPathCostConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.set.path.cost.input.PathCostList;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.set.path.cost.input.PathCostListBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policy.config.VtnPathCost;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policy.config.VtnPathCostBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
 
 /**
@@ -166,9 +165,8 @@ public class PathCostConfigBuilderTest extends TestBase {
                 pccb.set(pc);
                 unexpected();
             } catch (RpcException e) {
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("PathCost cannot be null", st.getDescription());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                assertEquals("PathCost cannot be null", e.getMessage());
                 assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
                 assertEquals(null, e.getCause());
             }
@@ -178,9 +176,8 @@ public class PathCostConfigBuilderTest extends TestBase {
                 pccb.set(vpc);
                 unexpected();
             } catch (RpcException e) {
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("Path cost cannot be null", st.getDescription());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                assertEquals("Path cost cannot be null", e.getMessage());
                 assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
                 assertEquals(null, e.getCause());
             }
@@ -245,10 +242,9 @@ public class PathCostConfigBuilderTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
                 assertEquals(null, e.getCause());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
                 assertEquals("Cost in PathCost cannot be null",
-                             st.getDescription());
+                             e.getMessage());
             }
 
             try {
@@ -257,10 +253,8 @@ public class PathCostConfigBuilderTest extends TestBase {
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
                 assertEquals(null, e.getCause());
-                Status st = e.getStatus();
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("Port location cannot be null",
-                             st.getDescription());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                assertEquals("Port location cannot be null", e.getMessage());
             }
 
             for (Node node: invalidNodes) {
@@ -271,16 +265,14 @@ public class PathCostConfigBuilderTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(null, e.getCause());
-                    Status st = e.getStatus();
-                    assertEquals(StatusCode.BADREQUEST, st.getCode());
+                    assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
                     if (node == null) {
-                        assertEquals("Node cannot be null",
-                                     st.getDescription());
+                        assertEquals("Node cannot be null", e.getMessage());
                         assertEquals(RpcErrorTag.MISSING_ELEMENT,
                                      e.getErrorTag());
                     } else {
                         String msg = "Unsupported node: type=" + node.getType();
-                        assertEquals(msg, st.getDescription());
+                        assertEquals(msg, e.getMessage());
                         assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
                     }
                 }
@@ -299,9 +291,8 @@ public class PathCostConfigBuilderTest extends TestBase {
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
                     assertEquals(null, e.getCause());
-                    Status st = e.getStatus();
-                    assertEquals(StatusCode.BADREQUEST, st.getCode());
-                    assertEquals(msg, st.getDescription());
+                    assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                    assertEquals(msg, e.getMessage());
                 }
             }
 
@@ -313,17 +304,16 @@ public class PathCostConfigBuilderTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(null, e.getCause());
-                    Status st = e.getStatus();
-                    assertEquals(StatusCode.BADREQUEST, st.getCode());
+                    assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
                     if (vdesc == null) {
                         assertEquals("Port descriptor cannot be null",
-                                     st.getDescription());
+                                     e.getMessage());
                         assertEquals(RpcErrorTag.MISSING_ELEMENT,
                                      e.getErrorTag());
                     } else {
                         String msg = "Invalid port descriptor: " +
                             vdesc.getValue();
-                        assertEquals(msg, st.getDescription());
+                        assertEquals(msg, e.getMessage());
                         assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
                     }
                 }
@@ -333,17 +323,16 @@ public class PathCostConfigBuilderTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(null, e.getCause());
-                    Status st = e.getStatus();
-                    assertEquals(StatusCode.BADREQUEST, st.getCode());
+                    assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
                     if (vdesc == null) {
                         assertEquals("Port descriptor cannot be null",
-                                     st.getDescription());
+                                     e.getMessage());
                         assertEquals(RpcErrorTag.MISSING_ELEMENT,
                                      e.getErrorTag());
                     } else {
                         String msg = "Invalid port descriptor: " +
                             vdesc.getValue();
-                        assertEquals(msg, st.getDescription());
+                        assertEquals(msg, e.getMessage());
                         assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
                     }
                 }
@@ -356,10 +345,9 @@ public class PathCostConfigBuilderTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(StatusCode.BADREQUEST, st.getCode());
+                    assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
                     String msg = "Invalid cost value: " + c;
-                    assertEquals(msg, st.getDescription());
+                    assertEquals(msg, e.getMessage());
                     Throwable t = e.getCause();
                     assertTrue("Unexpected cause: " + t,
                                t instanceof IllegalArgumentException);
@@ -370,10 +358,9 @@ public class PathCostConfigBuilderTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                    Status st = e.getStatus();
-                    assertEquals(StatusCode.BADREQUEST, st.getCode());
+                    assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
                     String msg = "Invalid cost value: " + c;
-                    assertEquals(msg, st.getDescription());
+                    assertEquals(msg, e.getMessage());
                     Throwable t = e.getCause();
                     assertTrue("Unexpected cause: " + t,
                                t instanceof IllegalArgumentException);

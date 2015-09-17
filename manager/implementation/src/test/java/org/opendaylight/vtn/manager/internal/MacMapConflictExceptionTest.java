@@ -45,10 +45,7 @@ public class MacMapConflictExceptionTest extends TestBase {
 
             String msg = "Already mapped by MAC mapping";
             assertEquals(msg, st.getDescription());
-
-            StringBuilder builder = new StringBuilder(code.toString());
-            builder.append(": ").append(msg).append(" (0)");
-            assertEquals(builder.toString(), e.getMessage());
+            assertEquals(msg, e.getMessage());
         }
     }
 }
