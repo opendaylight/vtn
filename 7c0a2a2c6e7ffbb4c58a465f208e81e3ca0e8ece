@@ -2,6 +2,29 @@
   "comments": [
     {
       "key": {
+        "uuid": "3a79b1b5_a7c6be47",
+        "filename": "manager/common/pom.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2015-09-17T08:52:12Z",
+      "side": 1,
+      "message": "This line was removed by 36e6bbe8b4a3293c5473f89b6d778177a8e95e34.\nThis patch seems to be based on old revision. You need to rebase this patch to the latest revision.",
+      "range": {
+        "startLine": 50,
+        "startChar": 0,
+        "endLine": 50,
+        "endChar": 58
+      },
+      "revId": "7c0a2a2c6e7ffbb4c58a465f208e81e3ca0e8ece",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "3a79b1b5_61b5f62f",
         "filename": "manager/common/pom.xml",
         "patchSetId": 1
