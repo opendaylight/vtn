@@ -388,8 +388,6 @@ public final class TestOption {
 
             // OVSDB bundles.
             mavenBundle(OVSDB, "library"),
-            mavenBundle(OVSDB, "plugin"),
-            mavenBundle(OVSDB, "ovsdb-plugin-compatibility-layer"),
             mavenBundle(OVSDB, "schema.openvswitch"),
             mavenBundle(OVSDB, "schema.hardwarevtep"),
 

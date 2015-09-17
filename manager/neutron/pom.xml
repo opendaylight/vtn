@@ -47,11 +47,8 @@
               org.opendaylight.controller.sal.utils,
               org.opendaylight.neutron.spi,
               org.opendaylight.ovsdb.lib.notation,
-              org.opendaylight.ovsdb.plugin.api,
-              org.opendaylight.ovsdb.compatibility.plugin,
-              org.opendaylight.ovsdb.compatibility.plugin.api,
-              org.opendaylight.ovsdb.schema.openvswitch,
               org.opendaylight.ovsdb.lib.schema,
+              org.opendaylight.ovsdb.schema.openvswitch,
               org.opendaylight.vtn.manager,
               org.apache.felix.dm,
               org.slf4j
@@ -76,10 +73,6 @@
       <artifactId>sal</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.opendaylight.ovsdb</groupId>
-      <artifactId>ovsdb-plugin-compatibility-layer</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.opendaylight.ovsdb</groupId>
       <artifactId>library</artifactId>

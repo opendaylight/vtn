@@ -56,8 +56,5 @@
     <feature version='${odl.ovsdb.version}'>odl-ovsdb-all</feature>
     <feature version="${project.version}">odl-vtn-manager</feature>
     <bundle>mvn:org.opendaylight.vtn/manager.neutron/${project.version}</bundle>
-
-    <!-- TODO: Remove the following bundle, since this bundle is not supported in Beryllium -->
-    <bundle>mvn:org.opendaylight.ovsdb/ovsdb-plugin-compatibility-layer/${odl.ovsdb.version}</bundle>
   </feature>
 </features>

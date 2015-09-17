@@ -173,12 +173,6 @@
       <artifactId>manager.northbound</artifactId>
     </dependency>
 
-    <!-- TODO: Remove the following dependency, since this bundle is not supported in Beryllium -->
-    <dependency>
-      <groupId>org.opendaylight.ovsdb</groupId>
-      <artifactId>ovsdb-plugin-compatibility-layer</artifactId>
-    </dependency>
-
     <!-- feature dependencies -->
     <dependency>
       <groupId>org.opendaylight.controller</groupId>

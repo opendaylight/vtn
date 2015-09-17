@@ -16,12 +16,7 @@ import org.opendaylight.controller.sal.core.ComponentActivatorAbstractBase;
 
 import org.opendaylight.neutron.spi.INeutronNetworkAware;
 import org.opendaylight.neutron.spi.INeutronPortAware;
-import org.opendaylight.neutron.spi.INeutronPortCRUD;
 import org.opendaylight.neutron.spi.INeutronSubnetAware;
-
-import org.opendaylight.ovsdb.compatibility.plugin.api.OvsdbConfigurationService;
-import org.opendaylight.ovsdb.compatibility.plugin.api.OvsdbConnectionService;
-import org.opendaylight.ovsdb.compatibility.plugin.api.OvsdbInventoryListener;
 
 /**
  * OSGi bundle activator for the VTN Neutron Interface.
@@ -57,8 +52,7 @@ public class Activator extends ComponentActivatorAbstractBase {
     public Object[] getImplementations() {
         Object[] res = {NetworkHandler.class,
                         PortHandler.class,
-                        SubnetHandler.class,
-                        OVSDBPluginEventHandler.class};
+                        SubnetHandler.class};
         return res;
     }
 
@@ -108,28 +102,5 @@ public class Activator extends ComponentActivatorAbstractBase {
                   setCallbacks("setVTNManager", "unsetVTNManager").
                   setRequired(true));
         }
-        if (imp.equals(OVSDBPluginEventHandler.class)) {
-            c.setInterface(OvsdbInventoryListener.class.getName(), null);
-
-            c.add(createServiceDependency().
-                  setService(IVTNManager.class).
-                  setCallbacks("setVTNManager", "unsetVTNManager").
-                  setRequired(true));
-            c.add(createServiceDependency().
-                  setService(OvsdbConfigurationService.class).
-                  setCallbacks("setOVSDBConfigService", "unsetOVSDBConfigService").
-                  setRequired(true));
-
-            c.add(createServiceDependency().
-                  setService(INeutronPortCRUD.class).
-                  setCallbacks("setNeutronPortCRUD", "unsetNeutronPortCRUD").
-                  setRequired(true));
-
-            c.add(createServiceDependency().
-                  setService(OvsdbConnectionService.class).
-                  setCallbacks("setConnectionService", "unsetConnectionService").
-                  setRequired(true));
-        }
-
     }
 }
