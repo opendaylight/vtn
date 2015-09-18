@@ -312,19 +312,18 @@ module vtn-flow {
             uses vfcond:vtn-match-fields;
         }
 
-        list data-flow-action {
-            description
-              "A list of flow actions to be applied to the packet by the
-               egress flow entry.
-
-               This list is omitted if a list of flow actions is not
-               configured, or if this data flow forwards packets without
-               any modification.
-
-               Note that elements in this list needs to be sorted by `order'
-               field in ascending order.";
-            uses vaction:vtn-ordered-flow-action;
-        }
+        /*
+         * A list of flow actions to be applied to the packet by the
+         * egress flow entry.
+         *
+         * `vtn-flow-action' list is omitted if a list of flow actions is not
+         * configured, or if this data flow forwards packets without any
+         * modification.
+         *
+         * Note that elements in this list needs to be sorted by `order'
+         * field in ascending order.";
+         */
+        uses vaction:vtn-flow-action-list;
 
         list physical-route {
             description

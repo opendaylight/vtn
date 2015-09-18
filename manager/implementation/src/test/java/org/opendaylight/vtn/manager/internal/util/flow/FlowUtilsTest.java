@@ -103,6 +103,8 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.DataFlowMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnDataFlowInfo;
@@ -123,8 +125,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataEgressNodeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataEgressPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataEgressPortBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataFlowAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataFlowActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataFlowStats;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataFlowStatsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataIngressNode;
@@ -606,23 +606,23 @@ public class FlowUtilsTest extends TestBase {
                                                  (short)srcVlan, null);
         FlowMatch fmatch = new FlowMatch(ematch, imatch, tmatch);
 
-        List<DataFlowAction> vactions = new ArrayList<>();
+        List<VtnFlowAction> vactions = new ArrayList<>();
         List<FlowAction> factions = new ArrayList<>();
         VtnAction vact = VTNSetVlanIdAction.newVtnAction(dstVlan);
-        DataFlowAction dfact = new DataFlowActionBuilder().
+        VtnFlowAction vfact = new VtnFlowActionBuilder().
             setVtnAction(vact).
             setOrder(vactions.size()).
             build();
-        vactions.add(dfact);
+        vactions.add(vfact);
         factions.add(new SetVlanIdAction((short)dstVlan));
 
         short dscp = 59;
         vact = VTNSetInetDscpAction.newVtnAction(dscp);
-        dfact = new DataFlowActionBuilder().
+        vfact = new VtnFlowActionBuilder().
             setVtnAction(vact).
             setOrder(vactions.size()).
             build();
-        vactions.add(dfact);
+        vactions.add(vfact);
         factions.add(new SetDscpAction((byte)dscp));
 
         long packets = 3456L;
@@ -668,7 +668,7 @@ public class FlowUtilsTest extends TestBase {
             setVirtualRoute(vrlist).
             setPhysicalRoute(phlist).
             setDataFlowMatch(vmatch.toDataFlowMatchBuilder().build()).
-            setDataFlowAction(vactions);
+            setVtnFlowAction(vactions);
         VtnDataFlowInfo vdfNoStats = builder.build();
         VtnDataFlowInfo vdfStats = builder.
             setDataFlowStats(dfs).

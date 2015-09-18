@@ -32,6 +32,7 @@ import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.vnode.VNodeUtils;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.DataFlowMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.input.DataFlowSource;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.output.DataFlowInfoBuilder;
@@ -46,7 +47,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataEgressNodeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataEgressPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataEgressPortBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataFlowAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataIngressNodeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataIngressPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataIngressPortBuilder;
@@ -473,11 +473,11 @@ public final class FlowCache implements VTNDataFlow {
         } else {
             VTNMatch vmatch = new VTNMatch(match);
             Short ipproto = vmatch.getInetProtocol();
-            List<DataFlowAction> dfacts = FlowActionUtils.
-                toDataFlowActions(actions, comparator, ipproto);
+            List<VtnFlowAction> vfacts = FlowActionUtils.
+                toVtnFlowActions(actions, comparator, ipproto);
             builder.setDataFlowMatch(vmatch.toDataFlowMatchBuilder().build()).
                 setVirtualRoute(getPublicVirtualRoute(vroutes)).
-                setDataFlowAction(dfacts).
+                setVtnFlowAction(vfacts).
                 setPhysicalRoute(getPhysicalRoute(inv));
         }
 

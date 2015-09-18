@@ -44,8 +44,8 @@ import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataFlowAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataFlowActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VlanType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.Ordered;
@@ -331,8 +331,8 @@ public class FlowActionUtilsTest extends TestBase {
      * @param order  Action order in the action list.
      * @return  A VTN DROP action.
      */
-    public static DataFlowAction createVtnDropAction(int order) {
-        return new DataFlowActionBuilder().
+    public static VtnFlowAction createVtnDropAction(int order) {
+        return new VtnFlowActionBuilder().
             setOrder(order).
             setVtnAction(VTNDropAction.newVtnAction()).
             build();
@@ -344,8 +344,8 @@ public class FlowActionUtilsTest extends TestBase {
      * @param order  Action order in the action list.
      * @return  A VTN POP_VLAN action.
      */
-    public static DataFlowAction createVtnPopVlanAction(int order) {
-        return new DataFlowActionBuilder().
+    public static VtnFlowAction createVtnPopVlanAction(int order) {
+        return new VtnFlowActionBuilder().
             setOrder(order).
             setVtnAction(VTNPopVlanAction.newVtnAction()).
             build();
@@ -357,8 +357,8 @@ public class FlowActionUtilsTest extends TestBase {
      * @param order  Action order in the action list.
      * @return  A VTN PUSH_VLAN action.
      */
-    public static DataFlowAction createVtnPushVlanAction(int order) {
-        return new DataFlowActionBuilder().
+    public static VtnFlowAction createVtnPushVlanAction(int order) {
+        return new VtnFlowActionBuilder().
             setOrder(order).
             setVtnAction(VTNPushVlanAction.newVtnAction(VlanType.VLAN)).
             build();
@@ -371,9 +371,9 @@ public class FlowActionUtilsTest extends TestBase {
      * @param mac    A MAC address.
      * @return  A VTN SET_DL_DST action.
      */
-    public static DataFlowAction createVtnSetDlDstAction(int order,
-                                                         MacAddress mac) {
-        return new DataFlowActionBuilder().
+    public static VtnFlowAction createVtnSetDlDstAction(int order,
+                                                        MacAddress mac) {
+        return new VtnFlowActionBuilder().
             setOrder(order).
             setVtnAction(VTNSetDlDstAction.newVtnAction(mac)).
             build();
@@ -386,9 +386,9 @@ public class FlowActionUtilsTest extends TestBase {
      * @param mac    A MAC address.
      * @return  A VTN SET_DL_SRC action.
      */
-    public static DataFlowAction createVtnSetDlSrcAction(int order,
-                                                         MacAddress mac) {
-        return new DataFlowActionBuilder().
+    public static VtnFlowAction createVtnSetDlSrcAction(int order,
+                                                        MacAddress mac) {
+        return new VtnFlowActionBuilder().
             setOrder(order).
             setVtnAction(VTNSetDlSrcAction.newVtnAction(mac)).
             build();
@@ -401,9 +401,9 @@ public class FlowActionUtilsTest extends TestBase {
      * @param code   An ICMP code.
      * @return  A VTN SET_ICMP_CODE action.
      */
-    public static DataFlowAction createVtnSetIcmpCodeAction(int order,
-                                                            int code) {
-        return new DataFlowActionBuilder().
+    public static VtnFlowAction createVtnSetIcmpCodeAction(int order,
+                                                           int code) {
+        return new VtnFlowActionBuilder().
             setOrder(order).
             setVtnAction(VTNSetIcmpCodeAction.newVtnAction((short)code)).
             build();
@@ -417,9 +417,9 @@ public class FlowActionUtilsTest extends TestBase {
      * @param type   An ICMP type.
      * @return  A VTN SET_ICMP_TYPE action.
      */
-    public static DataFlowAction createVtnSetIcmpTypeAction(int order,
-                                                            int type) {
-        return new DataFlowActionBuilder().
+    public static VtnFlowAction createVtnSetIcmpTypeAction(int order,
+                                                           int type) {
+        return new VtnFlowActionBuilder().
             setOrder(order).
             setVtnAction(VTNSetIcmpTypeAction.newVtnAction((short)type)).
             build();
@@ -432,9 +432,9 @@ public class FlowActionUtilsTest extends TestBase {
      * @param dscp   A DSCP value.
      * @return  A VTN SET_INET_DSCP action.
      */
-    public static DataFlowAction createVtnSetInetDscpAction(int order,
-                                                            int dscp) {
-        return new DataFlowActionBuilder().
+    public static VtnFlowAction createVtnSetInetDscpAction(int order,
+                                                           int dscp) {
+        return new VtnFlowActionBuilder().
             setOrder(order).
             setVtnAction(VTNSetInetDscpAction.newVtnAction((short)dscp)).
             build();
@@ -447,9 +447,9 @@ public class FlowActionUtilsTest extends TestBase {
      * @param addr   A MD-SAL IP address.
      * @return  A VTN SET_INET_DST action.
      */
-    public static DataFlowAction createVtnSetInetDstAction(int order,
-                                                           Address addr) {
-        return new DataFlowActionBuilder().
+    public static VtnFlowAction createVtnSetInetDstAction(int order,
+                                                          Address addr) {
+        return new VtnFlowActionBuilder().
             setOrder(order).
             setVtnAction(VTNSetInetDstAction.newVtnAction(addr)).
             build();
@@ -462,9 +462,9 @@ public class FlowActionUtilsTest extends TestBase {
      * @param addr   A MD-SAL IP address.
      * @return  A VTN SET_INET_SRC action.
      */
-    public static DataFlowAction createVtnSetInetSrcAction(int order,
-                                                           Address addr) {
-        return new DataFlowActionBuilder().
+    public static VtnFlowAction createVtnSetInetSrcAction(int order,
+                                                          Address addr) {
+        return new VtnFlowActionBuilder().
             setOrder(order).
             setVtnAction(VTNSetInetSrcAction.newVtnAction(addr)).
             build();
@@ -477,10 +477,10 @@ public class FlowActionUtilsTest extends TestBase {
      * @param port   A port number.
      * @return  A VTN SET_TP_DST action.
      */
-    public static DataFlowAction createVtnSetPortDstAction(int order,
-                                                           int port) {
+    public static VtnFlowAction createVtnSetPortDstAction(int order,
+                                                          int port) {
         PortNumber pnum = new PortNumber(port);
-        return new DataFlowActionBuilder().
+        return new VtnFlowActionBuilder().
             setOrder(order).
             setVtnAction(VTNSetPortDstAction.newVtnAction(pnum)).
             build();
@@ -493,10 +493,10 @@ public class FlowActionUtilsTest extends TestBase {
      * @param port   A port number.
      * @return  A VTN SET_TP_SRC action.
      */
-    public static DataFlowAction createVtnSetPortSrcAction(int order,
-                                                           int port) {
+    public static VtnFlowAction createVtnSetPortSrcAction(int order,
+                                                          int port) {
         PortNumber pnum = new PortNumber(port);
-        return new DataFlowActionBuilder().
+        return new VtnFlowActionBuilder().
             setOrder(order).
             setVtnAction(VTNSetPortSrcAction.newVtnAction(pnum)).
             build();
@@ -509,8 +509,8 @@ public class FlowActionUtilsTest extends TestBase {
      * @param vid    A VLAN ID.
      * @return  A VTN SET_VLAN_ID action.
      */
-    public static DataFlowAction createVtnSetVlanIdAction(int order, int vid) {
-        return new DataFlowActionBuilder().
+    public static VtnFlowAction createVtnSetVlanIdAction(int order, int vid) {
+        return new VtnFlowActionBuilder().
             setOrder(order).
             setVtnAction(VTNSetVlanIdAction.newVtnAction(vid)).
             build();
@@ -523,9 +523,9 @@ public class FlowActionUtilsTest extends TestBase {
      * @param pri    A VLAN priority.
      * @return  A VTN SET_VLAN_PCP action.
      */
-    public static DataFlowAction createVtnSetVlanPcpAction(int order, int pri) {
+    public static VtnFlowAction createVtnSetVlanPcpAction(int order, int pri) {
         VlanPcp pcp = new VlanPcp((short)pri);
-        return new DataFlowActionBuilder().
+        return new VtnFlowActionBuilder().
             setOrder(order).
             setVtnAction(VTNSetVlanPcpAction.newVtnAction(pcp)).
             build();
@@ -951,7 +951,7 @@ public class FlowActionUtilsTest extends TestBase {
         Comparator<Ordered> comp = new OrderedComparator();
         assertEquals(null, FlowActionUtils.toFlowActions(null, comp));
 
-        List<DataFlowAction> actions = Collections.<DataFlowAction>emptyList();
+        List<VtnFlowAction> actions = Collections.<VtnFlowAction>emptyList();
         List<FlowAction> expected = new ArrayList<>();
         assertEquals(expected, FlowActionUtils.toFlowActions(actions, comp));
 
@@ -980,8 +980,8 @@ public class FlowActionUtilsTest extends TestBase {
             createVtnSetVlanPcpAction(4, 5),
 
             // Insert broken VTN action.
-            new DataFlowActionBuilder().setOrder(10).build());
-        List<DataFlowAction> original = new ArrayList<>(actions);
+            new VtnFlowActionBuilder().setOrder(10).build());
+        List<VtnFlowAction> original = new ArrayList<>(actions);
 
         Collections.addAll(
             expected,
@@ -1016,7 +1016,7 @@ public class FlowActionUtilsTest extends TestBase {
      * Test case for the following methods.
      *
      * <ul>
-     *   <li>{@link FlowActionUtils#toDataFlowActions(List,Comparator,Short)}</li>
+     *   <li>{@link FlowActionUtils#toVtnFlowActions(List,Comparator,Short)}</li>
      *   <li>{@link FlowActionConverter#toVtnAction(org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action,Short)}</li>
      * </ul>
      *
@@ -1027,13 +1027,13 @@ public class FlowActionUtilsTest extends TestBase {
         List<Action> actions = null;
         Comparator<Ordered> comp = new OrderedComparator();
         Comparator<Ordered> rcomp = Collections.reverseOrder(comp);
-        List<DataFlowAction> drop = Collections.
+        List<VtnFlowAction> drop = Collections.
             singletonList(createVtnDropAction(0));
         assertEquals(drop,
-                     FlowActionUtils.toDataFlowActions(actions, comp, null));
+                     FlowActionUtils.toVtnFlowActions(actions, comp, null));
         actions = new ArrayList<>();
         assertEquals(drop,
-                     FlowActionUtils.toDataFlowActions(actions, comp, null));
+                     FlowActionUtils.toVtnFlowActions(actions, comp, null));
 
         // Construct a list that contains all the supported MD-SAL actions.
         EtherAddress dlSrc = new EtherAddress(0x123456789L);
@@ -1070,7 +1070,7 @@ public class FlowActionUtilsTest extends TestBase {
 
         // In case of unknown IP protocol.
         Short[] protocols = {null, 123};
-        List<DataFlowAction> expected = new ArrayList<>();
+        List<VtnFlowAction> expected = new ArrayList<>();
         Collections.addAll(
             expected,
             createVtnSetInetDstAction(0, nwDst.getMdAddress()),
@@ -1083,12 +1083,12 @@ public class FlowActionUtilsTest extends TestBase {
             createVtnSetDlSrcAction(7, dlSrc.getMacAddress()),
             createVtnSetInetDscpAction(8, 45),
             createVtnSetInetSrcAction(9, nwSrc.getMdAddress()));
-        List<DataFlowAction> reversed = new ArrayList<>(expected);
+        List<VtnFlowAction> reversed = new ArrayList<>(expected);
         Collections.reverse(reversed);
 
         for (Short ipproto: protocols) {
-            List<DataFlowAction> results = FlowActionUtils.
-                toDataFlowActions(actions, comp, ipproto);
+            List<VtnFlowAction> results = FlowActionUtils.
+                toVtnFlowActions(actions, comp, ipproto);
             assertEquals(expected, results);
 
             // The specified list should not be changed.
@@ -1096,11 +1096,11 @@ public class FlowActionUtilsTest extends TestBase {
 
             // Sort actions in descending order.
             results = FlowActionUtils.
-                toDataFlowActions(actions, rcomp, ipproto);
+                toVtnFlowActions(actions, rcomp, ipproto);
             assertEquals(expected.size(), results.size());
             for (int order = 0; order < results.size(); order++) {
                 VtnAction ex = reversed.get(order).getVtnAction();
-                DataFlowAction dfa = results.get(order);
+                VtnFlowAction dfa = results.get(order);
                 assertEquals(order, dfa.getOrder().intValue());
                 assertEquals(ex, dfa.getVtnAction());
             }
@@ -1132,17 +1132,17 @@ public class FlowActionUtilsTest extends TestBase {
         };
 
         for (Short ipproto: protocols) {
-            List<DataFlowAction> results = FlowActionUtils.
-                toDataFlowActions(actions, comp, ipproto);
+            List<VtnFlowAction> results = FlowActionUtils.
+                toVtnFlowActions(actions, comp, ipproto);
             assertEquals(expected, results);
             assertEquals(original, actions);
 
             results = FlowActionUtils.
-                toDataFlowActions(actions, rcomp, ipproto);
+                toVtnFlowActions(actions, rcomp, ipproto);
             assertEquals(expected.size(), results.size());
             for (int order = 0; order < results.size(); order++) {
                 VtnAction ex = reversed.get(order).getVtnAction();
-                DataFlowAction dfa = results.get(order);
+                VtnFlowAction dfa = results.get(order);
                 assertEquals(order, dfa.getOrder().intValue());
                 assertEquals(ex, dfa.getVtnAction());
             }
@@ -1169,16 +1169,16 @@ public class FlowActionUtilsTest extends TestBase {
         Collections.reverse(reversed);
 
         Short ipproto = IPProtocols.ICMP.shortValue();
-        List<DataFlowAction> results = FlowActionUtils.
-            toDataFlowActions(actions, comp, ipproto);
+        List<VtnFlowAction> results = FlowActionUtils.
+            toVtnFlowActions(actions, comp, ipproto);
         assertEquals(expected, results);
         assertEquals(original, actions);
 
-        results = FlowActionUtils.toDataFlowActions(actions, rcomp, ipproto);
+        results = FlowActionUtils.toVtnFlowActions(actions, rcomp, ipproto);
         assertEquals(expected.size(), results.size());
         for (int order = 0; order < results.size(); order++) {
             VtnAction ex = reversed.get(order).getVtnAction();
-            DataFlowAction dfa = results.get(order);
+            VtnFlowAction dfa = results.get(order);
             assertEquals(order, dfa.getOrder().intValue());
             assertEquals(ex, dfa.getVtnAction());
         }

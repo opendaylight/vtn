@@ -334,7 +334,7 @@ public final class FlowUtils {
 
             OrderedComparator comp = new OrderedComparator();
             df.setActions(FlowActionUtils.
-                          toFlowActions(vdf.getDataFlowAction(), comp));
+                          toFlowActions(vdf.getVtnFlowAction(), comp));
             df.setVirtualRoute(toVNodeRoutes(vdf.getVirtualRoute(), comp));
             df.setPhysicalRoute(toNodeRoutes(vdf.getPhysicalRoute(), comp));
 

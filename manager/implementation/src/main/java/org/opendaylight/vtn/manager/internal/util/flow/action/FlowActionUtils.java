@@ -24,8 +24,8 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.VtnOrderedFlowAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataFlowAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataFlowActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.Ordered;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.OutputActionCase;
@@ -196,40 +196,40 @@ public final class FlowActionUtils {
 
     /**
      * Convert the given MD-SAL action list into a list of
-     * {@link DataFlowAction} instances.
+     * {@link VtnFlowAction} instances.
      *
      * @param actions  A list of {@link VtnOrderedFlowAction} instances.
      * @param comp     A comparator for the given list.
      * @param ipproto  An IP protocol number configured in the flow match.
-     * @return  A list of {@link DataFlowAction} instances.
+     * @return  A list of {@link VtnFlowAction} instances.
      * @throws RpcException
      *    Failed to convert the given instance.
      */
-    public static List<DataFlowAction> toDataFlowActions(
+    public static List<VtnFlowAction> toVtnFlowActions(
         List<Action> actions, Comparator<? super Action> comp, Short ipproto)
         throws RpcException {
         int order = MiscUtils.ORDER_MIN;
         if (actions == null || actions.isEmpty()) {
-            DataFlowAction dfa = new DataFlowActionBuilder().
+            VtnFlowAction vfa = new VtnFlowActionBuilder().
                 setVtnAction(VTNDropAction.newVtnAction()).
                 setOrder(order).build();
-            return Collections.singletonList(dfa);
+            return Collections.singletonList(vfa);
         }
 
         List<Action> list = MiscUtils.sortedCopy(actions, comp);
-        List<DataFlowAction> dfacts = new ArrayList<>(list.size());
+        List<VtnFlowAction> vfacts = new ArrayList<>(list.size());
         FlowActionConverter conv = FlowActionConverter.getInstance();
         for (Action a: list) {
             VtnAction vact = conv.toVtnAction(a.getAction(), ipproto);
             if (vact != null) {
-                DataFlowAction dfa = new DataFlowActionBuilder().
+                VtnFlowAction vfa = new VtnFlowActionBuilder().
                     setVtnAction(vact).setOrder(order).build();
                 order++;
-                dfacts.add(dfa);
+                vfacts.add(vfa);
             }
         }
 
-        return dfacts;
+        return vfacts;
     }
 
     /**
