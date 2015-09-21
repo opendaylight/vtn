@@ -123,7 +123,7 @@ TEST(odcdriver_port, test_port_invalid_resp) {
   ctr= NULL;
 }
 
-TEST(odcdriver_port, test_port_data_add) {
+TEST(odcdriver_port, DISABLED_test_port_data_add) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
@@ -213,7 +213,7 @@ TEST(odcdriver_port, test_port_data_add) {
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
 }
 
-TEST(odcdriver_port, test_port_data_delete) {
+TEST(odcdriver_port, DISABLED_test_port_data_delete) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
@@ -306,7 +306,7 @@ TEST(odcdriver_port, test_port_data_delete) {
 }
 
 
-TEST(odcdriver_port, test_port_data_update) {
+TEST(odcdriver_port, DISABLED_test_port_data_update) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
@@ -445,7 +445,7 @@ TEST(odcdriver_port, test_port_data_update) {
   ctr= NULL;
 }
 
-TEST(odcdriver_port, test_port_data_update__empty) {
+TEST(odcdriver_port, DISABLED_test_port_data_update__empty) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr, 0, sizeof(key_ctr_t));

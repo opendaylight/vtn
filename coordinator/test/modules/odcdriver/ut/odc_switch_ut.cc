@@ -98,7 +98,7 @@ TEST(odcdriver_switch, test_switch_data) {
   ctr= NULL;
 }
 
-TEST(odcdriver_switch, test_switch_data_update) {
+TEST(odcdriver_switch, DISABLED_test_switch_data_update) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
@@ -180,7 +180,7 @@ TEST(odcdriver_switch, test_switch_data_update) {
   ctr= NULL;
 }
 
-TEST(odcdriver_switch, test_switch_data_delete) {
+TEST(odcdriver_switch, DISABLED_test_switch_data_delete) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
@@ -261,7 +261,7 @@ TEST(odcdriver_switch, test_switch_data_delete) {
 }
 
 
-TEST(odcdriver_switch, test_switch_data_update_same) {
+TEST(odcdriver_switch, DISABLED_test_switch_data_update_same) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr, 0, sizeof(key_ctr_t));

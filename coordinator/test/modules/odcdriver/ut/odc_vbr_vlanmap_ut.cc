@@ -374,7 +374,7 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_incorrect_response_body) {
   }
 }
 
-TEST(odcdriver,  test_fetch_conf_vlanmap_resp) {
+TEST(odcdriver,  DISABLED_test_fetch_conf_vlanmap_resp) {
   key_vbr_t key_vbr;
   val_vbr_t val_vbr;
   key_ctr_t key_ctr;
