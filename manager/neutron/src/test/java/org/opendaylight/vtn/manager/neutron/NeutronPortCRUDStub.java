@@ -13,6 +13,7 @@ import java.util.List;
 import org.opendaylight.neutron.spi.INeutronPortCRUD;
 import org.opendaylight.neutron.spi.NeutronPort;
 
+
 /**
  * Stub class for unit tests.
  *
@@ -123,4 +124,40 @@ public class NeutronPortCRUDStub implements INeutronPortCRUD {
     public boolean portExists(String uuid) {
         return true;
     }
+
+    @Override
+    public boolean inUse(String uuid) {
+        return true;
+    }
+
+    @Override
+    public boolean remove(String uuid) {
+        return true;
+    }
+
+    @Override
+    public boolean exists(String uuid) {
+        return true;
+    }
+
+    @Override
+    public boolean update(String uuid, NeutronPort delta) {
+        return true;
+    }
+
+    @Override
+    public boolean add(NeutronPort input) {
+        return true;
+    }
+
+    @Override
+    public List<NeutronPort> getAll() {
+        return null;
+    }
+
+    @Override
+    public NeutronPort get(String uuid) {
+        return null;
+    }
 }
+
