@@ -6362,8 +6362,10 @@ upll_rc_t VtnFlowFilterEntryMoMgr::DeleteChildrenPOM(
           uuc::CtrlrMgr *ctrlr_mgr = uuc::CtrlrMgr::GetInstance();
           GET_USER_DATA_CTRLR(temp_okey, ctrlr_id);
           if ((!ctrlr_mgr->GetCtrlrType(reinterpret_cast<char *>(ctrlr_id),
-                        dt_type, &ctrlrtype)) || (ctrlrtype != UNC_CT_PFC)) {
+                        dt_type, &ctrlrtype)) ||
+                ((ctrlrtype != UNC_CT_PFC) && (ctrlrtype != UNC_CT_ODC))) {
              UPLL_LOG_DEBUG("Controller type is  %d", ctrlrtype);
+             temp_okey = temp_okey->get_next_cfg_key_val();
              continue;
           }
 
