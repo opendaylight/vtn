@@ -76,7 +76,6 @@ public class PathPolicyUtilsTest extends TestBase {
      *   <li>{@link PathPolicyUtils#getInvalidDefaultCostException(Long)}</li>
      *   <li>{@link PathPolicyUtils#getNullPolicyIdException()}</li>
      *   <li>{@link PathPolicyUtils#getNullPathCostException()}</li>
-     *   <li>{@link PathPolicyUtils#getNullPortDescException()}</li>
      *   <li>{@link PathPolicyUtils#getDuplicatePortException(Object)}</li>
      * </ul>
      */
@@ -133,13 +132,6 @@ public class PathPolicyUtilsTest extends TestBase {
         assertEquals(null, e.getCause());
         assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
         assertEquals("Path cost cannot be null", e.getMessage());
-
-        // getNullPortDescException()
-        e = PathPolicyUtils.getNullPortDescException();
-        assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
-        assertEquals(null, e.getCause());
-        assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
-        assertEquals("Port descriptor cannot be null", e.getMessage());
 
         // getDuplicatePortException()
         SalPort sport = new SalPort(1L, 2L);

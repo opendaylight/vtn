@@ -48,6 +48,16 @@ public final class NodeUtils {
     }
 
     /**
+     * Return a new {@link RpcException} that indicates the port descriptor
+     * is null.
+     *
+     * @return  An {@link RpcException}.
+     */
+    public static RpcException getNullPortDescException() {
+        return RpcException.getNullArgumentException("vtn-port-desc");
+    }
+
+    /**
      * Check the specified node.
      *
      * @param node  Node to be tested.
@@ -218,6 +228,49 @@ public final class NodeUtils {
         if (sw != null) {
             checkSwitchPort(sw, node);
         }
+    }
+
+    /**
+     * Check whether the given {@link VtnPortDesc} instance is valid or not.
+     *
+     * @param vdesc  A {@link VtnPortDesc} instance to be tested.
+     * @throws RpcException
+     *    The specified instance is invalid.
+     */
+    public static void checkVtnPortDesc(VtnPortDesc vdesc)
+        throws RpcException {
+        String value = (vdesc == null) ? null : vdesc.getValue();
+        if (value == null) {
+            throw getNullPortDescException();
+        }
+
+        int idx = value.indexOf(PORT_DESC_SEPARATOR);
+        if (idx >= 0) {
+            String nodeId = value.substring(0, idx);
+            int idStart = idx + 1;
+            int idEnd = value.indexOf(PORT_DESC_SEPARATOR, idStart);
+            if (idEnd >= 0) {
+                String portId = (idStart == idEnd)
+                    ? null : value.substring(idStart, idEnd);
+                int nameStart = idEnd + 1;
+                String portName = (nameStart >= value.length())
+                    ? null : value.substring(nameStart);
+                try {
+                    checkPortLocation(nodeId, portId, portName);
+                    return;
+                } catch (RpcException e) {
+                    String msg = "Invalid vtn-port-desc: " + value + ": " +
+                        e.getMessage();
+                    RpcException re =
+                        RpcException.getBadArgumentException(msg);
+                    re.initCause(e);
+                    throw re;
+                }
+            }
+        }
+
+        throw RpcException.getBadArgumentException(
+            "Invalid vtn-port-desc format: " + value);
     }
 
     /**
@@ -473,5 +526,31 @@ public final class NodeUtils {
         SwitchPort swport = (id == null && name == null)
             ? null : new SwitchPort(name, type, id);
         return new PortLocation(node, swport);
+    }
+
+    /**
+     * Check whether the given parameters specifies a valid switch port or not.
+     *
+     * @param nodeId    A string representation of MD-SAL node identifier.
+     * @param portId    A string representation of switch port identifier.
+     * @param portName  The name of the switc port.
+     * @throws RpcException
+     *    The given parameters does not specify a valid switch port.
+     */
+    private static void checkPortLocation(String nodeId, String portId,
+                                          String portName) throws RpcException {
+        SalNode snode = SalNode.checkedCreate(nodeId);
+        if (portId != null) {
+            SalPort sport = SalPort.create(snode.getNodeNumber(), portId);
+            if (sport == null) {
+                throw RpcException.getBadArgumentException(
+                    "Invalid port ID: " + portId);
+            }
+        }
+
+        if (portName != null && portName.isEmpty()) {
+            throw RpcException.getBadArgumentException(
+                "Port name cannot be empty");
+        }
     }
 }

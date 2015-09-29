@@ -12,6 +12,8 @@ import java.math.BigInteger;
 
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
+
 import org.opendaylight.controller.sal.core.Node.NodeIDType;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 
@@ -158,6 +160,42 @@ public class SalNode {
             snode = new SalNode(l.longValue(), node);
         } else {
             snode = null;
+        }
+
+        return snode;
+    }
+
+    /**
+     * Convert the given MD-SAL node ID into a {@code SalNode} instance
+     * with value checking.
+     *
+     * @param nid  A {@link NodeId} instance.
+     * @return  A {@code SalNode} instance.
+     * @throws RpcException
+     *    An invalid node ID is passed to {@code nid}.
+     */
+    public static SalNode checkedCreate(NodeId nid) throws RpcException {
+        String id = (nid == null) ? null : nid.getValue();
+        return checkedCreate(id);
+    }
+
+    /**
+     * Convert a string representation of MD-SAL node ID into a {@code SalNode}
+     * instance with value checking.
+     *
+     * @param id  A string representation of MD-SAL node ID.
+     * @return  A {@code SalNode} instance.
+     * @throws RpcException
+     *    An invalid node ID is passed to {@code id}.
+     */
+    public static SalNode checkedCreate(String id) throws RpcException {
+        SalNode snode = create(id);
+        if (snode == null) {
+            if (id == null) {
+                throw RpcException.getNullArgumentException("Node");
+            }
+            throw RpcException.getBadArgumentException(
+                "Invalid node ID: " + id);
         }
 
         return snode;

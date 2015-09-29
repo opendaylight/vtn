@@ -303,17 +303,16 @@ public class PathCostConfigBuilderTest extends TestBase {
                     pccb.set(config);
                     unexpected();
                 } catch (RpcException e) {
-                    assertEquals(null, e.getCause());
                     assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
                     if (vdesc == null) {
-                        assertEquals("Port descriptor cannot be null",
+                        assertEquals("vtn-port-desc cannot be null",
                                      e.getMessage());
                         assertEquals(RpcErrorTag.MISSING_ELEMENT,
                                      e.getErrorTag());
                     } else {
-                        String msg = "Invalid port descriptor: " +
-                            vdesc.getValue();
-                        assertEquals(msg, e.getMessage());
+                        String msg = "Invalid vtn-port-desc: " +
+                            vdesc.getValue() + ": ";
+                        assertTrue(e.getMessage().startsWith(msg));
                         assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
                     }
                 }
@@ -322,17 +321,16 @@ public class PathCostConfigBuilderTest extends TestBase {
                     pccb.setPortDesc(vdesc);
                     unexpected();
                 } catch (RpcException e) {
-                    assertEquals(null, e.getCause());
                     assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
                     if (vdesc == null) {
-                        assertEquals("Port descriptor cannot be null",
+                        assertEquals("vtn-port-desc cannot be null",
                                      e.getMessage());
                         assertEquals(RpcErrorTag.MISSING_ELEMENT,
                                      e.getErrorTag());
                     } else {
-                        String msg = "Invalid port descriptor: " +
-                            vdesc.getValue();
-                        assertEquals(msg, e.getMessage());
+                        String msg = "Invalid vtn-port-desc: " +
+                            vdesc.getValue() + ": ";
+                        assertTrue(e.getMessage().startsWith(msg));
                         assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
                     }
                 }

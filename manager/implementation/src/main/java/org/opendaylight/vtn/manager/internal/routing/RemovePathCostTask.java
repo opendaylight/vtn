@@ -18,6 +18,7 @@ import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
+import org.opendaylight.vtn.manager.internal.util.inventory.NodeUtils;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcOutputGenerator;
@@ -72,12 +73,12 @@ public final class RemovePathCostTask
         Map<String, RemoveCostTask> taskMap = new HashMap<>();
         for (VtnPortDesc vdesc: portList) {
             if (vdesc == null) {
-                throw PathPolicyUtils.getNullPortDescException();
+                throw NodeUtils.getNullPortDescException();
             }
 
             String key = vdesc.getValue();
             if (key == null) {
-                throw PathPolicyUtils.getNullPortDescException();
+                throw NodeUtils.getNullPortDescException();
             }
 
             if (!taskMap.containsKey(key)) {

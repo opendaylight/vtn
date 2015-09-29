@@ -143,16 +143,6 @@ public final class PathPolicyUtils {
     }
 
     /**
-     * Return a new {@link RpcException} that indicates the port descriptor
-     * is null.
-     *
-     * @return  An {@link RpcException}.
-     */
-    public static RpcException getNullPortDescException() {
-        return RpcException.getNullArgumentException("Port descriptor");
-    }
-
-    /**
      * Return a new {@link RpcException} that indicates duplicate port
      * descriptor is detected.
      *

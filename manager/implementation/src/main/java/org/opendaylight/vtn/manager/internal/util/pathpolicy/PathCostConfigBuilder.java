@@ -10,7 +10,6 @@ package org.opendaylight.vtn.manager.internal.util.pathpolicy;
 
 import org.opendaylight.vtn.manager.PathCost;
 
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.NodeUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
@@ -86,21 +85,7 @@ public abstract class PathCostConfigBuilder<T> {
      */
     public final PathCostConfigBuilder<T> setPortDesc(VtnPortDesc value)
         throws RpcException {
-        if (value == null) {
-            throw PathPolicyUtils.getNullPortDescException();
-        }
-
-        String desc = value.getValue();
-        if (desc == null) {
-            throw PathPolicyUtils.getNullPortDescException();
-        }
-
-        if (NodeUtils.toPortLocation(value) == null) {
-            String msg = MiscUtils.joinColon("Invalid port descriptor",
-                                             value.getValue());
-            throw RpcException.getBadArgumentException(msg);
-        }
-
+        NodeUtils.checkVtnPortDesc(value);
         setPortDescImpl(value);
         return this;
     }

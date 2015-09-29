@@ -15,6 +15,8 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
@@ -26,6 +28,7 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnNodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNodeKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.Table;
@@ -47,13 +50,19 @@ public class SalNodeTest extends TestBase {
      *   <li>{@link SalNode#create(String)}</li>
      *   <li>{@link SalNode#create(NodeId)}</li>
      *   <li>{@link SalNode#create(NodeRef)}</li>
+     *   <li>{@link SalNode#checkedCreate(String)}</li>
+     *   <li>{@link SalNode#checkedCreate(NodeId)}</li>
      *   <li>{@link SalNode#getNodeNumber()}</li>
      * </ul>
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void testCreateString() {
+    public void testCreateString() throws Exception {
         assertEquals(null, SalNode.create((NodeId)null));
         assertEquals(null, SalNode.create((NodeRef)null));
+
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         String[] bad = {
             // Invalid node type.
             null,
@@ -69,9 +78,47 @@ public class SalNodeTest extends TestBase {
         };
         for (String id: bad) {
             assertEquals(null, SalNode.create(id));
-            if (id != null) {
+            if (id == null) {
+                String msg = "Node cannot be null";
+                try {
+                    SalNode.checkedCreate(id);
+                    unexpected();
+                } catch (RpcException e) {
+                    assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(msg, e.getMessage());
+                }
+
+                try {
+                    SalNode.checkedCreate((NodeId)null);
+                    unexpected();
+                } catch (RpcException e) {
+                    assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(msg, e.getMessage());
+                }
+            } else {
                 NodeId nid = new NodeId(id);
-                assertEquals(null, SalNode.create(id));
+                assertEquals(null, SalNode.create(nid));
+
+                String msg = "Invalid node ID: " + id;
+                try {
+                    SalNode.checkedCreate(nid);
+                    unexpected();
+                } catch (RpcException e) {
+                    assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(msg, e.getMessage());
+                }
+
+                try {
+                    SalNode.checkedCreate(id);
+                    unexpected();
+                } catch (RpcException e) {
+                    assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(msg, e.getMessage());
+                }
 
                 InstanceIdentifier<Node> path = InstanceIdentifier.
                     builder(Nodes.class).
