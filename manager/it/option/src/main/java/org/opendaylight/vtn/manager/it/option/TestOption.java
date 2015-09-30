@@ -379,14 +379,14 @@ public final class TestOption {
             mavenBundle(VTN, "manager"),
             mavenBundle(VTN, "manager.model"),
             mavenBundle(VTN, "manager.implementation"),
-            mavenBundle(VTN, "manager.neutron"),
+            //mavenBundle(VTN, "manager.neutron"),
             mavenBundle(VTN, "manager.it.ofmock"),
             mavenBundle(VTN, "manager.it.util"),
 
             // Neutron bundles.
-            mavenBundle(NEUTRON, "neutron-spi"),
-            mavenBundle(NEUTRON, "transcriber"),
-            mavenBundle(NEUTRON, "model"),
+            //mavenBundle(NEUTRON, "neutron-spi"),
+            //mavenBundle(NEUTRON, "transcriber"),
+            //mavenBundle(NEUTRON, "model"),
 
             // Netty bundles.
             mavenBundle(NETTY, "netty-buffer"),
