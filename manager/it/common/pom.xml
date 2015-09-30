@@ -53,10 +53,12 @@
       <groupId>org.opendaylight.vtn</groupId>
       <artifactId>manager.implementation</artifactId>
     </dependency>
-    <dependency>
+
+    <!-- TODO: Enable test after VTN Manager Neutron implementation -->
+    <!--dependency>
       <groupId>org.opendaylight.vtn</groupId>
       <artifactId>manager.neutron</artifactId>
-    </dependency>
+    </dependency-->
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
       <artifactId>manager.northbound</artifactId>
@@ -210,8 +212,9 @@
       <artifactId>forwardingrules-manager</artifactId>
     </dependency>
 
-    <!-- OpenDaylight neutron project -->
-    <dependency>
+    <!-- TODO: Enable test after VTN Manager Neutron implementation -->
+    <!-- OpenDaylight neutron project  -->
+    <!--dependency>
       <groupId>org.opendaylight.neutron</groupId>
       <artifactId>neutron-spi</artifactId>
     </dependency>
@@ -222,7 +225,7 @@
     <dependency>
       <groupId>org.opendaylight.neutron</groupId>
       <artifactId>model</artifactId>
-    </dependency>
+    </dependency-->
 
     <!-- OpenDaylight OVSDB project and requisites -->
     <dependency>
