@@ -13,13 +13,15 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>org.opendaylight.vtn</groupId>
-    <artifactId>manager.common.java</artifactId>
-    <version>0.4.0-SNAPSHOT</version>
-    <relativePath>../common/java</relativePath>
-  </parent>
+ <parent>
+  <groupId>org.opendaylight.controller</groupId>
+  <artifactId>config-parent</artifactId>
+  <version>0.4.0-SNAPSHOT</version>
+  <relativePath />
+ </parent>
 
+  <groupId>org.opendaylight.vtn</groupId>
+  <version>0.4.0-SNAPSHOT</version>
   <artifactId>manager.neutron</artifactId>
   <packaging>bundle</packaging>
 
@@ -32,59 +34,57 @@
 
   <properties>
     <vtn.manager.dir>..</vtn.manager.dir>
+    <root.directory>${env.PWD}</root.directory>
   </properties>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <extensions>true</extensions>
-        <configuration>
-          <instructions>
-            <Import-Package>
-              org.opendaylight.controller.sal.core,
-              org.opendaylight.controller.sal.utils,
-              org.opendaylight.neutron.spi,
-              org.opendaylight.ovsdb.lib.notation,
-              org.opendaylight.ovsdb.lib.schema,
-              org.opendaylight.ovsdb.schema.openvswitch,
-              org.opendaylight.vtn.manager,
-              org.apache.felix.dm,
-              org.slf4j
-            </Import-Package>
-            <Bundle-Activator>
-              org.opendaylight.vtn.manager.neutron.Activator
-            </Bundle-Activator>
-          </instructions>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.opendaylight.mdsal</groupId>
+        <artifactId>mdsal-artifacts</artifactId>
+        <version>2.0.0-SNAPSHOT</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.opendaylight.mdsal.model</groupId>
+        <artifactId>mdsal-model-artifacts</artifactId>
+        <version>0.8.0-SNAPSHOT</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
       <groupId>org.opendaylight.neutron</groupId>
-      <artifactId>neutron-spi</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>sal</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opendaylight.ovsdb</groupId>
-      <artifactId>library</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.ovsdb</groupId>
-      <artifactId>schema.openvswitch</artifactId>
+      <artifactId>model</artifactId>
+      <version>0.6.0-SNAPSHOT</version>
     </dependency>
 
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
       <artifactId>manager</artifactId>
+      <version>0.4.0-SNAPSHOT</version>
+    </dependency>
+
+    <!-- OpenDaylight Controller -->
+     <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>sal-binding-api</artifactId>
+     </dependency>
+     <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>sal-binding-config</artifactId>
+     </dependency>
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>config-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>sal-common-api</artifactId>
     </dependency>
 
     <dependency>
@@ -96,5 +96,60 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
+
+    <!-- OpenDaylight OVSDB -->
+    <dependency>
+      <groupId>org.opendaylight.ovsdb</groupId>
+      <artifactId>southbound-api</artifactId>
+      <version>1.2.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.ovsdb</groupId>
+      <artifactId>southbound-impl</artifactId>
+      <version>1.2.0-SNAPSHOT</version>
+    </dependency>
+
+      <!-- OpenDaylight YANG Tools -->
+    <dependency>
+       <groupId>org.opendaylight.yangtools</groupId>
+       <artifactId>yang-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.yangtools</groupId>
+      <artifactId>concepts</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.mdsal.model</groupId>
+      <artifactId>ietf-inet-types</artifactId>
+      <version>2010.09.24.8-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.mdsal.model</groupId>
+      <artifactId>ietf-topology</artifactId>
+      <version>2013.10.21.8-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.mdsal.model</groupId>
+      <artifactId>opendaylight-l2-types</artifactId>
+      <version>2013.08.27.8-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.mdsal.model</groupId>
+      <artifactId>ietf-yang-types-20130715</artifactId>
+      <version>2013.07.15.8-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.mdsal.model</groupId>
+      <artifactId>ietf-yang-types</artifactId>
+      <version>2010.09.24.8-SNAPSHOT</version>
+    </dependency>
   </dependencies>
+    <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+      </plugin>
+       </plugins>
+       </build>
 </project>
