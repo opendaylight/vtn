@@ -1,0 +1,45 @@
+/*
+ * Copyright (c) 2015 NEC Corporation
+ * All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-neutron {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:neutron";
+    prefix "vtn-neutron";
+
+    import config { prefix config; revision-date 2013-04-05; }
+    import opendaylight-md-sal-binding { prefix md-sal-binding; revision-date 2013-10-28;}
+    import opendaylight-md-sal-dom {prefix dom; revision-date 2013-10-28;}
+
+    description
+        "Service definition for VTN Neutron project";
+
+    revision "2015-09-22" {
+        description
+            "Initial revision";
+    }
+
+    identity vtn-neutron {
+        base config:module-type;
+        config:java-name-prefix VTNNeutron;
+    }
+
+    augment "/config:modules/config:module/config:configuration" {
+        case vtn-neutron {
+            when "/config:modules/config:module/config:type = 'vtn-neutron'";
+            container broker {
+                uses config:service-ref {
+                    refine type {
+                        mandatory true;
+                        config:required-identity md-sal-binding:binding-broker-osgi-registry;
+                    }
+                }
+            }
+        }
+    }
+}
