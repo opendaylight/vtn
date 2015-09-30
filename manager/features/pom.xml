@@ -164,8 +164,17 @@
     </dependency>
 
     <dependency>
-      <groupId>org.opendaylight.vtn</groupId>
+      <groupId>org.opendaylight.controller</groupId>
       <artifactId>manager.neutron</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>manager.neutron</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>xml</type>
     </dependency>
 
     <dependency>
@@ -208,6 +217,26 @@
       <type>xml</type>
     </dependency>
 
+     <dependency>
+      <groupId>org.opendaylight.ovsdb</groupId>
+      <artifactId>southbound-features</artifactId>
+      <classifier>features</classifier>
+      <type>xml</type>
+      <version>${odl.ovsdb.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opendaylight.ovsdb</groupId>
+      <artifactId>southbound-impl</artifactId>
+      <version>${odl.ovsdb.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opendaylight.ovsdb</groupId>
+      <artifactId>southbound-api</artifactId>
+      <version>${odl.ovsdb.version}</version>
+    </dependency>
+
     <dependency>
       <groupId>org.opendaylight.openflowplugin</groupId>
       <artifactId>features-openflowplugin</artifactId>
@@ -229,5 +258,33 @@
       <type>zip</type>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.opendaylight.mdsal.model</groupId>
+      <artifactId>ietf-inet-types</artifactId>
+      <version>2010.09.24.8-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.mdsal.model</groupId>
+      <artifactId>ietf-topology</artifactId>
+      <version>2013.10.21.8-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.mdsal.model</groupId>
+      <artifactId>opendaylight-l2-types</artifactId>
+      <version>2013.08.27.8-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.mdsal.model</groupId>
+      <artifactId>ietf-yang-types-20130715</artifactId>
+      <version>2013.07.15.8-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.mdsal.model</groupId>
+      <artifactId>ietf-yang-types</artifactId>
+      <version>2010.09.24.8-SNAPSHOT</version>
+    </dependency>
+
   </dependencies>
+
 </project>
