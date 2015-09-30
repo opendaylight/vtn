@@ -804,21 +804,11 @@
       </dependency>
 
       <!-- OpenDaylight neutron project -->
-      <dependency>
-        <groupId>org.opendaylight.neutron</groupId>
-        <artifactId>neutron-spi</artifactId>
-        <version>${odl.neutron.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.neutron</groupId>
-        <artifactId>transcriber</artifactId>
-        <version>${odl.neutron.version}</version>
-      </dependency>
-      <dependency>
+      <!--dependency>
         <groupId>org.opendaylight.neutron</groupId>
         <artifactId>model</artifactId>
         <version>${odl.neutron.version}</version>
-      </dependency>
+      </dependency-->
 
       <!-- OpenDaylight OVSDB project -->
       <dependency>
