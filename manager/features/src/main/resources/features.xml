@@ -19,7 +19,7 @@
   <repository>mvn:org.opendaylight.controller/features-nsf/${feature.nsf.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.netconf/features-restconf/${odl.netconf.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.neutron/features-neutron/${odl.neutron.version}/xml/features</repository>
-  <repository>mvn:org.opendaylight.ovsdb/features-ovsdb/${odl.ovsdb.version}/xml/features</repository>
+  <repository>mvn:org.opendaylight.ovsdb/southbound-features/${odl.ovsdb.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.openflowplugin/features-openflowplugin/${odl.openflowplugin.version}/xml/features</repository>
 
   <feature
@@ -45,16 +45,14 @@
     <bundle>mvn:org.opendaylight.vtn/manager.northbound/${project.version}</bundle>
   </feature>
 
-  <feature
+ <feature
       name='odl-vtn-manager-neutron'
       description="OpenDaylight :: VTN Manager :: Neutron Interface"
       version='${project.version}'>
-    <feature version='${odl.neutron.version}'>odl-neutron-northbound-api</feature>
-    <feature version="${odl.neutron.version}">odl-neutron-service</feature>
-    <feature version='${odl.neutron.version}'>odl-neutron-spi</feature>
-    <feature version='${odl.neutron.version}'>odl-neutron-transcriber</feature>
-    <feature version='${odl.ovsdb.version}'>odl-ovsdb-all</feature>
+    <feature version="${odl.controller.mdsal.version}">odl-mdsal-broker</feature>
     <feature version="${project.version}">odl-vtn-manager</feature>
+    <feature version='${odl.ovsdb.version}'>odl-ovsdb-southbound-impl</feature>
     <bundle>mvn:org.opendaylight.vtn/manager.neutron/${project.version}</bundle>
+    <configfile finalname="etc/opendaylight/karaf/90-vtn-neutron.xml">mvn:org.opendaylight.vtn/manager.neutron/${project.version}/xml/config</configfile>
   </feature>
 </features>
