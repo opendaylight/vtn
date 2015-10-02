@@ -129,13 +129,13 @@ public final class StatsTimerTask extends TimerTask implements AutoCloseable {
                 String maddr = (mac == null)
                     ? "<null>"
                     : Long.toHexString(mac.longValue());
-                traceLog("Skip flow entry: %s: Not owner: %s", id, maddr);
+                traceLog("Skip flow entry: {}: Not owner: {}", id, maddr);
                 return;
             }
 
             FlowId fid = vdf.getSalFlowId();
             if (fid == null) {
-                traceLog("Skip flow entry: %s: No MD-SAL flow ID.", id);
+                traceLog("Skip flow entry: {}: No MD-SAL flow ID.", id);
                 return;
             }
 
@@ -146,7 +146,7 @@ public final class StatsTimerTask extends TimerTask implements AutoCloseable {
                 FlowStatsUtils.read(tx, vfent.getNode(), fid);
             String err = FlowStatsUtils.check(fstats);
             if (err != null) {
-                traceLog("Skip flow entry: %s: %s", id, err);
+                traceLog("Skip flow entry: {}: {}", id, err);
                 return;
             }
 
@@ -157,7 +157,7 @@ public final class StatsTimerTask extends TimerTask implements AutoCloseable {
                 FlowStatsUtils.getIdentifier(tname, key);
             LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
             tx.put(oper, path, history, false);
-            traceLog("Flow statistics has been updated: %s, %s",
+            traceLog("Flow statistics has been updated: {}, {}",
                      id, fid.getValue());
         }
 

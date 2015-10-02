@@ -163,8 +163,8 @@ class VTenantLoadTask extends AbstractTxTask<Vtns> {
             try {
                 vlist.add(PathMapUtils.toVtnPathMapBuilder(xpm).build());
                 addLoadedPath(PathMapUtils.getIdentifier(vname, index),
-                              "%s.%s: VTN path map has been loaded: " +
-                              "cond=%s, policy=%s, idle=%s, hard=%s",
+                              "{}.{}: VTN path map has been loaded: " +
+                              "cond={}, policy={}, idle={}, hard={}",
                               vname.getValue(), index,
                               xpm.getCondition(),
                               xpm.getPolicy(), xpm.getIdleTimeout(),

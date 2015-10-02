@@ -146,7 +146,7 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
         InstanceIdentifier<Flow> path = data.getIdentifier();
         NodeId node = InventoryUtils.getNodeId(path);
         if (node == null) {
-            log(warnLogger, "Node ID is not present in flow path: %s", path);
+            log(warnLogger, "Node ID is not present in flow path: {}", path);
             return null;
         }
 
@@ -154,12 +154,12 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
         TableKey key = path.firstKeyOf(Table.class, TableKey.class);
         Short tid = (key == null) ? null : key.getId();
         if (tid == null) {
-            log(warnLogger, "Table ID is not present in flow path: %s", path);
+            log(warnLogger, "Table ID is not present in flow path: {}", path);
             return null;
         }
 
         if (tid.intValue() != FlowUtils.TABLE_ID) {
-            log(warnLogger, "Unexpected table ID in flow path: %s", path);
+            log(warnLogger, "Unexpected table ID in flow path: {}", path);
             return null;
         }
 
@@ -192,7 +192,7 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
         VtnFlowEntry vfent = fc.getIngressFlow();
         if (vfent == null) {
             log(warnLogger,
-                "Ignore flow statistics: %s: Ingress flow not found.",
+                "Ignore flow statistics: {}: Ingress flow not found.",
                 vdf.getFlowId().getValue());
             return false;
         }
@@ -201,7 +201,7 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
         NodeId vnode = vfent.getNode();
         if (!node.equals(vnode)) {
             log(traceLogger,
-                "Ignore flow statistics: %s: Node ID does not match: %s, %s",
+                "Ignore flow statistics: {}: Node ID does not match: {}, {}",
                 vdf.getFlowId().getValue(), vnode, node);
             return false;
         }
@@ -214,7 +214,7 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
             FlowMatchUtils.getIngressPort(flow.getMatch());
         if (!MiscUtils.equalsUri(vport, port)) {
             log(warnLogger,
-                "Ignore flow statistics: %s: IN_PORT does not match: %s, %s",
+                "Ignore flow statistics: {}: IN_PORT does not match: {}, {}",
                 vdf.getFlowId().getValue(), vport, port);
             return false;
         }
@@ -224,7 +224,7 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
         boolean ret = Objects.equals(vpri, pri);
         if (!ret) {
             log(warnLogger,
-                "Ignore flow statistics: %s: Priority does not match: %s, %s",
+                "Ignore flow statistics: {}: Priority does not match: {}, {}",
                 vdf.getFlowId().getValue(), vpri, pri);
         }
 
@@ -252,7 +252,7 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
                 setFlowStatsRecord(Collections.singletonList(fsr));
             builder.setFlowStatsHistory(sb.build());
         } else {
-            log(warnLogger, "%s: %s: No flow statistics: %s",
+            log(warnLogger, "{}: {}: No flow statistics: {}",
                 builder.getFlowId().getValue(),
                 builder.getSalFlowId().getValue(), err);
         }
@@ -271,7 +271,7 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
                          VtnFlowId vtnId) throws VTNException {
         IdentifiedData<VtnDataFlow> vdata = finder.find(vtnId);
         if (vdata == null) {
-            log(warnLogger, "Ignore flow statistics: %s: Data flow not found.",
+            log(warnLogger, "Ignore flow statistics: {}: Data flow not found.",
                 vtnId.getValue());
             return;
         }
@@ -281,7 +281,7 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
         FlowId mdId = flow.getId();
         if (mdId.equals(id)) {
             log(traceLogger,
-                "Ignore flow statistics: %s: Already resolved: %s",
+                "Ignore flow statistics: {}: Already resolved: {}",
                 vtnId.getValue(), id.getValue());
             return;
         }
@@ -292,7 +292,7 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
             String maddr = (mac == null)
                 ? "<null>"
                 : Long.toHexString(mac.longValue());
-            log(traceLogger, "Ignore flow statistics: %s: Not owner: %s",
+            log(traceLogger, "Ignore flow statistics: {}: Not owner: {}",
                 vtnId.getValue(), maddr);
         } else if (isIngressFlow(vdf, flow, node)) {
             // The given flow is the ingress flow of the target data flow.
@@ -306,11 +306,11 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
             LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
             tx.merge(oper, path, builder.build(), false);
             if (id == null) {
-                log(debugLogger, "%s: Associated with MD-SAL flow ID: %s",
+                log(debugLogger, "{}: Associated with MD-SAL flow ID: {}",
                     vtnId.getValue(), mdId.getValue());
             } else {
                 log(debugLogger,
-                    "%s: MD-SAL flow ID has been changed: %s -> %s",
+                    "{}: MD-SAL flow ID has been changed: {} -> {}",
                     vtnId.getValue(), id.getValue(), mdId.getValue());
             }
         }
@@ -355,14 +355,14 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
             Flow flow = data.getValue();
             FlowCookie cookie = flow.getCookie();
             if (flow.getId() == null) {
-                log(warnLogger, "No MD-SAL flow ID is assigned: %s", cookie);
+                log(warnLogger, "No MD-SAL flow ID is assigned: {}", cookie);
                 continue;
             }
 
             VtnFlowId vtnId = FlowUtils.getVtnFlowId(cookie);
             if (vtnId == null) {
                 log(traceLogger,
-                    "Ignore flow statistics: Unexpected cookie: %s", cookie);
+                    "Ignore flow statistics: Unexpected cookie: {}", cookie);
             } else {
                 resolve(tx, node, flow, vtnId);
             }
