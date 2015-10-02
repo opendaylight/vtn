@@ -233,8 +233,7 @@ public final class FlowCondUtils {
      *          {@code null} if not found.
      */
     public static String getName(InstanceIdentifier<?> path) {
-        VtnFlowConditionKey key =
-            path.firstKeyOf(VtnFlowCondition.class, VtnFlowConditionKey.class);
+        VtnFlowConditionKey key = path.firstKeyOf(VtnFlowCondition.class);
         if (key == null) {
             return null;
         }

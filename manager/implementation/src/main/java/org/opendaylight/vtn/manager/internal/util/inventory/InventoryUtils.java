@@ -551,7 +551,7 @@ public final class InventoryUtils {
      *          {@code null} if not found.
      */
     public static NodeId getNodeId(InstanceIdentifier<?> path) {
-        NodeKey key = path.firstKeyOf(Node.class, NodeKey.class);
+        NodeKey key = path.firstKeyOf(Node.class);
         return (key == null) ? null : key.getId();
     }
 
@@ -564,8 +564,7 @@ public final class InventoryUtils {
      */
     public static NodeConnectorId getNodeConnectorId(
         InstanceIdentifier<?> path) {
-        NodeConnectorKey key =
-            path.firstKeyOf(NodeConnector.class, NodeConnectorKey.class);
+        NodeConnectorKey key = path.firstKeyOf(NodeConnector.class);
         return (key == null) ? null : key.getId();
     }
 
@@ -577,7 +576,7 @@ public final class InventoryUtils {
      *          {@code null} if not found.
      */
     public static LinkId getLinkId(InstanceIdentifier<?> path) {
-        LinkKey key = path.firstKeyOf(Link.class, LinkKey.class);
+        LinkKey key = path.firstKeyOf(Link.class);
         return (key == null) ? null : key.getLinkId();
     }
 

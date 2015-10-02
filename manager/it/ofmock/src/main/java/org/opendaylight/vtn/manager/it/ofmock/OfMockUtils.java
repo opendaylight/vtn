@@ -132,8 +132,7 @@ public final class OfMockUtils {
             return null;
         }
 
-        NodeConnectorKey key =
-            path.firstKeyOf(NodeConnector.class, NodeConnectorKey.class);
+        NodeConnectorKey key = path.firstKeyOf(NodeConnector.class);
         if (key == null) {
             return null;
         }

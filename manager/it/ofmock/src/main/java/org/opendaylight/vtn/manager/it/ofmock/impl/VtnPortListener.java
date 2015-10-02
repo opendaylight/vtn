@@ -202,7 +202,7 @@ public final class VtnPortListener extends DataStoreListener<VtnPort, Void> {
      * @return  The port identifier.
      */
     private String getIdentifier(InstanceIdentifier<?> path) {
-        VtnPortKey key = path.firstKeyOf(VtnPort.class, VtnPortKey.class);
+        VtnPortKey key = path.firstKeyOf(VtnPort.class);
         if (key == null) {
             String msg = "Unexpected VtnPort path: " + path;
             LOG.error(msg);

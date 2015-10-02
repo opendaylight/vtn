@@ -148,7 +148,7 @@ public final class VtnNodeListener extends DataStoreListener<VtnNode, Void> {
      * @return  The node identifier.
      */
     private String getIdentifier(InstanceIdentifier<?> path) {
-        VtnNodeKey key = path.firstKeyOf(VtnNode.class, VtnNodeKey.class);
+        VtnNodeKey key = path.firstKeyOf(VtnNode.class);
         if (key == null) {
             String msg = "Unexpected VtnNode path: " + path;
             LOG.error(msg);

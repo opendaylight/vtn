@@ -145,7 +145,7 @@ public final class VTenantUtils {
      *          {@code null} if not found.
      */
     public static VnodeName getVnodeName(InstanceIdentifier<?> path) {
-        VtnKey key = path.firstKeyOf(Vtn.class, VtnKey.class);
+        VtnKey key = path.firstKeyOf(Vtn.class);
         return (key == null) ? null : key.getName();
     }
 

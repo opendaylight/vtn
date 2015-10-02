@@ -111,13 +111,8 @@ public final class SalPort extends SalNode {
             return null;
         }
 
-        NodeConnectorKey key =
-            id.firstKeyOf(NodeConnector.class, NodeConnectorKey.class);
-        if (key == null) {
-            return null;
-        }
-
-        return create(key.getId());
+        NodeConnectorKey key = id.firstKeyOf(NodeConnector.class);
+        return (key == null) ? null : create(key.getId());
     }
 
     /**

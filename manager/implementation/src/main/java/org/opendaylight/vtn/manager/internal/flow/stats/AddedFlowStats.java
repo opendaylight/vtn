@@ -151,7 +151,7 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
         }
 
         // Verify the table ID.
-        TableKey key = path.firstKeyOf(Table.class, TableKey.class);
+        TableKey key = path.firstKeyOf(Table.class);
         Short tid = (key == null) ? null : key.getId();
         if (tid == null) {
             log(warnLogger, "Table ID is not present in flow path: {}", path);

@@ -269,13 +269,8 @@ final class PathPolicyListener
      *          identifier. {@code null} on failure.
      */
     private Integer getIdentifier(InstanceIdentifier<VtnPathPolicy> path) {
-        VtnPathPolicyKey key =
-            path.firstKeyOf(VtnPathPolicy.class, VtnPathPolicyKey.class);
-        if (key == null) {
-            return null;
-        }
-
-        return key.getId();
+        VtnPathPolicyKey key = path.firstKeyOf(VtnPathPolicy.class);
+        return (key == null) ? null : key.getId();
     }
 
     // DataStoreListener

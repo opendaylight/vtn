@@ -105,12 +105,8 @@ public class SalNode {
             return null;
         }
 
-        NodeKey key = id.firstKeyOf(Node.class, NodeKey.class);
-        if (key == null) {
-            return null;
-        }
-
-        return create(key.getId());
+        NodeKey key = id.firstKeyOf(Node.class);
+        return (key == null) ? null : create(key.getId());
     }
 
     /**

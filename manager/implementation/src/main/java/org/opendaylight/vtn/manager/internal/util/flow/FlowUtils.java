@@ -654,8 +654,7 @@ public final class FlowUtils {
      *          {@code null} if not found.
      */
     public static String getTenantName(InstanceIdentifier<?> path) {
-        VtnFlowTableKey key =
-            path.firstKeyOf(VtnFlowTable.class, VtnFlowTableKey.class);
+        VtnFlowTableKey key = path.firstKeyOf(VtnFlowTable.class);
         return (key == null) ? null : key.getTenantName();
     }
 

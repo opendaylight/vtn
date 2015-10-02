@@ -207,8 +207,7 @@ public final class PathMapUtils {
      *          {@code null} if not found.
      */
     public static Integer getIndex(InstanceIdentifier<?> path) {
-        VtnPathMapKey key =
-            path.firstKeyOf(VtnPathMap.class, VtnPathMapKey.class);
+        VtnPathMapKey key = path.firstKeyOf(VtnPathMap.class);
         return (key == null) ? null : key.getIndex();
     }
 
