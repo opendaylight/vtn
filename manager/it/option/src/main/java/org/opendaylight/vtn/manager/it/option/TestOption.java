@@ -11,6 +11,7 @@ package org.opendaylight.vtn.manager.it.option;
 import static org.ops4j.pax.exam.CoreOptions.frameworkProperty;
 import static org.ops4j.pax.exam.CoreOptions.systemPackages;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
+import static org.ops4j.pax.exam.CoreOptions.systemTimeout;
 import static org.ops4j.pax.exam.CoreOptions.workingDirectory;
 
 import java.io.Closeable;
@@ -40,6 +41,11 @@ import org.opendaylight.controller.sal.utils.GlobalConstants;
  * </p>
  */
 public final class TestOption {
+    /**
+     * The number of milliseconds to wait for the framework to start.
+     */
+    private static final int  SYSTEM_TIMEOUT = 600000;
+
     /**
      * The size of internal buffer used by
      * {@link #copyFile(InputStream, File)}.
@@ -322,6 +328,9 @@ public final class TestOption {
             // Set fail if unresolved bundle present.
             systemProperty("pax.exam.osgi.unresolved.fail").value("true"),
 
+            // Set system timeout.
+            systemTimeout(SYSTEM_TIMEOUT),
+
             // Use own working directory in order to prevent from creating
             // temporary files in /tmp.
             workingDirectory(tmpPath),
@@ -471,7 +480,6 @@ public final class TestOption {
             mavenBundle(SPRING_FRAMEWORK_SECURITY, "spring-security-taglibs"),
 
             // Miscellaneous.
-            mavenBundle("org.ow2.asm", "asm-all"),
             mavenBundle("org.ow2.chameleon.management", "chameleon-mbeans"),
             mavenBundle("org.aopalliance", "com.springsource.org.aopalliance"),
             mavenBundle("commons-io", "commons-io"),
@@ -487,7 +495,6 @@ public final class TestOption {
             mavenBundle(TestHelper.CONTROLLER, "usermanager.implementation"),
             mavenBundle(TestHelper.CONTROLLER, "security").noStart(),
             mavenBundle(TestHelper.CONTROLLER, "bundlescanner"),
-            mavenBundle(TestHelper.CONTROLLER, "bundlescanner.implementation"),
             mavenBundle(TestHelper.CONTROLLER, "commons.northbound"),
 
             mavenBundle(CONTROLLER_THIRD_PARTY,

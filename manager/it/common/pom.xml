@@ -38,6 +38,9 @@
         in /tmp.
     -->
     <vtn.it.tmpdir>${project.build.directory}/it-tmp</vtn.it.tmpdir>
+
+    <!-- Kill test VM after 20 minutes. -->
+    <failsafe.timeout>1200</failsafe.timeout>
   </properties>
 
   <dependencies>
