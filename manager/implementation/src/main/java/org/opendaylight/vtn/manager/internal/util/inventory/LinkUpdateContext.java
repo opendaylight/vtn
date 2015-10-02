@@ -23,8 +23,9 @@ import org.slf4j.Logger;
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
-import org.opendaylight.vtn.manager.internal.util.FixedLogger;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.log.FixedLogger;
+import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -344,14 +345,14 @@ public final class LinkUpdateContext {
             }
         }
 
-        FixedLogger info = new FixedLogger.Info(log);
+        FixedLogger info = new FixedLogger(log, VTNLogLevel.INFO);
         recordLogs(info, ignoredLinks, "Ignore inter-switch link");
         recordLogs(info, resolvedLinks, "Inter-switch link has been resolved");
         recordLogs(info, movedLinks,
                    "Inter-switch link has been superseded by static topology");
 
         if (log.isDebugEnabled()) {
-            FixedLogger debug = new FixedLogger.Debug(log);
+            FixedLogger debug = new FixedLogger(log, VTNLogLevel.DEBUG);
             recordLogs(debug, unresolvedLinks, "Skip ignored-link");
         }
     }

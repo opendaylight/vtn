@@ -22,9 +22,10 @@ import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.routing.xml.XmlPathMap;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
-import org.opendaylight.vtn.manager.internal.util.FixedLogger;
-import org.opendaylight.vtn.manager.internal.util.LogRecord;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
+import org.opendaylight.vtn.manager.internal.util.log.FixedLogger;
+import org.opendaylight.vtn.manager.internal.util.log.LogRecord;
+import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
 import org.opendaylight.vtn.manager.internal.util.pathmap.PathMapUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
@@ -63,7 +64,8 @@ class VTenantLoadTask extends AbstractTxTask<Vtns> {
     /**
      * A logger instance bound to the info level.
      */
-    private final FixedLogger  infoLogger = new FixedLogger.Info(logger);
+    private final FixedLogger  infoLogger =
+        new FixedLogger(logger, VTNLogLevel.INFO);
 
     /**
      * The virtual tenant manager.

@@ -25,10 +25,11 @@ import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxQueue;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
-import org.opendaylight.vtn.manager.internal.util.FixedLogger;
-import org.opendaylight.vtn.manager.internal.util.LogRecord;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowStatsUtils;
+import org.opendaylight.vtn.manager.internal.util.log.FixedLogger;
+import org.opendaylight.vtn.manager.internal.util.log.LogRecord;
+import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
@@ -74,7 +75,8 @@ public final class StatsTimerTask extends TimerTask implements AutoCloseable {
         /**
          * A logger for trace logs.
          */
-        private final FixedLogger  traceLogger = new FixedLogger.Trace(LOG);
+        private final FixedLogger  traceLogger =
+            new FixedLogger(LOG, VTNLogLevel.TRACE);
 
         /**
          * The system time when the flow statistics are collected.

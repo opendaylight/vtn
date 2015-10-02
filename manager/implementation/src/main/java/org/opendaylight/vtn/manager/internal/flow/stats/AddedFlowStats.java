@@ -20,9 +20,7 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxQueue;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
-import org.opendaylight.vtn.manager.internal.util.FixedLogger;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
-import org.opendaylight.vtn.manager.internal.util.LogRecord;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowFinder;
@@ -30,6 +28,9 @@ import org.opendaylight.vtn.manager.internal.util.flow.FlowStatsUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
+import org.opendaylight.vtn.manager.internal.util.log.FixedLogger;
+import org.opendaylight.vtn.manager.internal.util.log.LogRecord;
+import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
@@ -107,9 +108,9 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
      * @param log  A {@link Logger} instance.
      */
     public AddedFlowStats(Logger log) {
-        warnLogger = new FixedLogger.Warn(log);
-        debugLogger = new FixedLogger.Debug(log);
-        traceLogger = new FixedLogger.Trace(log);
+        warnLogger = new FixedLogger(log, VTNLogLevel.WARN);
+        debugLogger = new FixedLogger(log, VTNLogLevel.DEBUG);
+        traceLogger = new FixedLogger(log, VTNLogLevel.TRACE);
         systemTime = System.currentTimeMillis();
     }
 

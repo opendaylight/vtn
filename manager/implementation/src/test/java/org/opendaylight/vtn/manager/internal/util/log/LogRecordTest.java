@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.vtn.manager.internal.util;
+package org.opendaylight.vtn.manager.internal.util.log;
 
 import org.slf4j.Logger;
 
@@ -26,7 +26,7 @@ public class LogRecordTest extends TestBase {
     @Test
     public void testSimple() {
         Logger mock = Mockito.mock(Logger.class);
-        FixedLogger logger = new FixedLogger.Error(mock);
+        FixedLogger logger = new FixedLogger(mock, VTNLogLevel.ERROR);
 
         Mockito.when(mock.isErrorEnabled()).thenReturn(false).thenReturn(true);
 
@@ -95,7 +95,7 @@ public class LogRecordTest extends TestBase {
     @Test
     public void testFormatted() {
         Logger mock = Mockito.mock(Logger.class);
-        FixedLogger logger = new FixedLogger.Error(mock);
+        FixedLogger logger = new FixedLogger(mock, VTNLogLevel.ERROR);
 
         Mockito.when(mock.isErrorEnabled()).thenReturn(false).thenReturn(true);
 
@@ -168,7 +168,7 @@ public class LogRecordTest extends TestBase {
     @Test
     public void testThrowable() {
         Logger mock = Mockito.mock(Logger.class);
-        FixedLogger logger = new FixedLogger.Error(mock);
+        FixedLogger logger = new FixedLogger(mock, VTNLogLevel.ERROR);
 
         Mockito.when(mock.isErrorEnabled()).thenReturn(false).thenReturn(true);
 

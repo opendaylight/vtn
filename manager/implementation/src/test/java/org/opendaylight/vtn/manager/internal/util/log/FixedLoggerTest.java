@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.vtn.manager.internal.util;
+package org.opendaylight.vtn.manager.internal.util.log;
 
 import org.slf4j.Logger;
 
@@ -21,13 +21,12 @@ import org.opendaylight.vtn.manager.internal.TestBase;
  */
 public class FixedLoggerTest extends TestBase {
     /**
-     * Test case for
-     * {@link org.opendaylight.vtn.manager.internal.util.FixedLogger.Error}.
+     * Test case for ERROR level.
      */
     @Test
     public void testError() {
         Logger mock = Mockito.mock(Logger.class);
-        FixedLogger logger = new FixedLogger.Error(mock);
+        FixedLogger logger = new FixedLogger(mock, VTNLogLevel.ERROR);
         assertSame(mock, logger.getLogger());
 
         // isEnabled()
@@ -89,13 +88,12 @@ public class FixedLoggerTest extends TestBase {
     }
 
     /**
-     * Test case for
-     * {@link org.opendaylight.vtn.manager.internal.util.FixedLogger.Warn}.
+     * Test case for WARN level.
      */
     @Test
     public void testWarn() {
         Logger mock = Mockito.mock(Logger.class);
-        FixedLogger logger = new FixedLogger.Warn(mock);
+        FixedLogger logger = new FixedLogger(mock, VTNLogLevel.WARN);
         assertSame(mock, logger.getLogger());
 
         // isEnabled()
@@ -157,13 +155,12 @@ public class FixedLoggerTest extends TestBase {
     }
 
     /**
-     * Test case for
-     * {@link org.opendaylight.vtn.manager.internal.util.FixedLogger.Info}.
+     * Test case for INFO level.
      */
     @Test
     public void testInfo() {
         Logger mock = Mockito.mock(Logger.class);
-        FixedLogger logger = new FixedLogger.Info(mock);
+        FixedLogger logger = new FixedLogger(mock, VTNLogLevel.INFO);
         assertSame(mock, logger.getLogger());
 
         // isEnabled()
@@ -225,13 +222,12 @@ public class FixedLoggerTest extends TestBase {
     }
 
     /**
-     * Test case for
-     * {@link org.opendaylight.vtn.manager.internal.util.FixedLogger.Debug}.
+     * Test case for DEBUG level.
      */
     @Test
     public void testDebug() {
         Logger mock = Mockito.mock(Logger.class);
-        FixedLogger logger = new FixedLogger.Debug(mock);
+        FixedLogger logger = new FixedLogger(mock, VTNLogLevel.DEBUG);
         assertSame(mock, logger.getLogger());
 
         // isEnabled()
@@ -293,13 +289,12 @@ public class FixedLoggerTest extends TestBase {
     }
 
     /**
-     * Test case for
-     * {@link org.opendaylight.vtn.manager.internal.util.FixedLogger.Trace}.
+     * Test case for TRACE level.
      */
     @Test
     public void testTrace() {
         Logger mock = Mockito.mock(Logger.class);
-        FixedLogger logger = new FixedLogger.Trace(mock);
+        FixedLogger logger = new FixedLogger(mock, VTNLogLevel.TRACE);
         assertSame(mock, logger.getLogger());
 
         // isEnabled()

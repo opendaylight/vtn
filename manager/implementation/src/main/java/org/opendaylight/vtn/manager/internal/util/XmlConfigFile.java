@@ -28,6 +28,9 @@ import org.w3c.dom.Node;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.opendaylight.vtn.manager.internal.util.log.FixedLogger;
+import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
+
 import org.opendaylight.controller.sal.utils.GlobalConstants;
 
 /**
@@ -139,11 +142,11 @@ public final class XmlConfigFile {
             if (severity == ValidationEvent.WARNING) {
                 // Continue operation.
                 ret = true;
-                logger = new FixedLogger.Warn(LOG);
+                logger = new FixedLogger(LOG, VTNLogLevel.WARN);
                 builder.append("Warning on XML validation: ");
             } else {
                 ret = false;
-                logger = new FixedLogger.Error(LOG);
+                logger = new FixedLogger(LOG, VTNLogLevel.ERROR);
                 if (severity == ValidationEvent.ERROR) {
                     builder.append("[ERROR]");
                 } else if (severity == ValidationEvent.FATAL_ERROR) {

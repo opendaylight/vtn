@@ -29,11 +29,12 @@ import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
-import org.opendaylight.vtn.manager.internal.util.FixedLogger;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
+import org.opendaylight.vtn.manager.internal.util.log.FixedLogger;
+import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
 import org.opendaylight.vtn.manager.internal.util.pathmap.PathMapUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcFuture;
@@ -282,7 +283,7 @@ public final class PathMapManager
             XmlPathMap xpm = new XmlPathMap(vpm);
             ectx.addUpdated(xpm.getIndex(), xpm, created);
         } catch (Exception e) {
-            FixedLogger logger = new FixedLogger.Warn(LOG);
+            FixedLogger logger = new FixedLogger(LOG, VTNLogLevel.WARN);
             logger.log(e, "Ignore broken %s event: path=%s, value=%s",
                        (created) ? "creation" : "update",
                        data.getIdentifier(), vpm);

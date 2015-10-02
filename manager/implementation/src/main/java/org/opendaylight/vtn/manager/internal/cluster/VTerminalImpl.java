@@ -36,9 +36,10 @@ import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
-import org.opendaylight.vtn.manager.internal.util.FixedLogger;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
+import org.opendaylight.vtn.manager.internal.util.log.FixedLogger;
+import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
@@ -247,7 +248,7 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
             iaddr = InetAddress.getByAddress(sip);
         } catch (UnknownHostException e) {
             // This should never happen.
-            FixedLogger logger = new FixedLogger.Error(LOG);
+            FixedLogger logger = new FixedLogger(LOG, VTNLogLevel.ERROR);
             logger.log(e, "%s: Invalid IP address: %s, ipaddr=%s",
                        getNodePath(), pctx.getDescription(),
                        ByteUtils.toHexString(sip));
