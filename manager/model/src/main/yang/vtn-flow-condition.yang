@@ -17,7 +17,7 @@ module vtn-flow-condition {
         revision-date 2015-02-09;
     }
 
-    /* OpenDaylight yangtools */
+    /* OpenDaylight MD-SAL */
     import opendaylight-l2-types {
         prefix l2;
         revision-date 2013-08-27;

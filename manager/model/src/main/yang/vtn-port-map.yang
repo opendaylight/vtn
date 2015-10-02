@@ -60,6 +60,7 @@ module vtn-port-map {
               "The container which contains port mapping configuration,
                which maps a physical switch port to a virtual interface in
                a virtual node.";
+            presence "Indicates that the port mapping is present.";
             uses vtn-port-map-config;
         }
     }

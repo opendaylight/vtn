@@ -24,7 +24,7 @@ module vtn-types {
         revision-date 2013-11-12;
     }
 
-    /* OpenDaylight yangtools */
+    /* OpenDaylight MD-SAL */
     import opendaylight-l2-types {
         prefix l2;
         revision-date 2013-08-27;

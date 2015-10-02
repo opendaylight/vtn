@@ -12,7 +12,7 @@ module vtn-config {
     namespace "urn:opendaylight:vtn:config";
     prefix vconf;
 
-    /* OpenDaylight yangtools */
+    /* OpenDaylight MD-SAL */
     import ietf-yang-types {
         prefix yang;
         revision-date 2010-09-24;

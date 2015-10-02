@@ -72,6 +72,7 @@ module vtn-vterminal {
         container vterminal-config {
             description
               "The container which contains configuration for vTerminal.";
+            presence "Indicates that the VLAN mapping is present.";
             uses vtn-vterminal-config;
         }
 

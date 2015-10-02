@@ -70,6 +70,7 @@ module vtn {
             description
               "The container which contains configuration for the Virtual
                Tenant Network (VTN).";
+            presence "Indicates that the VTN is present.";
             uses vtn-vtenant-config;
         }
 
