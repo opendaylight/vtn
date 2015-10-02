@@ -22,7 +22,7 @@ module vtn-mac-table {
         revision-date 2013-08-19;
     }
 
-    /* OpenDaylight yangtools */
+    /* OpenDaylight MD-SAL */
     import ietf-yang-types {
         prefix yang;
         revision-date 2010-09-24;

@@ -77,6 +77,7 @@ module vtn-vinterface {
             description
               "The container which contains configuration for virtual
                interface.";
+            presence "Indicates that the virtual interface is present.";
             uses vtn-vinterface-config;
         }
 
@@ -147,6 +148,7 @@ module vtn-vinterface {
               "The container which contains runtime status information about
                the virtual interface which can contain port mapping
                configuration.";
+            presence "Indicates that the virtual interface is present.";
             uses vtn-mappable-vinterface-status;
         }
 

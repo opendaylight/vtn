@@ -20,7 +20,7 @@ module vtn-mac-map {
         revision-date 2015-09-07;
     }
 
-    /* OpenDaylight yangtools */
+    /* OpenDaylight MD-SAL */
     import ietf-yang-types {
         prefix yang;
         revision-date 2010-09-24;
@@ -96,6 +96,7 @@ module vtn-mac-map {
         container mac-map-config {
             description
               "The container which contains configuration for MAC mapping.";
+            presence "Indicates that the MAC mapping is present.";
             uses vtn-mac-map-config;
         }
 
@@ -103,6 +104,7 @@ module vtn-mac-map {
             description
               "The container which contains runtime status information about
                MAC mapping.";
+            presence "Indicates that the MAC mapping is present.";
             uses vtn-mac-map-status;
         }
     }

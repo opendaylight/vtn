@@ -113,6 +113,7 @@ module vtn-vbridge {
             description
               "The container which contains runtime information about
                this virtual bridge.";
+            presence "Indicates that the virtual bridge is present.";
             uses vtn-bridge-status;
         }
 
@@ -182,6 +183,7 @@ module vtn-vbridge {
         container vbridge-config {
             description
               "The container which contains configuration for vBridge.";
+            presence "Indicates that the vBridge is present.";
             uses vtn-vbridge-config;
         }
 

@@ -78,6 +78,7 @@ module vtn-vlan-map {
         container vlan-map-config {
             description
               "The container which contains configuration for VLAN mapping.";
+            presence "Indicates that the VLAN mapping is present.";
             uses vtn-vlan-map-config;
         }
 
@@ -85,6 +86,7 @@ module vtn-vlan-map {
             description
               "The container which contains runtime status information about
                VLAN mapping.";
+            presence "Indicates that the VLAN mapping is present.";
             uses vtn-vlan-map-status;
         }
     }
