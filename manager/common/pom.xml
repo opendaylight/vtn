@@ -731,11 +731,6 @@
         <artifactId>bundlescanner</artifactId>
         <version>0.6.0-SNAPSHOT</version>
       </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>bundlescanner.implementation</artifactId>
-        <version>0.6.0-SNAPSHOT</version>
-      </dependency>
 
       <dependency>
         <groupId>org.opendaylight.controller</groupId>

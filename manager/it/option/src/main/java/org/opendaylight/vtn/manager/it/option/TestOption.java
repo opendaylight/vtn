@@ -471,7 +471,6 @@ public final class TestOption {
             mavenBundle(SPRING_FRAMEWORK_SECURITY, "spring-security-taglibs"),
 
             // Miscellaneous.
-            mavenBundle("org.ow2.asm", "asm-all"),
             mavenBundle("org.ow2.chameleon.management", "chameleon-mbeans"),
             mavenBundle("org.aopalliance", "com.springsource.org.aopalliance"),
             mavenBundle("commons-io", "commons-io"),
@@ -487,7 +486,6 @@ public final class TestOption {
             mavenBundle(TestHelper.CONTROLLER, "usermanager.implementation"),
             mavenBundle(TestHelper.CONTROLLER, "security").noStart(),
             mavenBundle(TestHelper.CONTROLLER, "bundlescanner"),
-            mavenBundle(TestHelper.CONTROLLER, "bundlescanner.implementation"),
             mavenBundle(TestHelper.CONTROLLER, "commons.northbound"),
 
             mavenBundle(CONTROLLER_THIRD_PARTY,

@@ -93,6 +93,7 @@
             <Import-Package>
               org.opendaylight.controller.northbound.commons,
               org.opendaylight.controller.northbound.commons.exception,
+              org.opendaylight.controller.northbound.commons.query,
               org.opendaylight.controller.northbound.commons.utils,
               org.opendaylight.controller.sal.authorization,
               org.opendaylight.controller.sal.core,
@@ -100,18 +101,21 @@
               org.opendaylight.controller.sal.utils,
               org.opendaylight.vtn.manager*,
               org.opendaylight.yang.gen.v1.*,
+              com.fasterxml.jackson.core,
+              com.fasterxml.jackson.databind,
               com.fasterxml.jackson.databind.annotation,
+              com.fasterxml.jackson.jaxrs.json,
               com.sun.jersey.spi.container.servlet,
+              com.google.common.collect,
               javax.ws.rs,
               javax.ws.rs.core,
+              javax.ws.rs.ext,
+              javax.xml.bind,
               javax.xml.bind.annotation,
               org.apache.catalina.filters,
               !org.codehaus.enunciate.jaxrs
             </Import-Package>
             <Web-ContextPath>/controller/nb/v2/vtn</Web-ContextPath>
-            <Jaxrs-Resources>
-              ,${classes;ANNOTATION;javax.ws.rs.Path}
-            </Jaxrs-Resources>
           </instructions>
         </configuration>
       </plugin>
@@ -147,6 +151,16 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.jaxrs</groupId>
+      <artifactId>jackson-jaxrs-base</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.jaxrs</groupId>
+      <artifactId>jackson-jaxrs-json-provider</artifactId>
     </dependency>
 
     <!-- Jackson JAXB support is used in unit tests. -->
