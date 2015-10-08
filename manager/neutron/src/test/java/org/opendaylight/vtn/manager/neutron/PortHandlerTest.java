@@ -127,7 +127,7 @@ public class PortHandlerTest extends TestBase {
 
         // Failure Case - By setting NULL to TennantID
         port = new NeutronPort();
-        port.setTenantID(null);
+        port.setTenantID((String) null);
         port.setNetworkUUID(NEUTRON_UUID_ARRAY[0]);
         port.setPortUUID(NEUTRON_UUID_ARRAY[1]);
         port.setMacAddress(MAC_ADDR_ARRAY[0]);
@@ -277,7 +277,7 @@ public class PortHandlerTest extends TestBase {
 
         // Failure Case - Method returns HTTP_BAD_REQUEST by setting NULL to TenantID.
         portOriginal = new NeutronPort();
-        portOriginal.setTenantID(null);
+        portOriginal.setTenantID((String) null);
         portOriginal.setNetworkUUID(NEUTRON_UUID_ARRAY[0]);
         portOriginal.setPortUUID(NEUTRON_UUID_ARRAY[1]);
         portOriginal.setMacAddress(MAC_ADDR_ARRAY[0]);
@@ -320,7 +320,7 @@ public class PortHandlerTest extends TestBase {
 
         // Failure Case - Method returns HTTP_BAD_REQUEST by setting NULL to TenantID.
         NeutronPort port = new NeutronPort();
-        port.setTenantID(null);
+        port.setTenantID((String) null);
         port.setNetworkUUID(NEUTRON_UUID_ARRAY[0]);
         port.setPortUUID(NEUTRON_UUID_ARRAY[1]);
         port.setMacAddress(MAC_ADDR_ARRAY[0]);
@@ -476,7 +476,7 @@ public class PortHandlerTest extends TestBase {
 
         // Case - Method returns HTTP_BAD_REQUEST by setting NULL to TenantID.
         NeutronPort port = new NeutronPort();
-        port.setTenantID(null);
+        port.setTenantID((String) null);
         port.setNetworkUUID(NEUTRON_UUID_ARRAY[0]);
         port.setPortUUID(NEUTRON_UUID_ARRAY[1]);
         port.setMacAddress(MAC_ADDR_ARRAY[0]);
