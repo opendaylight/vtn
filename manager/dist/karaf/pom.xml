@@ -16,13 +16,13 @@
   <parent>
     <groupId>org.opendaylight.controller</groupId>
     <artifactId>karaf-parent</artifactId>
-    <version>1.5.2-SNAPSHOT</version>
+    <version>1.5.2-Lithium-SR2</version>
     <relativePath />
   </parent>
 
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>distribution.vtn-manager.karaf</artifactId>
-  <version>0.3.2-SNAPSHOT</version>
+  <version>0.3.2-Lithium-SR2</version>
   <packaging>pom</packaging>
 
   <scm>
