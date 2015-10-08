@@ -24,7 +24,7 @@
   <parent>
     <groupId>org.opendaylight.vtn</groupId>
     <artifactId>common</artifactId>
-    <version>0.3.2-Lithium-SR2</version>
+    <version>0.3.3-SNAPSHOT</version>
     <relativePath>../../common</relativePath>
   </parent>
 
@@ -65,26 +65,26 @@
     <testvm.argLine>-Xmx1024m -XX:MaxPermSize=256m</testvm.argLine>
 
     <!-- Karaf properties -->
-    <karaf.empty.version>1.5.2-Lithium-SR2</karaf.empty.version>
-    <karaf.resources.version>1.5.2-Lithium-SR2</karaf.resources.version>
+    <karaf.empty.version>1.5.3-SNAPSHOT</karaf.empty.version>
+    <karaf.resources.version>1.5.3-SNAPSHOT</karaf.resources.version>
 
     <!-- Karaf features -->
-    <feature.nsf.version>0.5.2-Lithium-SR2</feature.nsf.version>
-    <feature.ovsdb.version>1.1.2-Lithium-SR2</feature.ovsdb.version>
-    <feature.openflowplugin.version>0.1.2-Lithium-SR2</feature.openflowplugin.version>
-    <feature.neutron.version>0.5.2-Lithium-SR2</feature.neutron.version>
-    <feature.test.version>0.7.2-Lithium-SR2</feature.test.version>
+    <feature.nsf.version>0.5.3-SNAPSHOT</feature.nsf.version>
+    <feature.ovsdb.version>1.1.3-SNAPSHOT</feature.ovsdb.version>
+    <feature.openflowplugin.version>0.1.3-SNAPSHOT</feature.openflowplugin.version>
+    <feature.neutron.version>0.5.3-SNAPSHOT</feature.neutron.version>
+    <feature.test.version>0.7.3-SNAPSHOT</feature.test.version>
 
     <!-- ODL Branding -->
-    <branding.version>1.1.2-Lithium-SR2</branding.version>
+    <branding.version>1.1.3-SNAPSHOT</branding.version>
 
     <!-- Exclude internal package from javadoc -->
     <javadoc.exclude>*.internal,*.impl,*.it</javadoc.exclude>
 
     <!-- OpenDaylight artifacts -->
-    <odl.mdsal.version>1.2.2-Lithium-SR2</odl.mdsal.version>
-    <odl.config.version>0.3.2-Lithium-SR2</odl.config.version>
-    <odl.yangtools.version>0.7.2-Lithium-SR2</odl.yangtools.version>
+    <odl.mdsal.version>1.2.3-SNAPSHOT</odl.mdsal.version>
+    <odl.config.version>0.3.3-SNAPSHOT</odl.config.version>
+    <odl.yangtools.version>0.7.3-SNAPSHOT</odl.yangtools.version>
   </properties>
 
   <profiles>
@@ -543,189 +543,189 @@
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>sal</artifactId>
-        <version>0.9.2-Lithium-SR2</version>
+        <version>0.9.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>sal.implementation</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>sal.connection</artifactId>
-        <version>0.2.2-Lithium-SR2</version>
+        <version>0.2.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>sal.connection.implementation</artifactId>
-        <version>0.2.2-Lithium-SR2</version>
+        <version>0.2.3-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>sal.networkconfiguration</artifactId>
-        <version>0.1.2-Lithium-SR2</version>
+        <version>0.1.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>sal.networkconfiguration.implementation</artifactId>
-        <version>0.1.2-Lithium-SR2</version>
+        <version>0.1.3-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>connectionmanager</artifactId>
-        <version>0.2.2-Lithium-SR2</version>
+        <version>0.2.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>connectionmanager.implementation</artifactId>
-        <version>0.2.2-Lithium-SR2</version>
+        <version>0.2.3-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>forwarding.staticrouting</artifactId>
-        <version>0.6.2-Lithium-SR2</version>
+        <version>0.6.3-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>routing.dijkstra_implementation</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>clustering.services</artifactId>
-        <version>0.6.2-Lithium-SR2</version>
+        <version>0.6.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>clustering.services-implementation</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>clustering.test</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>clustering.stub</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>configuration</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>configuration.implementation</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>forwardingrulesmanager</artifactId>
-        <version>0.7.2-Lithium-SR2</version>
+        <version>0.7.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>forwardingrulesmanager.implementation</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>hosttracker</artifactId>
-        <version>0.6.2-Lithium-SR2</version>
+        <version>0.6.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>hosttracker.implementation</artifactId>
-        <version>0.6.2-Lithium-SR2</version>
+        <version>0.6.3-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>containermanager</artifactId>
-        <version>0.6.2-Lithium-SR2</version>
+        <version>0.6.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>containermanager.it.implementation</artifactId>
-        <version>0.6.2-Lithium-SR2</version>
+        <version>0.6.3-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>switchmanager</artifactId>
-        <version>0.8.2-Lithium-SR2</version>
+        <version>0.8.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>switchmanager.implementation</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>statisticsmanager</artifactId>
-        <version>0.6.2-Lithium-SR2</version>
+        <version>0.6.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>statisticsmanager.implementation</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>usermanager</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>usermanager.implementation</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>security</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>topologymanager</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>commons.northbound</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>bundlescanner</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>bundlescanner.implementation</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
 
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>protocol_plugins.stub</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
 
       <dependency>
@@ -779,7 +779,7 @@
       <dependency>
         <groupId>org.opendaylight.openflowplugin</groupId>
         <artifactId>openflowplugin-artifacts</artifactId>
-        <version>0.1.2-Lithium-SR2</version>
+        <version>0.1.3-SNAPSHOT</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -788,44 +788,44 @@
       <dependency>
         <groupId>org.opendaylight.neutron</groupId>
         <artifactId>neutron-spi</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.neutron</groupId>
         <artifactId>transcriber</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.neutron</groupId>
         <artifactId>model</artifactId>
-        <version>0.5.2-Lithium-SR2</version>
+        <version>0.5.3-SNAPSHOT</version>
       </dependency>
 
       <!-- OpenDaylight OVSDB project -->
       <dependency>
         <groupId>org.opendaylight.ovsdb</groupId>
         <artifactId>plugin</artifactId>
-        <version>1.1.2-Lithium-SR2</version>
+        <version>1.1.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.ovsdb</groupId>
         <artifactId>ovsdb-plugin-compatibility-layer</artifactId>
-        <version>1.1.2-Lithium-SR2</version>
+        <version>1.1.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.ovsdb</groupId>
         <artifactId>library</artifactId>
-        <version>1.1.2-Lithium-SR2</version>
+        <version>1.1.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.ovsdb</groupId>
         <artifactId>schema.openvswitch</artifactId>
-        <version>1.1.2-Lithium-SR2</version>
+        <version>1.1.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.ovsdb</groupId>
         <artifactId>schema.hardwarevtep</artifactId>
-        <version>1.1.2-Lithium-SR2</version>
+        <version>1.1.3-SNAPSHOT</version>
       </dependency>
 
       <!-- Karaf features -->
