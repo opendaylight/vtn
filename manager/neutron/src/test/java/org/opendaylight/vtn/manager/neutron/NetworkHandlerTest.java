@@ -370,7 +370,7 @@ public class NetworkHandlerTest extends TestBase {
 
         // Failure Case - By setting NULL to TennantID
         network = new NeutronNetwork();
-        network.setTenantID(null);
+        network.setTenantID((String)null);
         network.setNetworkUUID(NEUTRON_UUID_ARRAY[0]);
         assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
                 nh.canCreateNetwork(network));
