@@ -222,7 +222,7 @@ module vtn {
         }
     }
 
-    rpc remove-tenant {
+    rpc remove-vtn {
         description
           "Remove the VTN specified by the name.
 
