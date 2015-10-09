@@ -85,6 +85,9 @@ module vtn-mac-map {
                 description "MAC address actually mapped to the vBridge.";
                 type yang:mac-address;
             }
+
+            /* VLAN ID where the host is detected. */
+            uses vtype:vtn-vlan-id-field;
         }
     }
 
