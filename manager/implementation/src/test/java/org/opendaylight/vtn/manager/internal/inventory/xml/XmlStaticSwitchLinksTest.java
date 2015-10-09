@@ -14,8 +14,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import static org.opendaylight.vtn.manager.internal.inventory.xml.XmlStaticSwitchLinkTest.newXmlStaticSwitchLink;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -148,9 +146,9 @@ public class XmlStaticSwitchLinksTest extends TestBase {
         goodLinks.add(swlink);
         links.add(swlink);
 
-        // The source port will be overriden.
         String src = "openflow:99:1";
         swlink = newStaticSwitchLink(src, "openflow:10:11");
+        goodLinks.add(swlink);
         links.add(swlink);
 
         swlink = newStaticSwitchLink("unknown:1:2", "openflow:1:99");
@@ -162,9 +160,8 @@ public class XmlStaticSwitchLinksTest extends TestBase {
         badLinks.add(swlink);
         links.add(swlink);
 
-        // Override the source port "openflow:99:1".
+        // Duplicate source port "openflow:99:1".
         swlink = newStaticSwitchLink(src, "openflow:888:999");
-        goodLinks.add(swlink);
         links.add(swlink);
 
         swlinks = new StaticSwitchLinksBuilder().
@@ -181,130 +178,6 @@ public class XmlStaticSwitchLinksTest extends TestBase {
         swlinks1 = xswlinks.getConfig();
         for (StaticSwitchLink swl: swlinks1.getStaticSwitchLink()) {
             assertTrue(goodLinks.remove(swl));
-        }
-        assertTrue(goodLinks.isEmpty());
-    }
-
-    /**
-     * Test case for {@link XmlStaticSwitchLinks#getXmlStaticSwitchLink()} and
-     * {@link XmlStaticSwitchLinks#setXmlStaticSwitchLink(List)}.
-     *
-     * @throws Exception  An error occurred.
-     */
-    @Test
-    public void testXmlStaticSwitchLink() throws Exception {
-        StaticSwitchLinks swlinks = new StaticSwitchLinksBuilder().build();
-        XmlStaticSwitchLinks xswlinks = new XmlStaticSwitchLinks(swlinks);
-        assertEquals(null, xswlinks.getXmlStaticSwitchLink());
-
-        for (List<StaticSwitchLink> links: createStaticSwitchLinks(false)) {
-            Set<XmlStaticSwitchLink> xlset = new HashSet<>();
-            for (StaticSwitchLink swlink: links) {
-                xlset.add(new XmlStaticSwitchLink(swlink));
-            }
-
-            List<XmlStaticSwitchLink> xlinks = new ArrayList<>(xlset);
-            xswlinks.setXmlStaticSwitchLink(xlinks);
-            xlinks = xswlinks.getXmlStaticSwitchLink();
-            if (xlset.isEmpty()) {
-                assertEquals(null, xlinks);
-            } else {
-                for (XmlStaticSwitchLink xlink: xlinks) {
-                    assertEquals(true, xlset.remove(xlink));
-                }
-                assertTrue(xlset.isEmpty());
-            }
-        }
-
-        xswlinks.setXmlStaticSwitchLink(null);
-        assertEquals(null, xswlinks.getXmlStaticSwitchLink());
-        xswlinks.setXmlStaticSwitchLink(new ArrayList<XmlStaticSwitchLink>());
-        assertEquals(null, xswlinks.getXmlStaticSwitchLink());
-
-        // Ensure that invalid static links are eliminated.
-        List<XmlStaticSwitchLink> xlinks = new ArrayList<>();
-        List<XmlStaticSwitchLink> badLinks = new ArrayList<>();
-        Set<XmlStaticSwitchLink> goodLinks = new HashSet<>();
-        XmlStaticSwitchLink xlink =
-            newXmlStaticSwitchLink("openflow:1:2", "openflow:2:2");
-        goodLinks.add(xlink);
-        xlinks.add(xlink);
-
-        // Empty link.
-        xlink = newXmlStaticSwitchLink(null, null);
-        badLinks.add(xlink);
-        xlinks.add(xlink);
-
-        xlink = newXmlStaticSwitchLink("openflow:1:3", "openflow:2:1");
-        goodLinks.add(xlink);
-        xlinks.add(xlink);
-
-        // Source port is null.
-        xlink = newXmlStaticSwitchLink(null, "openflow:2:10");
-        badLinks.add(xlink);
-        xlinks.add(xlink);
-
-        // Source port is empty.
-        xlink = newXmlStaticSwitchLink("", "openflow:2:10");
-        badLinks.add(xlink);
-        xlinks.add(xlink);
-
-        xlink = newXmlStaticSwitchLink("proto:1:3", "proto:2:1");
-        goodLinks.add(xlink);
-        xlinks.add(xlink);
-
-        // Destination port is null.
-        xlink = newXmlStaticSwitchLink("proto:1:3", null);
-        badLinks.add(xlink);
-        xlinks.add(xlink);
-
-        // Source port is empty.
-        xlink = newXmlStaticSwitchLink("proto:1:3", "");
-        badLinks.add(xlink);
-        xlinks.add(xlink);
-
-        xlink = newXmlStaticSwitchLink("openflow:10:10", "openflow:20:20");
-        goodLinks.add(xlink);
-        xlinks.add(xlink);
-
-        // The source port will be overridden.
-        String src = "openflow:100:1";
-        xlink = newXmlStaticSwitchLink(src, "openflow:100:200");
-        xlinks.add(xlink);
-
-        xlink = newXmlStaticSwitchLink("openflow:10:11", "openflow:20:21");
-        goodLinks.add(xlink);
-        xlinks.add(xlink);
-
-        // The destination port is the same as the source.
-        String[] ports = {
-            "openflow:1:2", "openflow:1:3", src, "openflow:123:456",
-        };
-        for (String port: ports) {
-            xlink = newXmlStaticSwitchLink(port, port);
-            badLinks.add(xlink);
-            xlinks.add(xlink);
-        }
-
-        // Override the source port "openflow:100:1".
-        for (String port: ports) {
-            xlink = newXmlStaticSwitchLink(src, port);
-            xlinks.add(xlink);
-        }
-
-        xlink = newXmlStaticSwitchLink(src, "openflow:12345:678");
-        goodLinks.add(xlink);
-        xlinks.add(xlink);
-
-        xlink = newXmlStaticSwitchLink("unknown:1", "unknown:2");
-        goodLinks.add(xlink);
-        xlinks.add(xlink);
-
-        xswlinks.setXmlStaticSwitchLink(badLinks);
-        assertEquals(null, xswlinks.getXmlStaticSwitchLink());
-        xswlinks.setXmlStaticSwitchLink(xlinks);
-        for (XmlStaticSwitchLink xl: xswlinks.getXmlStaticSwitchLink()) {
-            assertEquals(true, goodLinks.remove(xl));
         }
         assertTrue(goodLinks.isEmpty());
     }
@@ -409,9 +282,10 @@ public class XmlStaticSwitchLinksTest extends TestBase {
         goodLinks.add(newStaticSwitchLink(src, dst));
         xlinks.add(xlink);
 
-        // The source port will be overridden.
         String dupSrc = "openflow:123:456";
-        xlink = createXmlLink(dupSrc, "openflow:111:222");
+        dst = "openflow:111:222";
+        xlink = createXmlLink(dupSrc, dst);
+        goodLinks.add(newStaticSwitchLink(dupSrc, dst));
         xlinks.add(xlink);
 
         src = "unknown:1:3";
@@ -430,14 +304,13 @@ public class XmlStaticSwitchLinksTest extends TestBase {
             badLinks.add(xlink);
             xlinks.add(xlink);
 
-            // Override the source port "openflow:123:456".
+            // Duplicate source port "openflow:123:456" will be ignored.
             xlink = createXmlLink(dupSrc, port);
             xlinks.add(xlink);
         }
 
-        dst = "openflow:555:678";
-        xlink = createXmlLink(dupSrc, dst);
-        goodLinks.add(newStaticSwitchLink(dupSrc, dst));
+        // Duplicate source port "openflow:123:456" will be ignored.
+        xlink = createXmlLink(dupSrc, "openflow:555:678");
         xlinks.add(xlink);
 
         for (int i = 1; i <= 5; i++) {

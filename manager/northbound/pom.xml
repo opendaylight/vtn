@@ -35,6 +35,17 @@
   </properties>
 
   <profiles>
+    <!-- enunciate does not support JDK8 -->
+    <profile>
+      <id>skip-enunciate</id>
+      <activation>
+        <jdk>1.8</jdk>
+      </activation>
+      <properties>
+        <enunciate.skip>true</enunciate.skip>
+      </properties>
+    </profile>
+
     <!-- Build REST API document only if docs profile is activated -->
     <profile>
       <id>docs</id>
