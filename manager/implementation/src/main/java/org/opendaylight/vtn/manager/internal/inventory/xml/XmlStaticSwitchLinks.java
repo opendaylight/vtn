@@ -9,10 +9,11 @@
 package org.opendaylight.vtn.manager.internal.inventory.xml;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +51,8 @@ public final class XmlStaticSwitchLinks
     /**
      * A list of static inter-switch links.
      */
-    private Map<String, XmlStaticSwitchLink>  switchLinks;
+    @XmlElement(name = "static-switch-link")
+    private List<XmlStaticSwitchLink>  switchLinks;
 
     /**
      * Construct an empty instance.
@@ -72,50 +74,16 @@ public final class XmlStaticSwitchLinks
      * this instance.
      *
      * <p>
-     *   This method is provided only for JAXB.
+     *   This method is provided only for testing.
      * </p>
      *
      * @return  A list of {@link XmlStaticSwitchLink} instances or
      *          {@code null}.
      */
-    @XmlElement(name = "static-switch-link")
-    public List<XmlStaticSwitchLink> getXmlStaticSwitchLink() {
+    List<XmlStaticSwitchLink> getXmlStaticSwitchLink() {
         return (switchLinks == null)
-            ? null : new ArrayList<XmlStaticSwitchLink>(switchLinks.values());
-    }
-
-    /**
-     * Set a list of {@link XmlStaticSwitchLink} instances to this instance.
-     *
-     * <p>
-     *   This method is provided only for JAXB.
-     * </p>
-     *
-     * @param xlinks  A list of {@link XmlStaticSwitchLink} instance.
-     */
-    public void setXmlStaticSwitchLink(List<XmlStaticSwitchLink> xlinks) {
-        if (xlinks == null) {
-            switchLinks = null;
-            return;
-        }
-
-        Map<String, XmlStaticSwitchLink> map = new HashMap<>();
-        for (XmlStaticSwitchLink xlink: xlinks) {
-            if (xlink.isValid()) {
-                XmlStaticSwitchLink old = map.put(xlink.getSource(), xlink);
-                if (old != null) {
-                    LOG.warn("Ignore duplicate static link specified by XML" +
-                             ": {}", old);
-                }
-            } else {
-                LOG.warn("Ignore invalid static link specified by XML: {}",
-                         xlink);
-            }
-        }
-
-        if (!map.isEmpty()) {
-            switchLinks = map;
-        }
+            ? null
+            : Collections.unmodifiableList(switchLinks);
     }
 
     /**
@@ -123,10 +91,9 @@ public final class XmlStaticSwitchLinks
      * list of {@link XmlStaticSwitchLink} instances.
      *
      * @param swlinks  A {@link StaticSwitchLinks} instance.
-     * @return  A map which keeps {@link XmlStaticSwitchLink} instances or
-     *          {@code null}.
+     * @return  A list of {@link XmlStaticSwitchLink} instances or {@code null}.
      */
-    private Map<String, XmlStaticSwitchLink> toXmlStaticSwitchLink(
+    private List<XmlStaticSwitchLink> toXmlStaticSwitchLink(
         StaticSwitchLinks swlinks) {
         if (swlinks == null) {
             return null;
@@ -134,7 +101,8 @@ public final class XmlStaticSwitchLinks
 
         List<StaticSwitchLink> links = swlinks.getStaticSwitchLink();
         if (links != null) {
-            Map<String, XmlStaticSwitchLink> xlinks = new HashMap<>();
+            List<XmlStaticSwitchLink> xlinks = new ArrayList<>(links.size());
+            Set<String> srcSet = new HashSet<>();
             for (StaticSwitchLink link: links) {
                 XmlStaticSwitchLink xlink;
                 try {
@@ -149,9 +117,10 @@ public final class XmlStaticSwitchLinks
                 }
 
                 String src = xlink.getSource();
-                XmlStaticSwitchLink old = xlinks.put(src, xlink);
-                if (old != null) {
-                    LOG.warn("Ignore duplicate static link: ", old);
+                if (srcSet.add(src)) {
+                    xlinks.add(xlink);
+                } else {
+                    LOG.warn("Ignore duplicate static link: ", xlink);
                 }
             }
 
@@ -170,25 +139,33 @@ public final class XmlStaticSwitchLinks
      * @return  A list of {@link StaticSwitchLink} instances or {@code null}.
      */
     private List<StaticSwitchLink> getStaticSwitchLinks() {
-        if (switchLinks != null) {
-            List<StaticSwitchLink> links = new ArrayList<>();
-            for (XmlStaticSwitchLink xlink: switchLinks.values()) {
-                try {
-                    links.add(xlink.toStaticSwitchLink());
-                } catch (RuntimeException e) {
-                    // This should never happen because static links are
-                    // already verified by setXmlStaticSwitchLink().
-                    LOG.warn("Ignore invalid static link specified by XML: " +
-                             xlink, e);
+        List<StaticSwitchLink> links;
+        if (switchLinks == null) {
+            links = null;
+        } else {
+            links = new ArrayList<>();
+            Set<String> srcSet = new HashSet<>();
+            for (XmlStaticSwitchLink xlink: switchLinks) {
+                if (xlink.isValid()) {
+                    String src = xlink.getSource();
+                    if (srcSet.add(src)) {
+                        links.add(xlink.toStaticSwitchLink());
+                    } else {
+                        LOG.warn("Ignore duplicate static link specified " +
+                                 "by XML: {}", xlink);
+                    }
+                } else {
+                    LOG.warn("Ignore invalid static link specified by XML: {}",
+                             xlink);
                 }
             }
 
-            if (!links.isEmpty()) {
-                return links;
+            if (links.isEmpty()) {
+                links = null;
             }
         }
 
-        return null;
+        return links;
     }
 
     // XmlStaticTopologyConfig
