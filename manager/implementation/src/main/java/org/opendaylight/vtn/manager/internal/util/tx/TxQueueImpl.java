@@ -309,6 +309,7 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
             if (tx != null) {
                 transaction = null;
                 inventoryReader = null;
+                flowCondReader = null;
                 tx.cancel();
             }
         }
