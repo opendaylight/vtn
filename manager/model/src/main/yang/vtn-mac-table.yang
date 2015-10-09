@@ -71,6 +71,31 @@ module vtn-mac-table {
         }
     }
 
+    grouping vtn-mac-table-entry {
+        description
+          "Describes a set of MAC address entry in a MAC address table.";
+
+        list mac-table-entry {
+            description "MAC address information learned by a vBridge.";
+            key "mac-address";
+            uses vtn-mac-entry;
+
+            leaf used {
+                description
+                  "True is set if this entry is used by the VTN Manager
+                   This field is only for internal use.";
+                type boolean;
+            }
+
+            leaf entry-data {
+                description
+                  "An opaque data associated with this entry.
+                   This field is only for internal use.";
+                type string;
+            }
+        }
+    }
+
     grouping vtn-mac-table-list {
         description "A list of MAC address tables.";
 
@@ -87,18 +112,7 @@ module vtn-mac-table {
                 type string;
             }
 
-            list mac-table-entry {
-                description "MAC address information learned by a vBridge.";
-                key "mac-address";
-                uses vtn-mac-entry;
-
-                leaf entry-id {
-                    description
-                      "An opaque identifier assigned to this entry.
-                       This field is only for internal use.";
-                    type string;
-                }
-            }
+            uses vtn-mac-table-entry;
         }
     }
 
@@ -144,6 +158,13 @@ module vtn-mac-table {
            Null indicates that the MAC address specified by `mac-address'
            field in the RPC output is not learned by the vBridge specified by
            the RPC input.
+
+           If no MAC address is specified by the RPC input, there will be
+           only one `remove-mac-entry-result' entry with null MAC address
+           in the RPC output. In this case `REMOVED' in `status' field
+           indicates that at least one MAC address has been removed from
+           the MAC address table. Null indicates that the specified MAC
+           address table is empty.
 
            On failure, one of vtn-error-tag value which indicates the cause
            of error is set into application tag in RPC error.

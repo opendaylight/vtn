@@ -337,6 +337,13 @@ module vtn-flow-filter {
            Null indicates that the flow filter specified by `index' field is
            not present in the flow filter list specified by the RPC input.
 
+           If no flow filter index is specified by the RPC input, there will
+           be  only one `flow-filter-result' entry with null index in the
+           RPC output. In this case `REMOVED' in `status' field indicates
+           that at least one flow filter has been removed from the specified
+           virtual node. Null indicates that the specified flow filter list
+           is empty.
+
            On failure, one of vtn-error-tag value which indicates the cause
            of error is set into application tag in RPC error.
 
