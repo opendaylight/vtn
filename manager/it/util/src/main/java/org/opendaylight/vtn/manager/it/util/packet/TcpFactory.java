@@ -15,11 +15,12 @@ import static org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase.toPortNum
 
 import java.util.Set;
 
+import org.opendaylight.vtn.manager.util.InetProtocols;
+
 import org.opendaylight.vtn.manager.it.util.match.FlowMatchType;
 
 import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.packet.TCP;
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.layer._4.match.TcpMatchBuilder;
@@ -82,7 +83,7 @@ public final class TcpFactory extends PacketFactory {
      */
     public static TcpFactory newInstance(Inet4Factory i4fc) {
         TcpFactory tfc = new TcpFactory();
-        i4fc.setProtocol(IPProtocols.TCP.byteValue()).setNextFactory(tfc);
+        i4fc.setProtocol(InetProtocols.TCP.byteValue()).setNextFactory(tfc);
 
         return tfc;
     }
@@ -98,7 +99,7 @@ public final class TcpFactory extends PacketFactory {
     public static TcpFactory newInstance(Inet4Factory i4fc, short src,
                                          short dst) {
         TcpFactory tfc = new TcpFactory(src, dst);
-        i4fc.setProtocol(IPProtocols.TCP.byteValue()).setNextFactory(tfc);
+        i4fc.setProtocol(InetProtocols.TCP.byteValue()).setNextFactory(tfc);
 
         return tfc;
     }

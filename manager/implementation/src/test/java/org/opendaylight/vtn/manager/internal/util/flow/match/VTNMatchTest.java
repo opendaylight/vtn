@@ -23,6 +23,8 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.EtherTypes;
+import org.opendaylight.vtn.manager.util.InetProtocols;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.IpNetwork;
 
@@ -40,9 +42,6 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.DataGenerator;
 import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
-
-import org.opendaylight.controller.sal.utils.EtherTypes;
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
@@ -132,7 +131,7 @@ public class VTNMatchTest extends TestBase {
         Inet4MatchParams i4params = new Inet4MatchParams();
         String msg = "Ethernet type conflict: type=0x" +
             Integer.toHexString(etype) + ", expected=0x" +
-            Integer.toHexString(EtherTypes.IPv4.intValue());
+            Integer.toHexString(EtherTypes.IPV4.intValue());
         params = new MatchParams().setEtherParams(eparams).
             setInet4Params(i4params);
         FlowMatch fm = params.toFlowMatch();
@@ -162,7 +161,7 @@ public class VTNMatchTest extends TestBase {
         i4params.setProtocol(Short.valueOf(proto));
         TcpMatchParams tparams = new TcpMatchParams();
         msg = "IP protocol conflict: proto=" + proto + ", expected=" +
-            IPProtocols.TCP.shortValue();
+            InetProtocols.TCP.shortValue();
         params = new MatchParams().
             setInet4Params(i4params).
             setLayer4Params(tparams);
@@ -198,7 +197,7 @@ public class VTNMatchTest extends TestBase {
         VTNMatch vmatch = new VTNMatch();
         assertEquals(null, vmatch.getInetProtocol());
 
-        VTNEtherMatch em = new VTNEtherMatch(EtherTypes.IPv4.intValue());
+        VTNEtherMatch em = new VTNEtherMatch(EtherTypes.IPV4.intValue());
         vmatch = new VTNMatch(em, null, null);
         assertEquals(null, vmatch.getInetProtocol());
 
@@ -216,12 +215,12 @@ public class VTNMatchTest extends TestBase {
 
         VTNTcpMatch tmatch = new VTNTcpMatch();
         vmatch = new VTNMatch(null, null, tmatch);
-        assertEquals(IPProtocols.TCP.shortValue(),
+        assertEquals(InetProtocols.TCP.shortValue(),
                      vmatch.getInetProtocol().shortValue());
 
         VTNUdpMatch umatch = new VTNUdpMatch();
         vmatch = new VTNMatch(null, null, umatch);
-        assertEquals(IPProtocols.UDP.shortValue(),
+        assertEquals(InetProtocols.UDP.shortValue(),
                      vmatch.getInetProtocol().shortValue());
     }
 
@@ -340,7 +339,7 @@ public class VTNMatchTest extends TestBase {
             assertEquals(vtag, e.getVtnErrorTag());
             String msg = "Ethernet type conflict: type=0x" +
                 Integer.toHexString(etype) + ", expected=0x" +
-                Integer.toHexString(EtherTypes.IPv4.intValue());
+                Integer.toHexString(EtherTypes.IPV4.intValue());
             assertEquals(msg, e.getMessage());
         }
 
@@ -360,7 +359,7 @@ public class VTNMatchTest extends TestBase {
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
             assertEquals(vtag, e.getVtnErrorTag());
             String msg = "IP protocol conflict: proto=" + proto +
-                ", expected=" + IPProtocols.TCP.shortValue();
+                ", expected=" + InetProtocols.TCP.shortValue();
             assertEquals(msg, e.getMessage());
         }
 
@@ -385,7 +384,7 @@ public class VTNMatchTest extends TestBase {
             setInetHeader(new Inet4MatchParams().
                           setSourceAddress(gen.getInetAddress()).
                           setDestinationAddress(gen.getInetAddress()).
-                          setProtocol(IPProtocols.TCP.shortValue()).
+                          setProtocol(InetProtocols.TCP.shortValue()).
                           setDscp(Short.valueOf((short)0))).
             setLayer4Header(new TcpMatchParams().
                             setSourcePortFrom(gen.getPort()).
@@ -396,7 +395,7 @@ public class VTNMatchTest extends TestBase {
             setInetHeader(new Inet4MatchParams().
                           setSourceAddress(gen.getInetAddress()).
                           setDestinationAddress(gen.getInetAddress()).
-                          setProtocol(IPProtocols.UDP.shortValue()).
+                          setProtocol(InetProtocols.UDP.shortValue()).
                           setDscp(Short.valueOf((short)1))).
             setLayer4Header(new UdpMatchParams().
                             setSourcePortFrom(gen.getPort()).
@@ -407,7 +406,7 @@ public class VTNMatchTest extends TestBase {
             setInetHeader(new Inet4MatchParams().
                           setSourceAddress(gen.getInetAddress()).
                           setDestinationAddress(gen.getInetAddress()).
-                          setProtocol(IPProtocols.ICMP.shortValue()).
+                          setProtocol(InetProtocols.ICMP.shortValue()).
                           setDscp(Short.valueOf((short)2))).
             setLayer4Header(new IcmpMatchParams().
                             setType(gen.getIcmpValue()).
@@ -426,7 +425,7 @@ public class VTNMatchTest extends TestBase {
             setInetHeader(new Inet4MatchParams().
                           setSourceAddress(gen.getInetAddress()).
                           setDestinationAddress(gen.getInetAddress()).
-                          setProtocol(IPProtocols.TCP.shortValue()).
+                          setProtocol(InetProtocols.TCP.shortValue()).
                           setDscp(Short.valueOf((short)4))).
             setLayer4Header(new TcpMatchParams().
                             setSourcePortFrom(gen.getPort()).
@@ -439,7 +438,7 @@ public class VTNMatchTest extends TestBase {
         };
 
         short pcp = 0;
-        int ipv4Type = EtherTypes.IPv4.intValue();
+        int ipv4Type = EtherTypes.IPV4.intValue();
         for (Integer vlan: vlans) {
             // Unsupported packet.
             packet = new TestMatchContext().
@@ -632,7 +631,7 @@ public class VTNMatchTest extends TestBase {
                 setProtocol((short)6).setDscp((short)1);
 
             VTNMatch vmatch = new MatchParams().
-                setEtherParams(eparams.setEtherType(EtherTypes.IPv4.
+                setEtherParams(eparams.setEtherType(EtherTypes.IPV4.
                                                     intValue())).
                 setInet4Params(i4params).toVTNMatch();
             assertEquals(false, vmatch.match(ctx));
@@ -801,7 +800,7 @@ public class VTNMatchTest extends TestBase {
             TcpMatchParams tparams = new TcpMatchParams().
                 setSourcePortFrom(10).setDestinationPortFrom(300);
             VTNMatch vmatch = new MatchParams().
-                setEtherParams(eparams.setEtherType(EtherTypes.IPv4.
+                setEtherParams(eparams.setEtherType(EtherTypes.IPV4.
                                                     intValue())).
                 setInet4Params(i4params).
                 setLayer4Params(tparams).toVTNMatch();
@@ -827,7 +826,7 @@ public class VTNMatchTest extends TestBase {
 
         Layer4Header l4 = ctx.getLayer4Header();
         Layer4MatchParams l4params = null;
-        IPProtocols ipType = null;
+        InetProtocols ipType = null;
         TcpHeader tcp = null;
         TcpMatchParams tparams = null;
         UdpHeader udp = null;
@@ -845,7 +844,7 @@ public class VTNMatchTest extends TestBase {
         Short anotherIcmpType = null;
         Short anotherIcmpCode = null;
         if (l4 instanceof TcpHeader) {
-            ipType = IPProtocols.TCP;
+            ipType = InetProtocols.TCP;
             tcp = (TcpHeader)l4;
             srcPort = tcp.getSourcePort();
             dstPort = tcp.getDestinationPort();
@@ -857,7 +856,7 @@ public class VTNMatchTest extends TestBase {
             srcType = FlowMatchType.TCP_SRC;
             dstType = FlowMatchType.TCP_DST;
         } else if (l4 instanceof UdpHeader) {
-            ipType = IPProtocols.UDP;
+            ipType = InetProtocols.UDP;
             udp = (UdpHeader)l4;
             srcPort = udp.getSourcePort();
             dstPort = udp.getDestinationPort();
@@ -869,7 +868,7 @@ public class VTNMatchTest extends TestBase {
             srcType = FlowMatchType.UDP_SRC;
             dstType = FlowMatchType.UDP_DST;
         } else if (l4 instanceof IcmpHeader) {
-            ipType = IPProtocols.ICMP;
+            ipType = InetProtocols.ICMP;
             icmp = (IcmpHeader)l4;
             icmpType = icmp.getIcmpType();
             icmpCode = icmp.getIcmpCode();
@@ -884,7 +883,7 @@ public class VTNMatchTest extends TestBase {
 
         if (ipType == null) {
             // Layer 4 conditions should never be used.
-            i4params.setProtocol(IPProtocols.TCP.shortValue());
+            i4params.setProtocol(InetProtocols.TCP.shortValue());
             VTNMatch vmatch = new MatchParams().
                 setEtherParams(eparams).
                 setInet4Params(i4params).
@@ -895,7 +894,7 @@ public class VTNMatchTest extends TestBase {
             assertEquals(false, vmatch.match(ctx));
 
             // IP protocol will be tested before DSCP.
-            if (ipProto != IPProtocols.TCP.shortValue()) {
+            if (ipProto != InetProtocols.TCP.shortValue()) {
                 expectedTypes.remove(FlowMatchType.IP_DSCP);
             }
             ctx.checkMatchFields(expectedTypes);

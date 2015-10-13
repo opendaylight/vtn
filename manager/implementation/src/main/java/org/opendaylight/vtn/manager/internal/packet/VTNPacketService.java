@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.util.EtherTypes;
 
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.inventory.VTNInventoryListener;
@@ -45,7 +46,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.Pa
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.TransmitPacketInputBuilder;
 
 import org.opendaylight.controller.sal.packet.Packet;
-import org.opendaylight.controller.sal.utils.EtherTypes;
 
 /**
  * Provider of internal packet services.

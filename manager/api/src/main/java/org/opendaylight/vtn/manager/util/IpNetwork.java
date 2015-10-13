@@ -23,7 +23,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.Address;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.address.Ipv4;
 
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
 
 /**
@@ -235,6 +237,44 @@ public abstract class IpNetwork implements Serializable {
     }
 
     /**
+     * Create an {@link IpNetwork} instance which represents the IP address
+     * specified by the given {@link IpAddress} instance.
+     *
+     * @param ip  An {@link IpAddress} instance which represents the IP
+     *            address.
+     * @return  An {@link IpNetwork} instance which represents the given
+     *          IP address. Note that {@code null} is returned if {@code ip}
+     *          is {@code null} or it does not contain valid value.
+     * @throws IllegalArgumentException
+     *    The given {@link IpAddress} instance is invalid.
+     * @since  Beryllium
+     */
+    public static final IpNetwork create(IpAddress ip) {
+        if (ip != null) {
+            Ipv4Address ipv4 = ip.getIpv4Address();
+            if (ipv4 != null) {
+                String addr = ipv4.getValue();
+                if (addr != null) {
+                    // Eliminate zone information.
+                    int idx = addr.lastIndexOf('%');
+                    if (idx >= 0) {
+                        addr = addr.substring(0, idx);
+                    }
+
+                    return create(addr);
+                }
+            }
+
+            if (ip.getIpv6Address() != null) {
+                throw new IllegalArgumentException(
+                    "Unsupported IP address: " + ip);
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Create an {@link IpNetwork} instance which represents the IP network
      * specified by the given {@link Address} instance.
      *
@@ -397,6 +437,19 @@ public abstract class IpNetwork implements Serializable {
      * @return  An {@link IpPrefix} instance.
      */
     public abstract IpPrefix getIpPrefix();
+
+    /**
+     * Return an {@link IpAddress} instance which represents this instance.
+     *
+     * <p>
+     *   This method returns an IP address which represents a string
+     *   representation of this network address without CIDR prefix.
+     * </p>
+     *
+     * @return  An {@link IpAddress} instance.
+     * @since  Beryllium
+     */
+    public abstract IpAddress getIpAddress();
 
     /**
      * Return a MD-SAL IP address which represents this network address.

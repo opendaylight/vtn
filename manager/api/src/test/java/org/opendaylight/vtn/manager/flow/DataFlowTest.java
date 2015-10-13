@@ -24,9 +24,11 @@ import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeRoute;
-import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
-import org.opendaylight.vtn.manager.flow.action.FlowAction;
 import org.opendaylight.vtn.manager.flow.action.DropAction;
+import org.opendaylight.vtn.manager.flow.action.FlowAction;
+import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
+import org.opendaylight.vtn.manager.util.EtherTypes;
+import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.TestBase;
 import org.opendaylight.vtn.manager.XmlAttributeType;
@@ -53,8 +55,6 @@ import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
-import org.opendaylight.controller.sal.utils.EtherTypes;
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.DataFlowMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
@@ -133,9 +133,9 @@ public class DataFlowTest extends TestBase {
         port = new SwitchPort("OF", "12");
         EGRESS_PORT = new PortLocation(node, port);
 
-        TP_PROTOCOLS.add(Integer.valueOf(IPProtocols.TCP.intValue()));
-        TP_PROTOCOLS.add(Integer.valueOf(IPProtocols.UDP.intValue()));
-        TP_PROTOCOLS.add(Integer.valueOf(IPProtocols.ICMP.intValue()));
+        TP_PROTOCOLS.add(Integer.valueOf(InetProtocols.TCP.intValue()));
+        TP_PROTOCOLS.add(Integer.valueOf(InetProtocols.UDP.intValue()));
+        TP_PROTOCOLS.add(Integer.valueOf(InetProtocols.ICMP.intValue()));
 
         // Construct a list of unique DataFlow instances.
         DataFlowGenerator gen = new DataFlowGenerator();
@@ -165,7 +165,7 @@ public class DataFlowTest extends TestBase {
     static List<Flow> createIngressFlows(int num) {
         List<Flow> list = new ArrayList<Flow>();
 
-        Short etherType = Short.valueOf(EtherTypes.IPv4.shortValue());
+        Short etherType = Short.valueOf(EtherTypes.IPV4.shortValue());
         Byte ipProto = Byte.valueOf((byte)6);
         long dpid = 1L;
         short portId = 1;
@@ -370,7 +370,7 @@ public class DataFlowTest extends TestBase {
             actions.add(new SetDlDst(dstMac));
             actions.add(new SetNwSrc(srcIp));
             actions.add(new SetNwDst(dstIp));
-            actions.add(new PushVlan(EtherTypes.VLANTAGGED));
+            actions.add(new PushVlan(EtherTypes.VLAN.intValue()));
             actions.add(new SetVlanId((short)3));
             actions.add(new Output(port));
             flow = new Flow(match.clone(), actions);

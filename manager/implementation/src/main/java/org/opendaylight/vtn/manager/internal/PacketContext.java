@@ -24,6 +24,7 @@ import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.EtherTypes;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
@@ -65,7 +66,6 @@ import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.packet.TCP;
 import org.opendaylight.controller.sal.packet.UDP;
-import org.opendaylight.controller.sal.utils.EtherTypes;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
 
@@ -296,7 +296,7 @@ public class PacketContext implements Cloneable, FlowMatchContext {
             Packet payload = etherFrame.getPayload();
             if (payload instanceof ARP) {
                 ARP arp = (ARP)payload;
-                if (arp.getProtocolType() == EtherTypes.IPv4.shortValue()) {
+                if (arp.getProtocolType() == EtherTypes.IPV4.shortValue()) {
                     // Ignore sender protocol address if it is zero.
                     byte[] sender = arp.getSenderProtocolAddress();
                     if (NumberUtils.toInteger(sender) != 0) {
@@ -418,7 +418,7 @@ public class PacketContext implements Cloneable, FlowMatchContext {
             }
             tag.setCfi(cfi).setPcp(pcp).setVid((short)vlan).
                 setEtherType(ethType);
-            ether.setEtherType(EtherTypes.VLANTAGGED.shortValue());
+            ether.setEtherType(EtherTypes.VLAN.shortValue());
 
             // Set payload to IEEE 802.1Q header.
             if (payload != null) {
@@ -602,7 +602,7 @@ public class PacketContext implements Cloneable, FlowMatchContext {
      * @return  {@code true} is returned only if this packet is an IPv4 packet.
      */
     public boolean isIPv4() {
-        return (etherFrame.getEtherType() == EtherTypes.IPv4.intValue());
+        return (etherFrame.getEtherType() == EtherTypes.IPV4.intValue());
     }
 
     /**

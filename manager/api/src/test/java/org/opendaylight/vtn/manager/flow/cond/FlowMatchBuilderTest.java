@@ -15,11 +15,11 @@ import java.util.List;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.TestBase;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 /**
  * JUnit test for {@link FlowMatchBuilder}.
@@ -849,10 +849,10 @@ public class FlowMatchBuilderTest extends TestBase {
         index++;
 
         // L4 conditions.
-        IPProtocols[] ipprotos = {
-            IPProtocols.TCP, IPProtocols.UDP, IPProtocols.ICMP,
+        InetProtocols[] ipprotos = {
+            InetProtocols.TCP, InetProtocols.UDP, InetProtocols.ICMP,
         };
-        for (IPProtocols ipproto: ipprotos) {
+        for (InetProtocols ipproto: ipprotos) {
             short proto = ipproto.shortValue();
             im = new Inet4Match(inetSrc, inetSrcSuff, inetDst, inetDstSuff,
                                 Short.valueOf(proto), inetDscp);
@@ -906,7 +906,7 @@ public class FlowMatchBuilderTest extends TestBase {
         assertNotSame(fm, fm1);
         index++;
 
-        for (IPProtocols ipproto: ipprotos) {
+        for (InetProtocols ipproto: ipprotos) {
             fmbuilder.setSourceMacAddress(ethSrc).
                 setDestinationMacAddress(ethDst).
                 setEtherType(ethType.intValue()).

@@ -13,9 +13,9 @@ import java.util.HashSet;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.TestBase;
+import org.opendaylight.vtn.manager.util.EtherTypes;
 
-import org.opendaylight.controller.sal.utils.EtherTypes;
+import org.opendaylight.vtn.manager.TestBase;
 
 /**
  * JUnit test for {@link FlowAction}.
@@ -31,7 +31,7 @@ public class FlowActionTest extends TestBase {
         FlowAction[] actions = {
             new DropAction(),
             new PopVlanAction(),
-            new PushVlanAction(EtherTypes.VLANTAGGED),
+            new PushVlanAction(EtherTypes.VLAN),
             new SetDlDstAction((byte[])null),
             new SetDlSrcAction((byte[])null),
             new SetDscpAction((byte)0),

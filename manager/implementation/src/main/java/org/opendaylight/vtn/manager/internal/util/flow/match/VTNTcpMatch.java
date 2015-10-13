@@ -14,11 +14,10 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import org.opendaylight.vtn.manager.flow.cond.PortMatch;
 import org.opendaylight.vtn.manager.flow.cond.TcpMatch;
+import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.internal.util.packet.TcpHeader;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnTcpMatchFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.vtn.layer4.match.VtnTcpMatch;
@@ -141,7 +140,7 @@ public final class VTNTcpMatch extends VTNLayer4PortMatch<TcpHeader> {
      * @return  6 is always returned.
      */
     public short getInetProtocol(IpVersion ver) {
-        return IPProtocols.TCP.shortValue();
+        return InetProtocols.TCP.shortValue();
     }
 
     /**

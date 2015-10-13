@@ -23,8 +23,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.addr
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.address.Ipv6;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.address.Ipv6Builder;
 
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv6Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv6Prefix;
 
 /**
@@ -317,6 +320,43 @@ public class IpNetworkTest extends TestBase {
             } catch (IllegalArgumentException e) {
                 assertTrue(e.getMessage().startsWith("Invalid CIDR prefix: "));
             }
+        }
+    }
+
+    /**
+     * Test case for {@link IpNetwork#create(IpAddress)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testCreateIpAddress() throws Exception {
+        assertEquals(null, IpNetwork.create((IpAddress)null));
+
+        for (int loop = 0; loop < 50; loop++) {
+            int baseAddr = random.nextInt();
+            InetAddress iaddr =
+                InetAddress.getByAddress(NumberUtils.toBytes(baseAddr));
+            String host = iaddr.getHostAddress();
+            IpAddress ipa = new IpAddress(new Ipv4Address(host));
+            IpNetwork ip = IpNetwork.create(ipa);
+            assertEquals(iaddr, ip.getInetAddress());
+            assertEquals(32, ip.getPrefixLength());
+
+            // Zone should be ignored.
+            host = host + "%1";
+            ipa = new IpAddress(new Ipv4Address(host));
+            ip = IpNetwork.create(ipa);
+            assertEquals(iaddr, ip.getInetAddress());
+            assertEquals(32, ip.getPrefixLength());
+        }
+
+        IpAddress ipa = new IpAddress(new Ipv6Address("::1"));
+        try {
+            IpNetwork.create(ipa);
+            unexpected();
+        } catch (IllegalArgumentException e) {
+            String msg = "Unsupported IP address: " + ipa;
+            assertEquals(msg, e.getMessage());
         }
     }
 }

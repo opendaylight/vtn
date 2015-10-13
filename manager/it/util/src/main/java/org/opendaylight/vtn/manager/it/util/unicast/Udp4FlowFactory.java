@@ -8,13 +8,13 @@
 
 package org.opendaylight.vtn.manager.it.util.unicast;
 
+import org.opendaylight.vtn.manager.util.InetProtocols;
+
 import org.opendaylight.vtn.manager.it.ofmock.OfMockService;
 import org.opendaylight.vtn.manager.it.util.TestHost;
 import org.opendaylight.vtn.manager.it.util.packet.EthernetFactory;
 import org.opendaylight.vtn.manager.it.util.packet.Inet4Factory;
 import org.opendaylight.vtn.manager.it.util.packet.UdpFactory;
-
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 /**
  * {@code Udp4FlowFactory} describes a test environment for configuring an
@@ -37,7 +37,7 @@ public final class Udp4FlowFactory extends Inet4PortFlowFactory {
      * @param dst     The destination port.
      */
     public Udp4FlowFactory(OfMockService ofmock, short src, short dst) {
-        super(ofmock, IPProtocols.UDP.byteValue(), src, dst);
+        super(ofmock, InetProtocols.UDP.byteValue(), src, dst);
     }
 
     // UnicastFlowFactory

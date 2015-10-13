@@ -17,13 +17,13 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.util.Set;
 
+import org.opendaylight.vtn.manager.util.EtherTypes;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.it.util.match.FlowMatchType;
 
 import org.opendaylight.controller.sal.packet.IPv4;
 import org.opendaylight.controller.sal.packet.Packet;
-import org.opendaylight.controller.sal.utils.EtherTypes;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.IpMatchBuilder;
@@ -74,7 +74,7 @@ public final class Inet4Factory extends PacketFactory {
      */
     public static Inet4Factory newInstance(EthernetFactory efc) {
         Inet4Factory i4fc = new Inet4Factory();
-        efc.setEtherType(EtherTypes.IPv4.shortValue()).setNextFactory(i4fc);
+        efc.setEtherType(EtherTypes.IPV4.shortValue()).setNextFactory(i4fc);
 
         return i4fc;
     }
@@ -90,7 +90,7 @@ public final class Inet4Factory extends PacketFactory {
     public static Inet4Factory newInstance(EthernetFactory efc,
                                            InetAddress src, InetAddress dst) {
         Inet4Factory i4fc = new Inet4Factory(src, dst);
-        efc.setEtherType(EtherTypes.IPv4.shortValue()).setNextFactory(i4fc);
+        efc.setEtherType(EtherTypes.IPV4.shortValue()).setNextFactory(i4fc);
 
         return i4fc;
     }

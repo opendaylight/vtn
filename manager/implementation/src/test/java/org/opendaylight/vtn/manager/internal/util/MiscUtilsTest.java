@@ -30,6 +30,8 @@ import org.mockito.Mockito;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.EtherTypes;
+import org.opendaylight.vtn.manager.util.InetProtocols;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
@@ -45,8 +47,6 @@ import org.opendaylight.controller.sal.packet.IPv4;
 import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.packet.TCP;
 import org.opendaylight.controller.sal.packet.UDP;
-import org.opendaylight.controller.sal.utils.EtherTypes;
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
@@ -377,21 +377,21 @@ public class MiscUtilsTest extends TestBase {
         }
 
         // Ensure that nested Etherner frame can be copied.
-        IPProtocols[] protos = {
-            IPProtocols.TCP,
-            IPProtocols.UDP,
-            IPProtocols.ICMP,
+        InetProtocols[] protos = {
+            InetProtocols.TCP,
+            InetProtocols.UDP,
+            InetProtocols.ICMP,
         };
         int protoIndex = 0;
         vid = MatchType.DL_VLAN_NONE;
-        etype = EtherTypes.IPv4.shortValue();
+        etype = EtherTypes.IPV4.shortValue();
         pcp = 0;
         dscp = 0;
         srcPort = 128;
         dstPort = 12345;
         cksum = (short)0xed03;
         for (int loop = 0; loop < protos.length * 5; loop++) {
-            IPProtocols proto = protos[protoIndex];
+            InetProtocols proto = protos[protoIndex];
             protoIndex++;
             if (protoIndex >= protos.length) {
                 protoIndex = 0;
@@ -935,10 +935,8 @@ public class MiscUtilsTest extends TestBase {
             parent = copy;
             orgParent = org;
         } else {
-            assertEquals(EtherTypes.VLANTAGGED.shortValue(),
-                         org.getEtherType());
-            assertEquals(EtherTypes.VLANTAGGED.shortValue(),
-                         copy.getEtherType());
+            assertEquals(EtherTypes.VLAN.shortValue(), org.getEtherType());
+            assertEquals(EtherTypes.VLAN.shortValue(), copy.getEtherType());
             IEEE8021Q orgTag = (IEEE8021Q)org.getPayload();
             IEEE8021Q vlanTag = (IEEE8021Q)copy.getPayload();
             assertNotNull(vlanTag);

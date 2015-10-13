@@ -13,6 +13,7 @@ import java.net.InetAddress;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.EtherTypes;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
@@ -21,7 +22,6 @@ import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IEEE8021Q;
 import org.opendaylight.controller.sal.packet.Packet;
-import org.opendaylight.controller.sal.utils.EtherTypes;
 
 /**
  * JUnit test for {@link ArpPacketBuilder}.
@@ -154,7 +154,7 @@ public class ArpPacketBuilderTest extends TestBase {
         short ethType = ether.getEtherType();
         Packet payload = ether.getPayload();
         if (vid != 0) {
-            assertEquals(EtherTypes.VLANTAGGED.shortValue(), ethType);
+            assertEquals(EtherTypes.VLAN.shortValue(), ethType);
             assertTrue(payload instanceof IEEE8021Q);
             IEEE8021Q tag = (IEEE8021Q)payload;
             byte zero = 0;
@@ -172,7 +172,7 @@ public class ArpPacketBuilderTest extends TestBase {
         byte[] tha = (dst.equals(EtherAddress.BROADCAST))
             ? new byte[6] : dst.getBytes();
         assertEquals(ARP.HW_TYPE_ETHERNET, arp.getHardwareType());
-        assertEquals(EtherTypes.IPv4.shortValue(), arp.getProtocolType());
+        assertEquals(EtherTypes.IPV4.shortValue(), arp.getProtocolType());
         assertEquals((byte)6, arp.getHardwareAddressLength());
         assertEquals((byte)4, arp.getProtocolAddressLength());
         assertEquals(op, arp.getOpCode());

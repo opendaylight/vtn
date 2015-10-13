@@ -19,7 +19,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.address.Ipv4;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.address.Ipv4Builder;
 
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
 
 /**
@@ -367,6 +369,14 @@ public final class Ip4Network extends IpNetwork {
         }
 
         return ip;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public IpAddress getIpAddress() {
+        return new IpAddress(new Ipv4Address(getHostAddress()));
     }
 
     /**

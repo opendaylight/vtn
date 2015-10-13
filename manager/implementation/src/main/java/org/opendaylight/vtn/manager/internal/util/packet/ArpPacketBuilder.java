@@ -12,13 +12,13 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 
 import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.EtherTypes;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 
 import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IEEE8021Q;
 import org.opendaylight.controller.sal.packet.Packet;
-import org.opendaylight.controller.sal.utils.EtherTypes;
 
 /**
  * {@code ArpPacketBuilder} is a utility to build an ARP packet.
@@ -140,7 +140,7 @@ public final class ArpPacketBuilder {
         // Create an ARP request message.
         ARP arp = new ARP();
         arp.setHardwareType(ARP.HW_TYPE_ETHERNET).
-            setProtocolType(EtherTypes.IPv4.shortValue()).
+            setProtocolType(EtherTypes.IPV4.shortValue()).
             setHardwareAddressLength((byte)EtherAddress.SIZE).
             setProtocolAddressLength((byte)Ip4Network.SIZE).
             setOpCode(operation).
@@ -154,7 +154,7 @@ public final class ArpPacketBuilder {
             IEEE8021Q tag = new IEEE8021Q();
             tag.setCfi((byte)0).setPcp((byte)0).setVid((short)vlanId).
                 setEtherType(ethType).setPayload(arp);
-            ethType = EtherTypes.VLANTAGGED.shortValue();
+            ethType = EtherTypes.VLAN.shortValue();
             payload = tag;
         }
 

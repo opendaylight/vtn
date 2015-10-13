@@ -24,6 +24,8 @@ import org.junit.Test;
 import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
 import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.EtherTypes;
+import org.opendaylight.vtn.manager.util.InetProtocols;
 import org.opendaylight.vtn.manager.util.IpNetwork;
 import org.opendaylight.vtn.manager.util.VTNIdentifiableComparator;
 
@@ -43,9 +45,6 @@ import org.opendaylight.vtn.manager.internal.util.flow.match.Inet4MatchParams;
 import org.opendaylight.vtn.manager.internal.util.flow.match.TcpMatchParams;
 import org.opendaylight.vtn.manager.internal.util.flow.match.TestMatchContext;
 import org.opendaylight.vtn.manager.internal.util.flow.match.UdpMatchParams;
-
-import org.opendaylight.controller.sal.utils.EtherTypes;
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.flow.cond.config.VtnFlowMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.flow.cond.config.VtnFlowMatchBuilder;
@@ -510,12 +509,12 @@ public class VTNFlowConditionTest extends TestBase {
             reset();
 
         // Create an UDP packet to be matched by match at index 10000.
-        Short ipUdp = IPProtocols.UDP.shortValue();
+        Short ipUdp = InetProtocols.UDP.shortValue();
         Integer srcPort = gen.getPort();
         Integer dstPort = gen.getPort();
         IpNetwork ipaddr1 = IpNetwork.create(gen.getInetAddress());
         IpNetwork ipaddr2 = IpNetwork.create(gen.getInetAddress());
-        Integer ethIpv4 = EtherTypes.IPv4.intValue();
+        Integer ethIpv4 = EtherTypes.IPV4.intValue();
         ether.setSourceAddress(mac2.getAddress()).setEtherType(ethIpv4).
             setVlanId(Integer.valueOf(4095)).
             setVlanPriority(Short.valueOf((short)2));
@@ -547,7 +546,7 @@ public class VTNFlowConditionTest extends TestBase {
         IpNetwork inetSrc = IpNetwork.create("192.168.233.98");
         IcmpMatchParams icmp = new IcmpMatchParams().
             setType(gen.getIcmpValue()).setCode(gen.getIcmpValue());
-        Short ipIcmp = IPProtocols.ICMP.shortValue();
+        Short ipIcmp = InetProtocols.ICMP.shortValue();
         ipv4.setSourceNetwork(inetSrc).setDestinationNetwork(ipaddr2).
             setProtocol(ipIcmp).setDscp(dscp);
         ether.setVlanId(Integer.valueOf(30)).
@@ -568,7 +567,7 @@ public class VTNFlowConditionTest extends TestBase {
             dstTo + 1,
         };
 
-        Short ipTcp = IPProtocols.TCP.shortValue();
+        Short ipTcp = InetProtocols.TCP.shortValue();
         TcpMatchParams tcp = new TcpMatchParams();
         ipv4.setSourceNetwork(ipaddr1).setProtocol(ipTcp);
         ctx.setEtherHeader(ether).setInetHeader(ipv4).setLayer4Header(tcp);
