@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1a76adc5_c7bbe9e3",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/OvsdbDataChangeListener.java",
+        "patchSetId": 13
+      },
+      "lineNbr": 68,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-10-13T02:15:48Z",
+      "side": 1,
+      "message": "Can these logs be trace instead?",
+      "revId": "835fccf07a3528ccaeaca73422eb3c5f6aa93352",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
