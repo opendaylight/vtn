@@ -9,12 +9,11 @@
 package org.opendaylight.vtn.manager.internal.util.flow.match;
 
 import org.opendaylight.vtn.manager.flow.cond.PortMatch;
+import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.internal.util.packet.UdpHeader;
 
 import org.opendaylight.vtn.manager.internal.XmlNode;
-
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.VtnLayer4Match;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.vtn.layer4.match.VtnUdpMatch;
@@ -130,9 +129,9 @@ public final class UdpMatchParams extends Layer4PortMatchParams<UdpMatchParams>
         VTNPortRange dst = VTNPortRange.create(dstMatch);
         assertEquals(src, umatch.getSourcePort());
         assertEquals(dst, umatch.getDestinationPort());
-        assertEquals(IPProtocols.UDP.shortValue(),
+        assertEquals(InetProtocols.UDP.shortValue(),
                      umatch.getInetProtocol(IpVersion.Ipv4));
-        assertEquals(IPProtocols.UDP.shortValue(),
+        assertEquals(InetProtocols.UDP.shortValue(),
                      umatch.getInetProtocol(IpVersion.Ipv6));
         assertEquals(UdpHeader.class, umatch.getHeaderType());
         assertEquals(FlowMatchType.UDP_SRC, umatch.getSourceMatchType());

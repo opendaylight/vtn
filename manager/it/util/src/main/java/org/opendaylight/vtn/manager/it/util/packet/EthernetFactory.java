@@ -18,6 +18,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.opendaylight.vtn.manager.util.EtherTypes;
+
 import org.opendaylight.vtn.manager.it.ofmock.OfMockService;
 import org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase;
 import org.opendaylight.vtn.manager.it.util.TestBase;
@@ -26,7 +28,6 @@ import org.opendaylight.vtn.manager.it.util.match.FlowMatchType;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IEEE8021Q;
 import org.opendaylight.controller.sal.packet.Packet;
-import org.opendaylight.controller.sal.utils.EtherTypes;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.EthernetMatchBuilder;
@@ -259,7 +260,7 @@ public final class EthernetFactory extends PacketFactory {
         short type = eth.getEtherType();
         Packet payload = eth.getPayload();
         Packet parent;
-        if (type == EtherTypes.VLANTAGGED.shortValue()) {
+        if (type == EtherTypes.VLAN.shortValue()) {
             assertTrue(payload instanceof IEEE8021Q);
             IEEE8021Q vtag = (IEEE8021Q)payload;
             vlan = vtag.getVid();
@@ -321,7 +322,7 @@ public final class EthernetFactory extends PacketFactory {
         } else {
             IEEE8021Q vtag = new IEEE8021Q().setCfi((byte)0).setPcp(vlanPcp).
                 setVid(vlanId).setEtherType(etherType);
-            eth.setEtherType(EtherTypes.VLANTAGGED.shortValue()).
+            eth.setEtherType(EtherTypes.VLAN.shortValue()).
                 setPayload(vtag);
         }
 

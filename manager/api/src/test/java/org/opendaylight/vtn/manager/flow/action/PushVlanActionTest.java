@@ -14,11 +14,11 @@ import java.util.List;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.util.EtherTypes;
+
 import org.opendaylight.vtn.manager.TestBase;
 import org.opendaylight.vtn.manager.XmlDataType;
 import org.opendaylight.vtn.manager.XmlAttributeType;
-
-import org.opendaylight.controller.sal.utils.EtherTypes;
 
 /**
  * JUnit test for {@link PushVlanAction}.
@@ -49,7 +49,7 @@ public class PushVlanActionTest extends TestBase {
      */
     @Test
     public void testGetter() {
-        EtherTypes[] types = {EtherTypes.VLANTAGGED, EtherTypes.QINQ};
+        EtherTypes[] types = {EtherTypes.VLAN, EtherTypes.QINQ};
         for (EtherTypes type: types) {
             int t = type.intValue();
             PushVlanAction act = new PushVlanAction(t);
@@ -67,7 +67,7 @@ public class PushVlanActionTest extends TestBase {
     @Test
     public void testEquals() {
         HashSet<Object> set = new HashSet<Object>();
-        EtherTypes[] types = {EtherTypes.VLANTAGGED, EtherTypes.QINQ};
+        EtherTypes[] types = {EtherTypes.VLAN, EtherTypes.QINQ};
         for (EtherTypes type: types) {
             PushVlanAction act1 = new PushVlanAction(type);
             PushVlanAction act2 = new PushVlanAction(type);
@@ -82,7 +82,7 @@ public class PushVlanActionTest extends TestBase {
      */
     @Test
     public void testToString() {
-        EtherTypes[] types = {EtherTypes.VLANTAGGED, EtherTypes.QINQ};
+        EtherTypes[] types = {EtherTypes.VLAN, EtherTypes.QINQ};
         for (EtherTypes type: types) {
             PushVlanAction act = new PushVlanAction(type);
             String t = Integer.toHexString(type.intValue());
@@ -95,7 +95,7 @@ public class PushVlanActionTest extends TestBase {
      */
     @Test
     public void testSerialize() {
-        EtherTypes[] types = {EtherTypes.VLANTAGGED, EtherTypes.QINQ};
+        EtherTypes[] types = {EtherTypes.VLAN, EtherTypes.QINQ};
         for (EtherTypes type: types) {
             PushVlanAction act = new PushVlanAction(type);
             serializeTest(act);
@@ -107,7 +107,7 @@ public class PushVlanActionTest extends TestBase {
      */
     @Test
     public void testJAXB() {
-        EtherTypes[] types = {EtherTypes.VLANTAGGED, EtherTypes.QINQ};
+        EtherTypes[] types = {EtherTypes.VLAN, EtherTypes.QINQ};
         for (EtherTypes type: types) {
             PushVlanAction act = new PushVlanAction(type);
             jaxbTest(act, PushVlanAction.class, XML_ROOT);
@@ -122,7 +122,7 @@ public class PushVlanActionTest extends TestBase {
      */
     @Test
     public void testJSON() {
-        EtherTypes[] types = {EtherTypes.VLANTAGGED, EtherTypes.QINQ};
+        EtherTypes[] types = {EtherTypes.VLAN, EtherTypes.QINQ};
         for (EtherTypes type: types) {
             PushVlanAction act = new PushVlanAction(type);
             jsonTest(act, PushVlanAction.class);

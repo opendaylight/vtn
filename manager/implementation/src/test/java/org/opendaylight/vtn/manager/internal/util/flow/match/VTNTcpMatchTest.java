@@ -19,6 +19,7 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.flow.cond.L4Match;
 import org.opendaylight.vtn.manager.flow.cond.TcpMatch;
+import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.internal.util.packet.Layer4Header;
 import org.opendaylight.vtn.manager.internal.util.packet.TcpHeader;
@@ -28,8 +29,6 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
-
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
@@ -74,9 +73,9 @@ public class VTNTcpMatchTest extends TestBase {
         VTNTcpMatch empty = new VTNTcpMatch();
         assertEquals(null, empty.getSourcePort());
         assertEquals(null, empty.getDestinationPort());
-        assertEquals(IPProtocols.TCP.shortValue(),
+        assertEquals(InetProtocols.TCP.shortValue(),
                      empty.getInetProtocol(IpVersion.Ipv4));
-        assertEquals(IPProtocols.TCP.shortValue(),
+        assertEquals(InetProtocols.TCP.shortValue(),
                      empty.getInetProtocol(IpVersion.Ipv6));
         assertEquals(TcpHeader.class, empty.getHeaderType());
         assertEquals(FlowMatchType.TCP_SRC, empty.getSourceMatchType());

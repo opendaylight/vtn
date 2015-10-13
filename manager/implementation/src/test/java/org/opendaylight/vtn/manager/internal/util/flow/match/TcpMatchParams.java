@@ -9,12 +9,11 @@
 package org.opendaylight.vtn.manager.internal.util.flow.match;
 
 import org.opendaylight.vtn.manager.flow.cond.PortMatch;
+import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.internal.util.packet.TcpHeader;
 
 import org.opendaylight.vtn.manager.internal.XmlNode;
-
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.VtnLayer4Match;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.vtn.layer4.match.VtnTcpMatch;
@@ -130,9 +129,9 @@ public final class TcpMatchParams extends Layer4PortMatchParams<TcpMatchParams>
         VTNPortRange dst = VTNPortRange.create(dstMatch);
         assertEquals(src, tmatch.getSourcePort());
         assertEquals(dst, tmatch.getDestinationPort());
-        assertEquals(IPProtocols.TCP.shortValue(),
+        assertEquals(InetProtocols.TCP.shortValue(),
                      tmatch.getInetProtocol(IpVersion.Ipv4));
-        assertEquals(IPProtocols.TCP.shortValue(),
+        assertEquals(InetProtocols.TCP.shortValue(),
                      tmatch.getInetProtocol(IpVersion.Ipv6));
         assertEquals(TcpHeader.class, tmatch.getHeaderType());
         assertEquals(FlowMatchType.TCP_SRC, tmatch.getSourceMatchType());

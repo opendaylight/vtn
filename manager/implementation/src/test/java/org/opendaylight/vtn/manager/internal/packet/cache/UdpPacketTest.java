@@ -19,6 +19,7 @@ import java.util.Set;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.util.InetProtocols;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
@@ -35,7 +36,6 @@ import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IPv4;
 import org.opendaylight.controller.sal.packet.PacketException;
 import org.opendaylight.controller.sal.packet.UDP;
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 /**
  * JUnit test for {@link UdpPacket}.
@@ -416,7 +416,7 @@ public class UdpPacketTest extends TestBase {
      * @return  An {@link IPv4} instance.
      */
     private IPv4 createIPv4(byte[] src, byte[] dst, UDP udp) {
-        return createIPv4(src, dst, IPProtocols.UDP.shortValue(), (byte)0,
+        return createIPv4(src, dst, InetProtocols.UDP.shortValue(), (byte)0,
                           udp);
     }
 
@@ -427,7 +427,7 @@ public class UdpPacketTest extends TestBase {
      * @return  An {@link Ethernet} instance.
      */
     private Ethernet createEthernet(UDP udp) {
-        IPv4 ipv4 = createIPv4(IPProtocols.UDP.shortValue(), udp);
+        IPv4 ipv4 = createIPv4(InetProtocols.UDP.shortValue(), udp);
         return createEthernet(ipv4);
     }
 

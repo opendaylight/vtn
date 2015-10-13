@@ -15,7 +15,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import org.opendaylight.controller.sal.utils.EtherTypes;
+import org.opendaylight.vtn.manager.util.EtherTypes;
 
 /**
  * This class describes a flow action that adds a VLAN tag to the packet.

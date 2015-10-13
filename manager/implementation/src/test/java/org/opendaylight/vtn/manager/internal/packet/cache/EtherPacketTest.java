@@ -18,6 +18,7 @@ import java.util.Set;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.EtherTypes;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.util.flow.action.FlowFilterAction;
@@ -36,7 +37,6 @@ import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IEEE8021Q;
 import org.opendaylight.controller.sal.packet.Packet;
-import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 
@@ -323,7 +323,7 @@ public class EtherPacketTest extends TestBase {
                         assertEquals((short)type, pkt.getEtherType());
                         assertSame(arp, pkt.getPayload());
                     } else {
-                        assertEquals(EtherTypes.VLANTAGGED.shortValue(),
+                        assertEquals(EtherTypes.VLAN.shortValue(),
                                      pkt.getEtherType());
                         IEEE8021Q tag = (IEEE8021Q)pkt.getPayload();
                         assertEquals((short)vid, tag.getVid());
@@ -529,7 +529,7 @@ public class EtherPacketTest extends TestBase {
         ARP arp = new ARP();
         arp.setHardwareType(ARP.HW_TYPE_ETHERNET).
             setHardwareAddressLength((byte)EtherAddress.SIZE).
-            setProtocolType(EtherTypes.IPv4.shortValue()).
+            setProtocolType(EtherTypes.IPV4.shortValue()).
             setProtocolAddressLength((byte)4).
             setOpCode(op).
             setSenderHardwareAddress(sha).

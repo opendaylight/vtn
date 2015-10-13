@@ -17,6 +17,8 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.util.InetProtocols;
+
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.util.flow.action.FlowFilterAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetIcmpCodeAction;
@@ -29,7 +31,6 @@ import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.ICMP;
 import org.opendaylight.controller.sal.packet.IPv4;
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 /**
  * JUnit test for {@link IcmpPacket}.
@@ -287,7 +288,7 @@ public class IcmpPacketTest extends TestBase {
      * @return  An {@link Ethernet} instance.
      */
     private Ethernet createEthernet(ICMP icmp) {
-        IPv4 ipv4 = createIPv4(IPProtocols.ICMP.shortValue(), icmp);
+        IPv4 ipv4 = createIPv4(InetProtocols.ICMP.shortValue(), icmp);
         return createEthernet(ipv4);
     }
 }

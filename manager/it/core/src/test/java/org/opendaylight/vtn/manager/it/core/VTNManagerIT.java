@@ -93,6 +93,8 @@ import org.opendaylight.vtn.manager.flow.cond.Inet4Match;
 import org.opendaylight.vtn.manager.flow.cond.TcpMatch;
 import org.opendaylight.vtn.manager.flow.cond.UdpMatch;
 import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.EtherTypes;
+import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.it.ofmock.OfMockFlow;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockLink;
@@ -129,8 +131,6 @@ import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.EtherTypes;
-import org.opendaylight.controller.sal.utils.IPProtocols;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
@@ -5518,9 +5518,9 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
 
         EtherAddress nullMac = null;
         EthernetMatch em = new EthernetMatch(
-            nullMac, nullMac, EtherTypes.IPv4.intValue(), null, null);
+            nullMac, nullMac, EtherTypes.IPV4.intValue(), null, null);
         Inet4Match im = new Inet4Match(null, null, null, null,
-                                       IPProtocols.UDP.shortValue(), null);
+                                       InetProtocols.UDP.shortValue(), null);
         fm = new FlowMatch(1, em, im, udm);
         condUdp = new FlowCondition(cnameUdp, Collections.singletonList(fm));
         assertEquals(condUdp, vtnManager.getFlowCondition(cnameUdp));
@@ -5540,7 +5540,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         assertEquals(null,
                      vtnManager.setFlowConditionMatch(cnameTcp, 2, fm));
         im = new Inet4Match(null, null, null, null,
-                            IPProtocols.TCP.shortValue(), null);
+                            InetProtocols.TCP.shortValue(), null);
         fm = new FlowMatch(2, em, im, tcm);
         condTcp = new FlowCondition(cnameTcp, Collections.singletonList(fm));
         assertEquals(condTcp, vtnManager.getFlowCondition(cnameTcp));

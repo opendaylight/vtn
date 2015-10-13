@@ -15,11 +15,12 @@ import static org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase.toPortNum
 
 import java.util.Set;
 
+import org.opendaylight.vtn.manager.util.InetProtocols;
+
 import org.opendaylight.vtn.manager.it.util.match.FlowMatchType;
 
 import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.packet.UDP;
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.layer._4.match.UdpMatchBuilder;
@@ -57,7 +58,7 @@ public final class UdpFactory extends PacketFactory {
      */
     public static UdpFactory newInstance(Inet4Factory i4fc) {
         UdpFactory ufc = new UdpFactory();
-        i4fc.setProtocol(IPProtocols.UDP.byteValue()).setNextFactory(ufc);
+        i4fc.setProtocol(InetProtocols.UDP.byteValue()).setNextFactory(ufc);
 
         return ufc;
     }
@@ -73,7 +74,7 @@ public final class UdpFactory extends PacketFactory {
     public static UdpFactory newInstance(Inet4Factory i4fc, short src,
                                          short dst) {
         UdpFactory ufc = new UdpFactory(src, dst);
-        i4fc.setProtocol(IPProtocols.UDP.byteValue()).setNextFactory(ufc);
+        i4fc.setProtocol(InetProtocols.UDP.byteValue()).setNextFactory(ufc);
 
         return ufc;
     }

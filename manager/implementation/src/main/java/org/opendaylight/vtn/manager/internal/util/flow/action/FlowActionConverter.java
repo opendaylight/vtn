@@ -12,10 +12,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.opendaylight.vtn.manager.flow.action.FlowAction;
+import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnDropActionCase;
@@ -168,16 +167,16 @@ public final class FlowActionConverter {
         map = new HashMap<Class<?>, VTNFlowAction>();
         map.put(SetTpDstActionCase.class, portDst);
         map.put(SetTpSrcActionCase.class, portSrc);
-        l4map.put(IPProtocols.TCP.shortValue(), map);
+        l4map.put(InetProtocols.TCP.shortValue(), map);
 
         // For UDP.
-        l4map.put(IPProtocols.UDP.shortValue(), map);
+        l4map.put(InetProtocols.UDP.shortValue(), map);
 
         // For ICMP
         map = new HashMap<Class<?>, VTNFlowAction>();
         map.put(SetTpDstActionCase.class, icmpCode);
         map.put(SetTpSrcActionCase.class, icmpType);
-        l4map.put(IPProtocols.ICMP.shortValue(), map);
+        l4map.put(InetProtocols.ICMP.shortValue(), map);
         l4Converters = l4map;
 
         // Initialize stringifiers for MD-SAL action.

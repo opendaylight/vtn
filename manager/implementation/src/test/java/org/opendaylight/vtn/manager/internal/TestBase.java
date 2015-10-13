@@ -60,6 +60,7 @@ import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 import org.opendaylight.vtn.manager.flow.filter.PassFilter;
 import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.EtherTypes;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
@@ -85,7 +86,6 @@ import org.opendaylight.controller.sal.packet.IPv4;
 import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.core.UpdateType;
 
@@ -1050,7 +1050,7 @@ public abstract class TestBase extends Assert {
             IEEE8021Q tag = new IEEE8021Q();
             tag.setCfi((byte)0).setPcp(pcp).setVid(vid).
                 setEtherType((short)type).setPayload(payload);
-            pkt.setEtherType(EtherTypes.VLANTAGGED.shortValue()).
+            pkt.setEtherType(EtherTypes.VLAN.shortValue()).
                 setPayload(tag);
         }
 
@@ -1078,7 +1078,7 @@ public abstract class TestBase extends Assert {
             IEEE8021Q tag = new IEEE8021Q();
             tag.setCfi((byte)0).setPcp(pcp).setVid(vid).
                 setEtherType((short)type).setRawPayload(raw);
-            pkt.setEtherType(EtherTypes.VLANTAGGED.shortValue()).
+            pkt.setEtherType(EtherTypes.VLAN.shortValue()).
                 setPayload(tag);
         }
 
@@ -1105,7 +1105,7 @@ public abstract class TestBase extends Assert {
             (byte)0xdd, (byte)0xee, (byte)0xff,
         };
 
-        return createEthernet(src, dst, EtherTypes.IPv4.intValue(),
+        return createEthernet(src, dst, EtherTypes.IPV4.intValue(),
                               MatchType.DL_VLAN_NONE, (byte)0, ipv4);
     }
 
@@ -1244,17 +1244,17 @@ public abstract class TestBase extends Assert {
         eth.setSourceMACAddress(src).setDestinationMACAddress(dst);
 
         if (vlan >= 0) {
-            eth.setEtherType(EtherTypes.VLANTAGGED.shortValue());
+            eth.setEtherType(EtherTypes.VLAN.shortValue());
 
             IEEE8021Q vlantag = new IEEE8021Q();
             vlantag.setCfi((byte)0x0).setPcp((byte)0x0).setVid((short)vlan).
-                setEtherType(EtherTypes.IPv4.shortValue()).setParent(eth);
+                setEtherType(EtherTypes.IPV4.shortValue()).setParent(eth);
             eth.setPayload(vlantag);
 
             vlantag.setPayload(ip);
 
         } else {
-            eth.setEtherType(EtherTypes.IPv4.shortValue()).setPayload(ip);
+            eth.setEtherType(EtherTypes.IPV4.shortValue()).setPayload(ip);
         }
         return eth;
     }
@@ -1274,7 +1274,7 @@ public abstract class TestBase extends Assert {
             byte[] target, short vlan, short arptype) {
         ARP arp = new ARP();
         arp.setHardwareType(ARP.HW_TYPE_ETHERNET).
-            setProtocolType(EtherTypes.IPv4.shortValue()).
+            setProtocolType(EtherTypes.IPV4.shortValue()).
             setHardwareAddressLength((byte)EthernetAddress.SIZE).
             setProtocolAddressLength((byte)target.length).
             setOpCode(arptype).
@@ -1285,7 +1285,7 @@ public abstract class TestBase extends Assert {
         eth.setSourceMACAddress(src).setDestinationMACAddress(dst);
 
         if (vlan >= 0) {
-            eth.setEtherType(EtherTypes.VLANTAGGED.shortValue());
+            eth.setEtherType(EtherTypes.VLAN.shortValue());
 
             IEEE8021Q vlantag = new IEEE8021Q();
             vlantag.setCfi((byte)0x0).setPcp((byte)0x0).setVid(vlan)
@@ -2047,7 +2047,7 @@ public abstract class TestBase extends Assert {
                                           byte[] targetAddr) {
         ARP arp = null;
         if (vlan > 0) {
-            assertEquals(msg, EtherTypes.VLANTAGGED.shortValue(),
+            assertEquals(msg, EtherTypes.VLAN.shortValue(),
                          eth.getEtherType());
             IEEE8021Q vlantag = (IEEE8021Q)eth.getPayload();
             assertEquals(msg, vlan, vlantag.getVid());

@@ -33,6 +33,7 @@ import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
 import org.opendaylight.vtn.manager.flow.action.SetVlanIdAction;
 import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
 import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.InetProtocols;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 
 import org.opendaylight.vtn.manager.internal.L2Host;
@@ -40,8 +41,6 @@ import org.opendaylight.vtn.manager.internal.util.OrderedComparator;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
-
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowAction;
@@ -1127,8 +1126,8 @@ public class FlowActionUtilsTest extends TestBase {
         Collections.reverse(reversed);
 
         protocols = new Short[]{
-            IPProtocols.TCP.shortValue(),
-            IPProtocols.UDP.shortValue(),
+            InetProtocols.TCP.shortValue(),
+            InetProtocols.UDP.shortValue(),
         };
 
         for (Short ipproto: protocols) {
@@ -1168,7 +1167,7 @@ public class FlowActionUtilsTest extends TestBase {
         reversed = new ArrayList<>(expected);
         Collections.reverse(reversed);
 
-        Short ipproto = IPProtocols.ICMP.shortValue();
+        Short ipproto = InetProtocols.ICMP.shortValue();
         List<VtnFlowAction> results = FlowActionUtils.
             toVtnFlowActions(actions, comp, ipproto);
         assertEquals(expected, results);

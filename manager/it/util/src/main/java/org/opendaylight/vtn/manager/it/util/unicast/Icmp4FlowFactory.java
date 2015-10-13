@@ -8,13 +8,13 @@
 
 package org.opendaylight.vtn.manager.it.util.unicast;
 
+import org.opendaylight.vtn.manager.util.InetProtocols;
+
 import org.opendaylight.vtn.manager.it.ofmock.OfMockService;
 import org.opendaylight.vtn.manager.it.util.TestHost;
 import org.opendaylight.vtn.manager.it.util.packet.EthernetFactory;
 import org.opendaylight.vtn.manager.it.util.packet.Icmp4Factory;
 import org.opendaylight.vtn.manager.it.util.packet.Inet4Factory;
-
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 /**
  * {@code Icmp4FlowFactory} describes a test environment for configuring an
@@ -40,7 +40,7 @@ public final class Icmp4FlowFactory extends Inet4FlowFactory {
      */
     public Icmp4FlowFactory(OfMockService ofmock) {
         super(ofmock);
-        setProtocol(IPProtocols.ICMP.byteValue());
+        setProtocol(InetProtocols.ICMP.byteValue());
     }
 
     /**

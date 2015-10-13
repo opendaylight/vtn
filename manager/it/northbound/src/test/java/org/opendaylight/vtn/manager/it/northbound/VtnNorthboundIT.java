@@ -82,6 +82,8 @@ import org.opendaylight.vtn.manager.VInterfacePath;
 import org.opendaylight.vtn.manager.VTerminalIfPath;
 import org.opendaylight.vtn.manager.util.ByteUtils;
 import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.EtherTypes;
+import org.opendaylight.vtn.manager.util.InetProtocols;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 
 import org.opendaylight.vtn.manager.it.ofmock.OfMockService;
@@ -94,9 +96,7 @@ import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
-import org.opendaylight.controller.sal.utils.IPProtocols;
 import org.opendaylight.controller.usermanager.IUserManager;
 
 @RunWith(PaxExam.class)
@@ -391,21 +391,22 @@ public final class VtnNorthboundIT extends TestBase {
                         put("index", 1).
                         put("inetMatch", new JSONObject().
                             put("inet4", new JSONObject().
-                                put("protocol", IPProtocols.ICMP.intValue()))).
+                                put("protocol",
+                                    InetProtocols.ICMP.intValue()))).
                         put("l4Match", new JSONObject().
                             put("tcp", new JSONObject())));
             matches.add(new JSONObject().
                         put("index", 1).
                         put("inetMatch", new JSONObject().
                             put("inet4", new JSONObject().
-                                put("protocol", IPProtocols.TCP.intValue()))).
+                                put("protocol", InetProtocols.TCP.intValue()))).
                         put("l4Match", new JSONObject().
                             put("udp", new JSONObject())));
             matches.add(new JSONObject().
                         put("index", 1).
                         put("inetMatch", new JSONObject().
                             put("inet4", new JSONObject().
-                                put("protocol", IPProtocols.UDP.intValue()))).
+                                put("protocol", InetProtocols.UDP.intValue()))).
                         put("l4Match", new JSONObject().
                             put("icmp", new JSONObject())));
 
@@ -6566,7 +6567,7 @@ public final class VtnNorthboundIT extends TestBase {
         JSONObject match100 = new JSONObject().
             put("inetMatch", ipv4);
         JSONObject etherIpv4 = new JSONObject().
-            put("type", EtherTypes.IPv4.intValue());
+            put("type", EtherTypes.IPV4.intValue());
         JSONObject expected = new JSONObject().
             put("index", index).
             put("inetMatch", ipv4).
@@ -6593,7 +6594,7 @@ public final class VtnNorthboundIT extends TestBase {
             put("ethernet", new JSONObject().
                 put("src", src.getText()).
                 put("dst", dst.getText()).
-                put("type", EtherTypes.IPv4.intValue()).
+                put("type", EtherTypes.IPV4.intValue()).
                 put("vlan", 4095).
                 put("vlanpri", 7)).
             put("inetMatch", new JSONObject().
@@ -6602,7 +6603,7 @@ public final class VtnNorthboundIT extends TestBase {
                     put("srcsuffix", srcIp.getPrefixLength()).
                     put("dst", dstIp.getHostAddress()).
                     put("dstsuffix", dstIp.getPrefixLength()).
-                    put("protocol", IPProtocols.TCP.intValue()).
+                    put("protocol", InetProtocols.TCP.intValue()).
                     put("dscp", 63))).
             put("l4Match", new JSONObject().
                 put("tcp", new JSONObject().
@@ -6632,7 +6633,7 @@ public final class VtnNorthboundIT extends TestBase {
                         put("from", 53))));
         JSONObject ipv4Udp = new JSONObject().
             put("inet4", new JSONObject().
-                put("protocol", IPProtocols.UDP.intValue()));
+                put("protocol", InetProtocols.UDP.intValue()));
         expected = new JSONObject().
             put("index", index).
             put("l4Match", new JSONObject().
@@ -6663,7 +6664,7 @@ public final class VtnNorthboundIT extends TestBase {
             put("l4Match", icmp);
         JSONObject ipv4Icmp = new JSONObject().
             put("inet4", new JSONObject().
-                put("protocol", IPProtocols.ICMP.intValue()));
+                put("protocol", InetProtocols.ICMP.intValue()));
         expected = new JSONObject().
             put("index", index).
             put("l4Match", icmp).
@@ -6736,7 +6737,7 @@ public final class VtnNorthboundIT extends TestBase {
                 put("tcp", empty));
         JSONObject ipv4Tcp = new JSONObject().
             put("inet4", new JSONObject().
-                put("protocol", IPProtocols.TCP.intValue()));
+                put("protocol", InetProtocols.TCP.intValue()));
         expected = new JSONObject().
             put("index", index).
             put("ethernet", etherIpv4).

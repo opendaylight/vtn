@@ -43,6 +43,7 @@ import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
 import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 import org.opendaylight.vtn.manager.flow.cond.FlowMatchBuilder;
 import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.InetProtocols;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
@@ -66,7 +67,6 @@ import org.opendaylight.controller.sal.flowprogrammer.Flow;
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchField;
 import org.opendaylight.controller.sal.match.MatchType;
-import org.opendaylight.controller.sal.utils.IPProtocols;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
@@ -148,7 +148,7 @@ public final class DataFlowGenerator extends TestBase {
                 }
 
                 int proto = ipproto.intValue();
-                if (IPProtocols.TCP.intValue() == proto) {
+                if (InetProtocols.TCP.intValue() == proto) {
                     if (srcTp != null) {
                         int port = NumberUtils.getUnsigned(srcTp.shortValue());
                         builder.setTcpSourcePort(port);
@@ -157,7 +157,7 @@ public final class DataFlowGenerator extends TestBase {
                         int port = NumberUtils.getUnsigned(dstTp.shortValue());
                         builder.setTcpDestinationPort(port);
                     }
-                } else if (IPProtocols.UDP.intValue() == proto) {
+                } else if (InetProtocols.UDP.intValue() == proto) {
                     if (srcTp != null) {
                         int port = NumberUtils.getUnsigned(srcTp.shortValue());
                         builder.setUdpSourcePort(port);
@@ -166,7 +166,7 @@ public final class DataFlowGenerator extends TestBase {
                         int port = NumberUtils.getUnsigned(dstTp.shortValue());
                         builder.setUdpDestinationPort(port);
                     }
-                } else if (IPProtocols.ICMP.intValue() == proto) {
+                } else if (InetProtocols.ICMP.intValue() == proto) {
                     builder.setIcmpType(srcTp);
                     builder.setIcmpCode(dstTp);
                 } else {
@@ -322,19 +322,19 @@ public final class DataFlowGenerator extends TestBase {
         if (act instanceof SetTpDst) {
             SetTpDst a = (SetTpDst)act;
             int port = a.getPort();
-            if (ipproto == IPProtocols.TCP.intValue() ||
-                ipproto == IPProtocols.UDP.intValue()) {
+            if (ipproto == InetProtocols.TCP.intValue() ||
+                ipproto == InetProtocols.UDP.intValue()) {
                 return new SetTpDstAction(port);
-            } else if (ipproto == IPProtocols.ICMP.intValue()) {
+            } else if (ipproto == InetProtocols.ICMP.intValue()) {
                 return new SetIcmpCodeAction((short)port);
             }
         } else if (act instanceof SetTpSrc) {
             SetTpSrc a = (SetTpSrc)act;
             int port = a.getPort();
-            if (ipproto == IPProtocols.TCP.intValue() ||
-                ipproto == IPProtocols.UDP.intValue()) {
+            if (ipproto == InetProtocols.TCP.intValue() ||
+                ipproto == InetProtocols.UDP.intValue()) {
                 return new SetTpSrcAction(port);
-            } else if (ipproto == IPProtocols.ICMP.intValue()) {
+            } else if (ipproto == InetProtocols.ICMP.intValue()) {
                 return new SetIcmpTypeAction((short)port);
             }
         }

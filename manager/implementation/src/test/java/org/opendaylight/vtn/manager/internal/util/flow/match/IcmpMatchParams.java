@@ -11,12 +11,11 @@ package org.opendaylight.vtn.manager.internal.util.flow.match;
 import java.util.ArrayList;
 
 import org.opendaylight.vtn.manager.flow.cond.IcmpMatch;
+import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.internal.util.packet.IcmpHeader;
 
 import org.opendaylight.vtn.manager.internal.XmlNode;
-
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.VtnLayer4Match;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.vtn.layer4.match.VtnIcmpMatch;
@@ -56,7 +55,7 @@ public final class IcmpMatchParams extends Layer4MatchParams<IcmpMatchParams>
         }
         for (IpVersion ver: vers) {
             if (ver == IpVersion.Ipv4) {
-                assertEquals(IPProtocols.ICMP.shortValue(),
+                assertEquals(InetProtocols.ICMP.shortValue(),
                              imatch.getInetProtocol(ver));
             } else {
                 try {

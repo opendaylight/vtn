@@ -16,13 +16,12 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import org.opendaylight.vtn.manager.flow.cond.IcmpMatch;
+import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.packet.IcmpHeader;
 import org.opendaylight.vtn.manager.internal.util.packet.Layer4Header;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnIcmpMatchFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.vtn.layer4.match.VtnIcmpMatch;
@@ -217,7 +216,7 @@ public final class VTNIcmpMatch extends VTNLayer4Match {
     @Override
     public short getInetProtocol(IpVersion ver) {
         checkIpVersion(ver);
-        return IPProtocols.ICMP.shortValue();
+        return InetProtocols.ICMP.shortValue();
     }
 
     /**

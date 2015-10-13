@@ -14,12 +14,13 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Set;
 
+import org.opendaylight.vtn.manager.util.EtherTypes;
+
 import org.opendaylight.vtn.manager.it.util.match.FlowMatchType;
 
 import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.EtherTypes;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 
@@ -182,7 +183,7 @@ public final class ArpFactory extends PacketFactory {
     Packet createPacket() {
         ARP arp = new ARP().
             setHardwareType(ARP.HW_TYPE_ETHERNET).
-            setProtocolType(EtherTypes.IPv4.shortValue()).
+            setProtocolType(EtherTypes.IPV4.shortValue()).
             setHardwareAddressLength((byte)EthernetAddress.SIZE).
             setProtocolAddressLength((byte)targetProtocolAddress.length).
             setOpCode(operation).
@@ -203,7 +204,7 @@ public final class ArpFactory extends PacketFactory {
         ARP arp = (ARP)packet;
 
         assertEquals(ARP.HW_TYPE_ETHERNET, arp.getHardwareType());
-        assertEquals(EtherTypes.IPv4.shortValue(), arp.getProtocolType());
+        assertEquals(EtherTypes.IPV4.shortValue(), arp.getProtocolType());
         assertEquals((byte)senderHardwareAddress.length,
                      arp.getHardwareAddressLength());
         assertEquals((byte)senderProtocolAddress.length,

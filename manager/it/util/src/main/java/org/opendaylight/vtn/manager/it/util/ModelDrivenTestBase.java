@@ -16,11 +16,10 @@ import java.util.List;
 import java.util.ListIterator;
 
 import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.EtherTypes;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
-
-import org.opendaylight.controller.sal.utils.EtherTypes;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.DropActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.OutputActionCase;
@@ -310,7 +309,7 @@ public abstract class ModelDrivenTestBase extends TestBase {
                 verifyPopVlanAction(it);
             } else {
                 if (inVlan == 0) {
-                    int ethType = EtherTypes.VLANTAGGED.intValue();
+                    int ethType = EtherTypes.VLAN.intValue();
                     verifyPushVlanAction(it, ethType);
                 }
                 verifySetVlanIdAction(it, outVlan);

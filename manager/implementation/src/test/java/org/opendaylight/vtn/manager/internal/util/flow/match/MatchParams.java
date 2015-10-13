@@ -15,6 +15,8 @@ import org.opendaylight.vtn.manager.flow.cond.EthernetMatch;
 import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 import org.opendaylight.vtn.manager.flow.cond.InetMatch;
 import org.opendaylight.vtn.manager.flow.cond.L4Match;
+import org.opendaylight.vtn.manager.util.EtherTypes;
+import org.opendaylight.vtn.manager.util.InetProtocols;
 import org.opendaylight.vtn.manager.util.IpNetwork;
 
 import org.opendaylight.vtn.manager.internal.util.packet.EtherHeader;
@@ -24,9 +26,6 @@ import org.opendaylight.vtn.manager.internal.util.packet.PacketHeader;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.vtn.manager.internal.XmlNode;
-
-import org.opendaylight.controller.sal.utils.EtherTypes;
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.flow.cond.config.VtnFlowMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.VtnEtherMatch;
@@ -96,7 +95,7 @@ public class MatchParams extends TestBase implements PacketHeader, Cloneable {
         params = new MatchParams().setInet4Params(ip4params);
 
         // Ethernet type will be configured.
-        Integer ethIpv4 = Integer.valueOf(EtherTypes.IPv4.intValue());
+        Integer ethIpv4 = Integer.valueOf(EtherTypes.IPV4.intValue());
         eparams = new EtherMatchParams().setEtherType(ethIpv4);
         MatchParams expected = new MatchParams().setEtherParams(eparams);
         map.put(params, expected);
@@ -134,7 +133,7 @@ public class MatchParams extends TestBase implements PacketHeader, Cloneable {
         params = new MatchParams().setLayer4Params(tcpParams);
 
         // Ethernet type and IP protocol will be configured.
-        Short tcpProto = Short.valueOf(IPProtocols.TCP.shortValue());
+        Short tcpProto = Short.valueOf(InetProtocols.TCP.shortValue());
         eparams = new EtherMatchParams().setEtherType(ethIpv4);
         ip4params = new Inet4MatchParams().setProtocol(tcpProto);
         expected = new MatchParams().setEtherParams(eparams).
@@ -185,7 +184,7 @@ public class MatchParams extends TestBase implements PacketHeader, Cloneable {
         params = new MatchParams().setLayer4Params(udpParams);
 
         // Ethernet type and IP protocol will be configured.
-        Short udpProto = Short.valueOf(IPProtocols.UDP.shortValue());
+        Short udpProto = Short.valueOf(InetProtocols.UDP.shortValue());
         eparams = new EtherMatchParams().setEtherType(ethIpv4);
         ip4params = new Inet4MatchParams().setProtocol(udpProto);
         expected = new MatchParams().setEtherParams(eparams).
@@ -225,7 +224,7 @@ public class MatchParams extends TestBase implements PacketHeader, Cloneable {
         params = new MatchParams().setLayer4Params(icmpParams);
 
         // Ethernet type and IP protocol will be configured.
-        Short icmpProto = Short.valueOf(IPProtocols.ICMP.shortValue());
+        Short icmpProto = Short.valueOf(InetProtocols.ICMP.shortValue());
         eparams = new EtherMatchParams().setEtherType(ethIpv4);
         ip4params = new Inet4MatchParams().setProtocol(icmpProto);
         expected = new MatchParams().setEtherParams(eparams).

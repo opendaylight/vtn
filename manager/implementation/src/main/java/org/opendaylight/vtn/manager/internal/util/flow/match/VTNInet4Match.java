@@ -15,14 +15,13 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import org.opendaylight.vtn.manager.flow.cond.Inet4Match;
+import org.opendaylight.vtn.manager.util.EtherTypes;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.IpNetwork;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-
-import org.opendaylight.controller.sal.utils.EtherTypes;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnInetMatchFields;
 
@@ -212,7 +211,7 @@ public final class VTNInet4Match extends VTNInetMatch {
      */
     @Override
     public int getEtherType() {
-        return EtherTypes.IPv4.intValue();
+        return EtherTypes.IPV4.intValue();
     }
 
     /**

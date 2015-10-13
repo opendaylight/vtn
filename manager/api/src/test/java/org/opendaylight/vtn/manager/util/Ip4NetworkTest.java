@@ -25,7 +25,9 @@ import org.opendaylight.vtn.manager.XmlValueType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.address.Ipv4;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.address.Ipv4Builder;
 
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
 
 /**
@@ -274,6 +276,7 @@ public class Ip4NetworkTest extends TestBase {
      *   <li>{@link Ip4Network#getNetMask()}</li>
      *   <li>{@link Ip4Network#getMaxPrefix()}</li>
      *   <li>{@link Ip4Network#getIpPrefix()}</li>
+     *   <li>{@link Ip4Network#getIpAddress()}</li>
      *   <li>{@link Ip4Network#getMdAddress()}</li>
      *   <li>{@link Ip4Network#getCidrText()}</li>
      *   <li>{@link Ip4Network#getHostAddress()}</li>
@@ -299,6 +302,7 @@ public class Ip4NetworkTest extends TestBase {
             String cidr = host + "/32";
             Ipv4Prefix ipv4 = new Ipv4Prefix(cidr);
             IpPrefix ipp = new IpPrefix(ipv4);
+            IpAddress ipa = new IpAddress(new Ipv4Address(host));
             Ipv4 i4 = new Ipv4Builder().setIpv4Address(ipv4).build();
 
             Ip4Network[] cases = {
@@ -315,6 +319,7 @@ public class Ip4NetworkTest extends TestBase {
                 IpPrefix ipp1 = ip4.getIpPrefix();
                 assertEquals(ipp, ipp1);
                 assertSame(ipp1, ip4.getIpPrefix());
+                assertEquals(ipa, ip4.getIpAddress());
                 assertEquals(i4, ip4.getMdAddress());
                 String cidr1 = ip4.getCidrText();
                 assertEquals(cidr, cidr1);
@@ -348,6 +353,8 @@ public class Ip4NetworkTest extends TestBase {
                     ? maskedHost : maskedCidr;
                 Ipv4Prefix maskedIpv4 = new Ipv4Prefix(maskedCidr);
                 IpPrefix maskedIpp = new IpPrefix(maskedIpv4);
+                IpAddress maskedIpa =
+                    new IpAddress(new Ipv4Address(maskedHost));
                 Ipv4 maskedI4 = new Ipv4Builder().setIpv4Address(maskedIpv4).
                     build();
                 String arg1 = maskedHost + "/" + i;
@@ -367,6 +374,7 @@ public class Ip4NetworkTest extends TestBase {
                     IpPrefix ipp1 = ip4.getIpPrefix();
                     assertEquals(maskedIpp, ipp1);
                     assertSame(ipp1, ip4.getIpPrefix());
+                    assertEquals(maskedIpa, ip4.getIpAddress());
                     assertEquals(maskedI4, ip4.getMdAddress());
                     String cidr1 = ip4.getCidrText();
                     assertEquals(maskedCidr, cidr1);

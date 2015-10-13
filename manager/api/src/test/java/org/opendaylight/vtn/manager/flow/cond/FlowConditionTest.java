@@ -16,12 +16,12 @@ import java.util.List;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.TestBase;
 import org.opendaylight.vtn.manager.XmlDataType;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.IPProtocols;
 
 /**
  * JUnit test for {@link FlowCondition}.
@@ -236,21 +236,21 @@ public class FlowConditionTest extends TestBase {
             im = new Inet4Match(srcIp, null, dstIp, dstsuff, proto, dscp);
             list.add(new FlowMatch(index, em, im, lm));
 
-            IPProtocols ipproto = IPProtocols.TCP;
+            InetProtocols ipproto = InetProtocols.TCP;
             im = new Inet4Match(null, null, null, null,
                                 Short.valueOf(ipproto.shortValue()), null);
             lm = new TcpMatch(new PortMatch(1000, 2000), new PortMatch(61234));
             list.add(new FlowMatch(em, im, lm));
 
             index = Integer.valueOf(123);
-            ipproto = IPProtocols.UDP;
+            ipproto = InetProtocols.UDP;
             im = new Inet4Match(null, null, null, null,
                                 Short.valueOf(ipproto.shortValue()), null);
             lm = new UdpMatch(null, new PortMatch(20000, 30000));
             list.add(new FlowMatch(index, em, im, lm));
 
             index = Integer.valueOf(60000);
-            ipproto = IPProtocols.ICMP;
+            ipproto = InetProtocols.ICMP;
             Short srcsuff = Short.valueOf((short)31);
             em = new EthernetMatch(src, dst, type, vlan, pri);
             im = new Inet4Match(srcIp, srcsuff, dstIp, dstsuff,
