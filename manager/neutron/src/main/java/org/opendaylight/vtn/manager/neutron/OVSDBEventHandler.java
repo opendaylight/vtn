@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -10,27 +10,19 @@ package org.opendaylight.vtn.manager.neutron;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.UnknownHostException;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Properties;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.DatapathTypeNetdev;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.InterfaceTypeDpdk;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.bridge.attributes.ControllerEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.bridge.attributes.ControllerEntryBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.bridge.attributes.ProtocolEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.bridge.attributes.ProtocolEntryBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.node.attributes.ConnectionInfo;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.node.attributes.InterfaceTypeEntry;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.port._interface.attributes.InterfaceExternalIds;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbBridgeAugmentation;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbBridgeAugmentationBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbBridgeName;
@@ -148,12 +140,12 @@ public class OVSDBEventHandler  {
     /**
      * identifier to openflow port,6653 is official openflow port.
      */
-    private static short OPENFLOW_PORT = 6653;
+    private static final short OPENFLOW_PORT = 6653;
 
     /**
      * identifier to read open flow protocol from config file.
      */
-    public static String OPENFLOW_CONNECTION_PROTOCOL = "tcp";
+    public static final String OPENFLOW_CONNECTION_PROTOCOL = "tcp";
 
     /**
      * identifier to read portname from config file.
@@ -180,8 +172,8 @@ public class OVSDBEventHandler  {
      * @param dataBroker Instance of DataBroker object to be added.
      */
     public OVSDBEventHandler(DataBroker dataBroker) {
-    this.databroker = dataBroker;
-    mdsalUtils = new MdsalUtils(dataBroker);
+        this.databroker = dataBroker;
+        mdsalUtils = new MdsalUtils(dataBroker);
     }
 
     /**
@@ -189,7 +181,7 @@ public class OVSDBEventHandler  {
      * @param node Instance of Node object to be added.
      * @param resourceAugmentationData DataObject value.
      */
-    public void nodeAdded(Node node, DataObject resourceAugmentationData ) {
+    public void nodeAdded(Node node, DataObject resourceAugmentationData) {
         LOG.trace("nodeAdded() - {}", node.toString());
         try {
             createInternalNetworkForNeutron(node);
@@ -249,18 +241,18 @@ public class OVSDBEventHandler  {
         portname = prop.getProperty(CONFIG_PORTNAME, DEFAULT_PORTNAME);
         LOG.trace("System properties values : {},{},{},{}:",
                   integrationBridgeName, failmode, protocols, portname);
-                if (null != integrationBridgeName) {
-                   try {
-                          if (!isBridgeOnOvsdbNode(node, integrationBridgeName)) {
-                             addBridge(node, integrationBridgeName);
-                             addPortToBridge(node,integrationBridgeName,portname);
-                             } else {
-                                LOG.trace("Bridge Already exists in the given Node");
-                             }
-                   } catch (Exception e) {
-                       LOG.warn("Exception occurred while Adding Bridge", e);
-                       }
-                 }
+        if (null != integrationBridgeName) {
+            try {
+                if (!isBridgeOnOvsdbNode(node, integrationBridgeName)) {
+                    addBridge(node, integrationBridgeName);
+                    addPortToBridge(node, integrationBridgeName, portname);
+                } else {
+                    LOG.trace("Bridge Already exists in the given Node");
+                }
+            } catch (Exception e) {
+                LOG.warn("Exception occurred while Adding Bridge", e);
+            }
+        }
     }
 
     /**
@@ -270,7 +262,8 @@ public class OVSDBEventHandler  {
      * @return The {@link InstanceIdentifier} for the manager node.
      */
     private  InstanceIdentifier<Node> createInstanceIdentifier(NodeKey ovsdbNodeKey, String bridgeName) {
-       return createInstanceIdentifier(createManagedNodeId(ovsdbNodeKey.getNodeId(), bridgeName));
+        return createInstanceIdentifier(
+            createManagedNodeId(ovsdbNodeKey.getNodeId(), bridgeName));
     }
 
     /**
@@ -282,7 +275,7 @@ public class OVSDBEventHandler  {
         InstanceIdentifier<Node> nodePath = InstanceIdentifier
                 .create(NetworkTopology.class)
                 .child(Topology.class, new TopologyKey(new TopologyId(new Uri("ovsdb:1"))))
-                .child(Node.class,new NodeKey(nodeId));
+                .child(Node.class, new NodeKey(nodeId));
         return nodePath;
     }
 
@@ -303,13 +296,13 @@ public class OVSDBEventHandler  {
      * @return connectionInfo.
      */
     private ConnectionInfo getConnectionInfo(Node ovsdbNode) {
-        LOG.trace("ConnectionInfo Node {}" ,ovsdbNode);
+        LOG.trace("ConnectionInfo Node {}", ovsdbNode);
         ConnectionInfo connectionInfo = null;
         OvsdbNodeAugmentation ovsdbNodeAugmentation = extractOvsdbNode(ovsdbNode);
-         LOG.trace("OvsdbNodeAugmentation  Node {}" ,ovsdbNodeAugmentation);
+        LOG.trace("OvsdbNodeAugmentation  Node {}", ovsdbNodeAugmentation);
         if (ovsdbNodeAugmentation != null) {
             connectionInfo = ovsdbNodeAugmentation.getConnectionInfo();
-             LOG.debug("return connection info  Node {}" ,connectionInfo);
+            LOG.debug("return connection info  Node {}", connectionInfo);
         }
         return connectionInfo;
     }
@@ -323,25 +316,34 @@ public class OVSDBEventHandler  {
     public boolean addBridge(Node ovsdbNode, String bridgeName) {
         boolean result = false;
         String target = getControllerTarget(ovsdbNode);
-        LOG.trace("addBridge: node: {}, bridgeName: {}, target: {}", ovsdbNode, bridgeName, target);
+        LOG.trace("addBridge: node: {}, bridgeName: {}, target: {}",
+                  ovsdbNode, bridgeName, target);
         ConnectionInfo connectionInfo = getConnectionInfo(ovsdbNode);
         if (connectionInfo != null) {
-          LOG.debug("Connection info is not null {}", connectionInfo);
-          NodeBuilder bridgeNodeBuilder = new NodeBuilder();
-          InstanceIdentifier<Node> bridgeIid =
-                    this.createInstanceIdentifier(ovsdbNode.getKey(), bridgeName);
-          NodeId bridgeNodeId = this.createManagedNodeId(bridgeIid);
-          bridgeNodeBuilder.setNodeId(bridgeNodeId);
-          OvsdbBridgeAugmentationBuilder ovsdbBridgeAugmentationBuilder = new OvsdbBridgeAugmentationBuilder();
-          ovsdbBridgeAugmentationBuilder.setControllerEntry(createControllerEntries(target));
-          ovsdbBridgeAugmentationBuilder.setBridgeName(new OvsdbBridgeName(bridgeName));
-          ovsdbBridgeAugmentationBuilder.setProtocolEntry(createMdsalProtocols());
-          ovsdbBridgeAugmentationBuilder.setFailMode(
-                   OVSDB_FAIL_MODE_MAP.inverse().get("secure"));
-          this.setManagedByForBridge(ovsdbBridgeAugmentationBuilder, ovsdbNode.getKey());
-          bridgeNodeBuilder.addAugmentation(OvsdbBridgeAugmentation.class, ovsdbBridgeAugmentationBuilder.build());
-          result = mdsalUtils.put(LogicalDatastoreType.CONFIGURATION, bridgeIid, bridgeNodeBuilder.build());
-          LOG.info("Bridge Added: {}", result);
+            LOG.debug("Connection info is not null {}", connectionInfo);
+            NodeBuilder bridgeNodeBuilder = new NodeBuilder();
+            InstanceIdentifier<Node> bridgeIid =
+                this.createInstanceIdentifier(ovsdbNode.getKey(), bridgeName);
+            NodeId bridgeNodeId = this.createManagedNodeId(bridgeIid);
+            bridgeNodeBuilder.setNodeId(bridgeNodeId);
+            OvsdbBridgeAugmentationBuilder ovsdbBridgeAugmentationBuilder =
+                new OvsdbBridgeAugmentationBuilder();
+            ovsdbBridgeAugmentationBuilder.
+                setControllerEntry(createControllerEntries(target));
+            ovsdbBridgeAugmentationBuilder.
+                setBridgeName(new OvsdbBridgeName(bridgeName));
+            ovsdbBridgeAugmentationBuilder.
+                setProtocolEntry(createMdsalProtocols());
+            ovsdbBridgeAugmentationBuilder.setFailMode(
+                OVSDB_FAIL_MODE_MAP.inverse().get("secure"));
+            this.setManagedByForBridge(ovsdbBridgeAugmentationBuilder,
+                                       ovsdbNode.getKey());
+            bridgeNodeBuilder.
+                addAugmentation(OvsdbBridgeAugmentation.class,
+                                ovsdbBridgeAugmentationBuilder.build());
+            result = mdsalUtils.put(LogicalDatastoreType.CONFIGURATION,
+                                    bridgeIid, bridgeNodeBuilder.build());
+            LOG.info("Bridge Added: {}", result);
         } else {
             throw new InvalidParameterException("Could not find ConnectionInfo");
         }
@@ -357,23 +359,23 @@ public class OVSDBEventHandler  {
         String setControllerStr = null;
         String controllerIpStr = null;
         short openflowPort = OPENFLOW_PORT;
-            // Check if ovsdb node has connection info
-            OvsdbNodeAugmentation ovsdbNodeAugmentation = this.extractOvsdbNode(node);
-            if (ovsdbNodeAugmentation != null) {
-                ConnectionInfo connectionInfo = ovsdbNodeAugmentation.getConnectionInfo();
-                if (connectionInfo != null && connectionInfo.getLocalIp() != null) {
-                    controllerIpStr = new String(connectionInfo.getLocalIp().getValue());
-                   } else {
-                           LOG.warn("Ovsdb Node does not contains connection info : {}", node);
-                }
-            }
-            if (controllerIpStr != null) {
-                LOG.trace("Target OpenFlow Controller found : {}", controllerIpStr);
-                setControllerStr = OPENFLOW_CONNECTION_PROTOCOL + ":" + controllerIpStr + ":" + openflowPort;
+        // Check if ovsdb node has connection info
+        OvsdbNodeAugmentation ovsdbNodeAugmentation = this.extractOvsdbNode(node);
+        if (ovsdbNodeAugmentation != null) {
+            ConnectionInfo connectionInfo = ovsdbNodeAugmentation.getConnectionInfo();
+            if (connectionInfo != null && connectionInfo.getLocalIp() != null) {
+                controllerIpStr = new String(connectionInfo.getLocalIp().getValue());
             } else {
-                LOG.warn("Failed to determine OpenFlow controller ip address");
+                LOG.warn("Ovsdb Node does not contains connection info : {}", node);
             }
-            return setControllerStr;
+        }
+        if (controllerIpStr != null) {
+            LOG.trace("Target OpenFlow Controller found : {}", controllerIpStr);
+            setControllerStr = OPENFLOW_CONNECTION_PROTOCOL + ":" + controllerIpStr + ":" + openflowPort;
+        } else {
+            LOG.warn("Failed to determine OpenFlow controller ip address");
+        }
+        return setControllerStr;
     }
 
     /**
@@ -399,7 +401,7 @@ public class OVSDBEventHandler  {
      * @param the node
      * @return OvsdbTerminationPointAugmentation.
      */
-    private List<OvsdbTerminationPointAugmentation> extractTerminationPointAugmentations( Node node ) {
+    private List<OvsdbTerminationPointAugmentation> extractTerminationPointAugmentations(Node node) {
         List<OvsdbTerminationPointAugmentation> tpAugmentations = new ArrayList<OvsdbTerminationPointAugmentation>();
         List<TerminationPoint> terminationPoints = node.getTerminationPoint();
         if (terminationPoints != null && !terminationPoints.isEmpty()) {
@@ -421,7 +423,7 @@ public class OVSDBEventHandler  {
      * @params portName
      * returns true on success
      */
-    private boolean addPortToBridge (Node node, String bridgeName, String portName) throws Exception {
+    private boolean addPortToBridge(Node node, String bridgeName, String portName) throws Exception {
         boolean rv = true;
 
         if (extractTerminationPointAugmentation(node, portName) == null) {
@@ -483,10 +485,10 @@ public class OVSDBEventHandler  {
         InstanceIdentifier<TerminationPoint> terminationPointPath = InstanceIdentifier
                 .create(NetworkTopology.class)
                 .child(Topology.class, new TopologyKey(new TopologyId(new Uri("ovsdb:1"))))
-                .child(Node.class,node.getKey())
+                .child(Node.class, node.getKey())
                 .child(TerminationPoint.class, new TerminationPointKey(new TpId(portName)));
 
-        LOG.debug("Termination point InstanceIdentifier generated : {}",terminationPointPath);
+        LOG.debug("Termination point InstanceIdentifier generated : {}", terminationPointPath);
         return terminationPointPath;
     }
 
@@ -511,26 +513,26 @@ public class OVSDBEventHandler  {
         ImmutableBiMap<String, Class<? extends OvsdbBridgeProtocolBase>> mapper =
                 OVSDB_PROTOCOL_MAP.inverse();
         protocolList.add(new ProtocolEntryBuilder().
-                setProtocol((Class<? extends OvsdbBridgeProtocolBase>) mapper.get("OpenFlow13")).build());
+                setProtocol((Class<? extends OvsdbBridgeProtocolBase>)mapper.get("OpenFlow13")).build());
         return protocolList;
     }
 
     /**
      * Stores the Fail Mode Type.
      */
-    private static final ImmutableBiMap<Class<? extends OvsdbFailModeBase>,String> OVSDB_FAIL_MODE_MAP
-            = new ImmutableBiMap.Builder<Class<? extends OvsdbFailModeBase>,String>()
-            .put(OvsdbFailModeStandalone.class,"standalone")
-            .put(OvsdbFailModeSecure.class,"secure")
+    private static final ImmutableBiMap<Class<? extends OvsdbFailModeBase>, String> OVSDB_FAIL_MODE_MAP
+            = new ImmutableBiMap.Builder<Class<? extends OvsdbFailModeBase>, String>()
+            .put(OvsdbFailModeStandalone.class, "standalone")
+            .put(OvsdbFailModeSecure.class, "secure")
             .build();
 
     /**
      * Stores the Supported Openflow Protocol Version.
      */
 
-    private static final ImmutableBiMap<Class<? extends OvsdbBridgeProtocolBase>,String> OVSDB_PROTOCOL_MAP
-            = new ImmutableBiMap.Builder<Class<? extends OvsdbBridgeProtocolBase>,String>()
-            .put(OvsdbBridgeProtocolOpenflow13.class,"OpenFlow13")
+    private static final ImmutableBiMap<Class<? extends OvsdbBridgeProtocolBase>, String> OVSDB_PROTOCOL_MAP
+            = new ImmutableBiMap.Builder<Class<? extends OvsdbBridgeProtocolBase>, String>()
+            .put(OvsdbBridgeProtocolOpenflow13.class, "OpenFlow13")
             .build();
 
     /**
