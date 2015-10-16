@@ -17,6 +17,7 @@
 #include <unc/upll_ipc_enum.h>
 #include <vtndrvintf_defs.h>
 #include <vtn_drv_module.hh>
+#include <nodes.hh>
 #include <string>
 #include <list>
 #include <vector>
@@ -67,8 +68,7 @@ class OdcSwitch {
    */
   UncRespCode fill_config_node_vector(
       unc::driver::controller *ctr_ptr,
-      json_object *json_obj_node_prop,
-      int arr_idx,
+      std::string id,
       std::vector<unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
 
   /**
@@ -167,7 +167,7 @@ class OdcSwitch {
    */
   UncRespCode parse_node_response(
       unc::driver::controller *ctr_ptr,
-      char *data,
+      std::list<vtn_node> &node_deatil,
       std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
   /**
