@@ -14,6 +14,7 @@
 #include <arpa/inet.h>
 #include <driver/controller_interface.hh>
 #include <odc_driver_common_defs.hh>
+#include <rest_util.hh>
 #include <string>
 #include <vector>
 #include <sstream>
@@ -28,7 +29,8 @@ class OdcController: public unc::driver::controller {
    * @param[in] - key_ctr (key structure for controller)
    * @param[in] - val_ctr (value structure for controller)
    */
-  OdcController(const key_ctr_t& key_ctr, const val_ctr_t& val_ctr);
+  OdcController(const key_ctr_t& key_ctr, const val_ctr_t& val_ctr,
+                unc::restjson::ConfFileValues_t conf_values);
 
   /**
    * @brief - Destructor
@@ -78,6 +80,12 @@ class OdcController: public unc::driver::controller {
   std::string get_pass_word();
 
   /**
+   * @brief  - Gets the conf value struct
+   * @return - conf_file_values
+   */
+  unc::restjson::ConfFileValues_t get_conf_value();
+
+  /**
    * @brief     - Updates the controller parameters
    *              This method is called when KT_CTR update is received from UPPL
    * @param[in] - key_ctr (key structure for controller)
@@ -106,6 +114,7 @@ class OdcController: public unc::driver::controller {
   std::string user_name_;
   std::string pass_word_;
   pfc_bool_t audit_;
+  unc::restjson::ConfFileValues_t conf_file_values_;
 };
 }  // namespace odcdriver
 }  // namespace unc
