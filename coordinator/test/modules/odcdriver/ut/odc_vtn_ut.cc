@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -16,6 +16,7 @@
 TEST(odcdriver, test_in_valid_vtnname_empty_create_cmd) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   key_vtn_t key_vtn;
   val_vtn_t val_vtn;
   memset(&key_ctr, 0 , sizeof(key_ctr_t));
@@ -27,7 +28,7 @@ TEST(odcdriver, test_in_valid_vtnname_empty_create_cmd) {
   std::string ip_add =  "172.16.0.2";
   inet_aton(ip_add.c_str(),  &val_ctr.ip_address);
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   unc::restjson::ConfFileValues_t conf_file;
   conf_file.odc_port = 8080;
   conf_file.user_name = "admin";
@@ -45,6 +46,7 @@ TEST(odcdriver, test_in_valid_vtnname_empty_create_cmd) {
 TEST(odcdriver, test_in_valid_vtnname_empty_update_cmd) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   key_vtn_t key_vtn;
   val_vtn_t val1_vtn;
   val_vtn_t val2_vtn;
@@ -57,7 +59,7 @@ TEST(odcdriver, test_in_valid_vtnname_empty_update_cmd) {
   std::string ip_add =  "172.16.0.2";
   inet_aton(ip_add.c_str(),  &val_ctr.ip_address);
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   unc::restjson::ConfFileValues_t conf_file;
   conf_file.odc_port = 8080;
   conf_file.user_name = "admin";
@@ -71,6 +73,7 @@ TEST(odcdriver, test_in_valid_vtnname_empty_update_cmd) {
 TEST(odcdriver, test_in_valid_vtnname_empty_delete_cmd) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   key_vtn_t key_vtn;
   val_vtn_t val_vtn;
   memset(&key_ctr, 0 , sizeof(key_ctr_t));
@@ -82,7 +85,7 @@ TEST(odcdriver, test_in_valid_vtnname_empty_delete_cmd) {
   std::string ip_add =  "172.16.0.2";
   inet_aton(ip_add.c_str(),  &val_ctr.ip_address);
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   unc::restjson::ConfFileValues_t conf_file;
   conf_file.odc_port = 8080;
   conf_file.user_name = "admin";
@@ -97,6 +100,7 @@ TEST(odcdriver, test_in_valid_vtnname_empty_delete_cmd) {
 TEST(odcdriver, test_invalid_ipaddress_empty_create_cmd) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   key_vtn_t key_vtn;
   val_vtn_t val_vtn;
   memset(&key_ctr, 0 , sizeof(key_ctr_t));
@@ -110,7 +114,7 @@ TEST(odcdriver, test_invalid_ipaddress_empty_create_cmd) {
   std::string NULL_RESPONSE = "172.16.0.0";
   inet_aton(NULL_RESPONSE.c_str(),  &val_ctr.ip_address);
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   unc::restjson::ConfFileValues_t conf_file;
   conf_file.odc_port = 8080;
   conf_file.user_name = "admin";
@@ -126,6 +130,7 @@ TEST(odcdriver, test_invalid_ipaddress_empty_create_cmd) {
 TEST(odcdriver, test_null_response_update_cmd) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   key_vtn_t key_vtn;
   val_vtn_t val1_vtn;
   val_vtn_t val2_vtn;
@@ -142,7 +147,7 @@ TEST(odcdriver, test_null_response_update_cmd) {
 
   inet_aton(NULL_RESPONSE.c_str(),  &val_ctr.ip_address);
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   unc::restjson::ConfFileValues_t conf_file;
   conf_file.odc_port = 8080;
   conf_file.user_name = "admin";
@@ -157,6 +162,7 @@ TEST(odcdriver, test_null_response_update_cmd) {
 TEST(odcdriver, test_null_response_delete_cmd) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   key_vtn_t key_vtn;
   val_vtn_t val_vtn;
   memset(&key_ctr, 0 , sizeof(key_ctr_t));
@@ -171,7 +177,7 @@ TEST(odcdriver, test_null_response_delete_cmd) {
 
   inet_aton(NULL_RESPONSE.c_str(),  &val_ctr.ip_address);
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   unc::restjson::ConfFileValues_t conf_file;
   conf_file.odc_port = 8080;
   conf_file.user_name = "admin";
@@ -186,6 +192,7 @@ TEST(odcdriver, test_null_response_delete_cmd) {
 TEST(odcdriver,  test_delete_cmd) {
   key_vtn_t key_vtn;
   val_vtn_t val_vtn;
+  unc::restjson::ConfFileValues_t conf_values;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr, 0 , sizeof(key_ctr_t));
@@ -204,7 +211,7 @@ TEST(odcdriver,  test_delete_cmd) {
 
   inet_aton(UPDATE_DELETE_200.c_str(),  &val_ctr.ip_address);
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   unc::restjson::ConfFileValues_t conf_file;
   conf_file.odc_port = 8080;
   conf_file.user_name = "admin";
@@ -220,6 +227,7 @@ TEST(odcdriver,  test_delete_cmd) {
 TEST(odcdriver,  test_delete_cmd_failure) {
   key_vtn_t key_vtn;
   val_vtn_t val_vtn;
+  unc::restjson::ConfFileValues_t conf_values;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr, 0 , sizeof(key_ctr_t));
@@ -231,7 +239,7 @@ TEST(odcdriver,  test_delete_cmd_failure) {
   strncpy(reinterpret_cast<char*>(val_vtn.description),
           desc1.c_str(),  sizeof(val_vtn.description)-1);
   unc::driver::controller* ctr  =  new  unc::odcdriver::OdcController
-      (key_ctr,  val_ctr);;
+      (key_ctr,  val_ctr, conf_values);;
   std::string INVALID_RESPONSE = "172.0.0.0";
   inet_aton(INVALID_RESPONSE.c_str(),  &val_ctr.ip_address);
 
@@ -253,6 +261,7 @@ TEST(odcdriver,  test_delete_cmd_failure) {
 TEST(odcdriver,  invalid_response_create_cmd) {
   key_vtn_t key_vtn;
   val_vtn_t val_vtn;
+  unc::restjson::ConfFileValues_t conf_values;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr, 0 , sizeof(key_ctr_t));
@@ -263,7 +272,7 @@ TEST(odcdriver,  invalid_response_create_cmd) {
   std::string INVALID_RESPONSE = "172.0.0.0";
   inet_aton(INVALID_RESPONSE.c_str(),  &val_ctr.ip_address);
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   std::string vtnname =  "vtn1";
   strncpy(reinterpret_cast<char*>(key_vtn.vtn_name) ,
           vtnname.c_str(),  sizeof(vtnname));
@@ -283,6 +292,7 @@ TEST(odcdriver,  invalid_response_update_cmd) {
   val_vtn_t val2_vtn;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0 , sizeof(key_ctr_t));
   memset(&val_ctr,  0,  sizeof(val_ctr_t));
 
@@ -292,7 +302,7 @@ TEST(odcdriver,  invalid_response_update_cmd) {
   std::string INVALID_RESPONSE = "172.0.0.0";
   inet_aton(INVALID_RESPONSE.c_str(),  &val_ctr.ip_address);
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   std::string vtnname =  "vtn1";
   strncpy(reinterpret_cast<char*>(key_vtn.vtn_name) ,
           vtnname.c_str(),  sizeof(vtnname));
@@ -313,6 +323,7 @@ TEST(odcdriver,  test_update_cmd) {
   val_vtn_t val2_vtn;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0 , sizeof(key_ctr_t));
   memset(&val_ctr,  0,  sizeof(val_ctr_t));
 
@@ -325,7 +336,7 @@ TEST(odcdriver,  test_update_cmd) {
   std::string ip_add =  "172.16.0.2";
   inet_aton(ip_add.c_str(),  &val_ctr.ip_address);
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   std::string vtnname =  "vtn1";
   strncpy(reinterpret_cast<char*>(key_vtn.vtn_name) ,
           vtnname.c_str(),  sizeof(vtnname));
@@ -344,6 +355,7 @@ TEST(odcdriver,  test_valid_create_cmd) {
   val_vtn_t val_vtn;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0 , sizeof(key_ctr_t));
   memset(&val_ctr,  0,  sizeof(val_ctr_t));
 
@@ -355,7 +367,7 @@ TEST(odcdriver,  test_valid_create_cmd) {
   std::string CREATE_201      = "172.16.0.1";
   inet_aton(CREATE_201.c_str(),  &val_ctr.ip_address);
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   std::string vtnname =  "vtn1";
   strncpy(reinterpret_cast<char*>(key_vtn.vtn_name) ,
           vtnname.c_str(),  sizeof(vtnname));
@@ -374,6 +386,7 @@ TEST(odcdriver,  test_valid_create_cmd) {
 TEST(odcdriver,  read_all_valid_) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   key_vtn_t key_vtn;
   val_vtn_t val_vtn;
   memset(&key_ctr, 0 , sizeof(key_ctr_t));
@@ -394,7 +407,7 @@ TEST(odcdriver,  read_all_valid_) {
   strncpy(reinterpret_cast<char *>(key_ctr.controller_name),
           controller_name.c_str(),  sizeof(key_ctr.controller_name)-1);
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   unc::restjson::ConfFileValues_t conf_file;
   conf_file.odc_port = 8080;
   conf_file.user_name = "admin";
@@ -417,6 +430,7 @@ TEST(odcdriver,  read_all_valid_) {
 TEST(odcdriver,  read_all_invalid_resp) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   key_vtn_t key_vtn;
   val_vtn_t val_vtn;
   memset(&key_ctr, 0 , sizeof(key_ctr_t));
@@ -438,7 +452,7 @@ TEST(odcdriver,  read_all_invalid_resp) {
   strncpy(reinterpret_cast<char *>(key_ctr.controller_name),
           controller_name.c_str(),  sizeof(key_ctr.controller_name)-1);
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   unc::restjson::ConfFileValues_t conf_file;
   conf_file.odc_port = 8080;
   conf_file.user_name = "admin";
@@ -462,6 +476,7 @@ TEST(odcdriver,  read_all_invalid_resp) {
 TEST(odcdriver,  get_vtn_list_invalid_resp) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   key_vtn_t key_vtn;
   val_vtn_t val_vtn;
   memset(&key_ctr, 0 , sizeof(key_ctr_t));
@@ -482,7 +497,7 @@ TEST(odcdriver,  get_vtn_list_invalid_resp) {
   strncpy(reinterpret_cast<char *>(key_ctr.controller_name),
           controller_name.c_str(),  sizeof(key_ctr.controller_name)-1);
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   unc::restjson::ConfFileValues_t conf_file;
   conf_file.odc_port = 8080;
   conf_file.user_name = "admin";
@@ -507,6 +522,7 @@ TEST(odcdriver,  get_vtn_list_invalid_resp) {
 TEST(odcdriver,  read_all_valid_resp_no_vtn) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   key_vtn_t key_vtn;
   val_vtn_t val_vtn;
   memset(&key_ctr, 0 , sizeof(key_ctr_t));
@@ -527,7 +543,7 @@ TEST(odcdriver,  read_all_valid_resp_no_vtn) {
   strncpy(reinterpret_cast<char *>(key_ctr.controller_name),
           controller_name.c_str(),  sizeof(key_ctr.controller_name)-1);
   unc::driver::controller* ctr  =  new
-      unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   unc::restjson::ConfFileValues_t conf_file;
   conf_file.odc_port = 8080;
   conf_file.user_name = "admin";
@@ -551,6 +567,7 @@ TEST(odcdriver,  read_all_valid_resp_no_vtn) {
 TEST(odcdriver, test_create_cmd_controller_username) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   key_vtn_t key_vtn;
   val_vtn_t val_vtn;
   memset(&key_ctr, 0 , sizeof(key_ctr_t));
@@ -564,7 +581,7 @@ TEST(odcdriver, test_create_cmd_controller_username) {
   std::string ip_add =  "172.16.0.2";
   inet_aton(ip_add.c_str(),  &val_ctr.ip_address);
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   unc::restjson::ConfFileValues_t conf_file;
   conf_file.odc_port = 8080;
   conf_file.user_name = "";

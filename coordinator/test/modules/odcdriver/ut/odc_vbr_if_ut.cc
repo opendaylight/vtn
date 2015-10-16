@@ -22,6 +22,7 @@ TEST(odcdriver,  create_cmd_valid) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   std::string CREATE_201      = "172.16.0.1";
@@ -31,7 +32,7 @@ TEST(odcdriver,  create_cmd_valid) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -65,6 +66,7 @@ TEST(odcdriver,  create_cmd_valid_admin_disable) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   std::string CREATE_201      = "172.16.0.1";
@@ -74,7 +76,7 @@ TEST(odcdriver,  create_cmd_valid_admin_disable) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr,conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -107,6 +109,7 @@ TEST(odcdriver,  create_cmd_invalid_resp) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   std::string INVALID_RESPONSE = "172.0.0.0";
@@ -119,7 +122,7 @@ TEST(odcdriver,  create_cmd_invalid_resp) {
   strncpy(reinterpret_cast<char*>(val_ctr.password),
           pass_word.c_str(),  sizeof(val_ctr.password));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -147,6 +150,7 @@ TEST(odcdriver,  update_cmd_invalid_resp) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   std::string INVALID_RESPONSE = "172.0.0.0";
@@ -159,7 +163,7 @@ TEST(odcdriver,  update_cmd_invalid_resp) {
   strncpy(reinterpret_cast<char*>(val_ctr.password),
           pass_word.c_str(),  sizeof(val_ctr.password));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val1;
   pfcdrv_val_vbr_if_t vbrif_val2;
@@ -189,6 +193,7 @@ TEST(odcdriver,  delete_cmd_invalid_resp) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   std::string INVALID_RESPONSE = "172.0.0.0";
@@ -201,7 +206,7 @@ TEST(odcdriver,  delete_cmd_invalid_resp) {
   strncpy(reinterpret_cast<char*>(val_ctr.password),
           pass_word.c_str(),  sizeof(val_ctr.password));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -229,6 +234,7 @@ TEST(odcdriver,  create_cmd_null_resp) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   std::string NULL_RESPONSE = "172.16.0.0";
@@ -242,7 +248,7 @@ TEST(odcdriver,  create_cmd_null_resp) {
   strncpy(reinterpret_cast<char*>(val_ctr.password),
           pass_word.c_str(),  sizeof(val_ctr.password));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -271,6 +277,7 @@ TEST(odcdriver,  update_cmd_null_resp) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   std::string NULL_RESPONSE = "172.16.0.0";
@@ -284,7 +291,7 @@ TEST(odcdriver,  update_cmd_null_resp) {
   strncpy(reinterpret_cast<char*>(val_ctr.password),
           pass_word.c_str(),  sizeof(val_ctr.password));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val1;
   pfcdrv_val_vbr_if_t vbrif_val2;
@@ -315,6 +322,7 @@ TEST(odcdriver,  delete_cmd_null_resp) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   std::string NULL_RESPONSE = "172.16.0.0";
@@ -328,7 +336,7 @@ TEST(odcdriver,  delete_cmd_null_resp) {
   strncpy(reinterpret_cast<char*>(val_ctr.password),
           pass_word.c_str(),  sizeof(val_ctr.password));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -359,6 +367,7 @@ TEST(odcdriver,  create_cmd_empty_vtn) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -368,7 +377,7 @@ TEST(odcdriver,  create_cmd_empty_vtn) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -398,6 +407,7 @@ TEST(odcdriver,  create_cmd_empty_vbr) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -407,7 +417,7 @@ TEST(odcdriver,  create_cmd_empty_vbr) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -436,6 +446,7 @@ TEST(odcdriver,  create_cmd_empty_vbr_if) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -445,7 +456,7 @@ TEST(odcdriver,  create_cmd_empty_vbr_if) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -473,6 +484,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_no_values) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   std::string CREATE_VBRIF_PORTMAP = "172.16.0.4";
@@ -482,7 +494,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_no_values) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -515,6 +527,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_values) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -524,7 +537,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_values) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -561,6 +574,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_values) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -570,7 +584,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_values) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -609,6 +623,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_invalid_logical_port) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -618,7 +633,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_invalid_logical_port) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -656,6 +671,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_invalid_port_values) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -665,7 +681,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_invalid_port_values) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -701,6 +717,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_invalid_logical_port) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -710,7 +727,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_invalid_logical_port) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -747,6 +764,7 @@ TEST(odcdriver,  create_cmd_port_map_invalid_data) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -756,7 +774,7 @@ TEST(odcdriver,  create_cmd_port_map_invalid_data) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -796,6 +814,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_vlanid_zero) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -805,7 +824,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_vlanid_zero) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -844,6 +863,7 @@ TEST(odcdriver,  create_cmd_port_map_in_diff_format) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -853,7 +873,7 @@ TEST(odcdriver,  create_cmd_port_map_in_diff_format) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -892,6 +912,7 @@ TEST(odcdriver,  create_cmd_port_map_in_proper_format_invalid) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -901,7 +922,7 @@ TEST(odcdriver,  create_cmd_port_map_in_proper_format_invalid) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -941,6 +962,7 @@ TEST(odcdriver,  create_cmd_port_map_in_diff_format_invalid) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -950,7 +972,7 @@ TEST(odcdriver,  create_cmd_port_map_in_diff_format_invalid) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -989,6 +1011,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_invlanid) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -998,7 +1021,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_invlanid) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -1038,6 +1061,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_vlanid) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1047,7 +1071,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_vlanid) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -1086,6 +1110,7 @@ TEST(odcdriver,  update_cmd_port_map_valid) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   std::string UPDATE_DELETE_VBRIF_PORTMAP = "172.16.0.5";
@@ -1095,7 +1120,7 @@ TEST(odcdriver,  update_cmd_port_map_valid) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val1;
   pfcdrv_val_vbr_if_t vbrif_val2;
@@ -1137,6 +1162,7 @@ TEST(odcdriver,  update_cmd_no_port_map) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   std::string UPDATE_DELETE_VBRIF_PORTMAP = "172.16.0.5";
@@ -1160,7 +1186,7 @@ TEST(odcdriver,  update_cmd_no_port_map) {
   strncpy(reinterpret_cast<char*>(vbrif_key.if_name),
           intfname.c_str(),  sizeof(vbrif_key.if_name)-1);
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::string descp =  "desc";
   vbrif_val1.valid[PFCDRV_IDX_VAL_VBRIF] = UNC_VF_VALID;
   vbrif_val1.val_vbrif.valid[UPLL_IDX_PM_VBRI] = UNC_VF_INVALID;
@@ -1190,6 +1216,7 @@ TEST(odcdriver,  update_cmd_port_map_delete_resp_null) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   std::string UPDATE_DELETE_VBRIF_PORTMAP = "172.16.0.5";
@@ -1201,7 +1228,7 @@ TEST(odcdriver,  update_cmd_port_map_delete_resp_null) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val1;
   pfcdrv_val_vbr_if_t vbrif_val2;
@@ -1245,6 +1272,7 @@ TEST(odcdriver,  update_cmd_port_map_invalid) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   std::string UPDATE_DELETE_VBRIF_PORTMAP = "172.16.0.5";
@@ -1254,7 +1282,7 @@ TEST(odcdriver,  update_cmd_port_map_invalid) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val1;
   pfcdrv_val_vbr_if_t vbrif_val2;
@@ -1295,6 +1323,7 @@ TEST(odcdriver,  update_cmd_port_map_valid_vlan) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   std::string UPDATE_DELETE_VBRIF_PORTMAP = "172.16.0.5";
@@ -1304,7 +1333,7 @@ TEST(odcdriver,  update_cmd_port_map_valid_vlan) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val1;
   pfcdrv_val_vbr_if_t vbrif_val2;
@@ -1345,6 +1374,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_null_resp) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1354,7 +1384,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_null_resp) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -1394,6 +1424,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_invalid_logical) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1403,7 +1434,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_invalid_logical) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -1443,6 +1474,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_no_port_name) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1452,7 +1484,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_no_port_name) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -1491,6 +1523,7 @@ TEST(odcdriver,  create_cmd_port_map_invalid) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1500,7 +1533,7 @@ TEST(odcdriver,  create_cmd_port_map_invalid) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -1535,6 +1568,7 @@ TEST(odcdriver,  create_cmd_port_map_invalid_portmap) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1544,7 +1578,7 @@ TEST(odcdriver,  create_cmd_port_map_invalid_portmap) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -1580,6 +1614,7 @@ TEST(odcdriver,  update_cmd_port_map_portmap_invalid) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1589,7 +1624,7 @@ TEST(odcdriver,  update_cmd_port_map_portmap_invalid) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val1;
   pfcdrv_val_vbr_if_t vbrif_val2;
@@ -1627,6 +1662,7 @@ TEST(odcdriver,  update_cmd_port_map_portmap) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1636,7 +1672,7 @@ TEST(odcdriver,  update_cmd_port_map_portmap) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val1;
   pfcdrv_val_vbr_if_t vbrif_val2;
@@ -1673,6 +1709,7 @@ TEST(odcdriver,  update_cmd_port_map_portmap_failure) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1682,7 +1719,7 @@ TEST(odcdriver,  update_cmd_port_map_portmap_failure) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val1;
   pfcdrv_val_vbr_if_t vbrif_val2;
@@ -1721,6 +1758,7 @@ TEST(odcdriver,  update_cmd_port_map_update_portmap) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1730,7 +1768,7 @@ TEST(odcdriver,  update_cmd_port_map_update_portmap) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val1;
   pfcdrv_val_vbr_if_t vbrif_val2;
@@ -1768,6 +1806,7 @@ TEST(odcdriver,  update_cmd_empty_vtnname) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1777,7 +1816,7 @@ TEST(odcdriver,  update_cmd_empty_vtnname) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val1;
   pfcdrv_val_vbr_if_t vbrif_val2;
@@ -1815,6 +1854,7 @@ TEST(odcdriver,  delete_cmd_empty_vtnname) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1824,7 +1864,7 @@ TEST(odcdriver,  delete_cmd_empty_vtnname) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val;
   memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
@@ -1860,6 +1900,7 @@ TEST(odcdriver,  update_cmd_delete_portmap) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1869,7 +1910,7 @@ TEST(odcdriver,  update_cmd_delete_portmap) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val1;
   pfcdrv_val_vbr_if_t vbrif_val2;
@@ -1908,6 +1949,7 @@ TEST(odcdriver,  update_cmd_vbrif_success_portmap_failure) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1917,7 +1959,7 @@ TEST(odcdriver,  update_cmd_vbrif_success_portmap_failure) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =  new
-      unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val1;
   pfcdrv_val_vbr_if_t vbrif_val2;
@@ -1956,6 +1998,7 @@ TEST(odcdriver,  update_cmd_vbrif_success_portmap_delete_failure) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr , 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1966,7 +2009,7 @@ TEST(odcdriver,  update_cmd_vbrif_success_portmap_delete_failure) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =  new
-      unc::odcdriver::OdcController(key_ctr,  val_ctr);;
+      unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
   key_vbr_if_t vbrif_key;
   pfcdrv_val_vbr_if_t vbrif_val1;
   pfcdrv_val_vbr_if_t vbrif_val2;
@@ -2005,6 +2048,7 @@ TEST(odcdriver,  fetch_config) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   key_vbr_t key_vbr;
 
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -2021,7 +2065,7 @@ TEST(odcdriver,  fetch_config) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::vector<unc::vtndrvcache::ConfigNode *>
       cfgnode_vector;
   EXPECT_EQ(UNC_RC_SUCCESS,
@@ -2045,6 +2089,7 @@ TEST(odcdriver,  fetch_config_empty_vtn) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   key_vbr_t key_vbr;
 
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -2061,7 +2106,7 @@ TEST(odcdriver,  fetch_config_empty_vtn) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::vector<unc::vtndrvcache::ConfigNode *>
       cfgnode_vector;
   EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
@@ -2085,6 +2130,7 @@ TEST(odcdriver,  fetch_config_empty_vtn_data) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   key_vbr_t key_vbr;
 
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -2101,7 +2147,7 @@ TEST(odcdriver,  fetch_config_empty_vtn_data) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::vector<unc::vtndrvcache::ConfigNode *>
       cfgnode_vector;
   EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
@@ -2126,6 +2172,7 @@ TEST(odcdriver,  fetch_config_null_response) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   key_vbr_t key_vbr;
 
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -2142,7 +2189,7 @@ TEST(odcdriver,  fetch_config_null_response) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::vector<unc::vtndrvcache::ConfigNode *>
       cfgnode_vector;
   EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
@@ -2166,6 +2213,7 @@ TEST(odcdriver,  fetch_config_invalid_resp) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   key_vbr_t key_vbr;
 
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -2182,7 +2230,7 @@ TEST(odcdriver,  fetch_config_invalid_resp) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::vector<unc::vtndrvcache::ConfigNode *>
       cfgnode_vector;
   EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
@@ -2206,6 +2254,7 @@ TEST(odcdriver,  fetch_config_with_portmap) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   key_vbr_t key_vbr;
 
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -2222,7 +2271,7 @@ TEST(odcdriver,  fetch_config_with_portmap) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::vector<unc::vtndrvcache::ConfigNode *>
       cfgnode_vector;
   EXPECT_EQ(UNC_RC_SUCCESS,
@@ -2245,6 +2294,7 @@ TEST(odcdriver,  fetch_config_with_portmap_no_vlan) {
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   key_vbr_t key_vbr;
 
   memset(&key_ctr , 0, sizeof(key_ctr_t));
@@ -2262,7 +2312,7 @@ TEST(odcdriver,  fetch_config_with_portmap_no_vlan) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::vector<unc::vtndrvcache::ConfigNode *>
       cfgnode_vector;
   EXPECT_EQ(UNC_RC_SUCCESS,

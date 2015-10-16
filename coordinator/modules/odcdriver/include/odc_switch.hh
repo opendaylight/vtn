@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -17,6 +17,7 @@
 #include <unc/upll_ipc_enum.h>
 #include <vtndrvintf_defs.h>
 #include <vtn_drv_module.hh>
+#include <../../../dist/target/objs/modules/odcdriver/nodes.hh>
 #include <string>
 #include <list>
 #include <vector>
@@ -67,8 +68,7 @@ class OdcSwitch {
    */
   UncRespCode fill_config_node_vector(
       unc::driver::controller *ctr_ptr,
-      json_object *json_obj_node_prop,
-      int arr_idx,
+      std::string id,
       std::vector<unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
 
   /**
@@ -161,13 +161,13 @@ class OdcSwitch {
   /**
    * @brief                           - parse the response from controller
    * @param[in] ctr_ptr               - Controller pointer
-   * @param[in] data                  - data to be parsed
+   * @param[in] list                  - data to be parsed
    * @param[out] cfgnode_vector       - to be filled with the response
    * return UncRespCode               - return UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
    */
   UncRespCode parse_node_response(
       unc::driver::controller *ctr_ptr,
-      char *data,
+      std::list<vtn_node> &node_deatil,
       std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
   /**

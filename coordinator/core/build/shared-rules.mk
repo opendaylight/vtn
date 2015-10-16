@@ -1,7 +1,7 @@
 #
-# Copyright (c) 2010-2013 NEC Corporation
+# Copyright (c) 2010-2015 NEC Corporation
 # All rights reserved.
-# 
+#
 # This program and the accompanying materials are made available under the
 # terms of the Eclipse Public License v1.0 which accompanies this
 # distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
@@ -59,7 +59,8 @@ CMD_INSTALL	= $(call CMD_DEST_INSTALL,$(1),$(DESTDIR))
 # Update IPC struct headers if needed.
 EXTRA_INSTALL	+= ipc-header-install
 
-all:	$(SHLIB_TARGET) $(EXTRA_TARGET) $(SYS_EXTRA_TARGET)
+#all:	$(SHLIB_TARGET) $(EXTRA_TARGET) $(SYS_EXTRA_TARGET)
+all:   $(GENERATE_CODE) $(SHLIB_TARGET) $(EXTRA_TARGET) $(SYS_EXTRA_TARGET)
 
 ifndef	NO_SO_VERSION
 

@@ -40,68 +40,51 @@ UncRespCode OdcPort::fetch_config(
   }
   std::vector<unc::vtndrvcache::ConfigNode *> cfgnode_vector;
   parent_switch_ = reinterpret_cast<const char*>
-      (parent_switch->switch_id);
+    (parent_switch->switch_id);
 
   if (parent_switch_.empty()) {
     pfc_log_error("Switch id is empty");
     return UNC_DRV_RC_ERR_GENERIC;
   }
-  std::string url = "";
-  url.append(RESTCONF_BASE);
-  url.append(VTN_SW_NODES);
-  url.append(VTN_PORT);
-  url.append(SLASH);
-  url.append(parent_switch_);
-
-  pfc_log_trace("Url for port %s", url.c_str());
-  unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
-                                        ctr_ptr->get_user_name(),
-                                        ctr_ptr->get_pass_word());
-
-  unc::restjson::HttpResponse_t* response =
-      rest_util_obj.send_http_request(
-          url, restjson::HTTP_METHOD_GET, NULL, conf_file_values_);
-
-  if (NULL == response) {
-    pfc_log_error("Error Occured while getting httpresponse");
+  vtnport_request *req_obj = new vtnport_request(ctr_ptr,parent_switch_);
+  vtnport_parser *parse_obj = new vtnport_parser();
+  UncRespCode ret_val = req_obj->get_response(parse_obj);
+  if (UNC_RC_SUCCESS != ret_val) {
+     pfc_log_error("get_response error");
+    delete req_obj;
+    delete parse_obj;
     return UNC_DRV_RC_ERR_GENERIC;
   }
-
-  int resp_code = response->code;
-  if (HTTP_200_RESP_OK != resp_code) {
-    pfc_log_error("Response code is not OK , resp : %d", resp_code);
+  ret_val = parse_obj->set_vtn_port(parse_obj->jobj);
+  if (UNC_RC_SUCCESS != ret_val) {
+    pfc_log_error("set_vtn_port error");
+    delete req_obj;
+    delete parse_obj;
     return UNC_DRV_RC_ERR_GENERIC;
   }
-
-  if (NULL != response->write_data) {
-    if (NULL != response->write_data->memory) {
-      char *data = response->write_data->memory;
-      pfc_log_trace("All nodes : %s", data);
-      UncRespCode ret_val =
-          parse_port_response(ctr_ptr, data, cfgnode_vector);
-      pfc_log_debug("Number of Ports in Switch %s is, %d",
-                        parent_switch_.c_str(),
-                    static_cast<int>(cfgnode_vector.size()));
-      if (UNC_RC_SUCCESS != ret_val) {
-        pfc_log_error("Error while parsing the port response");
-        return ret_val;
-      }
-      // compare with cahe
-      ret_val = compare_with_cache(ctr_ptr,
-                                   cfgnode_vector, parent_switch_, cache_empty);
-      pfc_log_debug("Response from compare_with_cache is %d", ret_val);
-      return ret_val;
-    }
+  parse_port_response(ctr_ptr, parse_obj->vtn_port_, cfgnode_vector);
+  if (UNC_RC_SUCCESS != ret_val) {
+    pfc_log_error("Error occured while parsing");
+    delete req_obj;
+    delete parse_obj;
+    return ret_val;
   }
-  pfc_log_error("Response in NULL");
-  return UNC_DRV_RC_ERR_GENERIC;
+  // compare with cahe
+  ret_val = compare_with_cache(ctr_ptr,
+      cfgnode_vector, parent_switch_, cache_empty);
+  pfc_log_debug("Response from compare_with_cache is %d", ret_val);
+  delete req_obj;
+  delete parse_obj;
+  return ret_val;
 }
 
 // parse each port and append to cache
 UncRespCode OdcPort::fill_config_node_vector(
     unc::driver::controller *ctr_ptr,
-    json_object *json_obj_node_conn_prop,
-    int arr_idx,
+    std::string cost,
+    std::string id,
+    std::string name,
+    uint enabled,
     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
   ODC_FUNC_TRACE;
   key_port_t key_port;
@@ -109,54 +92,9 @@ UncRespCode OdcPort::fill_config_node_vector(
   memset(&key_port, 0, sizeof(key_port_t));
   memset(&val_port, 0, sizeof(val_port_st_t));
 
-  // json_object *json_obj_node_conn = NULL;
-  std::string port_id = "";
-  uint32_t ret_val = restjson::JsonBuildParse::parse(json_obj_node_conn_prop,
-                                                     "id",
-                                                     arr_idx,
-                                                     port_id);
-
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error(" Error while parsing port id");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  pfc_log_info("odc_port:port_id %s", port_id.c_str());
-
-  std::string cost = "";
-  ret_val = restjson::JsonBuildParse::parse(json_obj_node_conn_prop,
-                                                     "cost",
-                                                     arr_idx,
-                                                     cost);
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (cost.empty())) {
-    pfc_log_error(" Error while parsing cost");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  pfc_log_info("odc_port:cost %s", cost.c_str());
-
-  std::string port_name = "";
-  ret_val = restjson::JsonBuildParse::parse(json_obj_node_conn_prop,
-                                                     "name",
-                                                     arr_idx,
-                                                     port_name);
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (port_name.empty())) {
-    pfc_log_error(" Error while parsing port name");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  pfc_log_info("odc_port:port_name %s", port_name.c_str());
-
-  uint state_value = 0;
-  ret_val = restjson::JsonBuildParse::parse(json_obj_node_conn_prop,
-                                                     "enabled",
-                                                     arr_idx,
-                                                     state_value);
-  pfc_log_info("odc_port:status %d", state_value);
-
-
   //  Fills Key Structure
-  strncpy(reinterpret_cast<char*> (key_port.port_id), port_name.c_str(),
-          strlen(port_name.c_str()));
+  strncpy(reinterpret_cast<char*> (key_port.port_id), name.c_str(),
+          strlen(name.c_str()));
 
   strncpy(reinterpret_cast<char*> (key_port.sw_key.switch_id),
           parent_switch_.c_str(), strlen(parent_switch_.c_str()));
@@ -171,17 +109,17 @@ UncRespCode OdcPort::fill_config_node_vector(
   std::string lp_id = "PP-OF:";
   lp_id.append(parent_switch_);
   lp_id.append(HYPHEN);
-  lp_id.append(port_name);
+  lp_id.append(name);
   pfc_log_debug("Port id formed in logical port : %s", lp_id.c_str());
   // Fill link map
   // linkmap contains port_id as key
   // switchid|status|portname value
   // <openflow:3:3,s3-eth3|status|openflow:3>
-  std::string head_conn = port_id;
-  std::string port_value = port_name;
+  std::string head_conn = id;
+  std::string port_value = name;
   port_value.append(PIPE_SEPARATOR);
   std::ostringstream str_state_val;
-  str_state_val << state_value;
+  str_state_val << enabled;
   port_value.append(str_state_val.str());
   port_value.append(PIPE_SEPARATOR);
   port_value.append(parent_switch_);
@@ -194,21 +132,21 @@ UncRespCode OdcPort::fill_config_node_vector(
   val_port.valid[kIdxPortLogicalPortId] = UNC_VF_VALID;
 
   unsigned long long speed = 0;
-  if (ADMIN_UP == state_value) {
+  if (ADMIN_UP == enabled) {
     val_port.port.admin_status = UPPL_PORT_ADMIN_UP;
     val_port.port.valid[VAL_PORT_EVENT_ATTR3] = UNC_VF_VALID;
-  } else if (ADMIN_DOWN == state_value)  {
+  } else if (ADMIN_DOWN == enabled)  {
     val_port.port.admin_status = UPPL_PORT_ADMIN_DOWN;
     val_port.port.valid[VAL_PORT_EVENT_ATTR3] = UNC_VF_VALID;
   }
   std::string node_conn_id = "";
-  node_conn_id = port_id.substr(strlen(parent_switch_.c_str())+1,
-                                strlen(port_id.c_str()));
+  node_conn_id = id.substr(strlen(parent_switch_.c_str())+1,
+                                strlen(id.c_str()));
   val_port.port.port_number = atoi(node_conn_id.c_str());
   val_port.port.valid[VAL_PORT_EVENT_ATTR1] = UNC_VF_VALID;
 
   if (unc::driver::CONNECTION_UP == ctr_ptr->get_connection_status()) {
-    if (ADMIN_UP == state_value) {
+    if (ADMIN_UP == enabled) {
       val_port.oper_status = UPPL_PORT_OPER_UP;
       val_port.valid[VAL_PORT_EVENT_ATTR2] = UNC_VF_VALID;
     } else {
@@ -795,9 +733,11 @@ pfc_bool_t OdcPort::is_port_modified(val_port_st_t *val_port_ctr,
 
 // parsing function for converting controller response to driver format
 UncRespCode OdcPort::parse_port_response(
-    unc::driver::controller *ctr_ptr, char *data,
+    unc::driver::controller *ctr_ptr,
+    std::list<vtn_port> &port_detail,
     std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
   ODC_FUNC_TRACE;
+#if 0
   json_object* jobj = restjson::JsonBuildParse::get_json_object(data);
   if (json_object_is_type(jobj, json_type_null)) {
     pfc_log_error("json_object_is_type error");
@@ -840,17 +780,20 @@ UncRespCode OdcPort::parse_port_response(
                restjson::JsonBuildParse::get_json_string
                (json_obj_port_conn_prop));
   for (uint32_t arr_idx = 0; arr_idx < array_length; arr_idx++) {
-    UncRespCode ret_val = fill_config_node_vector(ctr_ptr,
-                                                  json_obj_port_conn_prop,
-                                                  arr_idx,
-                                                  cfgnode_vector);
+#endif
+    std::list<vtn_port>::iterator it;
+    for (it = port_detail.begin(); it != port_detail.end(); it++) {
+      UncRespCode ret_val = fill_config_node_vector(ctr_ptr,
+          it->cost,
+          it->id,
+          it->name,
+          it->enabled,
+          cfgnode_vector);
     if (UNC_RC_SUCCESS != ret_val) {
-      json_object_put(jobj);
       pfc_log_error("Error return from parse_node_append_vector failure");
       return ret_val;
     }
   }
-  json_object_put(jobj);
   return UNC_RC_SUCCESS;
 }
 
