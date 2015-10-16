@@ -804,11 +804,11 @@
       </dependency>
 
       <!-- OpenDaylight neutron project -->
-      <!--dependency>
+      <dependency>
         <groupId>org.opendaylight.neutron</groupId>
         <artifactId>model</artifactId>
         <version>${odl.neutron.version}</version>
-      </dependency-->
+      </dependency>
 
       <!-- OpenDaylight OVSDB project -->
       <dependency>
@@ -824,6 +824,16 @@
       <dependency>
         <groupId>org.opendaylight.ovsdb</groupId>
         <artifactId>schema.hardwarevtep</artifactId>
+        <version>${odl.ovsdb.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.opendaylight.ovsdb</groupId>
+        <artifactId>southbound-api</artifactId>
+        <version>${odl.ovsdb.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.opendaylight.ovsdb</groupId>
+        <artifactId>southbound-impl</artifactId>
         <version>${odl.ovsdb.version}</version>
       </dependency>
 

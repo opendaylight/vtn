@@ -35,6 +35,9 @@
 
   <required-capabilities>
     <capability>
+      urn:opendaylight:vtn:impl:provider?module=vtn-provider&amp;revision=2015-02-09
+    </capability>
+    <capability>
       urn:opendaylight:vtn:neutron?module=vtn-neutron&amp;revision=2015-09-22
     </capability>
   </required-capabilities>
