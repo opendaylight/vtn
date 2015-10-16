@@ -1,0 +1,205 @@
+# Copyright (c) 2013-2015 NEC Corporation
+# All rights reserved.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+
+# Response format of vtn-topology
+#{
+#  "vtn-topology": {
+#    "vtn-link": [
+#    {
+#      "destination": "openflow:1:1",
+#        "link-id": "openflow:2:3",
+#        "source": "openflow:2:3"
+#    },
+#    {
+#      "destination": "openflow:1:2",
+#      "link-id": "openflow:3:3",
+#      "source": "openflow:3:3"
+#    },
+#    {
+#      "destination": "openflow:3:3",
+#      "link-id": "openflow:1:2",
+#      "source": "openflow:1:2"
+#    },
+#    {
+#      "destination": "openflow:2:3",
+#      "link-id": "openflow:1:1",
+#      "source": "openflow:1:1"
+#    }
+#    ]
+#  }
+#}
+
+# To parse the above response using generated code we need to create topo.rest file
+# Steps to create topo.rest file:
+
+# [ROOT]
+# Every rest file starts from root.
+
+# [vtntopology_request]
+# In type, user needs to select the an URL operation. In port.rest file we are using
+# GET operation only, so we have mentioned "READ" operation.
+# Suppose if you want to create POST, PUT and DELETE operation you have to mention CUD in type.
+# request_type is always an object.
+
+# [vtntopology]
+# We have to select key in the above response format. Here, vtntopology key is vtn-topology.
+
+# [vtn_link]
+# vtn_link is a structure in the above response. Here, vtn_link type is an array.
+# vtn_link key is "vtn-link" in the above response. Structure members are destination, link-id and source.
+
+# [destination]
+# destination is a structure member of vtn_link. Destination key is "destination" in the above response.
+
+# [link-id]
+# link-id is a structure member of vtn_link. Link-id key is "link-id" in the above response.
+
+# [source]
+# source is a structure member of vtn_link. Source key is "source" in the above response.
+
+# [vtntopology_parser]
+# In parser class section we need to mention the vtn-topology as root with key name.
+# request_type is always an object. Request and response members are same from vtntopology_request.
+# Parser class is used to parse vtn_link structure members as an array.
+
+# [VTN_GETSUPPORT_URL]
+# This will create vtn-port GET URL.
+
+# Structure member section
+[source]
+type=string
+key="source"
+struct_name=vtn_link
+build_support =no
+parse_support =yes
+
+# Structure member section
+[destination]
+type=string
+key="destination"
+struct_name=vtn_link
+build_support =no
+parse_support =yes
+
+# Structure member section
+[link_id]
+type=string
+key="link-id"
+struct_name=vtn_link
+build_support=no
+parse_support =yes
+
+# Structure of vtntopology_parser class section
+[vtn_link]
+type=array
+key="vtn-link"
+is_child=yes
+struct_name=vtn_link
+check_bool_set=no
+members=source,link_id,destination
+
+# structure member section
+[cost]
+type=string
+key="cost"
+struct_name=vtn_port
+is_child=no
+category=mandatory
+
+# Structure member section
+[id]
+type=string
+key="id"
+is_child=no
+struct_name=vtn_port
+category=mandatory
+
+# Strucutre of vtntopology_parser class section
+[vtn_port]
+type=array
+key="vtn-port"
+is_child=yes
+struct_name=vtn_port
+check_bool_set=yes
+members=cost,id
+
+# Parser class object section
+[vtntopology]
+type=object
+key="vtn-topology"
+is_child=yes
+struct_name=vtn_link
+check_bool_set=yes
+members=vtn_link
+
+# URL section
+[RESTURL]
+type=url_string
+value="/restconf"
+
+# URL section
+[SLASH]
+type=url_string
+value="/"
+
+# URL section
+[VTNTOPOLGYURL]
+type=url_string
+value="vtn-topology"
+
+# URL section
+[COLON]
+type=url_string
+value=":"
+
+# URL section
+[OPERATIONURL]
+type=url_string
+value="operational"
+
+# URL interface members section
+[controller_ip]
+type=string
+get_abstract=yes
+
+# URL interface members section
+[controller_port]
+type=string
+get_abstract=yes
+
+# GET URL of vtntopology_parser class section
+[VTN_GETSUPPORT_URL]
+type=url_string
+url_format=RESTURL,SLASH,OPERATIONURL,SLASH,VTNTOPOLGYURL,COLON,VTNTOPOLGYURL
+interface_members=controller_ip,controller_port
+
+# parser class section
+[vtntopology_parser]
+type=READ
+request_type=object
+request_members=vtntopology
+response_members="vtn-topology"
+
+# Request class section
+[vtntopology_request]
+type=READ
+request_type=object
+request_members=vtntopology
+response_members="vtn-topology"
+
+# GET URL section
+[READ]
+url=VTN_GETSUPPORT_URL
+
+# Main function
+[ROOT]
+url_class = vtntopology_request
+parse_class=vtntopology_parser
+namespace=odcdriver
+struct_type = vtn-link
+data=vtn_link
+methods=vtntopology_request

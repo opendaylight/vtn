@@ -123,7 +123,7 @@ class RestUtil {
     std::string PORT_NODE_PROP_NAME_VALUE_WRONG = "172.16.0.66";
     std::string PORT_NODE_PROP_STATE_WRONG = "172.16.0.67";
     std::string PORT_NODE_PROP_STATE_VALUE_WRONG = "172.16.0.68";
-    std::string PORT_NODE_PROP_CONFIG_WRONG = "172.16.0.69";
+    std::string PORT_COST_PROP_WRONG = "172.16.0.69";
     std::string PORT_NODE_PROP_CONFIG_VALUE_WRONG = "172.16.0.70";
     std::string PORT_NODE_PROP_BANDWIDTH_WRONG = "172.16.0.71";
 
@@ -420,7 +420,7 @@ class RestUtil {
       return response_;
   } else if (ip_address_.compare(PORT_NODE_CONN_PROP_WRONG) == 0) {
       response_->code = 200;
-      response_->write_data->memory = const_cast<char *>("{\"vtn-node\":[{\"id\":\"openflow:3\",\"openflow-vers\":\"OF10\",\"vtn-port\":[{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth2\"}]}]}");
+      response_->write_data->memory = const_cast<char *>("{\"vtn-node\":[{\"i\":\"openflow:3\",\"openflow-vers\":\"OF10\",\"vtn-port\":[{\"i\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth2\"}]}]}");
       return response_;
   } else if (ip_address_.compare(PORT_NODE_CONN_WRONG) == 0) {
       response_->code = 200;
@@ -428,23 +428,23 @@ class RestUtil {
       return response_;
   } else if (ip_address_.compare(PORT_NODE_CONN_ID_WRONG) == 0) {
       response_->code = 200;
-      response_->write_data->memory = const_cast<char *>("{\"vtn-node\":[{\"i\":\"openflow:3\",\"openflow-version\":\"OF10\",\"vtn-port\":[{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth2\"}]}]}");
+      response_->write_data->memory = const_cast<char *>("{\"vtn-node\":[{\"i\":\"openflo:3\",\"openflow-version\":\"OF10\",\"vtn-port\":[{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth2\"}]}]}");
       return response_;
   } else if (ip_address_.compare(PORT_NODE_CONN_NODE_WRONG) == 0) {
       response_->code = 200;
-      response_->write_data->memory = const_cast<char *>("{\"vtn-node\":[{\"id\":\"openflow:3\",\"openflow-version\":\"OF10\",\"vtn-port\":[{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth2\"}]}]}");
+      response_->write_data->memory = const_cast<char *>("{\"vtn-node\":[{\"i\":\"openflow:3\",\"openflow-version\":\"OF10\",\"vtn-port\":[{\"id\":\"openflow:3:2\",\"cot\":1000,\"enable\":tru,\"name\":\"s3-eth2\"}]}]}");
       return response_;
   } else if (ip_address_.compare(PORT_NODE_CONN_TYPE_WRONG) == 0) {
       response_->code = 200;
-      response_->write_data->memory = const_cast<char *>("{\"vtn-node\":[{\"id\":\"openflow:3\",\"openflow-version\":\"OF10\",\"vtn-port\":[{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth2\"},{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth1\"}]}]}");
+      response_->write_data->memory = const_cast<char *>("{\"vtn-node\":[{\"id\":\"openflo:3\",\"openflow-version\":\"OF10\",\"vtn-port\":[{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth2\"},{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth1\"}]}]}");
       return response_;
   } else if (ip_address_.compare(PORT_NODE_ID_WRONG) == 0) {
       response_->code = 200;
-      response_->write_data->memory = const_cast<char *>("{\"vtn-node\":[{\"id\":\"openflow:3\",\"openflow-version\":\"OF10\",\"vtn-port\":[{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth2\"},{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth1\"}]}]}");
+      response_->write_data->memory = const_cast<char *>("{\"vtn-node\":[{\"id\":\"openflow:i\",\"openflow-version\":\"OF10\",\"vtn-port\":[{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth2\"},{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth1\"}]}]}");
       return response_;
   } else if (ip_address_.compare(PORT_NODE_ID_SW) == 0) {
       response_->code = 200;
-      response_->write_data->memory = const_cast<char *>("{\"vtn-node\":[{\"id\":\"openflow:3\",\"openflow-version\":\"OF10\",\"vtn-port\":[{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth2\"},{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth1\"},{\"id\":\"openflow:3:3\",\"cost\":1000,\"enabled\":true,\"port-link\":[{\"link-id\":\"openflow:1:2\",\"peer\":\"openflow:1:2\"},{\"link-id\":\"openflow:3:3\",\"peer\":\"openflow:1:2\"}],\"name\":\"s3-eth3\"}]}]}");
+      response_->write_data->memory = const_cast<char *>("{\"vtn-node\":[{\"i\":\"openflow:\",\"openflow-version\":\"OF10\",\"vtn-port\":[{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth2\"},{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth1\"},{\"id\":\"openflow:3:3\",\"cost\":1000,\"enabled\":true,\"port-link\":[{\"link-id\":\"openflow:1:2\",\"peer\":\"openflow:1:2\"},{\"link-id\":\"openflow:3:3\",\"peer\":\"openflow:1:2\"}],\"name\":\"s3-eth3\"}]}]}");
       return response_;
   } else if (ip_address_.compare(PORT_NODE_PROP_WRONG) == 0) {
       response_->code = 200;
@@ -452,7 +452,7 @@ class RestUtil {
       return response_;
   } else if (ip_address_.compare(PORT_NODE_PROP_NAME_WRONG) == 0) {
       response_->code = 200;
-      response_->write_data->memory = const_cast<char *>("{\"vtn-node\":[{\"id\":\"openflow:3\",\"openflow-version\":\"OF10\",\"vtn-port\":[{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth2\"},{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth1\"}]}]}");
+      response_->write_data->memory = const_cast<char *>("{\"vtn-node\":[{\"id\":\"openflow:3\",\"openflow-version\":\"OF10\",\"vtn-port\":[{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth2\"},{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"nam\":\"s3-eth1\"}]}]}");
       return response_;
   } else if (ip_address_.compare(PORT_NODE_PROP_NAME_VALUE_WRONG) == 0) {
       response_->code = 200;
@@ -460,15 +460,15 @@ class RestUtil {
       return response_;
   } else if (ip_address_.compare(PORT_NODE_PROP_STATE_WRONG) == 0) {
       response_->code = 200;
-      response_->write_data->memory = const_cast<char *>("{\"vtn-node\":[{\"id\":\"openflow:3\",\"openflow-version\":\"OF10\",\"vtn-port\":[{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth2\"},{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth1\"}]}]}");
+      response_->write_data->memory = const_cast<char *>("{\"vtn-node\":[{\"id\":\"openflow:3\",\"openflow-version\":\"OF10\",\"vtn-port\":[{\"i\":\"openflow:3:2\",\"cot\":1000,\"enabled\":tr,\"name\":\"s3-eth2\"},{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth1\"}]}]}");
       return response_;
   } else if (ip_address_.compare(PORT_NODE_PROP_STATE_VALUE_WRONG) == 0) {
       response_->code = 200;
       response_->write_data->memory = const_cast<char *>("{\"vtn-node\":[{\"id\":\"openflow:3\",\"openflow-version\":\"OF10\",\"vtn-port\":[{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth2\"},{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth1\"}]}]}");
       return response_;
-  } else if (ip_address_.compare(PORT_NODE_PROP_CONFIG_WRONG) == 0) {
+  } else if (ip_address_.compare(PORT_COST_PROP_WRONG) == 0) {
       response_->code = 200;
-      response_->write_data->memory = const_cast<char *>("{\"vtn-node\":[{\"id\":\"openflow:3\",\"openflow-version\":\"OF10\",\"vtn-port\":[{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth2\"},{\"id\":\"openflow:3:2\",\"cost\":1000,\"enabled\":true,\"name\":\"s3-eth1\"}]}]}");
+      response_->write_data->memory = const_cast<char *>("{\"vtn-node\":[{\"id\":\"openflow:3\",\"openflow-version\":\"OF10\",\"vtn-port\":[{\"id\":\"openflow:3:2\",\"co\":1000,\"enabled\":true,\"name\":\"s3-eth2\"},{\"id\":\"openflow::2\",\"cost\":1000,\"enabled\":true,\"name\":\"s-eth1\"}]}]}");
       return response_;
   } else if (ip_address_.compare(PORT_NODE_PROP_CONFIG_VALUE_WRONG) == 0) {
       response_->code = 200;

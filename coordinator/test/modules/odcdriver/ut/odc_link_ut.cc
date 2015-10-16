@@ -19,13 +19,14 @@
 TEST(odcdriver_link, test_link_null_resp) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
   std::string  NULL_RESPONSE = "172.16.0.0";
   inet_aton(NULL_RESPONSE.c_str(),  &val_ctr.ip_address);
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   unc::restjson::ConfFileValues_t conf_file;
   pfc_bool_t cache_empty = PFC_FALSE;
   unc::odcdriver::OdcLink obj(conf_file);
@@ -39,13 +40,14 @@ TEST(odcdriver_link, test_link_null_resp) {
 TEST(odcdriver_link, test_link_invalid_resp) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
   std::string INVALID_RESPONSE = "172.0.0.0";
   inet_aton(INVALID_RESPONSE.c_str(),  &val_ctr.ip_address);
 
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   unc::restjson::ConfFileValues_t conf_file;
 
   const pfc_bool_t cache_empty = PFC_FALSE;
@@ -61,6 +63,7 @@ TEST(odcdriver_link, test_link_invalid_resp) {
 TEST(odcdriver_link, test_link_data_add_wrong) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -71,7 +74,7 @@ TEST(odcdriver_link, test_link_data_add_wrong) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -86,6 +89,7 @@ TEST(odcdriver_link, test_link_data_add_wrong) {
 TEST(odcdriver_link, test_link_data_add) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -96,7 +100,7 @@ TEST(odcdriver_link, test_link_data_add) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   int flag = 1;
@@ -147,6 +151,7 @@ TEST(odcdriver_link, test_link_data_add) {
 TEST(odcdriver_link, test_link_data_add_wrong_resp) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -157,7 +162,7 @@ TEST(odcdriver_link, test_link_data_add_wrong_resp) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -172,6 +177,7 @@ TEST(odcdriver_link, test_link_data_add_wrong_resp) {
 TEST(odcdriver_link, test_link_data_add_resp) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -181,7 +187,7 @@ TEST(odcdriver_link, test_link_data_add_resp) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -246,6 +252,7 @@ TEST(odcdriver_link, test_link_data_add_resp) {
 TEST(odcdriver_link, test_link_data_add_resp_dynamically) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -255,7 +262,7 @@ TEST(odcdriver_link, test_link_data_add_resp_dynamically) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -315,6 +322,7 @@ TEST(odcdriver_link,
      test_link_data_add_resp_dynamically_small_topo_large_topo) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -325,7 +333,7 @@ TEST(odcdriver_link,
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -394,6 +402,7 @@ TEST(odcdriver_link,
      test_link_data_update_resp) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -404,7 +413,7 @@ TEST(odcdriver_link,
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
   ctr->set_connection_status(0);
 
@@ -464,6 +473,7 @@ TEST(odcdriver_link,
 TEST(odcdriver_link, test_link_data_update_dynamically) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -473,7 +483,7 @@ TEST(odcdriver_link, test_link_data_update_dynamically) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -534,6 +544,7 @@ TEST(odcdriver_link, test_link_data_update_dynamically) {
 TEST(odcdriver_link, test_link_data_delete) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -544,7 +555,7 @@ TEST(odcdriver_link, test_link_data_delete) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -566,6 +577,7 @@ TEST(odcdriver_link, test_link_data_delete) {
 TEST(odcdriver_link, test_link_no_data) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -576,7 +588,7 @@ TEST(odcdriver_link, test_link_no_data) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -592,6 +604,7 @@ TEST(odcdriver_link, test_link_no_data) {
 TEST(odcdriver_link, test_link_edge_resp_wrong) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -602,7 +615,7 @@ TEST(odcdriver_link, test_link_edge_resp_wrong) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -618,6 +631,7 @@ TEST(odcdriver_link, test_link_edge_resp_wrong) {
 TEST(odcdriver_link, test_link_tail_node_resp_wrong) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -628,7 +642,7 @@ TEST(odcdriver_link, test_link_tail_node_resp_wrong) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -644,6 +658,7 @@ TEST(odcdriver_link, test_link_tail_node_resp_wrong) {
 TEST(odcdriver_link, test_link_node_resp_wrong) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -654,7 +669,7 @@ TEST(odcdriver_link, test_link_node_resp_wrong) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -670,6 +685,7 @@ TEST(odcdriver_link, test_link_node_resp_wrong) {
 TEST(odcdriver_link, test_link_node_id_resp_wrong) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -679,7 +695,7 @@ TEST(odcdriver_link, test_link_node_id_resp_wrong) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -695,6 +711,7 @@ TEST(odcdriver_link, test_link_node_id_resp_wrong) {
 TEST(odcdriver_link, test_link_tail_id_resp_wrong) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -705,7 +722,7 @@ TEST(odcdriver_link, test_link_tail_id_resp_wrong) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -722,6 +739,7 @@ TEST(odcdriver_link, test_link_tail_id_resp_wrong) {
 TEST(odcdriver_link, test_link_head_node_wrong) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -732,7 +750,7 @@ TEST(odcdriver_link, test_link_head_node_wrong) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -747,6 +765,7 @@ TEST(odcdriver_link, test_link_head_node_wrong) {
 TEST(odcdriver_link, test_link_head_id_resp_wrong) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -757,7 +776,7 @@ TEST(odcdriver_link, test_link_head_id_resp_wrong) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -773,6 +792,7 @@ TEST(odcdriver_link, test_link_head_id_resp_wrong) {
 TEST(odcdriver_link, test_link_head_resp_wrong) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -783,7 +803,7 @@ TEST(odcdriver_link, test_link_head_resp_wrong) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr,conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -799,6 +819,7 @@ TEST(odcdriver_link, test_link_head_resp_wrong) {
 TEST(odcdriver_link, test_link_head_node_resp_wrong) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -809,7 +830,7 @@ TEST(odcdriver_link, test_link_head_node_resp_wrong) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -825,6 +846,7 @@ TEST(odcdriver_link, test_link_head_node_resp_wrong) {
 TEST(odcdriver_link, test_link_head_node_prop_wrong) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -835,7 +857,7 @@ TEST(odcdriver_link, test_link_head_node_prop_wrong) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -851,6 +873,7 @@ TEST(odcdriver_link, test_link_head_node_prop_wrong) {
 TEST(odcdriver_link, test_link_head_node_prop_namewrong) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -861,7 +884,7 @@ TEST(odcdriver_link, test_link_head_node_prop_namewrong) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -877,6 +900,7 @@ TEST(odcdriver_link, test_link_head_node_prop_namewrong) {
 TEST(odcdriver_link, test_link_head_node_prop_name_value_wrong) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -887,7 +911,7 @@ TEST(odcdriver_link, test_link_head_node_prop_name_value_wrong) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -904,6 +928,7 @@ TEST(odcdriver_link, test_link_head_node_prop_name_value_wrong) {
 TEST(odcdriver_link, test_link_head_node_prop_state_wrong) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -914,7 +939,7 @@ TEST(odcdriver_link, test_link_head_node_prop_state_wrong) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -931,6 +956,7 @@ TEST(odcdriver_link, test_link_head_node_prop_state_wrong) {
 TEST(odcdriver_link, test_link_head_node_prop_state_value_wrong) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -942,7 +968,7 @@ TEST(odcdriver_link, test_link_head_node_prop_state_value_wrong) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -958,6 +984,7 @@ TEST(odcdriver_link, test_link_head_node_prop_state_value_wrong) {
 TEST(odcdriver_link, test_link_head_node_prop_config_wrong) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -968,7 +995,7 @@ TEST(odcdriver_link, test_link_head_node_prop_config_wrong) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -984,6 +1011,7 @@ TEST(odcdriver_link, test_link_head_node_prop_config_wrong) {
 TEST(odcdriver_link, test_link_head_node_prop_config_value_wrong) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -995,7 +1023,7 @@ TEST(odcdriver_link, test_link_head_node_prop_config_value_wrong) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -1011,6 +1039,7 @@ TEST(odcdriver_link, test_link_head_node_prop_config_value_wrong) {
 TEST(odcdriver_link, test_link_edge_prop_wrong) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -1022,7 +1051,7 @@ TEST(odcdriver_link, test_link_edge_prop_wrong) {
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
@@ -1039,6 +1068,7 @@ TEST(odcdriver_link,
      test_link_data_update) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -1048,7 +1078,7 @@ TEST(odcdriver_link,
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   std::auto_ptr<unc::vtndrvcache::CommonIterator>
@@ -1148,6 +1178,7 @@ TEST(odcdriver_link,
      test_link_data_no_update) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -1157,7 +1188,7 @@ TEST(odcdriver_link,
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   std::auto_ptr<unc::vtndrvcache::CommonIterator>
@@ -1216,6 +1247,7 @@ TEST(odcdriver_link,
      test_link_data_ctr_down) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr,  0, sizeof(val_ctr_t));
 
@@ -1225,7 +1257,7 @@ TEST(odcdriver_link,
 
   unc::restjson::ConfFileValues_t conf_file;
   unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
   ctr->set_connection_status(1);
   std::auto_ptr<unc::vtndrvcache::CommonIterator>
