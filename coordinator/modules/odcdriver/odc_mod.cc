@@ -63,7 +63,7 @@ unc::driver::controller* ODCModule::add_controller(const key_ctr_t& key_ctr,
   if (0 == strlen(ctr_name)) {
     return NULL;
   }
-  return new OdcController(key_ctr, val_ctr);
+  return new OdcController(key_ctr, val_ctr, conf_file_values_);
 }
 
 // Start audit notification to TC

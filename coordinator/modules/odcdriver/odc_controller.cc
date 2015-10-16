@@ -13,14 +13,16 @@ namespace unc {
 namespace odcdriver {
 
 // Constructor
-OdcController::OdcController(const key_ctr_t& key_ctr, const val_ctr_t& val_ctr)
-: ip_addr_(inet_ntoa(val_ctr.ip_address)),
+OdcController::OdcController(const key_ctr_t& key_ctr, const val_ctr_t& val_ctr,
+                             unc::restjson::ConfFileValues_t conf_values)
+  : ip_addr_(inet_ntoa(val_ctr.ip_address)),
   controller_name_(reinterpret_cast<const char*>(key_ctr.controller_name)),
   version_(reinterpret_cast<const char*>(val_ctr.version)),
   description_(reinterpret_cast<const char*>(val_ctr.description)),
   user_name_(reinterpret_cast<const char*>(val_ctr.user)),
   pass_word_(reinterpret_cast<const char*>(val_ctr.password)),
-  audit_(val_ctr.enable_audit) {
+  audit_(val_ctr.enable_audit),
+  conf_file_values_(conf_values){
     ODC_FUNC_TRACE;
 }
 
@@ -103,6 +105,11 @@ std::string OdcController::get_user_name() {
 std::string OdcController::get_pass_word() {
   ODC_FUNC_TRACE;
   return pass_word_;
+}
+// Gets the conf value struct
+unc::restjson::ConfFileValues_t OdcController::get_conf_value() {
+  ODC_FUNC_TRACE;
+  return conf_file_values_;
 }
 }  //  namespace odcdriver
 }  //  namespace unc

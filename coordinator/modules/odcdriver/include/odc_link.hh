@@ -17,6 +17,7 @@
 #include <unc/uppl_common.h>
 #include <vtndrvintf_defs.h>
 #include <vtn_drv_module.hh>
+#include <topo.hh>
 #include <string>
 #include <list>
 #include <vector>
@@ -72,8 +73,8 @@ class OdcLink {
    *                                  UNC_DRV_RC_ERR_GENERIC
    */
   UncRespCode fill_edge_value_map(
-      json_object *json_obj_node_prop,
-      int arr_idx,
+      std::string source,
+      std::string dst,
       unc::driver::controller *ctr_ptr,
       std::vector<unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
 
@@ -186,13 +187,13 @@ class OdcLink {
   /**
    * @brief                           - parse the response from controller
    * @param[in] ctr_ptr               - Controller pointer
-   * @param[in] data                  - data to be parsed
+   * @param[in] link                  - data to be parsed
    * @param[out] cfgnode_vector       - to be filled with the response
    * return UncRespCode               - return UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
    */
   UncRespCode parse_link_response(
       unc::driver::controller *ctr_ptr,
-      char *data,
+      std::list<vtn_link> &link_detail,
       std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
   /**
    * @brief                           -  parse the link details from

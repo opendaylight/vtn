@@ -18,6 +18,7 @@
 #include <unc/unc_events.h>
 #include <vtndrvintf_defs.h>
 #include <driver/driver_command.hh>
+#include <port.hh>
 #include <string>
 #include <list>
 #include <vector>
@@ -93,8 +94,10 @@ class OdcPort : public unc::driver::vtn_driver_read_command {
    */
   UncRespCode fill_config_node_vector(
       unc::driver::controller *ctr_ptr,
-      json_object *json_obj_node_prop,
-      int arr_idx,
+      std::string cost,
+      std::string id,
+      std::string name,
+      uint enabled,
       std::vector<unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
 
   /**
@@ -211,13 +214,13 @@ class OdcPort : public unc::driver::vtn_driver_read_command {
   /**
    * @brief                           - parse the response from controller
    * @param[in] ctr_ptr               - Controller pointer
-   * @param[in] data                  - data to be parsed
+   * @param[in] list                  - data to be parsed
    * @param[out] cfgnode_vector       - to be filled with the response
    * return UncRespCode               - return UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
    */
   UncRespCode parse_port_response(
       unc::driver::controller *ctr_ptr,
-      char *data,
+      std::list<vtn_port> &port_detail,
       std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
   /**

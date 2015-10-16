@@ -30,78 +30,48 @@ UncRespCode OdcSwitch::fetch_config(unc::driver::controller *ctr_ptr,
   PFC_VERIFY(ctr_ptr != NULL);
   std::vector<unc::vtndrvcache::ConfigNode *> cfgnode_vector;
 
-  std::string url = "";
-  url.append(RESTCONF_BASE);
-  url.append(VTN_SW_NODES);
+  vtn_nodes_request *req_obj = new vtn_nodes_request(ctr_ptr);
+  std::string url =  req_obj->get_url();
+  pfc_log_info("URL:%s",url.c_str());
+  vtn_nodes_parser *parse_obj = new vtn_nodes_parser();
+  UncRespCode ret_val = req_obj->get_response(parse_obj);
+  if (UNC_RC_SUCCESS != ret_val) {
+    delete req_obj;
+    delete parse_obj;
 
-  unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
-                                        ctr_ptr->get_user_name(),
-                                        ctr_ptr->get_pass_word());
-
-  unc::restjson::HttpResponse_t* response =
-      rest_util_obj.send_http_request(
-          url, restjson::HTTP_METHOD_GET, NULL, conf_file_values_);
-
-  if (NULL == response) {
-    pfc_log_error("Error Occured while getting httpresponse");
     return UNC_DRV_RC_ERR_GENERIC;
   }
-  int resp_code = response->code;
-  if (HTTP_200_RESP_OK != resp_code) {
-    pfc_log_error("Response code is not OK , resp : %d", resp_code);
-    return UNC_DRV_RC_ERR_GENERIC;
+  ret_val = parse_obj->set_vtn_node(parse_obj->jobj);
+  ret_val =  parse_node_response(ctr_ptr, parse_obj->vtn_node_, cfgnode_vector);
+  if (UNC_RC_SUCCESS != ret_val) {
+    pfc_log_error("Error occured while parsing");
+    delete req_obj;
+    delete parse_obj;
+    return ret_val;
   }
-
-  if (NULL != response->write_data) {
-    if (NULL != response->write_data->memory) {
-      char *data = response->write_data->memory;
-      pfc_log_trace("All Switches : %s", data);
-      UncRespCode ret_val =  parse_node_response(
-                              ctr_ptr, data, cfgnode_vector);
-      pfc_log_debug("Number of SWITCH present, %d",
-                    static_cast<int>(cfgnode_vector.size()));
-      if (ret_val != UNC_RC_SUCCESS) {
-        pfc_log_error("Error occured while parsing");
-        return ret_val;
-      }
-      ret_val = compare_with_cache(ctr_ptr, cfgnode_vector, cache_empty);
-      pfc_log_debug("Response from compare_with_cache is %d", ret_val);
-      return ret_val;
-    }
-  }
-  pfc_log_error("Response data is NULL");
-  return UNC_DRV_RC_ERR_GENERIC;;
+  ret_val = compare_with_cache(ctr_ptr, cfgnode_vector, cache_empty);
+  pfc_log_debug("Response from compare with cache is %d", ret_val);
+  delete req_obj;
+  delete parse_obj;
+  return ret_val;
 }
 
 // parse each SWITCH append t  cache
 UncRespCode OdcSwitch::fill_config_node_vector(
     unc::driver::controller *ctr_ptr,
-    json_object *json_obj_node_prop,
-    int arr_idx,
+    std::string id,
     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
   ODC_FUNC_TRACE;
   key_switch_t key_switch;
   val_switch_st_t val_switch;
   memset(&key_switch, 0, sizeof(key_switch_t));
   memset(&val_switch, 0, sizeof(val_switch_st_t));
-
-  std::string node_id   = "";
-  uint32_t ret_val = restjson::JsonBuildParse::parse(json_obj_node_prop,
-                                            "id",
-                                            arr_idx,
-                                            node_id);
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (node_id.empty())) {
-    pfc_log_error(" Error while parsing id");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  pfc_log_info(" NODE id :%s", node_id.c_str());
+ 
 
   std::string ctr_name = ctr_ptr->get_controller_id();
   //  Fills Key Structure
-  strncpy(reinterpret_cast<char*> (key_switch.switch_id), node_id.c_str(),
-          strlen(node_id.c_str()));
+  strncpy(reinterpret_cast<char*> (key_switch.switch_id), id.c_str(),
+          strlen(id.c_str()));
   strncpy(reinterpret_cast<char*> (key_switch.ctr_key.controller_name),
           ctr_name.c_str(), strlen(ctr_name.c_str()));
 
@@ -524,52 +494,20 @@ pfc_bool_t OdcSwitch::is_switch_modified(val_switch_st_t *val_switch_ctr,
 // parsing function for converting controller response to driver format
 UncRespCode OdcSwitch::parse_node_response(
     unc::driver::controller *ctr_ptr,
-    char *data,
+    std::list<vtn_node> &node_detail,
     std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
   ODC_FUNC_TRACE;
-  json_object* jobj = restjson::JsonBuildParse::get_json_object(data);
-  if (json_object_is_type(jobj, json_type_null)) {
-    pfc_log_error("json_object_is_type error");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  uint32_t array_length =0;
-  json_object *json_obj_node = NULL;
-  uint32_t ret_val = restjson::JsonBuildParse::parse(jobj,
-                                                     "vtn-nodes",
-                                                     -1,
-                                                     json_obj_node);
+  std::list<vtn_node>::iterator it;
+  for (it = node_detail.begin(); it != node_detail.end(); it++) {
+    std::string id = it->id;
+    UncRespCode ret_val = fill_config_node_vector(
+      ctr_ptr, id, cfgnode_vector);
 
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (json_object_is_type(json_obj_node, json_type_null))) {
-    json_object_put(jobj);
-    pfc_log_error("Parsing Error json_obj_node is null");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  json_object *json_obj_node_prop = NULL;
-  ret_val = restjson::JsonBuildParse::parse(json_obj_node,
-                                                     "vtn-node",
-                                                     -1,
-                                                     json_obj_node_prop);
-  if (json_object_is_type(json_obj_node_prop, json_type_array)) {
-    array_length = restjson::JsonBuildParse::get_array_length(json_obj_node,
-                                                  "vtn-node");
-  }
-  if (0 == array_length) {
-    pfc_log_trace("No SWITCH present");
-    json_object_put(jobj);
-    return UNC_RC_SUCCESS;
-  }
-  for (uint32_t arr_idx = 0; arr_idx < array_length; arr_idx++) {
-    UncRespCode ret_val = fill_config_node_vector(ctr_ptr,
-                             json_obj_node_prop, arr_idx, cfgnode_vector);
     if (UNC_RC_SUCCESS != ret_val) {
-      json_object_put(jobj);
-      pfc_log_error("Error return from parse_node_append_vector failure");
+      pfc_log_error("Error return from fill map failure");
       return ret_val;
     }
   }
-  json_object_put(jobj);
   return UNC_RC_SUCCESS;
 }
 }  // namespace odcdriver
