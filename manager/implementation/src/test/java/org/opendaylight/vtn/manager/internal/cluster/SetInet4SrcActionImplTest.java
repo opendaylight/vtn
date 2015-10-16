@@ -20,6 +20,7 @@ import org.mockito.Mockito;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetInet4SrcAction;
+import org.opendaylight.vtn.manager.packet.IPv4;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.IpNetwork;
 
@@ -30,7 +31,6 @@ import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetSrcActio
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.sal.packet.IPv4;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**

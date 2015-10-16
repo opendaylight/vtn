@@ -13,12 +13,11 @@ import static org.junit.Assert.fail;
 
 import java.util.Set;
 
+import org.opendaylight.vtn.manager.packet.Packet;
 import org.opendaylight.vtn.manager.util.ByteUtils;
 
 import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
 import org.opendaylight.vtn.manager.it.util.match.FlowMatchType;
-
-import org.opendaylight.controller.sal.packet.Packet;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;

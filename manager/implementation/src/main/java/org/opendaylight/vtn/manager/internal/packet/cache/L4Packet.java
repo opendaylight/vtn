@@ -39,15 +39,14 @@ public interface L4Packet extends CachedPacket, Layer4Header {
 
     /**
      * Calculate the checksum of the packet, and set the computed checksum
-     * into a {@link org.opendaylight.controller.sal.packet.Packet} instance
+     * into a {@link org.opendaylight.vtn.manager.packet.Packet} instance
      * configured in this instance.
      *
      * @param ipv4  An {@link Inet4Packet} instance that contains this
      *              packet.
      * @return  {@code true} is returned if the checksum field was updated.
      *          {@code false} is returned if the packet was not modified.
-     * @throws VTNException
-     *    An error occurred.
+     * @throws VTNException  An error occurred.
      */
     boolean updateChecksum(Inet4Packet ipv4) throws VTNException;
 

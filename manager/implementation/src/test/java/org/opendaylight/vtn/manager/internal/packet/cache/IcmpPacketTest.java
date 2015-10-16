@@ -17,6 +17,9 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.packet.Ethernet;
+import org.opendaylight.vtn.manager.packet.ICMP;
+import org.opendaylight.vtn.manager.packet.IPv4;
 import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
@@ -27,10 +30,6 @@ import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNIcmpMatch;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
-
-import org.opendaylight.controller.sal.packet.Ethernet;
-import org.opendaylight.controller.sal.packet.ICMP;
-import org.opendaylight.controller.sal.packet.IPv4;
 
 /**
  * JUnit test for {@link IcmpPacket}.

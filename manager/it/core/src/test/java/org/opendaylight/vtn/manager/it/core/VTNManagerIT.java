@@ -95,6 +95,7 @@ import org.opendaylight.vtn.manager.flow.cond.UdpMatch;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.EtherTypes;
 import org.opendaylight.vtn.manager.util.InetProtocols;
+import org.opendaylight.vtn.manager.util.IpNetwork;
 
 import org.opendaylight.vtn.manager.it.ofmock.OfMockFlow;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockLink;
@@ -3700,7 +3701,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
 
         // Send ICMP packet from moved hosts.
         // This invalidates old MAC address table entries.
-        InetAddress dstIp = InetAddress.getByName("192.168.100.255");
+        IpNetwork dstIp = IpNetwork.create("192.168.100.255");
         for (Map.Entry<TestHost, TestHost> entry: oldHosts0.entrySet()) {
             TestHost oldHost = entry.getKey();
             TestHost newHost = entry.getValue();
@@ -3775,12 +3776,12 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
      *                  A set of VLAN IDs mapped to the given vBridge must be
      *                  associated with the key.
      */
-    private void sendBroadcastIcmp(TestHost host, InetAddress dstIp,
+    private void sendBroadcastIcmp(TestHost host, IpNetwork dstIp,
                                    Map<String, Set<Short>> allPorts)
         throws Exception {
         String pid = host.getPortIdentifier();
         byte[] src = host.getMacAddress();
-        InetAddress srcIp = host.getInetAddress();
+        IpNetwork srcIp = host.getInetAddress();
         short vlan = host.getVlan();
         byte type = 8;
         byte code = 0;

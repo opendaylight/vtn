@@ -9,10 +9,9 @@
 package org.opendaylight.vtn.manager.internal.packet.cache;
 
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.packet.Packet;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
-
-import org.opendaylight.controller.sal.packet.Packet;
 
 /**
  * {@code CachedPacket} defines interfaces that implements cache for a

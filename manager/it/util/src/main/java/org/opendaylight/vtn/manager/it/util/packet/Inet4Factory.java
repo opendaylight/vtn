@@ -11,19 +11,15 @@ package org.opendaylight.vtn.manager.it.util.packet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import static org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase.toIpv4Prefix;
-
-import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.util.Set;
 
+import org.opendaylight.vtn.manager.packet.IPv4;
+import org.opendaylight.vtn.manager.packet.Packet;
 import org.opendaylight.vtn.manager.util.EtherTypes;
-import org.opendaylight.vtn.manager.util.NumberUtils;
+import org.opendaylight.vtn.manager.util.Ip4Network;
+import org.opendaylight.vtn.manager.util.IpNetwork;
 
 import org.opendaylight.vtn.manager.it.util.match.FlowMatchType;
-
-import org.opendaylight.controller.sal.packet.IPv4;
-import org.opendaylight.controller.sal.packet.Packet;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.IpMatchBuilder;
@@ -44,12 +40,12 @@ public final class Inet4Factory extends PacketFactory {
     /**
      * The source IP address.
      */
-    private InetAddress  sourceAddress;
+    private Ip4Network  sourceAddress;
 
     /**
      * The target IP address.
      */
-    private InetAddress  destinationAddress;
+    private Ip4Network  destinationAddress;
 
     /**
      * IP protocl number.
@@ -88,7 +84,7 @@ public final class Inet4Factory extends PacketFactory {
      * @return  An {@link Inet4Factory} instance.
      */
     public static Inet4Factory newInstance(EthernetFactory efc,
-                                           InetAddress src, InetAddress dst) {
+                                           IpNetwork src, IpNetwork dst) {
         Inet4Factory i4fc = new Inet4Factory(src, dst);
         efc.setEtherType(EtherTypes.IPV4.shortValue()).setNextFactory(i4fc);
 
@@ -106,7 +102,7 @@ public final class Inet4Factory extends PacketFactory {
      * @param src  The source IP address.
      * @param dst  The destination IP address.
      */
-    Inet4Factory(InetAddress src, InetAddress dst) {
+    Inet4Factory(IpNetwork src, IpNetwork dst) {
         setSourceAddress(src);
         setDestinationAddress(dst);
     }
@@ -114,18 +110,18 @@ public final class Inet4Factory extends PacketFactory {
     /**
      * Return the source IP address.
      *
-     * @return  An {@link InetAddress} or {@code null}.
+     * @return  An {@link Ip4Network} or {@code null}.
      */
-    public InetAddress getSourceAddress() {
+    public Ip4Network getSourceAddress() {
         return sourceAddress;
     }
 
     /**
      * Return the destination IP address.
      *
-     * @return  An {@link InetAddress} or {@code null}.
+     * @return  An {@link Ip4Network} or {@code null}.
      */
-    public InetAddress getDestinationAddress() {
+    public Ip4Network getDestinationAddress() {
         return destinationAddress;
     }
 
@@ -159,28 +155,24 @@ public final class Inet4Factory extends PacketFactory {
     /**
      * Set the source IP address.
      *
-     * @param ip  An {@link InetAddress}.
+     * @param ip  An {@link IpNetwork}.
      * @return  This instance.
      */
-    public Inet4Factory setSourceAddress(InetAddress ip) {
-        if (ip != null) {
-            assertTrue(ip instanceof Inet4Address);
-        }
-        sourceAddress = ip;
+    public Inet4Factory setSourceAddress(IpNetwork ip) {
+        assertEquals(Ip4Network.class, ip.getClass());
+        sourceAddress = (Ip4Network)ip;
         return this;
     }
 
     /**
      * Set the destination IP address.
      *
-     * @param ip  An {@link InetAddress}.
+     * @param ip  An {@link IpNetwork}.
      * @return  This instance.
      */
-    public Inet4Factory setDestinationAddress(InetAddress ip) {
-        if (ip != null) {
-            assertTrue(ip instanceof Inet4Address);
-        }
-        destinationAddress = ip;
+    public Inet4Factory setDestinationAddress(IpNetwork ip) {
+        assertEquals(Ip4Network.class, ip.getClass());
+        destinationAddress = (Ip4Network)ip;
         return this;
     }
 
@@ -238,10 +230,8 @@ public final class Inet4Factory extends PacketFactory {
         assertTrue(packet instanceof IPv4);
         IPv4 ip = (IPv4)packet;
 
-        int srcInet = toInteger(sourceAddress);
-        int dstInet = toInteger(destinationAddress);
-        assertEquals(srcInet, ip.getSourceAddress());
-        assertEquals(dstInet, ip.getDestinationAddress());
+        assertEquals(sourceAddress, ip.getSourceAddress());
+        assertEquals(destinationAddress, ip.getDestinationAddress());
         assertEquals(protocol, ip.getProtocol());
         assertEquals(timeToLive, ip.getTtl());
         assertEquals(dscp, ip.getDiffServ());
@@ -258,11 +248,12 @@ public final class Inet4Factory extends PacketFactory {
         Ipv4MatchBuilder i4mb = new Ipv4MatchBuilder();
 
         if (types.contains(FlowMatchType.IP_SRC)) {
-            i4mb.setIpv4Source(toIpv4Prefix(sourceAddress));
+            i4mb.setIpv4Source(sourceAddress.getIpPrefix().getIpv4Prefix());
             v4Count++;
         }
         if (types.contains(FlowMatchType.IP_DST)) {
-            i4mb.setIpv4Destination(toIpv4Prefix(destinationAddress));
+            i4mb.setIpv4Destination(destinationAddress.getIpPrefix().
+                                    getIpv4Prefix());
             v4Count++;
         }
         if (types.contains(FlowMatchType.IP_PROTO)) {
@@ -282,16 +273,6 @@ public final class Inet4Factory extends PacketFactory {
         }
 
         return ipCount + v4Count;
-    }
-
-    /**
-     * Convert an IPv4 address into an integer value.
-     *
-     * @param ip  An {@link InetAddress} instance.
-     * @return    An integer value.
-     */
-    private int toInteger(InetAddress ip) {
-        return NumberUtils.toInteger(ip.getAddress());
     }
 
     // Object

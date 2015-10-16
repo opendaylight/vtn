@@ -13,12 +13,11 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Set;
 
+import org.opendaylight.vtn.manager.packet.ICMP;
+import org.opendaylight.vtn.manager.packet.Packet;
 import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.it.util.match.FlowMatchType;
-
-import org.opendaylight.controller.sal.packet.ICMP;
-import org.opendaylight.controller.sal.packet.Packet;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.Icmpv4MatchBuilder;

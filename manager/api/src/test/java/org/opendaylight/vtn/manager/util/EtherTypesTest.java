@@ -39,4 +39,25 @@ public class EtherTypesTest extends TestBase {
         assertEquals((short)0x88a8, EtherTypes.QINQ.shortValue());
         assertEquals((short)0x88cc, EtherTypes.LLDP.shortValue());
     }
+
+    /**
+     * Test case for {@link EtherTypes#forValue(short)}.
+     */
+    @Test
+    public void testForValue() {
+        short[] badTypes = {
+            (short)0x0000, (short)0x0011, (short)0x07ff, (short)0x0805,
+            (short)0x7fff, (short)0x8000, (short)0x8101, (short)0x8888,
+            (short)0x8999, (short)0x9999, (short)0xabcd, (short)0xcdef,
+            (short)0xcef0, (short)0xf000, (short)0xfff0, (short)0xffff,
+        };
+
+        for (short type: badTypes) {
+            assertEquals(null, EtherTypes.forValue(type));
+        }
+
+        for (EtherTypes etype: EtherTypes.values()) {
+            assertEquals(etype, EtherTypes.forValue(etype.shortValue()));
+        }
+    }
 }

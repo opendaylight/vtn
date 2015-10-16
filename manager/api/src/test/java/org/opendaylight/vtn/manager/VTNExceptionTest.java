@@ -94,7 +94,7 @@ public class VTNExceptionTest extends TestBase {
 
     /**
      * Test case for
-     * {@link VTNException#VTNException(VtnErrorTag, String, Thowable)} and
+     * {@link VTNException#VTNException(VtnErrorTag, String, Throwable)} and
      * the followings.
      *
      * <ul>
@@ -155,7 +155,7 @@ public class VTNExceptionTest extends TestBase {
 
     /**
      * Test case for
-     * {@link VTNException#VTNException(String, Thowable)} and
+     * {@link VTNException#VTNException(String, Throwable)} and
      * the followings.
      *
      * <ul>

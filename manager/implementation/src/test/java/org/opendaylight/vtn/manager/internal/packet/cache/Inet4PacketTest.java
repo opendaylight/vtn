@@ -18,6 +18,8 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.packet.Ethernet;
+import org.opendaylight.vtn.manager.packet.IPv4;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
@@ -30,9 +32,6 @@ import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNInet4Match;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
-
-import org.opendaylight.controller.sal.packet.Ethernet;
-import org.opendaylight.controller.sal.packet.IPv4;
 
 /**
  * JUnit test for {@link Inet4Packet}.
@@ -185,8 +184,8 @@ public class Inet4PacketTest extends TestBase {
             assertEquals(true, ip.commit(pctx));
             IPv4 newPkt = ip.getPacket();
             assertNotSame(pkt, newPkt);
-            assertEquals(src.getAddress(), newPkt.getSourceAddress());
-            assertEquals(dst.getAddress(), newPkt.getDestinationAddress());
+            assertEquals(src, newPkt.getSourceAddress());
+            assertEquals(dst, newPkt.getDestinationAddress());
             assertEquals((byte)proto, newPkt.getProtocol());
             assertEquals((byte)dscp, newPkt.getDiffServ());
 
@@ -228,8 +227,8 @@ public class Inet4PacketTest extends TestBase {
             assertEquals(dscp0, ipv4.getDscp());
             assertSame(pkt, ipv4.getPacket());
 
-            assertEquals(src0.getAddress(), pkt.getSourceAddress());
-            assertEquals(dst0.getAddress(), pkt.getDestinationAddress());
+            assertEquals(src0, pkt.getSourceAddress());
+            assertEquals(dst0, pkt.getDestinationAddress());
             assertEquals((byte)proto, pkt.getProtocol());
             assertEquals((byte)dscp0, pkt.getDiffServ());
 

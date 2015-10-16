@@ -28,6 +28,20 @@ public final class NumberUtils {
     public static final int  NUM_OCTETS_INTEGER = Integer.SIZE / Byte.SIZE;
 
     /**
+     * The number of octets in a short integer value.
+     *
+     * @since  Beryllium
+     */
+    public static final int  NUM_OCTETS_SHORT = Short.SIZE / Byte.SIZE;
+
+    /**
+     * The number of octets in a byte value.
+     *
+     * @since  Beryllium
+     */
+    public static final int  NUM_OCTETS_BYTE = 1;
+
+    /**
      * A mask value which represents all bits in a byte value.
      */
     public static final int  MASK_BYTE = (1 << Byte.SIZE) - 1;
@@ -121,10 +135,7 @@ public final class NumberUtils {
      *    The length of {@code b} is not 4.
      */
     public static int toInteger(byte[] b) {
-        if (b.length != NUM_OCTETS_INTEGER) {
-            throw new IllegalArgumentException(
-                "Invalid byte array length: " + b.length);
-        }
+        checkLength(b, NUM_OCTETS_INTEGER);
 
         int index = 0;
         int value = (b[index++] & MASK_BYTE) << INT_SHIFT_OCTET1;
@@ -134,14 +145,45 @@ public final class NumberUtils {
     }
 
     /**
+     * Convert a 2 bytes array into a short integer number.
+     *
+     * @param b  A 2 bytes array.
+     * @return   A short integer number.
+     * @throws NullPointerException
+     *    {@code b} is {@code null}.
+     * @throws IllegalArgumentException
+     *    The length of {@code b} is not 2.
+     * @since  Beryllium
+     */
+    public static short toShort(byte[] b) {
+        checkLength(b, NUM_OCTETS_SHORT);
+
+        int value = (b[0] & MASK_BYTE) << Byte.SIZE;
+        return (short)(value | (b[1] & MASK_BYTE));
+    }
+
+    /**
      * Convert an integer value into an byte array.
      *
-     * @param i  An integer value.
+     * @param v  An integer value.
      * @return   A converted byte array.
      */
-    public static byte[] toBytes(int i) {
+    public static byte[] toBytes(int v) {
         byte[] b = new byte[NUM_OCTETS_INTEGER];
-        setInt(b, 0, i);
+        setInt(b, 0, v);
+        return b;
+    }
+
+    /**
+     * Convert a short integer value into an byte array.
+     *
+     * @param v  A short integer value.
+     * @return   A converted byte array.
+     * @since  Beryllium
+     */
+    public static byte[] toBytes(short v) {
+        byte[] b = new byte[NUM_OCTETS_SHORT];
+        setShort(b, 0, v);
         return b;
     }
 
@@ -250,5 +292,22 @@ public final class NumberUtils {
      */
     public static boolean equalsDouble(double d1, double d2) {
         return (Double.doubleToLongBits(d1) == Double.doubleToLongBits(d2));
+    }
+
+    /**
+     * Check the length of the given byte array.
+     *
+     * @param b    The byte array to be tested.
+     * @param len  The expected length of the byte array.
+     * @throws NullPointerException
+     *    {@code b} is {@code null}.
+     * @throws IllegalArgumentException
+     *    The length of {@code b} is invalid.
+     */
+    private static void checkLength(byte[] b, int len) {
+        if (b.length != len) {
+            throw new IllegalArgumentException(
+                "Invalid byte array length: " + b.length);
+        }
     }
 }

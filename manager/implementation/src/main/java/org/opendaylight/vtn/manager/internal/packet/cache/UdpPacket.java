@@ -9,14 +9,12 @@
 package org.opendaylight.vtn.manager.internal.packet.cache;
 
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.packet.UDP;
 
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNPortRange;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNUdpMatch;
 import org.opendaylight.vtn.manager.internal.util.packet.UdpHeader;
-
-import org.opendaylight.controller.sal.packet.UDP;
 
 /**
  * {@code UdpPacket} class implements a cache for a {@link UDP} instance.
@@ -96,14 +94,12 @@ public final class UdpPacket extends PortProtoPacket<UDP>
      * @param doCopy {@code true} is passed if the packet configured in this
      *               instance needs to be copied.
      * @return  A {@link UDP} instance.
-     * @throws VTNException
-     *    Failed to copy the packet.
      */
     @Override
-    protected UDP getPacketForWrite(boolean doCopy) throws VTNException {
+    protected UDP getPacketForWrite(boolean doCopy) {
         UDP pkt;
         if (doCopy) {
-            pkt = MiscUtils.copy(packet, new UDP());
+            pkt = packet.clone();
             packet = pkt;
         } else {
             pkt = packet;

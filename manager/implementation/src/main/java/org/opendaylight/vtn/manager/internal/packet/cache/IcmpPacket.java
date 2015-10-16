@@ -12,18 +12,16 @@ import java.util.Set;
 
 import org.opendaylight.vtn.manager.VTNException;
 
+import org.opendaylight.vtn.manager.packet.ICMP;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetIcmpCodeAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetIcmpTypeAction;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNIcmpMatch;
 import org.opendaylight.vtn.manager.internal.util.packet.IcmpHeader;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-
-import org.opendaylight.controller.sal.packet.ICMP;
 
 /**
  * {@code IcmpPacket} class implements a cache for an {@link ICMP} instance.
@@ -208,13 +206,11 @@ public final class IcmpPacket implements L4Packet, IcmpHeader {
      * Return an {@link ICMP} instance to set modified values.
      *
      * @return  An {@link ICMP} instance.
-     * @throws VTNException
-     *    Failed to copy the packet.
      */
-    private ICMP getPacketForWrite() throws VTNException {
+    private ICMP getPacketForWrite() {
         if (cloned) {
             // Create a copy of the original packet.
-            packet = MiscUtils.copy(packet, new ICMP());
+            packet = packet.clone();
             cloned = false;
         }
 

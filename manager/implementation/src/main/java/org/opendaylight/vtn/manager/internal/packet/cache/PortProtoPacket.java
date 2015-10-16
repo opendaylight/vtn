@@ -8,9 +8,14 @@
 
 package org.opendaylight.vtn.manager.internal.packet.cache;
 
+import static org.opendaylight.vtn.manager.packet.IPv4.CKSUM_BYTES;
+import static org.opendaylight.vtn.manager.util.NumberUtils.MASK_BYTE;
+import static org.opendaylight.vtn.manager.util.NumberUtils.MASK_SHORT;
+
 import java.util.Set;
 
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.packet.Packet;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
@@ -21,8 +26,6 @@ import org.opendaylight.vtn.manager.internal.util.flow.match.VTNLayer4PortMatch;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNPortRange;
 import org.opendaylight.vtn.manager.internal.util.packet.Layer4PortHeader;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-
-import org.opendaylight.controller.sal.packet.Packet;
 
 /**
  * {@code PortProtoPacket} class implements a cache for layer 4 protocol
@@ -41,11 +44,6 @@ public abstract class PortProtoPacket<T extends Packet>
      * Computed checksum that indicates the packet verification succeeded.
      */
     private static final int  CKSUM_OK = 0xffff;
-
-    /**
-     * The number of octets in TCP/UDP checksum.
-     */
-    private static final int  CKSUM_BYTES = Short.SIZE / Byte.SIZE;
 
     /**
      * A mask value used to clear LSB.
@@ -199,25 +197,25 @@ public abstract class PortProtoPacket<T extends Packet>
         byte[] header = ipv4.getHeaderForChecksum(proto, (short)data.length);
         int sum = 0;
         for (int i = 0; i < header.length; i += CKSUM_BYTES) {
-            int v = ((header[i] & NumberUtils.MASK_BYTE) << Byte.SIZE) |
-                (header[i + 1] & NumberUtils.MASK_BYTE);
+            int v = ((header[i] & MASK_BYTE) << Byte.SIZE) |
+                (header[i + 1] & MASK_BYTE);
             sum += v;
         }
 
         int rsize = (data.length & MASK_CLEAR_LSB);
         for (int i = 0; i < rsize; i += CKSUM_BYTES) {
-            int v = ((data[i] & NumberUtils.MASK_BYTE) << Byte.SIZE) |
-                (data[i + 1] & NumberUtils.MASK_BYTE);
+            int v = ((data[i] & MASK_BYTE) << Byte.SIZE) |
+                (data[i + 1] & MASK_BYTE);
             sum += v;
         }
         if (rsize < data.length) {
             // Zero padding is needed.
-            int v = (data[rsize] & NumberUtils.MASK_BYTE) << Byte.SIZE;
+            int v = (data[rsize] & MASK_BYTE) << Byte.SIZE;
             sum += v;
         }
 
         int carry = (sum >>> Short.SIZE);
-        return (sum & NumberUtils.MASK_SHORT) + carry;
+        return (sum & MASK_SHORT) + carry;
     }
 
     /**
@@ -287,10 +285,8 @@ public abstract class PortProtoPacket<T extends Packet>
      * Return a {@link Packet} instance to set modified values.
      *
      * @return  A {@link Packet} instance.
-     * @throws VTNException
-     *    Failed to copy the packet.
      */
-    protected final T getPacketForWrite() throws VTNException {
+    protected final T getPacketForWrite() {
         T pkt = getPacketForWrite(cloned);
         cloned = false;
         return pkt;
@@ -333,10 +329,8 @@ public abstract class PortProtoPacket<T extends Packet>
      * @param doCopy {@code true} is passed if the packet configured in this
      *               instance needs to be copied.
      * @return  A {@link Packet} instance.
-     * @throws VTNException
-     *    Failed to copy the packet.
      */
-    protected abstract T getPacketForWrite(boolean doCopy) throws VTNException;
+    protected abstract T getPacketForWrite(boolean doCopy);
 
     /**
      * Return the name of the protocol.

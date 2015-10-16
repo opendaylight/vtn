@@ -23,6 +23,14 @@ import org.slf4j.LoggerFactory;
 import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.packet.ARP;
+import org.opendaylight.vtn.manager.packet.Ethernet;
+import org.opendaylight.vtn.manager.packet.ICMP;
+import org.opendaylight.vtn.manager.packet.IEEE8021Q;
+import org.opendaylight.vtn.manager.packet.IPv4;
+import org.opendaylight.vtn.manager.packet.Packet;
+import org.opendaylight.vtn.manager.packet.TCP;
+import org.opendaylight.vtn.manager.packet.UDP;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.EtherTypes;
 import org.opendaylight.vtn.manager.util.Ip4Network;
@@ -57,15 +65,6 @@ import org.opendaylight.vtn.manager.internal.util.packet.Layer4Header;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.packet.ARP;
-import org.opendaylight.controller.sal.packet.Ethernet;
-import org.opendaylight.controller.sal.packet.ICMP;
-import org.opendaylight.controller.sal.packet.IEEE8021Q;
-import org.opendaylight.controller.sal.packet.IPv4;
-import org.opendaylight.controller.sal.packet.Packet;
-import org.opendaylight.controller.sal.packet.RawPacket;
-import org.opendaylight.controller.sal.packet.TCP;
-import org.opendaylight.controller.sal.packet.UDP;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
 
@@ -89,9 +88,9 @@ public class PacketContext implements Cloneable, FlowMatchContext {
     private static final int  ETHER_TYPE_MASK = 0xffff;
 
     /**
-     * A received raw packet.
+     * A {@link SalPort} instance which specifies the ingress switch port.
      */
-    private final RawPacket  rawPacket;
+    private final SalPort  ingressPort;
 
     /**
      * PACKET_IN event.
@@ -218,7 +217,7 @@ public class PacketContext implements Cloneable, FlowMatchContext {
      * @param ev  A {@link PacketInEvent} instance.
      */
     PacketContext(PacketInEvent ev) {
-        rawPacket = ev.getPayload();
+        ingressPort = ev.getIngressPort();
         etherFrame = new EtherPacket(ev.getEthernet());
         txContext = ev.getTxContext();
         packetIn = ev;
@@ -237,7 +236,7 @@ public class PacketContext implements Cloneable, FlowMatchContext {
      * @param ctx    A MD-SAL datastore transaction only for read.
      */
     PacketContext(Ethernet ether, SalPort out, TxContext ctx) {
-        rawPacket = null;
+        ingressPort = null;
         etherFrame = new EtherPacket(ether);
         txContext = ctx;
         egressPort = out;
@@ -335,11 +334,11 @@ public class PacketContext implements Cloneable, FlowMatchContext {
      *          the packet was received from.
      */
     public PortVlan getIncomingNetwork() {
-        if (rawPacket == null) {
+        if (ingressPort == null) {
             return null;
         }
 
-        NodeConnector nc = rawPacket.getIncomingNodeConnector();
+        NodeConnector nc = ingressPort.getAdNodeConnector();
         return new PortVlan(nc, (short)etherFrame.getOriginalVlan());
     }
 
