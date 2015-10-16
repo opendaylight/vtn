@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -16,7 +16,6 @@ import org.opendaylight.controller.sal.binding.api.BindingAwareBroker.ProviderCo
 import org.opendaylight.controller.sal.binding.api.BindingAwareProvider;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.Topology;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.TopologyBuilder;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.TopologyKey;
@@ -68,7 +67,7 @@ public class NeutronProvider implements BindingAwareProvider, AutoCloseable {
                 .create(NetworkTopology.class)
                 .child(Topology.class, new TopologyKey(new TopologyId(new Uri("ovsdb:1"))));
         ReadWriteTransaction transaction = db.newReadWriteTransaction();
-        initializeTopology(transaction,type);
+        initializeTopology(transaction, type);
         CheckedFuture<Optional<Topology>, ReadFailedException> ovsdbTp = transaction.read(type, path);
         try {
             if (!ovsdbTp.get().isPresent()) {
@@ -91,14 +90,14 @@ public class NeutronProvider implements BindingAwareProvider, AutoCloseable {
      */
     private void initializeTopology(ReadWriteTransaction transaction, LogicalDatastoreType type) {
         InstanceIdentifier<NetworkTopology> path = InstanceIdentifier.create(NetworkTopology.class);
-        CheckedFuture<Optional<NetworkTopology>, ReadFailedException> topology = transaction.read(type,path);
+        CheckedFuture<Optional<NetworkTopology>, ReadFailedException> topology = transaction.read(type, path);
         try {
             if (!topology.get().isPresent()) {
                 NetworkTopologyBuilder ntb = new NetworkTopologyBuilder();
-                transaction.put(type,path,ntb.build());
+                transaction.put(type, path, ntb.build());
             }
         } catch (Exception e) {
-            LOG.error("Error initializing ovsdb topology {}",e);
+            LOG.error("Error initializing ovsdb topology {}", e);
         }
     }
 }
