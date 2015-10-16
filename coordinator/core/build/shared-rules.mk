@@ -59,7 +59,8 @@ CMD_INSTALL	= $(call CMD_DEST_INSTALL,$(1),$(DESTDIR))
 # Update IPC struct headers if needed.
 EXTRA_INSTALL	+= ipc-header-install
 
-all:	$(SHLIB_TARGET) $(EXTRA_TARGET) $(SYS_EXTRA_TARGET)
+#all:	$(SHLIB_TARGET) $(EXTRA_TARGET) $(SYS_EXTRA_TARGET)
+all:   $(GENERATE_CODE) $(SHLIB_TARGET) $(EXTRA_TARGET) $(SYS_EXTRA_TARGET)
 
 ifndef	NO_SO_VERSION
 

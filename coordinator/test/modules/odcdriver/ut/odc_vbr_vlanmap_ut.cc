@@ -17,6 +17,7 @@ TEST(odcdriver,  test_fetch_conf_vtn_name_empty) {
   val_vbr_t val_vbr;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   memset(&key_vbr, 0 , sizeof(key_vbr_t));
@@ -25,7 +26,7 @@ TEST(odcdriver,  test_fetch_conf_vtn_name_empty) {
 
   inet_aton(ip.c_str(),  &val_ctr.ip_address);
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::string vbrname =  "vbr1";
   strncpy(reinterpret_cast<char*>(key_vbr.vbridge_name),
           vbrname.c_str(),  sizeof(key_vbr.vbridge_name)-1);
@@ -58,6 +59,7 @@ TEST(odcdriver,  test_fetch_conf_vbr_name_empty) {
   val_vbr_t val_vbr;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   memset(&key_vbr, 0 , sizeof(key_vbr_t));
@@ -66,7 +68,7 @@ TEST(odcdriver,  test_fetch_conf_vbr_name_empty) {
 
   inet_aton(ip.c_str(),  &val_ctr.ip_address);
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::string vbrname =  "";
   strncpy(reinterpret_cast<char*>(key_vbr.vbridge_name),
           vbrname.c_str(),  sizeof(key_vbr.vbridge_name)-1);
@@ -99,6 +101,7 @@ TEST(odcdriver,  test_fetch_conf_null_response) {
   val_vbr_t val_vbr;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   memset(&key_vbr, 0 , sizeof(key_vbr_t));
@@ -106,7 +109,7 @@ TEST(odcdriver,  test_fetch_conf_null_response) {
   std::string NULL_RESPONSE = "172.16.0.0";
   inet_aton(NULL_RESPONSE.c_str(),  &val_ctr.ip_address);
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::string vbrname =  "vbr1";
   strncpy(reinterpret_cast<char*>(key_vbr.vbridge_name),
           vbrname.c_str(),  sizeof(key_vbr.vbridge_name)-1);
@@ -139,6 +142,7 @@ TEST(odcdriver,  test_fetch_conf_null_response_data) {
   val_vbr_t val_vbr;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   memset(&key_vbr, 0 , sizeof(key_vbr_t));
@@ -146,7 +150,7 @@ TEST(odcdriver,  test_fetch_conf_null_response_data) {
   std::string NULL_RESP_DATA = "172.16.0.19";
   inet_aton(NULL_RESP_DATA.c_str(),  &val_ctr.ip_address);
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::string vbrname =  "vbr1";
   strncpy(reinterpret_cast<char*>(key_vbr.vbridge_name),
           vbrname.c_str(),  sizeof(key_vbr.vbridge_name)-1);
@@ -180,6 +184,7 @@ TEST(odcdriver,  test_fetch_conf_not_found_response) {
   val_vbr_t val_vbr;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   memset(&key_vbr, 0 , sizeof(key_vbr_t));
@@ -188,7 +193,7 @@ TEST(odcdriver,  test_fetch_conf_not_found_response) {
 
   inet_aton(NOT_FOUND_404.c_str(),  &val_ctr.ip_address);
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::string vbrname =  "vbr1";
   strncpy(reinterpret_cast<char*>(key_vbr.vbridge_name),
           vbrname.c_str(),  sizeof(key_vbr.vbridge_name)-1);
@@ -220,6 +225,7 @@ TEST(odcdriver,  test_fetch_conf_service_unavilable_response) {
   val_vbr_t val_vbr;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   memset(&key_vbr, 0 , sizeof(key_vbr_t));
@@ -228,7 +234,7 @@ TEST(odcdriver,  test_fetch_conf_service_unavilable_response) {
 
   inet_aton(SERVICE_UNAVAILABLE_503.c_str(),  &val_ctr.ip_address);
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::string vbrname =  "vbr1";
   strncpy(reinterpret_cast<char*>(key_vbr.vbridge_name),
           vbrname.c_str(),  sizeof(key_vbr.vbridge_name)-1);
@@ -261,6 +267,7 @@ TEST(odcdriver,  test_fetch_conf_empty_response) {
   val_vbr_t val_vbr;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   memset(&key_vbr, 0 , sizeof(key_vbr_t));
@@ -268,7 +275,7 @@ TEST(odcdriver,  test_fetch_conf_empty_response) {
   std::string VLAN_MAP_EMPTY   = "172.16.0.14";
   inet_aton(VLAN_MAP_EMPTY.c_str(),  &val_ctr.ip_address);
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::string vbrname =  "vbr1";
   strncpy(reinterpret_cast<char*>(key_vbr.vbridge_name),
           vbrname.c_str(),  sizeof(key_vbr.vbridge_name)-1);
@@ -300,6 +307,7 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_incorrect_response) {
   val_vbr_t val_vbr;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   memset(&key_vbr, 0 , sizeof(key_vbr_t));
@@ -307,7 +315,7 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_incorrect_response) {
   std::string VLAN_MAP_INCORRECT_RESP               = "172.16.0.16";
   inet_aton(VLAN_MAP_INCORRECT_RESP.c_str(),  &val_ctr.ip_address);
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::string vbrname =  "vbr1";
   strncpy(reinterpret_cast<char*>(key_vbr.vbridge_name),
           vbrname.c_str(),  sizeof(key_vbr.vbridge_name)-1);
@@ -339,6 +347,7 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_incorrect_response_body) {
   val_vbr_t val_vbr;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   memset(&key_vbr, 0 , sizeof(key_vbr_t));
@@ -347,7 +356,7 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_incorrect_response_body) {
   inet_aton(VLAN_MAP_VLAN_INCORRECT_RESP.c_str(),  &val_ctr.ip_address);
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::string vbrname =  "vbr1";
   strncpy(reinterpret_cast<char*>(key_vbr.vbridge_name),
           vbrname.c_str(),  sizeof(key_vbr.vbridge_name)-1);
@@ -379,6 +388,7 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_resp) {
   val_vbr_t val_vbr;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   memset(&key_vbr, 0 , sizeof(key_vbr_t));
@@ -387,7 +397,7 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_resp) {
   inet_aton(VLAN_MAP_RESP.c_str(),  &val_ctr.ip_address);
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::string vbrname =  "vbr1";
   strncpy(reinterpret_cast<char*>(key_vbr.vbridge_name),
           vbrname.c_str(),  sizeof(key_vbr.vbridge_name)-1);
@@ -468,6 +478,7 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_resp_max_vlanid) {
   val_vbr_t val_vbr;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   memset(&key_vbr, 0 , sizeof(key_vbr_t));
@@ -476,7 +487,7 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_resp_max_vlanid) {
   inet_aton(VLAN_MAP_RESP.c_str(),  &val_ctr.ip_address);
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::string vbrname =  "vbr1";
   strncpy(reinterpret_cast<char*>(key_vbr.vbridge_name),
           vbrname.c_str(),  sizeof(key_vbr.vbridge_name)-1);
@@ -535,6 +546,7 @@ TEST(odcdriver,  test_fetch_conf_already_exist_vector) {
   val_vbr_t val_vbr;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   memset(&key_vbr, 0 , sizeof(key_vbr_t));
@@ -543,7 +555,7 @@ TEST(odcdriver,  test_fetch_conf_already_exist_vector) {
   inet_aton(VLAN_MAP_RESP.c_str(),  &val_ctr.ip_address);
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
 
   unc::odcdriver::OdcController *odc_ctr =
       reinterpret_cast<unc::odcdriver::OdcController *>(ctr);
@@ -587,6 +599,7 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_resp_max_vlan_id_any) {
   val_vbr_t val_vbr;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   memset(&key_vbr, 0 , sizeof(key_vbr_t));
@@ -596,7 +609,7 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_resp_max_vlan_id_any) {
   inet_aton(VLAN_MAP_RESP_ANY_0.c_str(),  &val_ctr.ip_address);
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::string vbrname =  "vbr1";
   strncpy(reinterpret_cast<char*>(key_vbr.vbridge_name),
           vbrname.c_str(),  sizeof(key_vbr.vbridge_name)-1);
@@ -656,6 +669,7 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_incorrect_vlan_parse) {
 
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -668,7 +682,7 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_incorrect_vlan_parse) {
   val_vlan_map.vm.vlan_id = 10;
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -708,6 +722,7 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_same_ANY) {
 
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -720,7 +735,7 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_same_ANY) {
   val_vlan_map.vm.vlan_id = 10;
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -760,6 +775,7 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_same_sw) {
 
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -772,7 +788,7 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_same_sw) {
   val_vlan_map.vm.vlan_id = 10;
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -812,6 +828,7 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_same_diff_vtn) {
 
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -824,7 +841,7 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_same_diff_vtn) {
   val_vlan_map.vm.vlan_id = 10;
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -866,6 +883,7 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_same_diff_vbr) {
 
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -878,7 +896,7 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_same_diff_vbr) {
   val_vlan_map.vm.vlan_id = 10;
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -920,6 +938,7 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_diff) {
 
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -932,7 +951,7 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_diff) {
   val_vlan_map.vm.vlan_id = 10;
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -973,6 +992,7 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_diff_sw_exist) {
 
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -985,7 +1005,7 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_diff_sw_exist) {
   val_vlan_map.vm.vlan_id = 10;
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1028,6 +1048,7 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_diff_any_exist) {
 
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1040,7 +1061,7 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_diff_any_exist) {
   val_vlan_map.vm.vlan_id = 10;
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1082,6 +1103,7 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_diff_vbr) {
 
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1094,7 +1116,7 @@ TEST(odcdriver,  test_validate_vlan_switch_requested_vlan_diff_vbr) {
   val_vlan_map.vm.vlan_id = 10;
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1136,6 +1158,7 @@ TEST(odcdriver,  test_validate_vlan_ANY_requested_vlan_wrong) {
 
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1148,7 +1171,7 @@ TEST(odcdriver,  test_validate_vlan_ANY_requested_vlan_wrong) {
   val_vlan_map.vm.vlan_id = 10;
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1188,6 +1211,7 @@ TEST(odcdriver,  test_validate_vlan_ANY_requested_vlan_same) {
 
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1200,7 +1224,7 @@ TEST(odcdriver,  test_validate_vlan_ANY_requested_vlan_same) {
   val_vlan_map.vm.vlan_id = 10;
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1240,6 +1264,7 @@ TEST(odcdriver,  test_validate_vlan_ANY_requested_vlan_same_sw) {
 
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1252,7 +1277,7 @@ TEST(odcdriver,  test_validate_vlan_ANY_requested_vlan_same_sw) {
   val_vlan_map.vm.vlan_id = 10;
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1292,6 +1317,7 @@ TEST(odcdriver,  test_validate_vlan_ANY_requested_vlan_same_ANY) {
 
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1304,7 +1330,7 @@ TEST(odcdriver,  test_validate_vlan_ANY_requested_vlan_same_ANY) {
   val_vlan_map.vm.vlan_id = 220;
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1347,6 +1373,7 @@ TEST(odcdriver,  test_validate_vlan_ANY_requested_vlan_diff_SW) {
 
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -1359,7 +1386,7 @@ TEST(odcdriver,  test_validate_vlan_ANY_requested_vlan_diff_SW) {
   val_vlan_map.vm.vlan_id = 220;
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1394,6 +1421,7 @@ TEST(odcdriver, test_create_command_null_resp) {
   pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
 
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&vlanmap_val, 0, sizeof(pfcdrv_val_vlan_map_t));
@@ -1417,7 +1445,7 @@ TEST(odcdriver, test_create_command_null_resp) {
           strlen(switch_id.c_str()));
   vlanmap_val.vm.vlan_id = 10;
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1439,6 +1467,7 @@ TEST(odcdriver_mod, test_create_command_invalidreq) {
   pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&vlanmap_val, 0, sizeof(pfcdrv_val_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
@@ -1461,7 +1490,7 @@ TEST(odcdriver_mod, test_create_command_invalidreq) {
           strlen(switch_id.c_str()));
   vlanmap_val.vm.vlan_id = 10;
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1482,6 +1511,7 @@ TEST(odcdriver, test_create_cmd_invalid_vbrname) {
   pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&vlanmap_val, 0, sizeof(pfcdrv_val_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
@@ -1505,7 +1535,7 @@ TEST(odcdriver, test_create_cmd_invalid_vbrname) {
           strlen(switch_id.c_str()));
   vlanmap_val.vm.vlan_id = 10;
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1525,6 +1555,7 @@ TEST(odcdriver, test_create_cmd_invalid_vtnname) {
   pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&vlanmap_val, 0, sizeof(pfcdrv_val_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
@@ -1547,7 +1578,7 @@ TEST(odcdriver, test_create_cmd_invalid_vtnname) {
           strlen(switch_id.c_str()));
   vlanmap_val.vm.vlan_id = 10;
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1567,6 +1598,7 @@ TEST(odcdriver, test_create_cmd_invalid_format) {
   pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&vlanmap_val, 0, sizeof(pfcdrv_val_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
@@ -1590,7 +1622,7 @@ TEST(odcdriver, test_create_cmd_invalid_format) {
           strlen(switch_id.c_str()));
   vlanmap_val.vm.vlan_id = 10;
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1611,6 +1643,7 @@ TEST(odcdriver, test_create_cmd) {
   pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&vlanmap_val, 0, sizeof(pfcdrv_val_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
@@ -1634,7 +1667,7 @@ TEST(odcdriver, test_create_cmd) {
           strlen(switch_id.c_str()));
   vlanmap_val.vm.vlan_id = 10;
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1654,6 +1687,7 @@ TEST(odcdriver, test_create_cmd_logicalport_in_diff_format) {
   pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&vlanmap_val, 0, sizeof(pfcdrv_val_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
@@ -1677,7 +1711,7 @@ TEST(odcdriver, test_create_cmd_logicalport_in_diff_format) {
           strlen(switch_id.c_str()));
   vlanmap_val.vm.vlan_id = 10;
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1697,6 +1731,7 @@ TEST(odcdriver, test_create_cmd_logicalport_in_diff_format_invalid) {
   pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&vlanmap_val, 0, sizeof(pfcdrv_val_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
@@ -1720,7 +1755,7 @@ TEST(odcdriver, test_create_cmd_logicalport_in_diff_format_invalid) {
           strlen(switch_id.c_str()));
   vlanmap_val.vm.vlan_id = 10;
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1740,6 +1775,7 @@ TEST(odcdriver, test_create_cmd_validatevlan_failure) {
   pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&vlanmap_val, 0, sizeof(pfcdrv_val_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
@@ -1762,7 +1798,7 @@ TEST(odcdriver, test_create_cmd_validatevlan_failure) {
           strlen(switch_id.c_str()));
   vlanmap_val.vm.vlan_id = 65535;
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1783,6 +1819,7 @@ TEST(odcdriver, test_update_cmd_vbrvlanmap) {
   pfcdrv_val_vlan_map_t vlanmap_val2;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&vlanmap_val1, 0, sizeof(pfcdrv_val_vlan_map_t));
   memset(&vlanmap_val2, 0, sizeof(pfcdrv_val_vlan_map_t));
@@ -1807,7 +1844,7 @@ TEST(odcdriver, test_update_cmd_vbrvlanmap) {
           strlen(switch_id.c_str()));
   vlanmap_val1.vm.vlan_id = 10;
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1827,6 +1864,7 @@ TEST(odcdriver, test_create_cmd_validate_fail) {
   pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&vlanmap_val, 0, sizeof(pfcdrv_val_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
@@ -1849,7 +1887,7 @@ TEST(odcdriver, test_create_cmd_validate_fail) {
           strlen(switch_id.c_str()));
   vlanmap_val.vm.vlan_id = 65535;
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1869,6 +1907,7 @@ TEST(odcdriver, test_create_cmd_validate_failure) {
   pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&vlanmap_val, 0, sizeof(pfcdrv_val_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
@@ -1893,7 +1932,7 @@ TEST(odcdriver, test_create_cmd_validate_failure) {
           strlen(switch_id.c_str()));
   vlanmap_val.vm.vlan_id = 65535;
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1913,6 +1952,7 @@ TEST(odcdriver, test_create_cmd_validate_logicalportid_fail) {
   pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&vlanmap_val, 0, sizeof(pfcdrv_val_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
@@ -1935,7 +1975,7 @@ TEST(odcdriver, test_create_cmd_validate_logicalportid_fail) {
           strlen(switch_id.c_str()));
   vlanmap_val.vm.vlan_id = 10;
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1955,6 +1995,7 @@ TEST(odcdriver, test_create_cmd_UNTAGGED) {
   pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&vlanmap_val, 0, sizeof(pfcdrv_val_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
@@ -1978,7 +2019,7 @@ TEST(odcdriver, test_create_cmd_UNTAGGED) {
           strlen(switch_id.c_str()));
   vlanmap_val.vm.vlan_id = 65535;
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -1998,6 +2039,7 @@ TEST(odcdriver, test_create_update_invalid) {
   pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&vlanmap_val, 0, sizeof(pfcdrv_val_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
@@ -2021,7 +2063,7 @@ TEST(odcdriver, test_create_update_invalid) {
           strlen(switch_id.c_str()));
   vlanmap_val.vm.vlan_id = 65535;
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -2042,6 +2084,7 @@ TEST(odcdriver, test_delete_existing_vlan_map_null_strid) {
   key_vlan_map_t vlanmap_key;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
@@ -2062,7 +2105,7 @@ TEST(odcdriver, test_delete_existing_vlan_map_null_strid) {
           switch_id.c_str(),
           strlen(switch_id.c_str()));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -2084,6 +2127,7 @@ TEST(odcdriver, test_delete_existing_vlan_map_url_empty) {
   key_vlan_map_t vlanmap_key;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
@@ -2103,7 +2147,7 @@ TEST(odcdriver, test_delete_existing_vlan_map_url_empty) {
           switch_id.c_str(),
           strlen(switch_id.c_str()));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -2124,6 +2168,7 @@ TEST(odcdriver, test_delete_existing_vlan_map_resp_null) {
   key_vlan_map_t vlanmap_key;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
@@ -2145,7 +2190,7 @@ TEST(odcdriver, test_delete_existing_vlan_map_resp_null) {
           switch_id.c_str(),
           strlen(switch_id.c_str()));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -2166,6 +2211,7 @@ TEST(odcdriver, test_delete_existing_vlan_map__success) {
   key_vlan_map_t vlanmap_key;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
@@ -2187,7 +2233,7 @@ TEST(odcdriver, test_delete_existing_vlan_map__success) {
           switch_id.c_str(),
           strlen(switch_id.c_str()));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -2210,6 +2256,7 @@ TEST(odcdriver, test_delete_existing_vlan_map__not_202) {
   key_vlan_map_t vlanmap_key;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
@@ -2231,7 +2278,7 @@ TEST(odcdriver, test_delete_existing_vlan_map__not_202) {
           switch_id.c_str(),
           strlen(switch_id.c_str()));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -2253,6 +2300,7 @@ TEST(odcdriver, test_delete_existing_vlan_map_201_resp) {
   key_vlan_map_t vlanmap_key;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
 
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
 
@@ -2276,7 +2324,7 @@ TEST(odcdriver, test_delete_existing_vlan_map_201_resp) {
           switch_id.c_str(),
           strlen(switch_id.c_str()));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -2300,6 +2348,7 @@ TEST(odcdriver, generate_vlanmap_id_invalid) {
   key_vlan_map_t vlanmap_key;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
@@ -2321,7 +2370,7 @@ TEST(odcdriver, generate_vlanmap_id_invalid) {
           switch_id.c_str(),
           strlen(switch_id.c_str()));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -2344,6 +2393,7 @@ TEST(odcdriver, generate_vlanmap_id_invalid_UNTAGGED_VLANID) {
   key_vlan_map_t vlanmap_key;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
@@ -2365,7 +2415,7 @@ TEST(odcdriver, generate_vlanmap_id_invalid_UNTAGGED_VLANID) {
           switch_id.c_str(),
           strlen(switch_id.c_str()));
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   if (ctr == NULL) {
     return;
   }
@@ -2496,6 +2546,7 @@ TEST(odcdriver,  test_delete_cmd_invalid_logicalport_id_1) {
   pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&vlanmap_key, 0, sizeof(key_vlan_map_t));
   memset(&vlanmap_val, 0, sizeof(pfcdrv_val_vlan_map_t));
   memset(&key_ctr, 0, sizeof(key_ctr_t));
@@ -2512,7 +2563,7 @@ TEST(odcdriver,  test_delete_cmd_invalid_logicalport_id_1) {
           logical_id.c_str(),  sizeof(vlanmap_key.logical_port_id)-1);
   vlanmap_key.logical_port_id_valid = 1;
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   unc::restjson::ConfFileValues_t conf_file;
   conf_file.odc_port = 8080;
   conf_file.user_name = "admin";
@@ -2533,6 +2584,7 @@ TEST(odcdriver,  test_delete_cmd_invalid_logicalport_id_2) {
   pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   std::string ip_add  = "172.16.0.0";
@@ -2554,7 +2606,7 @@ TEST(odcdriver,  test_delete_cmd_invalid_logicalport_id_2) {
   std::vector<std::string> vtn_vbr_vlan_vector;
   vtn_vbr_vlan_vector.push_back("vtn1.vbr1.ANY.20");
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   unc::odcdriver::OdcController *odc_ctr =
       reinterpret_cast<unc::odcdriver::OdcController *>(ctr);
   odc_ctr->vlan_vector = vtn_vbr_vlan_vector;
@@ -2577,6 +2629,7 @@ TEST(odcdriver,  test_delete_cmd_httpresponse_error) {
   pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   std::string ip_add  = "172.16.0.0";
@@ -2598,7 +2651,7 @@ TEST(odcdriver,  test_delete_cmd_httpresponse_error) {
   std::vector<std::string> vtn_vbr_vlan_vector;
   vtn_vbr_vlan_vector.push_back("vtn1.vbr1.OF-00:00:00:00:00:00:00:02.20");
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   unc::odcdriver::OdcController *odc_ctr =
       reinterpret_cast<unc::odcdriver::OdcController *>(ctr);
   odc_ctr->vlan_vector = vtn_vbr_vlan_vector;
@@ -2621,6 +2674,7 @@ TEST(odcdriver,  test_delete_cmd_invalid_http_responce) {
   pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   std::string ip_add  = "172.0.0.0";
@@ -2642,7 +2696,7 @@ TEST(odcdriver,  test_delete_cmd_invalid_http_responce) {
   std::vector<std::string> vtn_vbr_vlan_vector;
   vtn_vbr_vlan_vector.push_back("vtn1.vbr1.OF-00:00:00:00:00:00:00:02.20");
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   unc::odcdriver::OdcController *odc_ctr =
       reinterpret_cast<unc::odcdriver::OdcController *>(ctr);
   odc_ctr->vlan_vector = vtn_vbr_vlan_vector;
@@ -2665,6 +2719,7 @@ TEST(odcdriver,  test_delete_cmd_vtn_name_empty) {
   pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   std::string ip_add  = "172.0.0.0";
@@ -2683,7 +2738,7 @@ TEST(odcdriver,  test_delete_cmd_vtn_name_empty) {
   std::vector<std::string> vtn_vbr_vlan_vector;
   vtn_vbr_vlan_vector.push_back("vtn1.vbr1.OF-00:00:00:00:00:00:00:02.20");
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   unc::odcdriver::OdcController *odc_ctr =
       reinterpret_cast<unc::odcdriver::OdcController *>(ctr);
   odc_ctr->vlan_vector = vtn_vbr_vlan_vector;
@@ -2706,6 +2761,7 @@ TEST(odcdriver,  test_delete_cmd_valid) {
   pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   std::string ip_add  = "172.16.0.14";
@@ -2727,7 +2783,7 @@ TEST(odcdriver,  test_delete_cmd_valid) {
   std::vector<std::string> vtn_vbr_vlan_vector;
   vtn_vbr_vlan_vector.push_back("vtn1.vbr1.SW-openflow:2.20");
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   unc::odcdriver::OdcController *odc_ctr =
       reinterpret_cast<unc::odcdriver::OdcController *>(ctr);
   odc_ctr->vlan_vector = vtn_vbr_vlan_vector;
