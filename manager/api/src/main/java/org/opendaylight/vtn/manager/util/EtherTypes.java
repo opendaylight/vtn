@@ -8,8 +8,14 @@
 
 package org.opendaylight.vtn.manager.util;
 
+import java.util.Map;
+
+import com.google.common.collect.ImmutableMap;
+
 /**
  * {@code EtherTypes} contains the common Ethernet types.
+ *
+ * @since  Beryllium
  */
 public enum EtherTypes {
     /**
@@ -38,9 +44,40 @@ public enum EtherTypes {
     LLDP(0x88cc);
 
     /**
+     * A map which keeps pairs of Ethernet types and {@link EtherTypes}
+     * instances.
+     */
+    private static final Map<Short, EtherTypes>  TYPE_MAP;
+
+    /**
      * The Ethernet type value.
      */
-    private final int  value;
+    private final short  value;
+
+    /**
+     * Initialize static fields.
+     */
+    static {
+        ImmutableMap.Builder<Short, EtherTypes> builder =
+            ImmutableMap.<Short, EtherTypes>builder();
+        for (EtherTypes type: EtherTypes.values()) {
+            builder.put(type.value, type);
+        }
+
+        TYPE_MAP = builder.build();
+    }
+
+    /**
+     * Convert the given Ethernet type vlaue into a {@link EtherTypes}
+     * instance.
+     *
+     * @param value  An Ethernet type value.
+     * @return  An {@link EtherTypes} instance if found.
+     *          {@code null} if not found.
+     */
+    public static EtherTypes forValue(short value) {
+        return TYPE_MAP.get(value);
+    }
 
     /**
      * Construct a new instance.
@@ -48,7 +85,7 @@ public enum EtherTypes {
      * @param v  The Ethernet type value.
      */
     private EtherTypes(int v) {
-        value = v;
+        value = (short)v;
     }
 
     /**
@@ -57,7 +94,7 @@ public enum EtherTypes {
      * @return  An integer that represents the Ethernet type value.
      */
     public int intValue() {
-        return value;
+        return (value & NumberUtils.MASK_SHORT);
     }
 
     /**
@@ -66,6 +103,6 @@ public enum EtherTypes {
      * @return  A short integer that represents the Ethernet type value.
      */
     public short shortValue() {
-        return (short)value;
+        return value;
     }
 }

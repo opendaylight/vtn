@@ -59,8 +59,14 @@ import org.opendaylight.vtn.manager.flow.action.FlowAction;
 import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 import org.opendaylight.vtn.manager.flow.filter.PassFilter;
+import org.opendaylight.vtn.manager.packet.ARP;
+import org.opendaylight.vtn.manager.packet.Ethernet;
+import org.opendaylight.vtn.manager.packet.IEEE8021Q;
+import org.opendaylight.vtn.manager.packet.IPv4;
+import org.opendaylight.vtn.manager.packet.Packet;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.EtherTypes;
+import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
@@ -79,12 +85,6 @@ import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.match.MatchType;
-import org.opendaylight.controller.sal.packet.ARP;
-import org.opendaylight.controller.sal.packet.Ethernet;
-import org.opendaylight.controller.sal.packet.IEEE8021Q;
-import org.opendaylight.controller.sal.packet.IPv4;
-import org.opendaylight.controller.sal.packet.Packet;
-import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.core.UpdateType;
@@ -1120,6 +1120,21 @@ public abstract class TestBase extends Assert {
      */
     protected static IPv4 createIPv4(InetAddress src, InetAddress dst,
                                      short proto, byte dscp) {
+        return createIPv4(new Ip4Network(src), new Ip4Network(dst),
+                          proto, dscp);
+    }
+
+    /**
+     * Create an {@link IPv4} instance.
+     *
+     * @param src    Source IP address.
+     * @param dst    Destination IP address.
+     * @param proto  IP protocol number.
+     * @param dscp   DSCP field value.
+     * @return  An {@link IPv4} instance.
+     */
+    protected static IPv4 createIPv4(Ip4Network src, Ip4Network dst,
+                                     short proto, byte dscp) {
         IPv4 pkt = new IPv4();
         return pkt.setSourceAddress(src).setDestinationAddress(dst).
             setProtocol((byte)proto).setDiffServ(dscp).
@@ -1195,24 +1210,6 @@ public abstract class TestBase extends Assert {
         return createIPv4(src, dst, proto, (byte)0, payload);
     }
 
-    /**
-     * create a {@link RawPacket} object.
-     *
-     * @param eth   A {@link Ethernet} object.
-     * @param nc    A incoming node connector.
-     * @return A {@link RawPacket} object.
-     */
-    protected RawPacket createRawPacket(Ethernet eth, NodeConnector nc) {
-        RawPacket raw = null;
-        try {
-            raw = new RawPacket(eth.serialize());
-        } catch (Exception e) {
-            unexpected(e);
-        }
-        raw.setIncomingNodeConnector(copy(nc));
-
-        return raw;
-    }
 
     /**
      * create a {@link Ethernet} object of IPv4 Packet.
@@ -1237,8 +1234,8 @@ public abstract class TestBase extends Assert {
             setFragmentOffset((short)0).
             setTtl((byte)64);
 
-        ip.setDestinationAddress(createInetAddress(target));
-        ip.setSourceAddress(createInetAddress(sender));
+        ip.setDestinationAddress(new Ip4Network(target));
+        ip.setSourceAddress(new Ip4Network(sender));
 
         Ethernet eth = new Ethernet();
         eth.setSourceMACAddress(src).setDestinationMACAddress(dst);
@@ -1248,7 +1245,7 @@ public abstract class TestBase extends Assert {
 
             IEEE8021Q vlantag = new IEEE8021Q();
             vlantag.setCfi((byte)0x0).setPcp((byte)0x0).setVid((short)vlan).
-                setEtherType(EtherTypes.IPV4.shortValue()).setParent(eth);
+                setEtherType(EtherTypes.IPV4.shortValue());
             eth.setPayload(vlantag);
 
             vlantag.setPayload(ip);
@@ -1288,8 +1285,8 @@ public abstract class TestBase extends Assert {
             eth.setEtherType(EtherTypes.VLAN.shortValue());
 
             IEEE8021Q vlantag = new IEEE8021Q();
-            vlantag.setCfi((byte)0x0).setPcp((byte)0x0).setVid(vlan)
-                    .setEtherType(EtherTypes.ARP.shortValue()).setParent(eth);
+            vlantag.setCfi((byte)0x0).setPcp((byte)0x0).setVid(vlan).
+                setEtherType(EtherTypes.ARP.shortValue());
             eth.setPayload(vlantag);
 
             vlantag.setPayload(arp);
@@ -1333,42 +1330,6 @@ public abstract class TestBase extends Assert {
     protected PacketContext createIPv4PacketContext(byte[] src, byte[] dst,
             byte[] sender, byte[] target, short vlan, NodeConnector nc) {
         return createUnicastPacketContext(
-                createIPv4Packet(src, dst, sender, target, vlan), nc);
-    }
-
-    /**
-     * create a {@link RawPacket} object of ARP Request.
-     *
-     * @param src       A source MAC address
-     * @param dst       A destination MAC address
-     * @param sender    A sender address
-     * @param target    A target address
-     * @param vlan      specify val ID. if vlan < 0, vlan tag is not added.
-     * @param nc        A node connector
-     * @param arptype   ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
-     * @return  A {@link PacketContext} object.
-     */
-    protected RawPacket createARPRawPacket(byte[] src, byte[] dst,
-            byte[] sender, byte[] target, short vlan, NodeConnector nc,
-            short arptype) {
-        return createRawPacket(
-                createARPPacket(src, dst, sender, target, vlan, arptype), nc);
-    }
-
-    /**
-     * create a {@link RawPacket} object of IPv4 packet.
-     *
-     * @param src       A source MAC address
-     * @param dst       A destination MAC address
-     * @param sender    A sender address
-     * @param target    A target address
-     * @param vlan      specify vlan ID. if vlan < 0, vlan tag is not added.
-     * @param nc        A node connector
-     * @return  A {@link PacketContext} object.
-     */
-    protected RawPacket createIPv4RawPacket(byte[] src, byte[] dst,
-            byte[] sender, byte[] target, short vlan, NodeConnector nc) {
-        return createRawPacket(
                 createIPv4Packet(src, dst, sender, target, vlan), nc);
     }
 

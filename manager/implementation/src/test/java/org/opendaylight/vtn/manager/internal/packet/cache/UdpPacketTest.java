@@ -19,6 +19,11 @@ import java.util.Set;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.packet.Ethernet;
+import org.opendaylight.vtn.manager.packet.IPv4;
+import org.opendaylight.vtn.manager.packet.Packet;
+import org.opendaylight.vtn.manager.packet.PacketException;
+import org.opendaylight.vtn.manager.packet.UDP;
 import org.opendaylight.vtn.manager.util.InetProtocols;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 
@@ -31,11 +36,6 @@ import org.opendaylight.vtn.manager.internal.util.flow.match.VTNPortRange;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNUdpMatch;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
-
-import org.opendaylight.controller.sal.packet.Ethernet;
-import org.opendaylight.controller.sal.packet.IPv4;
-import org.opendaylight.controller.sal.packet.PacketException;
-import org.opendaylight.controller.sal.packet.UDP;
 
 /**
  * JUnit test for {@link UdpPacket}.
@@ -260,11 +260,16 @@ public class UdpPacketTest extends TestBase {
      */
     @Test
     public void testUpdateChecksum() throws Exception {
+        // Create a broken UDP packet.
+        UDP pkt = new UDP();
+        Map<String, byte[]> header = getFieldValue(
+            pkt, Packet.class, Map.class, "hdrFieldsMap");
+        header.put("Length", new byte[]{0});
+        pkt.setChecksum((short)1);
+
         // Ensure that an exception is wrapped by a VTNException.
         IPv4 ipv4 = new IPv4();
         Inet4Packet inet4 = new Inet4Packet(ipv4);
-        UDP pkt = new UDP();
-        pkt.setHeaderField("Checksum", new byte[]{1});
         UdpPacket udp = new UdpPacket(pkt);
         try {
             udp.updateChecksum(inet4);

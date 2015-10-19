@@ -24,6 +24,7 @@ import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.packet.Ethernet;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
@@ -49,7 +50,6 @@ import org.opendaylight.vtn.manager.internal.util.flow.VTNFlowBuilder;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
-import org.opendaylight.controller.sal.packet.Ethernet;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;

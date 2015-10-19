@@ -8,16 +8,15 @@
 
 package org.opendaylight.vtn.manager.internal.packet.cache;
 
-import java.net.InetAddress;
 import java.util.Set;
 
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.packet.IPv4;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.IpNetwork;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetDscpAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetDstAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetSrcAction;
@@ -25,8 +24,6 @@ import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNInet4Match;
 import org.opendaylight.vtn.manager.internal.util.packet.InetHeader;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-
-import org.opendaylight.controller.sal.packet.IPv4;
 
 /**
  * {@code Inet4Packet} class implements a cache for an {@link IPv4} instance.
@@ -196,11 +193,10 @@ public final class Inet4Packet implements CachedPacket, InetHeader {
          */
         private void fill(IPv4 ipv4) {
             if (sourceAddress == null) {
-                sourceAddress = new Ip4Network(ipv4.getSourceAddress());
+                sourceAddress = ipv4.getSourceAddress();
             }
             if (destinationAddress == null) {
-                destinationAddress =
-                    new Ip4Network(ipv4.getDestinationAddress());
+                destinationAddress = ipv4.getDestinationAddress();
             }
             if (dscp == DSCP_NONE) {
                 dscp = ipv4.getDiffServ();
@@ -337,13 +333,11 @@ public final class Inet4Packet implements CachedPacket, InetHeader {
      * Return an {@link IPv4} instance to set modified values.
      *
      * @return  An {@link IPv4} instance.
-     * @throws VTNException
-     *    Failed to copy the packet.
      */
-    private IPv4 getPacketForWrite() throws VTNException {
+    private IPv4 getPacketForWrite() {
         if (cloned) {
             // Create a copy of the original packet.
-            packet = MiscUtils.copy(packet, new IPv4());
+            packet = packet.clone();
             cloned = false;
         }
 
@@ -383,9 +377,8 @@ public final class Inet4Packet implements CachedPacket, InetHeader {
             Ip4Network newIp = modifiedValues.getSourceAddress();
             if (oldIp.getAddress() != newIp.getAddress()) {
                 // Source address was modified.
-                InetAddress iaddr = newIp.getInetAddress();
                 ipv4 = getPacketForWrite();
-                ipv4.setSourceAddress(iaddr);
+                ipv4.setSourceAddress(newIp);
                 mod = true;
             } else if (pctx.hasMatchField(FlowMatchType.IP_SRC)) {
                 // Source IP address in the original packet is unchanged and
@@ -398,11 +391,10 @@ public final class Inet4Packet implements CachedPacket, InetHeader {
             newIp = modifiedValues.getDestinationAddress();
             if (oldIp.getAddress() != newIp.getAddress()) {
                 // Destination address was modified.
-                InetAddress iaddr = newIp.getInetAddress();
                 if (ipv4 == null) {
                     ipv4 = getPacketForWrite();
                 }
-                ipv4.setDestinationAddress(iaddr);
+                ipv4.setDestinationAddress(newIp);
                 mod = true;
             } else if (pctx.hasMatchField(FlowMatchType.IP_DST)) {
                 // Destination IP address in the original packet is unchanged
@@ -463,7 +455,7 @@ public final class Inet4Packet implements CachedPacket, InetHeader {
         Values v = getValues();
         Ip4Network ipn = v.getSourceAddress();
         if (ipn == null) {
-            ipn = new Ip4Network(packet.getSourceAddress());
+            ipn = packet.getSourceAddress();
             v.setSourceAddress(ipn);
         }
 
@@ -496,7 +488,7 @@ public final class Inet4Packet implements CachedPacket, InetHeader {
         Values v = getValues();
         Ip4Network ipn = v.getDestinationAddress();
         if (ipn == null) {
-            ipn = new Ip4Network(packet.getDestinationAddress());
+            ipn = packet.getDestinationAddress();
             v.setDestinationAddress(ipn);
         }
 

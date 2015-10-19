@@ -9,14 +9,13 @@
 package org.opendaylight.vtn.manager.internal.packet;
 
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.packet.Ethernet;
+import org.opendaylight.vtn.manager.packet.PacketException;
 
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.tx.TxEvent;
 
 import org.opendaylight.controller.sal.core.ConstructionException;
-import org.opendaylight.controller.sal.packet.Ethernet;
-import org.opendaylight.controller.sal.packet.PacketException;
-import org.opendaylight.controller.sal.packet.RawPacket;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketReceived;
 
@@ -34,11 +33,6 @@ public final class PacketInEvent extends TxEvent {
      * A {@link SalPort} instance which specifies the ingress switch port.
      */
     private final SalPort  ingressPort;
-
-    /**
-     * A {@link RawPacket} instance which represents the received packet.
-     */
-    private final RawPacket  payload;
 
     /**
      * Decoded ethernet frame.
@@ -66,8 +60,6 @@ public final class PacketInEvent extends TxEvent {
         ingressPort = ingress;
 
         byte[] bytes = rcv.getPayload();
-        payload = new RawPacket(bytes);
-        payload.setIncomingNodeConnector(ingressPort.getAdNodeConnector());
         ethernet = new Ethernet();
         ethernet.deserialize(bytes, 0, bytes.length * Byte.SIZE);
     }
@@ -81,7 +73,6 @@ public final class PacketInEvent extends TxEvent {
     public PacketInEvent(VTNPacketListener l, PacketInEvent ev) {
         listener = l;
         ingressPort = ev.ingressPort;
-        payload = ev.payload;
         ethernet = ev.ethernet;
     }
 
@@ -93,16 +84,6 @@ public final class PacketInEvent extends TxEvent {
      */
     public SalPort getIngressPort() {
         return ingressPort;
-    }
-
-    /**
-     * Return a {@link RawPacket} instance which represents the received
-     * packet.
-     *
-     * @return  A {@link RawPacket} instance.
-     */
-    public RawPacket getPayload() {
-        return payload;
     }
 
     /**

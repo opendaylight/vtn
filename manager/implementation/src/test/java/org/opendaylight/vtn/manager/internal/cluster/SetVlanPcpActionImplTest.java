@@ -16,6 +16,7 @@ import org.mockito.Mockito;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
+import org.opendaylight.vtn.manager.packet.Ethernet;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
@@ -24,7 +25,6 @@ import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetVlanPcpActio
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**

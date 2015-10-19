@@ -16,6 +16,9 @@ import org.mockito.Mockito;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
+import org.opendaylight.vtn.manager.packet.ICMP;
+import org.opendaylight.vtn.manager.packet.TCP;
+import org.opendaylight.vtn.manager.packet.UDP;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.packet.cache.IcmpPacket;
@@ -26,9 +29,6 @@ import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetPortSrcActio
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.sal.packet.ICMP;
-import org.opendaylight.controller.sal.packet.TCP;
-import org.opendaylight.controller.sal.packet.UDP;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**

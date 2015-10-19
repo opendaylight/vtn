@@ -45,4 +45,24 @@ public class InetProtocolsTest extends TestBase {
         assertEquals((byte)6, InetProtocols.TCP.byteValue());
         assertEquals((byte)17, InetProtocols.UDP.byteValue());
     }
+
+    /**
+     * Test case for {@link InetProtocols#forValue(byte)}.
+     */
+    @Test
+    public void testForValue() {
+        for (int i = Byte.MIN_VALUE; i <= Byte.MAX_VALUE; i++) {
+            byte value = (byte)i;
+            InetProtocols proto = InetProtocols.forValue(value);
+            if (i == 1) {
+                assertEquals(InetProtocols.ICMP, proto);
+            } else if (i == 6) {
+                assertEquals(InetProtocols.TCP, proto);
+            } else if (i == 17) {
+                assertEquals(InetProtocols.UDP, proto);
+            } else {
+                assertEquals(null, proto);
+            }
+        }
+    }
 }

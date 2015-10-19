@@ -12,16 +12,15 @@ import java.net.InetAddress;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.packet.ARP;
+import org.opendaylight.vtn.manager.packet.Ethernet;
+import org.opendaylight.vtn.manager.packet.IEEE8021Q;
+import org.opendaylight.vtn.manager.packet.Packet;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.EtherTypes;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
-
-import org.opendaylight.controller.sal.packet.ARP;
-import org.opendaylight.controller.sal.packet.Ethernet;
-import org.opendaylight.controller.sal.packet.IEEE8021Q;
-import org.opendaylight.controller.sal.packet.Packet;
 
 /**
  * JUnit test for {@link ArpPacketBuilder}.

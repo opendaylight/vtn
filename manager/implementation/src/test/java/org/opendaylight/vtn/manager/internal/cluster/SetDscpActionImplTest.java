@@ -16,6 +16,7 @@ import org.mockito.Mockito;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetDscpAction;
+import org.opendaylight.vtn.manager.packet.IPv4;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
@@ -25,7 +26,6 @@ import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetDscpActi
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.sal.packet.IPv4;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**

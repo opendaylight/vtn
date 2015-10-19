@@ -24,14 +24,12 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.controller.sal.core.UpdateType;
-import org.opendaylight.controller.sal.packet.Packet;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
@@ -180,28 +178,6 @@ public final class MiscUtils {
             new StringBuilder("Unexpected InetAddress: addr=");
         builder.append(addr);
         throw new IllegalStateException(builder.toString());
-    }
-
-    /**
-     * Copy the contents of the given packet.
-     *
-     * @param src  The source {@link Packet} instance.
-     * @param dst  The destination {@link Packet} instance.
-     * @param <T>  Type of packet.
-     * @return  {@code dst}.
-     * @throws VTNException
-     *    Failed to copy the packet.
-     */
-    public static <T extends Packet> T copy(T src, T dst) throws VTNException {
-        try {
-            byte[] raw = src.serialize();
-            int nbits = raw.length * Byte.SIZE;
-            dst.deserialize(raw, 0, nbits);
-            return dst;
-        } catch (Exception e) {
-            // This should never happen.
-            throw new VTNException("Failed to copy the packet.", e);
-        }
     }
 
     /**

@@ -162,6 +162,60 @@ public class NumberUtilsTest extends TestBase {
     }
 
     /**
+     * Test case for {@link NumberUtils#toShort(byte[])} and
+     * {@link NumberUtils#toBytes(short)}.
+     */
+    @Test
+    public void testToShortBytes() {
+        try {
+            NumberUtils.toShort((byte[])null);
+            unexpected();
+        } catch (NullPointerException e) {
+        }
+
+        for (int i = 0; i <= 10; i++) {
+            if (i == 2) {
+                continue;
+            }
+
+            byte[] b = new byte[i];
+            try {
+                NumberUtils.toShort(b);
+                unexpected();
+            } catch (IllegalArgumentException e) {
+                assertEquals("Invalid byte array length: " + i,
+                             e.getMessage());
+            }
+        }
+
+        HashMap<byte[], Short> cases = new HashMap<>();
+        cases.put(new byte[]{0, 0}, (short)0);
+        cases.put(new byte[]{0, 1}, (short)1);
+        cases.put(new byte[]{0, 2}, (short)2);
+        cases.put(new byte[]{0, (byte)0xff}, (short)255);
+        cases.put(new byte[]{1, 0}, (short)256);
+        cases.put(new byte[]{(byte)0x10, (byte)0xff}, (short)4351);
+        cases.put(new byte[]{(byte)0x59, (byte)0x34}, (short)22836);
+        cases.put(new byte[]{(byte)0x7f, (byte)0xfe}, (short)32766);
+        cases.put(new byte[]{(byte)0x7f, (byte)0xff}, (short)32767);
+        cases.put(new byte[]{(byte)0x80, (byte)0x00}, (short)-32768);
+        cases.put(new byte[]{(byte)0x80, (byte)0x01}, (short)-32767);
+        cases.put(new byte[]{(byte)0x9a, (byte)0x1b}, (short)-26085);
+        cases.put(new byte[]{(byte)0xde, (byte)0xad}, (short)-8531);
+        cases.put(new byte[]{(byte)0xff, (byte)0xfc}, (short)-4);
+        cases.put(new byte[]{(byte)0xff, (byte)0xfd}, (short)-3);
+        cases.put(new byte[]{(byte)0xff, (byte)0xfe}, (short)-2);
+        cases.put(new byte[]{(byte)0xff, (byte)0xff}, (short)-1);
+
+        for (Map.Entry<byte[], Short> entry: cases.entrySet()) {
+            byte[] b = entry.getKey();
+            short v = entry.getValue();
+            assertEquals(v, NumberUtils.toShort(b));
+            assertArrayEquals(b, NumberUtils.toBytes(v));
+        }
+    }
+
+    /**
      * Test case for {@link NumberUtils#getUnsigned(byte)}.
      */
     @Test

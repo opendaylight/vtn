@@ -13,21 +13,20 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import java.net.InetAddress;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.opendaylight.vtn.manager.packet.Ethernet;
+import org.opendaylight.vtn.manager.packet.IEEE8021Q;
+import org.opendaylight.vtn.manager.packet.Packet;
 import org.opendaylight.vtn.manager.util.EtherTypes;
+import org.opendaylight.vtn.manager.util.IpNetwork;
 
 import org.opendaylight.vtn.manager.it.ofmock.OfMockService;
 import org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase;
 import org.opendaylight.vtn.manager.it.util.TestBase;
 import org.opendaylight.vtn.manager.it.util.match.FlowMatchType;
-
-import org.opendaylight.controller.sal.packet.Ethernet;
-import org.opendaylight.controller.sal.packet.IEEE8021Q;
-import org.opendaylight.controller.sal.packet.Packet;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.EthernetMatchBuilder;
@@ -66,7 +65,7 @@ public final class EthernetFactory extends PacketFactory {
     /**
      * IP address to be probed.
      */
-    private InetAddress  probeAddress;
+    private IpNetwork  probeAddress;
 
     /**
      * VLAN ID used for IP address probe.
@@ -139,9 +138,9 @@ public final class EthernetFactory extends PacketFactory {
     /**
      * Return an IP address to be probed.
      *
-     * @return  An {@link InetAddress} instance or {@code null}.
+     * @return  An {@link IpNetwork} instance or {@code null}.
      */
-    public InetAddress getProbeAddress() {
+    public IpNetwork getProbeAddress() {
         return probeAddress;
     }
 
@@ -212,11 +211,11 @@ public final class EthernetFactory extends PacketFactory {
     /**
      * Set a pair of IP address and VLAN ID for IP address probe.
      *
-     * @param ip   An {@link InetAddress} instance.
+     * @param ip   An {@link IpNetwork} instance.
      * @param vid  VLAN ID used for IP address probe.
      * @return  This instance.
      */
-    public EthernetFactory setProbe(InetAddress ip, short vid) {
+    public EthernetFactory setProbe(IpNetwork ip, short vid) {
         probeAddress = ip;
         probeVlan = vid;
         return this;
@@ -283,7 +282,7 @@ public final class EthernetFactory extends PacketFactory {
             afc.setSenderHardwareAddress(ctlrMac).
                 setTargetHardwareAddress(sourceAddress).
                 setSenderProtocolAddress(TestBase.IPV4_ZERO).
-                setTargetProtocolAddress(probeAddress.getAddress());
+                setTargetProtocolAddress(probeAddress.getBytes());
             return efc.verify(ofmock, bytes, vlanIds);
         }
 

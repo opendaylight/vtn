@@ -15,14 +15,13 @@ import java.util.concurrent.Future;
 import com.google.common.util.concurrent.FutureCallback;
 
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.packet.Packet;
 
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.flow.VTNFlowBuilder;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-
-import org.opendaylight.controller.sal.packet.Packet;
 
 import org.opendaylight.yangtools.yang.binding.Notification;
 import org.opendaylight.yangtools.yang.binding.RpcService;

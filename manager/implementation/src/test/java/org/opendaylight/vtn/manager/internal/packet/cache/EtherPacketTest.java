@@ -17,6 +17,10 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.packet.ARP;
+import org.opendaylight.vtn.manager.packet.Ethernet;
+import org.opendaylight.vtn.manager.packet.IEEE8021Q;
+import org.opendaylight.vtn.manager.packet.Packet;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.EtherTypes;
 
@@ -33,10 +37,6 @@ import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.packet.ARP;
-import org.opendaylight.controller.sal.packet.Ethernet;
-import org.opendaylight.controller.sal.packet.IEEE8021Q;
-import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 

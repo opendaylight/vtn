@@ -29,6 +29,7 @@ import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.packet.Ethernet;
 
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
@@ -52,7 +53,6 @@ import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 

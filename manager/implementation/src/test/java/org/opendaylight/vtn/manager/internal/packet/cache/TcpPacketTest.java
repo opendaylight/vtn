@@ -19,6 +19,11 @@ import java.util.Set;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.packet.Ethernet;
+import org.opendaylight.vtn.manager.packet.IPv4;
+import org.opendaylight.vtn.manager.packet.Packet;
+import org.opendaylight.vtn.manager.packet.PacketException;
+import org.opendaylight.vtn.manager.packet.TCP;
 import org.opendaylight.vtn.manager.util.InetProtocols;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 
@@ -31,11 +36,6 @@ import org.opendaylight.vtn.manager.internal.util.flow.match.VTNPortRange;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNTcpMatch;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
-
-import org.opendaylight.controller.sal.packet.Ethernet;
-import org.opendaylight.controller.sal.packet.IPv4;
-import org.opendaylight.controller.sal.packet.PacketException;
-import org.opendaylight.controller.sal.packet.TCP;
 
 /**
  * JUnit test for {@link TcpPacket}.
@@ -295,11 +295,17 @@ public class TcpPacketTest extends TestBase {
      */
     @Test
     public void testUpdateChecksum() throws Exception {
+        // Create a broken TCP packet.
+        TCP pkt = new TCP();
+        Map<String, byte[]> header = getFieldValue(
+            pkt, Packet.class, Map.class, "hdrFieldsMap");
+        header.put("WindowSize", new byte[]{0});
+
         // Ensure that an exception is wrapped by a VTNException.
         IPv4 ipv4 = new IPv4();
         Inet4Packet inet4 = new Inet4Packet(ipv4);
-        TCP pkt = new TCP();
         TcpPacket tcp = new TcpPacket(pkt);
+
         try {
             tcp.updateChecksum(inet4);
             unexpected();

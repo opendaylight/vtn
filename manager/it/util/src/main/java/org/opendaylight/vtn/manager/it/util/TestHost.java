@@ -15,6 +15,8 @@ import java.util.Set;
 
 import org.opendaylight.vtn.manager.EthernetHost;
 import org.opendaylight.vtn.manager.MacAddressEntry;
+import org.opendaylight.vtn.manager.util.Ip4Network;
+import org.opendaylight.vtn.manager.util.IpNetwork;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
@@ -46,7 +48,7 @@ public final class TestHost {
     /**
      * IP address.
      */
-    private final InetAddress  inetAddress;
+    private final IpNetwork  inetAddress;
 
     /**
      * MD-SAL node connector identifier which specifies the switch port
@@ -74,7 +76,7 @@ public final class TestHost {
 
         byte[] addr = IPV4_ADDRESS_BASE.clone();
         addr[addr.length - 1] = (byte)index;
-        inetAddress = InetAddress.getByAddress(addr);
+        inetAddress = new Ip4Network(addr);
         portIdentifier = pid;
         vlan = vid;
     }
@@ -114,9 +116,9 @@ public final class TestHost {
     /**
      * Return IP address of this host.
      *
-     * @return  An {@link InetAddress} instance.
+     * @return  An {@link IpNetwork} instance.
      */
-    public InetAddress getInetAddress() {
+    public IpNetwork getInetAddress() {
         return inetAddress;
     }
 
@@ -126,7 +128,7 @@ public final class TestHost {
      * @return  A byte array which represents the IP address of this host.
      */
     public byte[] getRawInetAddress() {
-        return inetAddress.getAddress();
+        return inetAddress.getBytes();
     }
 
     /**
@@ -176,7 +178,7 @@ public final class TestHost {
     public MacAddressEntry getMacAddressEntry(boolean useIp) {
         NodeConnector nc = TestBase.toAdNodeConnector(portIdentifier);
         Set<InetAddress> ipaddrs = (useIp)
-            ? Collections.singleton(inetAddress)
+            ? Collections.singleton(inetAddress.getInetAddress())
             : null;
         return new MacAddressEntry(macAddress, vlan, nc, ipaddrs);
     }

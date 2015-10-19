@@ -9,14 +9,12 @@
 package org.opendaylight.vtn.manager.internal.packet.cache;
 
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.packet.TCP;
 
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNPortRange;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNTcpMatch;
 import org.opendaylight.vtn.manager.internal.util.packet.TcpHeader;
-
-import org.opendaylight.controller.sal.packet.TCP;
 
 /**
  * {@code TcpPacket} class implements a cache for a {@link TCP} instance.
@@ -93,14 +91,12 @@ public final class TcpPacket extends PortProtoPacket<TCP>
      * @param doCopy {@code true} is passed if the packet configured in this
      *               instance needs to be copied.
      * @return  A {@link TCP} instance.
-     * @throws VTNException
-     *    Failed to copy the packet.
      */
     @Override
-    protected TCP getPacketForWrite(boolean doCopy) throws VTNException {
+    protected TCP getPacketForWrite(boolean doCopy) {
         TCP pkt;
         if (doCopy) {
-            pkt = MiscUtils.copy(packet, new TCP());
+            pkt = packet.clone();
             packet = pkt;
         } else {
             pkt = packet;

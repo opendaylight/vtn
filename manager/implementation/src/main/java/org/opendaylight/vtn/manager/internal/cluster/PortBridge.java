@@ -20,6 +20,7 @@ import org.opendaylight.vtn.manager.VInterfacePath;
 import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.packet.Ethernet;
 
 import org.opendaylight.vtn.manager.internal.LockStack;
 import org.opendaylight.vtn.manager.internal.PacketContext;
@@ -36,7 +37,6 @@ import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.packet.Ethernet;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
