@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fad0f9df_c84a4855",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 15,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-10-19T20:51:19Z",
+      "side": 1,
+      "message": "Please modify the commit message to the allowed number of characters.",
+      "revId": "20ed94fae944d42f2a2a7f38e294375ca5debb82",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fad0f9df_a8790495",
+        "filename": "coordinator/modules/odcdriver/port.rest",
+        "patchSetId": 2
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-10-19T20:51:19Z",
+      "side": 1,
+      "message": "Please add some comment  sections in the files to indicate what each section means. Please add a header to indicate  how this was created",
+      "revId": "20ed94fae944d42f2a2a7f38e294375ca5debb82",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
