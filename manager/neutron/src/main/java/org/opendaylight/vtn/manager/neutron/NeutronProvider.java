@@ -35,6 +35,8 @@ public class NeutronProvider implements BindingAwareProvider, AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(NeutronProvider.class);
     private static DataBroker db;
     private OvsdbDataChangeListener ovsdbDataChangeListener;
+    private NeutronNetworkChangeListener neutronNetworkChangeListener;
+    private PortDataChangeListener portDataChangeListener;
 
     /**
      * Method invoked when the open flow switch is Added.
@@ -45,8 +47,10 @@ public class NeutronProvider implements BindingAwareProvider, AutoCloseable {
         LOG.trace("Neutron provider Session Initiated");
         db = session.getSALService(DataBroker.class);
         ovsdbDataChangeListener = new OvsdbDataChangeListener(db);
+        neutronNetworkChangeListener = new NeutronNetworkChangeListener(db);
         initializeOvsdbTopology(LogicalDatastoreType.OPERATIONAL);
         initializeOvsdbTopology(LogicalDatastoreType.CONFIGURATION);
+        portDataChangeListener = new PortDataChangeListener(db);
     }
 
      /**
@@ -56,6 +60,8 @@ public class NeutronProvider implements BindingAwareProvider, AutoCloseable {
     public void close() throws Exception {
         LOG.trace("Neutron provider Closed()");
         ovsdbDataChangeListener.close();
+        neutronNetworkChangeListener.close();
+        portDataChangeListener.close();
     }
 
      /**

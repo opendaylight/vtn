@@ -19,6 +19,7 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbNodeAugmentation;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbTerminationPointAugmentation;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.Topology;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.TopologyKey;
@@ -78,6 +79,8 @@ public class OvsdbDataChangeListener implements AutoCloseable, DataChangeListene
         LOG.trace("onDataChanged: {}", changes);
         processOvsdbConnections(changes);
         processOvsdbConnectionAttributeUpdates(changes);
+        processPortCreation(changes);
+        processPortDeletion(changes);
     }
 
     /**
@@ -136,5 +139,53 @@ public class OvsdbDataChangeListener implements AutoCloseable, DataChangeListene
         InstanceIdentifier<Node> nodeInstanceIdentifier = path.firstIdentifierOf(Node.class);
         return (Node)changes.get(nodeInstanceIdentifier);
     }
+
+    /**
+     * Method invoked when the port is created.
+     * @param changes
+     */
+    private void processPortCreation(
+            AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> changes) {
+        for (Map.Entry<InstanceIdentifier<?>, DataObject> newPort : changes.getCreatedData().entrySet()) {
+            if (newPort.getKey().getTargetType().equals(OvsdbTerminationPointAugmentation.class)) {
+                try {
+                    LOG.trace("processPortCreation: port details {}", newPort);
+                    //If user created termination point only, Node will get updated
+                    Node tpParentNode  = getNode(changes.getCreatedData(), newPort);
+                    if (tpParentNode == null) {
+                        tpParentNode  = getNode(changes.getUpdatedData(), newPort);
+                    }
+                    if (tpParentNode != null) {
+                        ovsdbeventHandler.readOVSDBPorts(tpParentNode, "added");
+                    }
+                } catch (Exception ex) {
+                    LOG.error("exception obtained {}", ex);
+                }
+            }
+        }
+    }
+
+    /**
+     * Method invoked when the port is deleted.
+     * @param changes
+     */
+    private void processPortDeletion(
+            AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> changes) {
+
+        for (InstanceIdentifier<?> removedPort : changes.getRemovedPaths()) {
+            if (removedPort.getTargetType().equals(OvsdbTerminationPointAugmentation.class)) {
+                Node tpParentNode = getNode(changes.getOriginalData(), removedPort);
+                if (tpParentNode == null) {
+                    //Throwing this warning in case behavior of southbound plugin changes.
+                    LOG.warn("Port's {} parent node details are not present in original data, "
+                            + "it should not happen", removedPort);
+                    continue;
+                } else {
+                    ovsdbeventHandler.readOVSDBPorts(tpParentNode , "delete");
+                }
+            }
+        }
+    }
+
 
 }
