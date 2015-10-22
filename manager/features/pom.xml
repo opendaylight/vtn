@@ -202,13 +202,18 @@
       <classifier>features</classifier>
       <type>xml</type>
     </dependency>
-
-    <!--dependency>
+    <!-- NEUTRON DEPENDENCY -->
+    <dependency>
+      <groupId>org.opendaylight.neutron</groupId>
+      <artifactId>dummyprovider</artifactId>
+      <version>${odl.neutron.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.opendaylight.neutron</groupId>
       <artifactId>features-neutron</artifactId>
       <classifier>features</classifier>
       <type>xml</type>
-    </dependency-->
+    </dependency>
 
     <dependency>
       <groupId>org.opendaylight.ovsdb</groupId>

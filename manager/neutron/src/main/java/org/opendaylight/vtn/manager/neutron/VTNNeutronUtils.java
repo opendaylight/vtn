@@ -18,12 +18,13 @@ import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.opendaylight.controller.sal.utils.ServiceHelper;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
+
 
 
 /**
@@ -42,19 +43,10 @@ public class VTNNeutronUtils {
     private IVTNManager vtnManager;
 
     /**
-     * Neutron UUID identifier length.
-     */
-    private static final int UUID_LEN = 36;
-
-    /**
-     * Tenant id length when keystone identifier is used in neutron.
-     */
-    private static final int KEYSTONE_ID_LEN = 32;
-
-    /**
      * UUID version number position.
      */
     private static final int UUID_VERSION_POS = 12;
+
 
     /**
      * UUID time-low field byte length in hex.
@@ -87,13 +79,37 @@ public class VTNNeutronUtils {
     private static final int UUID_TIME_LEN = (UUID_TIME_LOW +
             UUID_TIME_MID + UUID_TIME_HIGH_VERSION);
 
+
+    /**
+     * Neutron UUID identifier length.
+     */
+    private static final int UUID_LEN = 36;
+
+    /**
+     * Tenant id length when keystone identifier is used in neutron.
+     */
+    private static final int KEYSTONE_ID_LEN = 32;
+
+    /**
+     * Class constructor.
+     */
+    public VTNNeutronUtils() {
+        vtnManager = getVTNManager();
+    }
+
     /**
      * get VTNManager instance.
      *
      * @return VTN manager service instance
      */
-    public IVTNManager getVTNManager() {
-        return this.vtnManager;
+    protected IVTNManager getVTNManager() {
+        IVTNManager mgr = (IVTNManager)ServiceHelper.getInstance(
+                IVTNManager.class, "default", this);
+
+        if (mgr == null) {
+            LOG.error("manager instance is not available");
+        }
+        return mgr;
     }
 
     /**
@@ -128,6 +144,170 @@ public class VTNNeutronUtils {
     }
 
     /**
+     * Convert UUID to VTN key syntax.
+     *
+     * @param id neutron object UUID.
+     * @return key in compliance to VTN object key.
+     */
+    protected static String convertUUIDToKey(String id) {
+
+        String key = null;
+        if (id == null) {
+            return key;
+        }
+        LOG.trace("id - {}, length - {}", id, id.length());
+        /**
+         * VTN ID must be less than 32 bytes,
+         * Shorten UUID string length from 36 to 31 as follows:
+         * delete UUID Version and hyphen (see RFC4122) field in the UUID
+         */
+        try {
+            StringBuilder tKey = new StringBuilder();
+            // remove all the '-'
+            for (String retkey: id.split("-")) {
+                tKey.append(retkey);
+            }
+            // remove the version byte
+            tKey.deleteCharAt(UUID_VERSION_POS);
+            key = tKey.toString();
+        } catch (IllegalArgumentException ile) {
+            LOG.error("Invalid UUID - {}", id);
+            key = null;
+        }
+        return key;
+    }
+
+    /**
+     * Check if tenant configuration exist.
+     *
+     * @param tenantID tenant identifier provided by neutron.
+     * @return tenant existing status in HTTP response status code.
+     */
+    protected int isTenantExist(String tenantID) {
+        int result = HttpURLConnection.HTTP_NOT_FOUND;
+        if (tenantID == null) {
+            return HttpURLConnection.HTTP_BAD_REQUEST;
+        }
+
+        VTenantPath path = new VTenantPath(tenantID);
+        try {
+            if (vtnManager.getTenant(path) != null) {
+                result = HttpURLConnection.HTTP_OK;
+            }
+        } catch (VTNException e) {
+            LOG.error("isTenantExist error, path - {}, e - {}", path,
+                      e.toString());
+            result = getException(e.getStatus());
+        }
+        return result;
+    }
+
+    /**
+     * Check if L2 virtual bridge configuration exist in tenant.
+     *
+     * @param tenantID tenant identifier provided by neutron.
+     * @param bridgeID bridge identifier provided by neutron.
+     * @return bridge existing status in HTTP response status code.
+     */
+    protected int isBridgeExist(String tenantID, String bridgeID) {
+        int result = HttpURLConnection.HTTP_NOT_FOUND;
+        if ((tenantID == null) || (bridgeID == null)) {
+            return HttpURLConnection.HTTP_BAD_REQUEST;
+        }
+        LOG.trace("Bridge exists");
+        VBridgePath path = new VBridgePath(tenantID, bridgeID);
+        try {
+            if (vtnManager.getBridge(path) != null) {
+                result = HttpURLConnection.HTTP_OK;
+                LOG.trace("Bridge exists succeeded" + result);
+            }
+        } catch (VTNException e) {
+            LOG.error("isBridgeExist error, path - {}, e - {}", path,
+                      e.toString());
+            result = getException(e.getStatus());
+        }
+        return result;
+    }
+
+    /**
+     * Check if interface configuration exist in L2 virtual bridge.
+     *
+     * @param tenantID tenant identifier provided by neutron.
+     * @param bridgeID bridge identifier provided by neutron.
+     * @param portID port identifier provided by neutron.
+     * @return interface existing status in HTTP response status code.
+     */
+    protected int isBridgeInterfaceExist(String tenantID,
+                                         String bridgeID,
+                                         String portID) {
+        int result = HttpURLConnection.HTTP_NOT_FOUND;
+        if ((tenantID == null) || (bridgeID == null) || (portID == null)) {
+            return HttpURLConnection.HTTP_BAD_REQUEST;
+        }
+
+        VBridgeIfPath path = new VBridgeIfPath(tenantID, bridgeID, portID);
+        try {
+            if (vtnManager.getInterface(path) != null) {
+                result = HttpURLConnection.HTTP_OK;
+            }
+        } catch (VTNException e) {
+            LOG.error("isBridgeInterfaceExist error, path - {}, e - {}", path,
+                      e.toString());
+            result = getException(e.getStatus());
+        }
+        return result;
+    }
+
+
+    /**
+     * Invoked when a vtn manager service is registered.
+     *
+     * @param service  VTN manager service.
+     */
+    void setVTNManager(IVTNManager service) {
+        LOG.trace("Set vtn manager: {}", service);
+        this.vtnManager = service;
+    }
+
+    /**
+     * Invoked when a vtn manager service is unregistered.
+     *
+     * @param service  VTN manager service.
+     */
+    void unsetVTNManager(IVTNManager service) {
+        if (this.vtnManager == service) {
+            LOG.trace("Unset vtn manager: {}", service);
+            this.vtnManager = null;
+        }
+    }
+    /**
+     * Convert neutron object id to VTN key syntax.
+     *
+     * @param neutronID neutron object id.
+     * @return key in compliance to VTN object key.
+     */
+    protected static final String convertNeutronIDToVTNKey(String neutronID) {
+        String key = null;
+        if (neutronID == null) {
+            return key;
+        }
+
+        LOG.trace("neutronID - {}, length - {}",
+                  neutronID, neutronID.length());
+        if (!isValidNeutronID(neutronID)) {
+            return key;
+        }
+
+        if (neutronID.length() == UUID_LEN) {
+            key = convertUUIDToKey(neutronID);
+        } else if (neutronID.length() == KEYSTONE_ID_LEN) {
+            key = convertKeystoneIDToVTNKey(neutronID);
+        } else {
+            key = neutronID;
+        }
+        return key;
+    }
+     /**
      * Verify the validity of neutron object identifiers.
      *
      * @param id neutron object id.
@@ -162,41 +342,12 @@ public class VTNNeutronUtils {
         }
         return isValid;
     }
-
     /**
-     * Convert UUID to VTN key syntax.
+     * Convert string id to VTN key syntax.
      *
-     * @param id neutron object UUID.
+     * @param id neutron object id.
      * @return key in compliance to VTN object key.
      */
-    private static String convertUUIDToKey(String id) {
-
-        String key = null;
-        if (id == null) {
-            return key;
-        }
-        LOG.trace("id - {}, length - {}", id, id.length());
-        /**
-         * VTN ID must be less than 32 bytes,
-         * Shorten UUID string length from 36 to 31 as follows:
-         * delete UUID Version and hyphen (see RFC4122) field in the UUID
-         */
-        try {
-            StringBuilder tKey = new StringBuilder();
-            // remove all the '-'
-            for (String retkey: id.split("-")) {
-                tKey.append(retkey);
-            }
-            // remove the version byte
-            tKey.deleteCharAt(UUID_VERSION_POS);
-            key = tKey.toString();
-        } catch (IllegalArgumentException ile) {
-            LOG.error("Invalid UUID - {}", id);
-            key = null;
-        }
-        return key;
-    }
-
     /**
      * Convert string id to VTN key syntax.
      *
@@ -253,133 +404,4 @@ public class VTNNeutronUtils {
         return key;
     }
 
-    /**
-     * Convert neutron object id to VTN key syntax.
-     *
-     * @param neutronID neutron object id.
-     * @return key in compliance to VTN object key.
-     */
-    protected static final String convertNeutronIDToVTNKey(String neutronID) {
-        String key = null;
-        if (neutronID == null) {
-            return key;
-        }
-
-        LOG.trace("neutronID - {}, length - {}",
-                  neutronID, neutronID.length());
-        if (!isValidNeutronID(neutronID)) {
-            return key;
-        }
-
-        if (neutronID.length() == UUID_LEN) {
-            key = convertUUIDToKey(neutronID);
-        } else if (neutronID.length() == KEYSTONE_ID_LEN) {
-            key = convertKeystoneIDToVTNKey(neutronID);
-        } else {
-            key = neutronID;
-        }
-        return key;
-    }
-
-    /**
-     * Check if tenant configuration exist.
-     *
-     * @param tenantID tenant identifier provided by neutron.
-     * @return tenant existing status in HTTP response status code.
-     */
-    protected int isTenantExist(String tenantID) {
-        int result = HttpURLConnection.HTTP_NOT_FOUND;
-        if (tenantID == null) {
-            return HttpURLConnection.HTTP_BAD_REQUEST;
-        }
-
-        VTenantPath path = new VTenantPath(tenantID);
-        try {
-            if (vtnManager.getTenant(path) != null) {
-                result = HttpURLConnection.HTTP_OK;
-            }
-        } catch (VTNException e) {
-            LOG.error("isTenantExist error, path - {}, e - {}", path,
-                      e.toString());
-            result = getException(e.getStatus());
-        }
-        return result;
-    }
-
-    /**
-     * Check if L2 virtual bridge configuration exist in tenant.
-     *
-     * @param tenantID tenant identifier provided by neutron.
-     * @param bridgeID bridge identifier provided by neutron.
-     * @return bridge existing status in HTTP response status code.
-     */
-    protected int isBridgeExist(String tenantID, String bridgeID) {
-        int result = HttpURLConnection.HTTP_NOT_FOUND;
-        if ((tenantID == null) || (bridgeID == null)) {
-            return HttpURLConnection.HTTP_BAD_REQUEST;
-        }
-
-        VBridgePath path = new VBridgePath(tenantID, bridgeID);
-        try {
-            if (vtnManager.getBridge(path) != null) {
-                result = HttpURLConnection.HTTP_OK;
-            }
-        } catch (VTNException e) {
-            LOG.error("isBridgeExist error, path - {}, e - {}", path,
-                      e.toString());
-            result = getException(e.getStatus());
-        }
-        return result;
-    }
-
-    /**
-     * Check if interface configuration exist in L2 virtual bridge.
-     *
-     * @param tenantID tenant identifier provided by neutron.
-     * @param bridgeID bridge identifier provided by neutron.
-     * @param portID port identifier provided by neutron.
-     * @return interface existing status in HTTP response status code.
-     */
-    protected int isBridgeInterfaceExist(String tenantID,
-                                         String bridgeID,
-                                         String portID) {
-        int result = HttpURLConnection.HTTP_NOT_FOUND;
-        if ((tenantID == null) || (bridgeID == null) || (portID == null)) {
-            return HttpURLConnection.HTTP_BAD_REQUEST;
-        }
-
-        VBridgeIfPath path = new VBridgeIfPath(tenantID, bridgeID, portID);
-        try {
-            if (vtnManager.getInterface(path) != null) {
-                result = HttpURLConnection.HTTP_OK;
-            }
-        } catch (VTNException e) {
-            LOG.error("isBridgeInterfaceExist error, path - {}, e - {}", path,
-                      e.toString());
-            result = getException(e.getStatus());
-        }
-        return result;
-    }
-
-    /**
-     * Invoked when a vtn manager service is registered.
-     *
-     * @param service  VTN manager service.
-     */
-    void setVTNManager(IVTNManager service) {
-        LOG.trace("Set vtn manager: {}", service);
-        this.vtnManager = service;
-    }
-
-    /**
-     * Invoked when a vtn manager service is unregistered.
-     *
-     * @param service  VTN manager service.
-     */
-    void unsetVTNManager(IVTNManager service) {
-        if (this.vtnManager == service) {
-            LOG.trace("Unset vtn manager: {}", service);
-            this.vtnManager = null;
-        }
-    }
 }
