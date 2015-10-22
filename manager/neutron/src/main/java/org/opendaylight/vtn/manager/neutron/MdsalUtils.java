@@ -38,11 +38,60 @@ public class MdsalUtils {
     }
 
     /**
-     * Executes put as a blocking transaction.
+     * Executes delete as a blocking transaction.
      *
+     * @param store {@link LogicalDatastoreType} which should be modified
+     * @param path {@link InstanceIdentifier} to read from
+     * @param <D> the data object type
+     * @return the result of the request
+     */
+    public <D extends org.opendaylight.yangtools.yang.binding.DataObject> boolean delete(
+            final LogicalDatastoreType store, final InstanceIdentifier<D> path)  {
+        boolean result = false;
+        final WriteTransaction transaction = databroker.newWriteOnlyTransaction();
+        transaction.delete(store, path);
+        CheckedFuture<Void, TransactionCommitFailedException> future = transaction.submit();
+        try {
+            future.checkedGet();
+            result = true;
+        } catch (TransactionCommitFailedException e) {
+            LOG.warn("Failed to delete {} ", path, e);
+        }
+        return result;
+    }
+
+    /**
+     * Executes merge as a blocking transaction.
+     *
+     * @param <D> the data object type
      * @param logicalDatastoreType {@link LogicalDatastoreType} which should be modified
      * @param path {@link InstanceIdentifier} for path to read
+     * @param data the data object of type D
+     * @return the result of the request
+     */
+    public <D extends org.opendaylight.yangtools.yang.binding.DataObject> boolean merge(
+            final LogicalDatastoreType logicalDatastoreType, final InstanceIdentifier<D> path, D data)  {
+        boolean result = false;
+        final WriteTransaction transaction = databroker.newWriteOnlyTransaction();
+        transaction.merge(logicalDatastoreType, path, data, true);
+        CheckedFuture<Void, TransactionCommitFailedException> future = transaction.submit();
+        try {
+            future.checkedGet();
+            result = true;
+        } catch (TransactionCommitFailedException e) {
+            LOG.warn("Failed to merge {} ", path, e);
+        }
+        return result;
+    }
+
+    /**
+     * Executes put as a blocking transaction.
+     *
      * @param <D> the data object type
+     * @param logicalDatastoreType {@link LogicalDatastoreType} which should be modified
+     * @param logicalDatastoreType {@link LogicalDatastoreType} which should be modified
+     * @param path {@link InstanceIdentifier} for path to read
+     * @param data the data object of type D
      * @return the result of the request
      */
     public <D extends org.opendaylight.yangtools.yang.binding.DataObject> boolean put(
