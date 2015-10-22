@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fad0f9df_b57e34e3",
+        "filename": "coordinator/modules/odcdriver/code_gen.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-10-22T22:11:26Z",
+      "side": 1,
+      "message": "Please add File copyright header and comments",
+      "revId": "16aaef2846d4a953ae4a19d8c55136e9aea2464c",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fad0f9df_7588cce7",
+        "filename": "coordinator/modules/odcdriver/code_gen.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-10-22T22:11:26Z",
+      "side": 1,
+      "message": "Please add some comment to indicate what is \"d\" for?",
+      "revId": "16aaef2846d4a953ae4a19d8c55136e9aea2464c",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fad0f9df_156dc032",
+        "filename": "coordinator/modules/odcdriver/code_gen.py",
+        "patchSetId": 5
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-10-22T22:11:26Z",
+      "side": 1,
+      "message": "please add some comments in every function to indicate the use of the function.",
+      "revId": "16aaef2846d4a953ae4a19d8c55136e9aea2464c",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
