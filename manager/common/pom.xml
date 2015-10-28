@@ -89,6 +89,8 @@
     <odl.openflowplugin.version>0.2.0-SNAPSHOT</odl.openflowplugin.version>
     <odl.neutron.version>0.6.0-SNAPSHOT</odl.neutron.version>
     <odl.ovsdb.version>1.2.1-SNAPSHOT</odl.ovsdb.version>
+    <powermock.version>1.5.2</powermock.version>
+    <sonar-jacoco-listeners.version>2.4</sonar-jacoco-listeners.version>
   </properties>
 
   <profiles>
