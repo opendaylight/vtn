@@ -32,85 +32,50 @@ UncRespCode OdcLink::fetch_config(
   ODC_FUNC_TRACE;
   PFC_VERIFY(ctr_ptr != NULL);
   std::vector<unc::vtndrvcache::ConfigNode *> cfgnode_vector;
-
-  std::string url = "";
-  url.append(RESTCONF_BASE);
-  url.append(VTN_TOPO_URL);
-
-  unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
-                                        ctr_ptr->get_user_name(),
-                                        ctr_ptr->get_pass_word());
-
-  unc::restjson::HttpResponse_t* response =
-      rest_util_obj.send_http_request(
-          url, restjson::HTTP_METHOD_GET, NULL, conf_file_values_);
-
-  if (NULL == response) {
-    pfc_log_error("Error Occured while getting httpresponse");
+  vtntopology_request *req_obj = new vtntopology_request(ctr_ptr);
+  std::string url =  req_obj->get_url();
+  pfc_log_info("URL:%s",url.c_str());
+  vtntopology_parser *parse_obj = new vtntopology_parser();
+  UncRespCode ret_val = req_obj->get_response(parse_obj);
+  if (UNC_RC_SUCCESS != ret_val) {
+    pfc_log_error("Get response error");
+    delete req_obj;
+    delete parse_obj;
     return UNC_DRV_RC_ERR_GENERIC;
   }
-  int resp_code = response->code;
-  if (HTTP_200_RESP_OK != resp_code) {
-    pfc_log_error("Response code is not OK , resp : %d", resp_code);
+  ret_val = parse_obj->set_vtn_link(parse_obj->jobj);
+  if (UNC_RC_SUCCESS != ret_val) {
+    pfc_log_error("set vtn-link error");
+    delete req_obj;
+    delete parse_obj;
     return UNC_DRV_RC_ERR_GENERIC;
   }
-
-  if (NULL != response->write_data) {
-    if (NULL != response->write_data->memory) {
-      char *data = response->write_data->memory;
-      pfc_log_trace("All Linkes : %s", data);
-      UncRespCode ret_val =  parse_link_response(
-                              ctr_ptr, data, cfgnode_vector);
-      pfc_log_debug("Number of LINK present, %d",
-                    static_cast<int>(cfgnode_vector.size()));
-      if (UNC_RC_SUCCESS != ret_val) {
-        pfc_log_error("Error occured while parsing");
-        return ret_val;
-      }
-      ret_val = compare_with_cache(ctr_ptr, cache_empty, cfgnode_vector);
-      pfc_log_debug("Response from compare_with_cache is %d", ret_val);
-      return ret_val;
-    }
+  ret_val =  parse_link_response(ctr_ptr, parse_obj->vtn_link_, cfgnode_vector);
+  if (UNC_RC_SUCCESS != ret_val) {
+    pfc_log_error("Error occured while parsing");
+    delete req_obj;
+    delete parse_obj;
+    return ret_val;
   }
-  pfc_log_error("Response data is NULL");
-  return UNC_DRV_RC_ERR_GENERIC;
+  ret_val = compare_with_cache(ctr_ptr, cache_empty, cfgnode_vector);
+  pfc_log_debug("Response from compare_with_cache is %d", ret_val);
+  delete req_obj;
+  delete parse_obj;
+  return ret_val;
 }
 
 // parse each LINK append to map maintained
 UncRespCode OdcLink::fill_edge_value_map(
-    json_object *json_obj_node_prop,
-    int arr_idx,
+    std::string source,
+    std::string dst,
     unc::driver::controller *ctr_ptr,
     std::vector<unc::vtndrvcache::ConfigNode *> &cfg_node_vector) {
   ODC_FUNC_TRACE;
-
-  std::string source_node_id = "";
-  uint32_t ret_val = restjson::JsonBuildParse::parse(json_obj_node_prop,
-                                                     "source",
-                                                     arr_idx,
-                                                     source_node_id);
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (source_node_id.empty())) {
-    pfc_log_error(" Error while parsing source node id");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  std::string dst_node_id = "";
-  ret_val = restjson::JsonBuildParse::parse(json_obj_node_prop,
-                                            "destination",
-                                            arr_idx,
-                                            dst_node_id);
-
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (dst_node_id.empty())) {
-    pfc_log_error("Error while parsing destination node_id");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
   std::string dst_prob = "";
   std::string source_prob = "";
   std::map<std::string, std::string>::iterator iter;
-  pfc_log_info("source_node_id %s", source_node_id.c_str());
-  iter = link_map_.find(source_node_id);
+  pfc_log_info("source_node_id %s", source.c_str());
+  iter = link_map_.find(source);
   if (iter != link_map_.end()) {
       source_prob = iter->second;
   } else {
@@ -118,8 +83,8 @@ UncRespCode OdcLink::fill_edge_value_map(
     return UNC_DRV_RC_ERR_GENERIC;
   }
 
-  pfc_log_info("dst_node_id %s", dst_node_id.c_str());
-  iter = link_map_.find(dst_node_id);
+  pfc_log_info("dst_node_id %s", dst.c_str());
+  iter = link_map_.find(dst);
   if (iter != link_map_.end()) {
       dst_prob = iter->second;
   } else {
@@ -128,7 +93,7 @@ UncRespCode OdcLink::fill_edge_value_map(
   }
   pfc_log_info("Entry in link map source is  val : %s", source_prob.c_str());
   pfc_log_info("Entry in link map dst is  val : %s", dst_prob.c_str());
-  ret_val = fill_config_node_vector
+  UncRespCode ret_val = fill_config_node_vector
       (ctr_ptr, source_prob, dst_prob, cfg_node_vector);
 
   if (UNC_RC_SUCCESS != ret_val) {
@@ -587,60 +552,20 @@ void OdcLink::parse_properties(std::string conn, std::string &switch_id,
 // parsing function for converting controller response to driver format
 UncRespCode OdcLink::parse_link_response(
     unc::driver::controller *ctr_ptr,
-    char *data,
+    std::list<vtn_link> &link_detail,
     std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
   ODC_FUNC_TRACE;
-  json_object* jobj = restjson::JsonBuildParse::get_json_object(data);
-  if (json_object_is_type(jobj, json_type_null)) {
-    pfc_log_error("json_object_is_type error");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  uint32_t array_length =0;
-  json_object *json_obj_vtn_topo = NULL;
-  int parse_ret_val = restjson::JsonBuildParse::parse(jobj,
-                                                      "vtn-topology",
-                                                      -1,
-                                                      json_obj_vtn_topo);
-
-  if ((restjson::REST_OP_SUCCESS != parse_ret_val) ||
-      (json_object_is_type(json_obj_vtn_topo, json_type_null))) {
-    json_object_put(jobj);
-    pfc_log_error("Parsing Error json_obj_vtn_topo is null");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  json_object *json_obj_vtn_links = NULL;
-  parse_ret_val = restjson::JsonBuildParse::parse(json_obj_vtn_topo,
-                                                      "vtn-link",
-                                                      -1,
-                                                      json_obj_vtn_links);
-  if ((restjson::REST_OP_SUCCESS != parse_ret_val) ||
-      (json_object_is_type(json_obj_vtn_links, json_type_null))) {
-    json_object_put(jobj);
-    pfc_log_error("Parsing Error json_obj_vtn_vlinks is null");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  if (json_object_is_type(json_obj_vtn_links, json_type_array)) {
-    array_length = restjson::JsonBuildParse::get_array_length(json_obj_vtn_topo,
-                                                              "vtn-link");
-  }
-  if (0 == array_length) {
-    pfc_log_debug("No LINKS present");
-    json_object_put(jobj);
-    return UNC_RC_SUCCESS;
-  }
-  UncRespCode ret_val = UNC_DRV_RC_ERR_GENERIC;
-  std::map<std::string, std::string> edge_prop_map;
-  std::map<std::string, std::string> head_conn_map;
-  for (uint32_t arr_idx = 0; arr_idx < array_length; arr_idx++) {
-    ret_val = fill_edge_value_map(
-        json_obj_vtn_links, arr_idx, ctr_ptr, cfgnode_vector);
+  std::list<vtn_link>::iterator it;
+  for (it = link_detail.begin(); it != link_detail.end(); it++) {
+    std::string source = it->source;
+    std::string dst = it->destination;
+    UncRespCode ret_val = fill_edge_value_map(
+        source, dst, ctr_ptr, cfgnode_vector);
     if (UNC_RC_SUCCESS != ret_val) {
-      json_object_put(jobj);
       pfc_log_error("Error return from fill map failure");
       return ret_val;
     }
   }
-  json_object_put(jobj);
   return UNC_RC_SUCCESS;
 }
 }  // namespace odcdriver

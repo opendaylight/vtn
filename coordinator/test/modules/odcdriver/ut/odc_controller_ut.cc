@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,6 +14,7 @@
 TEST(odcdriver, controller) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -45,7 +46,7 @@ TEST(odcdriver, controller) {
   val_ctr.enable_audit = PFC_TRUE;
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr, val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr, val_ctr, conf_values );;
   std::vector<unc::vtndrvcache::ConfigNode*> cfg_ptr;
 
   EXPECT_EQ(UNC_CT_ODC, ctr->get_controller_type());
@@ -65,6 +66,7 @@ TEST(odcdriver, controller) {
 TEST(odcdriver, controller_all_empty_values) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
 
@@ -93,7 +95,7 @@ TEST(odcdriver, controller_all_empty_values) {
   val_ctr.enable_audit = PFC_TRUE;
 
   unc::driver::controller* ctr  =
-      new  unc::odcdriver::OdcController(key_ctr, val_ctr);;
+      new  unc::odcdriver::OdcController(key_ctr, val_ctr, conf_values);
 
   EXPECT_EQ(UNC_CT_ODC, ctr->get_controller_type());
   EXPECT_EQ(controller_name , ctr->get_controller_id());

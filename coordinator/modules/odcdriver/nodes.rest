@@ -1,0 +1,219 @@
+# Copyright (c) 2015 NEC Corporation
+# All rights reserved.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+
+# Response format of vtn-nodes
+#{
+#  "vtn-nodes": {
+#    "vtn-node": [
+#    {
+#      "id": "openflow:1",
+#        "openflow-version": "OF10",
+#        "vtn-port": [
+#        {
+#          "cost": 1000,
+#          "enabled": true,
+#          "id": "openflow:1:2",
+#          "name": "s1-eth2",
+#          "port-link": [
+#          {
+#            "link-id": "openflow:1:2",
+#            "peer": "openflow:3:3"
+#          },
+#          {
+#            "link-id": "openflow:3:3",
+#            "peer": "openflow:3:3"
+#          }
+#          ]
+#        },
+#        {
+#          "cost": 1000,
+#          "enabled": true,
+#          "id": "openflow:1:1",
+#          "name": "s1-eth1",
+#          "port-link": [
+#          {
+#            "link-id": "openflow:2:3",
+#            "peer": "openflow:2:3"
+#          },
+#          {
+#            "link-id": "openflow:1:1",
+#            "peer": "openflow:2:3"
+#          }
+#          ]
+#        }
+#      ]
+#    },
+#    {
+#      "id": "openflow:2",
+#      "openflow-version": "OF10",
+#      "vtn-port": [
+#      {
+#        "cost": 1000,
+#        "enabled": true,
+#        "id": "openflow:2:2",
+#        "name": "s2-eth2"
+#      },
+#      {
+#        "cost": 1000,
+#        "enabled": true,
+#        "id": "openflow:2:3",
+#        "name": "s2-eth3",
+#        "port-link": [
+#        {
+#          "link-id": "openflow:2:3",
+#          "peer": "openflow:1:1"
+#        },
+#        {
+#          "link-id": "openflow:1:1",
+#          "peer": "openflow:1:1"
+#        }
+#        ]
+#      },
+#      {
+#        "cost": 1000,
+#        "enabled": true,
+#        "id": "openflow:2:1",
+#        "name": "s2-eth1"
+#      }
+#      ]
+#    },
+#    {
+#      "id": "openflow:3",
+#      "openflow-version": "OF10",
+#      "vtn-port": [
+#      {
+#        "cost": 1000,
+#        "enabled": true,
+#        "id": "openflow:3:2",
+#        "name": "s3-eth2"
+#      },
+#      {
+#        "cost": 1000,
+#        "enabled": true,
+#        "id": "openflow:3:1",
+#        "name": "s3-eth1"
+#      },
+#      {
+#        "cost": 1000,
+#        "enabled": true,
+#        "id": "openflow:3:3",
+#        "name": "s3-eth3",
+#        "port-link": [
+#        {
+#          "link-id": "openflow:1:2",
+#          "peer": "openflow:1:2"
+#        },
+#        {
+#          "link-id": "openflow:3:3",
+#          "peer": "openflow:1:2"
+#        }
+#        ]
+#      }
+#      ]
+#    }
+#    ]
+#  }
+#}
+# Please go through topo.rest file for explanations.
+
+# Structure member section
+[id]
+type=string
+key="id"
+struct_name=vtn_node
+build_support =no
+parse_support=yes
+
+# Structure member section
+[vtn_node]
+type=array
+key="vtn-node"
+struct_name=vtn_node
+check_bool_set=no
+members=id
+
+# Structure member section
+[vtn_nodes]
+type=object
+key="vtn-nodes"
+struct_name=vtn_node
+check_bool_set=yes
+members=vtn_node
+
+# URL section
+[RESTURL]
+type=url_string
+value="/restconf"
+
+# URL section
+[SLASH]
+type=url_string
+value="/"
+
+# URL section
+[VTNNODESURL]
+type=url_string
+value="vtn-nodes"
+
+# URL section
+[VTNINVENTORYURL]
+type=url_string
+value="vtn-inventory"
+
+# URL section
+[COLON]
+type=url_string
+value=":"
+
+# URL section
+[OPERATIONURL]
+type=url_string
+value="operational"
+
+# URL interface members section
+[controller_ip]
+type=string
+get_abstract=yes
+
+# URL interface members section
+[controller_port]
+type=string
+get_abstract=yes
+
+# GET URL of parser class section
+[VTN_GETSUPPORT_URL]
+type=url_string
+url_format=RESTURL,SLASH,OPERATIONURL,SLASH,VTNINVENTORYURL,COLON,VTNNODESURL
+interface_members=controller_ip,controller_port
+
+# Parser class section
+[vtn_nodes_parser]
+type=READ
+url=VTN_GETSUPPORT_URL
+request_type=object
+request_members=vtn_nodes
+response_members="vtn-nodes"
+
+# Request class section
+[vtn_nodes_request]
+type=READ
+request_type=object
+request_members=vtn_nodes
+response_members="vtn-nodes"
+
+# GET URL section
+[READ]
+url=VTN_GETSUPPORT_URL
+
+# Main function
+[ROOT]
+url_class = vtn_nodes_request
+parse_class=vtn_nodes_parser
+namespace=odcdriver
+struct_type = vtn_node
+data=vtn_node
+methods=vtn_nodes_request
