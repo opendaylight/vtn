@@ -89,7 +89,6 @@ public class MdsalUtils {
      *
      * @param <D> the data object type
      * @param logicalDatastoreType {@link LogicalDatastoreType} which should be modified
-     * @param logicalDatastoreType {@link LogicalDatastoreType} which should be modified
      * @param path {@link InstanceIdentifier} for path to read
      * @param data the data object of type D
      * @return the result of the request
