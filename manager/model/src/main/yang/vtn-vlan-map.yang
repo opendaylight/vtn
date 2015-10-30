@@ -185,6 +185,9 @@ module vtn-vlan-map {
            error.";
 
         input {
+            /* The location of the vBridge. */
+            uses vtype:vbridge-path-fields;
+
             leaf-list map-ids {
                 description
                   "A list of VLAN mapping IDs to be removed from the specified

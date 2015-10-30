@@ -327,6 +327,10 @@ module vtn-mac-map {
                 type vtype:vlan-host-desc;
             }
         }
+
+        output {
+            uses vtype:vtn-rpc-result;
+        }
     }
 
     rpc get-mac-mapped-host {
@@ -367,6 +371,13 @@ module vtn-mac-map {
         }
 
         output {
+            leaf configured {
+                description
+                  "True is set only if the MAC mapping is configured in the
+                   vBridge specified by the RPC input.";
+                type boolean;
+            }
+
             list mac-mapped-hosts {
                 description
                   "A list of host information mapped to the specified vBridge
