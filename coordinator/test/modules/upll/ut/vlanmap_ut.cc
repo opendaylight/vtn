@@ -2553,7 +2553,7 @@ TEST_F(VlanMapTest, OpRename_Dtcandidate_Opts_valid) {
 /* ============================*FilterAttributes*============================ */
 TEST(VlanMapMoMgr_FilterAttributes, update_auditstatus_test) {
   VlanMapMoMgr obj;
-  pfc_log_set_level(PFC_LOGLVL_VERBOSE);
+  // pfc_log_set_level(PFC_LOGLVL_VERBOSE);
 
   pfcdrv_val_vlan_map_t *vlanmap_val1 =
     reinterpret_cast<pfcdrv_val_vlan_map_t *>
@@ -2581,7 +2581,7 @@ TEST(VlanMapMoMgr_FilterAttributes, update_auditstatus_test) {
 
 TEST(VlanMapMoMgr_FilterAttributes, update_auditstatus_valid) {
   VlanMapMoMgr obj;
-  pfc_log_set_level(PFC_LOGLVL_VERBOSE);
+  // pfc_log_set_level(PFC_LOGLVL_VERBOSE);
 
   pfcdrv_val_vlan_map_t *vlanmap_val1 =
     reinterpret_cast<pfcdrv_val_vlan_map_t *>
@@ -2608,7 +2608,7 @@ TEST(VlanMapMoMgr_FilterAttributes, update_auditstatus_valid) {
 
 TEST(VlanMapMoMgr_FilterAttributes, create_auditstatus_valid) {
   VlanMapMoMgr obj;
-  pfc_log_set_level(PFC_LOGLVL_VERBOSE);
+  // pfc_log_set_level(PFC_LOGLVL_VERBOSE);
 
   pfcdrv_val_vlan_map_t *vlanmap_val1 =
     reinterpret_cast<pfcdrv_val_vlan_map_t *>
