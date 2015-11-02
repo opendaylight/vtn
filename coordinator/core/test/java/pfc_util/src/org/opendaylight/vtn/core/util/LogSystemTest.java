@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -26,6 +26,23 @@ import static junit.framework.TestCase.assertNotNull;
  */
 public class LogSystemTest extends TestBase
 {
+	/**
+	 * An interface that specifies the condition to met.
+	 */
+	private interface TestCond {
+		/**
+		 * Determine whether the specified condition is met or not.
+		 *
+		 * @return  {@code true} only if the condition is met.
+		 */
+		boolean check();
+
+		/**
+		 * Invoked when the test has been timed out.
+		 */
+		void timedOut();
+	}
+
 	/**
 	 * <p>
 	 *   Create JUnit test case for {@link LogSystem}.
@@ -69,7 +86,7 @@ public class LogSystemTest extends TestBase
 
 		LogSystem lsys = LogSystem.getInstance();
 
-		// NullPointerException must be thrown 
+		// NullPointerException must be thrown
 		try {
 			lsys.setLevel(null);
 			needException();
@@ -149,16 +166,19 @@ public class LogSystemTest extends TestBase
 		}
 
 		// Ensure that all loggers are removed by the GC.
-		LogSystemImpl tsys = TraceLogImpl.getInstance();
-		long cur = System.currentTimeMillis();
-		long timeout = cur + 10000;
-		int tsz = tsys.getSize();
-		while (tsz != 0 || tsz != 0) {
-			runGC();
-			cur = System.currentTimeMillis();
-			assertTrue("tsz = " + tsz, cur <= timeout);
-			tsz = tsys.getSize();
-		}
+		final LogSystemImpl tsys = TraceLogImpl.getInstance();
+		TestCond cond = new TestCond() {
+			@Override
+			public boolean check() {
+				return (tsys.getSize() == 0);
+			}
+
+			@Override
+			public void timedOut() {
+				assertEquals(0, tsys.getSize());
+			}
+		};
+		runGC(cond);
 	}
 
 	/**
@@ -391,7 +411,7 @@ public class LogSystemTest extends TestBase
 	 *
 	 * @param factory	Factory class of the logger.
 	 */
-	private void getLoggerTest(TestLoggerFactory factory)
+	private void getLoggerTest(final TestLoggerFactory factory)
 	{
 		// Create 3 loggers.
 		String[] names = {
@@ -410,7 +430,7 @@ public class LogSystemTest extends TestBase
 		}
 
 		// Ensure that loggers are kept by LogSystem.
-		LogSystemImpl impl = factory.getImpl();
+		final LogSystemImpl impl = factory.getImpl();
 		assertEquals(loggers.length, impl.getSize());
 
 		// Run the GC.
@@ -436,9 +456,20 @@ public class LogSystemTest extends TestBase
 
 			// Unlink the logger, and make the GC collect it.
 			loggers[i] = null;
-			runGC();
 			size--;
-			assertEquals(size, impl.getSize());
+			final int sz = size;
+			TestCond cond = new TestCond() {
+				@Override
+				public boolean check() {
+					return (impl.getSize() == sz);
+				}
+
+				@Override
+				public void timedOut() {
+					assertEquals(sz, impl.getSize());
+				}
+			};
+			runGC(cond);
 		}
 		assertEquals(0, lset.size());
 
@@ -459,13 +490,24 @@ public class LogSystemTest extends TestBase
 			loggers[i] = null;
 		}
 
-		// Run the GC.
-		runGC();
-
 		// Create a logger with specifying another name.
 		// This purges dead loggers.
-		Logger logger = factory.newLogger("another-logger");
-		assertEquals(1, impl.getSize());
+		final String another = "another-logger";
+		TestCond cond = new TestCond() {
+			@Override
+			public boolean check() {
+				Logger logger = factory.newLogger(another);
+				return (impl.getSize() == 1);
+			}
+
+			@Override
+			public void timedOut() {
+				runGC();
+				Logger logger = factory.newLogger(another);
+				assertEquals(1, impl.getSize());
+			}
+		};
+		runGC(cond);
 	}
 
 	/**
@@ -496,6 +538,27 @@ public class LogSystemTest extends TestBase
 			Thread.sleep(5);
 		}
 		catch (InterruptedException e) {
+		}
+	}
+
+	/**
+	 * <p>
+	 *   Run the GC util the given condition is met.
+	 * </p>
+	 *
+	 * @param cond  A {@link TestCond} that specifies the condition.
+	 */
+	private void runGC(TestCond cond) {
+		runGC();
+
+		long cur = System.currentTimeMillis();
+		long timeout = cur + 10000;
+		while (!cond.check()) {
+			runGC();
+			cur = System.currentTimeMillis();
+			if (cur > timeout) {
+				cond.timedOut();
+			}
 		}
 	}
 
@@ -633,7 +696,7 @@ public class LogSystemTest extends TestBase
 
 		/**
 		 * <p>
-		 *   Run the test until the thread is interrupted.	
+		 *   Run the test until the thread is interrupted.
 		 * </p>
 		 */
 		public void run()
