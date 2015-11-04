@@ -41,6 +41,23 @@ module vtn-neutron {
                     }
                 }
             }
+
+            leaf bridgeName {
+                description "name of the vBridge.";
+                type string;
+            }
+            leaf portName {
+                description "portName of the vBridge.";
+                type string;
+            }
+            leaf protocol {
+                description "protocol of the vBridge.";
+                type string;
+            }
+            leaf failMode {
+                description "failMode of the vBridge.";
+                type string;
+            }
         }
     }
 }
