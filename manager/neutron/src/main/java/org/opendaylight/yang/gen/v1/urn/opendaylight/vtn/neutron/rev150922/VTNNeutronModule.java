@@ -16,6 +16,7 @@ import org.opendaylight.vtn.manager.neutron.NeutronProvider;
 
 import org.opendaylight.controller.config.api.DependencyResolver;
 import org.opendaylight.controller.config.api.ModuleIdentifier;
+import org.opendaylight.vtn.manager.neutron.OVSDBEventHandler;
 
 public class VTNNeutronModule extends AbstractVTNNeutronModule {
     private static final Logger LOG =
@@ -40,8 +41,13 @@ public class VTNNeutronModule extends AbstractVTNNeutronModule {
 
     @Override
     public java.lang.AutoCloseable createInstance() {
+        OVSDBEventHandler.ovsdbPortName = getPortName();
+        OVSDBEventHandler.ovsdbBridgeName = getBridgeName();
+        OVSDBEventHandler.ovsdbProtocol = getProtocol();
+        OVSDBEventHandler.ovsdbFailMode = getFailMode();
         NeutronProvider provider = new NeutronProvider();
         getBrokerDependency().registerProvider(provider);
+
         return provider;
     }
 }
