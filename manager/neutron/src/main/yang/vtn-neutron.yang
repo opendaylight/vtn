@@ -41,6 +41,34 @@ module vtn-neutron {
                     }
                 }
             }
+            leaf bridgename {
+                description
+                    "Name of the bridge to create in OVS";
+                type string {
+                   length "1..32";
+                }
+            }
+            leaf portname {
+                description
+                    "Name of the port to add to bridge in OVS";
+                type string {
+                   length "1..32";
+                }
+            }
+            leaf ofprotocol {
+                description
+                    "OpenFlow Protocol 13 or 10";
+                type string {
+                   length "1..32";
+                }
+            }
+            leaf failmode {
+                description
+                    "Failure Mode";
+                type string {
+                   length "1..32";
+                }
+            }
         }
     }
 }
