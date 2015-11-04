@@ -27,7 +27,10 @@
             <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">binding:binding-broker-osgi-registry</type>
             <name>binding-osgi-broker</name>
           </broker>
-
+          <bridgename>"br-tun"</bridgename>
+          <portname>"eth1"</portname>
+          <ofprotocol>"OpenFlow13"</ofprotocol>
+          <failmode>"secure"</failmode>
         </module>
       </modules>
     </data>

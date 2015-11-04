@@ -40,6 +40,10 @@ public class VTNNeutronModule extends AbstractVTNNeutronModule {
 
     @Override
     public java.lang.AutoCloseable createInstance() {
+        LOG.info("BridgeNAme: {}", getBridgename());
+        LOG.info("portname : {}", getPortname());
+        LOG.info("ofprotocol: {}", getOfprotocol());
+        LOG.info("failmode: {}", getFailmode());
         NeutronProvider provider = new NeutronProvider();
         getBrokerDependency().registerProvider(provider);
         return provider;
