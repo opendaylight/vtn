@@ -8,13 +8,10 @@
 
 package org.opendaylight.vtn.manager.neutron;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.net.HttpURLConnection;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -79,18 +76,7 @@ public class OVSDBEventHandler extends VTNNeutronUtils {
      */
     static final Logger LOG = LoggerFactory.getLogger(OVSDBEventHandler.class);
 
-    /**
-     * The name of the configuration directory.
-     */
-    private static final String  CONFIG_DIR = "configuration";
-
-    /**
-     * The name of the configuration file.
-     */
-    private static final String  VTN_INI_NAME = "vtn.ini";
-
-
-    /**
+     /**
      * identifier for the integration bridge name.
      */
     private String integrationBridgeName;
@@ -191,6 +177,27 @@ public class OVSDBEventHandler extends VTNNeutronUtils {
      * VTN identifiers in neutron port object.
      */
     private static final int VTN_IDENTIFIERS_IN_PORT = 3;
+
+    /**
+     * identifiers for OVSDB Port Name.
+     */
+    public static String ovsdbPortName;
+
+    /**
+     * identifiers for OVSDB Bridge Name.
+     */
+    public static String ovsdbBridgeName;
+
+    /**
+     * identifiers for OVSDB Protocol.
+     */
+    public static String ovsdbProtocol;
+
+    /**
+     * identifiers for OVSDB Failmode.
+     */
+    public static String ovsdbFailMode;
+
     /**
      * Method invoked when the open flow switch is Added.
      * @param dataBroker Instance of DataBroker object to be added.
@@ -234,35 +241,28 @@ public class OVSDBEventHandler extends VTNNeutronUtils {
     }
 
     /**
-     * Read the parameters configured in configuration file(vtn.ini).
+     * Read the parameters configured in configuration file(default.config).
      * @param node instance of Node
      */
     public void getSystemProperties(Node node) {
-        File f = new File(new File(CONFIG_DIR), VTN_INI_NAME);
-        FileInputStream in = null;
-        Properties prop = new Properties();
-        try {
-            in = new FileInputStream(f);
-            prop.load(in);
-            LOG.trace("loaded Integration bridge Configuring details from vtn.ini");
-        } catch (Exception e) {
-            LOG.debug("Exception occurred while reading SystemProperties", e);
-        } finally {
-            if (in != null) {
-                try {
-                    in.close();
-                } catch (Exception e) {
-                    LOG.warn("Exception occurred while closing file", e);
-                }
-                in = null;
-            }
+        LOG.trace("System properties from default config : {},{},{},{}:",
+                  ovsdbBridgeName, ovsdbPortName, ovsdbProtocol, ovsdbFailMode);
+        integrationBridgeName = ovsdbBridgeName;
+        if (integrationBridgeName == null) {
+            integrationBridgeName = DEFAULT_INTEGRATION_BRIDGENAME;
         }
-        integrationBridgeName =
-            prop.getProperty(CONFIG_INTEGRATION_BRIDGENAME,
-                             DEFAULT_INTEGRATION_BRIDGENAME);
-        failmode = prop.getProperty(CONFIG_FAILMODE, DEFAULT_FAILMODE);
-        protocols = prop.getProperty(CONFIG_PROTOCOLS, DEFAULT_PROTOCOLS);
-        portname = prop.getProperty(CONFIG_PORTNAME, DEFAULT_PORTNAME);
+        portname = ovsdbPortName;
+        if (portname == null) {
+            portname = DEFAULT_PORTNAME;
+        }
+        failmode = ovsdbFailMode;
+        if (failmode == null) {
+            failmode = DEFAULT_FAILMODE;
+        }
+        protocols = ovsdbProtocol;
+        if (protocols == null) {
+            protocols = DEFAULT_PROTOCOLS;
+        }
         LOG.trace("System properties values : {},{},{},{}:",
                   integrationBridgeName, failmode, protocols, portname);
         if (null != integrationBridgeName) {
