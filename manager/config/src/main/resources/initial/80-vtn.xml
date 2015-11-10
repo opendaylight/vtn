@@ -42,6 +42,13 @@
             </type>
             <name>binding-data-broker</name>
           </data-broker>
+
+          <entity-ownership-service>
+            <type xmlns:ownership="urn:opendaylight:params:xml:ns:yang:controller:md:sal:core:spi:entity-ownership-service">
+              ownership:entity-ownership-service
+            </type>
+            <name>entity-ownership-service</name>
+          </entity-ownership-service>
         </module>
       </modules>
     </data>

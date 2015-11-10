@@ -13,25 +13,36 @@ import java.util.Enumeration;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Optional;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.TxContext;
+import org.opendaylight.vtn.manager.internal.TxQueue;
+import org.opendaylight.vtn.manager.internal.TxTask;
 import org.opendaylight.vtn.manager.internal.VTNConfig;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
+import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
-import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
+import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 import org.opendaylight.vtn.manager.internal.util.tx.TxQueueImpl;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipChange;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListener;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListenerRegistration;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
@@ -89,31 +100,78 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
     private boolean  configProvider;
 
     /**
-     * MD-SAL transaction task for initialization of VTN configuration data.
+     * MD-SAL transaction task that loads VTN configuration from file.
      *
      * <p>
-     *   This task returns the current value of "init-state".
+     *   This task returns {@code null} as the current value of "init-state".
      * </p>
      */
-    private static final class ConfigInitTask extends AbstractTxTask<Boolean> {
+    private static final class ConfigLoadTask extends AbstractTxTask<Boolean> {
         /**
          * MAC address of the local node.
          */
         private final EtherAddress  macAddress;
 
         /**
-         * A {@link VTNConfigImpl} instance to be saved into file.
-         */
-        private VTNConfigImpl  saveConfig;
-
-        /**
          * Construct a new instance.
          *
          * @param mac  MAC address of the local node.
          */
-        private ConfigInitTask(EtherAddress mac) {
+        private ConfigLoadTask(EtherAddress mac) {
             macAddress = mac;
         }
+
+        // AbstractTxTask
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public Boolean execute(TxContext ctx) throws VTNException {
+            LogicalDatastoreType cstore = LogicalDatastoreType.CONFIGURATION;
+            ReadWriteTransaction tx = ctx.getReadWriteTransaction();
+            VtnConfig vcfg = null;
+
+            // Try to load configuration from file.
+            VTNConfigImpl vconf = XmlConfigFile.load(
+                XmlConfigFile.Type.CONFIG, KEY_VTN_CONFIG,
+                VTNConfigImpl.class);
+            if (vconf != null) {
+                // Initialize the VTN configuration in configuration view.
+                vcfg = vconf.getJaxbValue().build();
+                tx.put(cstore, CONFIG_IDENT, vcfg, true);
+            } else {
+                // Delete configuration.
+                DataStoreUtils.delete(tx, cstore, CONFIG_IDENT);
+            }
+
+            // Initialize the VTN configuration in operational view.
+            VtnConfigBuilder builder = VTNConfigImpl.builder(vcfg, macAddress);
+
+            // Set false to init-state to notify that the configuration
+            // is initializing.
+            builder.setInitState(Boolean.FALSE);
+            LogicalDatastoreType ostore = LogicalDatastoreType.OPERATIONAL;
+            tx.put(ostore, CONFIG_IDENT, builder.build(), true);
+
+            return null;
+        }
+    }
+
+    /**
+     * MD-SAL transaction task that saves VTN configuration into file.
+     *
+     * <p>
+     *   This task returns the current value of "init-state".
+     * </p>
+     */
+    private static final class ConfigSaveTask extends AbstractTxTask<Boolean> {
+        /**
+         * A {@link VTNConfigImpl} instance to be saved into file.
+         */
+        private VTNConfigImpl  saveConfig;
+
+        // AbstractTxTask
 
         /**
          * {@inheritDoc}
@@ -125,43 +183,29 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
             // Read current VTN configuration in configuration view.
             LogicalDatastoreType cstore = LogicalDatastoreType.CONFIGURATION;
             ReadWriteTransaction tx = ctx.getReadWriteTransaction();
-            VtnConfig vcfg =
-                DataStoreUtils.read(tx, cstore, CONFIG_IDENT).orNull();
-            if (vcfg == null) {
-                // Try to load configuration from file.
-                VTNConfigImpl vconf = XmlConfigFile.load(
-                    XmlConfigFile.Type.CONFIG, KEY_VTN_CONFIG,
-                    VTNConfigImpl.class);
-                if (vconf != null) {
-                    vcfg = vconf.getJaxbValue().build();
-                    tx.put(cstore, CONFIG_IDENT, vcfg, true);
-                }
-            } else {
+            Optional<VtnConfig> opt =
+                DataStoreUtils.read(tx, cstore, CONFIG_IDENT);
+            if (opt.isPresent()) {
                 // Save current configuration into file.
-                saveConfig = new VTNConfigImpl(vcfg);
+                saveConfig = new VTNConfigImpl(opt.get());
             }
 
             // Read current VTN configuration in operational view.
             Boolean ret;
             LogicalDatastoreType ostore = LogicalDatastoreType.OPERATIONAL;
-            VtnConfig voper = DataStoreUtils.read(tx, ostore, CONFIG_IDENT).
-                orNull();
-            if (voper == null) {
-                // Initialize operational view.
-                VtnConfigBuilder builder =
-                    VTNConfigImpl.builder(vcfg, macAddress);
-
-                // Set false to init-state to notify that the configuration
-                // is initializing.
-                builder.setInitState(Boolean.FALSE);
-                tx.put(ostore, CONFIG_IDENT, builder.build(), true);
-                ret = null;
+            opt = DataStoreUtils.read(tx, ostore, CONFIG_IDENT);
+            if (opt.isPresent()) {
+                ret = opt.get().isInitState();
             } else {
-                ret = voper.isInitState();
+                // The owner is now initializing the configuration.
+                LOG.debug("VTN configuration is not present.");
+                ret = Boolean.FALSE;
             }
 
             return ret;
         }
+
+        // TxTask
 
         /**
          * {@inheritDoc}
@@ -176,6 +220,103 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
     }
 
     /**
+     * A futute associated with the task that initializes the VTN
+     * configuration.
+     *
+     * <p>
+     *   This future returns the current value of "init-state".
+     * </p>
+     */
+    private static final class ConfigInitFuture
+        extends SettableVTNFuture<Boolean>
+        implements EntityOwnershipListener, FutureCallback<Boolean> {
+        /**
+         * A MD-SAL datastore transaction queue for the global configuration.
+         */
+        private final TxQueue  txQueue;
+
+        /**
+         * MAC address of the local node.
+         */
+        private final EtherAddress  macAddress;
+
+        /**
+         * Registration of the VTN configuration entity ownership listener.
+         */
+        private final EntityOwnershipListenerRegistration  listener;
+
+        /**
+         * A boolean value that determines whether the VTN configuration is
+         * initialized or not.
+         */
+        private final AtomicBoolean  initialized = new AtomicBoolean();
+
+        /**
+         * Construct a new instance.
+         *
+         * @param provider  VTN Manager provider service.
+         * @param cfq       The DS task queue for the VTN configuration.
+         * @param mac       MAC address of the local node.
+         */
+        private ConfigInitFuture(VTNManagerProvider provider, TxQueue cfq,
+                                 EtherAddress mac) {
+            txQueue = cfq;
+            macAddress = mac;
+
+            // Register a listener in order to determine the ownership of the
+            // VTN configuration.
+            listener = provider.registerListener(VTNEntityType.CONFIG, this);
+        }
+
+        // EntityOwnershipListener
+
+        /**
+         * Invoked when the ownership status of the VTN configuration has been
+         * changed.
+         *
+         * @param change  An {@link EntityOwnershipChange} instance.
+         */
+        @Override
+        public void ownershipChanged(EntityOwnershipChange change) {
+            LOG.info("Received VTN config ownership change: {}", change);
+
+            if (change.hasOwner() && !initialized.getAndSet(true)) {
+                // Start DS task that initializes the VTN configuration.
+                TxTask<Boolean> task = (change.isOwner())
+                    ? new ConfigLoadTask(macAddress)
+                    : new ConfigSaveTask();
+                Futures.addCallback(txQueue.postFirst(task), this);
+            }
+        }
+
+        // FutureCallback
+
+        /**
+         * Invoked when the VTN configuration has been initialized
+         * successfully.
+         *
+         * @param result  A {@link Boolean} value returned by the DS task.
+         */
+        @Override
+        public void onSuccess(Boolean result) {
+            listener.close();
+            set(result);
+        }
+
+        /**
+         * Invoked when a throwable was caught during initialization.
+         *
+         * @param cause  A {@link Throwable} that indicates the cause of
+         *               failure.
+         */
+        @Override
+        public void onFailure(Throwable cause) {
+            listener.close();
+            setException(cause);
+        }
+    }
+
+    /**
      * MD-SAL transaction task to change "init-state" to true.
      */
     private static class ConfigInitDoneTask extends AbstractTxTask<Void> {
@@ -186,8 +327,8 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
         public Void execute(TxContext ctx) throws VTNException {
             ReadWriteTransaction tx = ctx.getReadWriteTransaction();
             LogicalDatastoreType ostore = LogicalDatastoreType.OPERATIONAL;
-            VtnConfigBuilder builder = new VtnConfigBuilder();
-            builder.setInitState(Boolean.TRUE);
+            VtnConfigBuilder builder = new VtnConfigBuilder().
+                setInitState(Boolean.TRUE);
             tx.merge(ostore, CONFIG_IDENT, builder.build(), true);
             return null;
         }
@@ -376,8 +517,7 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
         operListener.set(opl);
 
         // Post initialization task.
-        ConfigInitTask task = new ConfigInitTask(mac);
-        VTNFuture<Boolean> f = cfq.postFirst(task);
+        ConfigInitFuture f = new ConfigInitFuture(provider, cfq, mac);
 
         // Start transaction queue processing.
         cfq.start();

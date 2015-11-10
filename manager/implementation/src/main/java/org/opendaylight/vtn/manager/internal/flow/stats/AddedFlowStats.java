@@ -98,11 +98,6 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
     private FlowFinder  finder;
 
     /**
-     * The MAC address of the controller.
-     */
-    private Long  controllerAddress;
-
-    /**
      * Construct a new instance.
      *
      * @param log  A {@link Logger} instance.
@@ -286,15 +281,7 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
             return;
         }
 
-        // Ensure that this data flow is installed by this controller.
-        Long mac = vdf.getControllerAddress();
-        if (!controllerAddress.equals(mac)) {
-            String maddr = (mac == null)
-                ? "<null>"
-                : Long.toHexString(mac.longValue());
-            log(traceLogger, "Ignore flow statistics: {}: Not owner: {}",
-                vtnId.getValue(), maddr);
-        } else if (isIngressFlow(vdf, flow, node)) {
+        if (isIngressFlow(vdf, flow, node)) {
             // The given flow is the ingress flow of the target data flow.
             // Copy statistics if available.
             VtnDataFlowBuilder builder = new VtnDataFlowBuilder().
@@ -340,10 +327,6 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
         logRecords = new ArrayList<>();
         ReadWriteTransaction tx = ctx.getReadWriteTransaction();
         finder = new FlowFinder(tx);
-        if (controllerAddress == null) {
-            controllerAddress = ctx.getProvider().getVTNConfig().
-                getControllerMacAddress().getAddress();
-        }
 
         for (IdentifiedData<Flow> data: addedFlows) {
             // Verify the node and the table ID.

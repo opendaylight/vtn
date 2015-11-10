@@ -36,6 +36,7 @@ import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
+import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
 import org.opendaylight.vtn.manager.internal.util.tx.TxQueueImpl;
 
@@ -43,6 +44,10 @@ import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
+import org.opendaylight.controller.md.sal.common.api.clustering.Entity;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipChange;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListener;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListenerRegistration;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.TransactionCommitFailedException;
@@ -119,6 +124,12 @@ public class VTNConfigManagerTest extends TestBase {
     private ListenerRegistration  operListenerReg;
 
     /**
+     * Registration to be associated with {@link EntityOwnershipListener}.
+     */
+    @Mock
+    private EntityOwnershipListenerRegistration  ownerListenerReg;
+
+    /**
      * A {@link VTNConfigManager} instance for test.
      */
     private VTNConfigManager  configManager;
@@ -149,6 +160,11 @@ public class VTNConfigManagerTest extends TestBase {
     private EtherAddress  defaultMacAddress;
 
     /**
+     * An entity ownership change to be notified.
+     */
+    private EntityOwnershipChange  ownerChange;
+
+    /**
      * Set up test environment.
      */
     @Before
@@ -177,6 +193,27 @@ public class VTNConfigManagerTest extends TestBase {
                  any(LogicalDatastoreType.class), any(InstanceIdentifier.class),
                  isA(OperationalListener.class), any(DataChangeScope.class))).
             thenAnswer(ans);
+
+        Answer ownerAns = new Answer() {
+            @Override
+            public Object answer(InvocationOnMock inv) {
+                Object[] args = inv.getArguments();
+                Object type = args[0];
+                Object eol = args[1];
+                if (VTNEntityType.CONFIG.equals(type) &&
+                    eol instanceof EntityOwnershipListener) {
+                    setOwnerListener((EntityOwnershipListener)eol);
+                    return ownerListenerReg;
+                }
+
+                unexpected();
+                return null;
+            }
+        };
+        when(vtnProvider.registerListener(
+                 eq(VTNEntityType.CONFIG),
+                 any(EntityOwnershipListener.class))).
+            thenAnswer(ownerAns);
     }
 
     /**
@@ -317,6 +354,8 @@ public class VTNConfigManagerTest extends TestBase {
      */
     @Test
     public void testConstructorError1() {
+        initOwner(true);
+
         EtherAddress ea = getDefaultMacAddress();
         ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
         when(dataBroker.newReadWriteTransaction()).thenReturn(tx);
@@ -356,6 +395,8 @@ public class VTNConfigManagerTest extends TestBase {
      */
     @Test
     public void testConstructorError2() {
+        initOwner(false);
+
         VtnConfig current = new VtnConfigBuilder().
             setFlowModTimeout(3000).
             setInitTimeout(20000).
@@ -664,6 +705,52 @@ public class VTNConfigManagerTest extends TestBase {
     }
 
     /**
+     * Set the entity ownership listener associated with the VTN configuration.
+     *
+     * @param eol  An {@link EntityOwnershipListener} instance.
+     */
+    private void setOwnerListener(final EntityOwnershipListener eol) {
+        // Start a thread to notify entity ownership change.
+        Thread thr = new Thread() {
+            @Override
+            public void run() {
+                verifyZeroInteractions(ownerListenerReg);
+
+                // Send a dummy ownership event.
+                eol.ownershipChanged(newOwnerChange(false, false, false));
+                verifyZeroInteractions(ownerListenerReg);
+
+                eol.ownershipChanged(ownerChange);
+            }
+        };
+        thr.start();
+    }
+
+    /**
+     * Construct a new entity ownership change.
+     *
+     * @param was  The previous ownership status.
+     * @param is   The current ownership status.
+     * @param has  A boolean value where the VTN configuration has owner.
+     */
+    private EntityOwnershipChange newOwnerChange(boolean was, boolean is,
+                                                 boolean has) {
+        Entity configEntity =
+            VTNEntityType.getGlobalEntity(VTNEntityType.CONFIG);
+        return new EntityOwnershipChange(configEntity, was, is, has);
+    }
+
+    /**
+     * Initialize the entity ownership.
+     *
+     * @param owner  {@code true} indicates that this process is the owner
+     *               of the VTN configuration.
+     */
+    private void initOwner(boolean owner) {
+        ownerChange = newOwnerChange(false, owner, true);
+    }
+
+    /**
      * Create a {@link VTNConfigManager} instance as the configuration
      * provider.
      */
@@ -678,6 +765,8 @@ public class VTNConfigManagerTest extends TestBase {
      * @param vconf  A {@link VTNConfigImpl} to be loaded.
      */
     private void initProvider(VTNConfigImpl vconf) {
+        initOwner(true);
+
         EtherAddress ea = getDefaultMacAddress();
         ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
         when(dataBroker.newReadWriteTransaction()).thenReturn(tx);
@@ -707,17 +796,14 @@ public class VTNConfigManagerTest extends TestBase {
         newCurrentConfig = new VTNConfigImpl(vcfg);
 
         configManager = new VTNConfigManager(vtnProvider);
+        verify(ownerListenerReg).close();
 
-        verify(tx).read(cfg, path);
         if (vconf == null) {
-            verify(tx, never()).
-                put(eq(cfg), eq(path), any(VtnConfig.class),
-                    any(Boolean.class));
+            verify(tx).read(cfg, path);
         } else {
             verify(tx).put(cfg, path, saved, true);
         }
 
-        verify(tx).read(oper, path);
         verify(tx).put(oper, path, vcfg, true);
         verify(tx).submit();
 
@@ -736,6 +822,8 @@ public class VTNConfigManagerTest extends TestBase {
      * @param istate   Init state to be set.
      */
     private void initConsumer(VtnConfig current, boolean istate) {
+        initOwner(false);
+
         EtherAddress ea = getDefaultMacAddress();
         ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
         when(dataBroker.newReadWriteTransaction()).thenReturn(tx);
@@ -763,6 +851,7 @@ public class VTNConfigManagerTest extends TestBase {
         thr.start();
 
         configManager = new VTNConfigManager(vtnProvider);
+        verify(ownerListenerReg).close();
 
         verify(tx).read(cfg, path);
         verify(tx).read(oper, path);
@@ -833,11 +922,18 @@ public class VTNConfigManagerTest extends TestBase {
      */
     private synchronized void awaitConfigSubmitted() {
         if (!configSubmitted) {
-            try {
-                wait(TASK_TIMEOUT);
-            } catch (InterruptedException e) {
-                unexpected(e);
-            }
+            long timeout = TASK_TIMEOUT;
+            long expire = System.currentTimeMillis() + timeout;
+            do {
+                try {
+                    wait(timeout);
+                } catch (InterruptedException e) {
+                    unexpected(e);
+                }
+
+                timeout = expire - System.currentTimeMillis();
+            } while (!configSubmitted && timeout > 0);
+
             assertTrue(configSubmitted);
         }
     }
@@ -873,22 +969,29 @@ public class VTNConfigManagerTest extends TestBase {
      */
     private synchronized OperationalListener getOperationalListener() {
         if (operListener == null) {
-            try {
-                wait(TASK_TIMEOUT);
-            } catch (InterruptedException e) {
-                unexpected(e);
-            }
+            long timeout = TASK_TIMEOUT;
+            long expire = System.currentTimeMillis() + timeout;
+            do {
+                try {
+                    wait(timeout);
+                } catch (InterruptedException e) {
+                    unexpected(e);
+                }
+
+                timeout = expire - System.currentTimeMillis();
+            } while (operListener == null && timeout > 0);
+
+            assertNotNull(operListener);
         }
 
-        assertNotNull(operListener);
         return operListener;
     }
 
     /**
      * Notify settings to the operational datastore listener.
      *
-     * @param vcfg    A {@link VtnConfig} instance which contains settings
-     *                in the operational datastore.
+     * @param vcfg  A {@link VtnConfig} instance which contains settings
+     *              in the operational datastore.
      */
     private void setInitState(VtnConfig vcfg) {
         OperationalListener opl = getOperationalListener();

@@ -25,7 +25,6 @@ import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.packet.Ethernet;
-import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
@@ -974,14 +973,13 @@ public abstract class PortInterface extends AbstractInterface
 
         VTNManagerProvider provider = pctx.getTxContext().getProvider();
         VTNConfig vcfg = provider.getVTNConfig();
-        EtherAddress mac = vcfg.getControllerMacAddress();
         int pri = vcfg.getL2FlowPriority();
         int idle = pctx.getIdleTimeout();
         int hard = pctx.getHardTimeout();
         String tname = getTenantName();
 
         VTNFlowBuilder builder =
-            new VTNFlowBuilder(tname, mac, vmatch, pri, idle, hard);
+            new VTNFlowBuilder(tname, vmatch, pri, idle, hard);
         builder.addVirtualRoute(getIngressRoute(MacVlan.UNDEFINED, (short)0)).
             setEgressVNodeRoute(null).
             addDropFlow(mapped);

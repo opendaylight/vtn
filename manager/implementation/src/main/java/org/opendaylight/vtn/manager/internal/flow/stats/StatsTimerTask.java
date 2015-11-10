@@ -50,7 +50,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.model.statistics.types.rev1
 /**
  * The timer task that collects flow statistics periodically.
  */
-public final class StatsTimerTask extends TimerTask implements AutoCloseable {
+public final class StatsTimerTask extends TimerTask {
     /**
      * Logger instance.
      */
@@ -89,11 +89,6 @@ public final class StatsTimerTask extends TimerTask implements AutoCloseable {
         private List<LogRecord>  logRecords;
 
         /**
-         * The MAC address of the controller.
-         */
-        private Long  controllerAddress;
-
-        /**
          * Update flow statistics in the specified VTN.
          *
          * @param tx     A {@link ReadWriteTransaction} instance.
@@ -124,15 +119,6 @@ public final class StatsTimerTask extends TimerTask implements AutoCloseable {
                             VtnDataFlow vdf) throws VTNException {
             VtnDataFlowKey key = vdf.getKey();
             BigInteger id = key.getFlowId().getValue();
-            Long mac = vdf.getControllerAddress();
-            if (!controllerAddress.equals(mac)) {
-                String maddr = (mac == null)
-                    ? "<null>"
-                    : Long.toHexString(mac.longValue());
-                traceLog("Skip flow entry: {}: Not owner: {}", id, maddr);
-                return;
-            }
-
             FlowId fid = vdf.getSalFlowId();
             if (fid == null) {
                 traceLog("Skip flow entry: {}: No MD-SAL flow ID.", id);
@@ -182,10 +168,6 @@ public final class StatsTimerTask extends TimerTask implements AutoCloseable {
         public Void execute(TxContext ctx) throws VTNException {
             systemTime = System.currentTimeMillis();
             logRecords = new ArrayList<>();
-            if (controllerAddress == null) {
-                controllerAddress = ctx.getProvider().getVTNConfig().
-                    getControllerMacAddress().getAddress();
-            }
 
             // Read the root container of flow tables.
             InstanceIdentifier<VtnFlows> path =
@@ -238,12 +220,19 @@ public final class StatsTimerTask extends TimerTask implements AutoCloseable {
     /**
      * Construct a new instance.
      *
-     * @param timer  A timer thread.
-     * @param txq    A {@link TxQueue} instance used to update the MD-SAL
-     *               datastore.
+     * @param txq  A {@link TxQueue} instance used to update the MD-SAL
+     *             datastore.
      */
-    public StatsTimerTask(Timer timer, TxQueue txq) {
+    public StatsTimerTask(TxQueue txq) {
         txQueue = txq;
+    }
+
+    /**
+     * Start the periodic timer task that updates the flow statistics.
+     *
+     * @param timer  A timer thread.
+     */
+    public void start(Timer timer) {
         timer.scheduleAtFixedRate(this, STATS_INTERVAL, STATS_INTERVAL);
     }
 
@@ -255,15 +244,5 @@ public final class StatsTimerTask extends TimerTask implements AutoCloseable {
     @Override
     public void run() {
         txQueue.post(new StatsUpdator());
-    }
-
-    // AutoCloseable
-
-    /**
-     * Close this timer task.
-     */
-    @Override
-    public void close() {
-        cancel();
     }
 }

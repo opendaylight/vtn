@@ -43,6 +43,7 @@ import org.opendaylight.vtn.manager.internal.inventory.VTNInventoryManager;
 import org.opendaylight.vtn.manager.internal.packet.VTNPacketService;
 import org.opendaylight.vtn.manager.internal.routing.PathMapManager;
 import org.opendaylight.vtn.manager.internal.routing.VTNRoutingManager;
+import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
 import org.opendaylight.vtn.manager.internal.util.VTNTimer;
 import org.opendaylight.vtn.manager.internal.util.concurrent.CanceledFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.FutureCallbackTask;
@@ -59,6 +60,10 @@ import org.opendaylight.vtn.manager.internal.util.tx.TxSyncFuture;
 import org.opendaylight.vtn.manager.internal.vnode.VTenantManager;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.common.api.clustering.Entity;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListener;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListenerRegistration;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipService;
 import org.opendaylight.controller.sal.binding.api.NotificationProviderService;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 
@@ -131,6 +136,11 @@ public final class VTNManagerProviderImpl
     private final NotificationProviderService  notificationService;
 
     /**
+     * Entity ownership service.
+     */
+    private final EntityOwnershipService  entityOwnerService;
+
+    /**
      * VTN configuration manager.
      */
     private final AtomicReference<VTNConfigManager>  configManager;
@@ -177,17 +187,23 @@ public final class VTNManagerProviderImpl
      * @param broker  A {@link DataBroker} service instance.
      * @param rpcReg  A {@link RpcProviderRegistry} service instance.
      * @param nsv     A {@link NotificationProviderService} service instance.
+     * @param eos     A {@link EntityOwnershipService} serivce instance.
      */
     public VTNManagerProviderImpl(DataBroker broker,
                                   RpcProviderRegistry rpcReg,
-                                  NotificationProviderService nsv) {
+                                  NotificationProviderService nsv,
+                                  EntityOwnershipService eos) {
         dataBroker = broker;
         rpcRegistry = rpcReg;
         notificationService = nsv;
+        entityOwnerService = eos;
         globalExecutor =
             new VTNThreadPool("VTN Async Thread", THREAD_POOL_MAXSIZE,
                               THREAD_POOL_KEEPALIVE);
         globalTimer = new VTNTimer("Global timer for VTN provider");
+
+        // Initialize global entities in a cluster node.
+        initGlobalEntities(eos);
 
         TxQueueImpl globq =  new TxQueueImpl("VTN Main", this);
         globalQueue = new AtomicReference<TxQueueImpl>(globq);
@@ -281,6 +297,22 @@ public final class VTNManagerProviderImpl
         }
 
         return alive;
+    }
+
+    /**
+     * Initialize global entities in a cluster node.
+     *
+     * @param eos  A {@link EntityOwnershipService} serivce instance.
+     */
+    private void initGlobalEntities(EntityOwnershipService eos) {
+        for (Entity ent: VTNEntityType.getGlobalEntities()) {
+            try {
+                eos.registerCandidate(ent);
+            } catch (Exception e) {
+                LOG.error("Failed to register entity candidate: " + ent, e);
+                // FALLTHROUGH
+            }
+        }
     }
 
     /**
@@ -489,6 +521,15 @@ public final class VTNManagerProviderImpl
         return (vfm == null)
             ? new CanceledFuture<Void>()
             : vfm.removeFlows(remover);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public EntityOwnershipListenerRegistration registerListener(
+        VTNEntityType etype, EntityOwnershipListener listener) {
+        return entityOwnerService.registerListener(etype.getType(), listener);
     }
 
     /**

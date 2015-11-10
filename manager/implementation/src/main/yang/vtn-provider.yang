@@ -12,6 +12,7 @@ module vtn-provider {
     namespace "urn:opendaylight:vtn:impl:provider";
     prefix vtn-provider;
 
+    /* OpenDaylight controller */
     import config {
         prefix config;
         revision-date 2013-04-05;
@@ -19,6 +20,10 @@ module vtn-provider {
     import opendaylight-md-sal-binding {
         prefix mdsal;
         revision-date 2013-10-28;
+    }
+    import opendaylight-entity-ownership-service {
+        prefix ownership;
+        revision-date 2015-08-10;
     }
 
     description
@@ -66,6 +71,16 @@ module vtn-provider {
                         mandatory true;
                         config:required-identity
                           mdsal:binding-async-data-broker;
+                    }
+                }
+            }
+
+            container entity-ownership-service {
+                uses config:service-ref {
+                    refine type {
+                        mandatory true;
+                        config:required-identity
+                          ownership:entity-ownership-service;
                     }
                 }
             }

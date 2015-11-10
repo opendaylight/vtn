@@ -17,11 +17,14 @@ import com.google.common.util.concurrent.FutureCallback;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.packet.Packet;
 
+import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.flow.VTNFlowBuilder;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListener;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListenerRegistration;
 
 import org.opendaylight.yangtools.yang.binding.Notification;
 import org.opendaylight.yangtools.yang.binding.RpcService;
@@ -150,6 +153,17 @@ public interface VTNManagerProvider extends AutoCloseable, Executor, TxQueue {
      * @return  A future associated with the task which removes VTN data flows.
      */
     VTNFuture<Void> removeFlows(FlowRemover remover);
+
+    /**
+     * Register a listener that listens the ownership status of the entity
+     * specified by the given type.
+     *
+     * @param etype     The type of the VTN global entity.
+     * @param listener  An {@link EntityOwnershipListener} instance.
+     * @return  An {@link EntityOwnershipListenerRegistration} instance.
+     */
+    EntityOwnershipListenerRegistration registerListener(
+        VTNEntityType etype, EntityOwnershipListener listener);
 
     /**
      * Return an implementation of the specified RPC service.

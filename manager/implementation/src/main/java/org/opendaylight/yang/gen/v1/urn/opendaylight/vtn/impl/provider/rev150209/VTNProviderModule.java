@@ -138,7 +138,8 @@ public final class VTNProviderModule extends AbstractVTNProviderModule {
     private VTNManagerProviderImpl createProvider() {
         return new VTNManagerProviderImpl(
             getDataBrokerDependency(), getRpcRegistryDependency(),
-            getNotificationServiceDependency());
+            getNotificationServiceDependency(),
+            getEntityOwnershipServiceDependency());
     }
 
     /**

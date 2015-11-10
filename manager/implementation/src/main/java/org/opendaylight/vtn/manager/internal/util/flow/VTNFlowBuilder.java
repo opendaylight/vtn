@@ -18,7 +18,6 @@ import java.util.Set;
 
 import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeRoute;
-import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.L2Host;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
@@ -144,16 +143,14 @@ public final class VTNFlowBuilder implements VTNDataFlow {
      * Construct a new instance.
      *
      * @param tname   The name of the VTN.
-     * @param mac     The MAC address of the controller.
      * @param vmatch  A {@link VTNMatch} instance.
      * @param pri     A flow priority.
      * @param idle    Idle timeout in seconds.
      * @param hard    Hard timeout in seconds.
      */
-    public VTNFlowBuilder(String tname, EtherAddress mac, VTNMatch vmatch,
-                          int pri, int idle, int hard) {
-        flowBuilder = new VtnDataFlowBuilder().
-            setControllerAddress(mac.getAddress());
+    public VTNFlowBuilder(String tname, VTNMatch vmatch, int pri, int idle,
+                          int hard) {
+        flowBuilder = new VtnDataFlowBuilder();
         tenantName = tname;
         vtnMatch = vmatch;
         matchBuilder = vmatch.toMatchBuilder();

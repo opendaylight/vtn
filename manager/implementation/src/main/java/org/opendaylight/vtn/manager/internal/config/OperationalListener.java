@@ -89,7 +89,7 @@ public final class OperationalListener
             tc.await(this);
         } while (!Boolean.TRUE.equals(initState));
 
-        LOG.debug("Another controller has complete initialization.");
+        LOG.debug("Another controller has completed initialization.");
     }
 
     /**

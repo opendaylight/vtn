@@ -381,6 +381,7 @@ public final class TestOption {
             mavenBundle(VTN, "manager.implementation"),
             //mavenBundle(VTN, "manager.neutron"),
             mavenBundle(VTN, "manager.it.ofmock"),
+            mavenBundle(VTN, "manager.it.ownermock"),
             mavenBundle(VTN, "manager.it.util"),
 
             // Neutron bundles.

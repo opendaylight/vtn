@@ -20,7 +20,7 @@
     <relativePath>../../common/yang</relativePath>
   </parent>
 
-  <artifactId>manager.it.ofmock</artifactId>
+  <artifactId>manager.it.ownermock</artifactId>
   <packaging>bundle</packaging>
 
   <scm>
@@ -53,18 +53,6 @@
   </build>
 
   <dependencies>
-    <!-- VTN Manager bundles -->
-    <dependency>
-      <groupId>org.opendaylight.vtn</groupId>
-      <artifactId>manager.implementation</artifactId>
-    </dependency>
-
-    <!-- OSGi framework -->
-    <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>org.osgi.core</artifactId>
-    </dependency>
-
     <!-- OpenDaylight controller (MD-SAL) -->
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
@@ -72,66 +60,13 @@
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
-      <artifactId>sal-binding-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>sal-binding-config</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opendaylight.controller.model</groupId>
-      <artifactId>model-inventory</artifactId>
+      <artifactId>sal-common-impl</artifactId>
     </dependency>
 
     <!-- OpenDaylight config subsystem -->
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>config-api</artifactId>
-    </dependency>
-
-    <!-- OpenDaylight YANG Tools -->
-    <dependency>
-      <groupId>org.opendaylight.yangtools</groupId>
-      <artifactId>concepts</artifactId>
-    </dependency>
-
-    <!-- OpenDaylight MD-SAL -->
-    <dependency>
-      <groupId>org.opendaylight.mdsal</groupId>
-      <artifactId>yang-binding</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.mdsal.model</groupId>
-      <artifactId>yang-ext</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.mdsal.model</groupId>
-      <artifactId>ietf-yang-types</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.mdsal.model</groupId>
-      <artifactId>ietf-topology</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.mdsal.model</groupId>
-      <artifactId>ietf-inet-types</artifactId>
-    </dependency>
-
-    <!-- OpenDaylight openflowplugin -->
-    <dependency>
-      <groupId>org.opendaylight.openflowplugin.model</groupId>
-      <artifactId>model-flow-service</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.openflowplugin.model</groupId>
-      <artifactId>model-flow-statistics</artifactId>
-    </dependency>
-
-    <!-- OpenDaylight third party artifacts -->
-    <dependency>
-      <groupId>org.opendaylight.controller.thirdparty</groupId>
-      <artifactId>net.sf.jung2</artifactId>
     </dependency>
 
     <!-- SLF4J API -->

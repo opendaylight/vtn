@@ -264,6 +264,14 @@
               </data-broker>
             </module>
 
+            <!-- Entity ownership service mock-up configuration -->
+            <module>
+              <type xmlns:ownermock="urn:opendaylight:vtn:it:ownermock:service">
+                ownermock:ownermock-service
+              </type>
+              <name>ownermock-service</name>
+            </module>
+
             <!-- VTN Manager configuration -->
             <module>
               <type xmlns:vtn="urn:opendaylight:vtn:impl:provider">
@@ -291,6 +299,13 @@
                 </type>
                 <name>binding-data-broker</name>
               </data-broker>
+
+              <entity-ownership-service>
+                <type xmlns:ownership="urn:opendaylight:params:xml:ns:yang:controller:md:sal:core:spi:entity-ownership-service">
+                  ownership:entity-ownership-service
+                </type>
+                <name>entity-ownership-service</name>
+              </entity-ownership-service>
             </module>
           </modules>
 
@@ -399,6 +414,17 @@
                 <provider>/modules/module[type='pingpong-data-broker'][name='pingpong-data-broker']</provider>
               </instance>
             </service>
+
+            <!-- Register the mock up of the entity ownership service -->
+            <service>
+              <type xmlns:entity-ownership="urn:opendaylight:params:xml:ns:yang:controller:md:sal:core:spi:entity-ownership-service">
+                entity-ownership:entity-ownership-service
+              </type>
+              <instance>
+                <name>entity-ownership-service</name>
+                <provider>/modules/module[type='ownermock-service'][name='ownermock-service']</provider>
+              </instance>
+            </service>
           </services>
         </data>
       </configuration>
@@ -478,6 +504,11 @@
         <!-- openflowplugin mock-up capabilities -->
         <capability>
           urn:opendaylight:vtn:it:ofmock:provider?module=ofmock-provider&amp;revision=2015-02-09
+        </capability>
+
+        <!-- Entity ownership service mock-up capabilities -->
+        <capability>
+          urn:opendaylight:vtn:it:ownermock:service?module=ownermock-service&amp;revision=2015-11-10
         </capability>
 
         <!-- VTN Manager capabilities -->

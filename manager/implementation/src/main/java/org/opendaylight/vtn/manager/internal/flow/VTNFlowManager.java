@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,7 @@ import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.SalNotificationListener;
+import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
 import org.opendaylight.vtn.manager.internal.util.concurrent.TimeoutCounter;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNThreadPool;
@@ -66,6 +68,8 @@ import org.opendaylight.vtn.manager.internal.util.tx.TxQueueImpl;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipChange;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListener;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.binding.api.NotificationService;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
@@ -103,7 +107,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCo
  */
 public final class VTNFlowManager extends SalNotificationListener
     implements VTNSubSystem, VTNInventoryListener, VtnFlowService,
-               SalFlowListener {
+               SalFlowListener, EntityOwnershipListener {
     /**
      * Logger instance.
      */
@@ -157,6 +161,12 @@ public final class VTNFlowManager extends SalNotificationListener
      * Flow statistics reader service.
      */
     private final StatsReaderService  statsReader;
+
+    /**
+     * A periodic timer task that updates the flow statistics.
+     */
+    private final AtomicReference<StatsTimerTask>  statsTimer =
+        new AtomicReference<>();
 
     /**
      * MD-SAL transaction task to initialize internal flow containers.
@@ -364,6 +374,7 @@ public final class VTNFlowManager extends SalNotificationListener
      */
     public void shutdown() {
         shutdownFlowService();
+        stopStatsTimer();
 
         StatsReaderService srs = statsReader;
         if (srs != null) {
@@ -536,6 +547,33 @@ public final class VTNFlowManager extends SalNotificationListener
         }
     }
 
+    /**
+     * Start the flow statistics updater if not yet started.
+     */
+    private void startStatsTimer() {
+        if (flowService != null) {
+            StatsTimerTask current = statsTimer.get();
+            if (current == null) {
+                StatsTimerTask task = new StatsTimerTask(txQueue);
+                if (statsTimer.compareAndSet(current, task)) {
+                    task.start(vtnProvider.getTimer());
+                    LOG.info("Flow statistics timer task has been started.");
+                }
+            }
+        }
+    }
+
+    /**
+     * Terminate the flow statistics updater.
+     */
+    private void stopStatsTimer() {
+        StatsTimerTask task = statsTimer.getAndSet(null);
+        if (task != null) {
+            task.cancel();
+            LOG.info("Flow statistics timer task has been canceled.");
+        }
+    }
+
     // AutoCloseable
 
     /**
@@ -568,8 +606,11 @@ public final class VTNFlowManager extends SalNotificationListener
         VTNFuture<?> f = txQueue.postFirst(task);
         txQueue.start();
 
-        // Start flow statistics updater.
-        addCloseable(new StatsTimerTask(vtnProvider.getTimer(), txQueue));
+        // Register Entity ownership listener for the flow statistics.
+        // Flow statistics timer will be started immediately if this process
+        // is the owner of the flow statistics.
+        addCloseable(vtnProvider.
+                     registerListener(VTNEntityType.FLOW_STATS, this));
 
         return f;
     }
@@ -754,6 +795,23 @@ public final class VTNFlowManager extends SalNotificationListener
         } else {
             // Remove VTN data flow.
             removeFlows(new RemovedFlowRemover(data, snode));
+        }
+    }
+
+    // EntityOwnershipListener
+
+    /**
+     * Invoked when the ownership status of the flow statistics has been
+     * changed.
+     *
+     * @param change  An {@link EntityOwnershipChange} instance.
+     */
+    public void ownershipChanged(EntityOwnershipChange change) {
+        LOG.debug("Received entity ownerchip change: {}", change);
+        if (change.isOwner()) {
+            startStatsTimer();
+        } else {
+            stopStatsTimer();
         }
     }
 }

@@ -129,13 +129,6 @@ module vtn-flow-impl {
             type int32;
         }
 
-        leaf controller-address {
-            description
-              "A int64 value which represents the MAC address of the
-               controller which installed this flow entry.";
-            type int64;
-        }
-
         container flow-stats-history {
             description
               "Container that keeps history of flow statistics information

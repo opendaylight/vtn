@@ -1089,13 +1089,12 @@ public class PacketContext implements Cloneable, FlowMatchContext {
 
         VTNManagerProvider provider = txContext.getProvider();
         VTNConfig vcfg = provider.getVTNConfig();
-        EtherAddress mac = vcfg.getControllerMacAddress();
         int nmatches = matchFields.size() -
             FlowMatchType.getUnicastTypeCount(matchFields);
         int pri = vcfg.getL2FlowPriority() + nmatches;
 
         VTNFlowBuilder builder = new VTNFlowBuilder(
-            tname, mac, vmatch, pri, idleTimeout, hardTimeout);
+            tname, vmatch, pri, idleTimeout, hardTimeout);
 
         // Set the virtual packet routing path and path policy identifier.
         return builder.addVirtualRoute(virtualRoute).
