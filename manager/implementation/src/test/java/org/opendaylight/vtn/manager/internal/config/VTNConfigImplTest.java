@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -135,6 +135,19 @@ public class VTNConfigImplTest extends TestBase {
         all.setMaxRedirections(value);
         allTest.set(ConfigType.MAX_REDIRECTIONS, value);
 
+        // Set host-tracking.
+        Boolean htrack = Boolean.FALSE;
+        builder = new VtnConfigBuilder().setHostTracking(htrack);
+        assertSame(builder, VTNConfigImpl.fillDefault(builder, mac));
+        new TestVtnConfigBuilder().set(ConfigType.HOST_TRACKING, htrack).
+            set(ConfigType.CONTROLLER_MAC_ADDRESS, defMac).fillDefault().
+            verify(builder);
+        assertEquals(null, builder.isInitState());
+
+        htrack = Boolean.TRUE;
+        all.setHostTracking(htrack);
+        allTest.set(ConfigType.HOST_TRACKING, htrack);
+
         // Set controller-mac-address.
         MacAddress macAddr = new MacAddress("12:34:56:78:9a:bc");
         builder = new VtnConfigBuilder().setControllerMacAddress(macAddr);
@@ -256,6 +269,19 @@ public class VTNConfigImplTest extends TestBase {
         all.setMaxRedirections(value);
         allTest.set(ConfigType.MAX_REDIRECTIONS, value);
 
+        // Set host-tracking.
+        Boolean htrack = Boolean.FALSE;
+        vcfg = new VtnConfigBuilder().setHostTracking(htrack).build();
+        builder = VTNConfigImpl.builder(vcfg, mac);
+        new TestVtnConfigBuilder().set(ConfigType.HOST_TRACKING, htrack).
+            set(ConfigType.CONTROLLER_MAC_ADDRESS, defMac).fillDefault().
+            verify(builder);
+        assertEquals(null, builder.isInitState());
+
+        htrack = Boolean.TRUE;
+        all.setHostTracking(htrack);
+        allTest.set(ConfigType.HOST_TRACKING, htrack);
+
         // Set controller-mac-address.
         MacAddress macAddr = new MacAddress("12:34:56:78:9a:bc");
         vcfg = new VtnConfigBuilder().setControllerMacAddress(macAddr).
@@ -364,6 +390,18 @@ public class VTNConfigImplTest extends TestBase {
         all2.setMaxRedirections(nv1);
         diffList.add("max-redirections=(" + nv + "->" + nv1 + ")");
 
+        // Change host-tracking.
+        boolean ob = vconfOld.isHostTracking();
+        boolean nb = false;
+        vcfg = new VtnConfigBuilder().setHostTracking(nb).build();
+        vconfNew = new VTNConfigImpl(vcfg);
+        expected = "host-tracking=(" + ob + "->" + nb + ")";
+        assertEquals(expected, VTNConfigImpl.diff(vconfOld, vconfNew));
+
+        all1.setHostTracking(nb);
+        all2.setHostTracking(ob);
+        diffList.add("host-tracking=(" + nb + "->" + ob + ")");
+
         // Change controller-mac-address.
         EtherAddress omac = vconfOld.getControllerMacAddress();
         EtherAddress nmac = new EtherAddress(0xfafbfcfdfeffL);
@@ -443,7 +481,7 @@ public class VTNConfigImplTest extends TestBase {
             vcfg = new VtnConfigBuilder().setTopologyWait(value).build();
             vconf = (mac == null)
                 ? new VTNConfigImpl(vcfg) : new VTNConfigImpl(vcfg, mac);
-            test.resetIntegers().set(type, value).verify(vconf);
+            test.reset().set(type, value).verify(vconf);
 
             value = 1;
             all.setTopologyWait(value);
@@ -455,7 +493,7 @@ public class VTNConfigImplTest extends TestBase {
             vcfg = new VtnConfigBuilder().setL2FlowPriority(value).build();
             vconf = (mac == null)
                 ? new VTNConfigImpl(vcfg) : new VTNConfigImpl(vcfg, mac);
-            test.resetIntegers().set(type, value).verify(vconf);
+            test.reset().set(type, value).verify(vconf);
 
             value = 1;
             all.setL2FlowPriority(value);
@@ -467,7 +505,7 @@ public class VTNConfigImplTest extends TestBase {
             vcfg = new VtnConfigBuilder().setFlowModTimeout(value).build();
             vconf = (mac == null)
                 ? new VTNConfigImpl(vcfg) : new VTNConfigImpl(vcfg, mac);
-            test.resetIntegers().set(type, value).verify(vconf);
+            test.reset().set(type, value).verify(vconf);
 
             value = 200;
             all.setFlowModTimeout(value);
@@ -479,7 +517,7 @@ public class VTNConfigImplTest extends TestBase {
             vcfg = new VtnConfigBuilder().setBulkFlowModTimeout(value).build();
             vconf = (mac == null)
                 ? new VTNConfigImpl(vcfg) : new VTNConfigImpl(vcfg, mac);
-            test.resetIntegers().set(type, value).verify(vconf);
+            test.reset().set(type, value).verify(vconf);
 
             value = 3300;
             all.setBulkFlowModTimeout(value);
@@ -491,7 +529,7 @@ public class VTNConfigImplTest extends TestBase {
             vcfg = new VtnConfigBuilder().setInitTimeout(value).build();
             vconf = (mac == null)
                 ? new VTNConfigImpl(vcfg) : new VTNConfigImpl(vcfg, mac);
-            test.resetIntegers().set(type, value).verify(vconf);
+            test.reset().set(type, value).verify(vconf);
 
             value = 200;
             all.setInitTimeout(value);
@@ -503,11 +541,19 @@ public class VTNConfigImplTest extends TestBase {
             vcfg = new VtnConfigBuilder().setMaxRedirections(value).build();
             vconf = (mac == null)
                 ? new VTNConfigImpl(vcfg) : new VTNConfigImpl(vcfg, mac);
-            test.resetIntegers().set(type, value).verify(vconf);
+            test.reset().set(type, value).verify(vconf);
 
             value = 11;
             all.setMaxRedirections(value);
             allTest.set(type, value);
+
+            // Set host-tracking.
+            type = ConfigType.HOST_TRACKING;
+            Boolean htrack = Boolean.FALSE;
+            vcfg = new VtnConfigBuilder().setHostTracking(htrack).build();
+            vconf = (mac == null)
+                ? new VTNConfigImpl(vcfg) : new VTNConfigImpl(vcfg, mac);
+            test.reset().set(type, htrack).verify(vconf);
 
             // Set ccontroller-mac-address.
             MacAddress macAddr = new MacAddress("12:34:56:78:9a:bc");
@@ -516,7 +562,7 @@ public class VTNConfigImplTest extends TestBase {
                 build();
             vconf = (mac == null)
                 ? new VTNConfigImpl(vcfg) : new VTNConfigImpl(vcfg, mac);
-            test.resetIntegers().set(type, macAddr).verify(vconf);
+            test.reset().set(type, macAddr).verify(vconf);
 
             macAddr = new MacAddress("11:22:33:44:55:66");
             all.setControllerMacAddress(macAddr);
@@ -610,6 +656,18 @@ public class VTNConfigImplTest extends TestBase {
         value = 10;
         all.setMaxRedirections(value);
         allTest.set(ConfigType.MAX_REDIRECTIONS, value);
+
+        // Set host-tracking.
+        Boolean htrack = Boolean.FALSE;
+        vcfg = new VtnConfigBuilder().setHostTracking(htrack).build();
+        vcfg = new VTNConfigImpl(vcfg).toVtnConfig();
+        new TestVtnConfigBuilder().set(ConfigType.HOST_TRACKING, htrack).
+            verify(vcfg);
+        assertEquals(null, vcfg.isInitState());
+
+        value = 10;
+        all.setHostTracking(htrack);
+        allTest.set(ConfigType.HOST_TRACKING, htrack);
 
         // Set controller-mac-address.
         MacAddress macAddr = new MacAddress("12:34:56:78:9a:bc");
@@ -719,6 +777,15 @@ public class VTNConfigImplTest extends TestBase {
             testEquals(set, vconf1, vconf2);
         }
 
+        boolean[] bools = {true, false};
+        for (boolean b: bools) {
+            builder.setHostTracking(b);
+            VTNConfigImpl vconf1 = new VTNConfigImpl(builder.build());
+            VTNConfigImpl vconf2 = new VTNConfigImpl(builder.build());
+            assertEquals(b, vconf1.isHostTracking());
+            testEquals(set, vconf1, vconf2);
+        }
+
         String[] addrs = {
             "aa:bb:cc:dd:ee:ff",
             "99:88:77:66:55:44",
@@ -736,7 +803,8 @@ public class VTNConfigImplTest extends TestBase {
 
         int expected = neWaits.length + l2Priorities.length +
             flowModTimeouts.length + bulkFlowModTimeouts.length +
-            initTimeouts.length + maxRedirections.length + addrs.length + 1;
+            initTimeouts.length + maxRedirections.length + bools.length +
+            addrs.length + 1;
         assertEquals(expected, set.size());
     }
 
@@ -764,7 +832,7 @@ public class VTNConfigImplTest extends TestBase {
             VtnConfig vcfg = new VtnConfigBuilder().setTopologyWait(v).build();
             vconf = jaxbTest(new VTNConfigImpl(vcfg), VTNConfigImpl.class,
                              XML_ROOT);
-            test.resetIntegers().set(type, v).verify(vconf);
+            test.reset().set(type, v).verify(vconf);
             assertEquals(vcfg, vconf.getJaxbValue().build());
 
             allBuilder.setTopologyWait(v);
@@ -788,7 +856,7 @@ public class VTNConfigImplTest extends TestBase {
                 build();
             vconf = jaxbTest(new VTNConfigImpl(vcfg), VTNConfigImpl.class,
                              XML_ROOT);
-            test.resetIntegers().set(type, v).verify(vconf);
+            test.reset().set(type, v).verify(vconf);
             assertEquals(vcfg, vconf.getJaxbValue().build());
 
             allBuilder.setL2FlowPriority(v);
@@ -813,7 +881,7 @@ public class VTNConfigImplTest extends TestBase {
                 build();
             vconf = jaxbTest(new VTNConfigImpl(vcfg), VTNConfigImpl.class,
                              XML_ROOT);
-            test.resetIntegers().set(type, v).verify(vconf);
+            test.reset().set(type, v).verify(vconf);
             assertEquals(vcfg, vconf.getJaxbValue().build());
 
             allBuilder.setFlowModTimeout(v);
@@ -838,7 +906,7 @@ public class VTNConfigImplTest extends TestBase {
                 build();
             vconf = jaxbTest(new VTNConfigImpl(vcfg), VTNConfigImpl.class,
                              XML_ROOT);
-            test.resetIntegers().set(type, v).verify(vconf);
+            test.reset().set(type, v).verify(vconf);
             assertEquals(vcfg, vconf.getJaxbValue().build());
 
             allBuilder.setBulkFlowModTimeout(v);
@@ -862,7 +930,7 @@ public class VTNConfigImplTest extends TestBase {
             VtnConfig vcfg = new VtnConfigBuilder().setInitTimeout(v).build();
             vconf = jaxbTest(new VTNConfigImpl(vcfg), VTNConfigImpl.class,
                              XML_ROOT);
-            test.resetIntegers().set(type, v).verify(vconf);
+            test.reset().set(type, v).verify(vconf);
             assertEquals(vcfg, vconf.getJaxbValue().build());
 
             allBuilder.setInitTimeout(v);
@@ -887,7 +955,7 @@ public class VTNConfigImplTest extends TestBase {
                 build();
             vconf = jaxbTest(new VTNConfigImpl(vcfg), VTNConfigImpl.class,
                              XML_ROOT);
-            test.resetIntegers().set(type, v).verify(vconf);
+            test.reset().set(type, v).verify(vconf);
             assertEquals(vcfg, vconf.getJaxbValue().build());
 
             allBuilder.setMaxRedirections(v);
@@ -899,6 +967,24 @@ public class VTNConfigImplTest extends TestBase {
         }
         vconf.setJaxbMaxRedirections(null);
         assertEquals(null, vconf.getJaxbMaxRedirections());
+
+        type = ConfigType.HOST_TRACKING;
+        Boolean[] bools = {null, Boolean.TRUE, Boolean.FALSE};
+        for (Boolean b: bools) {
+            VtnConfig vcfg = new VtnConfigBuilder().setHostTracking(b).
+                build();
+            vconf = jaxbTest(new VTNConfigImpl(vcfg), VTNConfigImpl.class,
+                             XML_ROOT);
+            test.reset().set(type, b).verify(vconf);
+            assertEquals(vcfg, vconf.getJaxbValue().build());
+
+            allBuilder.setHostTracking(b);
+            VtnConfig all = allBuilder.build();
+            vconf = jaxbTest(new VTNConfigImpl(all), VTNConfigImpl.class,
+                             XML_ROOT);
+            allTest.set(type, b).verify(vconf);
+            assertEquals(all, vconf.getJaxbValue().build());
+        }
 
         type = ConfigType.CONTROLLER_MAC_ADDRESS;
         String[] addrs = {
@@ -913,7 +999,7 @@ public class VTNConfigImplTest extends TestBase {
                 setControllerMacAddress(maddr).build();
             vconf = jaxbTest(new VTNConfigImpl(vcfg), VTNConfigImpl.class,
                              XML_ROOT);
-            test.resetIntegers().set(type, maddr).verify(vconf);
+            test.reset().set(type, maddr).verify(vconf);
             assertEquals(vcfg, vconf.getJaxbValue().build());
 
             allBuilder.setControllerMacAddress(maddr);
@@ -959,17 +1045,17 @@ public class VTNConfigImplTest extends TestBase {
         jaxbErrorTest(VTNConfigImpl.class,
                       new XmlValueType("controller-mac-address",
                                        EtherAddress.class).add(XML_ROOT),
-                      new XmlValueType("topology-wait", Integer.class).
-                      add(XML_ROOT),
-                      new XmlValueType("l2-flow-priority", Integer.class).
-                      add(XML_ROOT),
-                      new XmlValueType("flow-mod-timeout", Integer.class).
-                      add(XML_ROOT),
-                      new XmlValueType("bulk-flow-mod-timeout", Integer.class).
-                      add(XML_ROOT),
-                      new XmlValueType("init-timeout", Integer.class).
-                      add(XML_ROOT),
-                      new XmlValueType("max-redirections", Integer.class).
-                      add(XML_ROOT));
+                      new XmlValueType("topology-wait",
+                                       Integer.class).add(XML_ROOT),
+                      new XmlValueType("l2-flow-priority",
+                                       Integer.class).add(XML_ROOT),
+                      new XmlValueType("flow-mod-timeout",
+                                       Integer.class).add(XML_ROOT),
+                      new XmlValueType("bulk-flow-mod-timeout",
+                                       Integer.class).add(XML_ROOT),
+                      new XmlValueType("init-timeout",
+                                       Integer.class).add(XML_ROOT),
+                      new XmlValueType("max-redirections",
+                                       Integer.class).add(XML_ROOT));
     }
 }

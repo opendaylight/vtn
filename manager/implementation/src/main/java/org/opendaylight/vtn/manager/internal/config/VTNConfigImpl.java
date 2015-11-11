@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -121,6 +121,13 @@ public final class VTNConfigImpl implements VTNConfig {
     private int  maxRedirections;
 
     /**
+     * A boolean value that determines whether to enable host tracking in the
+     * vBridge.
+     */
+    @XmlElement(name = "host-tracking")
+    private Boolean  hostTracking;
+
+    /**
      * MAC address of the controller used as source MAC address of ARP packet.
      * It is determined by the controller if omitted.
      */
@@ -163,6 +170,10 @@ public final class VTNConfigImpl implements VTNConfig {
 
         if (builder.getMaxRedirections() == null) {
             builder.setMaxRedirections(DEFAULT_MAX_REDIRECTIONS);
+        }
+
+        if (builder.isHostTracking() == null) {
+            builder.setHostTracking(true);
         }
 
         if (builder.getControllerMacAddress() == null) {
@@ -215,6 +226,7 @@ public final class VTNConfigImpl implements VTNConfig {
                 setBulkFlowModTimeout(vcfg.getBulkFlowModTimeout()).
                 setInitTimeout(vcfg.getInitTimeout()).
                 setMaxRedirections(vcfg.getMaxRedirections()).
+                setHostTracking(vcfg.isHostTracking()).
                 setControllerMacAddress(vcfg.getControllerMacAddress());
         }
 
@@ -244,6 +256,8 @@ public final class VTNConfigImpl implements VTNConfig {
              newConf.getInitTimeout());
         diff(list, "max-redirections", oldConf.getMaxRedirections(),
              newConf.getMaxRedirections());
+        diff(list, "host-tracking", oldConf.isHostTracking(),
+             newConf.isHostTracking());
 
         EtherAddress oldMac = oldConf.getControllerMacAddress();
         EtherAddress newMac = newConf.getControllerMacAddress();
@@ -268,6 +282,24 @@ public final class VTNConfigImpl implements VTNConfig {
      * @param n     New value of the parameter.
      */
     private static void diff(List<String> list, String name, int o, int n) {
+        if (o != n) {
+            StringBuilder builder = new StringBuilder(name);
+            builder.append("=(").append(o).append(RIGHT_ARROW).append(n).
+                append(')');
+            list.add(builder.toString());
+        }
+    }
+
+    /**
+     * Add a string that indicates the change of parameter to the given list.
+     *
+     * @param list  A list of strings that indicates diferrences of parameters.
+     * @param name  The name of the parameter.
+     * @param o     Old value of the parameter.
+     * @param n     New value of the parameter.
+     */
+    private static void diff(List<String> list, String name, boolean o,
+                             boolean n) {
         if (o != n) {
             StringBuilder builder = new StringBuilder(name);
             builder.append("=(").append(o).append(RIGHT_ARROW).append(n).
@@ -328,6 +360,7 @@ public final class VTNConfigImpl implements VTNConfig {
         bulkFlowModTimeout = decode(vcfg.getBulkFlowModTimeout());
         initTimeout = decode(vcfg.getInitTimeout());
         maxRedirections = decode(vcfg.getMaxRedirections());
+        hostTracking = vcfg.isHostTracking();
         controllerMacAddress = decode(vcfg.getControllerMacAddress());
         if (mac != null && controllerMacAddress == null) {
             controllerMacAddress = mac;
@@ -347,6 +380,7 @@ public final class VTNConfigImpl implements VTNConfig {
             setBulkFlowModTimeout(encode(bulkFlowModTimeout)).
             setInitTimeout(encode(initTimeout)).
             setMaxRedirections(encode(maxRedirections)).
+            setHostTracking(hostTracking).
             setControllerMacAddress(encode(controllerMacAddress));
 
         return builder.build();
@@ -362,6 +396,7 @@ public final class VTNConfigImpl implements VTNConfig {
      */
     public VtnConfigBuilder getJaxbValue() {
         return createJaxbValue().
+            setHostTracking(hostTracking).
             setControllerMacAddress(encode(controllerMacAddress));
     }
 
@@ -389,17 +424,14 @@ public final class VTNConfigImpl implements VTNConfig {
      */
     @Override
     public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-
-        boolean result = false;
-        if (o != null && getClass().equals(o.getClass())) {
+        boolean result = (o == this);
+        if (!result && o != null && getClass().equals(o.getClass())) {
             VTNConfigImpl vconf = (VTNConfigImpl)o;
             if (topologyWait == vconf.topologyWait &&
                 initTimeout == vconf.initTimeout &&
                 maxRedirections == vconf.maxRedirections) {
                 result = (equalsFlowParams(vconf) &&
+                          Objects.equals(hostTracking, vconf.hostTracking) &&
                           Objects.equals(controllerMacAddress,
                                          vconf.controllerMacAddress));
             }
@@ -416,8 +448,8 @@ public final class VTNConfigImpl implements VTNConfig {
     @Override
     public int hashCode() {
         return Objects.hash(topologyWait, l2FlowPriority, flowModTimeout,
-                            bulkFlowModTimeout, initTimeout,
-                            maxRedirections, controllerMacAddress);
+                            bulkFlowModTimeout, initTimeout, maxRedirections,
+                            hostTracking, controllerMacAddress);
     }
 
     // JAXB methods.
@@ -646,6 +678,19 @@ public final class VTNConfigImpl implements VTNConfig {
     }
 
     /**
+     * Determine whether the given object is {@code null} or not.
+     *
+     * @param obj  An object to be tested.
+     * @param def  The default value.
+     * @param <T>  The type of the object.
+     * @return  {@code obj} if it is not {@code null}.
+     *          {@code def} if {@code obj} is {@code null}.
+     */
+    private <T> T checkNotNull(T obj, T def) {
+        return (obj == null) ? def : obj;
+    }
+
+    /**
      * Return an {@link EtherAddress} instance that represents the given
      * {@link MacAddress} instance.
      *
@@ -742,6 +787,14 @@ public final class VTNConfigImpl implements VTNConfig {
     @Override
     public int getMaxRedirections() {
         return intValue(maxRedirections, DEFAULT_MAX_REDIRECTIONS);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isHostTracking() {
+        return (hostTracking == null || hostTracking.booleanValue());
     }
 
     /**

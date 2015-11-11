@@ -100,6 +100,15 @@ module vtn-config {
             type yang:mac-address;
         }
 
+        leaf host-tracking {
+            description
+              "A boolean value that determines whether to enable host tracking
+               in the vBridge. If true, a packet for IP address probing will
+               be sent to hosts learned in the vBridge periodically.";
+            type boolean;
+            default true;
+        }
+
         leaf init-state {
             description
               "Internal data used to determine whether the VTN Manager is

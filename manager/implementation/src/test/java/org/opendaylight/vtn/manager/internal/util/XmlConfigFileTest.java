@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -294,6 +294,7 @@ public class XmlConfigFileTest extends TestBase {
 
         // Write configuration with the minimum values.
         String minimum = "minimum";
+        Boolean minBool = Boolean.FALSE;
         EtherAddress minMac = new EtherAddress(0L);
         File baseDir = getConfigDir();
         File dir = new File(baseDir, type.toString());
@@ -304,7 +305,7 @@ public class XmlConfigFileTest extends TestBase {
         for (ConfigType ctype: configTypes) {
             Object min = ctype.getMinimumValue();
             if (min == null) {
-                min = minMac;
+                min = (ctype.isBoolean()) ? minBool : minMac;
             }
             ps.println(ctype.getXmlElement(min));
         }
@@ -313,6 +314,7 @@ public class XmlConfigFileTest extends TestBase {
 
         // Write configuration with the maximum values.
         String maximum = "maximum";
+        Boolean maxBool = Boolean.TRUE;
         EtherAddress maxMac = new EtherAddress(0xffffffffffffL);
         file = new File(dir, maximum + ".xml");
         ps = new PrintStream(new FileOutputStream(file));
@@ -320,7 +322,7 @@ public class XmlConfigFileTest extends TestBase {
         for (ConfigType ctype: configTypes) {
             Object max = ctype.getMaximumValue();
             if (max == null) {
-                max = maxMac;
+                max = (ctype.isBoolean()) ? maxBool : maxMac;
             }
             ps.println(ctype.getXmlElement(max));
         }
@@ -335,7 +337,7 @@ public class XmlConfigFileTest extends TestBase {
                 Object value = ctype.get(min);
                 Object expected = ctype.getMinimumValue();
                 if (expected == null) {
-                    expected = minMac;
+                    expected = (ctype.isBoolean()) ? minBool : minMac;
                 }
                 assertEquals(expected, value);
             }
@@ -346,7 +348,7 @@ public class XmlConfigFileTest extends TestBase {
                 Object value = ctype.get(max);
                 Object expected = ctype.getMaximumValue();
                 if (expected == null) {
-                    expected = maxMac;
+                    expected = (ctype.isBoolean()) ? maxBool : maxMac;
                 }
                 assertEquals(expected, value);
             }
@@ -355,16 +357,18 @@ public class XmlConfigFileTest extends TestBase {
         // Test with broken value.
         String bad = "bad";
         for (ConfigType ctype: configTypes) {
-            file = new File(dir, bad + ".xml");
-            ps = new PrintStream(new FileOutputStream(file));
-            ps.printf("<vtn-config>\n");
-            ps.println(ctype.getXmlElement("bad value"));
-            ps.printf("</vtn-config>\n");
-            ps.close();
-            assertEquals(true, file.isFile());
-            assertEquals(ctype.toString(), null,
-                         XmlConfigFile.load(type, bad, cls));
-            assertEquals(false, file.isFile());
+            if (!ctype.isBoolean()) {
+                file = new File(dir, bad + ".xml");
+                ps = new PrintStream(new FileOutputStream(file));
+                ps.printf("<vtn-config>\n");
+                ps.println(ctype.getXmlElement("bad value"));
+                ps.printf("</vtn-config>\n");
+                ps.close();
+                assertEquals(true, file.isFile());
+                assertEquals(ctype.toString(), null,
+                             XmlConfigFile.load(type, bad, cls));
+                assertEquals(false, file.isFile());
+            }
         }
 
         // Test with too small values.
