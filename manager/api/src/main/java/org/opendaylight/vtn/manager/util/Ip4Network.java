@@ -191,6 +191,34 @@ public final class Ip4Network extends IpNetwork {
     }
 
     /**
+     * Create a new {@link Ip4Network} instance from the given MD-SAL
+     * ipv4-address.
+     *
+     * @param ipv4  An {@link Ipv4Address} instance.
+     * @return  An {@link Ip4Network} instance on success.
+     *          {@code null} if {@code ipv4} is {@code null}.
+     * @throws IllegalArgumentException
+     *    The given instance contains an invalid value.
+     */
+    public static Ip4Network create(Ipv4Address ipv4) {
+        Ip4Network ip4;
+        if (ipv4 == null) {
+            ip4 = null;
+        } else {
+            String addr = ipv4.getValue();
+
+            // Eliminate zone information.
+            int idx = addr.lastIndexOf('%');
+            if (idx >= 0) {
+                addr = addr.substring(0, idx);
+            }
+            ip4 = new Ip4Network(addr);
+        }
+
+        return ip4;
+    }
+
+    /**
      * Private constructor used for JAXB mapping.
      */
     @SuppressWarnings("unused")

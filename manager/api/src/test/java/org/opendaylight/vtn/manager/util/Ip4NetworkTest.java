@@ -261,6 +261,40 @@ public class Ip4NetworkTest extends TestBase {
     }
 
     /**
+     * Test case for {@link Ip4Network#create(Ipv4Address)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testCreateIpv4Address() throws Exception {
+        assertEquals(null, Ip4Network.create((Ipv4Address)null));
+
+        String[] taddrs = {
+            "0.0.0.0",
+            "127.0.0.1",
+            "1.2.3.4",
+            "10.20.30.40",
+            "192.168.45.23",
+            "255.255.255.255",
+        };
+
+        for (String text: taddrs) {
+            InetAddress iaddr = InetAddress.getByName(text);
+            Ipv4Address ipv4 = new Ipv4Address(text);
+            Ip4Network ip4 = Ip4Network.create(ipv4);
+            assertEquals(iaddr, ip4.getInetAddress());
+            assertEquals(ipv4, ip4.getIpAddress().getIpv4Address());
+
+            // Zone should be ignored.
+            String text1 = text + "%1";
+            Ip4Network newIp4 = Ip4Network.create(new Ipv4Address(text1));
+            assertEquals(ip4, newIp4);
+            assertEquals(iaddr, newIp4.getInetAddress());
+            assertEquals(ipv4, newIp4.getIpAddress().getIpv4Address());
+        }
+    }
+
+    /**
      * Test case for constructors and getter methods.
      *
      * <ul>
