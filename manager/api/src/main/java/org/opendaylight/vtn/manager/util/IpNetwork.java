@@ -25,7 +25,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.addr
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
 
 /**
@@ -251,20 +250,10 @@ public abstract class IpNetwork implements Serializable {
      */
     public static final IpNetwork create(IpAddress ip) {
         if (ip != null) {
-            Ipv4Address ipv4 = ip.getIpv4Address();
-            if (ipv4 != null) {
-                String addr = ipv4.getValue();
-                if (addr != null) {
-                    // Eliminate zone information.
-                    int idx = addr.lastIndexOf('%');
-                    if (idx >= 0) {
-                        addr = addr.substring(0, idx);
-                    }
-
-                    return create(addr);
-                }
+            Ip4Network ip4 = Ip4Network.create(ip.getIpv4Address());
+            if (ip4 != null) {
+                return ip4;
             }
-
             if (ip.getIpv6Address() != null) {
                 throw new IllegalArgumentException(
                     "Unsupported IP address: " + ip);
