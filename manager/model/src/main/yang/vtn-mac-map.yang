@@ -26,6 +26,12 @@ module vtn-mac-map {
         revision-date 2010-09-24;
     }
 
+    /* OpenDaylight controller */
+    import opendaylight-inventory {
+        prefix inv;
+        revision-date 2013-08-19;
+    }
+
     description
       "The module that describes the data models for MAC mapping, which
        associates a host with a vBridge in VTN.";
@@ -76,7 +82,7 @@ module vtn-mac-map {
         description
           "Describes runtime status information about MAC mapping.";
 
-        list mapped-hosts {
+        list mapped-host {
             description
               "A list of MAC addresses actually mapped to the vBridge.";
             key "mac-address";
@@ -84,6 +90,13 @@ module vtn-mac-map {
             leaf mac-address {
                 description "MAC address actually mapped to the vBridge.";
                 type yang:mac-address;
+            }
+
+            leaf port-id {
+                description
+                  "An identifier for a physical switch port where the
+                   MAC address is detected.";
+                type inv:node-connector-id;
             }
 
             /* VLAN ID where the host is detected. */
@@ -378,7 +391,7 @@ module vtn-mac-map {
                 type boolean;
             }
 
-            list mac-mapped-hosts {
+            list mac-mapped-host {
                 description
                   "A list of host information mapped to the specified vBridge
                    by MAC mapping.";
