@@ -256,6 +256,21 @@ public final class OwnerMockService
         return Optional.fromNullable(state);
     }
 
+    /**
+     * Determine whether the given entity is registered as a local candidate
+     * of ownership.
+     *
+     * @param ent  The entity to be tested.
+     * @return  {@code true} if the given entity is registered as a candidate.
+     *          {@code false} otherwise.
+     */
+    @Override
+    public synchronized boolean isCandidateRegistered(Entity ent) {
+        String type = ent.getType();
+        Set<Entity> entities = candidateMap.get(type);
+        return (entities != null && entities.contains(ent));
+    }
+
     // AutoCloseable
 
     /**
