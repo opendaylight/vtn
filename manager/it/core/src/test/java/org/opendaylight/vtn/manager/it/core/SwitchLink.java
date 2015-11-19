@@ -75,7 +75,9 @@ public final class SwitchLink {
      */
     public SwitchLink(VtnLink vlink) {
         this((VtnLinkInfo)vlink);
-        staticLink = vlink.isStaticLink();
+        if (Boolean.TRUE.equals(vlink.isStaticLink())) {
+            staticLink = Boolean.TRUE;
+        }
     }
 
     /**
