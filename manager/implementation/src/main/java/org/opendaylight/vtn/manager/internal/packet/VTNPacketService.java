@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -9,6 +9,7 @@
 package org.opendaylight.vtn.manager.internal.packet;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimerTask;
@@ -20,6 +21,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.packet.Packet;
@@ -126,37 +129,64 @@ public final class VTNPacketService extends SalNotificationListener
      *
      * @param egress  A {@link SalPort} instance which specifies the egress
      *                switch port.
-     * @param packet  A {@link Packet} instance to be transmitted.
+     * @param packet  A {@link Packet} instance to transmit.
      */
     public void transmit(SalPort egress, Packet packet) {
         PacketProcessingService pps = packetService.get();
-        if (pps == null) {
-            return;
+        if (pps != null) {
+            transmit(pps, egress, packet);
         }
+    }
 
+    /**
+     * Transmit all the given packets.
+     *
+     * @param packets  A list of packets to transmit.
+     *                 The left of each elements indicates the egress switch
+     *                 port, and the right indiciates a packet to transmit.
+     */
+    public void transmit(List<Pair<SalPort, Packet>> packets) {
+        PacketProcessingService pps = packetService.get();
+        if (pps != null) {
+            for (Pair<SalPort, Packet> pkt: packets) {
+                transmit(pps, pkt.getLeft(), pkt.getRight());
+            }
+        }
+    }
+
+    /**
+     * Transmit the given packet.
+     *
+     * @param pps     A packet-procssing service.
+     * @param egress  A {@link SalPort} instance which specifies the egress
+     *                switch port.
+     * @param packet  A {@link Packet} instance to be transmitted.
+     */
+    private void transmit(PacketProcessingService pps, SalPort egress,
+                          Packet packet) {
         if (topologyWaiting.containsKey(egress)) {
             LOG.trace("Ignore packet transmission due to topology " +
                       "detection: {}", egress);
-            return;
+        } else {
+            byte[] payload;
+            try {
+                payload = packet.serialize();
+            } catch (Exception e) {
+                LOG.error("Failed to transmit packet via " + egress, e);
+                return;
+            }
+
+            TransmitPacketInputBuilder builder =
+                new TransmitPacketInputBuilder().
+                setNode(egress.getNodeRef()).
+                setEgress(egress.getNodeConnectorRef()).
+                setPayload(payload);
+
+            Future<RpcResult<Void>> f = pps.transmitPacket(builder.build());
+            RpcErrorCallback<Void> cb = new RpcErrorCallback<>(
+                LOG, "transmit-packet", "Failed to transmit packet.");
+            vtnProvider.setCallback(f, cb);
         }
-
-        byte[] payload;
-        try {
-            payload = packet.serialize();
-        } catch (Exception e) {
-            LOG.error("Failed to transmit packet via " + egress, e);
-            return;
-        }
-
-        TransmitPacketInputBuilder builder = new TransmitPacketInputBuilder();
-        builder.setNode(egress.getNodeRef()).
-            setEgress(egress.getNodeConnectorRef()).
-            setPayload(payload);
-
-        Future<RpcResult<Void>> f = pps.transmitPacket(builder.build());
-        RpcErrorCallback<Void> cb = new RpcErrorCallback<>(
-            LOG, "transmit-packet", "Failed to transmit packet.");
-        vtnProvider.setCallback(f, cb);
     }
 
     /**
@@ -202,25 +232,6 @@ public final class VTNPacketService extends SalNotificationListener
                 vtnProvider.getTimer().schedule(task, topoWait);
             }
         }
-    }
-
-    /**
-     * Determine whether the topology waiting on the given port should be
-     * terminated or not.
-     *
-     * @param ev  A {@link VtnPortEvent} instance which notifies the port
-     *            change.
-     * @return  {@code true} only if the topology waiting on the port specified
-     *          by {@code ev} should be terminated.
-     */
-    private boolean shouldStopTopologyWait(VtnPortEvent ev) {
-        // Topology wait should be terminated when the port is disabled.
-        if (ev.getUpdateType() == VtnUpdateType.REMOVED ||
-            Boolean.FALSE.equals(ev.getStateChange())) {
-            return true;
-        }
-
-        return false;
     }
 
     /**
@@ -281,7 +292,8 @@ public final class VTNPacketService extends SalNotificationListener
             return "inter-switch link has been detected";
         }
 
-        InventoryReader reader = ev.getTxContext().getInventoryReader();
+        InventoryReader reader = ev.getTxContext().
+            getReadSpecific(InventoryReader.class);
         SalPort sport = ev.getSalPort();
         return (reader.isStaticEdgePort(sport))
             ? "static edge port" : null;

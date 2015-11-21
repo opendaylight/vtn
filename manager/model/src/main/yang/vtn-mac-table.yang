@@ -166,12 +166,12 @@ module vtn-mac-table {
            field in the RPC output is not learned by the vBridge specified by
            the RPC input.
 
-           If no MAC address is specified by the RPC input, there will be
-           only one `remove-mac-entry-result' entry with null MAC address
-           in the RPC output. In this case `REMOVED' in `status' field
-           indicates that at least one MAC address has been removed from
-           the MAC address table. Null indicates that the specified MAC
-           address table is empty.
+           If no MAC address is specified by the RPC input, all the MAC
+           addresses in the MAC address table will be removed. In this case
+           all the removed MAC addresses will be copied to the RPC output.
+           `remove-mac-entry-result' will be null if no MAC address is
+           specified by the RPC input and the specified MAC address table is
+           empty.
 
            On failure, one of vtn-error-tag value which indicates the cause
            of error is set into application tag in RPC error.

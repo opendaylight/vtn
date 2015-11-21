@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,14 +8,26 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow.action;
 
-import java.util.HashMap;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableMap;
+
 import org.opendaylight.vtn.manager.flow.action.FlowAction;
+import org.opendaylight.vtn.manager.flow.action.SetDlDstAction;
+import org.opendaylight.vtn.manager.flow.action.SetDlSrcAction;
+import org.opendaylight.vtn.manager.flow.action.SetDscpAction;
+import org.opendaylight.vtn.manager.flow.action.SetIcmpCodeAction;
+import org.opendaylight.vtn.manager.flow.action.SetIcmpTypeAction;
+import org.opendaylight.vtn.manager.flow.action.SetInet4DstAction;
+import org.opendaylight.vtn.manager.flow.action.SetInet4SrcAction;
+import org.opendaylight.vtn.manager.flow.action.SetTpDstAction;
+import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
+import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
 import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.VtnOrderedFlowAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnDropActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPopVlanActionCase;
@@ -107,6 +119,12 @@ public final class FlowActionConverter {
     private final Map<Class<?>, VTNFlowAction>  mdStringifiers;
 
     /**
+     * A map that keeps adapters for conversion from {@link FlowAction} to
+     * {@link FlowFilterAction}.
+     */
+    private final Map<Class<?>, FlowFilterAction>  adFilterConverters;
+
+    /**
      * Construct a new instance.
      */
     private FlowActionConverter() {
@@ -127,64 +145,83 @@ public final class FlowActionConverter {
         VTNOutputAction output = new VTNOutputAction();
 
         // Initialize adapters for conversion from VtnAction into FlowAction.
-        Map<Class<?>, VTNFlowAction> map = new HashMap<>();
-        map.put(VtnDropActionCase.class, drop);
-        map.put(VtnPopVlanActionCase.class, popVlan);
-        map.put(VtnPushVlanActionCase.class, pushVlan);
-        map.put(VtnSetDlDstActionCase.class, dlDst);
-        map.put(VtnSetDlSrcActionCase.class, dlSrc);
-        map.put(VtnSetIcmpCodeActionCase.class, icmpCode);
-        map.put(VtnSetIcmpTypeActionCase.class, icmpType);
-        map.put(VtnSetInetDscpActionCase.class, dscp);
-        map.put(VtnSetInetDstActionCase.class, inetDst);
-        map.put(VtnSetInetSrcActionCase.class, inetSrc);
-        map.put(VtnSetPortDstActionCase.class, portDst);
-        map.put(VtnSetPortSrcActionCase.class, portSrc);
-        map.put(VtnSetVlanIdActionCase.class, vlanId);
-        map.put(VtnSetVlanPcpActionCase.class, vlanPcp);
-        flowConverters = map;
+        flowConverters = ImmutableMap.<Class<?>, VTNFlowAction>builder().
+            put(VtnDropActionCase.class, drop).
+            put(VtnPopVlanActionCase.class, popVlan).
+            put(VtnPushVlanActionCase.class, pushVlan).
+            put(VtnSetDlDstActionCase.class, dlDst).
+            put(VtnSetDlSrcActionCase.class, dlSrc).
+            put(VtnSetIcmpCodeActionCase.class, icmpCode).
+            put(VtnSetIcmpTypeActionCase.class, icmpType).
+            put(VtnSetInetDscpActionCase.class, dscp).
+            put(VtnSetInetDstActionCase.class, inetDst).
+            put(VtnSetInetSrcActionCase.class, inetSrc).
+            put(VtnSetPortDstActionCase.class, portDst).
+            put(VtnSetPortSrcActionCase.class, portSrc).
+            put(VtnSetVlanIdActionCase.class, vlanId).
+            put(VtnSetVlanPcpActionCase.class, vlanPcp).
+            build();
 
         // Initialize adapters for conversion from MD-SAL action into
         // VtnAction.
-        map = new HashMap<Class<?>, VTNFlowAction>();
-        map.put(DropActionCase.class, drop);
-        map.put(PopVlanActionCase.class, popVlan);
-        map.put(PushVlanActionCase.class, pushVlan);
-        map.put(SetDlDstActionCase.class, dlDst);
-        map.put(SetDlSrcActionCase.class, dlSrc);
-        map.put(SetNwTosActionCase.class, dscp);
-        map.put(SetNwDstActionCase.class, inetDst);
-        map.put(SetNwSrcActionCase.class, inetSrc);
-        map.put(SetVlanIdActionCase.class, vlanId);
-        map.put(SetVlanPcpActionCase.class, vlanPcp);
-        mdConverters = map;
+        mdConverters = ImmutableMap.<Class<?>, VTNFlowAction>builder().
+            put(DropActionCase.class, drop).
+            put(PopVlanActionCase.class, popVlan).
+            put(PushVlanActionCase.class, pushVlan).
+            put(SetDlDstActionCase.class, dlDst).
+            put(SetDlSrcActionCase.class, dlSrc).
+            put(SetNwTosActionCase.class, dscp).
+            put(SetNwDstActionCase.class, inetDst).
+            put(SetNwSrcActionCase.class, inetSrc).
+            put(SetVlanIdActionCase.class, vlanId).
+            put(SetVlanPcpActionCase.class, vlanPcp).
+            build();
 
         // Initialize adapters for conversion from layer 4 MD-SAL action into
         // VtnAction.
 
-        // For TCP.
-        Map<Short, Map<Class<?>, VTNFlowAction>> l4map = new HashMap<>();
-        map = new HashMap<Class<?>, VTNFlowAction>();
-        map.put(SetTpDstActionCase.class, portDst);
-        map.put(SetTpSrcActionCase.class, portSrc);
-        l4map.put(InetProtocols.TCP.shortValue(), map);
+        // For TCP and TCP.
+        Map<Class<?>, VTNFlowAction> tcpMap = ImmutableMap.
+            <Class<?>, VTNFlowAction>builder().
+            put(SetTpDstActionCase.class, portDst).
+            put(SetTpSrcActionCase.class, portSrc).
+            build();
 
-        // For UDP.
-        l4map.put(InetProtocols.UDP.shortValue(), map);
+        // For ICMP.
+        Map<Class<?>, VTNFlowAction> icmpMap = ImmutableMap.
+            <Class<?>, VTNFlowAction>builder().
+            put(SetTpDstActionCase.class, icmpCode).
+            put(SetTpSrcActionCase.class, icmpType).
+            build();
 
-        // For ICMP
-        map = new HashMap<Class<?>, VTNFlowAction>();
-        map.put(SetTpDstActionCase.class, icmpCode);
-        map.put(SetTpSrcActionCase.class, icmpType);
-        l4map.put(InetProtocols.ICMP.shortValue(), map);
-        l4Converters = l4map;
+        l4Converters = ImmutableMap.
+            <Short, Map<Class<?>, VTNFlowAction>>builder().
+            put(InetProtocols.TCP.shortValue(), tcpMap).
+            put(InetProtocols.UDP.shortValue(), tcpMap).
+            put(InetProtocols.ICMP.shortValue(), icmpMap).
+            build();
 
         // Initialize stringifiers for MD-SAL action.
-        map = new HashMap<Class<?>, VTNFlowAction>();
-        map.put(OutputActionCase.class, output);
-        map.put(SetTpDstActionCase.class, portDst);
-        map.put(SetTpSrcActionCase.class, portSrc);
-        mdStringifiers = map;
+        mdStringifiers = ImmutableMap.<Class<?>, VTNFlowAction>builder().
+            put(OutputActionCase.class, output).
+            put(SetTpDstActionCase.class, portDst).
+            put(SetTpSrcActionCase.class, portSrc).
+            build();
+
+        // Initialize adapters for conversion from FlowAction into
+        // FlowFilterAction.
+        adFilterConverters = ImmutableMap.<Class<?>, FlowFilterAction>builder().
+            put(SetDlSrcAction.class, dlSrc).
+            put(SetDlDstAction.class, dlDst).
+            put(SetInet4SrcAction.class, inetSrc).
+            put(SetInet4DstAction.class, inetDst).
+            put(SetDscpAction.class, dscp).
+            put(SetTpSrcAction.class, portSrc).
+            put(SetTpDstAction.class, portDst).
+            put(SetIcmpTypeAction.class, icmpType).
+            put(SetIcmpCodeAction.class, icmpCode).
+            put(SetVlanPcpAction.class, vlanPcp).
+            build();
     }
 
     /**
@@ -208,6 +245,63 @@ public final class FlowActionConverter {
         }
 
         return null;
+    }
+
+    /**
+     * Convert the given VTN action into a {@link FlowFilterAction} instance.
+     *
+     * @param vaction  A VTN flow action to be converted.
+     * @return  A converted {@link FlowFilterAction} instance.
+     * @throws RpcException
+     *    Failed to convert the given instance.
+     */
+    public FlowFilterAction toFlowFilterAction(VtnOrderedFlowAction vaction)
+        throws RpcException {
+        if (vaction == null) {
+            throw RpcException.getNullArgumentException("vtn-flow-action");
+        }
+
+        VtnAction vact = vaction.getVtnAction();
+        if (vact == null) {
+            throw RpcException.getNullArgumentException("vtn-action");
+        }
+
+        Class<?> type = vact.getImplementedInterface();
+        VTNFlowAction conv = flowConverters.get(type);
+        if (!(conv instanceof FlowFilterAction)) {
+            throw RpcException.getBadArgumentException(
+                "Unsupported vtn-action: " + type.getName());
+        }
+
+        FlowFilterAction fact = (FlowFilterAction)conv;
+        return fact.toFlowFilterAction(vact, vaction.getOrder());
+    }
+
+    /**
+     * Convert the given AD-SAL flow action into a {@link FlowFilterAction}
+     * instance.
+     *
+     * @param ord   An integer which determines the order of flow actions
+     *              in a flow filter.
+     * @param fact  A {@link FlowAction} instance to be converted.
+     * @return  A converted {@link FlowFilterAction} instance.
+     * @throws RpcException
+     *    Failed to convert the given instance.
+     */
+    public FlowFilterAction toFlowFilterAction(int ord, FlowAction fact)
+        throws RpcException {
+        if (fact == null) {
+            throw RpcException.getNullArgumentException("Flow action");
+        }
+
+        Class<?> type = fact.getClass();
+        FlowFilterAction conv = adFilterConverters.get(type);
+        if (conv == null) {
+            throw RpcException.getBadArgumentException(
+                "Unsupported flow action: " + type.getSimpleName());
+        }
+
+        return conv.toFlowFilterAction(fact, ord);
     }
 
     /**

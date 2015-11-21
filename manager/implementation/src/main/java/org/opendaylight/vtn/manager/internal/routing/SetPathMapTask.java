@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -26,9 +26,7 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcOutputGenerator;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcUtils;
 import org.opendaylight.vtn.manager.internal.util.tx.CompositeTxTask;
-import org.opendaylight.vtn.manager.internal.util.vnode.VTenantUtils;
-
-import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
+import org.opendaylight.vtn.manager.internal.util.vnode.VTenantIdentifier;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
@@ -39,7 +37,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.set.p
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.set.path.map.output.SetPathMapResult;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.set.path.map.output.SetPathMapResultBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.vtn.path.map.list.VtnPathMap;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
@@ -53,13 +50,13 @@ public final class SetPathMapTask
     extends CompositeTxTask<VtnUpdateType, SetMapTask>
     implements RpcOutputGenerator<List<VtnUpdateType>, SetPathMapOutput> {
     /**
-     * The name of the target VTN.
+     * The identifier for the target VTN.
      *
      * <p>
      *   {@code null} means that the global path map is targeted.
      * </p>
      */
-    private final VnodeName  tenantName;
+    private final VTenantIdentifier  identifier;
 
     /**
      * Construct a new task that set all the given path map configurations
@@ -78,9 +75,9 @@ public final class SetPathMapTask
         }
 
         String tname = input.getTenantName();
-        VnodeName vname = (tname == null)
+        VTenantIdentifier ident = (tname == null)
             ? null
-            : VTenantUtils.getVnodeName(tname);
+            : VTenantIdentifier.create(tname, true);
 
         List<PathMapList> vmaps = input.getPathMapList();
         if (vmaps == null || vmaps.isEmpty()) {
@@ -94,26 +91,25 @@ public final class SetPathMapTask
             VtnPathMap vpm = PathMapUtils.toVtnPathMapBuilder(pml).build();
             Integer index = vpm.getIndex();
             PathMapUtils.verifyMapIndex(indices, index);
-            InstanceIdentifier<VtnPathMap> path = (vname == null)
+            InstanceIdentifier<VtnPathMap> path = (ident == null)
                 ? PathMapUtils.getIdentifier(index)
-                : PathMapUtils.getIdentifier(vname, index);
+                : PathMapUtils.getIdentifier(ident, index);
             taskList.add(new SetMapTask(path, vpm));
         }
 
-        return new SetPathMapTask(vname, taskList);
+        return new SetPathMapTask(ident, taskList);
     }
 
     /**
      * Construct a new instance.
      *
-     * @param vname  A {@link VnodeName} instance that contains the name of the
-     *               target VTN. {@code null} means that the global path map
-     *               is targeted.
+     * @param ident  The identifier for the target VTN.
+     *               {@code null} means that the global path map is targeted.
      * @param tasks  A list of tasks that set path map configuration.
      */
-    private SetPathMapTask(VnodeName vname, List<SetMapTask> tasks) {
+    private SetPathMapTask(VTenantIdentifier ident, List<SetMapTask> tasks) {
         super(tasks);
-        tenantName = vname;
+        identifier = ident;
     }
 
     // CompositeTxTask
@@ -123,10 +119,9 @@ public final class SetPathMapTask
      */
     @Override
     protected void onStarted(TxContext ctx) throws VTNException {
-        if (tenantName != null) {
+        if (identifier != null) {
             // Ensure that the target VTN is present.
-            ReadWriteTransaction tx = ctx.getReadWriteTransaction();
-            VTenantUtils.readVtn(tx, tenantName);
+            identifier.fetch(ctx.getReadWriteTransaction());
         }
     }
 
@@ -141,9 +136,9 @@ public final class SetPathMapTask
         for (VtnUpdateType status: result) {
             if (status != null) {
                 // REVISIT: Select flow entries affected by the change.
-                FlowRemover remover = (tenantName == null)
+                FlowRemover remover = (identifier == null)
                     ? new AllFlowRemover()
-                    : new TenantFlowRemover(tenantName.getValue());
+                    : new TenantFlowRemover(identifier);
                 addBackgroundTask(provider.removeFlows(remover));
                 break;
             }

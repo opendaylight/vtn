@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -21,16 +21,16 @@ import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.vtn.manager.internal.L2Host;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxQueue;
-import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.flow.stats.AddFlowStatsTask;
 import org.opendaylight.vtn.manager.internal.flow.stats.StatsReaderService;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.inventory.L2Host;
+import org.opendaylight.vtn.manager.internal.util.inventory.MacVlan;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
@@ -290,7 +290,8 @@ public abstract class ReadFlowFuture
     protected final DataFlowInfo toDataFlowInfo(
         FlowCache fc, VTNFuture<FlowStatsRecord> current) {
         try {
-            InventoryReader reader = getTxContext().getInventoryReader();
+            InventoryReader reader = getTxContext().
+                getReadSpecific(InventoryReader.class);
             DataFlowInfoBuilder builder =
                 fc.toDataFlowInfoBuilder(reader, flowMode);
             if (flowMode != DataFlowMode.SUMMARY) {
@@ -330,7 +331,8 @@ public abstract class ReadFlowFuture
             VtnSwitchPort vswp = input.getDataFlowPort();
             if (vswp != null) {
                 // Determine the specified switch port.
-                InventoryReader reader = ctx.getInventoryReader();
+                InventoryReader reader =
+                    ctx.getReadSpecific(InventoryReader.class);
                 SalPort sport = reader.findPort(snode, vswp);
                 if (sport == null) {
                     // The specified port is not present.
@@ -365,7 +367,7 @@ public abstract class ReadFlowFuture
                 src = null;
             }
 
-            if (src == null || src.getMacAddress() == MacVlan.UNDEFINED) {
+            if (src == null || src.getAddress() == MacVlan.UNDEFINED) {
                 // Invalid source host is specified.
                 // Thus no data flow should be selected.
                 notFound();

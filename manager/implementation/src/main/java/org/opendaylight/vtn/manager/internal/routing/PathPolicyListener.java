@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,9 +26,9 @@ import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
+import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyConfigBuilder;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
@@ -64,28 +63,38 @@ final class PathPolicyListener
     private final TopologyGraph  topology;
 
     /**
-     * A set of path policy IDs laoded by {@link PathPolicyLoadTask}.
-     */
-    private Set<Integer>  loadedPolicies;
-
-    /**
      * MD-SAL transaction task to load path policy configuration.
      *
      * <p>
      *   This task returns current {@link VtnPathPolicies} instance.
      * </p>
      */
-    private class PathPolicyLoadTask extends AbstractTxTask<VtnPathPolicies> {
+    private static class PathPolicyLoadTask
+        extends AbstractTxTask<VtnPathPolicies> {
+        /**
+         * A graph that keeps network topology.
+         */
+        private final TopologyGraph  topoGraph;
+
+        /**
+         * Construct a new instance.
+         *
+         * @param topo  A {@link TopologyGraph} instance.
+         */
+        private PathPolicyLoadTask(TopologyGraph topo) {
+            topoGraph = topo;
+        }
+
         /**
          * Resume the configuration for the given path policy.
          *
+         * @param ctx     MD-SAL datastore transaction context.
          * @param vlist   A list of {@link VtnPathPolicy} instance to store
          *                resumed configuration.
-         * @param loaded  A set of loaded path policy IDs.
          * @param key     A string representation of the policy ID.
          * @param xpp     A {@link XmlPathPolicy} instance.
          */
-        private void resume(List<VtnPathPolicy> vlist, Set<Integer> loaded,
+        private void resume(TxContext ctx, List<VtnPathPolicy> vlist,
                             String key, XmlPathPolicy xpp) {
             Integer pid = xpp.getId();
             try {
@@ -98,12 +107,9 @@ final class PathPolicyListener
                 VtnPathPolicy vpp = new PathPolicyConfigBuilder.Data().
                     set(xpp).getBuilder().build();
                 vlist.add(vpp);
-                loaded.add(pid);
             } catch (RpcException | RuntimeException e) {
-                String msg = MiscUtils.joinColon(
-                    "Ignore invalid path policy configuration",
-                    xpp, e.getMessage());
-                LOG.warn(msg, e);
+                ctx.log(LOG, VTNLogLevel.WARN, e,
+                        "Ignore invalid path policy configuration: %s", e);
             }
         }
 
@@ -112,9 +118,6 @@ final class PathPolicyListener
          */
         @Override
         public VtnPathPolicies execute(TxContext ctx) throws VTNException {
-            loadedPolicies = null;
-            Set<Integer> loaded = new ConcurrentSkipListSet<>();
-
             // Load configuration from file.
             XmlConfigFile.Type ftype = XmlConfigFile.Type.PATHPOLICY;
             List<VtnPathPolicy> vlist = new ArrayList<>();
@@ -122,7 +125,7 @@ final class PathPolicyListener
                 XmlPathPolicy xpp = XmlConfigFile.load(
                     ftype, key, XmlPathPolicy.class);
                 if (xpp != null) {
-                    resume(vlist, loaded, key, xpp);
+                    resume(ctx, vlist, key, xpp);
                 }
             }
 
@@ -140,9 +143,6 @@ final class PathPolicyListener
 
             VtnPathPolicies policies = builder.build();
             tx.put(oper, path, policies, true);
-            if (!loaded.isEmpty()) {
-                loadedPolicies = loaded;
-            }
 
             return policies;
         }
@@ -158,8 +158,8 @@ final class PathPolicyListener
                 // Create route resolvers for path policies.
                 for (VtnPathPolicy vpp: vlist) {
                     Integer id = vpp.getId();
-                    LOG.info("{}: Path policy has been loaded.", id);
-                    topology.updateResolver(id);
+                    LOG.debug("{}: Path policy has been loaded.", id);
+                    topoGraph.updateResolver(id);
                 }
             }
         }
@@ -257,7 +257,7 @@ final class PathPolicyListener
      */
     VTNFuture<?> initConfig(VTNManagerProvider provider, boolean master) {
         TxTask<?> task = (master)
-            ? new PathPolicyLoadTask() : new PathPolicySaveTask();
+            ? new PathPolicyLoadTask(topology) : new PathPolicySaveTask();
         return provider.post(task);
     }
 
@@ -304,15 +304,7 @@ final class PathPolicyListener
             LOG.warn("Ignore broken creation event: path={}, value={}",
                      path, data.getValue());
         } else {
-            // Do nothing if the specified event was caused by the initial
-            // setup.
-            Set<Integer> loaded = loadedPolicies;
-            if (loaded == null || !loaded.remove(id)) {
-                ectx.addUpdated(id, new XmlPathPolicy(data.getValue()));
-            } else if (loaded.isEmpty()) {
-                LOG.debug("All loaded path policies have been notified.");
-                loadedPolicies = null;
-            }
+            ectx.addUpdated(id, new XmlPathPolicy(data.getValue()));
         }
     }
 

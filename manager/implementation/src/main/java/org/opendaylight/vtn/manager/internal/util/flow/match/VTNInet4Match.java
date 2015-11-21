@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -188,11 +188,14 @@ public final class VTNInet4Match extends VTNInetMatch {
     public void setMatch(MatchBuilder builder) {
         super.setMatch(builder);
 
-        Ipv4MatchBuilder imatch = null;
+        Ipv4MatchBuilder imatch;
         IpNetwork ipn = getSourceNetwork();
-        if (ipn != null) {
+        if (ipn == null) {
+            imatch = null;
+        } else {
             IpPrefix ipp = ipn.getIpPrefix();
-            imatch = create(imatch).setIpv4Source(ipp.getIpv4Prefix());
+            imatch = create((Ipv4MatchBuilder)null).
+                setIpv4Source(ipp.getIpv4Prefix());
         }
 
         ipn = getDestinationNetwork();

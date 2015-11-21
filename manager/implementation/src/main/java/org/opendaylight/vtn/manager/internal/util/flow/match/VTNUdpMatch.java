@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -164,13 +164,16 @@ public final class VTNUdpMatch extends VTNLayer4PortMatch<UdpHeader> {
      */
     @Override
     public VtnUdpMatch toVtnLayer4Match() {
-        VtnUdpMatchBuilder vumatch = null;
+        VtnUdpMatchBuilder vumatch;
         VTNPortRange src = getSourcePort();
-        if (src != null) {
+        if (src == null) {
+            vumatch = null;
+        } else {
             UdpSourceRangeBuilder sb = new UdpSourceRangeBuilder().
                 setPortFrom(src.getPortNumberFrom()).
                 setPortTo(src.getPortNumberTo());
-            vumatch = create(vumatch).setUdpSourceRange(sb.build());
+            vumatch = create((VtnUdpMatchBuilder)null).
+                setUdpSourceRange(sb.build());
         }
 
         VTNPortRange dst = getDestinationPort();
@@ -189,10 +192,13 @@ public final class VTNUdpMatch extends VTNLayer4PortMatch<UdpHeader> {
      */
     @Override
     public void setMatch(MatchBuilder builder, IpVersion ver) {
-        UdpMatchBuilder umatch = null;
+        UdpMatchBuilder umatch;
         VTNPortRange src = getSourcePort();
-        if (src != null) {
-            umatch = create(umatch).setUdpSourcePort(src.getPortNumberFrom());
+        if (src == null) {
+            umatch = null;
+        } else {
+            umatch = create((UdpMatchBuilder)null).
+                setUdpSourcePort(src.getPortNumberFrom());
         }
 
         VTNPortRange dst = getDestinationPort();

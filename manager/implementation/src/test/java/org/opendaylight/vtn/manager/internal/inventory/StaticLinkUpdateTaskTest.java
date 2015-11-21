@@ -368,7 +368,7 @@ public class StaticLinkUpdateTaskTest extends TestBase {
         InventoryReader reader = new InventoryReader(tx);
         TxContext ctx = mock(TxContext.class);
         when(ctx.getReadWriteTransaction()).thenReturn(tx);
-        when(ctx.getInventoryReader()).thenReturn(reader);
+        when(ctx.getReadSpecific(InventoryReader.class)).thenReturn(reader);
 
         // No configuration is present in the config DS.
         LogicalDatastoreType config = LogicalDatastoreType.CONFIGURATION;
@@ -398,7 +398,7 @@ public class StaticLinkUpdateTaskTest extends TestBase {
                      getFieldValue(task, Boolean.class, "configLoaded"));
 
         verify(ctx).getReadWriteTransaction();
-        verify(ctx).getInventoryReader();
+        verify(ctx).getReadSpecific(InventoryReader.class);
         verify(tx).read(config, path);
         verify(tx).read(oper, igPath);
         verifyNoMoreInteractions(ctx, tx);
@@ -452,7 +452,7 @@ public class StaticLinkUpdateTaskTest extends TestBase {
         InventoryReader reader = new InventoryReader(tx);
         TxContext ctx = mock(TxContext.class);
         when(ctx.getReadWriteTransaction()).thenReturn(tx);
-        when(ctx.getInventoryReader()).thenReturn(reader);
+        when(ctx.getReadSpecific(InventoryReader.class)).thenReturn(reader);
 
         // Create configurations to be saved.
         SalPort src = new SalPort(12L, 34L);
@@ -526,7 +526,7 @@ public class StaticLinkUpdateTaskTest extends TestBase {
                      getFieldValue(task, Boolean.class, "configLoaded"));
 
         verify(ctx).getReadWriteTransaction();
-        verify(ctx).getInventoryReader();
+        verify(ctx).getReadSpecific(InventoryReader.class);
         verify(tx).read(config, path);
         verify(tx).read(oper, igPath);
         verifyNoMoreInteractions(ctx, tx);
@@ -578,7 +578,7 @@ public class StaticLinkUpdateTaskTest extends TestBase {
         InventoryReader reader = new InventoryReader(tx);
         TxContext ctx = mock(TxContext.class);
         when(ctx.getReadWriteTransaction()).thenReturn(tx);
-        when(ctx.getInventoryReader()).thenReturn(reader);
+        when(ctx.getReadSpecific(InventoryReader.class)).thenReturn(reader);
 
         // sport1 is configured as an static edge port.
         SalPort sport1 = new SalPort(11L, 22L);
@@ -706,7 +706,7 @@ public class StaticLinkUpdateTaskTest extends TestBase {
                      getFieldValue(task, Boolean.class, "configLoaded"));
 
         verify(ctx).getReadWriteTransaction();
-        verify(ctx).getInventoryReader();
+        verify(ctx).getReadSpecific(InventoryReader.class);
         verify(tx).read(config, path);
 
         // Links on sport1 will be removed.
@@ -830,7 +830,7 @@ public class StaticLinkUpdateTaskTest extends TestBase {
         InventoryReader reader = new InventoryReader(tx);
         TxContext ctx = mock(TxContext.class);
         when(ctx.getReadWriteTransaction()).thenReturn(tx);
-        when(ctx.getInventoryReader()).thenReturn(reader);
+        when(ctx.getReadSpecific(InventoryReader.class)).thenReturn(reader);
 
         // Throw an exception on configuration read operation.
         IllegalStateException cause = new IllegalStateException();
@@ -890,7 +890,7 @@ public class StaticLinkUpdateTaskTest extends TestBase {
                      getFieldValue(task, Boolean.class, "configLoaded"));
 
         verify(ctx).getReadWriteTransaction();
-        verify(ctx).getInventoryReader();
+        verify(ctx).getReadSpecific(InventoryReader.class);
         verify(tx).read(config, path);
         verifyNoMoreInteractions(ctx, tx);
 
@@ -937,7 +937,7 @@ public class StaticLinkUpdateTaskTest extends TestBase {
         InventoryReader reader = new InventoryReader(tx);
         TxContext ctx = mock(TxContext.class);
         when(ctx.getReadWriteTransaction()).thenReturn(tx);
-        when(ctx.getInventoryReader()).thenReturn(reader);
+        when(ctx.getReadSpecific(InventoryReader.class)).thenReturn(reader);
 
         // Create configurations to be saved.
         StaticSwitchLink swlink1 = new StaticSwitchLinkBuilder().
@@ -1004,7 +1004,7 @@ public class StaticLinkUpdateTaskTest extends TestBase {
                      getFieldValue(task, Boolean.class, "configLoaded"));
 
         verify(ctx).getReadWriteTransaction();
-        verify(ctx).getInventoryReader();
+        verify(ctx).getReadSpecific(InventoryReader.class);
         verify(tx).read(config, path);
         verify(tx).read(oper, portPath);
         verifyNoMoreInteractions(ctx, tx);

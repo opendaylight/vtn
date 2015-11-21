@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -52,6 +52,69 @@ public class DataStoreUtilsTest extends TestBase {
     private static final long  READ_TIMEOUT = 5;
 
     /**
+     * Test case for {@link DataStoreUtils#read(ReadTransaction, InstanceIdentifier)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testReadOperational() throws Exception {
+        SalPort sport = new SalPort(1L, 2L);
+        VtnPort vport = createVtnPortBuilder(sport).build();
+        InstanceIdentifier<VtnPort> path = sport.getVtnPortIdentifier();
+        LogicalDatastoreType store = LogicalDatastoreType.OPERATIONAL;
+
+        // In case of successful completion.
+        ReadTransaction rtx = Mockito.mock(ReadTransaction.class);
+        CheckedFuture<Optional<VtnPort>, ReadFailedException> f =
+            doRead(vport);
+        Mockito.when(rtx.read(store, path)).thenReturn(f);
+        Optional<VtnPort> res = DataStoreUtils.read(rtx, path);
+        assertTrue(res.isPresent());
+        assertEquals(vport, res.orNull());
+        Mockito.verify(rtx, Mockito.times(1)).read(store, path);
+        verifyFutureMock(f);
+
+        rtx = Mockito.mock(ReadTransaction.class);
+        f = doRead((VtnPort)null);
+        Mockito.when(rtx.read(store, path)).thenReturn(f);
+        res = DataStoreUtils.read(rtx, path);
+        assertFalse(res.isPresent());
+        assertEquals(null, res.orNull());
+        Mockito.verify(rtx, Mockito.times(1)).read(store, path);
+        verifyFutureMock(f);
+
+        // In case of read failure.
+        ReadFailedException rfe = new ReadFailedException("Read failed");
+        rtx = Mockito.mock(ReadTransaction.class);
+        f = doRead(rfe);
+        Mockito.when(rtx.read(store, path)).thenReturn(f);
+        try {
+            DataStoreUtils.read(rtx, path);
+            unexpected();
+        } catch (VTNException e) {
+            assertEquals(VtnErrorTag.INTERNALERROR, e.getVtnErrorTag());
+            assertEquals(rfe, e.getCause());
+        }
+        Mockito.verify(rtx, Mockito.times(1)).read(store, path);
+        verifyFutureMock(f);
+
+        // In case of timeout.
+        TimeoutException te = new TimeoutException("Timed out");
+        rtx = Mockito.mock(ReadTransaction.class);
+        f = doRead(te);
+        Mockito.when(rtx.read(store, path)).thenReturn(f);
+        try {
+            DataStoreUtils.read(rtx, path);
+            unexpected();
+        } catch (VTNException e) {
+            assertEquals(VtnErrorTag.TIMEOUT, e.getVtnErrorTag());
+            assertEquals(te, e.getCause());
+        }
+        Mockito.verify(rtx, Mockito.times(1)).read(store, path);
+        verifyFutureMock(f);
+    }
+
+    /**
      * Test case for {@link DataStoreUtils#read(ReadTransaction, LogicalDatastoreType, InstanceIdentifier)}.
      *
      * @throws Exception  An error occurred.
@@ -61,56 +124,56 @@ public class DataStoreUtilsTest extends TestBase {
         SalPort sport = new SalPort(1L, 2L);
         VtnPort vport = createVtnPortBuilder(sport).build();
         InstanceIdentifier<VtnPort> path = sport.getVtnPortIdentifier();
-        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        LogicalDatastoreType store = LogicalDatastoreType.CONFIGURATION;
 
         // In case of successful completion.
         ReadTransaction rtx = Mockito.mock(ReadTransaction.class);
         CheckedFuture<Optional<VtnPort>, ReadFailedException> f =
             doRead(vport);
-        Mockito.when(rtx.read(oper, path)).thenReturn(f);
-        Optional<VtnPort> res = DataStoreUtils.read(rtx, oper, path);
+        Mockito.when(rtx.read(store, path)).thenReturn(f);
+        Optional<VtnPort> res = DataStoreUtils.read(rtx, store, path);
         assertTrue(res.isPresent());
         assertEquals(vport, res.orNull());
-        Mockito.verify(rtx, Mockito.times(1)).read(oper, path);
+        Mockito.verify(rtx, Mockito.times(1)).read(store, path);
         verifyFutureMock(f);
 
         rtx = Mockito.mock(ReadTransaction.class);
         f = doRead((VtnPort)null);
-        Mockito.when(rtx.read(oper, path)).thenReturn(f);
-        res = DataStoreUtils.read(rtx, oper, path);
+        Mockito.when(rtx.read(store, path)).thenReturn(f);
+        res = DataStoreUtils.read(rtx, store, path);
         assertFalse(res.isPresent());
         assertEquals(null, res.orNull());
-        Mockito.verify(rtx, Mockito.times(1)).read(oper, path);
+        Mockito.verify(rtx, Mockito.times(1)).read(store, path);
         verifyFutureMock(f);
 
         // In case of read failure.
         ReadFailedException rfe = new ReadFailedException("Read failed");
         rtx = Mockito.mock(ReadTransaction.class);
         f = doRead(rfe);
-        Mockito.when(rtx.read(oper, path)).thenReturn(f);
+        Mockito.when(rtx.read(store, path)).thenReturn(f);
         try {
-            DataStoreUtils.read(rtx, oper, path);
+            DataStoreUtils.read(rtx, store, path);
             unexpected();
         } catch (VTNException e) {
             assertEquals(VtnErrorTag.INTERNALERROR, e.getVtnErrorTag());
             assertEquals(rfe, e.getCause());
         }
-        Mockito.verify(rtx, Mockito.times(1)).read(oper, path);
+        Mockito.verify(rtx, Mockito.times(1)).read(store, path);
         verifyFutureMock(f);
 
         // In case of timeout.
         TimeoutException te = new TimeoutException("Timed out");
         rtx = Mockito.mock(ReadTransaction.class);
         f = doRead(te);
-        Mockito.when(rtx.read(oper, path)).thenReturn(f);
+        Mockito.when(rtx.read(store, path)).thenReturn(f);
         try {
-            DataStoreUtils.read(rtx, oper, path);
+            DataStoreUtils.read(rtx, store, path);
             unexpected();
         } catch (VTNException e) {
             assertEquals(VtnErrorTag.TIMEOUT, e.getVtnErrorTag());
             assertEquals(te, e.getCause());
         }
-        Mockito.verify(rtx, Mockito.times(1)).read(oper, path);
+        Mockito.verify(rtx, Mockito.times(1)).read(store, path);
         verifyFutureMock(f);
     }
 
@@ -164,6 +227,70 @@ public class DataStoreUtilsTest extends TestBase {
     }
 
     /**
+     * Test case for {@link DataStoreUtils#delete(ReadWriteTransaction, InstanceIdentifier)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testDeleteOperational() throws Exception {
+        SalPort sport = new SalPort(100L, 200L);
+        VtnPort vport = createVtnPortBuilder(sport).build();
+        InstanceIdentifier<VtnPort> path = sport.getVtnPortIdentifier();
+        LogicalDatastoreType store = LogicalDatastoreType.OPERATIONAL;
+
+        // The target object is present.
+        ReadWriteTransaction tx = Mockito.mock(ReadWriteTransaction.class);
+        CheckedFuture<Optional<VtnPort>, ReadFailedException> f =
+            doRead(vport);
+        Mockito.when(tx.read(store, path)).thenReturn(f);
+        assertEquals(vport, DataStoreUtils.delete(tx, path));
+        Mockito.verify(tx, Mockito.times(1)).read(store, path);
+        Mockito.verify(tx, Mockito.times(1)).delete(store, path);
+        verifyFutureMock(f);
+
+        // The target object is not present.
+        tx = Mockito.mock(ReadWriteTransaction.class);
+        f = doRead((VtnPort)null);
+        Mockito.when(tx.read(store, path)).thenReturn(f);
+        assertEquals(null, DataStoreUtils.delete(tx, path));
+        Mockito.verify(tx, Mockito.times(1)).read(store, path);
+        Mockito.verify(tx, Mockito.never()).delete(store, path);
+        verifyFutureMock(f);
+
+        // In case of read failure.
+        ReadFailedException rfe = new ReadFailedException("Read failed");
+        tx = Mockito.mock(ReadWriteTransaction.class);
+        f = doRead(rfe);
+        Mockito.when(tx.read(store, path)).thenReturn(f);
+        try {
+            DataStoreUtils.delete(tx, path);
+            unexpected();
+        } catch (VTNException e) {
+            assertEquals(VtnErrorTag.INTERNALERROR, e.getVtnErrorTag());
+            assertEquals(rfe, e.getCause());
+        }
+        Mockito.verify(tx, Mockito.times(1)).read(store, path);
+        Mockito.verify(tx, Mockito.never()).delete(store, path);
+        verifyFutureMock(f);
+
+        // In case of timeout.
+        TimeoutException te = new TimeoutException("Timed out");
+        tx = Mockito.mock(ReadWriteTransaction.class);
+        f = doRead(te);
+        Mockito.when(tx.read(store, path)).thenReturn(f);
+        try {
+            DataStoreUtils.delete(tx, path);
+            unexpected();
+        } catch (VTNException e) {
+            assertEquals(VtnErrorTag.TIMEOUT, e.getVtnErrorTag());
+            assertEquals(te, e.getCause());
+        }
+        Mockito.verify(tx, Mockito.times(1)).read(store, path);
+        Mockito.verify(tx, Mockito.never()).delete(store, path);
+        verifyFutureMock(f);
+    }
+
+    /**
      * Test case for {@link DataStoreUtils#delete(ReadWriteTransaction, LogicalDatastoreType, InstanceIdentifier)}.
      *
      * @throws Exception  An error occurred.
@@ -173,57 +300,57 @@ public class DataStoreUtilsTest extends TestBase {
         SalPort sport = new SalPort(100L, 200L);
         VtnPort vport = createVtnPortBuilder(sport).build();
         InstanceIdentifier<VtnPort> path = sport.getVtnPortIdentifier();
-        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        LogicalDatastoreType store = LogicalDatastoreType.CONFIGURATION;
 
         // The target object is present.
         ReadWriteTransaction tx = Mockito.mock(ReadWriteTransaction.class);
         CheckedFuture<Optional<VtnPort>, ReadFailedException> f =
             doRead(vport);
-        Mockito.when(tx.read(oper, path)).thenReturn(f);
-        assertEquals(true, DataStoreUtils.delete(tx, oper, path));
-        Mockito.verify(tx, Mockito.times(1)).read(oper, path);
-        Mockito.verify(tx, Mockito.times(1)).delete(oper, path);
+        Mockito.when(tx.read(store, path)).thenReturn(f);
+        assertEquals(vport, DataStoreUtils.delete(tx, store, path));
+        Mockito.verify(tx, Mockito.times(1)).read(store, path);
+        Mockito.verify(tx, Mockito.times(1)).delete(store, path);
         verifyFutureMock(f);
 
         // The target object is not present.
         tx = Mockito.mock(ReadWriteTransaction.class);
         f = doRead((VtnPort)null);
-        Mockito.when(tx.read(oper, path)).thenReturn(f);
-        assertEquals(false, DataStoreUtils.delete(tx, oper, path));
-        Mockito.verify(tx, Mockito.times(1)).read(oper, path);
-        Mockito.verify(tx, Mockito.never()).delete(oper, path);
+        Mockito.when(tx.read(store, path)).thenReturn(f);
+        assertEquals(null, DataStoreUtils.delete(tx, store, path));
+        Mockito.verify(tx, Mockito.times(1)).read(store, path);
+        Mockito.verify(tx, Mockito.never()).delete(store, path);
         verifyFutureMock(f);
 
         // In case of read failure.
         ReadFailedException rfe = new ReadFailedException("Read failed");
         tx = Mockito.mock(ReadWriteTransaction.class);
         f = doRead(rfe);
-        Mockito.when(tx.read(oper, path)).thenReturn(f);
+        Mockito.when(tx.read(store, path)).thenReturn(f);
         try {
-            DataStoreUtils.delete(tx, oper, path);
+            DataStoreUtils.delete(tx, store, path);
             unexpected();
         } catch (VTNException e) {
             assertEquals(VtnErrorTag.INTERNALERROR, e.getVtnErrorTag());
             assertEquals(rfe, e.getCause());
         }
-        Mockito.verify(tx, Mockito.times(1)).read(oper, path);
-        Mockito.verify(tx, Mockito.never()).delete(oper, path);
+        Mockito.verify(tx, Mockito.times(1)).read(store, path);
+        Mockito.verify(tx, Mockito.never()).delete(store, path);
         verifyFutureMock(f);
 
         // In case of timeout.
         TimeoutException te = new TimeoutException("Timed out");
         tx = Mockito.mock(ReadWriteTransaction.class);
         f = doRead(te);
-        Mockito.when(tx.read(oper, path)).thenReturn(f);
+        Mockito.when(tx.read(store, path)).thenReturn(f);
         try {
-            DataStoreUtils.delete(tx, oper, path);
+            DataStoreUtils.delete(tx, store, path);
             unexpected();
         } catch (VTNException e) {
             assertEquals(VtnErrorTag.TIMEOUT, e.getVtnErrorTag());
             assertEquals(te, e.getCause());
         }
-        Mockito.verify(tx, Mockito.times(1)).read(oper, path);
-        Mockito.verify(tx, Mockito.never()).delete(oper, path);
+        Mockito.verify(tx, Mockito.times(1)).read(store, path);
+        Mockito.verify(tx, Mockito.never()).delete(store, path);
         verifyFutureMock(f);
     }
 

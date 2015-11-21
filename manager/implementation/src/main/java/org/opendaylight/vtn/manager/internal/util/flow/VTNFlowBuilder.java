@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -16,17 +16,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.opendaylight.vtn.manager.VNodePath;
-import org.opendaylight.vtn.manager.VNodeRoute;
-
-import org.opendaylight.vtn.manager.internal.L2Host;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.action.FlowFilterAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNActionList;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNMatch;
+import org.opendaylight.vtn.manager.internal.util.inventory.L2Host;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
+import org.opendaylight.vtn.manager.internal.util.vnode.VNodeIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnFlowId;
@@ -131,7 +129,7 @@ public final class VTNFlowBuilder implements VTNDataFlow {
     /**
      * A sequence of virtual packet routing.
      */
-    private final List<VNodeRoute>  virtualRoute = new ArrayList<>();
+    private final List<VNodeHop>  virtualRoute = new ArrayList<>();
 
     /**
      * A string which specifies the flow match coinfigured in the ingress flow
@@ -231,25 +229,25 @@ public final class VTNFlowBuilder implements VTNDataFlow {
     }
 
     /**
-     * Add the specified {@link VNodeRoute} to the tail of the virtual packet
+     * Add the specified {@link VNodeHop} to the tail of the virtual packet
      * routing path.
      *
-     * @param vroute  A {@link VNodeRoute} instance.
+     * @param vhop  A {@link VNodeHop} instance.
      * @return  This instance.
      */
-    public VTNFlowBuilder addVirtualRoute(VNodeRoute vroute) {
-        virtualRoute.add(vroute);
+    public VTNFlowBuilder addVirtualRoute(VNodeHop vhop) {
+        virtualRoute.add(vhop);
         return this;
     }
 
     /**
-     * Add the specified sequence of {@link VNodeRoute} to the tail of the
+     * Add the specified sequence of {@link VNodeHop} to the tail of the
      * virtual packet routing path.
      *
-     * @param c  A collection of {@link VNodeRoute} instances.
+     * @param c  A collection of {@link VNodeHop} instances.
      * @return  This instance.
      */
-    public VTNFlowBuilder addVirtualRoute(Collection<VNodeRoute> c) {
+    public VTNFlowBuilder addVirtualRoute(Collection<VNodeHop> c) {
         virtualRoute.addAll(c);
         return this;
     }
@@ -257,18 +255,18 @@ public final class VTNFlowBuilder implements VTNDataFlow {
     /**
      * Set the virtual node hop to the egress virtual node of this flow.
      *
-     * @param vroute  A {@link VNodeRoute} instance which represents the hop
-     *                to the egress virtual node.
-     *                Specifying {@code null} or an empty route means that
-     *                this VTN flow always discards packets.
+     * @param vhop  A {@link VNodeHop} instance which represents the hop to
+     *              the egress virtual node.
+     *              Specifying {@code null} or an empty route means that
+     *              this VTN flow always discards packets.
      * @return  This instance.
      */
-    public VTNFlowBuilder setEgressVNodeRoute(VNodeRoute vroute) {
+    public VTNFlowBuilder setEgressVNodeHop(VNodeHop vhop) {
         int lastIndex = virtualRoute.size() - 1;
-        VNodePath path = (vroute == null) ? null : vroute.getPath();
+        VNodeIdentifier<?> path = (vhop == null) ? null : vhop.getPath();
         if (path == null) {
             // Append an empty route which represents a negative flow.
-            addEmptyVNodeRoute(lastIndex);
+            addEmptyVNodeHop(lastIndex);
             return this;
         }
 
@@ -277,26 +275,26 @@ public final class VTNFlowBuilder implements VTNDataFlow {
         if (lastIndex > 0) {
             // A VNodePath which specifies the virtual mapping which
             // established the egress flow must be always configured in the
-            // last VNodeRoute element of the virtual packet routing path.
-            VNodeRoute last = virtualRoute.get(lastIndex);
-            VNodePath lastPath = last.getPath();
+            // last VNodeHop element of the virtual packet routing path.
+            VNodeHop last = virtualRoute.get(lastIndex);
+            VNodeIdentifier<?> lastPath = last.getPath();
             if (path.equals(lastPath)) {
                 // The last route element already points the specified virtual
                 // mapping.
                 return this;
             }
 
-            if (VBRIDGE_MAP_REASONS.contains(vroute.getReason()) &&
+            if (VBRIDGE_MAP_REASONS.contains(vhop.getReason()) &&
                 lastPath.contains(path)) {
                 // A path to the virtual mapping must be configured in the last
                 // virtual packet route.
-                VNodeRoute newLast = new VNodeRoute(path, last.getReason());
+                VNodeHop newLast = new VNodeHop(path, last.getReason());
                 virtualRoute.set(lastIndex, newLast);
                 return this;
             }
         }
 
-        virtualRoute.add(vroute);
+        virtualRoute.add(vhop);
         return this;
     }
 
@@ -319,7 +317,7 @@ public final class VTNFlowBuilder implements VTNDataFlow {
 
             // Configure VTN data flow.
             flowBuilder.setFlowId(fid).
-                setVirtualRoute(FlowUtils.toVirtualRouteList(virtualRoute)).
+                setVirtualRoute(VNodeHop.toVirtualRouteList(virtualRoute)).
                 setVtnFlowEntry(entries);
         }
 
@@ -388,14 +386,14 @@ public final class VTNFlowBuilder implements VTNDataFlow {
     }
 
     /**
-     * Append an empty virtual node route to the virtual route path.
+     * Append an empty virtual node hop to the virtual route path.
      *
      * @param lastIndex  The index of the last element in the virtual route
      *                   path.
      */
-    private void addEmptyVNodeRoute(int lastIndex) {
+    private void addEmptyVNodeHop(int lastIndex) {
         if (lastIndex < 0 || virtualRoute.get(lastIndex).getPath() != null) {
-            virtualRoute.add(new VNodeRoute());
+            virtualRoute.add(new VNodeHop());
         }
     }
 

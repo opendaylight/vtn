@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -16,8 +16,8 @@ import java.util.ListIterator;
 
 import org.opendaylight.vtn.manager.flow.action.FlowAction;
 
-import org.opendaylight.vtn.manager.internal.L2Host;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.inventory.L2Host;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.packet.EtherHeader;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -36,16 +36,20 @@ import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.InetProtocols;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 
-import org.opendaylight.vtn.manager.internal.L2Host;
 import org.opendaylight.vtn.manager.internal.util.OrderedComparator;
+import org.opendaylight.vtn.manager.internal.util.inventory.L2Host;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.VtnOrderedFlowAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VlanType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.Ordered;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.DropActionCaseBuilder;
@@ -103,7 +107,7 @@ public class FlowActionUtilsTest extends TestBase {
      * @param order  Action order in the action list.
      * @return  A MD-SAL DROP action.
      */
-    public static Action createDropAction(int order) {
+    public static Action createDropAction(Integer order) {
         return new ActionBuilder().
             setOrder(order).
             setAction(new DropActionCaseBuilder().
@@ -118,7 +122,7 @@ public class FlowActionUtilsTest extends TestBase {
      * @param order  Action order in the action list.
      * @return  A MD-SAL POP_VLAN action.
      */
-    public static Action createPopVlanAction(int order) {
+    public static Action createPopVlanAction(Integer order) {
         return new ActionBuilder().
             setOrder(order).
             setAction(new PopVlanActionCaseBuilder().
@@ -133,7 +137,7 @@ public class FlowActionUtilsTest extends TestBase {
      * @param order  Action order in the action list.
      * @return  A MD-SAL PUSH_VLAN action.
      */
-    public static Action createPushVlanAction(int order) {
+    public static Action createPushVlanAction(Integer order) {
         PushVlanActionBuilder ab = new PushVlanActionBuilder().
             setEthernetType(VlanType.VLAN.getIntValue());
         return new ActionBuilder().
@@ -150,7 +154,7 @@ public class FlowActionUtilsTest extends TestBase {
      * @param port   A MD-SAL port identifier.
      * @return  A MD-SAL OUTPUT action.
      */
-    public static Action createOutputAction(int order, String port) {
+    public static Action createOutputAction(Integer order, String port) {
         OutputActionBuilder ab = new OutputActionBuilder().
             setMaxLength(0xffff);
         if (port != null) {
@@ -171,7 +175,7 @@ public class FlowActionUtilsTest extends TestBase {
      * @param mac    A MAC address.
      * @return  A MD-SAL SET_DL_DST action.
      */
-    public static Action createSetDlDstAction(int order, MacAddress mac) {
+    public static Action createSetDlDstAction(Integer order, MacAddress mac) {
         return new ActionBuilder().
             setOrder(order).
             setAction(new SetDlDstActionCaseBuilder().
@@ -188,7 +192,7 @@ public class FlowActionUtilsTest extends TestBase {
      * @param mac    A MAC address.
      * @return  A MD-SAL SET_DL_SRC action.
      */
-    public static Action createSetDlSrcAction(int order, MacAddress mac) {
+    public static Action createSetDlSrcAction(Integer order, MacAddress mac) {
         return new ActionBuilder().
             setOrder(order).
             setAction(new SetDlSrcActionCaseBuilder().
@@ -205,7 +209,7 @@ public class FlowActionUtilsTest extends TestBase {
      * @param port   A port number.
      * @return  A MD-SAL SET_TP_DST action.
      */
-    public static Action createSetTpDstAction(int order, int port) {
+    public static Action createSetTpDstAction(Integer order, int port) {
         return new ActionBuilder().
             setOrder(order).
             setAction(new SetTpDstActionCaseBuilder().
@@ -223,7 +227,7 @@ public class FlowActionUtilsTest extends TestBase {
      * @param port   A port number.
      * @return  A MD-SAL SET_TP_SRC action.
      */
-    public static Action createSetTpSrcAction(int order, int port) {
+    public static Action createSetTpSrcAction(Integer order, int port) {
         return new ActionBuilder().
             setOrder(order).
             setAction(new SetTpSrcActionCaseBuilder().
@@ -241,7 +245,7 @@ public class FlowActionUtilsTest extends TestBase {
      * @param dscp   A DSCP value.
      * @return  A MD-SAL SET_NW_TOS action.
      */
-    public static Action createSetNwTosAction(int order, int dscp) {
+    public static Action createSetNwTosAction(Integer order, int dscp) {
         Integer tos = Integer.valueOf(dscp << 2);
         return new ActionBuilder().
             setOrder(order).
@@ -259,7 +263,7 @@ public class FlowActionUtilsTest extends TestBase {
      * @param addr   A MD-SAL IP address.
      * @return  A MD-SAL SET_NW_DST action.
      */
-    public static Action createSetNwDstAction(int order, Address addr) {
+    public static Action createSetNwDstAction(Integer order, Address addr) {
         return new ActionBuilder().
             setOrder(order).
             setAction(new SetNwDstActionCaseBuilder().
@@ -277,7 +281,7 @@ public class FlowActionUtilsTest extends TestBase {
      * @param addr   A MD-SAL IP address.
      * @return  A MD-SAL SET_NW_SRC action.
      */
-    public static Action createSetNwSrcAction(int order, Address addr) {
+    public static Action createSetNwSrcAction(Integer order, Address addr) {
         return new ActionBuilder().
             setOrder(order).
             setAction(new SetNwSrcActionCaseBuilder().
@@ -295,7 +299,7 @@ public class FlowActionUtilsTest extends TestBase {
      * @param vid    A VLAN ID.
      * @return  A MD-SAL SET_VLAN_ID action.
      */
-    public static Action createSetVlanIdAction(int order, int vid) {
+    public static Action createSetVlanIdAction(Integer order, int vid) {
         return new ActionBuilder().
             setOrder(order).
             setAction(new SetVlanIdActionCaseBuilder().
@@ -313,7 +317,7 @@ public class FlowActionUtilsTest extends TestBase {
      * @param pri    A VLAN priority.
      * @return  A MD-SAL SET_VLAN_ID action.
      */
-    public static Action createSetVlanPcpAction(int order, int pri) {
+    public static Action createSetVlanPcpAction(Integer order, int pri) {
         return new ActionBuilder().
             setOrder(order).
             setAction(new SetVlanPcpActionCaseBuilder().
@@ -325,16 +329,39 @@ public class FlowActionUtilsTest extends TestBase {
     }
 
     /**
+     * Create a VTN DROP action builder.
+     *
+     * @param order  Action order in the action list.
+     * @return  A VTN DROP action builder.
+     */
+    public static VtnFlowActionBuilder createVtnDropActionBuilder(
+        Integer order) {
+        return new VtnFlowActionBuilder().
+            setOrder(order).
+            setVtnAction(VTNDropAction.newVtnAction());
+    }
+
+    /**
      * Create a VTN DROP action.
      *
      * @param order  Action order in the action list.
      * @return  A VTN DROP action.
      */
-    public static VtnFlowAction createVtnDropAction(int order) {
+    public static VtnFlowAction createVtnDropAction(Integer order) {
+        return createVtnDropActionBuilder(order).build();
+    }
+
+    /**
+     * Create a VTN POP_VLAN action builder.
+     *
+     * @param order  Action order in the action list.
+     * @return  A VTN POP_VLAN action builder.
+     */
+    public static VtnFlowActionBuilder createVtnPopVlanActionBuilder(
+        Integer order) {
         return new VtnFlowActionBuilder().
             setOrder(order).
-            setVtnAction(VTNDropAction.newVtnAction()).
-            build();
+            setVtnAction(VTNPopVlanAction.newVtnAction());
     }
 
     /**
@@ -343,11 +370,8 @@ public class FlowActionUtilsTest extends TestBase {
      * @param order  Action order in the action list.
      * @return  A VTN POP_VLAN action.
      */
-    public static VtnFlowAction createVtnPopVlanAction(int order) {
-        return new VtnFlowActionBuilder().
-            setOrder(order).
-            setVtnAction(VTNPopVlanAction.newVtnAction()).
-            build();
+    public static VtnFlowAction createVtnPopVlanAction(Integer order) {
+        return createVtnPopVlanActionBuilder(order).build();
     }
 
     /**
@@ -356,7 +380,7 @@ public class FlowActionUtilsTest extends TestBase {
      * @param order  Action order in the action list.
      * @return  A VTN PUSH_VLAN action.
      */
-    public static VtnFlowAction createVtnPushVlanAction(int order) {
+    public static VtnFlowAction createVtnPushVlanAction(Integer order) {
         return new VtnFlowActionBuilder().
             setOrder(order).
             setVtnAction(VTNPushVlanAction.newVtnAction(VlanType.VLAN)).
@@ -370,7 +394,7 @@ public class FlowActionUtilsTest extends TestBase {
      * @param mac    A MAC address.
      * @return  A VTN SET_DL_DST action.
      */
-    public static VtnFlowAction createVtnSetDlDstAction(int order,
+    public static VtnFlowAction createVtnSetDlDstAction(Integer order,
                                                         MacAddress mac) {
         return new VtnFlowActionBuilder().
             setOrder(order).
@@ -385,7 +409,7 @@ public class FlowActionUtilsTest extends TestBase {
      * @param mac    A MAC address.
      * @return  A VTN SET_DL_SRC action.
      */
-    public static VtnFlowAction createVtnSetDlSrcAction(int order,
+    public static VtnFlowAction createVtnSetDlSrcAction(Integer order,
                                                         MacAddress mac) {
         return new VtnFlowActionBuilder().
             setOrder(order).
@@ -400,7 +424,7 @@ public class FlowActionUtilsTest extends TestBase {
      * @param code   An ICMP code.
      * @return  A VTN SET_ICMP_CODE action.
      */
-    public static VtnFlowAction createVtnSetIcmpCodeAction(int order,
+    public static VtnFlowAction createVtnSetIcmpCodeAction(Integer order,
                                                            int code) {
         return new VtnFlowActionBuilder().
             setOrder(order).
@@ -416,7 +440,7 @@ public class FlowActionUtilsTest extends TestBase {
      * @param type   An ICMP type.
      * @return  A VTN SET_ICMP_TYPE action.
      */
-    public static VtnFlowAction createVtnSetIcmpTypeAction(int order,
+    public static VtnFlowAction createVtnSetIcmpTypeAction(Integer order,
                                                            int type) {
         return new VtnFlowActionBuilder().
             setOrder(order).
@@ -431,7 +455,7 @@ public class FlowActionUtilsTest extends TestBase {
      * @param dscp   A DSCP value.
      * @return  A VTN SET_INET_DSCP action.
      */
-    public static VtnFlowAction createVtnSetInetDscpAction(int order,
+    public static VtnFlowAction createVtnSetInetDscpAction(Integer order,
                                                            int dscp) {
         return new VtnFlowActionBuilder().
             setOrder(order).
@@ -446,7 +470,7 @@ public class FlowActionUtilsTest extends TestBase {
      * @param addr   A MD-SAL IP address.
      * @return  A VTN SET_INET_DST action.
      */
-    public static VtnFlowAction createVtnSetInetDstAction(int order,
+    public static VtnFlowAction createVtnSetInetDstAction(Integer order,
                                                           Address addr) {
         return new VtnFlowActionBuilder().
             setOrder(order).
@@ -461,12 +485,27 @@ public class FlowActionUtilsTest extends TestBase {
      * @param addr   A MD-SAL IP address.
      * @return  A VTN SET_INET_SRC action.
      */
-    public static VtnFlowAction createVtnSetInetSrcAction(int order,
+    public static VtnFlowAction createVtnSetInetSrcAction(Integer order,
                                                           Address addr) {
         return new VtnFlowActionBuilder().
             setOrder(order).
             setVtnAction(VTNSetInetSrcAction.newVtnAction(addr)).
             build();
+    }
+
+    /**
+     * Create a VTN SET_TP_DST action builder.
+     *
+     * @param order  Action order in the action list.
+     * @param port   A port number.
+     * @return  A VTN SET_TP_DST action builder.
+     */
+    public static VtnFlowActionBuilder createVtnSetPortDstActionBuilder(
+        Integer order, int port) {
+        PortNumber pnum = new PortNumber(port);
+        return new VtnFlowActionBuilder().
+            setOrder(order).
+            setVtnAction(VTNSetPortDstAction.newVtnAction(pnum));
     }
 
     /**
@@ -476,13 +515,24 @@ public class FlowActionUtilsTest extends TestBase {
      * @param port   A port number.
      * @return  A VTN SET_TP_DST action.
      */
-    public static VtnFlowAction createVtnSetPortDstAction(int order,
+    public static VtnFlowAction createVtnSetPortDstAction(Integer order,
                                                           int port) {
+        return createVtnSetPortDstActionBuilder(order, port).build();
+    }
+
+    /**
+     * Create a VTN SET_TP_SRC action builder.
+     *
+     * @param order  Action order in the action list.
+     * @param port   A port number.
+     * @return  A VTN SET_TP_SRC action builder.
+     */
+    public static VtnFlowActionBuilder createVtnSetPortSrcActionBuilder(
+        Integer order, int port) {
         PortNumber pnum = new PortNumber(port);
         return new VtnFlowActionBuilder().
             setOrder(order).
-            setVtnAction(VTNSetPortDstAction.newVtnAction(pnum)).
-            build();
+            setVtnAction(VTNSetPortSrcAction.newVtnAction(pnum));
     }
 
     /**
@@ -492,13 +542,9 @@ public class FlowActionUtilsTest extends TestBase {
      * @param port   A port number.
      * @return  A VTN SET_TP_SRC action.
      */
-    public static VtnFlowAction createVtnSetPortSrcAction(int order,
+    public static VtnFlowAction createVtnSetPortSrcAction(Integer order,
                                                           int port) {
-        PortNumber pnum = new PortNumber(port);
-        return new VtnFlowActionBuilder().
-            setOrder(order).
-            setVtnAction(VTNSetPortSrcAction.newVtnAction(pnum)).
-            build();
+        return createVtnSetPortSrcActionBuilder(order, port).build();
     }
 
     /**
@@ -508,7 +554,8 @@ public class FlowActionUtilsTest extends TestBase {
      * @param vid    A VLAN ID.
      * @return  A VTN SET_VLAN_ID action.
      */
-    public static VtnFlowAction createVtnSetVlanIdAction(int order, int vid) {
+    public static VtnFlowAction createVtnSetVlanIdAction(Integer order,
+                                                         int vid) {
         return new VtnFlowActionBuilder().
             setOrder(order).
             setVtnAction(VTNSetVlanIdAction.newVtnAction(vid)).
@@ -522,7 +569,8 @@ public class FlowActionUtilsTest extends TestBase {
      * @param pri    A VLAN priority.
      * @return  A VTN SET_VLAN_PCP action.
      */
-    public static VtnFlowAction createVtnSetVlanPcpAction(int order, int pri) {
+    public static VtnFlowAction createVtnSetVlanPcpAction(Integer order,
+                                                          int pri) {
         VlanPcp pcp = new VlanPcp((short)pri);
         return new VtnFlowActionBuilder().
             setOrder(order).
@@ -1012,6 +1060,357 @@ public class FlowActionUtilsTest extends TestBase {
     }
 
     /**
+     * Test case for
+     * {@link FlowActionConverter#toFlowFilterAction(VtnOrderedFlowAction)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testVtnFlowActionToFlowFilterAction() throws Exception {
+        FlowActionConverter converter = FlowActionConverter.getInstance();
+        VtnOrderedFlowAction vaction = null;
+        String emsg = "vtn-flow-action cannot be null";
+        RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
+        try {
+            converter.toFlowFilterAction(vaction);
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(etag, e.getErrorTag());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
+        }
+
+        vaction = new VtnFlowActionBuilder().build();
+        emsg = "vtn-action cannot be null";
+        try {
+            converter.toFlowFilterAction(vaction);
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(etag, e.getErrorTag());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
+        }
+
+        // Unsupported actions.
+        List<VtnFlowAction> actions = new ArrayList<>();
+        Collections.addAll(
+            actions,
+            createVtnDropAction(1),
+            createVtnPopVlanAction(1),
+            createVtnPushVlanAction(1),
+            createVtnSetVlanIdAction(1, 1));
+        etag = RpcErrorTag.BAD_ELEMENT;
+        for (VtnFlowAction vfa: actions) {
+            VtnAction vact = vfa.getVtnAction();
+            emsg = "Unsupported vtn-action: " +
+                vact.getImplementedInterface().getName();
+            try {
+                converter.toFlowFilterAction(vfa);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
+            }
+        }
+
+        Integer[] orders = {
+            null, Integer.MIN_VALUE, -1000, -1,
+            0, 1, 2, 32000, Integer.MAX_VALUE,
+        };
+
+        EtherAddress dlSrc = new EtherAddress(0x123456789L);
+        EtherAddress dlDst = new EtherAddress(0xaabbccddee11L);
+        Ip4Network nwSrc = new Ip4Network("192.168.100.200");
+        Ip4Network nwDst = new Ip4Network("127.0.0.1");
+        short dscp = 45;
+        int portSrc = 1;
+        int portDst = 60000;
+        short icmpType = 35;
+        short icmpCode = 7;
+        short vlanPcp = 4;
+        etag = RpcErrorTag.MISSING_ELEMENT;
+        for (Integer order: orders) {
+            FlowFilterAction ffa;
+            try {
+                vaction = createVtnSetDlSrcAction(order, dlSrc.getMacAddress());
+                ffa = converter.toFlowFilterAction(vaction);
+                assertNotNull(order);
+                assertEquals(order, ffa.getOrder());
+                assertTrue(ffa instanceof VTNSetDlSrcAction);
+                assertEquals(dlSrc, ((VTNSetDlSrcAction)ffa).getAddress());
+            } catch (RpcException e) {
+                assertEquals(null, order);
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                emsg = "VTNSetDlSrcAction: Action order cannot be null";
+                assertEquals(emsg, e.getMessage());
+            }
+
+            try {
+                vaction = createVtnSetDlDstAction(order, dlDst.getMacAddress());
+                ffa = converter.toFlowFilterAction(vaction);
+                assertNotNull(order);
+                assertEquals(order, ffa.getOrder());
+                assertTrue(ffa instanceof VTNSetDlDstAction);
+                assertEquals(dlDst, ((VTNSetDlDstAction)ffa).getAddress());
+            } catch (RpcException e) {
+                assertEquals(null, order);
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                emsg = "VTNSetDlDstAction: Action order cannot be null";
+                assertEquals(emsg, e.getMessage());
+            }
+
+            try {
+                vaction = createVtnSetInetSrcAction(order,
+                                                    nwSrc.getMdAddress());
+                ffa = converter.toFlowFilterAction(vaction);
+                assertNotNull(order);
+                assertEquals(order, ffa.getOrder());
+                assertTrue(ffa instanceof VTNSetInetSrcAction);
+                assertEquals(nwSrc, ((VTNSetInetSrcAction)ffa).getAddress());
+            } catch (RpcException e) {
+                assertEquals(null, order);
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                emsg = "VTNSetInetSrcAction: Action order cannot be null";
+                assertEquals(emsg, e.getMessage());
+            }
+
+            try {
+                vaction = createVtnSetInetDstAction(order,
+                                                    nwDst.getMdAddress());
+                ffa = converter.toFlowFilterAction(vaction);
+                assertNotNull(order);
+                assertEquals(order, ffa.getOrder());
+                assertTrue(ffa instanceof VTNSetInetDstAction);
+                assertEquals(nwDst, ((VTNSetInetDstAction)ffa).getAddress());
+            } catch (RpcException e) {
+                assertEquals(null, order);
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                emsg = "VTNSetInetDstAction: Action order cannot be null";
+                assertEquals(emsg, e.getMessage());
+            }
+
+            try {
+                vaction = createVtnSetInetDscpAction(order, dscp);
+                ffa = converter.toFlowFilterAction(vaction);
+                assertNotNull(order);
+                assertEquals(order, ffa.getOrder());
+                assertTrue(ffa instanceof VTNSetInetDscpAction);
+                assertEquals(dscp, ((VTNSetInetDscpAction)ffa).getDscp());
+            } catch (RpcException e) {
+                assertEquals(null, order);
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                emsg = "VTNSetInetDscpAction: Action order cannot be null";
+                assertEquals(emsg, e.getMessage());
+            }
+
+            try {
+                vaction = createVtnSetPortSrcAction(order, portSrc);
+                ffa = converter.toFlowFilterAction(vaction);
+                assertNotNull(order);
+                assertEquals(order, ffa.getOrder());
+                assertTrue(ffa instanceof VTNSetPortSrcAction);
+                assertEquals(portSrc, ((VTNSetPortSrcAction)ffa).getPort());
+            } catch (RpcException e) {
+                assertEquals(null, order);
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                emsg = "VTNSetPortSrcAction: Action order cannot be null";
+                assertEquals(emsg, e.getMessage());
+            }
+
+            try {
+                vaction = createVtnSetPortDstAction(order, portDst);
+                ffa = converter.toFlowFilterAction(vaction);
+                assertNotNull(order);
+                assertEquals(order, ffa.getOrder());
+                assertTrue(ffa instanceof VTNSetPortDstAction);
+                assertEquals(portDst, ((VTNSetPortDstAction)ffa).getPort());
+            } catch (RpcException e) {
+                assertEquals(null, order);
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                emsg = "VTNSetPortDstAction: Action order cannot be null";
+                assertEquals(emsg, e.getMessage());
+            }
+
+            try {
+                vaction = createVtnSetIcmpTypeAction(order, icmpType);
+                ffa = converter.toFlowFilterAction(vaction);
+                assertNotNull(order);
+                assertEquals(order, ffa.getOrder());
+                assertTrue(ffa instanceof VTNSetIcmpTypeAction);
+                assertEquals(icmpType, ((VTNSetIcmpTypeAction)ffa).getType());
+            } catch (RpcException e) {
+                assertEquals(null, order);
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                emsg = "VTNSetIcmpTypeAction: Action order cannot be null";
+                assertEquals(emsg, e.getMessage());
+            }
+
+            try {
+                vaction = createVtnSetIcmpCodeAction(order, icmpCode);
+                ffa = converter.toFlowFilterAction(vaction);
+                assertNotNull(order);
+                assertEquals(order, ffa.getOrder());
+                assertTrue(ffa instanceof VTNSetIcmpCodeAction);
+                assertEquals(icmpCode, ((VTNSetIcmpCodeAction)ffa).getCode());
+            } catch (RpcException e) {
+                assertEquals(null, order);
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                emsg = "VTNSetIcmpCodeAction: Action order cannot be null";
+                assertEquals(emsg, e.getMessage());
+            }
+
+            try {
+                vaction = createVtnSetVlanPcpAction(order, vlanPcp);
+                ffa = converter.toFlowFilterAction(vaction);
+                assertNotNull(order);
+                assertEquals(order, ffa.getOrder());
+                assertTrue(ffa instanceof VTNSetVlanPcpAction);
+                assertEquals(vlanPcp, ((VTNSetVlanPcpAction)ffa).getPriority());
+            } catch (RpcException e) {
+                assertEquals(null, order);
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                emsg = "VTNSetVlanPcpAction: Action order cannot be null";
+                assertEquals(emsg, e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Test case for
+     * {@link FlowActionConverter#toFlowFilterAction(int, FlowAction)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testFlowActionToFlowFilterAction() throws Exception {
+        FlowActionConverter converter = FlowActionConverter.getInstance();
+        FlowAction faction = null;
+        String emsg = "Flow action cannot be null";
+        RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
+        try {
+            converter.toFlowFilterAction(1, faction);
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(etag, e.getErrorTag());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(emsg, e.getMessage());
+        }
+
+        // Unsupported actions.
+        List<FlowAction> actions = new ArrayList<>();
+        Collections.addAll(
+            actions,
+            new DropAction(),
+            new PopVlanAction(),
+            new PushVlanAction(VlanType.VLAN.getIntValue()),
+            new SetVlanIdAction((short)10));
+        etag = RpcErrorTag.BAD_ELEMENT;
+        for (FlowAction fact: actions) {
+            emsg = "Unsupported flow action: " +
+                fact.getClass().getSimpleName();
+            try {
+                converter.toFlowFilterAction(1, fact);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
+            }
+        }
+
+        Integer[] orders = {
+            Integer.MIN_VALUE, -1000, -1,
+            0, 1, 2, 32000, Integer.MAX_VALUE,
+        };
+
+        EtherAddress dlSrc = new EtherAddress(0x1122334455L);
+        EtherAddress dlDst = new EtherAddress(0xdeadbeef01L);
+        Ip4Network nwSrc = new Ip4Network("192.168.111.222");
+        Ip4Network nwDst = new Ip4Network("10.20.30.40");
+        short dscp = 7;
+        int portSrc = 55555;
+        int portDst = 3333;
+        short icmpType = 12;
+        short icmpCode = 45;
+        short vlanPcp = 2;
+        for (Integer order: orders) {
+            FlowFilterAction ffa;
+            faction = new SetDlSrcAction(dlSrc);
+            ffa = converter.toFlowFilterAction(order, faction);
+            assertEquals(order, ffa.getOrder());
+            assertTrue(ffa instanceof VTNSetDlSrcAction);
+            assertEquals(dlSrc, ((VTNSetDlSrcAction)ffa).getAddress());
+
+            faction = new SetDlDstAction(dlDst);
+            ffa = converter.toFlowFilterAction(order, faction);
+            assertEquals(order, ffa.getOrder());
+            assertTrue(ffa instanceof VTNSetDlDstAction);
+            assertEquals(dlDst, ((VTNSetDlDstAction)ffa).getAddress());
+
+            faction = new SetInet4SrcAction(nwSrc);
+            ffa = converter.toFlowFilterAction(order, faction);
+            assertEquals(order, ffa.getOrder());
+            assertTrue(ffa instanceof VTNSetInetSrcAction);
+            assertEquals(nwSrc, ((VTNSetInetSrcAction)ffa).getAddress());
+
+            faction = new SetInet4DstAction(nwDst);
+            ffa = converter.toFlowFilterAction(order, faction);
+            assertEquals(order, ffa.getOrder());
+            assertTrue(ffa instanceof VTNSetInetDstAction);
+            assertEquals(nwDst, ((VTNSetInetDstAction)ffa).getAddress());
+
+            faction = new SetDscpAction((byte)dscp);
+            ffa = converter.toFlowFilterAction(order, faction);
+            assertEquals(order, ffa.getOrder());
+            assertTrue(ffa instanceof VTNSetInetDscpAction);
+            assertEquals(dscp, ((VTNSetInetDscpAction)ffa).getDscp());
+
+            faction = new SetTpSrcAction(portSrc);
+            ffa = converter.toFlowFilterAction(order, faction);
+            assertEquals(order, ffa.getOrder());
+            assertTrue(ffa instanceof VTNSetPortSrcAction);
+            assertEquals(portSrc, ((VTNSetPortSrcAction)ffa).getPort());
+
+            faction = new SetTpDstAction(portDst);
+            ffa = converter.toFlowFilterAction(order, faction);
+            assertEquals(order, ffa.getOrder());
+            assertTrue(ffa instanceof VTNSetPortDstAction);
+            assertEquals(portDst, ((VTNSetPortDstAction)ffa).getPort());
+
+            faction = new SetIcmpTypeAction(icmpType);
+            ffa = converter.toFlowFilterAction(order, faction);
+            assertEquals(order, ffa.getOrder());
+            assertTrue(ffa instanceof VTNSetIcmpTypeAction);
+            assertEquals(icmpType, ((VTNSetIcmpTypeAction)ffa).getType());
+
+            faction = new SetIcmpCodeAction(icmpCode);
+            ffa = converter.toFlowFilterAction(order, faction);
+            assertEquals(order, ffa.getOrder());
+            assertTrue(ffa instanceof VTNSetIcmpCodeAction);
+            assertEquals(icmpCode, ((VTNSetIcmpCodeAction)ffa).getCode());
+
+            faction = new SetVlanPcpAction((byte)vlanPcp);
+            ffa = converter.toFlowFilterAction(order, faction);
+            assertEquals(order, ffa.getOrder());
+            assertTrue(ffa instanceof VTNSetVlanPcpAction);
+            assertEquals(vlanPcp, ((VTNSetVlanPcpAction)ffa).getPriority());
+        }
+    }
+
+    /**
      * Test case for the following methods.
      *
      * <ul>
@@ -1099,9 +1498,9 @@ public class FlowActionUtilsTest extends TestBase {
             assertEquals(expected.size(), results.size());
             for (int order = 0; order < results.size(); order++) {
                 VtnAction ex = reversed.get(order).getVtnAction();
-                VtnFlowAction dfa = results.get(order);
-                assertEquals(order, dfa.getOrder().intValue());
-                assertEquals(ex, dfa.getVtnAction());
+                VtnFlowAction vfa = results.get(order);
+                assertEquals(order, vfa.getOrder().intValue());
+                assertEquals(ex, vfa.getVtnAction());
             }
             assertEquals(original, actions);
         }
@@ -1141,9 +1540,9 @@ public class FlowActionUtilsTest extends TestBase {
             assertEquals(expected.size(), results.size());
             for (int order = 0; order < results.size(); order++) {
                 VtnAction ex = reversed.get(order).getVtnAction();
-                VtnFlowAction dfa = results.get(order);
-                assertEquals(order, dfa.getOrder().intValue());
-                assertEquals(ex, dfa.getVtnAction());
+                VtnFlowAction vfa = results.get(order);
+                assertEquals(order, vfa.getOrder().intValue());
+                assertEquals(ex, vfa.getVtnAction());
             }
             assertEquals(original, actions);
         }
@@ -1177,9 +1576,9 @@ public class FlowActionUtilsTest extends TestBase {
         assertEquals(expected.size(), results.size());
         for (int order = 0; order < results.size(); order++) {
             VtnAction ex = reversed.get(order).getVtnAction();
-            VtnFlowAction dfa = results.get(order);
-            assertEquals(order, dfa.getOrder().intValue());
-            assertEquals(ex, dfa.getVtnAction());
+            VtnFlowAction vfa = results.get(order);
+            assertEquals(order, vfa.getOrder().intValue());
+            assertEquals(ex, vfa.getVtnAction());
         }
         assertEquals(original, actions);
     }

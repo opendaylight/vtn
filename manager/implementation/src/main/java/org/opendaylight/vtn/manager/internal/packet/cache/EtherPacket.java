@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2014, 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -16,7 +16,6 @@ import org.opendaylight.vtn.manager.packet.Packet;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
-import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetDlDstAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetDlSrcAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetVlanPcpAction;
@@ -267,7 +266,7 @@ public final class EtherPacket implements CachedPacket, EtherHeader {
      * <p>
      *   Note that this method returns the VLAN tag in the original Ethernet
      *   frame. Any modification to VLAN tag is never applied to the returned
-     *   value even if {@link #commit(PacketContext)} is called.
+     *   value even if {@link #commit(CachedPacketContext)} is called.
      * </p>
      *
      * @return  An {@link IEEE8021Q} instance which represents the VLAN tag.
@@ -379,7 +378,7 @@ public final class EtherPacket implements CachedPacket, EtherHeader {
      * <p>
      *   Note that this method returns the original ethernet frame.
      *   Any modification to Ethernet header field is never applied to the
-     *   returned value even if {@link #commit(PacketContext)} is called.
+     *   returned value even if {@link #commit(CachedPacketContext)} is called.
      * </p>
      *
      * @return  An {@link Ethernet} instance.
@@ -393,10 +392,10 @@ public final class EtherPacket implements CachedPacket, EtherHeader {
      * {@inheritDoc}
      */
     @Override
-    public boolean commit(PacketContext pctx) {
+    public boolean commit(CachedPacketContext pctx) {
         // We don't need to set modified values to Ethernet and IEEE8021Q
-        // instances because PacketContext always creates Ethernet header and
-        // VLAN tag from scratch.
+        // instances because CachedPacketContext always creates Ethernet header
+        // and VLAN tag from scratch.
         boolean mod = false;
         if (modifiedValues != null) {
             EtherAddress src = modifiedValues.getSourceAddress();

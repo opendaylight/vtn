@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -60,12 +60,13 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.vtn.topology.VtnLinkKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.VtnStaticTopology;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology.StaticEdgePorts;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePort;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePortKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology.StaticSwitchLinks;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static._switch.links.StaticSwitchLink;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static._switch.links.StaticSwitchLinkBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static._switch.links.StaticSwitchLinkKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePort;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePortKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnSwitchLink;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeConnector;
@@ -143,6 +144,33 @@ public class InventoryUtilsTest extends TestBase {
                 enabled = triState(enabled);
             }
         }
+    }
+
+    /**
+     * Test case for {@link InventoryUtils#getPortState(VtnPort)}.
+     */
+    @Test
+    public void testGetPortState() {
+        VtnPort vport = null;
+        assertEquals(VnodeState.UNKNOWN, InventoryUtils.getPortState(vport));
+
+        vport = mock(VtnPort.class);
+        when(vport.isEnabled()).thenReturn((Boolean)null);
+        assertEquals(VnodeState.DOWN, InventoryUtils.getPortState(vport));
+        verify(vport).isEnabled();
+        verifyNoMoreInteractions(vport);
+
+        vport = mock(VtnPort.class);
+        when(vport.isEnabled()).thenReturn(Boolean.FALSE);
+        assertEquals(VnodeState.DOWN, InventoryUtils.getPortState(vport));
+        verify(vport).isEnabled();
+        verifyNoMoreInteractions(vport);
+
+        vport = mock(VtnPort.class);
+        when(vport.isEnabled()).thenReturn(Boolean.TRUE);
+        assertEquals(VnodeState.UP, InventoryUtils.getPortState(vport));
+        verify(vport).isEnabled();
+        verifyNoMoreInteractions(vport);
     }
 
     /**

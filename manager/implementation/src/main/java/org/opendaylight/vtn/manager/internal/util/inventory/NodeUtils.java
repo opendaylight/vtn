@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2014, 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -231,6 +231,32 @@ public final class NodeUtils {
     }
 
     /**
+     * Check whether the given parameters specifies a physical switch port
+     * or not.
+     *
+     * @param snode     A {@link SalNode} instance which specifies a physical
+     *                  switch.
+     * @param portId    A string representation of a switch port ID.
+     * @param portName  The name of the switch port.
+     * @return  If a valid port identifier is passed to {@code portId},
+     *          A {@link SalPort} instance converted from {@code snode} and
+     *          {@code portId} is returned. {@code null} otherwise.
+     * @throws RpcException
+     *    The specified instance is invalid.
+     */
+    public static SalPort checkPortLocation(SalNode snode, String portId,
+                                            String portName)
+        throws RpcException {
+        SalPort sport = checkPortLocationImpl(snode, portId, portName);
+        if (portId == null && portName == null) {
+            throw RpcException.getBadArgumentException(
+                "Target port name or ID must be specified");
+        }
+
+        return sport;
+    }
+
+    /**
      * Check whether the given {@link VtnPortDesc} instance is valid or not.
      *
      * @param vdesc  A {@link VtnPortDesc} instance to be tested.
@@ -256,7 +282,8 @@ public final class NodeUtils {
                 String portName = (nameStart >= value.length())
                     ? null : value.substring(nameStart);
                 try {
-                    checkPortLocation(nodeId, portId, portName);
+                    SalNode snode = SalNode.checkedCreate(nodeId);
+                    checkPortLocationImpl(snode, portId, portName);
                     return;
                 } catch (RpcException e) {
                     String msg = "Invalid vtn-port-desc: " + value + ": " +
@@ -531,17 +558,24 @@ public final class NodeUtils {
     /**
      * Check whether the given parameters specifies a valid switch port or not.
      *
-     * @param nodeId    A string representation of MD-SAL node identifier.
+     * @param snode     A {@link SalNode} instance which specifies a physical
+     *                  switch.
      * @param portId    A string representation of switch port identifier.
      * @param portName  The name of the switc port.
+     * @return  If a valid port identifier is passed to {@code portId},
+     *          A {@link SalPort} instance converted from {@code snode} and
+     *          {@code portId} is returned. {@code null} otherwise.
      * @throws RpcException
      *    The given parameters does not specify a valid switch port.
      */
-    private static void checkPortLocation(String nodeId, String portId,
-                                          String portName) throws RpcException {
-        SalNode snode = SalNode.checkedCreate(nodeId);
-        if (portId != null) {
-            SalPort sport = SalPort.create(snode.getNodeNumber(), portId);
+    private static SalPort checkPortLocationImpl(SalNode snode, String portId,
+                                                 String portName)
+        throws RpcException {
+        SalPort sport;
+        if (portId == null) {
+            sport = null;
+        } else {
+            sport = SalPort.create(snode.getNodeNumber(), portId);
             if (sport == null) {
                 throw RpcException.getBadArgumentException(
                     "Invalid port ID: " + portId);
@@ -552,5 +586,7 @@ public final class NodeUtils {
             throw RpcException.getBadArgumentException(
                 "Port name cannot be empty");
         }
+
+        return sport;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -20,6 +20,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev15020
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPortKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.port.info.PortLink;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.port.info.PortLinkKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortLocation;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRef;
@@ -199,6 +200,26 @@ public final class SalPort extends SalNode {
         } catch (RuntimeException e) {
             return null;
         }
+    }
+
+    /**
+     * Convert the given {@link VtnPortLocation} instance into a
+     * {@code SalPort} instance.
+     *
+     * @param vpl  A {@link VtnPortLocation} instance.
+     * @return  A {@code SalPort} instance on success.
+     *          {@code null} on failure.
+     */
+    public static SalPort create(VtnPortLocation vpl) {
+        SalPort sport = null;
+        if (vpl != null) {
+            SalNode snode = SalNode.create(vpl.getNode());
+            if (snode != null) {
+                sport = create(snode.getNodeNumber(), vpl.getPortId());
+            }
+        }
+
+        return sport;
     }
 
     /**
@@ -412,6 +433,17 @@ public final class SalPort extends SalNode {
     }
 
     /**
+     * Determine whether the given port is identical to this instance or not.
+     *
+     * @param sport  A {@link SalPort} instance to be compared.
+     * @return   {@code true} only if the given port is identical to this
+     *           instance.
+     */
+    public boolean equalsPort(SalPort sport) {
+        return (super.equalsNode(sport) && sport.portNumber == portNumber);
+    }
+
+    /**
      * Return an instance identifier builder that contains an instance
      * identifier for a VTN port.
      *
@@ -422,6 +454,8 @@ public final class SalPort extends SalNode {
         return getVtnNodeIdentifierBuilder().
             child(VtnPort.class, getVtnPortKey());
     }
+
+    // SalNode
 
     /**
      * Return a string which identifies the switch corresponding to this
@@ -445,6 +479,8 @@ public final class SalPort extends SalNode {
         return toNodeStringBuilder().append(MD_ID_SEPARATOR).
             append(portNumber);
     }
+
+    // Object
 
     /**
      * Determine whether the given object is identical to this object.

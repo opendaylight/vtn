@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,12 +8,13 @@
 
 package org.opendaylight.vtn.manager.internal.flow.remove;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.vtn.manager.internal.L2Host;
-import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
-import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
+import org.opendaylight.vtn.manager.internal.util.inventory.L2Host;
+import org.opendaylight.vtn.manager.internal.util.inventory.MacVlan;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 /**
@@ -68,8 +69,8 @@ public final class EdgePortFlowRemover extends PortIndexFlowRemover {
     private boolean match(L2Host l2h) {
         if (l2h != null) {
             MacVlan mv = l2h.getHost();
-            return ((int)mv.getVlan() == vlanId &&
-                    getFlowPort().equals(l2h.getPort()));
+            return (mv.getVlanId() == vlanId &&
+                    getFlowPort().equalsPort(l2h.getPort()));
         }
 
         return false;
@@ -82,7 +83,7 @@ public final class EdgePortFlowRemover extends PortIndexFlowRemover {
      */
     @Override
     protected boolean select(FlowCache fc) throws VTNException {
-        ObjectPair<L2Host, L2Host> edges = fc.getEdgeHosts();
+        Pair<L2Host, L2Host> edges = fc.getEdgeHosts();
         return (edges == null)
             ? false
             : (match(edges.getLeft()) || match(edges.getRight()));

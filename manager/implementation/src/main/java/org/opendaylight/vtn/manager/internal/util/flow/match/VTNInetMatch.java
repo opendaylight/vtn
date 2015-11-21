@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -354,9 +354,11 @@ public abstract class VTNInetMatch {
      * @param builder  A {@link MatchBuilder} instance.
      */
     public void setMatch(MatchBuilder builder) {
-        IpMatchBuilder imatch = null;
-        if (protocol != null) {
-            imatch = create(imatch).setIpProtocol(protocol);
+        IpMatchBuilder imatch;
+        if (protocol == null) {
+            imatch = null;
+        } else {
+            imatch = create((IpMatchBuilder)null).setIpProtocol(protocol);
         }
         if (dscp != null) {
             imatch = create(imatch).setIpDscp(new Dscp(dscp));
@@ -445,7 +447,7 @@ public abstract class VTNInetMatch {
     /**
      * Verify the contents of this instance.
      *
-     * @throws RpcException  Verifycation failed.
+     * @throws RpcException  Verification failed.
      */
     public final void verify() throws RpcException {
         if (protocol != null) {
@@ -676,7 +678,7 @@ public abstract class VTNInetMatch {
      */
     public abstract IpVersion getIpVersion();
 
-    // Objects
+    // Object
 
     /**
      * Determine whether the given object is identical to this object.

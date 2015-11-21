@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2014, 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -16,7 +16,6 @@ import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.IpNetwork;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
-import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetDscpAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetDstAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetSrcAction;
@@ -351,7 +350,7 @@ public final class Inet4Packet implements CachedPacket, InetHeader {
      *
      * <p>
      *   Note that modification to the IPv4 header is not applied to the
-     *   returned until {@link #commit(PacketContext)} is called.
+     *   returned until {@link #commit(CachedPacketContext)} is called.
      * </p>
      *
      * @return  An {@link IPv4} instance.
@@ -365,7 +364,7 @@ public final class Inet4Packet implements CachedPacket, InetHeader {
      * {@inheritDoc}
      */
     @Override
-    public boolean commit(PacketContext pctx) throws VTNException {
+    public boolean commit(CachedPacketContext pctx) throws VTNException {
         boolean mod = false;
         IPv4 ipv4 = null;
         if (modifiedValues != null) {

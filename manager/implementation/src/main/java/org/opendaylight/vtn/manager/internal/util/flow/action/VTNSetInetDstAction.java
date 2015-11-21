@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -69,6 +69,18 @@ public final class VTNSetInetDstAction extends VTNInetAddrAction {
      */
     public VTNSetInetDstAction(IpNetwork addr) {
         super(addr);
+    }
+
+    /**
+     * Construct a new instance with specifying action order.
+     *
+     * @param addr  An {@link IpNetwork} instance which represents the
+     *              IP address to be set.
+     * @param ord   An integer which determines the order of flow actions
+     *              in a flow entry.
+     */
+    public VTNSetInetDstAction(IpNetwork addr, Integer ord) {
+        super(addr, ord);
     }
 
     /**
@@ -184,5 +196,33 @@ public final class VTNSetInetDstAction extends VTNInetAddrAction {
         }
 
         return result;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public FlowAction toFlowAction() {
+        return new SetInet4DstAction(getAddress());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VTNSetInetDstAction toFlowFilterAction(VtnAction vact, Integer ord)
+        throws RpcException {
+        VtnSetInetDstActionCase ac = cast(VtnSetInetDstActionCase.class, vact);
+        return new VTNSetInetDstAction(ac, ord);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VTNSetInetDstAction toFlowFilterAction(FlowAction fact, int ord)
+        throws RpcException {
+        SetInet4DstAction act = cast(SetInet4DstAction.class, fact);
+        return new VTNSetInetDstAction(act, ord);
     }
 }

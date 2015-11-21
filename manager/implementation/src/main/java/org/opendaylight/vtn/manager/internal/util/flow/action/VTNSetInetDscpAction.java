@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -81,6 +81,18 @@ public final class VTNSetInetDscpAction extends FlowFilterAction {
      * @param d  A DSCP value to be set.
      */
     public VTNSetInetDscpAction(short d) {
+        dscp = d;
+    }
+
+    /**
+     * Construct a new instance with specifying action order.
+     *
+     * @param d    A DSCP value to be set.
+     * @param ord  An integer which determines the order of flow actions
+     *             in a flow entry.
+     */
+    public VTNSetInetDscpAction(short d, Integer ord) {
+        super(ord);
         dscp = d;
     }
 
@@ -239,6 +251,35 @@ public final class VTNSetInetDscpAction extends FlowFilterAction {
         }
 
         return result;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public FlowAction toFlowAction() {
+        return new SetDscpAction((byte)dscp);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VTNSetInetDscpAction toFlowFilterAction(VtnAction vact, Integer ord)
+        throws RpcException {
+        VtnSetInetDscpActionCase ac =
+            cast(VtnSetInetDscpActionCase.class, vact);
+        return new VTNSetInetDscpAction(ac, ord);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VTNSetInetDscpAction toFlowFilterAction(FlowAction fact, int ord)
+        throws RpcException {
+        SetDscpAction act = cast(SetDscpAction.class, fact);
+        return new VTNSetInetDscpAction(act, ord);
     }
 
     /**

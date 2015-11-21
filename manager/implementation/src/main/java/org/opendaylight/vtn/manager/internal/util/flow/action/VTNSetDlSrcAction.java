@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -63,13 +63,25 @@ public final class VTNSetDlSrcAction extends VTNDlAddrAction {
     }
 
     /**
-     * Construct a new instance.
+     * Construct a new instance without specifying action order.
      *
      * @param addr  An {@link EtherAddress} instance which represents the
      *              MAC address to be set.
      */
     public VTNSetDlSrcAction(EtherAddress addr) {
         super(addr);
+    }
+
+    /**
+     * Construct a new instance with specifying action order.
+     *
+     * @param addr  An {@link EtherAddress} instance which represents the
+     *              MAC address to be set.
+     * @param ord   An integer which determines the order of flow actions
+     *              in a flow entry.
+     */
+    public VTNSetDlSrcAction(EtherAddress addr, Integer ord) {
+        super(addr, ord);
     }
 
     /**
@@ -179,5 +191,36 @@ public final class VTNSetDlSrcAction extends VTNDlAddrAction {
         ether.setSourceAddress(getAddress());
         ctx.addFilterAction(this);
         return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public FlowAction toFlowAction() {
+        return new org.opendaylight.vtn.manager.flow.action.
+            SetDlSrcAction(getAddress());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VTNSetDlSrcAction toFlowFilterAction(VtnAction vact, Integer ord)
+        throws RpcException {
+        VtnSetDlSrcActionCase ac = cast(VtnSetDlSrcActionCase.class, vact);
+        return new VTNSetDlSrcAction(ac, ord);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VTNSetDlSrcAction toFlowFilterAction(FlowAction fact, int ord)
+        throws RpcException {
+        org.opendaylight.vtn.manager.flow.action.SetDlSrcAction act =
+            cast(org.opendaylight.vtn.manager.flow.action.SetDlSrcAction.class,
+                 fact);
+        return new VTNSetDlSrcAction(act, ord);
     }
 }

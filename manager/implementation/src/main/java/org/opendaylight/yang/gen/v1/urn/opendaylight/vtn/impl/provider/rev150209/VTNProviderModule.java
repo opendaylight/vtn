@@ -84,8 +84,9 @@ public final class VTNProviderModule extends AbstractVTNProviderModule {
      */
     @Override
     public AutoCloseable createInstance() {
-        VTNManagerProviderImpl provider = createProvider();
-        registerService(getBundle(), provider);
+        BundleContext bc = getBundle().getBundleContext();
+        VTNManagerProviderImpl provider = createProvider(bc);
+        registerService(bc, provider);
         return provider;
     }
 
@@ -114,6 +115,7 @@ public final class VTNProviderModule extends AbstractVTNProviderModule {
             return old;
         }
 
+        BundleContext bc = b.getBundleContext();
         VTNManagerProviderImpl oldProvider = (VTNManagerProviderImpl)old;
         VTNManagerProviderImpl provider;
         if (oldProvider.canReuse()) {
@@ -121,23 +123,25 @@ public final class VTNProviderModule extends AbstractVTNProviderModule {
             provider = oldProvider;
         } else {
             oldProvider.close();
-            provider = createProvider();
+            provider = createProvider(bc);
             LOG.trace("Create new provider: this={}, old={}, new={}",
                       this, oldProvider, provider);
         }
 
-        registerService(b, provider);
+        registerService(bc, provider);
         return provider;
     }
 
     /**
      * Create a new VTN Manager provider.
      *
+     * @param bc  A {@link BundleContext} instance associated with the OSGi
+     *            bundle that contains this class.
      * @return  A {@link VTNManagerProviderImpl} instance.
      */
-    private VTNManagerProviderImpl createProvider() {
+    private VTNManagerProviderImpl createProvider(BundleContext bc) {
         return new VTNManagerProviderImpl(
-            getDataBrokerDependency(), getRpcRegistryDependency(),
+            bc, getDataBrokerDependency(), getRpcRegistryDependency(),
             getNotificationServiceDependency(),
             getEntityOwnershipServiceDependency());
     }
@@ -145,12 +149,12 @@ public final class VTNProviderModule extends AbstractVTNProviderModule {
     /**
      * Register VTN Manager provider to the OSGi service registry.
      *
-     * @param bundle    A {@link Bundle} instance.
+     * @param bc        A {@link BundleContext} instance associated with the
+     *                  OSGi bundle that contains this class.
      * @param provider  A {@link VTNManagerProviderImpl} instance.
      */
-    private void registerService(Bundle bundle,
+    private void registerService(BundleContext bc,
                                  VTNManagerProviderImpl provider) {
-        BundleContext bc = bundle.getBundleContext();
         if (isOsgiServiceRequired(bc, provider)) {
             Dictionary<String, Object> prop = new Hashtable<>();
             prop.put("containerName", GlobalConstants.DEFAULT.toString());

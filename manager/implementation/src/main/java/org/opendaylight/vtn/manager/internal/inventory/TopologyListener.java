@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -27,6 +27,7 @@ import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.LinkUpdateContext;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
@@ -131,7 +132,9 @@ public final class TopologyListener
                     InstanceIdentifier.create(IgnoredLinks.class);
                 tx.put(oper, vtPath, new VtnTopologyBuilder().build(), true);
                 tx.put(oper, igPath, new IgnoredLinksBuilder().build(), true);
-                luctx = new LinkUpdateContext(tx, ctx.getInventoryReader());
+                InventoryReader reader =
+                    ctx.getReadSpecific(InventoryReader.class);
+                luctx = new LinkUpdateContext(tx, reader);
                 initLinks(luctx, topology);
             }
 

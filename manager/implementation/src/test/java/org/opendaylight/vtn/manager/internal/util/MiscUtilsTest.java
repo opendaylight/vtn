@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2014, 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,19 +8,29 @@
 
 package org.opendaylight.vtn.manager.internal.util;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
 import java.math.BigInteger;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
+
+import com.google.common.collect.ImmutableList;
 
 import org.slf4j.Logger;
 
@@ -36,16 +46,25 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
+import org.opendaylight.vtn.manager.internal.TestVlanId;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnVlanIdField;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanId;
+
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv6Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.Counter32;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.Counter64;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
-
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 
 /**
  * JUnit test for {@link MiscUtils}.
@@ -182,6 +201,28 @@ public class MiscUtilsTest extends TestBase {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
                 }
             }
+        }
+    }
+
+    /**
+     * Test case for {@link MiscUtils#checkPresent(String, VnodeName)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testCheckPresent() throws Exception {
+        VnodeName vname = new VnodeName("node");
+        String desc = "Virtual node";
+        MiscUtils.checkPresent(desc, vname);
+
+        vname = null;
+        String msg = desc + " name cannot be null";
+        try {
+            MiscUtils.checkPresent(desc, vname);
+            unexpected();
+        } catch (RpcException e) {
+            checkException(e, msg);
+            assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
         }
     }
 
@@ -337,6 +378,16 @@ public class MiscUtilsTest extends TestBase {
     }
 
     /**
+     * Test case for {@link MiscUtils#toLowerCase(VtnUpdateType)}.
+     */
+    @Test
+    public void testToLowerCaseVtnUpdateType() {
+        assertEquals("created", MiscUtils.toLowerCase(VtnUpdateType.CREATED));
+        assertEquals("removed", MiscUtils.toLowerCase(VtnUpdateType.REMOVED));
+        assertEquals("changed", MiscUtils.toLowerCase(VtnUpdateType.CHANGED));
+    }
+
+    /**
      * Test case for {@link MiscUtils#unexpected()}.
      */
     @Test
@@ -453,6 +504,49 @@ public class MiscUtilsTest extends TestBase {
     }
 
     /**
+     * Test case for {@link MiscUtils#equalsAsSet(Collection, Collection)}.
+     */
+    @Test
+    public void testEqualsAsSet() {
+        List<Integer> nullList = null;
+        List<Integer> emptyList = Collections.<Integer>emptyList();
+        assertTrue(MiscUtils.equalsAsSet(nullList, nullList));
+        assertTrue(MiscUtils.equalsAsSet(nullList, emptyList));
+        assertTrue(MiscUtils.equalsAsSet(emptyList, nullList));
+        assertTrue(MiscUtils.equalsAsSet(emptyList, emptyList));
+
+        List<Integer> list1 = ImmutableList.of(0);
+        assertFalse(MiscUtils.equalsAsSet(nullList, list1));
+        assertFalse(MiscUtils.equalsAsSet(emptyList, list1));
+        assertFalse(MiscUtils.equalsAsSet(list1, nullList));
+        assertFalse(MiscUtils.equalsAsSet(list1, emptyList));
+
+        List<Integer> list2 = ImmutableList.of(0);
+        assertTrue(MiscUtils.equalsAsSet(list1, list2));
+        assertTrue(MiscUtils.equalsAsSet(list2, list1));
+
+        list2 = ImmutableList.of(0, 0);
+        assertTrue(MiscUtils.equalsAsSet(list1, list2));
+        assertTrue(MiscUtils.equalsAsSet(list2, list1));
+
+        list2 = ImmutableList.of(0, 1, 2);
+        assertFalse(MiscUtils.equalsAsSet(list1, list2));
+        assertFalse(MiscUtils.equalsAsSet(list2, list1));
+
+        list1 = ImmutableList.of(2, 0, 1, 2, 0);
+        assertTrue(MiscUtils.equalsAsSet(list1, list2));
+        assertTrue(MiscUtils.equalsAsSet(list2, list1));
+
+        list2 = ImmutableList.of(0, 1, 2, 3, 4, 5);
+        assertFalse(MiscUtils.equalsAsSet(list1, list2));
+        assertFalse(MiscUtils.equalsAsSet(list2, list1));
+
+        list1 = ImmutableList.of(5, 3, 1, 0, 2, 4, 1, 2, 3, 4, 5);
+        assertTrue(MiscUtils.equalsAsSet(list1, list2));
+        assertTrue(MiscUtils.equalsAsSet(list2, list1));
+    }
+
+    /**
      * Test case for {@link MiscUtils#getValue(Uri)}.
      */
     @Test
@@ -470,6 +564,25 @@ public class MiscUtilsTest extends TestBase {
         for (String s: strings) {
             assertEquals(s, MiscUtils.getValue(new Uri(s)));
             assertEquals(s, MiscUtils.getValue(new NodeConnectorId(s)));
+        }
+    }
+
+    /**
+     * Test case for {@link MiscUtils#getValue(VnodeName)}.
+     */
+    @Test
+    public void testGetValueVnodeName() {
+        assertEquals(null, MiscUtils.getValue((VnodeName)null));
+
+        String[] strings = {
+            "a",
+            "vtn_1",
+            "vbridge_2",
+            "vif_3",
+        };
+
+        for (String s: strings) {
+            assertEquals(s, MiscUtils.getValue(new VnodeName(s)));
         }
     }
 
@@ -576,6 +689,186 @@ public class MiscUtilsTest extends TestBase {
             } catch (UnsupportedOperationException e) {
             }
         }
+    }
+
+    /**
+     * Test case for {@link MiscUtils#getVlanId(VtnVlanIdField)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testGetVlanId() throws Exception {
+        VtnVlanIdField field = mock(VtnVlanIdField.class);
+        when(field.getVlanId()).thenReturn((VlanId)null);
+        VlanId vlanId = MiscUtils.getVlanId(field);
+        assertEquals(0, vlanId.getValue().intValue());
+        verify(field).getVlanId();
+        verifyNoMoreInteractions(field);
+
+        Integer[] vids = {
+            0, 1, 2, 88, 567, 890, 1234, 3456, 4094, 4095,
+        };
+        for (Integer vid: vids) {
+            vlanId = new VlanId(vid);
+            field = mock(VtnVlanIdField.class);
+            when(field.getVlanId()).thenReturn(vlanId);
+            assertEquals(vlanId, MiscUtils.getVlanId(field));
+            verify(field).getVlanId();
+            verifyNoMoreInteractions(field);
+        }
+
+        // VLAN ID is missing.
+        RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
+        String msg = "vlan-id cannot be null";
+        vlanId = new TestVlanId();
+        field = mock(VtnVlanIdField.class);
+        when(field.getVlanId()).thenReturn(vlanId);
+
+        try {
+            MiscUtils.getVlanId(field);
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(etag, e.getErrorTag());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
+        }
+        verify(field).getVlanId();
+        verifyNoMoreInteractions(field);
+
+        // Invalid VLAN ID.
+        etag = RpcErrorTag.BAD_ELEMENT;
+        Integer[] badVids = {
+            Integer.MIN_VALUE, -2, -1, 4096, 4097, Integer.MAX_VALUE,
+        };
+        for (Integer vid: badVids) {
+            msg = "Invalid VLAN ID: " + vid;
+            vlanId = new TestVlanId(vid);
+            field = mock(VtnVlanIdField.class);
+            when(field.getVlanId()).thenReturn(vlanId);
+
+            try {
+                MiscUtils.getVlanId(field);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
+            }
+            verify(field).getVlanId();
+            verifyNoMoreInteractions(field);
+        }
+    }
+
+    /**
+     * Test case for {@link MiscUtils#isBadRequest(Throwable)}.
+     */
+    @Test
+    public void testIsBadRequest() {
+        Throwable[] throwables = {
+            new NullPointerException(),
+            new IllegalArgumentException(),
+            new IllegalStateException(),
+        };
+        for (Throwable t: throwables) {
+            assertEquals(false, MiscUtils.isBadRequest(t));
+        }
+
+        Set<VtnErrorTag> badTags = EnumSet.of(
+            VtnErrorTag.BADREQUEST, VtnErrorTag.NOTFOUND,
+            VtnErrorTag.CONFLICT);
+        for (VtnErrorTag vtag: VtnErrorTag.values()) {
+            String msg = "Message";
+            VTNException ve = new VTNException(vtag, msg);
+            boolean bad = badTags.contains(vtag);
+            assertEquals(bad, MiscUtils.isBadRequest(ve));
+
+            RpcException re = new RpcException(
+                RpcErrorTag.BAD_ELEMENT, vtag, msg);
+            assertEquals(bad, MiscUtils.isBadRequest(ve));
+        }
+    }
+
+    /**
+     * Test case for {@link MiscUtils#toValueList(Map)}.
+     */
+    @Test
+    public void testToValueList() {
+        Map<Integer, String> map = null;
+        assertEquals(null, MiscUtils.toValueList(map));
+
+        map = new TreeMap<>();
+        assertEquals(null, MiscUtils.toValueList(map));
+
+        map.put(1, "a");
+        map.put(10, "b");
+        map.put(-1, "c");
+        map.put(9, "d");
+        map.put(3, "e");
+        map.put(4, "f");
+        map.put(5, "g");
+
+        List<String> expected = Arrays.
+            asList("c", "a", "e", "f", "g", "d", "b");
+        assertEquals(expected, MiscUtils.toValueList(map));
+    }
+
+    /**
+     * Test case for {@link MiscUtils#isEmpty(Collection)}.
+     */
+    @Test
+    public void testIsEmpty() {
+        List<Integer> list = null;
+        Set<Integer> set = null;
+        assertEquals(true, MiscUtils.isEmpty(list));
+        assertEquals(true, MiscUtils.isEmpty(set));
+
+        list = new ArrayList<>();
+        assertEquals(true, MiscUtils.isEmpty(list));
+        set = new HashSet<>();
+        assertEquals(true, MiscUtils.isEmpty(set));
+
+        for (int i = 0; i < 10; i++) {
+            list.add(i);
+            assertEquals(false, MiscUtils.isEmpty(list));
+            set.add(i);
+            assertEquals(false, MiscUtils.isEmpty(set));
+        }
+    }
+
+    /**
+     * Test case for {@link MiscUtils#toVnodeState(boolean)}.
+     */
+    @Test
+    public void testToVnodeState() {
+        assertEquals(VnodeState.UP, MiscUtils.toVnodeState(true));
+        assertEquals(VnodeState.DOWN, MiscUtils.toVnodeState(false));
+    }
+
+    /**
+     * Test case for {@link MiscUtils#hasIpv4Address(Collection)}.
+     */
+    @Test
+    public void testHasIpv4Address() {
+        List<IpAddress> addrs = null;
+        assertEquals(false, MiscUtils.hasIpv4Address(addrs));
+        addrs = new ArrayList<>();
+        assertEquals(false, MiscUtils.hasIpv4Address(addrs));
+
+        addrs.add(null);
+        assertEquals(false, MiscUtils.hasIpv4Address(addrs));
+
+        Ipv6Address ipv6 = new Ipv6Address("::1");
+        addrs.add(new IpAddress(ipv6));
+        assertEquals(false, MiscUtils.hasIpv4Address(addrs));
+
+        ipv6 = new Ipv6Address("aaaa:bbbb:cdef:0123::4567");
+        addrs.add(new IpAddress(ipv6));
+        assertEquals(false, MiscUtils.hasIpv4Address(addrs));
+
+        Ipv4Address ipv4 = new Ipv4Address("127.0.0.1");
+        addrs.add(new IpAddress(ipv4));
+        assertEquals(true, MiscUtils.hasIpv4Address(addrs));
     }
 
     /**

@@ -12,9 +12,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.opendaylight.vtn.manager.it.ofmock.DataChangeWaiter;
+import org.opendaylight.vtn.manager.it.ofmock.DataStoreUtils;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
+import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -48,12 +50,17 @@ public final class DataChangeWaiterImpl<T extends DataObject>
     /**
      * Revision number of the target data.
      */
-    private int  revision;
+    private int  revision = 0;
 
     /**
      * Base revision number of the target data.
      */
     private int  baseRevision;
+
+    /**
+     * The data object that contains the latest value.
+     */
+    private T  latestValue;
 
     /**
      * Construct a new instance.
@@ -70,30 +77,70 @@ public final class DataChangeWaiterImpl<T extends DataObject>
         DataBroker broker = ofmock.getDataBroker();
         listener = broker.registerDataChangeListener(
             store, path, this, DataChangeScope.SUBTREE);
+
+        // Read the current data.
+        try (ReadOnlyTransaction rtx = ofmock.newReadOnlyTransaction()) {
+            T data = DataStoreUtils.read(rtx, store, path).orNull();
+            synchronized (this) {
+                if (revision == 0) {
+                    latestValue = data;
+                }
+            }
+        }
     }
 
     /**
-     * Determine whether the given event contains the target data object
-     * or not.
+     * Return the target data object if it has been created or updated.
      *
      * @param ev  An {@link AsyncDataChangeEvent} instance.
-     * @return  {@code true} only if the given event contains the target data
-     *          object.
+     * @return  A data object if the specified data has been created or
+     *          updated. {@code null} otherwise.
      */
-    private boolean contains(
+    private T getUpdatedData(
         AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
+        Class<T> type = targetPath.getTargetType();
+
         Map<InstanceIdentifier<?>, DataObject> created = ev.getCreatedData();
-        if (created != null && created.containsKey(targetPath)) {
-            return true;
+        if (created != null) {
+            DataObject data = created.get(targetPath);
+            if (type.isInstance(data)) {
+                return type.cast(data);
+            }
         }
 
         Map<InstanceIdentifier<?>, DataObject> updated = ev.getUpdatedData();
-        if (updated != null && updated.containsKey(targetPath)) {
-            return true;
+        if (updated != null) {
+            DataObject data = updated.get(targetPath);
+            if (type.isInstance(data)) {
+                return type.cast(data);
+            }
         }
 
+        return null;
+    }
+
+    /**
+     * Determine whether the target data object has been removed or not.
+     *
+     * @param ev  An {@link AsyncDataChangeEvent} instance.
+     * @return  {@code true} if the target data object has been removed.
+     *          {@code false} otherwise.
+     */
+    private boolean isRemoved(
+        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
         Set<InstanceIdentifier<?>> removed = ev.getRemovedPaths();
         return (removed != null && removed.contains(targetPath));
+    }
+
+    /**
+     * Set the latest value notified by the data change listener.
+     *
+     * @param data  The data object notified by the data change listener.
+     */
+    private synchronized void setValue(T data) {
+        latestValue = data;
+        revision++;
+        notifyAll();
     }
 
     // DataChangeWaiter
@@ -104,6 +151,14 @@ public final class DataChangeWaiterImpl<T extends DataObject>
     @Override
     public InstanceIdentifier<T> getPath() {
         return targetPath;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public synchronized T getValue() {
+        return latestValue;
     }
 
     /**
@@ -145,11 +200,9 @@ public final class DataChangeWaiterImpl<T extends DataObject>
     @Override
     public void onDataChanged(
         AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
-        if (contains(ev)) {
-            synchronized (this) {
-                revision++;
-                notifyAll();
-            }
+        T data = getUpdatedData(ev);
+        if (data != null || isRemoved(ev)) {
+            setValue(data);
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -961,35 +961,6 @@ public class VTNInventoryManagerTest extends TestBase {
         }
         assertTrue(portEvents.isEmpty());
 
-        // The next must be port update events.
-        portEvents = new HashMap<>(changedPorts);
-        for (int i = 0; i < changedPorts.size(); i++) {
-            TxEvent tev = it.next();
-            assertTrue(tev instanceof VtnPortEvent);
-            pev = (VtnPortEvent)tev;
-            sport = pev.getSalPort();
-            VtnPortEvent expected = portEvents.remove(sport);
-            assertNotNull(expected);
-            for (int j = 0; j < nlisteners; j++) {
-                if (j != 0) {
-                    tev = it.next();
-                    assertTrue(tev instanceof VtnPortEvent);
-                    pev = (VtnPortEvent)tev;
-                }
-                assertEquals(listeners[j],
-                             getFieldValue(pev, VTNInventoryListener.class,
-                                           "listener"));
-                assertEquals(sport, pev.getSalPort());
-                assertSame(expected.getVtnPort(), pev.getVtnPort());
-                assertEquals(expected.getInterSwitchLinkChange(),
-                             pev.getInterSwitchLinkChange());
-                assertEquals(expected.getStateChange(), pev.getStateChange());
-                assertEquals(VtnUpdateType.CHANGED, pev.getUpdateType());
-                assertEquals(expected.isDisabled(), pev.isDisabled());
-            }
-        }
-        assertTrue(portEvents.isEmpty());
-
         // The next must be port removal events.
         portEvents = new HashMap<>(removedPorts);
         for (int i = 0; i < removedPorts.size(); i++) {
@@ -1019,7 +990,7 @@ public class VTNInventoryManagerTest extends TestBase {
         }
         assertTrue(portEvents.isEmpty());
 
-        // Node removal events must come last.
+        // The next must be node removal events.
         nodeEvents = new HashMap<>(removedNodes);
         for (int i = 0; i < removedNodes.size(); i++) {
             TxEvent tev = it.next();
@@ -1043,6 +1014,35 @@ public class VTNInventoryManagerTest extends TestBase {
             }
         }
         assertTrue(nodeEvents.isEmpty());
+
+        // Port update events must come last.
+        portEvents = new HashMap<>(changedPorts);
+        for (int i = 0; i < changedPorts.size(); i++) {
+            TxEvent tev = it.next();
+            assertTrue(tev instanceof VtnPortEvent);
+            pev = (VtnPortEvent)tev;
+            sport = pev.getSalPort();
+            VtnPortEvent expected = portEvents.remove(sport);
+            assertNotNull(expected);
+            for (int j = 0; j < nlisteners; j++) {
+                if (j != 0) {
+                    tev = it.next();
+                    assertTrue(tev instanceof VtnPortEvent);
+                    pev = (VtnPortEvent)tev;
+                }
+                assertEquals(listeners[j],
+                             getFieldValue(pev, VTNInventoryListener.class,
+                                           "listener"));
+                assertEquals(sport, pev.getSalPort());
+                assertSame(expected.getVtnPort(), pev.getVtnPort());
+                assertEquals(expected.getInterSwitchLinkChange(),
+                             pev.getInterSwitchLinkChange());
+                assertEquals(expected.getStateChange(), pev.getStateChange());
+                assertEquals(VtnUpdateType.CHANGED, pev.getUpdateType());
+                assertEquals(expected.isDisabled(), pev.isDisabled());
+            }
+        }
+        assertTrue(portEvents.isEmpty());
         assertFalse(it.hasNext());
 
         for (VTNInventoryListener l: listeners) {

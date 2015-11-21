@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -56,6 +56,22 @@ public abstract class TxEvent extends AbstractTxTask<Void> {
     protected abstract void notifyEvent() throws VTNException;
 
     // TxTask
+
+    /**
+     * Determine whether this instance is associated with an asynchronous
+     * task or not.
+     *
+     * <p>
+     *   This method always returns {@code true} because this instance is
+     *   associated with an asynchronous event task.
+     * </p>
+     *
+     * @return  {@code true}.
+     */
+    @Override
+    public final boolean isAsync() {
+        return true;
+    }
 
     /**
      * {@inheritDoc}

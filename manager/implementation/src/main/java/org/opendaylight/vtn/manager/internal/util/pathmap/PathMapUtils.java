@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -24,7 +24,7 @@ import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondUtils;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-import org.opendaylight.vtn.manager.internal.util.vnode.VTenantUtils;
+import org.opendaylight.vtn.manager.internal.util.vnode.VTenantIdentifier;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -245,26 +245,25 @@ public final class PathMapUtils {
      */
     public static InstanceIdentifier<VtnPathMap> getIdentifier(
         String name, Integer index) throws RpcException {
-        return getIdentifier(VTenantUtils.getVnodeName(name), index);
+        return getIdentifier(VTenantIdentifier.create(name, true), index);
     }
 
     /**
      * Create the instance identifier for the VTN path map specified by the
-     * given VTN name and map index.
+     * given VTN identifier and map index.
      *
-     * @param vname  A {@link VnodeName} instance that contains the name of the
-     *               target VTN.
+     * @param ident  The identifier for the target VTN.
      * @param index  The index assigned to the path map in the specified VTN.
      * @return  An {@link InstanceIdentifier} instance.
      * @throws RpcException
      *    The given map index is invalid.
      */
     public static InstanceIdentifier<VtnPathMap> getIdentifier(
-        VnodeName vname, Integer index) throws RpcException {
+        VTenantIdentifier ident, Integer index) throws RpcException {
         if (index == null) {
             throw getNullMapIndexException();
         }
-        return VTenantUtils.getIdentifierBuilder(vname).
+        return ident.getIdentifierBuilder().
             child(VtnPathMaps.class).
             child(VtnPathMap.class, new VtnPathMapKey(index)).build();
     }
@@ -334,17 +333,16 @@ public final class PathMapUtils {
      *
      * @param rtx    A {@link ReadTransaction} instance associated with the
      *               read transaction for the MD-SAL datastore.
-     * @param vname  A {@link VnodeName} instance that contains the name of
-     *               the target VTN.
+     * @param ident  The identifier for the target VTN.
      * @return  A list of all VTN path maps in the given VTN.
      *          Each element in the list is sorted by index in ascending order.
      *          An empty list is returned if no VTN path map is configured.
      * @throws VTNException  An error occurred.
      */
     public static List<VtnPathMap> readPathMaps(
-        ReadTransaction rtx, VnodeName vname) throws VTNException {
-        InstanceIdentifier<VtnPathMaps> path = VTenantUtils.
-            getIdentifierBuilder(vname).child(VtnPathMaps.class).build();
+        ReadTransaction rtx, VTenantIdentifier ident) throws VTNException {
+        InstanceIdentifier<VtnPathMaps> path = ident.getIdentifierBuilder().
+            child(VtnPathMaps.class).build();
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
         Optional<VtnPathMaps> opt = DataStoreUtils.read(rtx, oper, path);
         if (opt.isPresent()) {
@@ -354,8 +352,8 @@ public final class PathMapUtils {
                 return MiscUtils.sortedCopy(list, new VtnIndexComparator());
             }
         } else {
-            // Check to see if the target VTN is present or not.
-            VTenantUtils.readVtn(rtx, vname);
+            // Check to see if the target VTN is present.
+            ident.fetch(rtx);
         }
 
         return Collections.<VtnPathMap>emptyList();
@@ -366,24 +364,24 @@ public final class PathMapUtils {
      *
      * @param rtx    A {@link ReadTransaction} instance associated with the
      *               read transaction for the MD-SAL datastore.
-     * @param vname  A {@link VnodeName} instance that contains the name of
-     *               the target VTN.
+     * @param ident  The identifier for the target VTN.
      * @param index  The index that specifies the path map.
      * @return  A {@link VtnPathMap} instance if found.
      *          {@code null} if not found.
      * @throws VTNException  An error occurred.
      */
-    public static VtnPathMap readPathMap(ReadTransaction rtx, VnodeName vname,
-                                         Integer index) throws VTNException {
-        InstanceIdentifier<VtnPathMap> path = getIdentifier(vname, index);
+    public static VtnPathMap readPathMap(
+        ReadTransaction rtx, VTenantIdentifier ident, Integer index)
+        throws VTNException {
+        InstanceIdentifier<VtnPathMap> path = getIdentifier(ident, index);
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
         Optional<VtnPathMap> opt = DataStoreUtils.read(rtx, oper, path);
         VtnPathMap vpm;
         if (opt.isPresent()) {
             vpm = opt.get();
         } else {
-            // Check to see if the target VTN is present or not.
-            VTenantUtils.readVtn(rtx, vname);
+            // Check to see if the target VTN is present.
+            ident.fetch(rtx);
             vpm = null;
         }
 

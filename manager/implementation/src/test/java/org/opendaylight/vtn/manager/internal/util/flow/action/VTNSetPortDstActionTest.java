@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -35,6 +35,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.v
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetPortDstActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.port.dst.action._case.VtnSetPortDstAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.port.dst.action._case.VtnSetPortDstActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
@@ -85,6 +86,8 @@ public class VTNSetPortDstActionTest extends TestBase {
      *   <li>{@link VTNSetPortDstAction#set(VtnFlowActionBuilder)}</li>
      *   <li>{@link VTNSetPortDstAction#set(ActionBuilder)}</li>
      *   <li>{@link VTNSetPortDstAction#toFlowAction(VtnAction)}</li>
+     *   <li>{@link VTNSetPortDstAction#toFlowAction()}</li>
+     *   <li>{@link VTNSetPortDstAction#toFlowFilterAction(VtnAction,Integer)}</li>
      *   <li>{@link VTNSetPortDstAction#toVtnAction(Action)}</li>
      *   <li>{@link VTNSetPortDstAction#getDescription(Action)}</li>
      *   <li>{@link VTNPortAction#getPort()}</li>
@@ -92,6 +95,7 @@ public class VTNSetPortDstActionTest extends TestBase {
      *   <li>{@link VTNPortAction#verifyImpl()}</li>
      *   <li>{@link FlowFilterAction#verify()}</li>
      *   <li>{@link FlowFilterAction#getIdentifier()}</li>
+     *   <li>{@link FlowFilterAction#toVtnFlowAction()}</li>
      *   <li>{@link VTNFlowAction#toVtnFlowActionBuilder(Integer)}</li>
      *   <li>{@link VTNFlowAction#toActionBuilder(Integer)}</li>
      * </ul>
@@ -143,6 +147,12 @@ public class VTNSetPortDstActionTest extends TestBase {
                 assertEquals(port, va.getPort());
                 assertEquals(pnum, va.getPortNumber());
 
+                VtnFlowAction vfact = va.toVtnFlowAction();
+                assertEquals(order, vfact.getOrder());
+                assertEquals(vac, vfact.getVtnAction());
+
+                assertEquals(vad, va.toFlowAction());
+
                 VtnFlowActionBuilder vbuilder =
                     va.toVtnFlowActionBuilder(anotherOrder);
                 assertEquals(anotherOrder, vbuilder.getOrder());
@@ -153,6 +163,16 @@ public class VTNSetPortDstActionTest extends TestBase {
                 assertEquals(anotherOrder, mbuilder.getOrder());
                 assertEquals(mact, mbuilder.getAction());
                 assertEquals(order, va.getIdentifier());
+
+                if (order != null) {
+                    // toFlowFilterAction() test.
+                    VTNSetPortDstAction conv = new VTNSetPortDstAction();
+                    assertEquals(va, conv.toFlowFilterAction(vac, order));
+
+                    // toFlowFilterAction() should never affect instance
+                    // variables.
+                    assertEquals(0, conv.getPort());
+                }
             }
 
             // Default port number test.
@@ -407,7 +427,7 @@ public class VTNSetPortDstActionTest extends TestBase {
         Mockito.verify(ctx).addFilterAction(va);
         Mockito.verify(ctx, Mockito.never()).
             removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterAction();
+        Mockito.verify(ctx, Mockito.never()).getFilterActions();
 
         Mockito.verify(tcp).setDestinationPort(port);
         Mockito.verify(tcp, Mockito.never()).getSourcePort();
@@ -425,7 +445,7 @@ public class VTNSetPortDstActionTest extends TestBase {
         Mockito.verify(ctx).addFilterAction(va);
         Mockito.verify(ctx, Mockito.never()).
             removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterAction();
+        Mockito.verify(ctx, Mockito.never()).getFilterActions();
 
         Mockito.verify(udp).setDestinationPort(port);
         Mockito.verify(udp, Mockito.never()).getSourcePort();
@@ -444,7 +464,7 @@ public class VTNSetPortDstActionTest extends TestBase {
             addFilterAction(Mockito.any(FlowFilterAction.class));
         Mockito.verify(ctx, Mockito.never()).
             removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterAction();
+        Mockito.verify(ctx, Mockito.never()).getFilterActions();
 
         Mockito.verifyZeroInteractions(icmp);
 
@@ -458,7 +478,7 @@ public class VTNSetPortDstActionTest extends TestBase {
             addFilterAction(Mockito.any(FlowFilterAction.class));
         Mockito.verify(ctx, Mockito.never()).
             removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterAction();
+        Mockito.verify(ctx, Mockito.never()).getFilterActions();
     }
 
     /**

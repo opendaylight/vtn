@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -40,6 +40,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.v
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetSrcActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.inet.src.action._case.VtnSetInetSrcAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.inet.src.action._case.VtnSetInetSrcActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
@@ -95,6 +96,8 @@ public class VTNSetInetSrcActionTest extends TestBase {
      *   <li>{@link VTNSetInetSrcAction#set(VtnFlowActionBuilder)}</li>
      *   <li>{@link VTNSetInetSrcAction#set(ActionBuilder)}</li>
      *   <li>{@link VTNSetInetSrcAction#toFlowAction(VtnAction)}</li>
+     *   <li>{@link VTNSetInetSrcAction#toFlowAction()}</li>
+     *   <li>{@link VTNSetInetSrcAction#toFlowFilterAction(VtnAction,Integer)}</li>
      *   <li>{@link VTNSetInetSrcAction#toVtnAction(Action)}</li>
      *   <li>{@link VTNSetInetSrcAction#getDescription(Action)}</li>
      *   <li>{@link VTNInetAddrAction#getAddress()}</li>
@@ -102,6 +105,7 @@ public class VTNSetInetSrcActionTest extends TestBase {
      *   <li>{@link VTNInetAddrAction#verifyImpl()}</li>
      *   <li>{@link FlowFilterAction#verify()}</li>
      *   <li>{@link FlowFilterAction#getIdentifier()}</li>
+     *   <li>{@link FlowFilterAction#toVtnFlowAction()}</li>
      *   <li>{@link VTNFlowAction#toVtnFlowActionBuilder(Integer)}</li>
      *   <li>{@link VTNFlowAction#toActionBuilder(Integer)}</li>
      * </ul>
@@ -156,6 +160,12 @@ public class VTNSetInetSrcActionTest extends TestBase {
                 assertEquals(iaddr, va.getAddress());
                 assertEquals(mdaddr, va.getMdAddress());
 
+                VtnFlowAction vfact = va.toVtnFlowAction();
+                assertEquals(order, vfact.getOrder());
+                assertEquals(vac, vfact.getVtnAction());
+
+                assertEquals(vad, va.toFlowAction());
+
                 VtnFlowActionBuilder vbuilder =
                     va.toVtnFlowActionBuilder(anotherOrder);
                 assertEquals(anotherOrder, vbuilder.getOrder());
@@ -166,6 +176,16 @@ public class VTNSetInetSrcActionTest extends TestBase {
                 assertEquals(anotherOrder, mbuilder.getOrder());
                 assertEquals(mact, mbuilder.getAction());
                 assertEquals(order, va.getIdentifier());
+
+                if (order != null) {
+                    // toFlowFilterAction() test.
+                    VTNSetInetSrcAction conv = new VTNSetInetSrcAction();
+                    assertEquals(va, conv.toFlowFilterAction(vac, order));
+
+                    // toFlowFilterAction() should never affect instance
+                    // variables.
+                    assertEquals(null, conv.getAddress());
+                }
             }
         }
 
@@ -550,7 +570,7 @@ public class VTNSetInetSrcActionTest extends TestBase {
         Mockito.verify(ctx).addFilterAction(va);
         Mockito.verify(ctx, Mockito.never()).
             removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterAction();
+        Mockito.verify(ctx, Mockito.never()).getFilterActions();
 
         Mockito.verify(inet).setSourceAddress(iaddr);
         Mockito.verify(inet, Mockito.never()).getSourceAddress();
@@ -573,7 +593,7 @@ public class VTNSetInetSrcActionTest extends TestBase {
             addFilterAction(Mockito.any(FlowFilterAction.class));
         Mockito.verify(ctx, Mockito.never()).
             removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterAction();
+        Mockito.verify(ctx, Mockito.never()).getFilterActions();
 
         Mockito.verify(inet).setSourceAddress(iaddr);
         Mockito.verify(inet, Mockito.never()).getSourceAddress();
@@ -595,7 +615,7 @@ public class VTNSetInetSrcActionTest extends TestBase {
             addFilterAction(Mockito.any(FlowFilterAction.class));
         Mockito.verify(ctx, Mockito.never()).
             removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterAction();
+        Mockito.verify(ctx, Mockito.never()).getFilterActions();
     }
 
     /**

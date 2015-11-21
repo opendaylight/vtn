@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2014, 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,9 @@
  */
 
 package org.opendaylight.vtn.manager.internal.packet.cache;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,13 +30,15 @@ import org.opendaylight.vtn.manager.packet.TCP;
 import org.opendaylight.vtn.manager.util.InetProtocols;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 
-import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.util.flow.action.FlowFilterAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetPortDstAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetPortSrcAction;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNPortRange;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNTcpMatch;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
+import org.opendaylight.vtn.manager.internal.vnode.PacketContext;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
@@ -103,6 +108,9 @@ public class TcpPacketTest extends TestBase {
      */
     @Test
     public void testGetter() throws Exception {
+        TxContext ctx = mock(TxContext.class);
+        SalPort ingress = new SalPort(1L, 3L);
+
         int[] srcs = {0, 1, 53, 123, 12000, 23567, 45900, 58123, 60000, 65535};
         int[] dsts = {0, 2, 35, 99, 390, 14567, 39734, 47614, 59198, 65535};
         for (int src: srcs) {
@@ -114,8 +122,7 @@ public class TcpPacketTest extends TestBase {
 
                 // commit() should return false.
                 Ethernet ether = createEthernet(pkt);
-                PacketContext pctx = createPacketContext(
-                    ether, EtherPacketTest.NODE_CONNECTOR);
+                PacketContext pctx = new PacketContext(ctx, ether, ingress);
                 assertFalse(tcp.commit(pctx));
                 assertEquals(null, pctx.getFilterActions());
                 for (FlowMatchType mtype: FlowMatchType.values()) {
@@ -123,6 +130,8 @@ public class TcpPacketTest extends TestBase {
                 }
             }
         }
+
+        verifyZeroInteractions(ctx);
     }
 
     /**
@@ -132,6 +141,9 @@ public class TcpPacketTest extends TestBase {
      */
     @Test
     public void testSetter() throws Exception {
+        TxContext ctx = mock(TxContext.class);
+        SalPort ingress = new SalPort(1L, 3L);
+
         int src0 = 1;
         int dst0 = 80;
         int src1 = 52984;
@@ -154,8 +166,7 @@ public class TcpPacketTest extends TestBase {
             int src = src0;
             int dst = dst0;
             Ethernet ether = createEthernet(pkt);
-            PacketContext pctx =
-                createPacketContext(ether, EtherPacketTest.NODE_CONNECTOR);
+            PacketContext pctx = new PacketContext(ctx, ether, ingress);
             for (FlowFilterAction act: fltActions.values()) {
                 pctx.addFilterAction(act);
             }
@@ -210,7 +221,7 @@ public class TcpPacketTest extends TestBase {
                 actions.add(fltActions.get(VTNSetPortDstAction.class));
             }
 
-            pctx = createPacketContext(ether, EtherPacketTest.NODE_CONNECTOR);
+            pctx = new PacketContext(ctx, ether, ingress);
             for (FlowMatchType mt: FlowMatchType.values()) {
                 pctx.addMatchField(mt);
             }
@@ -249,6 +260,8 @@ public class TcpPacketTest extends TestBase {
             assertEquals(src1, tcp2.getSourcePort());
             assertEquals(dst1, tcp2.getDestinationPort());
         }
+
+        verifyZeroInteractions(ctx);
     }
 
     /**
@@ -295,6 +308,9 @@ public class TcpPacketTest extends TestBase {
      */
     @Test
     public void testUpdateChecksum() throws Exception {
+        TxContext ctx = mock(TxContext.class);
+        SalPort ingress = new SalPort(1L, 3L);
+
         // Create a broken TCP packet.
         TCP pkt = new TCP();
         Map<String, byte[]> header = getFieldValue(
@@ -398,8 +414,7 @@ public class TcpPacketTest extends TestBase {
         tcp.setSourcePort(src);
         tcp.setDestinationPort(dst);
         Ethernet ether = createEthernet(pkt);
-        PacketContext pctx =
-            createPacketContext(ether, EtherPacketTest.NODE_CONNECTOR);
+        PacketContext pctx = new PacketContext(ctx, ether, ingress);
         assertEquals(true, tcp.commit(pctx));
 
         list.clear();
@@ -424,6 +439,8 @@ public class TcpPacketTest extends TestBase {
         list.add(new ChecksumData(odd, 0xcacb));
         list.add(new ChecksumData(large, 0x0e6f));
         verifyChecksum(list, tcp, inet4);
+
+        verifyZeroInteractions(ctx);
     }
 
     /**

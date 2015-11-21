@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -21,8 +21,12 @@ import java.util.Map;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 
+import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
+
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanId;
 
 /**
  * {@code XmlDataType} describes the data type of the XML node value or
@@ -151,6 +155,24 @@ public abstract class XmlDataType {
             ",1,eth1",
         };
         map.put(VtnPortDesc.class, forVtnPortDesc);
+
+        String[] forSalNode = {
+            "",
+            "a",
+            "openflow:",
+            "openflow:dpid",
+            "unknown:1",
+        };
+        map.put(SalNode.class, forSalNode);
+
+        String[] forVlanId = {
+            "",
+            "bad VLAN ID",
+            "-1",
+            "4096",
+            "99999999999999999999999999",
+        };
+        map.put(VlanId.class, forVlanId);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -56,6 +56,18 @@ public abstract class VTNPortAction extends FlowFilterAction {
      * @param p  The port numbet to be set.
      */
     protected VTNPortAction(int p) {
+        port = p;
+    }
+
+    /**
+     * Construct a new instance with specifying action order.
+     *
+     * @param p    The port numbet to be set.
+     * @param ord  An integer which determines the order of flow actions
+     *             in a flow entry.
+     */
+    protected VTNPortAction(int p, Integer ord) {
+        super(ord);
         port = p;
     }
 

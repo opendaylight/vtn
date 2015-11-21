@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,9 @@
  */
 
 package org.opendaylight.vtn.manager.internal.util.inventory;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.math.BigInteger;
 import java.util.HashSet;
@@ -34,6 +37,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev15020
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNodeKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.port.info.PortLink;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.port.info.PortLinkKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortLocation;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRef;
@@ -70,7 +74,6 @@ public class SalPortTest extends TestBase {
      *   <li>{@link SalPort#getNodeNumber()}</li>
      *   <li>{@link SalPort#getPortNumber()}</li>
      *   <li>{@link SalPort#isLogicalPort(NodeConnectorId)}</li>
-     * and
      */
     @Test
     public void testCreateString() {
@@ -196,6 +199,74 @@ public class SalPortTest extends TestBase {
                 assertEquals(nid, sport.getNodeNumber());
                 assertEquals(p, sport.getPortNumber());
             }
+        }
+    }
+
+    /**
+     * Test case for {@link SalPort#create(VtnPortLocation)}.
+     */
+    @Test
+    public void testCreateVtnPortLocation() {
+        VtnPortLocation vpl = null;
+        assertEquals(null, SalPort.create(vpl));
+
+        SalPort[] sports = {
+            new SalPort(1L, 1L),
+            new SalPort(1L, 0xffffff00L),
+            new SalPort(1L, 2L),
+            new SalPort(123L, 456L),
+            new SalPort(-1L, 1000L),
+            new SalPort(-1L, 0xffffff00L),
+        };
+
+        for (SalPort sport: sports) {
+            NodeId nodeId = sport.getNodeId();
+            String portId = String.valueOf(sport.getPortNumber());
+            vpl = mock(VtnPortLocation.class);
+            when(vpl.getNode()).thenReturn(nodeId);
+            when(vpl.getPortId()).thenReturn(portId);
+            assertEquals(sport, SalPort.create(vpl));
+        }
+
+        // Invalid node ID.
+        NodeId[] badNodeIds = {
+            null,
+            new NodeId(""),
+            new NodeId("openflow"),
+            new NodeId("openflow:"),
+            new NodeId("openflow:18446744073709551616"),
+            new NodeId("unknown:1"),
+        };
+
+        for (NodeId nodeId: badNodeIds) {
+            vpl = mock(VtnPortLocation.class);
+            when(vpl.getNode()).thenReturn(nodeId);
+            when(vpl.getPortId()).thenReturn("1");
+            assertEquals(null, SalPort.create(vpl));
+        }
+
+        // Invalid port ID.
+        NodeId nodeId = new NodeId("openflow:1");
+        String[] badPortIds = {
+            null,
+            "MAX",
+            "IN_PORT",
+            "TABLE",
+            "NORMAL",
+            "FLOOD",
+            "ALL",
+            "CONTROLLER",
+            "LOCAL",
+            "-1",
+            "bad port ID",
+            "4294967041",
+        };
+
+        for (String portId: badPortIds) {
+            vpl = mock(VtnPortLocation.class);
+            when(vpl.getNode()).thenReturn(nodeId);
+            when(vpl.getPortId()).thenReturn(portId);
+            assertEquals(null, SalPort.create(vpl));
         }
     }
 
@@ -480,6 +551,22 @@ public class SalPortTest extends TestBase {
                 assertEquals(portStr, sport.toStringBuilder().toString());
                 assertEquals(nodeStr, sport.toNodeStringBuilder().toString());
                 assertEquals(nodeStr, sport.toNodeString());
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link SalPort#equalsPort(SalPort)}.
+     */
+    @Test
+    public void testEqualsPort() {
+        SalPort target = new SalPort(6L, 2L);
+        assertEquals(false, target.equalsPort(null));
+
+        for (long dpid = 1L; dpid <= 10L; dpid++) {
+            for (long port = 1L; port <= 5L; port++) {
+                SalPort sport = new SalPort(dpid, port);
+                assertEquals(target.equals(sport), target.equalsPort(sport));
             }
         }
     }

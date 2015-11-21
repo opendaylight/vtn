@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -326,6 +326,31 @@ public class SalNodeTest extends TestBase {
             assertSame(s, snode.toNodeString());
             assertEquals(idstr, snode.toStringBuilder().toString());
             assertEquals(idstr, snode.toNodeStringBuilder().toString());
+        }
+    }
+
+    /**
+     * Test case for {@link SalNode#equalsNode(SalNode)}.
+     */
+    @Test
+    public void testEqualsNode() {
+        long nodeNumber = 3L;
+        SalNode targetNode = new SalNode(nodeNumber);
+        SalPort targetPort = new SalPort(nodeNumber, 123L);
+        assertEquals(false, targetNode.equalsNode(null));
+        assertEquals(false, targetPort.equalsNode(null));
+
+        for (long dpid = 1L; dpid <= 10L; dpid++) {
+            boolean expected = (dpid == nodeNumber);
+            SalNode snode = new SalNode(dpid);
+            assertEquals(expected, targetNode.equalsNode(snode));
+            assertEquals(expected, targetPort.equalsNode(snode));
+
+            for (long port = 1L; port <= 5L; port++) {
+                SalPort sport = new SalPort(dpid, port);
+                assertEquals(expected, targetNode.equalsNode(sport));
+                assertEquals(expected, targetPort.equalsNode(sport));
+            }
         }
     }
 

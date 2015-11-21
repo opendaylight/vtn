@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2013, 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -13,18 +13,16 @@ import static org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag.MISSING
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -43,22 +41,12 @@ import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.opendaylight.vtn.manager.DataLinkHost;
-import org.opendaylight.vtn.manager.EthernetHost;
-import org.opendaylight.vtn.manager.PortLocation;
 import org.opendaylight.vtn.manager.SwitchPort;
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
-import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
-import org.opendaylight.vtn.manager.VTerminalIfPath;
-import org.opendaylight.vtn.manager.VTerminalPath;
-import org.opendaylight.vtn.manager.flow.action.FlowAction;
-import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
-import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
-import org.opendaylight.vtn.manager.flow.filter.PassFilter;
 import org.opendaylight.vtn.manager.packet.ARP;
 import org.opendaylight.vtn.manager.packet.Ethernet;
 import org.opendaylight.vtn.manager.packet.IEEE8021Q;
@@ -69,12 +57,8 @@ import org.opendaylight.vtn.manager.util.EtherTypes;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
-import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
-import org.opendaylight.vtn.manager.internal.cluster.MapReference;
-import org.opendaylight.vtn.manager.internal.cluster.MapType;
-import org.opendaylight.vtn.manager.internal.cluster.VTenantImpl;
-import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
-import org.opendaylight.vtn.manager.internal.packet.PacketInEvent;
+import org.opendaylight.vtn.manager.internal.adsal.VlanMapPath;
+import org.opendaylight.vtn.manager.internal.util.inventory.MacVlan;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 
@@ -95,16 +79,20 @@ import org.opendaylight.yangtools.yang.common.RpcError;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.list.VtnFlowFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPortBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.port.info.PortLink;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.port.info.PortLinkBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.vtn.mac.map.config.AllowedHosts;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.vtn.mac.map.config.DeniedHosts;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.vtn.mac.map.info.MacMapConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology.StaticEdgePorts;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology.StaticSwitchLinks;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static._switch.links.StaticSwitchLink;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePort;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketReceivedBuilder;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.LinkId;
 
 /**
@@ -116,51 +104,6 @@ public abstract class TestBase extends Assert {
      */
     public static final String  XML_DECLARATION =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>";
-
-    /**
-     * String Declaration for Mac Unavilable.
-     */
-    protected static final String MAC_UNAVAILABLE =
-        "MAC mapping is unavailable: ";
-
-    /**
-     * String Declaration for Mac Used .
-     */
-    protected static final String MAC_USED =
-        "Same MAC address is already mapped: host={";
-
-    /**
-     * String Declaration for Mac Inactivated .
-     */
-    protected static final String MAC_INACTIVATED =
-        "MAC mapping has been inactivated: host={";
-
-    /**
-     * String Declaration for Switch Reserved .
-     */
-
-    protected static final String SWITCH_RESERVED =
-        "switch port is reserved: host={";
-     /**
-     * An array of index values with positive and negative values.
-     */
-
-    public static final int[] INDEX_ARRAY = {3, 0, 65536};
-
-     /**
-     * An array of Tenant values with valid and invalid values.
-     */
-    public static final String[] TENANT_NAME = {"tenant", "", null};
-
-    /**
-     * An array of Cost values with valid and invalid values.
-     */
-    public static final long[] COST = {0L, 333L, Long.MAX_VALUE};
-
-    /**
-     * An array of FlowCondition names with valid and invalid values.
-     */
-    public static final String[] FLOW_CONDITION_NAME = {"flowCondition", "", null};
 
     /**
      * Throw an error which indicates an unexpected throwable is caught.
@@ -218,37 +161,31 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * Create a copy of the specified {@link Node}.
+     * Create a deep copy of the specified {@link VnodeName}.
      *
-     * @param node  A {@link Node} object to be copied.
-     * @return      A copied {@link Node} object.
+     * @param vname  A {@link VnodeName} instance to be copied.
+     * @return  A copied {@link VnodeName} instance.
      */
-    protected static Node copy(Node node) {
-        if (node != null) {
-            try {
-                node = new Node(node);
-            } catch (Exception e) {
-                unexpected(e);
-            }
+    protected static VnodeName copy(VnodeName vname) {
+        VnodeName ret = vname;
+        if (ret != null) {
+            ret = new VnodeName(copy(vname.getValue()));
         }
-        return node;
+        return ret;
     }
 
     /**
-     * Create a copy of the specified {@link NodeConnector}.
+     * Create a deep copy of the specified {@link MacVlan}.
      *
-     * @param nc  A {@link NodeConnector} object to be copied.
-     * @return    A copied {@link NodeConnector} object.
+     * @param mv  A {@link MacVlan} instance to be copied.
+     * @return  A copied {@link MacVlan} instance.
      */
-    protected static NodeConnector copy(NodeConnector nc) {
-        if (nc != null) {
-            try {
-                nc = new NodeConnector(nc);
-            } catch (Exception e) {
-                unexpected(e);
-            }
+    protected static MacVlan copy(MacVlan mv) {
+        MacVlan ret = mv;
+        if (ret != null) {
+            ret = new MacVlan(mv.getEncodedValue());
         }
-        return nc;
+        return ret;
     }
 
     /**
@@ -304,67 +241,6 @@ public abstract class TestBase extends Assert {
             ia = newset;
         }
         return ia;
-    }
-
-    /**
-     * Create a deep copy of the specified {@link VTenantPath} object.
-     *
-     * @param path  A {@link VTenantPath} object to be copied.
-     * @return  A copied {@link VTenantPath} object.
-     */
-    protected static VTenantPath copy(VTenantPath path) {
-        if (path != null) {
-            String tname = copy(path.getTenantName());
-            if (path instanceof VBridgePath) {
-                VBridgePath bpath = (VBridgePath)path;
-                String bname = copy(bpath.getBridgeName());
-                bpath = new VBridgePath(tname, bname);
-
-                if (path instanceof VBridgeIfPath) {
-                    VBridgeIfPath ipath = (VBridgeIfPath)path;
-                    String iname = copy(ipath.getInterfaceName());
-                    path = new VBridgeIfPath(tname, bname, iname);
-                } else if (path instanceof VlanMapPath) {
-                    VlanMapPath vpath = (VlanMapPath)path;
-                    String mapId = copy(vpath.getMapId());
-                    path = new VlanMapPath(bpath, mapId);
-                } else if (path instanceof MacMapPath) {
-                    path = new MacMapPath(bpath);
-                } else {
-                    path = bpath;
-                }
-            } else if (path instanceof VTerminalPath) {
-                VTerminalPath vtpath = (VTerminalPath)path;
-                String vtname = copy(vtpath.getTerminalName());
-                vtpath = new VTerminalPath(tname, vtname);
-
-                if (path instanceof VTerminalIfPath) {
-                    VTerminalIfPath ipath = (VTerminalIfPath)path;
-                    String iname = copy(ipath.getInterfaceName());
-                    path = new VTerminalIfPath(vtpath, iname);
-                } else {
-                    path = vtpath;
-                }
-            }
-        }
-        return path;
-    }
-
-    /**
-     * Create a deep copy of the specified {@link MapReference} object.
-     *
-     * @param ref  A {@link MapReference} object to be copied.
-     * @return  A copied {@link MapReference} object.
-     */
-    protected static MapReference copy(MapReference ref) {
-        if (ref != null) {
-            MapType type = ref.getMapType();
-            String cname = copy(ref.getContainerName());
-            VNodePath path = (VNodePath)copy(ref.getPath());
-            ref = new MapReference(type, cname, path);
-        }
-
-        return ref;
     }
 
     /**
@@ -795,6 +671,35 @@ public abstract class TestBase extends Assert {
     }
 
     /**
+     * Create a list of {@link EtherAddress} and a {@code null}.
+     *
+     * @return A list of {@link EtherAddress}.
+     */
+    protected static List<EtherAddress> createEtherAddresses() {
+        return createEtherAddresses(true);
+    }
+
+    /**
+     * Create a list of {@link EtherAddress}.
+     *
+     * @param setNull  Set {@code null} to returned list if {@code true}.
+     * @return A list of {@link EtherAddress}.
+     */
+    protected static List<EtherAddress> createEtherAddresses(boolean setNull) {
+        List<EtherAddress> list = new ArrayList<>();
+        if (setNull) {
+            list.add(null);
+        }
+
+        Collections.addAll(
+            list,
+            new EtherAddress(0x000000000001L),
+            new EtherAddress(0x123456789abcL),
+            new EtherAddress(0xfedcba987654L));
+        return list;
+    }
+
+    /**
      * Create a {@link EthernetAddress} instance which represents the
      * MAC address specified by a long integer value.
      *
@@ -843,88 +748,6 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * Create a list of {@link InetAddress} set and a {@code null}.
-     *
-     * @return A list of {@link InetAddress} set.
-     */
-    protected static List<Set<InetAddress>> createInetAddresses() {
-        return createInetAddresses(true);
-    }
-
-    /**
-     * Create a list of {@link InetAddress} set.
-     *
-     * @param setNull  Set {@code null} to returned list if {@code true}.
-     * @return A list of {@link InetAddress} set.
-     */
-    protected static List<Set<InetAddress>> createInetAddresses(boolean setNull) {
-        List<Set<InetAddress>> list = new ArrayList<Set<InetAddress>>();
-        String[][] arrays = {
-            {"0.0.0.0"},
-            {"255.255.255.255", "10.1.2.3"},
-            {"0.0.0.0", "10.0.0.1", "192.255.255.1",
-             "2001:420:281:1004:e123:e688:d655:a1b0"},
-            {},
-        };
-
-        if (setNull) {
-            list.add(null);
-        }
-
-        for (String[] array : arrays) {
-            Set<InetAddress> iset = new HashSet<InetAddress>();
-            try {
-                for (String addr : array) {
-                    assertTrue(iset.add(InetAddress.getByName(addr)));
-                }
-                list.add(iset);
-            } catch (Exception e) {
-                unexpected(e);
-            }
-        }
-        return list;
-    }
-
-    /**
-     * Create a list of IPv4 addresses and {@code null}.
-     *
-     * @return  A list of {@link InetAddress} instances.
-     */
-    protected static List<InetAddress> createInet4Addresses() {
-        return createInet4Addresses(true);
-    }
-
-    /**
-     * Create a list of IPv4 addresses.
-     *
-     * @param setNull  Set {@code null} to returned list if {@code true}.
-     * @return  A list of {@link InetAddress} instances.
-     */
-    protected static List<InetAddress> createInet4Addresses(boolean setNull) {
-        List<InetAddress> list = new ArrayList<InetAddress>();
-        if (setNull) {
-            list.add(null);
-        }
-
-        String[] addrs = {
-            "0.0.0.0",
-            "255.255.255.255",
-            "127.0.0.1",
-            "10.20.30.40",
-            "192.168.100.200",
-        };
-        for (String addr: addrs) {
-            try {
-                list.add(InetAddress.getByName(addr));
-            } catch (Exception e) {
-                unexpected(e);
-            }
-        }
-
-        return list;
-    }
-
-    /**
      * Create a {@link InetAddress} instance which represents the specified
      * IP address.
      *
@@ -940,92 +763,6 @@ public abstract class TestBase extends Assert {
         }
 
         return iaddr;
-    }
-
-    /**
-     * Create a list of {@link VBridgePath} objects.
-     *
-     * @return  A list of {@link VBridgePath} objects.
-     */
-    protected static List<VBridgePath> createVBridgePaths() {
-        List<VBridgePath> list = new ArrayList<VBridgePath>();
-        for (int tidx = 0; tidx < 2; tidx++) {
-            String tname = "tenant" + tidx;
-            for (int bidx = 0; bidx < 2; bidx++) {
-                VBridgePath path = new VBridgePath(tname, "bridge" + bidx);
-                list.add(path);
-            }
-        }
-
-        return list;
-    }
-
-    /**
-     * Create a list of {@link VBridgePath} objects.
-     *
-     * @param subclass  If {@code true} is specified, instances of classes
-     *                  which extend {@link VBridgePath} are added to the
-     *                  returned list.
-     * @return  A list of {@link VBridgePath} objects.
-     */
-    protected static List<VBridgePath> createVBridgePaths(boolean subclass) {
-        if (!subclass) {
-            return createVBridgePaths();
-        }
-
-        List<VBridgePath> list = new ArrayList<VBridgePath>();
-        String[] bnames = {"bridge1", "bridge2"};
-        String[] inames = {"if_1", "if_2"};
-        for (String tname: new String[]{"tenant1", "tenant2"}) {
-            for (String bname: bnames) {
-                VBridgePath bpath = new VBridgePath(tname, bname);
-                list.add(bpath);
-
-                for (String iname: inames) {
-                    list.add(new VBridgeIfPath(tname, bname, iname));
-                    list.add(new VlanMapPath(bpath, iname));
-                }
-            }
-        }
-
-        return list;
-    }
-
-    /**
-     * create a {@link PacketContext} object.
-     *
-     * @param eth   A {@link Ethernet} object.
-     * @param nc    A incoming node connector.
-     * @return A {@link PacketContext} object.
-     */
-    protected PacketContext createPacketContext(Ethernet eth, NodeConnector nc) {
-        PacketReceivedBuilder builder = new PacketReceivedBuilder();
-        try {
-            builder.setPayload(eth.serialize());
-            SalPort ingress = SalPort.create(nc);
-            assertNotNull(ingress);
-            PacketInEvent pin =
-                new PacketInEvent(null, builder.build(), ingress);
-            return new PacketContext(pin);
-        } catch (Exception e) {
-            unexpected(e);
-        }
-
-        return null;
-    }
-
-    /**
-     * Create a {@link PacketContext} object for unicast packet transmission.
-     *
-     * @param eth   A {@link Ethernet} object.
-     * @param nc    A incoming node connector.
-     * @return A {@link PacketContext} object.
-     */
-    protected PacketContext createUnicastPacketContext(Ethernet eth,
-                                                       NodeConnector nc) {
-        PacketContext pctx = createPacketContext(eth, nc);
-        pctx.addUnicastMatchFields();
-        return pctx;
     }
 
     /**
@@ -1257,144 +994,6 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * create a {@link Ethernet} object of ARP Packet.
-     *
-     * @param src       A source MAC address
-     * @param dst       A destination MAC address
-     * @param sender    A sender address
-     * @param target    A target address
-     * @param vlan      specify vlan ID. if vlan < 0, vlan tag is not added.
-     * @param arptype   ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
-     * @return  A {@link Ethernet object.}
-     */
-    protected Ethernet createARPPacket(byte[] src, byte[] dst, byte[] sender,
-            byte[] target, short vlan, short arptype) {
-        ARP arp = new ARP();
-        arp.setHardwareType(ARP.HW_TYPE_ETHERNET).
-            setProtocolType(EtherTypes.IPV4.shortValue()).
-            setHardwareAddressLength((byte)EthernetAddress.SIZE).
-            setProtocolAddressLength((byte)target.length).
-            setOpCode(arptype).
-            setSenderHardwareAddress(src).setSenderProtocolAddress(sender).
-            setTargetHardwareAddress(dst).setTargetProtocolAddress(target);
-
-        Ethernet eth = new Ethernet();
-        eth.setSourceMACAddress(src).setDestinationMACAddress(dst);
-
-        if (vlan >= 0) {
-            eth.setEtherType(EtherTypes.VLAN.shortValue());
-
-            IEEE8021Q vlantag = new IEEE8021Q();
-            vlantag.setCfi((byte)0x0).setPcp((byte)0x0).setVid(vlan).
-                setEtherType(EtherTypes.ARP.shortValue());
-            eth.setPayload(vlantag);
-
-            vlantag.setPayload(arp);
-
-        } else {
-            eth.setEtherType(EtherTypes.ARP.shortValue()).setPayload(arp);
-        }
-        return eth;
-    }
-
-    /**
-     * create a {@link PacketContext} object of ARP Request.
-     *
-     * @param src       A source MAC address
-     * @param dst       A destination MAC address
-     * @param sender    A sender address
-     * @param target    A target address
-     * @param vlan      specify vlan ID. if vlan < 0, vlan tag is not added.
-     * @param nc        A node connector
-     * @param arptype   ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
-     * @return  A {@link PacketContext} object.
-     */
-    protected PacketContext createARPPacketContext(byte[] src, byte[] dst,
-            byte[] sender, byte[] target, short vlan, NodeConnector nc,
-            short arptype) {
-        return createUnicastPacketContext(
-                createARPPacket(src, dst, sender, target, vlan, arptype), nc);
-    }
-
-    /**
-     * create a {@link PacketContext} object of IPv4 packet.
-     *
-     * @param src       A source MAC address
-     * @param dst       A destination MAC address
-     * @param sender    A sender address
-     * @param target    A target address
-     * @param vlan      specify vlan ID. if vlan < 0, vlan tag is not added.
-     * @param nc        A node connector
-     * @return  A {@link PacketContext} object.
-     */
-    protected PacketContext createIPv4PacketContext(byte[] src, byte[] dst,
-            byte[] sender, byte[] target, short vlan, NodeConnector nc) {
-        return createUnicastPacketContext(
-                createIPv4Packet(src, dst, sender, target, vlan), nc);
-    }
-
-    /**
-     * Create a {@link EthernetHost} instance which represents the
-     * specified MAC address and VLAN ID.
-     *
-     * @param mac   A long integer value which represents the MAC address.
-     * @param vlan  A VLAN ID.
-     * @return  A {@link EthernetHost} instance.
-     */
-    protected static EthernetHost createEthernetHost(long mac, short vlan) {
-        EthernetAddress eaddr = createEthernetAddress(mac);
-        return new EthernetHost(eaddr, vlan);
-    }
-
-    /**
-     * Create a list of set of {@link DataLinkHost} instances.
-     *
-     * @param limit  The number of ethernet addresses to be created.
-     * @return  A list of set of {@link DataLinkHost} instances.
-     */
-    protected static List<Set<DataLinkHost>> createDataLinkHostSet(int limit) {
-        return createDataLinkHostSet(limit, true);
-    }
-
-    /**
-     * Create a list of set of {@link DataLinkHost} instances.
-     *
-     * @param limit  The number of ethernet addresses to be created.
-     * @param setNull  Set {@code null} to returned list if {@code true}.
-     * @return  A list of set of {@link DataLinkHost} instances.
-     */
-    protected static List<Set<DataLinkHost>> createDataLinkHostSet(
-        int limit, boolean setNull) {
-        List<Set<DataLinkHost>> list = new ArrayList<Set<DataLinkHost>>();
-        if (setNull) {
-            list.add(null);
-        }
-
-        HashSet<DataLinkHost> set = new HashSet<DataLinkHost>();
-        short[] vlans = {0, 4095};
-        for (short vlan: vlans) {
-            for (EthernetAddress ether: createEthernetAddresses()) {
-                set.add(new EthernetHost(ether, vlan));
-                list.add(new HashSet<DataLinkHost>(set));
-                if (list.size() >= limit) {
-                    return list;
-                }
-            }
-        }
-
-        for (int i = 0; i < 2; i++) {
-            TestDataLink dladdr = new TestDataLink("addr" + i);
-            set.add(new TestDataLinkHost(dladdr));
-            list.add(new HashSet<DataLinkHost>(set));
-            if (list.size() >= limit) {
-                break;
-            }
-        }
-
-        return list;
-    }
-
-    /**
      * Determine whether the specified two strings are identical or not.
      *
      * <p>
@@ -1574,25 +1173,6 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * Ensure that the given object is serializable.
-     *
-     * @param o  An object to be tested.
-     * @return  A deserialized object is returned.
-     */
-    protected static Object serializeTest(Object o) {
-        Object newobj = serializeAndDeserialize(o);
-
-        if (o instanceof Enum) {
-            assertSame(o, newobj);
-        } else {
-            assertNotSame(o, newobj);
-            assertEquals(o, newobj);
-        }
-
-        return newobj;
-    }
-
-    /**
      * Ensure that the given object is mapped to XML root element.
      *
      * @param o         An object to be tested.
@@ -1602,6 +1182,23 @@ public abstract class TestBase extends Assert {
      * @return  Deserialized object.
      */
     protected static <T> T jaxbTest(T o, Class<T> cls, String rootName) {
+        return jaxbTest(o, cls, createMarshaller(cls), createUnmarshaller(cls),
+                        rootName);
+    }
+
+    /**
+     * Ensure that the given object is mapped to XML root element.
+     *
+     * @param o         An object to be tested.
+     * @param cls       The type of the given object.
+     * @param m         XML marshaller.
+     * @param um        XML unmarshaller.
+     * @param rootName  The name of expected root element.
+     * @param <T>       The type of the given object.
+     * @return  Deserialized object.
+     */
+    protected static <T> T jaxbTest(T o, Class<T> cls, Marshaller m,
+                                    Unmarshaller um, String rootName) {
         // Ensure that the class of the given class has XmlRootElement
         // annotation.
         XmlRootElement xmlRoot = cls.getAnnotation(XmlRootElement.class);
@@ -1609,7 +1206,6 @@ public abstract class TestBase extends Assert {
         assertEquals(rootName, xmlRoot.name());
 
         // Marshal the given object into XML.
-        Marshaller m = createMarshaller(cls);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
             m.marshal(o, out);
@@ -1622,7 +1218,6 @@ public abstract class TestBase extends Assert {
 
         // Construct a new Java object from XML.
         ByteArrayInputStream in = new ByteArrayInputStream(bytes);
-        Unmarshaller um = createUnmarshaller(cls);
         Object newobj = null;
         try {
             newobj = um.unmarshal(in);
@@ -1820,58 +1415,6 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * Ensure that the given object is serializable.
-     *
-     * <p>
-     *   Note: This method doesn't check if deserialized object equals
-     *   input object.
-     * </p>
-     *
-     * @param o  An object to be tested.
-     * @return  A deserialized object is returned.
-     */
-    protected static Object eventSerializeTest(Object o) {
-        Object newobj = serializeAndDeserialize(o);
-        assertNotSame(o, newobj);
-
-        return newobj;
-    }
-
-    /**
-     * Serialize and deserialize object.
-     *
-     * @param o An {@link Object} serialized and deserialized.
-     * @return A deserialized object.
-     */
-    private static Object serializeAndDeserialize(Object o) {
-        // Serialize the given object.
-        byte[] bytes = null;
-        try {
-            ByteArrayOutputStream bout = new ByteArrayOutputStream();
-            ObjectOutputStream out = new ObjectOutputStream(bout);
-
-            out.writeObject(o);
-            out.close();
-            bytes = bout.toByteArray();
-        } catch (Exception e) {
-            unexpected(e);
-        }
-        assertTrue(bytes.length != 0);
-
-        // Deserialize the object.
-        Object newobj = null;
-        try {
-            ByteArrayInputStream bin = new ByteArrayInputStream(bytes);
-            ObjectInputStream in = new ObjectInputStream(bin);
-            newobj = in.readObject();
-            in.close();
-        } catch (Exception e) {
-            unexpected(e);
-        }
-        return newobj;
-    }
-
-    /**
      * setup a startup directory
      */
     protected static void setupStartupDir() {
@@ -1961,18 +1504,6 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * Return a path to the tenant configuration directory.
-     *
-     * @param container  The name of the container.
-     * @return  A {@link File} instance which represents the tenant
-     *          configuration directory.
-     */
-    protected static File getTenantConfigDir(String container) {
-        File dir = getConfigDir(container);
-        return new File(dir, ContainerConfig.Type.TENANT.toString());
-    }
-
-    /**
      * Delete configuration directory after test.
      */
     @After
@@ -2059,22 +1590,6 @@ public abstract class TestBase extends Assert {
     }
 
     /**
-     * VtnmanagerImpl  object creation
-     * @return VtnmanagerImplList
-     */
-    public List<VTNManagerImpl> createVtnManagerImplobj() {
-        List<VTNManagerImpl> vtnMangerList = new ArrayList<VTNManagerImpl>();
-        try {
-            vtnMangerList.add(null);
-            VTNManagerImpl vtnmangerimpl = new VTNManagerImpl();
-            vtnMangerList.add(vtnmangerimpl);
-            return vtnMangerList;
-        } catch (Exception ex) {
-            return vtnMangerList;
-        }
-    }
-
-    /**
      * Common Method to create UpdateTye.
      *  @return UpdateType list.
      */
@@ -2089,120 +1604,6 @@ public abstract class TestBase extends Assert {
             return updatetypeList;
         } catch (Exception ex) {
             return updatetypeList;
-        }
-    }
-
-    /**
-     * Common Method to create FlowFilter.
-     *  @return flowfilter list object.
-     */
-    public List<FlowFilter> createFlowFilter() {
-        List<FlowFilter> flowList = new ArrayList<FlowFilter>();
-        flowList.add(null);
-
-        try {
-            FlowFilter flowfilter = createFlowFilterobj();
-            flowList.add(flowfilter);
-            flowfilter = null;
-            flowList.add(flowfilter);
-            return flowList;
-        } catch (Exception ex) {
-            return null;
-        }
-    }
-
-    /**
-     * Common Method to create FlowFilter.
-     *  @return flowfilter object.
-     */
-    public FlowFilter createFlowFilterobj() {
-        int idx = 3;
-        int port = 0;
-        String cond = "Flow";
-        try {
-            List<FlowAction> actionList = new ArrayList<FlowAction>();
-            actionList.add(new SetTpSrcAction(port));
-            FlowFilter flowfilterobj = new FlowFilter(cond, new PassFilter(), actionList);
-            return flowfilterobj;
-        } catch (Exception ex) {
-            return null;
-        }
-    }
-
-    /**
-     * Common Method to create VtenantPaths.
-     *  @return VTenantPath list object.
-     */
-    public List<VTenantPath> creatVtenantPaths() {
-        List<VTenantPath> pathList = new ArrayList<VTenantPath>();
-        try {
-            VTenantPath vpath = null;
-            pathList.add(null);
-            pathList.add(vpath);
-
-            for (String tenantName : TENANT_NAME) {
-                vpath = new  VTenantPath(tenantName);
-                pathList.add(vpath);
-            }
-            return pathList;
-        } catch (Exception ex) {
-            return null;
-        }
-    }
-
-    /**
-     * Common Method to create VTenantImpl.
-     *
-     *  @param description      The description of the VTN.
-     *  @param vContainerName   The name of the container to which the tenant belongs.
-     *  @param tenantName       The name of the tenant.
-     *  @return VTenantImpl list object.
-     */
-    public List<VTenantImpl> createVTenantImpl(String description, String vContainerName, String tenantName) {
-        List<VTenantImpl> vTenantImplList = new ArrayList<VTenantImpl>();
-
-        try {
-            VTenantImpl vTenantImpl = null;
-            vTenantImplList.add(null);
-            vTenantImplList.add(vTenantImpl);
-
-
-            // VTenantConfig.idleTimeout List
-            for (Integer idleTimeout: createIntegers(-1, 4, false)) {
-                // VTenantConfig.hardTimeout List
-                for (Integer hardTimeout: createIntegers(-1, 4, false)) {
-                    VTenantConfig tconf = createVTenantConfig(description, idleTimeout, hardTimeout);
-                    VTenantImpl vtenantImpl = new VTenantImpl(vContainerName, tenantName, tconf);
-
-                    vTenantImplList.add(vTenantImpl);
-                }
-            }
-            return vTenantImplList;
-        } catch (Exception ex) {
-            return null;
-        }
-    }
-
-    /**
-     * Create lists of {@link PortLocation} instances for test.
-     *
-     * @return A list of {@link PortLocation} lists.
-     */
-
-    public List<PortLocation> createPortLocation() {
-        try {
-
-            List<PortLocation> portLocation = new ArrayList<PortLocation>();
-            for (NodeConnector nodeConnector : createNodeConnectors(5)) {
-                for (String name : createStrings("portName")) {
-                    PortLocation locationobj = new PortLocation(nodeConnector, name);
-                    portLocation.add(locationobj);
-                }
-            }
-            return portLocation;
-        } catch (Exception ex) {
-            //ex.printStackTrace();
-            return null;
         }
     }
 
@@ -2286,6 +1687,29 @@ public abstract class TestBase extends Assert {
     }
 
     /**
+     * Ensure that the tiven two collecitons are identical.
+     *
+     * <p>
+     *   This method compares the given collections as set.
+     * </p>
+     *
+     * @param expected  An expected collection.
+     * @param c         An collection to be tested.
+     */
+    public static <T> void assertEqualsAsSet(Collection<T> expected,
+                                             Collection<T> c) {
+        if (expected == null) {
+            assertEquals(null, c);
+            return;
+        }
+        assertNotNull(c);
+
+        Set<T> eset = new HashSet<>(expected);
+        Set<T> set = new HashSet<>(c);
+        assertEquals(eset, set);
+    }
+
+    /**
      * Ensure that the given two {@link StaticSwitchLinks} instances are
      * identical.
      *
@@ -2339,6 +1763,64 @@ public abstract class TestBase extends Assert {
             lset.addAll(list);
         }
         assertEquals(eset, lset);
+    }
+
+    /**
+     * Ensure that the given two {@link VtnFlowFilter} instances are
+     * identical.
+     *
+     * @param expected  A {@link VtnFlowFilter} instance which contains
+     *                  expected values.
+     * @param vff       A {@link VtnFlowFilter} instance to be tested.
+     */
+    public static void assertEqualsVtnFlowFilter(VtnFlowFilter expected,
+                                                 VtnFlowFilter vff) {
+        if (expected == null) {
+            assertEquals(null, vff);
+            return;
+        }
+
+        assertEquals(expected.getIndex(), vff.getIndex());
+        assertEquals(expected.getCondition(), vff.getCondition());
+        assertEquals(expected.getVtnFlowFilterType(),
+                     vff.getVtnFlowFilterType());
+        assertEqualsAsSet(expected.getVtnFlowAction(), vff.getVtnFlowAction());
+    }
+
+    /**
+     * Ensure that the given two {@link MacMapConfig} instances are identical.
+     *
+     * @param expected  A {@link MacMapConfig} instance which contains expected
+     *                  values.
+     * @param mconf     A {@link MacMapConfig} instance to be tested.
+     */
+    public static void assertEqualsMacMapConfig(MacMapConfig expected,
+                                                MacMapConfig mconf) {
+        if (expected == null) {
+            assertEquals(null, mconf);
+            return;
+        }
+        assertNotNull(mconf);
+
+        AllowedHosts exAllowed = expected.getAllowedHosts();
+        if (exAllowed == null) {
+            assertEquals(null, mconf.getAllowedHosts());
+        } else {
+            AllowedHosts allowed = mconf.getAllowedHosts();
+            assertNotNull(allowed);
+            assertEqualsAsSet(exAllowed.getVlanHostDescList(),
+                              allowed.getVlanHostDescList());
+        }
+
+        DeniedHosts exDenied = expected.getDeniedHosts();
+        if (exDenied == null) {
+            assertEquals(null, mconf.getDeniedHosts());
+        } else {
+            DeniedHosts denied = mconf.getDeniedHosts();
+            assertNotNull(denied);
+            assertEqualsAsSet(exDenied.getVlanHostDescList(),
+                              denied.getVlanHostDescList());
+        }
     }
 
     /**
@@ -2492,49 +1974,6 @@ public abstract class TestBase extends Assert {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
             unexpected(e);
-        }
-    }
-
-    /**
-     * Flush all pending tasks on the VTN task thread.
-     */
-    protected void flushTasks(VTNManagerImpl vtnMgr) {
-        NopTask task = new NopTask();
-        vtnMgr.postTask(task);
-        assertTrue(task.await(10, TimeUnit.SECONDS));
-    }
-
-    /**
-     * A dummy task to flush tasks on the VTN task thread.
-     */
-    private class NopTask implements Runnable {
-        /**
-         * A latch to wait for completion.
-         */
-        private final CountDownLatch  latch = new CountDownLatch(1);
-
-        /**
-         * Wake up all threads waiting for this task.
-         */
-        @Override
-        public void run() {
-            latch.countDown();
-        }
-
-        /**
-         * Wait for completion of this task.
-         *
-         * @param timeout  The maximum time to wait.
-         * @param unit     The time unit of the {@code timeout} argument.
-         * @return  {@code true} is returned if this task completed.
-         *          Otherwise {@code false} is returned.
-         */
-        private boolean await(long timeout, TimeUnit unit) {
-            try {
-                return latch.await(timeout, unit);
-            } catch (InterruptedException e) {
-                return false;
-            }
         }
     }
 }

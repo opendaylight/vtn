@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -10,12 +10,10 @@ package org.opendaylight.vtn.manager.internal.flow.remove;
 
 import java.util.List;
 
-import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.VTenantPath;
 
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
-import org.opendaylight.vtn.manager.internal.util.vnode.VNodeUtils;
+import org.opendaylight.vtn.manager.internal.util.vnode.VNodeIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.common.VirtualRoute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.VtnDataFlow;
@@ -32,19 +30,20 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.ten
  */
 public final class VNodeFlowRemover extends TenantScanFlowRemover {
     /**
-     * A {@link VTenantPath} instance which specifies the virtual node.
+     * A {@link VNodeIdentifier} instance which specifies the virtual node.
      */
-    private final VTenantPath  nodePath;
+    private final VNodeIdentifier<?>  identifier;
 
     /**
      * Construct a new instance.
      *
-     * @param path  A path to the virtual node.
-     *              Specifying {@code null} results in undefined behavior.
+     * @param ident  A {@link VNodeIdentifier} instance which specifies the
+     *               virtual node.
+     *               Specifying {@code null} results in undefined behavior.
      */
-    public VNodeFlowRemover(VTenantPath path) {
-        super(path.getTenantName());
-        nodePath = path;
+    public VNodeFlowRemover(VNodeIdentifier<?> ident) {
+        super(ident.getTenantNameString());
+        identifier = ident;
     }
 
     // ScanFlowRemover
@@ -58,9 +57,7 @@ public final class VNodeFlowRemover extends TenantScanFlowRemover {
         List<VirtualRoute> vroutes = vdf.getVirtualRoute();
         if (vroutes != null) {
             for (VirtualRoute vr: vroutes) {
-                VNodePath vnpath =
-                    VNodeUtils.toVNodePath(vr.getVirtualNodePath());
-                if (nodePath.contains(vnpath)) {
+                if (identifier.contains(vr.getVirtualNodePath())) {
                     return true;
                 }
             }
@@ -76,7 +73,7 @@ public final class VNodeFlowRemover extends TenantScanFlowRemover {
      */
     @Override
     public String getDescription() {
-        return new StringBuilder("virtual-node[").append(nodePath).
+        return new StringBuilder("virtual-node[").append(identifier).
             append(']').toString();
     }
 }

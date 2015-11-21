@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -11,9 +11,7 @@ package org.opendaylight.vtn.manager.internal.flow.reader;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-import org.opendaylight.vtn.manager.internal.util.vnode.VTenantUtils;
-
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
+import org.opendaylight.vtn.manager.internal.util.vnode.VTenantIdentifier;
 
 /**
  * {@code AbstractReadFlowFuture} is a base class for future associated with
@@ -28,9 +26,9 @@ public abstract class AbstractReadFlowFuture<T> extends SettableVTNFuture<T> {
     private final TxContext  context;
 
     /**
-     * The name of the target VTN.
+     * The identifier for the target VTN.
      */
-    private final VnodeName  tenantName;
+    private final VTenantIdentifier  vtnId;
 
     /**
      * Construct a new instance.
@@ -44,7 +42,7 @@ public abstract class AbstractReadFlowFuture<T> extends SettableVTNFuture<T> {
         context = ctx;
 
         // Verify the name of the VTN.
-        tenantName = VTenantUtils.getVnodeName(tname);
+        vtnId = VTenantIdentifier.create(tname, true);
     }
 
     /**
@@ -62,7 +60,7 @@ public abstract class AbstractReadFlowFuture<T> extends SettableVTNFuture<T> {
      * @return  The name of the target VTN.
      */
     protected final String getTenantName() {
-        return tenantName.getValue();
+        return vtnId.getTenantNameString();
     }
 
     /**
@@ -79,7 +77,7 @@ public abstract class AbstractReadFlowFuture<T> extends SettableVTNFuture<T> {
     protected final boolean checkTenant() {
         // Ensure that the target VTN is present.
         try {
-            VTenantUtils.readVtn(context.getTransaction(), tenantName);
+            vtnId.fetch(context.getTransaction());
         } catch (Exception e) {
             setFailure(e);
             return false;

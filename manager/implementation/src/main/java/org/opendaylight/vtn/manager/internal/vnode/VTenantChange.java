@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,8 +8,11 @@
 
 package org.opendaylight.vtn.manager.internal.vnode;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -22,14 +25,17 @@ import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.ConfigFileUpdater;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
-import org.opendaylight.vtn.manager.internal.util.vnode.VTenantUtils;
+import org.opendaylight.vtn.manager.internal.util.vnode.VBridgeIdentifier;
+import org.opendaylight.vtn.manager.internal.util.vnode.VNodeIdentifier;
+import org.opendaylight.vtn.manager.internal.util.vnode.VTenantIdentifier;
 import org.opendaylight.vtn.manager.internal.vnode.xml.XmlVTenant;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.Vtn;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.vtn.bridge.status.FaultedPaths;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.vtn.vbridge.info.VbridgeConfig;
 
 /**
  * {@code VTenantChange} describes changes to the VTN models.
@@ -45,6 +51,11 @@ final class VTenantChange extends ConfigFileUpdater<String, XmlVTenant> {
     private final VTNManagerProvider  vtnProvider;
 
     /**
+     * The vBridge manager instance.
+     */
+    private final VBridgeManager  vBridgeManager;
+
+    /**
      * A map that keeps updated VTN models.
      */
     private Map<String, Vtn>  updatedVtns = new HashMap<>();
@@ -58,6 +69,12 @@ final class VTenantChange extends ConfigFileUpdater<String, XmlVTenant> {
      * A set of VTN names to be saved.
      */
     private Set<String>  targetVtns = new HashSet<>();
+
+    /**
+     * A set of resolved faulted paths in a vBridge or vTerminal.
+     */
+    private Map<VNodeIdentifier<?>, List<FaultedPaths>>  resolvedPathFaults =
+        new HashMap<>();
 
     /**
      * Convert the given {@link Vtn} instance into a {@link XmlVTenant}
@@ -115,7 +132,8 @@ final class VTenantChange extends ConfigFileUpdater<String, XmlVTenant> {
          */
         private void save(ReadTransaction rtx, String name)
             throws VTNException {
-            Vtn vtn = VTenantUtils.readVtn(rtx, new VnodeName(name));
+            VTenantIdentifier vtnId = VTenantIdentifier.create(name, true);
+            Vtn vtn = vtnId.fetch(rtx);
             XmlVTenant xvtn = VTenantChange.toXmlVTenant(vtn, logger, "ASYNC");
             if (xvtn == null) {
                 return;
@@ -157,10 +175,12 @@ final class VTenantChange extends ConfigFileUpdater<String, XmlVTenant> {
      * Construct a new instance.
      *
      * @param provider  A VTN Manager provider service.
+     * @param vbmgr      The vBridge manager instance.
      */
-    VTenantChange(VTNManagerProvider provider) {
+    VTenantChange(VTNManagerProvider provider, VBridgeManager vbmgr) {
         super(XmlConfigFile.Type.VTN, XmlConfigFile.Type.VTN.name());
         vtnProvider = provider;
+        vBridgeManager = vbmgr;
     }
 
     /**
@@ -189,6 +209,64 @@ final class VTenantChange extends ConfigFileUpdater<String, XmlVTenant> {
         targetVtns.add(name);
     }
 
+    /**
+     * Update the entity of the specified vBridge.
+     *
+     * <p>
+     *   The entity of the specified vBridge will be created if not present.
+     *   If present, the specified configuration will be applied to the
+     *   existing entity of the vBridge.
+     * </p>
+     *
+     * @param ident   The identifier for the target vBridge.
+     * @param config  The configuration of the vBridge.
+     */
+    public void updateBridge(VBridgeIdentifier ident, VbridgeConfig config) {
+        vBridgeManager.updateEntity(ident, config);
+    }
+
+    /**
+     * Remove the entity of the specified vBridge.
+     *
+     * @param ident   The identifier for the target vBridge.
+     */
+    public void removeBridge(VBridgeIdentifier ident) {
+        vBridgeManager.removeEntity(ident);
+    }
+
+    /**
+     * Add the resolved faulted path in a virtual bridge.
+     *
+     * @param ident  A {@link VNodeIdentifier} instance that specifies the
+     *               virtual bridge.
+     * @param path   A {@link FaultedPaths} instance that specifies a resolved
+     *               path fault.
+     */
+    public void addResolvedPathFault(VNodeIdentifier<?> ident,
+                                     FaultedPaths path) {
+        List<FaultedPaths> list = resolvedPathFaults.get(ident);
+        if (list == null) {
+            list = new ArrayList<>();
+            resolvedPathFaults.put(ident, list);
+        }
+
+        list.add(path);
+    }
+
+    /**
+     * Return a list of resolved path faults on the given virtual bridge.
+     *
+     * @param ident  A {@link VNodeIdentifier} instance that specifies the
+     *               virtual bridge.
+     * @return  A list of resolved path faults.
+     */
+    public List<FaultedPaths> getResolvedPathFaults(VNodeIdentifier<?> ident) {
+        List<FaultedPaths> list = resolvedPathFaults.get(ident);
+        return (list == null)
+            ? Collections.<FaultedPaths>emptyList()
+            : Collections.unmodifiableList(list);
+    }
+
     // AbstractConfigFileUpdater
 
     /**
@@ -202,22 +280,22 @@ final class VTenantChange extends ConfigFileUpdater<String, XmlVTenant> {
         Set<String> pending = new HashSet<>();
         for (Map.Entry<String, Vtn> entry: updatedVtns.entrySet()) {
             String name = entry.getKey();
-            if (isRemoved(name)) {
+            if (isRemoved(name) || !targetVtns.contains(name)) {
                 continue;
             }
 
             Vtn vtn = entry.getValue();
             if (vtn == null) {
                 pending.add(name);
-                continue;
-            }
-
-            boolean created = createdVtns.contains(name);
-            VtnUpdateType type = (created)
-                ? VtnUpdateType.CREATED : VtnUpdateType.CHANGED;
-            XmlVTenant xvtn = VTenantChange.toXmlVTenant(vtn, logger, type);
-            if (xvtn != null) {
-                addUpdated(name, xvtn, created);
+            } else {
+                boolean created = createdVtns.contains(name);
+                VtnUpdateType type = (created)
+                    ? VtnUpdateType.CREATED : VtnUpdateType.CHANGED;
+                XmlVTenant xvtn =
+                    VTenantChange.toXmlVTenant(vtn, logger, type);
+                if (xvtn != null) {
+                    addUpdated(name, xvtn, created);
+                }
             }
         }
 
@@ -225,5 +303,26 @@ final class VTenantChange extends ConfigFileUpdater<String, XmlVTenant> {
             // Save current VTN configurations on background.
             vtnProvider.post(new SaveTask(pending, logger));
         }
+    }
+
+    /**
+     * This method does nothing.
+     *
+     * @param logger   Unused.
+     * @param key      Unused.
+     * @param created  Unused.
+     */
+    @Override
+    protected void logUpdated(Logger logger, String key, boolean created) {
+    }
+
+    /**
+     * This method does nothing.
+     *
+     * @param logger  Unused.
+     * @param key     Unused.
+     */
+    @Override
+    protected void logRemoved(Logger logger, String key) {
     }
 }

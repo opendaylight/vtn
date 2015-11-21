@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -9,7 +9,6 @@
 package org.opendaylight.vtn.manager.internal.flow.stats;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -27,9 +26,6 @@ import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowStatsUtils;
-import org.opendaylight.vtn.manager.internal.util.log.FixedLogger;
-import org.opendaylight.vtn.manager.internal.util.log.LogRecord;
-import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
@@ -73,20 +69,9 @@ public final class StatsTimerTask extends TimerTask {
      */
     private static class StatsUpdator extends AbstractTxTask<Void> {
         /**
-         * A logger for trace logs.
-         */
-        private final FixedLogger  traceLogger =
-            new FixedLogger(LOG, VTNLogLevel.TRACE);
-
-        /**
          * The system time when the flow statistics are collected.
          */
         private Long  systemTime;
-
-        /**
-         * A list of log records.
-         */
-        private List<LogRecord>  logRecords;
 
         /**
          * Update flow statistics in the specified VTN.
@@ -121,7 +106,7 @@ public final class StatsTimerTask extends TimerTask {
             BigInteger id = key.getFlowId().getValue();
             FlowId fid = vdf.getSalFlowId();
             if (fid == null) {
-                traceLog("Skip flow entry: {}: No MD-SAL flow ID.", id);
+                LOG.trace("Skip flow entry: {}: No MD-SAL flow ID.", id);
                 return;
             }
 
@@ -132,7 +117,7 @@ public final class StatsTimerTask extends TimerTask {
                 FlowStatsUtils.read(tx, vfent.getNode(), fid);
             String err = FlowStatsUtils.check(fstats);
             if (err != null) {
-                traceLog("Skip flow entry: {}: {}", id, err);
+                LOG.trace("Skip flow entry: {}: {}", id, err);
                 return;
             }
 
@@ -143,20 +128,8 @@ public final class StatsTimerTask extends TimerTask {
                 FlowStatsUtils.getIdentifier(tname, key);
             LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
             tx.put(oper, path, history, false);
-            traceLog("Flow statistics has been updated: {}, {}",
-                     id, fid.getValue());
-        }
-
-        /**
-         * Record a trace log message.
-         *
-         * @param format  A format string used to construct log message.
-         * @param args    An object array used to construct log message.
-         */
-        private void traceLog(String format, Object ... args) {
-            if (traceLogger.isEnabled()) {
-                logRecords.add(new LogRecord(traceLogger, format, args));
-            }
+            LOG.trace("Flow statistics has been updated: {}, {}",
+                      id, fid.getValue());
         }
 
         // AbstractTxTask
@@ -167,7 +140,6 @@ public final class StatsTimerTask extends TimerTask {
         @Override
         public Void execute(TxContext ctx) throws VTNException {
             systemTime = System.currentTimeMillis();
-            logRecords = new ArrayList<>();
 
             // Read the root container of flow tables.
             InstanceIdentifier<VtnFlows> path =
@@ -191,17 +163,13 @@ public final class StatsTimerTask extends TimerTask {
         // TxTask
 
         /**
-         * Invoked when the task has been completed successfully.
+         * Invoked when the task has completed successfully.
          *
          * @param provider  VTN Manager provider service.
          * @param result    The result of this task.
          */
         @Override
         public void onSuccess(VTNManagerProvider provider, Void result) {
-            for (LogRecord r: logRecords) {
-                r.log();
-            }
-
             LOG.debug("Flow statistics have been updated successfully.");
         }
 

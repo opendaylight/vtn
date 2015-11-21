@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -28,19 +28,13 @@ import java.util.Set;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.SwitchPort;
-
-import org.opendaylight.vtn.manager.internal.PortFilter;
-import org.opendaylight.vtn.manager.internal.SpecificPortFilter;
+import org.opendaylight.vtn.manager.internal.util.inventory.port.PortFilter;
+import org.opendaylight.vtn.manager.internal.util.inventory.port.SpecificPortFilter;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-
-import org.opendaylight.controller.sal.core.Node;
-import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
@@ -568,116 +562,12 @@ public class InventoryReaderTest extends TestBase {
     }
 
     /**
-     * Test case for {@link InventoryReader#findPort(Node, SwitchPort)}.
-     *
-     * @throws Exception  An error occurred.
-     */
-    @Test
-    public void testFindPort1() throws Exception {
-        // Set up mock-up of MD-SAL read transaction.
-        ReadTransaction rtx = mock(ReadTransaction.class);
-        InventoryReader reader = new InventoryReader(rtx);
-        assertSame(rtx, reader.getReadTransaction());
-        assertEquals(null, reader.findPort((Node)null, (SwitchPort)null));
-
-        Map<SalNode, VtnNode> nodeMap = new HashMap<>();
-        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
-        for (long dpid = 1L; dpid <= 4L; dpid++) {
-            List<VtnPort> portList = new ArrayList<>();
-            for (long port = 1L; port <= 10L; port++) {
-                SalPort sport = new SalPort(dpid, port);
-                VtnPort vport = createVtnPortBuilder(sport).build();
-                portList.add(vport);
-            }
-
-            SalNode snode = new SalNode(dpid);
-            InstanceIdentifier<VtnNode> path = snode.getVtnNodeIdentifier();
-            VtnNode vnode = new VtnNodeBuilder().
-                setId(snode.getNodeId()).setVtnPort(portList).build();
-            when(rtx.read(oper, path)).thenReturn(getReadResult(vnode));
-            assertNull(nodeMap.put(snode, vnode));
-        }
-
-        Set<SalNode> notPresent = new HashSet<>();
-        for (long dpid = 10L; dpid <= 15L; dpid++) {
-            SalNode snode = new SalNode(dpid);
-            InstanceIdentifier<VtnNode> path = snode.getVtnNodeIdentifier();
-            VtnNode vnode = null;
-            when(rtx.read(oper, path)).thenReturn(getReadResult(vnode));
-            assertTrue(notPresent.add(snode));
-        }
-
-        final String type = NodeConnectorIDType.OPENFLOW;
-        final String badType = "UNKNOWN";
-        for (int i = 0; i < 10; i++) {
-            for (Map.Entry<SalNode, VtnNode> entry: nodeMap.entrySet()) {
-                SalNode snode = entry.getKey();
-                VtnNode vnode = entry.getValue();
-                Node node = snode.getAdNode();
-                for (VtnPort vport: vnode.getVtnPort()) {
-                    // Search by port name.
-                    SalPort sport = SalPort.create(vport.getId());
-                    String name = vport.getName();
-                    String id = String.valueOf(sport.getPortNumber());
-                    SwitchPort swport = new SwitchPort(name);
-                    assertEquals(sport, reader.findPort(node, swport));
-                    for (int j = 0; j < 4; j++) {
-                        String nm = name + "-" + j;
-                        swport = new SwitchPort(nm);
-                        assertEquals(null, reader.findPort(node, swport));
-
-                        swport = new SwitchPort(nm, type, id);
-                        assertEquals(null, reader.findPort(node, swport));
-                    }
-
-                    // Search by port type and ID.
-                    swport = new SwitchPort(type, id);
-                    assertEquals(sport, reader.findPort(node, swport));
-
-                    swport = new SwitchPort(badType, id);
-                    assertEquals(null, reader.findPort(node, swport));
-                    for (int j = 0; j < 4; j++) {
-                        String badId = String.valueOf(1000 + j);
-                        swport = new SwitchPort(type, badId);
-                        assertEquals(null, reader.findPort(node, swport));
-
-                        swport = new SwitchPort(name, type, badId);
-                        assertEquals(null, reader.findPort(node, swport));
-                    }
-
-                    // Seaerch by port name, type, and ID.
-                    swport = new SwitchPort(name, type, id);
-                    assertEquals(sport, reader.findPort(node, swport));
-                    swport = new SwitchPort(name, badType, id);
-                    assertEquals(null, reader.findPort(node, swport));
-                }
-            }
-
-            for (long dpid = 10L; dpid <= 15L; dpid++) {
-                SalNode snode = new SalNode(dpid);
-                assertEquals(null, reader.findPort(snode.getAdNode(), null));
-            }
-        }
-
-        for (SalNode snode: nodeMap.keySet()) {
-            InstanceIdentifier<VtnNode> path = snode.getVtnNodeIdentifier();
-            verify(rtx, times(1)).read(oper, path);
-        }
-
-        for (long dpid = 10L; dpid <= 15L; dpid++) {
-            SalNode snode = new SalNode(dpid);
-            InstanceIdentifier<VtnNode> path = snode.getVtnNodeIdentifier();
-            verify(rtx, times(1)).read(oper, path);
-        }
-    }
-
-    /**
      * Test case for {@link InventoryReader#findPort(SalNode, VtnSwitchPort)}.
      *
      * @throws Exception  An error occurred.
      */
     @Test
-    public void testFindPort2() throws Exception {
+    public void testFindPort() throws Exception {
         // Set up mock-up of MD-SAL read transaction.
         ReadTransaction rtx = mock(ReadTransaction.class);
         InventoryReader reader = new InventoryReader(rtx);
@@ -787,7 +677,7 @@ public class InventoryReaderTest extends TestBase {
         InventoryReader reader = new InventoryReader(rtx);
         assertSame(rtx, reader.getReadTransaction());
 
-        Set<NodeConnector> expected = new HashSet<>();
+        Set<SalPort> expected = new HashSet<>();
         List<VtnNode> nodeList = new ArrayList<>();
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
 
@@ -831,7 +721,7 @@ public class InventoryReaderTest extends TestBase {
             VtnPort vport = createVtnPortBuilder(sport, en, edge).build();
             portList.add(vport);
             if (en.booleanValue()) {
-                assertTrue(expected.add(sport.getAdNodeConnector()));
+                assertTrue(expected.add(sport));
             }
             edge = !edge;
         }
@@ -866,7 +756,7 @@ public class InventoryReaderTest extends TestBase {
                 build();
             portList.add(vport);
             if (edge) {
-                assertTrue(expected.add(sport.getAdNodeConnector()));
+                assertTrue(expected.add(sport));
             }
         }
         vnode = new VtnNodeBuilder().setId(snode.getNodeId()).
@@ -879,16 +769,16 @@ public class InventoryReaderTest extends TestBase {
         when(rtx.read(oper, root)).thenReturn(getReadResult(vnodes));
 
         for (int i = 0; i < 10; i++) {
-            Set<NodeConnector> result = new HashSet<>();
+            Set<SalPort> result = new HashSet<>();
             reader.collectUpEdgePorts(result);
             assertEquals(expected, result);
 
-            for (NodeConnector nc: expected) {
-                Set<NodeConnector> res = new HashSet<>();
-                Set<NodeConnector> exp = new HashSet<>();
-                exp.add(nc);
+            for (SalPort sport: expected) {
+                Set<SalPort> res = new HashSet<>();
+                Set<SalPort> exp = new HashSet<>();
+                exp.add(sport);
 
-                PortFilter filter = new SpecificPortFilter(nc);
+                PortFilter filter = new SpecificPortFilter(sport);
                 reader.collectUpEdgePorts(res, filter);
                 assertEquals(exp, res);
             }
@@ -904,12 +794,12 @@ public class InventoryReaderTest extends TestBase {
         when(rtx.read(oper, root)).thenReturn(getReadResult(vnodes));
 
         for (int i = 0; i < 10; i++) {
-            Set<NodeConnector> result = new HashSet<>();
+            Set<SalPort> result = new HashSet<>();
             reader.collectUpEdgePorts(result);
             assertTrue(result.isEmpty());
 
-            for (NodeConnector nc: expected) {
-                PortFilter filter = new SpecificPortFilter(nc);
+            for (SalPort sport: expected) {
+                PortFilter filter = new SpecificPortFilter(sport);
                 reader.collectUpEdgePorts(result, filter);
                 assertTrue(result.isEmpty());
             }

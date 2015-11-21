@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -54,7 +54,16 @@ public interface TxTask<T> {
     boolean needErrorLog(Throwable t);
 
     /**
-     * Invoked when the task has been completed successfully.
+     * Determine whether this instance is associated with an asynchronous
+     * task or not.
+     *
+     * @return  {@code true} if this instance is associated with an
+     *          asynchronous task. {@code false} otherwise.
+     */
+    boolean isAsync();
+
+    /**
+     * Invoked when the task has completed successfully.
      *
      * <p>
      *   Note that this method must be called prior to
@@ -89,4 +98,17 @@ public interface TxTask<T> {
      *          Note that this method must not return {@code null}.
      */
     List<VTNFuture<?>> getBackgroundTasks();
+
+    /**
+     * Associate the given future with this task.
+     *
+     * <p>
+     *   The task associated with the given future will be treated as a
+     *   background task associated with this task.
+     * </p>
+     *
+     * @param future  A {@link VTNFuture} instance associated with background
+     *                task.
+     */
+    void addBackgroundTask(VTNFuture<?> future);
 }

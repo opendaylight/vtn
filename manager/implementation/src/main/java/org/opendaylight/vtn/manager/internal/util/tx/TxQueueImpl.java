@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -9,6 +9,8 @@
 package org.opendaylight.vtn.manager.internal.util.tx;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
@@ -23,13 +25,16 @@ import com.google.common.util.concurrent.CheckedFuture;
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.TxContext;
+import org.opendaylight.vtn.manager.internal.TxHook;
 import org.opendaylight.vtn.manager.internal.TxQueue;
 import org.opendaylight.vtn.manager.internal.TxTask;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
-import org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondReader;
-import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.log.FixedLogger;
+import org.opendaylight.vtn.manager.internal.util.log.FixedLoggerCache;
+import org.opendaylight.vtn.manager.internal.util.log.LogRecord;
+import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
@@ -81,7 +86,7 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
     /**
      * A transaction queue.
      */
-    private final Deque<TxFuture>  txQueue = new LinkedList<TxFuture>();
+    private final Deque<TxFuture>  txQueue = new LinkedList<>();
 
     /**
      * A runner thread.
@@ -100,7 +105,7 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
      * @param <T>  The type of the object to be returned by the task.
      */
     private static final class TxFuture<T> extends SettableVTNFuture<T>
-        implements TxContext {
+        implements Comparator<TxHook>, TxContext {
         /**
          * VTN Manager provider service.
          */
@@ -117,14 +122,41 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
         private ReadWriteTransaction  transaction;
 
         /**
-         * A VTN inventory reader.
+         * Read-only data specific to the current transaction.
          */
-        private InventoryReader  inventoryReader;
+        private final TxSpecific<ReadTransaction>  readSpecific =
+            new TxSpecific<>(ReadTransaction.class);
 
         /**
-         * A flow condition reader.
+         * Writable data specific to the current transaction.
          */
-        private FlowCondReader  flowCondReader;
+        private final TxSpecific<TxContext>  specific =
+            new TxSpecific<>(TxContext.class);
+
+        /**
+         * Cached for logger instances.
+         */
+        private final FixedLoggerCache  loggerCache = new FixedLoggerCache();
+
+        /**
+         * Cached log records.
+         */
+        private final Deque<LogRecord>  logRecords = new LinkedList<>();
+
+        /**
+         * Transaction pre-submit hooks.
+         */
+        private final List<TxHook>  preSubmitHooks = new ArrayList<>();
+
+        /**
+         * Transaction post-submit hooks.
+         */
+        private final List<TxHook>  postSubmitHooks = new ArrayList<>();
+
+        /**
+         * Set {@code true} if the MD-SAL DS transaction has been submitted.
+         */
+        private boolean  submitted;
 
         /**
          * Construct a new instance.
@@ -167,6 +199,7 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
             }
 
             // Complete the task.
+            submitted = true;
             set(res);
         }
 
@@ -184,6 +217,9 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
         private void submit(ReadWriteTransaction tx)
             throws TransactionCommitFailedException, TimeoutException,
                    InterruptedException {
+            // Run pre-submit hooks.
+            runHooks(preSubmitHooks);
+
             // Disable cancellation while submitting.
             maskCancel();
 
@@ -229,6 +265,32 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
             setException(cause);
         }
 
+        /**
+         * Logs a log messages recorded by the transaction task.
+         */
+        private void flushLogRecords() {
+            for (LogRecord lr = logRecords.pollFirst(); lr != null;
+                 lr = logRecords.pollFirst()) {
+                lr.log();
+            }
+        }
+
+        /**
+         * Run hooks in the given list, and make it empty.
+         *
+         * @param hooks  A list of hooks to be invoked.
+         */
+        private void runHooks(List<TxHook> hooks) {
+            // Sort hooks in ascending order of order value.
+            Collections.sort(hooks, this);
+
+            for (TxHook hook: hooks) {
+                hook.run(this, txTask);
+            }
+
+            hooks.clear();
+        }
+
         // SettableVTNFuture
 
         /**
@@ -236,6 +298,10 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
          */
         @Override
         protected void onFutureSucceeded(T result) {
+            // Run post-submit hooks.
+            runHooks(postSubmitHooks);
+
+            flushLogRecords();
             txTask.onSuccess(vtnProvider, result);
         }
 
@@ -244,6 +310,7 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
          */
         @Override
         protected void onFutureFailed(Throwable cause) {
+            flushLogRecords();
             txTask.onFailure(vtnProvider, cause);
         }
 
@@ -275,42 +342,55 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
          * {@inheritDoc}
          */
         @Override
-        public InventoryReader getInventoryReader() {
-            InventoryReader reader = inventoryReader;
-            if (reader == null) {
-                reader = new InventoryReader(getReadWriteTransaction());
-                inventoryReader = reader;
-            }
-
-            return reader;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public FlowCondReader getFlowCondReader() {
-            FlowCondReader reader = flowCondReader;
-            if (reader == null) {
-                reader = new FlowCondReader(getReadWriteTransaction());
-                flowCondReader = reader;
-            }
-
-            return reader;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
         public void cancelTransaction() {
             ReadWriteTransaction tx = transaction;
             if (tx != null) {
                 transaction = null;
-                inventoryReader = null;
-                flowCondReader = null;
-                tx.cancel();
+                readSpecific.clear();
+                specific.clear();
+                if (!submitted) {
+                    tx.cancel();
+                }
             }
+
+            // Clear submit hooks registered by the previous transaction.
+            preSubmitHooks.clear();
+            postSubmitHooks.clear();
+
+            // Clear log records.
+            logRecords.clear();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public <T> T getReadSpecific(Class<T> type) {
+            return readSpecific.get(type, getReadWriteTransaction());
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public <T> T getSpecific(Class<T> type) {
+            return specific.get(type, this);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void addPreSubmitHook(TxHook hook) {
+            preSubmitHooks.add(hook);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void addPostSubmitHook(TxHook hook) {
+            postSubmitHooks.add(hook);
         }
 
         /**
@@ -319,6 +399,69 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
         @Override
         public VTNManagerProvider getProvider() {
             return vtnProvider;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void log(Logger logger, VTNLogLevel level, String msg) {
+            if (level.isEnabled(logger)) {
+                FixedLogger flogger = loggerCache.get(logger, level);
+                logRecords.addLast(new LogRecord(flogger, msg));
+            }
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void log(Logger logger, VTNLogLevel level, String format,
+                        Object ... args) {
+            if (level.isEnabled(logger)) {
+                FixedLogger flogger = loggerCache.get(logger, level);
+                logRecords.addLast(new LogRecord(flogger, format, args));
+            }
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void log(Logger logger, VTNLogLevel level, String msg,
+                        Throwable t) {
+            if (level.isEnabled(logger)) {
+                FixedLogger flogger = loggerCache.get(logger, level);
+                logRecords.addLast(new LogRecord(flogger, msg, t));
+            }
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void log(Logger logger, VTNLogLevel level, Throwable t,
+                        String format, Object ... args) {
+            if (level.isEnabled(logger)) {
+                FixedLogger flogger = loggerCache.get(logger, level);
+                logRecords.addLast(new LogRecord(flogger, t, format, args));
+            }
+        }
+
+        // Comparator
+
+        /**
+         * Compare the given {@link TxHook} instances.
+         *
+         * @param h1  The first object to be compared.
+         * @param h2  The second object to be compared.
+         * @return    A negative integer, zero, or a positive integer as the
+         *            first argument is less than, equal to, or greater than
+         *            the second.
+         */
+        @Override
+        public int compare(TxHook h1, TxHook h2) {
+            return Integer.compare(h1.getOrder(), h2.getOrder());
         }
     }
 
@@ -348,9 +491,9 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
      */
     private synchronized TxFuture<?> getTask() {
         while (available) {
-            while (txQueue.size() != 0) {
+            for (TxFuture<?> future = txQueue.pollFirst(); future != null;
+                 future = txQueue.pollFirst()) {
                 // Ignore canceled task.
-                TxFuture<?> future = txQueue.removeFirst();
                 if (!future.isCancelled()) {
                     return future;
                 }

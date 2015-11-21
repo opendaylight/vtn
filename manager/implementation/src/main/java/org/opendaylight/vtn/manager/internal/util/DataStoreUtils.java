@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -42,7 +42,22 @@ public final class DataStoreUtils {
     private DataStoreUtils() {}
 
     /**
-     * Read data from the given MD-SAL data store at the given path.
+     * Read data from the MD-SAL operational datastore at the given path.
+     *
+     * @param rtx   A read transaction.
+     * @param path  An {@link InstanceIdentifier} instance which specifies
+     *              data to be read.
+     * @param <T>   Type of data to be read.
+     * @return  An {@link Optional} instance that contains the result.
+     * @throws VTNException  Failed to read data.
+     */
+    public static <T extends DataObject> Optional<T> read(
+        ReadTransaction rtx, InstanceIdentifier<T> path) throws VTNException {
+        return read(rtx, LogicalDatastoreType.OPERATIONAL, path);
+    }
+
+    /**
+     * Read data from the given MD-SAL datastore at the given path.
      *
      * @param rtx    A read transaction.
      * @param store  A {@link LogicalDatastoreType} which specifies the type
@@ -51,9 +66,7 @@ public final class DataStoreUtils {
      *               data to be read.
      * @param <T>    Type of data to be read.
      * @return  An {@link Optional} instance that contains the result.
-     *          {@code null} if no data is present.
-     * @throws VTNException
-     *    Failed to read data.
+     * @throws VTNException  Failed to read data.
      */
     public static <T extends DataObject> Optional<T> read(
         ReadTransaction rtx, LogicalDatastoreType store,
@@ -69,7 +82,6 @@ public final class DataStoreUtils {
      *                transaction.
      * @param <T>    Type of data to be read.
      * @return  An {@link Optional} instance that contains the result.
-     *          {@code null} if no data is present.
      * @throws VTNException
      *    Failed to read data.
      */
@@ -84,6 +96,28 @@ public final class DataStoreUtils {
         } catch (Exception e) {
             throw new VTNException("Failed to read data from datastore.", e);
         }
+    }
+
+    /**
+     * Delete data in the MD-SAL operational datastore at the specified path.
+     *
+     * <p>
+     *   This method tries to read data at the specified path, and deletes
+     *   data only if the data is present.
+     * </p>
+     *
+     * @param tx     A MD-SAL data transaction.
+     * @param path   An {@link InstanceIdentifier} instance which specifies
+     *               data to be deleted.
+     * @param <T>    Type of data to be deleted.
+     * @return  A deleted data object if deleted.
+     *          {@code null} if the specified data object is not present.
+     * @throws VTNException   Failed to read data.
+     */
+    public static <T extends DataObject> T delete(
+        ReadWriteTransaction tx, InstanceIdentifier<T> path)
+        throws VTNException {
+        return delete(tx, LogicalDatastoreType.OPERATIONAL, path);
     }
 
     /**
@@ -102,21 +136,21 @@ public final class DataStoreUtils {
      * @param <T>    Type of data to be deleted.
      * @return  {@code true} if data was actually deleted.
      *          {@code false} if data is not present.
-     * @throws VTNException
-     *    Failed to read data.
+     * @throws VTNException  Failed to read data.
      */
-    public static <T extends DataObject> boolean delete(
+    public static <T extends DataObject> T delete(
         ReadWriteTransaction tx, LogicalDatastoreType store,
         InstanceIdentifier<T> path) throws VTNException {
-        boolean ret;
-        if (read(tx, store, path).isPresent()) {
+        Optional<T> opt = read(tx, store, path);
+        T deleted;
+        if (opt.isPresent()) {
+            deleted = opt.get();
             tx.delete(store, path);
-            ret = true;
         } else {
-            ret = false;
+            deleted = null;
         }
 
-        return ret;
+        return deleted;
     }
 
     /**

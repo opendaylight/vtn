@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2014, 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,9 @@
  */
 
 package org.opendaylight.vtn.manager.internal.packet.cache;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -24,21 +27,18 @@ import org.opendaylight.vtn.manager.packet.Packet;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.EtherTypes;
 
-import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.util.flow.action.FlowFilterAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetDlDstAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetDlSrcAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetVlanPcpAction;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNEtherMatch;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.packet.EtherHeader;
+import org.opendaylight.vtn.manager.internal.vnode.PacketContext;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
-
-import org.opendaylight.controller.sal.core.Node;
-import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
-import org.opendaylight.controller.sal.utils.NodeCreator;
 
 /**
  * JUnit test for {@link EtherPacket}.
@@ -72,11 +72,6 @@ public class EtherPacketTest extends TestBase {
         (ETH_SRC | ETH_DST | ETH_VLAN_VID | ETH_VLAN_PCP);
 
     /**
-     * A node connector for test.
-     */
-    static final NodeConnector  NODE_CONNECTOR;
-
-    /**
      * A raw payload for test.
      */
     static final byte[] RAW_PAYLOAD = {
@@ -85,16 +80,6 @@ public class EtherPacketTest extends TestBase {
         (byte)0x45, (byte)0x67, (byte)0x89, (byte)0xab,
         (byte)0xcd, (byte)0xef, (byte)0x00, (byte)0x01,
     };
-
-    /**
-     * Initialize test class.
-     */
-    static {
-        // Create a node connector.
-        Node node = NodeCreator.createOFNode(Long.valueOf(1L));
-        NODE_CONNECTOR = NodeConnectorCreator.
-            createNodeConnector(Short.valueOf((short)1), node);
-    }
 
     /**
      * VLAN priority for test.
@@ -106,6 +91,8 @@ public class EtherPacketTest extends TestBase {
      */
     @Test
     public void testGetter() {
+        TxContext ctx = mock(TxContext.class);
+        SalPort ingress = new SalPort(1L, 3L);
         byte[] bytes = {
             (byte)0x00, (byte)0x0a, (byte)0x7f, (byte)0x88, (byte)0xff,
         };
@@ -174,7 +161,7 @@ public class EtherPacketTest extends TestBase {
 
                         // commit() should return false.
                         PacketContext pctx =
-                            createPacketContext(pkt, NODE_CONNECTOR);
+                            new PacketContext(ctx, pkt, ingress);
                         assertFalse(ether.commit(pctx));
                         assertEquals(null, pctx.getFilterActions());
 
@@ -185,6 +172,8 @@ public class EtherPacketTest extends TestBase {
                 }
             }
         }
+
+        verifyZeroInteractions(ctx);
     }
 
     /**
@@ -192,6 +181,8 @@ public class EtherPacketTest extends TestBase {
      */
     @Test
     public void testSetter() {
+        TxContext ctx = mock(TxContext.class);
+        SalPort ingress = new SalPort(1L, 3L);
         int type = 0x0806;
         int[] vids = {EtherHeader.VLAN_NONE, 1, 4095};
         int vid1 = 1000;
@@ -227,10 +218,9 @@ public class EtherPacketTest extends TestBase {
                     int vlan = vid;
                     short pcp = vlanPcp;
                     boolean setPcp = false;
-                    boolean mod = false;
 
-                    PacketContext pctx =
-                        createPacketContext(pkt, NODE_CONNECTOR);
+                    boolean mod = false;
+                    PacketContext pctx = new PacketContext(ctx, pkt, ingress);
                     for (FlowFilterAction act: fltActions.values()) {
                         pctx.addFilterAction(act);
                     }
@@ -383,6 +373,8 @@ public class EtherPacketTest extends TestBase {
                 }
             }
         }
+
+        verifyZeroInteractions(ctx);
     }
 
     /**

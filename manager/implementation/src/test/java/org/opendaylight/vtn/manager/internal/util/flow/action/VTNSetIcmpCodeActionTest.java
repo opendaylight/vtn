@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -38,6 +38,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.v
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpCodeActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.icmp.code.action._case.VtnSetIcmpCodeAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.icmp.code.action._case.VtnSetIcmpCodeActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
@@ -90,9 +91,12 @@ public class VTNSetIcmpCodeActionTest extends TestBase {
      *   <li>{@link VTNSetIcmpCodeAction#getCode()}</li>
      *   <li>{@link VTNSetIcmpCodeAction#verifyImpl()}</li>
      *   <li>{@link VTNSetIcmpCodeAction#toFlowAction(VtnAction)}</li>
+     *   <li>{@link VTNSetIcmpCodeAction#toFlowAction()}</li>
+     *   <li>{@link VTNSetIcmpCodeAction#toFlowFilterAction(VtnAction,Integer)}</li>
      *   <li>{@link VTNSetIcmpCodeAction#toVtnAction(Action)}</li>
      *   <li>{@link FlowFilterAction#verify()}</li>
      *   <li>{@link FlowFilterAction#getIdentifier()}</li>
+     *   <li>{@link FlowFilterAction#toVtnFlowAction()}</li>
      *   <li>{@link VTNFlowAction#toVtnFlowActionBuilder(Integer)}</li>
      *   <li>{@link VTNFlowAction#toActionBuilder(Integer)}</li>
      * </ul>
@@ -140,6 +144,12 @@ public class VTNSetIcmpCodeActionTest extends TestBase {
                 assertEquals(order, va.getIdentifier());
                 assertEquals(code, va.getCode());
 
+                VtnFlowAction vfact = va.toVtnFlowAction();
+                assertEquals(order, vfact.getOrder());
+                assertEquals(vac, vfact.getVtnAction());
+
+                assertEquals(vad, va.toFlowAction());
+
                 VtnFlowActionBuilder vbuilder =
                     va.toVtnFlowActionBuilder(anotherOrder);
                 assertEquals(anotherOrder, vbuilder.getOrder());
@@ -150,6 +160,16 @@ public class VTNSetIcmpCodeActionTest extends TestBase {
                 assertEquals(anotherOrder, mbuilder.getOrder());
                 assertEquals(mact, mbuilder.getAction());
                 assertEquals(order, va.getIdentifier());
+
+                if (order != null) {
+                    // toFlowFilterAction() test.
+                    VTNSetIcmpCodeAction conv = new VTNSetIcmpCodeAction();
+                    assertEquals(va, conv.toFlowFilterAction(vac, order));
+
+                    // toFlowFilterAction() should never affect instance
+                    // variables.
+                    assertEquals(0, conv.getCode());
+                }
             }
 
             if (order != null) {
@@ -414,7 +434,7 @@ public class VTNSetIcmpCodeActionTest extends TestBase {
             addFilterAction(Mockito.any(FlowFilterAction.class));
         Mockito.verify(ctx, Mockito.never()).
             removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterAction();
+        Mockito.verify(ctx, Mockito.never()).getFilterActions();
 
         Mockito.verifyZeroInteractions(tcp);
 
@@ -429,7 +449,7 @@ public class VTNSetIcmpCodeActionTest extends TestBase {
             addFilterAction(Mockito.any(FlowFilterAction.class));
         Mockito.verify(ctx, Mockito.never()).
             removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterAction();
+        Mockito.verify(ctx, Mockito.never()).getFilterActions();
 
         Mockito.verifyZeroInteractions(udp);
 
@@ -443,7 +463,7 @@ public class VTNSetIcmpCodeActionTest extends TestBase {
         Mockito.verify(ctx).addFilterAction(va);
         Mockito.verify(ctx, Mockito.never()).
             removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterAction();
+        Mockito.verify(ctx, Mockito.never()).getFilterActions();
 
         Mockito.verify(icmp).setIcmpCode(code);
         Mockito.verify(icmp, Mockito.never()).getIcmpType();
@@ -460,7 +480,7 @@ public class VTNSetIcmpCodeActionTest extends TestBase {
             addFilterAction(Mockito.any(FlowFilterAction.class));
         Mockito.verify(ctx, Mockito.never()).
             removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterAction();
+        Mockito.verify(ctx, Mockito.never()).getFilterActions();
     }
 
     /**

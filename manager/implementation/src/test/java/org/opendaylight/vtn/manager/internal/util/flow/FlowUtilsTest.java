@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -58,10 +58,9 @@ import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
-import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
-import org.opendaylight.vtn.manager.internal.cluster.MacMappedHostPath;
-import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
-import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
+import org.opendaylight.vtn.manager.internal.adsal.MacMapPath;
+import org.opendaylight.vtn.manager.internal.adsal.MacMappedHostPath;
+import org.opendaylight.vtn.manager.internal.adsal.VlanMapPath;
 import org.opendaylight.vtn.manager.internal.util.OrderedComparator;
 import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNActionList;
@@ -82,6 +81,7 @@ import org.opendaylight.vtn.manager.internal.util.flow.match.VTNPortRange;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNTcpMatch;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNUdpMatch;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.inventory.MacVlan;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.pathmap.PathMapUtils;
@@ -268,6 +268,7 @@ public class FlowUtilsTest extends TestBase {
      *
      * <ul>
      *   <li>{@link FlowUtils#verifyFlowTimeout(Integer, Integer)}</li>
+     *   <li>{@link FlowUtils#verifyFlowTimeout(Integer, Integer, boolean)}</li>
      *   <li>{@link FlowUtils#verifyFlowTimeout(VtnFlowTimeoutConfig)}</li>
      * </ul>
      *
@@ -286,15 +287,47 @@ public class FlowUtilsTest extends TestBase {
                 tc.setIdleTimeout(tmout).setHardTimeout(tmout);
                 FlowUtils.verifyFlowTimeout(tc);
                 FlowUtils.verifyFlowTimeout(tmout, tmout);
+                FlowUtils.verifyFlowTimeout(tmout, tmout, false);
+
+                String msg = "idle-timeout cannot be null";
+                try {
+                    FlowUtils.verifyFlowTimeout(tmout, tmout, true);
+                    unexpected();
+                } catch (RpcException e) {
+                    assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(msg, e.getMessage());
+                }
+
+                try {
+                    FlowUtils.verifyFlowTimeout(tmout, 10, true);
+                    unexpected();
+                } catch (RpcException e) {
+                    assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(msg, e.getMessage());
+                }
+
+                msg = "hard-timeout cannot be null";
+                try {
+                    FlowUtils.verifyFlowTimeout(10, tmout, true);
+                    unexpected();
+                } catch (RpcException e) {
+                    assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
+                    assertEquals(vtag, e.getVtnErrorTag());
+                    assertEquals(msg, e.getMessage());
+                }
                 continue;
             }
 
             tc.setIdleTimeout(tmout).setHardTimeout(0);
             FlowUtils.verifyFlowTimeout(tc);
             FlowUtils.verifyFlowTimeout(tmout, 0);
+            FlowUtils.verifyFlowTimeout(tmout, 0, false);
             tc.setIdleTimeout(0).setHardTimeout(tmout);
             FlowUtils.verifyFlowTimeout(tc);
             FlowUtils.verifyFlowTimeout(0, tmout);
+            FlowUtils.verifyFlowTimeout(0, tmout, false);
 
             String msg = "idle-timeout must be less than hard-timeout.";
             int tm = tmout.intValue();

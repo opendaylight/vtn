@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -261,7 +261,7 @@ public final class VTNPortRange {
     /**
      * Verify the contents of this instance.
      *
-     * @throws RpcException  Verifycation failed.
+     * @throws RpcException  Verification failed.
      */
     public void verify() throws RpcException {
         checkPortFrom();
@@ -301,7 +301,7 @@ public final class VTNPortRange {
         }
     }
 
-    // Objects
+    // Object
 
     /**
      * Determine whether the given object is identical to this object.

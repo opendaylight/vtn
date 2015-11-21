@@ -110,7 +110,7 @@
             <dependency>
               <groupId>org.opendaylight.mdsal</groupId>
               <artifactId>maven-sal-api-gen-plugin</artifactId>
-              <version>${odl.yangtools.version}</version>
+              <version>${odl.mdsal.apigen.version}</version>
             </dependency>
           </dependencies>
         </plugin>

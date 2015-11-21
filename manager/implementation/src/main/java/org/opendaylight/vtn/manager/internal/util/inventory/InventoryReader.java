@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -20,17 +20,13 @@ import java.util.Set;
 
 import com.google.common.base.Optional;
 
-import org.opendaylight.vtn.manager.SwitchPort;
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.vtn.manager.internal.PortFilter;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
+import org.opendaylight.vtn.manager.internal.util.inventory.port.PortFilter;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-
-import org.opendaylight.controller.sal.core.Node;
-import org.opendaylight.controller.sal.core.NodeConnector;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
@@ -182,21 +178,20 @@ public final class InventoryReader {
          * Collect node connectors associated with edge switch ports in
          * up state.
          *
-         * @param portSet  A set of {@link NodeConnector} instances to store
-         *                 results.
+         * @param portSet  A set of {@link SalPort} instances to store results.
          * @param filter   A {@link PortFilter} instance which filters switch
          *                 port. All switch ports are stored to {@code portSet}
          *                 if {@code null} is specified.
+         * @throws VTNException  An error occurred.
          */
-        private void collectUpEdgePorts(Set<NodeConnector> portSet,
-                                        PortFilter filter) {
+        private void collectUpEdgePorts(
+            Set<SalPort> portSet, PortFilter filter) throws VTNException {
             for (Map.Entry<SalPort, VtnPort> ent: cache.entrySet()) {
                 VtnPort vport = ent.getValue();
                 if (InventoryUtils.isEnabledEdge(vport)) {
                     SalPort sport = ent.getKey();
-                    NodeConnector nc = sport.getAdNodeConnector();
-                    if (filter == null || filter.accept(nc, vport)) {
-                        portSet.add(nc);
+                    if (filter == null || filter.accept(sport, vport)) {
+                        portSet.add(sport);
                     }
                 }
             }
@@ -427,39 +422,6 @@ public final class InventoryReader {
     /**
      * Find a {@link SalPort} instance that meets the specified condition.
      *
-     * @param node  A {@link Node} instance corresponding to a physical
-     *              switch.
-     * @param port  A {@link SwitchPort} instance which specifies the
-     *              condition to select switch port.
-     * @return  A {@link SalPort} instance if found.
-     *          {@code null} is returned if not found.
-     * @throws VTNException  An error occurred.
-     */
-    public SalPort findPort(Node node, SwitchPort port) throws VTNException {
-        SalNode snode = SalNode.create(node);
-        if (get(snode) == null) {
-            return null;
-        }
-
-        SalPort target = null;
-        String type = port.getType();
-        String id = port.getId();
-        if (type != null && id != null) {
-            // Try to construct a NodeConnector instance.
-            // This returns null if invalid parameter is specified.
-            NodeConnector nc = NodeConnector.fromStringNoNode(type, id, node);
-            target = SalPort.create(nc);
-            if (target == null) {
-                return null;
-            }
-        }
-
-        return findPort(snode, target, port.getName());
-    }
-
-    /**
-     * Find a {@link SalPort} instance that meets the specified condition.
-     *
      * @param snode A {@link SalNode} instance corresponding to a physical
      *              switch.
      * @param vswp  A {@link VtnSwitchPort} instance which specifies the
@@ -491,12 +453,11 @@ public final class InventoryReader {
     /**
      * Collect node connectors associated with edge switch ports in up state.
      *
-     * @param portSet  A set of {@link NodeConnector} instances to store
+     * @param portSet  A set of {@link SalPort} instances to store
      *                 results.
      * @throws VTNException  An error occurred.
      */
-    public void collectUpEdgePorts(Set<NodeConnector> portSet)
-        throws VTNException {
+    public void collectUpEdgePorts(Set<SalPort> portSet) throws VTNException {
         collectUpEdgePorts(portSet, null);
     }
 
@@ -508,18 +469,16 @@ public final class InventoryReader {
      *   {@link PortFilter} instance to {@code filter}.
      *   If a {@link PortFilter} instance is specified, this method collects
      *   switch ports accepted by
-     *   {@link PortFilter#accept(NodeConnector, VtnPort)}.
+     *   {@link PortFilter#accept(SalPort, VtnPort)}.
      * </p>
      *
-     * @param portSet  A set of {@link NodeConnector} instances to store
-     *                 results.
+     * @param portSet  A set of {@link SalPort} instances to store results.
      * @param filter   A {@link PortFilter} instance which filters switch port.
      *                 All switch ports are stored to {@code portSet} if
      *                 {@code null} is specified.
      * @throws VTNException  An error occurred.
      */
-    public void collectUpEdgePorts(Set<NodeConnector> portSet,
-                                   PortFilter filter)
+    public void collectUpEdgePorts(Set<SalPort> portSet, PortFilter filter)
         throws VTNException {
         // Fill all the nodes into cache.
         getVtnNodes();

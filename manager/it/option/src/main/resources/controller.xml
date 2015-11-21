@@ -490,6 +490,9 @@
         <capability>
           urn:opendaylight:vtn:impl:topology?module=vtn-topology&amp;revision=2015-02-09
         </capability>
+        <capability>
+          urn:opendaylight:vtn:impl:mapping?module=vtn-mapping&amp;revision=2015-10-01
+        </capability>
 
         <!-- inventory-manager capabilities -->
         <capability>

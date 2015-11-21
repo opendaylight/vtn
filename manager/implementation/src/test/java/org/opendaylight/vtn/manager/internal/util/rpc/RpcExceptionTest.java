@@ -32,7 +32,8 @@ public class RpcExceptionTest extends TestBase {
     }
 
     /**
-     * Test case for {@link RpcException#getBadArgumentException(String)}.
+     * Test case for {@link RpcException#getBadArgumentException(String)} and
+     * {@link RpcException#getBadArgumentException(String, Throwable)}.
      */
     @Test
     public void testGetBadArgumentException() {
@@ -42,6 +43,13 @@ public class RpcExceptionTest extends TestBase {
         assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
         assertEquals(desc, e.getMessage());
         assertEquals(null, e.getCause());
+
+        NullPointerException cause = new NullPointerException();
+        e = RpcException.getBadArgumentException(desc, cause);
+        assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+        assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+        assertEquals(desc, e.getMessage());
+        assertEquals(cause, e.getCause());
     }
 
     /**
@@ -79,7 +87,8 @@ public class RpcExceptionTest extends TestBase {
     }
 
     /**
-     * Test case for {@link RpcException#getDataExistsException(String)}.
+     * Test case for {@link RpcException#getDataExistsException(String)} and
+     * {@link RpcException#getDataExistsException(String, Throwable)}.
      */
     @Test
     public void testGetDataExistsException() {
@@ -89,6 +98,13 @@ public class RpcExceptionTest extends TestBase {
         assertEquals(RpcErrorTag.DATA_EXISTS, e.getErrorTag());
         assertEquals(desc, e.getMessage());
         assertEquals(null, e.getCause());
+
+        NullPointerException cause = new NullPointerException();
+        e = RpcException.getDataExistsException(desc, cause);
+        assertEquals(VtnErrorTag.CONFLICT, e.getVtnErrorTag());
+        assertEquals(RpcErrorTag.DATA_EXISTS, e.getErrorTag());
+        assertEquals(desc, e.getMessage());
+        assertEquals(cause, e.getCause());
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2014, 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,9 @@
  */
 
 package org.opendaylight.vtn.manager.internal.packet.cache;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -23,13 +26,15 @@ import org.opendaylight.vtn.manager.packet.IPv4;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
-import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.util.flow.action.FlowFilterAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetDscpAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetDstAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetSrcAction;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNInet4Match;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
+import org.opendaylight.vtn.manager.internal.vnode.PacketContext;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
@@ -64,6 +69,9 @@ public class Inet4PacketTest extends TestBase {
      */
     @Test
     public void testGetter() throws Exception {
+        TxContext ctx = mock(TxContext.class);
+        SalPort ingress = new SalPort(1L, 3L);
+
         byte[] bytes = {
             (byte)0, (byte)1, (byte)33, (byte)128, (byte)192, (byte)255,
         };
@@ -87,8 +95,8 @@ public class Inet4PacketTest extends TestBase {
 
                         // commit() should return false.
                         Ethernet ether = createEthernet(pkt);
-                        PacketContext pctx = createPacketContext(
-                            ether, EtherPacketTest.NODE_CONNECTOR);
+                        PacketContext pctx =
+                            new PacketContext(ctx, ether, ingress);
                         assertFalse(ipv4.commit(pctx));
                         assertEquals(null, pctx.getFilterActions());
 
@@ -99,6 +107,8 @@ public class Inet4PacketTest extends TestBase {
                 }
             }
         }
+
+        verifyZeroInteractions(ctx);
     }
 
     /**
@@ -108,6 +118,9 @@ public class Inet4PacketTest extends TestBase {
      */
     @Test
     public void testSetter() throws Exception {
+        TxContext ctx = mock(TxContext.class);
+        SalPort ingress = new SalPort(1L, 3L);
+
         short proto = 111;
         short dscp0 = 1;
         short dscp1 = 63;
@@ -146,8 +159,7 @@ public class Inet4PacketTest extends TestBase {
             short dscp = dscp0;
 
             Ethernet ether = createEthernet(pkt);
-            PacketContext pctx =
-                createPacketContext(ether, EtherPacketTest.NODE_CONNECTOR);
+            PacketContext pctx = new PacketContext(ctx, ether, ingress);
             for (FlowFilterAction act: fltActions.values()) {
                 pctx.addFilterAction(act);
             }
@@ -208,7 +220,7 @@ public class Inet4PacketTest extends TestBase {
                 actions.add(fltActions.get(VTNSetInetDscpAction.class));
             }
 
-            pctx = createPacketContext(ether, EtherPacketTest.NODE_CONNECTOR);
+            pctx = new PacketContext(ctx, ether, ingress);
             for (FlowMatchType mt: FlowMatchType.values()) {
                 pctx.addMatchField(mt);
             }
@@ -265,6 +277,8 @@ public class Inet4PacketTest extends TestBase {
             assertEquals(proto, ip1.getProtocol());
             assertEquals(dscp1, ip1.getDscp());
         }
+
+        verifyZeroInteractions(ctx);
     }
 
     /**

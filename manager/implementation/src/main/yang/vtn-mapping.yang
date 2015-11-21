@@ -1,0 +1,141 @@
+/*
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this distribution,
+ * and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-mapping {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:impl:mapping";
+    prefix vmapping;
+
+    import vtn-types {
+        prefix vtype;
+        revision-date 2015-02-09;
+    }
+
+    /* OpenDaylight MD-SAL */
+    import opendaylight-l2-types {
+        prefix l2;
+        revision-date 2013-08-27;
+    }
+    import ietf-yang-types {
+        prefix yang;
+        revision-date 2010-09-24;
+    }
+
+    description
+      "The internal module to maintain mappings between virtual nodes and
+       physical network elements.
+       Application other than VTN Manager must not use models defined in
+       this module.";
+
+    revision 2015-10-01 {
+        description "Initial revision.";
+    }
+
+    grouping vtn-map-reference-field {
+        description
+          "Describes a field that keeps a virtual network mapping.";
+
+        leaf mapping {
+            description
+              "Describes a virtual network mapping.
+               The value of this field contains the type of mapping and
+               the location of the virtual node.";
+            type string;
+        }
+    }
+
+    grouping vtn-map-reference {
+        description
+          "Describes a virtual network mapping associated with physical
+           network element.";
+
+        leaf identifier {
+            description
+              "Describes an identifier for a physical network element.";
+            type string;
+        }
+
+        uses vtn-map-reference-field;
+    }
+
+    grouping vtn-map-reference-list {
+        description "Describes a set of virtual network mappings.";
+
+        list map-reference-list {
+            description "Describes a virtual network mapping.";
+            key "mapping";
+            uses vtn-map-reference-field;
+        }
+    }
+
+    grouping vtn-map-reference-set {
+        description
+          "Describes a set of virtual network mappings associated with
+           physical network element.";
+
+        leaf identifier {
+            description
+              "Describes an identifier for a physical network element.";
+            type string;
+        }
+
+        uses vtn-map-reference-list;
+    }
+
+    container vtn-mappings {
+        description
+          "The root container of mappings between virtual nodes and
+           physical network elements.";
+        config false;
+        presence "Indicates the virtual network mapping manager is active.";
+
+        list vlan-mapping {
+            description
+              "VLAN mapping configured in a vBridge.
+               `identifier' field indicates a pair of physical switch and
+               VLAN ID. The value of `identifier' field must be a node-id
+               and VLAN ID joined with '@'. If node-id is omitted, it
+               indicates that all switches managed by the controler is
+               mapped by VLAN mapping. For example, \"@1\" indicates VLAN
+               mapping that maps VLAN ID 1 on all switches.";
+            key "identifier";
+            uses vtn-map-reference;
+        }
+
+        list port-mapping {
+            description
+              "Describes VLAN network on a switch port mapped by port
+               mapping or MAC mapping.
+               `identifier' field indicates a pair of physical switch port
+               and VLAN ID. The value of `identifier' field must be a
+               node-connector-id and VLAN ID joined with '@'.";
+            key "identifier";
+            uses vtn-map-reference;
+        }
+
+        list mac-map-allowed {
+            description
+              "Describes layer 2 host mapped by MAC mapping.
+              `identifier' field indicates a pair of MAC address and VLAN ID.
+              The value of `identifier' field must be a MAC address and VLAN
+              ID joined with '@'.";
+            key "identifier";
+            uses vtn-map-reference;
+        }
+
+        list mac-map-denied {
+            description
+              "Describes layer 2 host not to be mapped by MAC mapping.
+              `identifier' field indicates a pair of MAC address and VLAN ID.
+              The value of `identifier' field must be a MAC address and VLAN
+              ID joined with '@'.";
+            key "identifier";
+            uses vtn-map-reference-set;
+        }
+    }
+}

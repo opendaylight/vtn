@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -344,6 +344,17 @@ public class SalNode {
     }
 
     /**
+     * Determine whether the given node has the same node number or not.
+     *
+     * @param snode  A {@link SalNode} instance to be compared.
+     * @return  {@code true} only if the given node has the same node number
+     *          as this instance.
+     */
+    public final boolean equalsNode(SalNode snode) {
+        return (snode != null && snode.nodeNumber == nodeNumber);
+    }
+
+    /**
      * Return a {@link StringBuilder} instance that contains a string
      * representation of this instance.
      *
@@ -395,6 +406,8 @@ public class SalNode {
         return InstanceIdentifier.builder(VtnNodes.class).
             child(VtnNode.class, getVtnNodeKey());
     }
+
+    // Object
 
     /**
      * Determine whether the given object is identical to this object.

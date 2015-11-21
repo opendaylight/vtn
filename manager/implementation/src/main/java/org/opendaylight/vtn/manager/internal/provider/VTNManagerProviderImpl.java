@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
@@ -21,8 +22,12 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import org.osgi.framework.Bundle;
-import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
+import org.osgi.framework.SynchronousBundleListener;
 import org.osgi.framework.Version;
 
 import org.opendaylight.vtn.manager.VTNException;
@@ -33,7 +38,6 @@ import org.opendaylight.vtn.manager.internal.RouteResolver;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxTask;
 import org.opendaylight.vtn.manager.internal.VTNConfig;
-import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.config.VTNConfigImpl;
 import org.opendaylight.vtn.manager.internal.config.VTNConfigManager;
@@ -43,6 +47,7 @@ import org.opendaylight.vtn.manager.internal.inventory.VTNInventoryManager;
 import org.opendaylight.vtn.manager.internal.packet.VTNPacketService;
 import org.opendaylight.vtn.manager.internal.routing.PathMapManager;
 import org.opendaylight.vtn.manager.internal.routing.VTNRoutingManager;
+import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
 import org.opendaylight.vtn.manager.internal.util.VTNTimer;
 import org.opendaylight.vtn.manager.internal.util.concurrent.CanceledFuture;
@@ -60,7 +65,9 @@ import org.opendaylight.vtn.manager.internal.util.tx.TxSyncFuture;
 import org.opendaylight.vtn.manager.internal.vnode.VTenantManager;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.common.api.clustering.CandidateAlreadyRegisteredException;
 import org.opendaylight.controller.md.sal.common.api.clustering.Entity;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipCandidateRegistration;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListener;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListenerRegistration;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipService;
@@ -84,7 +91,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.get.m
  * MD-SAL service provider of the VTN Manager.
  */
 public final class VTNManagerProviderImpl
-    implements VTNManagerProvider, VtnVersionService {
+    implements SynchronousBundleListener, VTNManagerProvider,
+               VtnVersionService {
     /**
      * Logger instance.
      */
@@ -119,6 +127,26 @@ public final class VTNManagerProviderImpl
      * thread.
      */
     private static final long  TIMER_SHUTDOWN_TIMEOUT = 10000L;
+
+    /**
+     * Internal state that indicates the VTN Manager is active.
+     */
+    private static final int  STATE_ACTIVE = 0;
+
+    /**
+     * Internal state that indicates the VTN Manager is about to be closed.
+     */
+    private static final int  STATE_CLOSING = 1;
+
+    /**
+     * Internal state that indicates the VTN Manager is closed.
+     */
+    private static final int  STATE_CLOSED = 2;
+
+    /**
+     * The OSGi bundle associated with the manager.implementation bundle.
+     */
+    private final Bundle  implBundle;
 
     /**
      * Data broker SAL service.
@@ -176,23 +204,32 @@ public final class VTNManagerProviderImpl
     private final SubSystemRegistry  subSystems = new SubSystemRegistry();
 
     /**
-     * AD-SAL VTN Manager service.
+     * Registrations of the global entities.
      */
-    private AtomicReference<VTNManagerImpl>  vtnManager =
-        new AtomicReference<>();
+    private final CompositeAutoCloseable  globalEntities =
+        new CompositeAutoCloseable(LOG);
+
+    /**
+     * The internal state of the VTN Manager.
+     */
+    private final AtomicInteger  managerState =
+        new AtomicInteger(STATE_ACTIVE);
 
     /**
      * Construct a new instance.
      *
+     * @param bctx    A {@link BundleContext} instance associated with the
+     *                bundle that contains this class.
      * @param broker  A {@link DataBroker} service instance.
      * @param rpcReg  A {@link RpcProviderRegistry} service instance.
      * @param nsv     A {@link NotificationProviderService} service instance.
      * @param eos     A {@link EntityOwnershipService} serivce instance.
      */
-    public VTNManagerProviderImpl(DataBroker broker,
+    public VTNManagerProviderImpl(BundleContext bctx, DataBroker broker,
                                   RpcProviderRegistry rpcReg,
                                   NotificationProviderService nsv,
                                   EntityOwnershipService eos) {
+        implBundle = bctx.getBundle();
         dataBroker = broker;
         rpcRegistry = rpcReg;
         notificationService = nsv;
@@ -206,22 +243,26 @@ public final class VTNManagerProviderImpl
         initGlobalEntities(eos);
 
         TxQueueImpl globq =  new TxQueueImpl("VTN Main", this);
-        globalQueue = new AtomicReference<TxQueueImpl>(globq);
+        globalQueue = new AtomicReference<>(globq);
         VTNConfigManager cfm = new VTNConfigManager(this);
-        configManager = new AtomicReference<VTNConfigManager>(cfm);
+        configManager = new AtomicReference<>(cfm);
         boolean master = cfm.isConfigProvider();
 
         VTNInventoryManager vim = new VTNInventoryManager(this);
-        inventoryManager = new AtomicReference<VTNInventoryManager>(vim);
+        inventoryManager = new AtomicReference<>(vim);
 
         // Initialize internal subsystems.
         VTNFlowManager vfm;
+        VTenantManager tnm;
+        VTNRoutingManager rtm;
         try {
             vfm = new VTNFlowManager(this, nsv);
             subSystems.add(vfm).
-                add(vim.newStaticTopologyManager()).
-                add(new VTenantManager(this)).
-                add(new VTNRoutingManager(this)).
+                add(vim.newStaticTopologyManager());
+            tnm = new VTenantManager(this);
+            rtm = new VTNRoutingManager(this);
+            subSystems.add(tnm).
+                add(rtm).
                 add(new FlowCondManager(this)).
                 add(new PathMapManager(this));
         } catch (RuntimeException e) {
@@ -237,7 +278,11 @@ public final class VTNManagerProviderImpl
 
         VTNPacketService psv = new VTNPacketService(this, nsv);
         vim.addListener(psv);
-        packetService = new AtomicReference<VTNPacketService>(psv);
+        packetService = new AtomicReference<>(psv);
+
+        vim.addListener(tnm);
+        rtm.addListener(tnm);
+        psv.addListener(tnm);
         globq.start();
 
         // Wait for completion of initialization.
@@ -267,6 +312,11 @@ public final class VTNManagerProviderImpl
             throw e;
         }
 
+        cfm.initDone();
+
+        // Register bundle listener to detect the start of shutdown.
+        bctx.addBundleListener(this);
+
         LOG.info("VTN Manager provider has been initialized.");
     }
 
@@ -276,27 +326,7 @@ public final class VTNManagerProviderImpl
      * @return  {@code true} only if this instance can be reused.
      */
     public boolean canReuse() {
-        AtomicReference<?>[] refs = {
-            configManager,
-            globalQueue,
-            packetService,
-        };
-        for (AtomicReference<?> ref: refs) {
-            if (ref.get() == null) {
-                return false;
-            }
-        }
-
-        VTNInventoryManager vim = inventoryManager.get();
-        boolean alive;
-        if (vim == null || !vim.isAlive()) {
-            alive = false;
-        } else {
-            alive = (!subSystems.isRpcClosed() && globalTimer.isAvailable() &&
-                     globalExecutor.isAlive());
-        }
-
-        return alive;
+        return (managerState.get() == STATE_ACTIVE);
     }
 
     /**
@@ -307,7 +337,7 @@ public final class VTNManagerProviderImpl
     private void initGlobalEntities(EntityOwnershipService eos) {
         for (Entity ent: VTNEntityType.getGlobalEntities()) {
             try {
-                eos.registerCandidate(ent);
+                globalEntities.add(eos.registerCandidate(ent));
             } catch (Exception e) {
                 LOG.error("Failed to register entity candidate: " + ent, e);
                 // FALLTHROUGH
@@ -321,98 +351,95 @@ public final class VTNManagerProviderImpl
      * @return  A {@link GetManagerVersionOutput} instance.
      */
     private GetManagerVersionOutput getManagerVersionOutput() {
-        GetManagerVersionOutputBuilder builder =
-            new GetManagerVersionOutputBuilder();
-
         // Determine OSGi bundle version.
-        Bundle bundle = FrameworkUtil.getBundle(VTNManagerProviderImpl.class);
-        if (bundle != null) {
-            Version ver = bundle.getVersion();
-            BundleVersion bv = new BundleVersionBuilder().
-                setMajor((long)ver.getMajor()).
-                setMinor((long)ver.getMinor()).
-                setMicro((long)ver.getMicro()).
-                setQualifier(ver.getQualifier()).
-                build();
-            builder.setBundleVersion(bv);
+        Version ver = implBundle.getVersion();
+        BundleVersion bv = new BundleVersionBuilder().
+            setMajor((long)ver.getMajor()).
+            setMinor((long)ver.getMinor()).
+            setMicro((long)ver.getMicro()).
+            setQualifier(ver.getQualifier()).
+            build();
+
+        return new GetManagerVersionOutputBuilder().
+            setApiVersion(API_VERSION).
+            setBundleVersion(bv).
+            build();
+    }
+
+    /**
+     * Shut down all listener services.
+     */
+    private void shutdown() {
+        // Remove OSGi lifecycle listener.
+        BundleContext bctx = implBundle.getBundleContext();
+        if (bctx != null) {
+            bctx.removeBundleListener(this);
         }
 
-        return builder.setApiVersion(API_VERSION).build();
+        if (managerState.compareAndSet(STATE_ACTIVE, STATE_CLOSING)) {
+            LOG.info("VTN Manager provider is going to be closed.");
+
+            // Close packet service.
+            VTNPacketService psv = packetService.getAndSet(null);
+            if (psv != null) {
+                psv.close();
+            }
+
+            // Stop inventory event delivery.
+            VTNInventoryManager vim = inventoryManager.get();
+            if (vim != null) {
+                vim.shutdown();
+            }
+
+            // Stop RPC services.
+            subSystems.closeRpc();
+
+            // Shut down the flow service.
+            VTNFlowManager vfm = subSystems.get(VTNFlowManager.class);
+            if (vfm != null) {
+                vfm.shutdown();
+            }
+
+            // Shut down the VTN service.
+            VTenantManager tnm = subSystems.get(VTenantManager.class);
+            if (tnm != null) {
+                tnm.shutdown();
+            }
+
+            // Shut down the gloabl timer.
+            if (globalTimer.shutdown()) {
+                // Flush all the timers previously scheduled.
+                try {
+                    globalTimer.flush(TIMER_SHUTDOWN_TIMEOUT,
+                                      TimeUnit.MILLISECONDS);
+                } catch (VTNException e) {
+                    LOG.warn("Failed to synchronize timer tasks.", e);
+                }
+            }
+
+            // Unregister global entities.
+            globalEntities.close();
+        }
+    }
+
+    // SynchronousBundleListener
+
+    /**
+     * Invoked when the manager.implementation bundle has a lifecycle change.
+     *
+     * @param ev  A {@link BundleEvent} instance.
+     */
+    @Override
+    public void bundleChanged(BundleEvent ev) {
+        Bundle bundle = ev.getBundle();
+        if (bundle.getBundleId() == implBundle.getBundleId() &&
+            ev.getType() == BundleEvent.STOPPING) {
+            // Shut down the service.
+            shutdown();
+        }
     }
 
     // VTNManagerProvider
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void setVTNManager(VTNManagerImpl mgr) {
-        VTNInventoryManager vim = inventoryManager.get();
-        if (vim != null) {
-            vim.addListener(mgr);
-        }
-
-        VTNRoutingManager rtm = subSystems.get(VTNRoutingManager.class);
-        if (rtm != null) {
-            rtm.addListener(mgr);
-        }
-
-        VTNPacketService psv = packetService.get();
-        if (psv != null) {
-            psv.addListener(mgr);
-        }
-
-        vtnManager.set(mgr);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void shutdown() {
-        // Close packet service.
-        VTNPacketService psv = packetService.getAndSet(null);
-        if (psv != null) {
-            psv.close();
-        }
-
-        // Stop inventory event delivery.
-        VTNInventoryManager vim = inventoryManager.get();
-        if (vim != null) {
-            vim.shutdown();
-        }
-
-        // Stop RPC services.
-        subSystems.closeRpc();
-
-        // Shut down the flow service.
-        VTNFlowManager vfm = subSystems.get(VTNFlowManager.class);
-        if (vfm != null) {
-            vfm.shutdown();
-        }
-
-        // Shut down the gloabl timer.
-        if (globalTimer.shutdown()) {
-            // Flush all the timers previously scheduled.
-            try {
-                globalTimer.flush(TIMER_SHUTDOWN_TIMEOUT,
-                                  TimeUnit.MILLISECONDS);
-            } catch (VTNException e) {
-                LOG.warn("Failed to synchronize timer tasks.", e);
-            }
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void configLoaded() {
-        VTNConfigManager cfm = configManager.get();
-        if (cfm != null) {
-            cfm.initDone();
-        }
-    }
 
     /**
      * {@inheritDoc}
@@ -488,6 +515,17 @@ public final class VTNManagerProviderImpl
      * {@inheritDoc}
      */
     @Override
+    public void transmit(List<Pair<SalPort, Packet>> packets) {
+        VTNPacketService psv = packetService.get();
+        if (psv != null) {
+            psv.transmit(packets);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public RouteResolver getRouteResolver() {
         return getRouteResolver(PathPolicyUtils.DEFAULT_POLICY);
     }
@@ -521,6 +559,15 @@ public final class VTNManagerProviderImpl
         return (vfm == null)
             ? new CanceledFuture<Void>()
             : vfm.removeFlows(remover);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public EntityOwnershipCandidateRegistration registerEntity(Entity ent)
+        throws CandidateAlreadyRegisteredException {
+        return entityOwnerService.registerCandidate(ent);
     }
 
     /**
@@ -595,7 +642,8 @@ public final class VTNManagerProviderImpl
         shutdown();
         globalExecutor.shutdown();
 
-        if (subSystems.close()) {
+        if (managerState.getAndSet(STATE_CLOSED) != STATE_CLOSED) {
+            subSystems.close();
             VTNInventoryManager vim = inventoryManager.getAndSet(null);
             if (vim != null) {
                 vim.close();
@@ -613,7 +661,6 @@ public final class VTNManagerProviderImpl
 
             globalTimer.cancel();
             globalExecutor.close();
-            vtnManager.set(null);
 
             LOG.info("VTN Manager provider has been closed.");
         }

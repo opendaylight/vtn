@@ -49,7 +49,7 @@ module vtn-flow-impl {
         revision-date 2013-08-19;
     }
 
-    /* OpenDaylight yangtools */
+    /* OpenDaylight MD-SAL */
     import opendaylight-l2-types {
         prefix l2;
         revision-date 2013-08-27;

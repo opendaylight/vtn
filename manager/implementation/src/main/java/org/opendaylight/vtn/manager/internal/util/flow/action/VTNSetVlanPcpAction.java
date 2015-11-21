@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -81,6 +81,18 @@ public final class VTNSetVlanPcpAction extends FlowFilterAction {
      * @param pri  A VLAN priority value to be set.
      */
     public VTNSetVlanPcpAction(short pri) {
+        priority = pri;
+    }
+
+    /**
+     * Construct a new instane with specifying action order.
+     *
+     * @param pri  A VLAN priority value to be set.
+     * @param ord  An integer which determines the order of flow actions
+     *             in a flow entry.
+     */
+    public VTNSetVlanPcpAction(short pri, Integer ord) {
+        super(ord);
         priority = pri;
     }
 
@@ -234,6 +246,37 @@ public final class VTNSetVlanPcpAction extends FlowFilterAction {
         ether.setVlanPriority(priority);
         ctx.addFilterAction(this);
         return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public FlowAction toFlowAction() {
+        return new org.opendaylight.vtn.manager.flow.action.
+            SetVlanPcpAction((byte)priority);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VTNSetVlanPcpAction toFlowFilterAction(VtnAction vact, Integer ord)
+        throws RpcException {
+        VtnSetVlanPcpActionCase ac = cast(VtnSetVlanPcpActionCase.class, vact);
+        return new VTNSetVlanPcpAction(ac, ord);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VTNSetVlanPcpAction toFlowFilterAction(FlowAction fact, int ord)
+        throws RpcException {
+        org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction act =
+            cast(org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction.class,
+                 fact);
+        return new VTNSetVlanPcpAction(act, ord);
     }
 
     /**

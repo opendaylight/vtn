@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -28,6 +28,7 @@ import org.opendaylight.vtn.manager.PathMap;
 
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
+import org.opendaylight.vtn.manager.internal.util.vnode.VTenantIdentifier;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.vtn.manager.internal.XmlNode;
@@ -664,7 +665,7 @@ public class PathMapUtilsTest extends TestBase {
      *   <li>{@link PathMapUtils#getIndex(InstanceIdentifier)}</li>
      *   <li>{@link PathMapUtils#getIdentifier(Integer)}</li>
      *   <li>{@link PathMapUtils#getIdentifier(String, Integer)}</li>
-     *   <li>{@link PathMapUtils#getIdentifier(VnodeName, Integer)}</li>
+     *   <li>{@link PathMapUtils#getIdentifier(VTenantIdentifier, Integer)}</li>
      * </ul>
      *
      * @throws Exception  An error occurred.
@@ -708,6 +709,7 @@ public class PathMapUtilsTest extends TestBase {
             // VTN path map identifier test.
             for (String tname: tenants) {
                 VnodeName vname = new VnodeName(tname);
+                VTenantIdentifier ident = new VTenantIdentifier(vname);
                 expected = InstanceIdentifier.builder(Vtns.class).
                     child(Vtn.class, new VtnKey(vname)).
                     child(VtnPathMaps.class).
@@ -715,7 +717,7 @@ public class PathMapUtilsTest extends TestBase {
                 assertEquals(expected,
                              PathMapUtils.getIdentifier(tname, index));
                 assertEquals(expected,
-                             PathMapUtils.getIdentifier(vname, index));
+                             PathMapUtils.getIdentifier(ident, index));
                 assertEquals(index, PathMapUtils.getIndex(expected));
 
                 try {
@@ -729,7 +731,7 @@ public class PathMapUtilsTest extends TestBase {
                 }
 
                 try {
-                    PathMapUtils.getIdentifier(vname, (Integer)null);
+                    PathMapUtils.getIdentifier(ident, (Integer)null);
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(null, e.getCause());
@@ -753,7 +755,7 @@ public class PathMapUtilsTest extends TestBase {
         }
 
         // VTN name is null.
-        msg = "Tenant name cannot be null";
+        msg = "VTN name cannot be null";
         try {
             PathMapUtils.getIdentifier((String)null, 1);
             unexpected();
@@ -779,7 +781,7 @@ public class PathMapUtilsTest extends TestBase {
         etag = RpcErrorTag.DATA_MISSING;
         vtag = VtnErrorTag.NOTFOUND;
         for (String name: invalidNames) {
-            msg = name + ": Tenant does not exist.";
+            msg = name + ": VTN does not exist.";
             try {
                 PathMapUtils.getIdentifier(name, 1);
                 unexpected();
@@ -795,11 +797,11 @@ public class PathMapUtilsTest extends TestBase {
                 assertEquals(VtnErrorTag.BADREQUEST, re.getVtnErrorTag());
                 cause = re.getCause();
                 if (name.isEmpty()) {
-                    assertEquals("Tenant name cannot be empty",
+                    assertEquals("VTN name cannot be empty",
                                  re.getMessage());
                     assertEquals(null, cause);
                 } else {
-                    assertEquals("Tenant name is invalid", re.getMessage());
+                    assertEquals("VTN name is invalid", re.getMessage());
                     assertTrue(cause instanceof IllegalArgumentException);
                 }
             }
@@ -964,7 +966,7 @@ public class PathMapUtilsTest extends TestBase {
 
     /**
      * Test case for
-     * {@link PathMapUtils#readPathMaps(ReadTransaction, VnodeName)}.
+     * {@link PathMapUtils#readPathMaps(ReadTransaction, VTenantIdentifier)}.
      *
      * @throws Exception  An error occurred.
      */
@@ -976,6 +978,7 @@ public class PathMapUtilsTest extends TestBase {
 
         // VTN is not present.
         VnodeName vname = new VnodeName("vtn1");
+        VTenantIdentifier ident = new VTenantIdentifier(vname);
         VtnKey vtnKey = new VtnKey(vname);
         InstanceIdentifier<Vtn> vtnPath = InstanceIdentifier.
             builder(Vtns.class).child(Vtn.class, vtnKey).build();
@@ -988,9 +991,9 @@ public class PathMapUtilsTest extends TestBase {
         Mockito.when(rtx.read(oper, vtnPath)).thenReturn(getReadResult(vtn));
         RpcErrorTag etag = RpcErrorTag.DATA_MISSING;
         VtnErrorTag vtag = VtnErrorTag.NOTFOUND;
-        String msg = "vtn1: Tenant does not exist.";
+        String msg = ident + ": VTN does not exist.";
         try {
-            PathMapUtils.readPathMaps(rtx, vname);
+            PathMapUtils.readPathMaps(rtx, ident);
             unexpected();
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
@@ -1007,7 +1010,7 @@ public class PathMapUtilsTest extends TestBase {
         Mockito.when(rtx.read(oper, path)).thenReturn(getReadResult(root));
         Mockito.when(rtx.read(oper, vtnPath)).thenReturn(getReadResult(vtn));
         assertEquals(Collections.<VtnPathMap>emptyList(),
-                     PathMapUtils.readPathMaps(rtx, vname));
+                     PathMapUtils.readPathMaps(rtx, ident));
         Mockito.verify(rtx).read(oper, path);
         Mockito.verify(rtx).read(oper, vtnPath);
         Mockito.reset(rtx);
@@ -1017,7 +1020,7 @@ public class PathMapUtilsTest extends TestBase {
         Mockito.when(rtx.read(oper, path)).thenReturn(getReadResult(root));
         Mockito.when(rtx.read(oper, vtnPath)).thenReturn(getReadResult(vtn));
         assertEquals(Collections.<VtnPathMap>emptyList(),
-                     PathMapUtils.readPathMaps(rtx, vname));
+                     PathMapUtils.readPathMaps(rtx, ident));
         Mockito.verify(rtx).read(oper, path);
         Mockito.verify(rtx, Mockito.never()).read(oper, vtnPath);
         Mockito.reset(rtx);
@@ -1028,7 +1031,7 @@ public class PathMapUtilsTest extends TestBase {
         Mockito.when(rtx.read(oper, path)).thenReturn(getReadResult(root));
         Mockito.when(rtx.read(oper, vtnPath)).thenReturn(getReadResult(vtn));
         assertEquals(Collections.<VtnPathMap>emptyList(),
-                     PathMapUtils.readPathMaps(rtx, vname));
+                     PathMapUtils.readPathMaps(rtx, ident));
         Mockito.verify(rtx).read(oper, path);
         Mockito.verify(rtx, Mockito.never()).read(oper, vtnPath);
         Mockito.reset(rtx);
@@ -1039,7 +1042,7 @@ public class PathMapUtilsTest extends TestBase {
         root = new VtnPathMapsBuilder().setVtnPathMap(vpmList).build();
         Mockito.when(rtx.read(oper, path)).thenReturn(getReadResult(root));
         Mockito.when(rtx.read(oper, vtnPath)).thenReturn(getReadResult(vtn));
-        vlist = PathMapUtils.readPathMaps(rtx, vname);
+        vlist = PathMapUtils.readPathMaps(rtx, ident);
         Mockito.verify(rtx).read(oper, path);
         Mockito.verify(rtx, Mockito.never()).read(oper, vtnPath);
         assertEquals(maps.size(), vlist.size());
@@ -1058,7 +1061,7 @@ public class PathMapUtilsTest extends TestBase {
 
     /**
      * Test case for
-     * {@link PathMapUtils#readPathMap(ReadTransaction, VnodeName, Integer)}.
+     * {@link PathMapUtils#readPathMap(ReadTransaction, VTenantIdentifier, Integer)}.
      *
      * @throws Exception  An error occurred.
      */
@@ -1070,7 +1073,9 @@ public class PathMapUtilsTest extends TestBase {
 
         // Map index is null.
         try {
-            PathMapUtils.readPathMap(rtx, new VnodeName("vtn"), (Integer)null);
+            VTenantIdentifier ident =
+                new VTenantIdentifier(new VnodeName("vtn"));
+            PathMapUtils.readPathMap(rtx, ident, (Integer)null);
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
@@ -1087,6 +1092,8 @@ public class PathMapUtilsTest extends TestBase {
         Set<Integer> notPresent = new HashSet<>();
         VnodeName vname1 = new VnodeName("vtn1");
         VnodeName vname2 = new VnodeName("vtn2");
+        VTenantIdentifier ident1 = new VTenantIdentifier(vname1);
+        VTenantIdentifier ident2 = new VTenantIdentifier(vname2);
         VtnKey vkey1 = new VtnKey(vname1);
         VtnKey vkey2 = new VtnKey(vname2);
         List<InstanceIdentifier<VtnPathMap>> pathList1 = new ArrayList<>();
@@ -1142,15 +1149,15 @@ public class PathMapUtilsTest extends TestBase {
         // Run tests.
         RpcErrorTag etag = RpcErrorTag.DATA_MISSING;
         VtnErrorTag vtag = VtnErrorTag.NOTFOUND;
-        String msg = "vtn2: Tenant does not exist.";
+        String msg = ident2 + ": VTN does not exist.";
         for (Integer index: maps.keySet()) {
             VtnPathMap expected = maps.get(index);
             assertEquals(expected,
-                         PathMapUtils.readPathMap(rtx, vname1, index));
+                         PathMapUtils.readPathMap(rtx, ident1, index));
 
             // vtn2 is not present.
             try {
-                PathMapUtils.readPathMap(rtx, vname2, index);
+                PathMapUtils.readPathMap(rtx, ident2, index);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());

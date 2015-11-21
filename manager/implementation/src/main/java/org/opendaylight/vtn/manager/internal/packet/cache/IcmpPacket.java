@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2014, 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -15,7 +15,6 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.packet.ICMP;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
-import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetIcmpCodeAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetIcmpTypeAction;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
@@ -224,7 +223,7 @@ public final class IcmpPacket implements L4Packet, IcmpHeader {
      *
      * <p>
      *   Note that modification to the ICMP header is not applied to the
-     *   returned until {@link #commit(PacketContext)} is called.
+     *   returned until {@link #commit(CachedPacketContext)} is called.
      * </p>
      *
      * @return  A {@link ICMP} instance.
@@ -238,7 +237,7 @@ public final class IcmpPacket implements L4Packet, IcmpHeader {
      * {@inheritDoc}
      */
     @Override
-    public boolean commit(PacketContext pctx) throws VTNException {
+    public boolean commit(CachedPacketContext pctx) throws VTNException {
         boolean mod = false;
         ICMP icmp = null;
         if (modifiedValues != null) {

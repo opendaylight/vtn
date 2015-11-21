@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,10 +8,12 @@
 
 package org.opendaylight.vtn.manager.internal.util.tx;
 
+import org.slf4j.Logger;
+
 import org.opendaylight.vtn.manager.internal.TxContext;
+import org.opendaylight.vtn.manager.internal.TxHook;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
-import org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondReader;
-import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
@@ -36,14 +38,10 @@ public final class ReadTxContext implements TxContext {
     private ReadOnlyTransaction  transaction;
 
     /**
-     * A VTN inventory reader.
+     * Read-only data specific to the current transaction.
      */
-    private InventoryReader  inventoryReader;
-
-    /**
-     * A flow condition reader.
-     */
-    private FlowCondReader  flowCondReader;
+    private final TxSpecific<ReadTransaction>  readSpecific =
+        new TxSpecific<>(ReadTransaction.class);
 
     /**
      * Construct a new instance.
@@ -52,6 +50,15 @@ public final class ReadTxContext implements TxContext {
      */
     public ReadTxContext(VTNManagerProvider provider) {
         vtnProvider = provider;
+    }
+
+    /**
+     * Return an exception that indicates read-only transaction.
+     *
+     * @return  An {@link IllegalStateException} instance.
+     */
+    private IllegalStateException getReadOnlyException() {
+        return new IllegalStateException("Read-only transaction.");
     }
 
     /**
@@ -77,35 +84,7 @@ public final class ReadTxContext implements TxContext {
      */
     @Override
     public ReadWriteTransaction getReadWriteTransaction() {
-        throw new IllegalStateException("Read-only transaction.");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public InventoryReader getInventoryReader() {
-        InventoryReader reader = inventoryReader;
-        if (reader == null) {
-            reader = new InventoryReader(getTransaction());
-            inventoryReader = reader;
-        }
-
-        return reader;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public FlowCondReader getFlowCondReader() {
-        FlowCondReader reader = flowCondReader;
-        if (reader == null) {
-            reader = new FlowCondReader(getTransaction());
-            flowCondReader = reader;
-        }
-
-        return reader;
+        throw getReadOnlyException();
     }
 
     /**
@@ -116,7 +95,7 @@ public final class ReadTxContext implements TxContext {
         ReadOnlyTransaction tx = transaction;
         if (tx != null) {
             transaction = null;
-            inventoryReader = null;
+            readSpecific.clear();
             tx.close();
         }
     }
@@ -125,7 +104,92 @@ public final class ReadTxContext implements TxContext {
      * {@inheritDoc}
      */
     @Override
+    public <T> T getReadSpecific(Class<T> type) {
+        return readSpecific.get(type, getTransaction());
+    }
+
+    /**
+     * This method always throws an exception because this transaction is
+     * read-only.
+     *
+     * @param type  A class that specifies the type of data.
+     * @param <T>   The type of the transaction specific data.
+     * @return  Never returns.
+     * @throws IllegalStateException   Always thrown.
+     */
+    @Override
+    public <T> T getSpecific(Class<T> type) {
+        throw getReadOnlyException();
+    }
+
+    /**
+     * This method always throws an exception because transaction pre-submit
+     * hook is not supported.
+     *
+     * @param hook  A hook to be invoked when the transaction is going to be
+     *              submitted.
+     * @throws IllegalStateException   Always thrown.
+     */
+    @Override
+    public void addPreSubmitHook(TxHook hook) {
+        throw getReadOnlyException();
+    }
+
+    /**
+     * This method always throws an exception because transaction post-submit
+     * hook is not supported.
+     *
+     * @param hook  A hook to be invoked after the successful completion of
+     *              the transaction.
+     * @throws IllegalStateException   Always thrown.
+     */
+    @Override
+    public void addPostSubmitHook(TxHook hook) {
+        throw getReadOnlyException();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public VTNManagerProvider getProvider() {
         return vtnProvider;
+    }
+
+    // The transaction associated with this context is read-only and never
+    // cause data confliction. So log messages should be logged immediately.
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void log(Logger logger, VTNLogLevel level, String msg) {
+        level.log(logger, msg);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void log(Logger logger, VTNLogLevel level, String format,
+                    Object ... args) {
+        level.log(logger, format, args);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void log(Logger logger, VTNLogLevel level, String msg, Throwable t) {
+        level.log(logger, msg, t);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void log(Logger logger, VTNLogLevel level, Throwable t,
+                    String format, Object ... args) {
+        level.log(logger, t, format, args);
     }
 }

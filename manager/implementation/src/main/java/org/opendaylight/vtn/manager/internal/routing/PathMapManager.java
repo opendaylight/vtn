@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
@@ -30,7 +29,6 @@ import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.log.FixedLogger;
@@ -81,29 +79,25 @@ public final class PathMapManager
     private final VTNManagerProvider  vtnProvider;
 
     /**
-     * A set of global path map identifiers loaded by {@link PathMapLoadTask}.
-     */
-    private Set<Integer>  loadedPathMaps;
-
-    /**
      * MD-SAL transaction task to load global path map configurations.
      *
      * <p>
      *   This task returns current {@link GlobalPathMaps} instance.
      * </p>
      */
-    private class PathMapLoadTask extends AbstractTxTask<GlobalPathMaps> {
+    private static class PathMapLoadTask
+        extends AbstractTxTask<GlobalPathMaps> {
         /**
          * Resume the configuration for the given path map.
          *
-         * @param vlist   A list of {@link VtnPathMap} instance to store
-         *                resumed configuration.
-         * @param loaded  A set of loaded path path map indices.
-         * @param key     A string representation of the map index.
-         * @param xpm     A {@link XmlPathMap} instance.
+         * @param ctx    MD-SAL datastore transaction context.
+         * @param vlist  A list of {@link VtnPathMap} instance to store
+         *               resumed configuration.
+         * @param key    A string representation of the map index.
+         * @param xpm    A {@link XmlPathMap} instance.
          */
-        private void resume(List<VtnPathMap> vlist, Set<Integer> loaded,
-                            String key, XmlPathMap xpm) {
+        private void resume(TxContext ctx, List<VtnPathMap> vlist, String key,
+                            XmlPathMap xpm) {
             Integer index = xpm.getIndex();
             try {
                 if (!key.equals(String.valueOf(index))) {
@@ -115,12 +109,18 @@ public final class PathMapManager
                 VtnPathMap vpm = PathMapUtils.toVtnPathMapBuilder(xpm).
                     build();
                 vlist.add(vpm);
-                loaded.add(index);
+
+                if (LOG.isDebugEnabled()) {
+                    ctx.log(LOG, VTNLogLevel.DEBUG,
+                            "{}: Global path map has been loaded: cond={}, " +
+                            "policy={}, idle={}, hard={}",
+                            vpm.getIndex(), vpm.getCondition().getValue(),
+                            vpm.getPolicy(), vpm.getIdleTimeout(),
+                            vpm.getHardTimeout());
+                }
             } catch (RpcException | RuntimeException e) {
-                String msg = MiscUtils.joinColon(
-                    "Ignore invalid path map configuration",
-                    xpm, e.getMessage());
-                LOG.warn(msg, e);
+                ctx.log(LOG, VTNLogLevel.WARN, e,
+                        "Ignore invalid path map configuration: %s", e);
             }
         }
 
@@ -129,9 +129,6 @@ public final class PathMapManager
          */
         @Override
         public GlobalPathMaps execute(TxContext ctx) throws VTNException {
-            loadedPathMaps = null;
-            Set<Integer> loaded = new ConcurrentSkipListSet<>();
-
             // Load configuration from file.
             XmlConfigFile.Type ftype = XmlConfigFile.Type.PATHMAP;
             List<VtnPathMap> vlist = new ArrayList<>();
@@ -139,7 +136,7 @@ public final class PathMapManager
                 XmlPathMap xpm =
                     XmlConfigFile.load(ftype, key, XmlPathMap.class);
                 if (xpm != null) {
-                    resume(vlist, loaded, key, xpm);
+                    resume(ctx, vlist, key, xpm);
                 }
             }
 
@@ -157,29 +154,8 @@ public final class PathMapManager
 
             GlobalPathMaps maps = builder.build();
             tx.put(oper, path, maps, true);
-            if (!loaded.isEmpty()) {
-                loadedPathMaps = loaded;
-            }
 
             return maps;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void onSuccess(VTNManagerProvider provider,
-                              GlobalPathMaps result) {
-            List<VtnPathMap> vlist = result.getVtnPathMap();
-            if (vlist != null) {
-                for (VtnPathMap vpm: vlist) {
-                    LOG.info("{}: Global path map has been loaded: " +
-                             "cond={}, policy={}, idle={}, hard={}",
-                             vpm.getIndex(), vpm.getCondition().getValue(),
-                             vpm.getPolicy(), vpm.getIdleTimeout(),
-                             vpm.getHardTimeout());
-                }
-            }
         }
     }
 
@@ -315,20 +291,6 @@ public final class PathMapManager
     @Override
     protected void onCreated(GlobalPathMapChange ectx,
                              IdentifiedData<VtnPathMap> data) {
-        // Do nothing if the specified event was caused by the initial setup.
-        Set<Integer> loaded = loadedPathMaps;
-        if (loaded != null) {
-            Integer index = PathMapUtils.getIndex(data.getIdentifier());
-            if (index != null && loaded.remove(index)) {
-                if (loaded.isEmpty()) {
-                    LOG.debug(
-                        "All loaded global path maps have been notified.");
-                    loadedPathMaps = null;
-                }
-                return;
-            }
-        }
-
         onUpdated(ectx, data, true);
     }
 

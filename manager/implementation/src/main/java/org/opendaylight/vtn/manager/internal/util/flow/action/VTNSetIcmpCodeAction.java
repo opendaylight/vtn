@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -84,6 +84,18 @@ public final class VTNSetIcmpCodeAction extends FlowFilterAction {
      * @param c  The ICMP code to be set.
      */
     public VTNSetIcmpCodeAction(short c) {
+        code = c;
+    }
+
+    /**
+     * Construct a new instance with specifying action order.
+     *
+     * @param c    The ICMP code to be set.
+     * @param ord  An integer which determines the order of flow actions
+     *             in a flow entry.
+     */
+    public VTNSetIcmpCodeAction(short c, Integer ord) {
+        super(ord);
         code = c;
     }
 
@@ -234,6 +246,35 @@ public final class VTNSetIcmpCodeAction extends FlowFilterAction {
         }
 
         return result;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public FlowAction toFlowAction() {
+        return new SetIcmpCodeAction(code);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VTNSetIcmpCodeAction toFlowFilterAction(VtnAction vact, Integer ord)
+        throws RpcException {
+        VtnSetIcmpCodeActionCase ac =
+            cast(VtnSetIcmpCodeActionCase.class, vact);
+        return new VTNSetIcmpCodeAction(ac, ord);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VTNSetIcmpCodeAction toFlowFilterAction(FlowAction fact, int ord)
+        throws RpcException {
+        SetIcmpCodeAction act = cast(SetIcmpCodeAction.class, fact);
+        return new VTNSetIcmpCodeAction(act, ord);
     }
 
     /**

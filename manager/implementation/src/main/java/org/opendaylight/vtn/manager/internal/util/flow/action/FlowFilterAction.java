@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -18,9 +18,13 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
+import org.opendaylight.vtn.manager.flow.action.FlowAction;
 import org.opendaylight.vtn.manager.util.VTNIdentifiable;
 
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowAction;
 
 /**
  * {@code FlowFilterAction} descrbes the flow action which can be configured
@@ -66,7 +70,7 @@ public abstract class FlowFilterAction extends VTNFlowAction
     /**
      * Verify the contents of this instance.
      *
-     * @throws RpcException  Verifycation failed.
+     * @throws RpcException  Verification failed.
      */
     public final void verify() throws RpcException {
         if (getIdentifier() == null) {
@@ -75,6 +79,25 @@ public abstract class FlowFilterAction extends VTNFlowAction
         }
 
         verifyImpl();
+    }
+
+    /**
+     * Return the order value assigned to this action.
+     *
+     * @return  An {@link Integer} instance which indicates the order.
+     *          {@code null} if the order is not specified.
+     */
+    public final Integer getOrder() {
+        return order;
+    }
+
+    /**
+     * Convert this instance into a {@link VtnFlowAction} instance.
+     *
+     * @return  A {@link VtnFlowAction} instance.
+     */
+    public final VtnFlowAction toVtnFlowAction() {
+        return toVtnFlowActionBuilder(order).build();
     }
 
     /**
@@ -87,9 +110,44 @@ public abstract class FlowFilterAction extends VTNFlowAction
     public abstract boolean apply(FlowActionContext ctx);
 
     /**
+     * Convert this instance into a {@link FlowAction} instance.
+     *
+     * @return  A {@link FlowAction} instance.
+     */
+    public abstract FlowAction toFlowAction();
+
+    /**
+     * Convert the given {@link VtnAction} instance into a
+     * {@link FlowFilterAction} instance.
+     *
+     * @param vact  A {@link VtnAction} instance.
+     * @param ord   An integer which determines the order of flow actions
+     *              in a flow filter.
+     * @return  A {@link FlowFilterAction} instance.
+     * @throws RpcException
+     *    Failed to convert the given instance.
+     */
+    public abstract FlowFilterAction toFlowFilterAction(
+        VtnAction vact, Integer ord) throws RpcException;
+
+    /**
+     * Convert the given {@link FlowAction} instance into a
+     * {@link FlowFilterAction} instance.
+     *
+     * @param fact  A {@link FlowAction} instance.
+     * @param ord   An integer which determines the order of flow actions
+     *              in a flow filter.
+     * @return  A {@link FlowFilterAction} instance.
+     * @throws RpcException
+     *    Failed to convert the given instance.
+     */
+    public abstract FlowFilterAction toFlowFilterAction(
+        FlowAction fact, int ord) throws RpcException;
+
+    /**
      * Verify the contents of this instance.
      *
-     * @throws RpcException  Verifycation failed.
+     * @throws RpcException  Verification failed.
      */
     protected abstract void verifyImpl() throws RpcException;
 

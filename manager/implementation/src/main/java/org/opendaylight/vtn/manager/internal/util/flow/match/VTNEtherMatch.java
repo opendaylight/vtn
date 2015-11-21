@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -356,11 +356,14 @@ public final class VTNEtherMatch {
      * @param builder  A {@link MatchBuilder} instance.
      */
     public void setMatch(MatchBuilder builder) {
-        EthernetMatchBuilder ematch = null;
-        if (sourceAddress != null) {
+        EthernetMatchBuilder ematch;
+        if (sourceAddress == null) {
+            ematch = null;
+        } else {
             EthernetSource src = new EthernetSourceBuilder().
                 setAddress(sourceAddress.getMacAddress()).build();
-            ematch = create(ematch).setEthernetSource(src);
+            ematch = create((EthernetMatchBuilder)null).
+                setEthernetSource(src);
         }
         if (destinationAddress != null) {
             EthernetDestination dst = new EthernetDestinationBuilder().
@@ -381,7 +384,8 @@ public final class VTNEtherMatch {
             VlanIdBuilder vidBuilder = new VlanIdBuilder();
             boolean present = (vlanId.intValue() != EtherHeader.VLAN_NONE);
             vidBuilder.setVlanIdPresent(present).setVlanId(new VlanId(vlanId));
-            vmatch = create(vmatch).setVlanId(vidBuilder.build());
+            vmatch = create((VlanMatchBuilder)null).
+                setVlanId(vidBuilder.build());
         }
         if (vlanPriority != null) {
             vmatch = create(vmatch).setVlanPcp(new VlanPcp(vlanPriority));
@@ -462,7 +466,7 @@ public final class VTNEtherMatch {
     /**
      * Verify the contents of this instance.
      *
-     * @throws RpcException  Verifycation failed.
+     * @throws RpcException  Verification failed.
      */
     public void verify() throws RpcException {
         if (etherType != null) {
@@ -712,7 +716,7 @@ public final class VTNEtherMatch {
         return true;
     }
 
-    // Objects
+    // Object
 
     /**
      * Determine whether the given object is identical to this object.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -9,10 +9,10 @@
 package org.opendaylight.vtn.manager.internal.routing;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 import org.opendaylight.vtn.manager.VTNException;
 
@@ -70,7 +70,8 @@ public final class RemovePathCostTask
             throw PathPolicyUtils.getNoSwitchPortException();
         }
 
-        Map<String, RemoveCostTask> taskMap = new HashMap<>();
+        Set<String> descSet = new HashSet<>();
+        List<RemoveCostTask> taskList = new ArrayList<>();
         for (VtnPortDesc vdesc: portList) {
             if (vdesc == null) {
                 throw NodeUtils.getNullPortDescException();
@@ -81,13 +82,11 @@ public final class RemovePathCostTask
                 throw NodeUtils.getNullPortDescException();
             }
 
-            if (!taskMap.containsKey(key)) {
-                RemoveCostTask task = new RemoveCostTask(id, vdesc);
-                taskMap.put(key, task);
+            if (descSet.add(key)) {
+                taskList.add(new RemoveCostTask(id, vdesc));
             }
         }
 
-        List<RemoveCostTask> taskList = new ArrayList<>(taskMap.values());
         return new RemovePathCostTask(topo, id, taskList);
     }
 

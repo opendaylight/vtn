@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -74,6 +74,18 @@ public class CompositeTxTask<V, T extends AbstractTxTask<V>>
         // Nothing to do. Subclass may override this method.
     }
 
+    /**
+     * Invoked when all the sub tasks have completed.
+     *
+     * @param ctx      A runtime context for transaction task.
+     * @param results  A list of sub task results.
+     * @throws VTNException  An error occurred.
+     */
+    protected void onCompleted(TxContext ctx, List<V> results)
+        throws VTNException {
+        // Nothing to do. Subclass may override this method.
+    }
+
     // AbstractTxTask
 
     /**
@@ -96,6 +108,8 @@ public class CompositeTxTask<V, T extends AbstractTxTask<V>>
         for (T task: subTasks) {
             result.add(task.execute(ctx));
         }
+
+        onCompleted(ctx, result);
 
         return result;
     }

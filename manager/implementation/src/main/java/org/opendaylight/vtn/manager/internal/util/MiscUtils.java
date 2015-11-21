@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2014, 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -15,6 +15,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -24,6 +27,10 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+
+import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
@@ -32,8 +39,14 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.controller.sal.core.UpdateType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnVlanIdField;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanId;
+
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.Counter32;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.Counter64;
@@ -51,10 +64,42 @@ public final class MiscUtils {
         LoggerFactory.getLogger("ODL-VTN-Manager-verbose");
 
     /**
+     * A map that keeps lower-cased name of {@link VtnUpdateType}.
+     */
+    private static final Map<VtnUpdateType, String>  UPDATE_TYPE_MAP;
+
+    /**
      * The minimum value of the order value for the first element in the
      * ordered list.
      */
     public static final int  ORDER_MIN = 0;
+
+    /**
+     * Default VLAN ID.
+     */
+    public static final int  DEFAULT_VLAN_ID = 0;
+
+    /**
+     * A set of {@link VtnErrorTag} that indicate an error caused by a
+     * bad request.
+     */
+    private static final Set<VtnErrorTag>  BAD_REQUEST_TAGS;
+
+    /**
+     * Initialize static fields.
+     */
+    static {
+        Map<VtnUpdateType, String> types = new EnumMap<>(VtnUpdateType.class);
+        for (VtnUpdateType type: VtnUpdateType.values()) {
+            types.put(type, toLowerCase(type.name()));
+        }
+        UPDATE_TYPE_MAP = ImmutableMap.copyOf(types);
+
+        Set<VtnErrorTag> set = EnumSet.of(
+            VtnErrorTag.BADREQUEST, VtnErrorTag.NOTFOUND,
+            VtnErrorTag.CONFLICT);
+        BAD_REQUEST_TAGS = ImmutableSet.copyOf(set);
+    }
 
     /**
      * Private constructor that protects this class from instantiating.
@@ -136,6 +181,20 @@ public final class MiscUtils {
         String name = (vname == null) ? null : vname.getValue();
         checkName(desc, name);
         return name;
+    }
+
+    /**
+     * Ensure the given vnode-name is not null.
+     *
+     * @param desc   Brief description of the resource.
+     * @param vname  A {@link VnodeName} instance.
+     * @throws RpcException  {@code vname} is {@code null}.
+     */
+    public static void checkPresent(String desc, VnodeName vname)
+        throws RpcException {
+        if (vname == null) {
+            throw RpcException.getNullArgumentException(desc + " name");
+        }
     }
 
     /**
@@ -319,6 +378,17 @@ public final class MiscUtils {
     }
 
     /**
+     * Convert all of the characters in the given {@link VtnUpdateType} name
+     * to lower case.
+     *
+     * @param type  A {@link VtnUpdateType} instance.
+     * @return  A converted string.
+     */
+    public static String toLowerCase(VtnUpdateType type) {
+        return UPDATE_TYPE_MAP.get(type);
+    }
+
+    /**
      * Return an {@link IllegalStateException} which indicates unexpected
      * method is called.
      *
@@ -439,6 +509,40 @@ public final class MiscUtils {
     }
 
     /**
+     * Determine whether the given two collections are identical or not.
+     *
+     * <p>
+     *   This method compares the given collections as sets.
+     *   Duplicate elements in the given collections are ignored.
+     * </p>
+     *
+     * @param c1   The first collections to be compared.
+     *             {@code null} is treated as an empty collection.
+     * @param c2   The second collections to be compared.
+     *             {@code null} is treated as an empty collection.
+     * @param <T>  The type of elements in the given collections.
+     * @return  {@code true} only if {@code c1} and {@code c2} are identical.
+     */
+    public static <T> boolean equalsAsSet(Collection<T> c1, Collection<T> c2) {
+        Set<T> set1 = new HashSet<>();
+        if (c1 != null) {
+            set1.addAll(c1);
+        }
+
+        if (c2 != null) {
+            Set<T> set2 = new HashSet<>();
+            for (T o: c2) {
+                if (!set1.remove(o) && !set2.contains(o)) {
+                    return false;
+                }
+                set2.add(o);
+            }
+        }
+
+        return set1.isEmpty();
+    }
+
+    /**
      * Return a string configured in the given URI.
      *
      * @param uri  An {@link Uri} instance.
@@ -448,6 +552,18 @@ public final class MiscUtils {
      */
     public static String getValue(Uri uri) {
         return (uri == null) ? null : uri.getValue();
+    }
+
+    /**
+     * Return a string configured in the given vnode-name.
+     *
+     * @param vname  An {@link VnodeName} instance.
+     * @return  A string configured in the given URI.
+     *          Note that {@code null} is returned if {@code vname} is
+     *          {@code null}.
+     */
+    public static String getValue(VnodeName vname) {
+        return (vname == null) ? null : vname.getValue();
     }
 
     /**
@@ -490,5 +606,110 @@ public final class MiscUtils {
         return (src == null)
             ? Collections.<T>emptySet()
             : Collections.unmodifiableSet(src.keySet());
+    }
+
+    /**
+     * Return a VLAN ID configured in the given {@link VtnVlanIdField}
+     * instance.
+     *
+     * @param field  A {@link VtnVlanIdField} instance.
+     * @return  A {@link VlanId} instance.
+     * @throws RpcException
+     *    {@code field} contains an invalid value.
+     */
+    public static VlanId getVlanId(VtnVlanIdField field) throws RpcException {
+        VlanId vlanId = field.getVlanId();
+        if (vlanId == null) {
+            // Use default VLAN ID.
+            vlanId = new VlanId(DEFAULT_VLAN_ID);
+        } else {
+            Integer vid = vlanId.getValue();
+            if (vid == null) {
+                // This should never happen.
+                throw RpcException.getNullArgumentException("vlan-id");
+            } else {
+                ProtocolUtils.checkVlan(vid);
+            }
+        }
+
+        return vlanId;
+    }
+
+    /**
+     * Determine whether the given throwable is caused by a bad user request
+     * or not.
+     *
+     * @param t  A throwable to be tested.
+     * @return  {@code true} only if the given throwable is caused by a
+     *          bad user request.
+     */
+    public static boolean isBadRequest(Throwable t) {
+        boolean bad;
+        if (t instanceof VTNException) {
+            VTNException e = (VTNException)t;
+            bad = BAD_REQUEST_TAGS.contains(e.getVtnErrorTag());
+        } else {
+            bad = false;
+        }
+
+        return bad;
+    }
+
+    /**
+     * Convert values in the given map into a list.
+     *
+     * @param map  A map to be converted.
+     * @param <T>  The type of values in the given map.
+     * @return  A list of values in the given map if the given map contains
+     *          at least one value.
+     *          {@code null} if the given map is {@code null} or empty.
+     */
+    public static <T> List<T> toValueList(Map<?, T> map) {
+        return (map == null || map.isEmpty())
+            ? null
+            : new ArrayList<>(map.values());
+    }
+
+    /**
+     * Determine whether the given collection is empty or not.
+     *
+     * @param c  A collection to be tested.
+     * @return  {@code true} only of the given collection is empty.
+     */
+    public static boolean isEmpty(Collection<?> c) {
+        return (c == null || c.isEmpty());
+    }
+
+    /**
+     * Convert a boolean value into a {@link VnodeState} instance.
+     *
+     * @param b  A boolean value.
+     * @return  {@link VnodeState#UP} if {@code b} is {@code true}.
+     *          {@link VnodeState#DOWN} if {@code b} is {@code false}.
+     */
+    public static VnodeState toVnodeState(boolean b) {
+        return (b) ? VnodeState.UP : VnodeState.DOWN;
+    }
+
+    /**
+     * Determine whether the given collection contains at least one IPv4
+     * address or not.
+     *
+     * @param addrs  A collection of {@link IpAddress} instances.
+     * @return  {@code true} only if the given collection contains at least
+     *          one IPv4 address.
+     */
+    public static boolean hasIpv4Address(Collection<IpAddress> addrs) {
+        boolean found = false;
+        if (addrs != null) {
+            for (IpAddress ip: addrs) {
+                found = (ip != null && ip.getIpv4Address() != null);
+                if (found) {
+                    break;
+                }
+            }
+        }
+
+        return found;
     }
 }

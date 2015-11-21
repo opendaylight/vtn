@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -58,6 +58,19 @@ public abstract class VTNDlAddrAction extends FlowFilterAction {
      *              MAC address to be set.
      */
     protected VTNDlAddrAction(EtherAddress addr) {
+        address = addr;
+    }
+
+    /**
+     * Construct a new instance with specifying action order.
+     *
+     * @param addr  An {@link EtherAddress} instance which represents the
+     *              MAC address to be set.
+     * @param ord  An integer which determines the order of flow actions
+     *             in a flow entry.
+     */
+    protected VTNDlAddrAction(EtherAddress addr, Integer ord) {
+        super(ord);
         address = addr;
     }
 

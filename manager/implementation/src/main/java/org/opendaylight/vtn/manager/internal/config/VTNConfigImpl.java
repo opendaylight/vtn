@@ -678,19 +678,6 @@ public final class VTNConfigImpl implements VTNConfig {
     }
 
     /**
-     * Determine whether the given object is {@code null} or not.
-     *
-     * @param obj  An object to be tested.
-     * @param def  The default value.
-     * @param <T>  The type of the object.
-     * @return  {@code obj} if it is not {@code null}.
-     *          {@code def} if {@code obj} is {@code null}.
-     */
-    private <T> T checkNotNull(T obj, T def) {
-        return (obj == null) ? def : obj;
-    }
-
-    /**
      * Return an {@link EtherAddress} instance that represents the given
      * {@link MacAddress} instance.
      *

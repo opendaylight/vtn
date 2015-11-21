@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2014, 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,9 @@
  */
 
 package org.opendaylight.vtn.manager.internal.packet.cache;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -22,12 +25,14 @@ import org.opendaylight.vtn.manager.packet.ICMP;
 import org.opendaylight.vtn.manager.packet.IPv4;
 import org.opendaylight.vtn.manager.util.InetProtocols;
 
-import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.util.flow.action.FlowFilterAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetIcmpCodeAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetIcmpTypeAction;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNIcmpMatch;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
+import org.opendaylight.vtn.manager.internal.vnode.PacketContext;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
@@ -67,6 +72,9 @@ public class IcmpPacketTest extends TestBase {
      */
     @Test
     public void testGetter() throws Exception {
+        TxContext ctx = mock(TxContext.class);
+        SalPort ingress = new SalPort(1L, 3L);
+
         short[] types = {0, 1, 10, 50, 80, 100, 150, 200, 254, 255};
         short[] codes = {0, 1, 33, 66, 88, 128, 143, 230, 254, 255};
         for (short type: types) {
@@ -78,8 +86,7 @@ public class IcmpPacketTest extends TestBase {
 
                 // commit() should return false.
                 Ethernet ether = createEthernet(pkt);
-                PacketContext pctx = createPacketContext(
-                    ether, EtherPacketTest.NODE_CONNECTOR);
+                PacketContext pctx = new PacketContext(ctx, ether, ingress);
                 assertFalse(icmp.commit(pctx));
                 assertEquals(null, pctx.getFilterActions());
                 for (FlowMatchType mtype: FlowMatchType.values()) {
@@ -87,6 +94,8 @@ public class IcmpPacketTest extends TestBase {
                 }
             }
         }
+
+        verifyZeroInteractions(ctx);
     }
 
     /**
@@ -101,6 +110,9 @@ public class IcmpPacketTest extends TestBase {
      */
     @Test
     public void testSetter() throws Exception {
+        TxContext ctx = mock(TxContext.class);
+        SalPort ingress = new SalPort(1L, 3L);
+
         short type0 = 0;
         short code0 = 8;
         short type1 = 10;
@@ -123,8 +135,7 @@ public class IcmpPacketTest extends TestBase {
             short type = type0;
             short code = code0;
             Ethernet ether = createEthernet(pkt);
-            PacketContext pctx =
-                createPacketContext(ether, EtherPacketTest.NODE_CONNECTOR);
+            PacketContext pctx = new PacketContext(ctx, ether, ingress);
             for (FlowFilterAction act: fltActions.values()) {
                 pctx.addFilterAction(act);
             }
@@ -182,7 +193,7 @@ public class IcmpPacketTest extends TestBase {
                 actions.add(fltActions.get(VTNSetIcmpCodeAction.class));
             }
 
-            pctx = createPacketContext(ether, EtherPacketTest.NODE_CONNECTOR);
+            pctx = new PacketContext(ctx, ether, ingress);
             for (FlowMatchType mt: FlowMatchType.values()) {
                 pctx.addMatchField(mt);
             }
@@ -225,6 +236,8 @@ public class IcmpPacketTest extends TestBase {
             assertEquals(type1, icmp2.getIcmpType());
             assertEquals(code1, icmp2.getIcmpCode());
         }
+
+        verifyZeroInteractions(ctx);
     }
 
     /**

@@ -180,7 +180,7 @@ final class StaticLinkUpdateTask extends AbstractTxTask<LinkUpdateContext> {
     public LinkUpdateContext execute(TxContext ctx) throws VTNException {
         configLoaded = false;
         ReadWriteTransaction tx = ctx.getReadWriteTransaction();
-        InventoryReader reader = ctx.getInventoryReader();
+        InventoryReader reader = ctx.getReadSpecific(InventoryReader.class);
         LinkUpdateContext luctx = new LinkUpdateContext(tx, reader);
 
         // Read whole static network topology configuration.

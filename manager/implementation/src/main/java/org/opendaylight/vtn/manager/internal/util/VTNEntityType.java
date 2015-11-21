@@ -30,7 +30,16 @@ public enum VTNEntityType {
      * The global entity type that indicates the timer for updating flow
      * statistics.
      */
-    FLOW_STATS("vtn:flow-stats");
+    FLOW_STATS("vtn:flow-stats"),
+
+    /**
+     * The entity type that indicates the vBridge.
+     *
+     * <p>
+     *   One entity of this type is associated with a vBridge.
+     * </p>
+     */
+    VBRIDGE("vtn:vbridge");
 
     /**
      * A map that keeps global entities.
@@ -41,11 +50,15 @@ public enum VTNEntityType {
      * Initialize global entities.
      */
     static {
-        Map<VTNEntityType, Entity> map = new EnumMap(VTNEntityType.class);
-        for (VTNEntityType etype: VTNEntityType.values()) {
-            String type = etype.getType();
-            map.put(etype, new Entity(type, type));
-        }
+        Map<VTNEntityType, Entity> map = new EnumMap<>(VTNEntityType.class);
+        VTNEntityType etype = VTNEntityType.CONFIG;
+        String type = etype.getType();
+        map.put(etype, new Entity(type, type));
+
+        etype = VTNEntityType.FLOW_STATS;
+        type = etype.getType();
+        map.put(etype, new Entity(type, type));
+
         GLOBAL_ENTITIES = ImmutableMap.copyOf(map);
     }
 

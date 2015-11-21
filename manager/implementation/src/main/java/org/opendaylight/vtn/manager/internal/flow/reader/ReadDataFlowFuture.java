@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -10,6 +10,8 @@ package org.opendaylight.vtn.manager.internal.flow.reader;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,11 +25,11 @@ import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxQueue;
-import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.flow.stats.FlowStatsReader;
 import org.opendaylight.vtn.manager.internal.flow.stats.StatsReaderService;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
+import org.opendaylight.vtn.manager.internal.util.inventory.MacVlan;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
@@ -80,7 +82,7 @@ public final class ReadDataFlowFuture extends ReadFlowFuture
          *                flow index.
          */
         @Override
-        public void onSuccess(Optional<T> result) {
+        public void onSuccess(@Nonnull Optional<T> result) {
             List<FlowIdList> list;
             if (result.isPresent()) {
                 list = result.get().getFlowIdList();
@@ -154,7 +156,7 @@ public final class ReadDataFlowFuture extends ReadFlowFuture
          *                data flows.
          */
         @Override
-        public void onSuccess(List<Optional<VtnDataFlow>> result) {
+        public void onSuccess(@Nonnull List<Optional<VtnDataFlow>> result) {
             int size = result.size();
             List<DataFlowInfo> flows = new ArrayList<>(size);
             int index = 0;
@@ -293,7 +295,7 @@ public final class ReadDataFlowFuture extends ReadFlowFuture
      *                table.
      */
     @Override
-    public void onSuccess(Optional<VtnFlowTable> result) {
+    public void onSuccess(@Nonnull Optional<VtnFlowTable> result) {
         if (result.isPresent()) {
             // Select data flows which meet the condition.
             List<VtnDataFlow> flows = result.get().getVtnDataFlow();

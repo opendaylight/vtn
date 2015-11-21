@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2014, 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -18,7 +18,6 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.packet.Packet;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
-import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetPortDstAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetPortSrcAction;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
@@ -398,7 +397,7 @@ public abstract class PortProtoPacket<T extends Packet>
      * {@inheritDoc}
      */
     @Override
-    public final boolean commit(PacketContext pctx) throws VTNException {
+    public final boolean commit(CachedPacketContext pctx) throws VTNException {
         boolean mod = false;
         T pkt = null;
         if (modifiedValues != null) {

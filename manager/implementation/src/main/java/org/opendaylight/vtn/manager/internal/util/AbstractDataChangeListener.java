@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -307,14 +307,14 @@ public abstract class AbstractDataChangeListener<T extends DataObject, C>
                     <InstanceIdentifier<?>, DataObject>emptyMap();
             }
 
-            if (isRequiredEvent(required, VtnUpdateType.CHANGED)) {
-                // Process change events.
-                onUpdated(ectx, ev.getUpdatedData(), original);
-            }
-
             if (isRequiredEvent(required, VtnUpdateType.REMOVED)) {
                 // Process removal events.
                 onRemoved(ectx, ev.getRemovedPaths(), original);
+            }
+
+            if (isRequiredEvent(required, VtnUpdateType.CHANGED)) {
+                // Process change events.
+                onUpdated(ectx, ev.getUpdatedData(), original);
             }
         } catch (RuntimeException e) {
             getLogger().error(

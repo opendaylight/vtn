@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2013, 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -22,6 +22,8 @@ import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -442,7 +444,8 @@ public class VTNThreadPool extends AbstractExecutorService
      * @return  A {@link RunnableFuture} instance.
      */
     @Override
-    protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
+    protected <T> RunnableFuture<T> newTaskFor(@Nonnull Runnable runnable,
+                                               T value) {
         return new VTNFutureTask<T>(runnable, value);
     }
 
@@ -454,7 +457,7 @@ public class VTNThreadPool extends AbstractExecutorService
      * @return  A {@link RunnableFuture} instance.
      */
     @Override
-    protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
+    protected <T> RunnableFuture<T> newTaskFor(@Nonnull Callable<T> callable) {
         return new VTNFutureTask<T>(callable);
     }
 

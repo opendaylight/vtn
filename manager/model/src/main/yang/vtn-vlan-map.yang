@@ -170,12 +170,12 @@ module vtn-vlan-map {
            Null indicates that the VLAN mapping specified by `map-id' field
            in the RPC output is not present.
 
-           If no VLAN mapping ID is specified by the RPC input, there will
-           be only one `remove-vlan-map-result' entry with null `map-id'
-           in the RPC output. In this case `REMOVED' in `status' field
-           indicates that at least one VLAN mapping has been removed from
-           the specified vBridge. Null indicates that the specified vBridge
-           has no VLAN mapping.
+           If no VLAN mapping ID is specified by the RPC input, all the
+           VLAN mappings in the specified vBridge will be removed.
+           In this case IDs for all the removed VLAN mappings will be copied
+           to the RPC output. `remove-vlan-map-result' in the RPC output will
+           be null if no VLAN mapping ID is specified by the RPC input and
+           no VLAN mapping is configured in the specified vBridge.
 
            On failure, one of vtn-error-tag value which indicates the cause
            of error is set into application tag in RPC error.

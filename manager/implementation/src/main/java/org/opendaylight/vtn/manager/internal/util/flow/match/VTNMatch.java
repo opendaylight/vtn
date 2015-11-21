@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -323,7 +323,7 @@ public class VTNMatch {
     /**
      * Verify the contents of this instance.
      *
-     * @throws RpcException  Verifycation failed.
+     * @throws RpcException  Verification failed.
      */
     public void verify() throws RpcException {
         complete();
@@ -451,7 +451,7 @@ public class VTNMatch {
         return builder.toString();
     }
 
-    // Objects
+    // Object
 
     /**
      * Determine whether the given object is identical to this object.

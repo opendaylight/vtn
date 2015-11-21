@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2014, 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,9 @@
  */
 
 package org.opendaylight.vtn.manager.internal.packet.cache;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,13 +30,15 @@ import org.opendaylight.vtn.manager.packet.UDP;
 import org.opendaylight.vtn.manager.util.InetProtocols;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 
-import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.util.flow.action.FlowFilterAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetPortDstAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetPortSrcAction;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNPortRange;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNUdpMatch;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
+import org.opendaylight.vtn.manager.internal.vnode.PacketContext;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
@@ -68,6 +73,9 @@ public class UdpPacketTest extends TestBase {
      */
     @Test
     public void testGetter() throws Exception {
+        TxContext ctx = mock(TxContext.class);
+        SalPort ingress = new SalPort(1L, 3L);
+
         int[] srcs = {0, 1, 53, 123, 12333, 23567, 45699, 58123, 60000, 65535};
         int[] dsts = {0, 2, 35, 99, 390, 14567, 39734, 47614, 59198, 65535};
         for (int src: srcs) {
@@ -79,8 +87,7 @@ public class UdpPacketTest extends TestBase {
 
                 // commit() should return false.
                 Ethernet ether = createEthernet(pkt);
-                PacketContext pctx = createPacketContext(
-                    ether, EtherPacketTest.NODE_CONNECTOR);
+                PacketContext pctx = new PacketContext(ctx, ether, ingress);
                 assertFalse(udp.commit(pctx));
                 assertEquals(null, pctx.getFilterActions());
                 for (FlowMatchType mtype: FlowMatchType.values()) {
@@ -88,6 +95,8 @@ public class UdpPacketTest extends TestBase {
                 }
             }
         }
+
+        verifyZeroInteractions(ctx);
     }
 
     /**
@@ -97,6 +106,9 @@ public class UdpPacketTest extends TestBase {
      */
     @Test
     public void testSetter() throws Exception {
+        TxContext ctx = mock(TxContext.class);
+        SalPort ingress = new SalPort(1L, 3L);
+
         int src0 = 2;
         int dst0 = 2800;
         int src1 = 48321;
@@ -119,8 +131,7 @@ public class UdpPacketTest extends TestBase {
             int src = src0;
             int dst = dst0;
             Ethernet ether = createEthernet(pkt);
-            PacketContext pctx =
-                createPacketContext(ether, EtherPacketTest.NODE_CONNECTOR);
+            PacketContext pctx = new PacketContext(ctx, ether, ingress);
             for (FlowFilterAction act: fltActions.values()) {
                 pctx.addFilterAction(act);
             }
@@ -175,7 +186,7 @@ public class UdpPacketTest extends TestBase {
                 actions.add(fltActions.get(VTNSetPortDstAction.class));
             }
 
-            pctx = createPacketContext(ether, EtherPacketTest.NODE_CONNECTOR);
+            pctx = new PacketContext(ctx, ether, ingress);
             for (FlowMatchType mt: FlowMatchType.values()) {
                 pctx.addMatchField(mt);
             }
@@ -214,6 +225,8 @@ public class UdpPacketTest extends TestBase {
             assertEquals(src1, udp2.getSourcePort());
             assertEquals(dst1, udp2.getDestinationPort());
         }
+
+        verifyZeroInteractions(ctx);
     }
 
     /**
@@ -260,6 +273,9 @@ public class UdpPacketTest extends TestBase {
      */
     @Test
     public void testUpdateChecksum() throws Exception {
+        TxContext ctx = mock(TxContext.class);
+        SalPort ingress = new SalPort(1L, 3L);
+
         // Create a broken UDP packet.
         UDP pkt = new UDP();
         Map<String, byte[]> header = getFieldValue(
@@ -349,8 +365,7 @@ public class UdpPacketTest extends TestBase {
         udp.setSourcePort(src);
         udp.setDestinationPort(dst);
         Ethernet ether = createEthernet(pkt);
-        PacketContext pctx =
-            createPacketContext(ether, EtherPacketTest.NODE_CONNECTOR);
+        PacketContext pctx = new PacketContext(ctx, ether, ingress);
         assertEquals(true, udp.commit(pctx));
 
         list.clear();
@@ -379,6 +394,8 @@ public class UdpPacketTest extends TestBase {
         pkt.setChecksum(checksumIni);
         verifyChecksum(list, udp, inet4);
         verifyChecksumDisabled(udp, inet4, empty, even, odd, large);
+
+        verifyZeroInteractions(ctx);
     }
 
     /**

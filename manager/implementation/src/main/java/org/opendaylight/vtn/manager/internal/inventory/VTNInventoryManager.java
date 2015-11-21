@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -174,8 +174,8 @@ public final class VTNInventoryManager
         if (nodeData != null) {
             VtnNode vnode = nodeData.getValue();
             LOG.info("Node has been {}: id={}, proto={}",
-                     MiscUtils.toLowerCase(type.name()),
-                     vnode.getId().getValue(), vnode.getOpenflowVersion());
+                     MiscUtils.toLowerCase(type), vnode.getId().getValue(),
+                     vnode.getOpenflowVersion());
             postVtnNodeEvent(vnode, type);
             return;
         }
@@ -186,7 +186,7 @@ public final class VTNInventoryManager
             Boolean state = Boolean.valueOf(InventoryUtils.isEnabled(vport));
             Boolean isl = Boolean.valueOf(InventoryUtils.hasPortLink(vport));
             LOG.info("Port has been {}: {}",
-                     MiscUtils.toLowerCase(type.name()),
+                     MiscUtils.toLowerCase(type),
                      InventoryUtils.toString(vport));
             postVtnPortEvent(vport, state, isl, type);
             return;

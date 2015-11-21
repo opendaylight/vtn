@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -9,6 +9,8 @@
 package org.opendaylight.vtn.manager.internal.flow.reader;
 
 import java.util.List;
+
+import javax.annotation.Nonnull;
 
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.FutureCallback;
@@ -82,7 +84,7 @@ public final class FlowCountFuture extends AbstractReadFlowFuture<Integer>
      *                table.
      */
     @Override
-    public void onSuccess(Optional<VtnFlowTable> result) {
+    public void onSuccess(@Nonnull Optional<VtnFlowTable> result) {
         if (result.isPresent()) {
             List<VtnDataFlow> flows = result.get().getVtnDataFlow();
             int count = (flows == null) ? 0 : flows.size();

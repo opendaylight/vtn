@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -74,7 +74,7 @@ final class PathPolicyTransformer implements Transformer<LinkEdge, Long> {
     /**
      * A class which holds inventory reader and local DS transaction.
      */
-    private final class InventoryReaderHolder {
+    private static final class InventoryReaderHolder implements AutoCloseable {
         /**
          * An inventory reader.
          */
@@ -87,18 +87,19 @@ final class PathPolicyTransformer implements Transformer<LinkEdge, Long> {
 
         /**
          * Construct a new instance.
+         *
+         * @param broker  A {@link DataBroker} service.
+         * @param rdr     An {@link InventoryReader} instance to be used.
          */
-        private InventoryReaderHolder() {
-            InventoryReader rdr = reader;
+        private InventoryReaderHolder(DataBroker broker, InventoryReader rdr) {
             if (rdr == null) {
                 // Create a new reader using local transaction.
-                localTx = dataBroker.newReadOnlyTransaction();
-                rdr = new InventoryReader(localTx);
+                localTx = broker.newReadOnlyTransaction();
+                localReader = new InventoryReader(localTx);
             } else {
                 localTx = null;
+                localReader = rdr;
             }
-
-            localReader = rdr;
         }
 
         /**
@@ -110,10 +111,13 @@ final class PathPolicyTransformer implements Transformer<LinkEdge, Long> {
             return localReader;
         }
 
+        // AutoCloseable
+
         /**
          * Close the MD-SAL DS transaction.
          */
-        private void close() {
+        @Override
+        public void close() {
             if (localTx != null) {
                 localTx.close();
             }
@@ -248,22 +252,20 @@ final class PathPolicyTransformer implements Transformer<LinkEdge, Long> {
         }
 
         // Prepare MD-SAL datastore transaction.
-        InventoryReaderHolder holder = new InventoryReaderHolder();
         Long cost;
-        try {
+        try (InventoryReaderHolder holder =
+             new InventoryReaderHolder(dataBroker, reader)) {
             cost = getCost(holder.getReader(), sport);
             if (cost == null) {
                 cost = PathPolicyUtils.DEFAULT_LINK_COST;
             }
-        } catch (Exception e) {
+        } catch (VTNException | RuntimeException e) {
             StringBuilder builder = new StringBuilder();
             builder.append(policyId).
                 append(": Failed to determine path cost for ").
                 append(le).append('.');
             LOG.warn(builder.toString(), e);
             cost = Long.valueOf(Long.MAX_VALUE);
-        } finally {
-            holder.close();
         }
 
         return cost;

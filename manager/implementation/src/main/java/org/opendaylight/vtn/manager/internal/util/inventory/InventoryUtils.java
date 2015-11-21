@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -45,6 +45,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static._switch.links.StaticSwitchLinkKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePortKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnSwitchLink;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeConnector;
@@ -185,6 +186,25 @@ public final class InventoryUtils {
         }
 
         return false;
+    }
+
+
+    /**
+     * Return the state of the given switch port.
+     *
+     * @param vport  A {@link VtnPort} instance.
+     * @return  A {@link VnodeState} instance which represents the state of
+     *          the given switch port.
+     */
+    public static VnodeState getPortState(VtnPort vport) {
+        VnodeState state;
+        if (vport == null) {
+            state = VnodeState.UNKNOWN;
+        } else {
+            state = (isEnabled(vport)) ? VnodeState.UP : VnodeState.DOWN;
+        }
+
+        return state;
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -32,13 +32,13 @@ import org.opendaylight.vtn.manager.flow.DataFlow;
 import org.opendaylight.vtn.manager.flow.FlowStats;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
-import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.OrderedComparator;
 import org.opendaylight.vtn.manager.internal.util.flow.action.FlowActionUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNMatch;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.inventory.MacVlan;
 import org.opendaylight.vtn.manager.internal.util.inventory.NodeUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
@@ -163,8 +163,23 @@ public final class FlowUtils {
      */
     public static void verifyFlowTimeout(Integer idle, Integer hard)
         throws RpcException {
-        verifyFlowTimeout(idle, DESC_IDLE_TIMEOUT);
-        verifyFlowTimeout(hard, DESC_HARD_TIMEOUT);
+        verifyFlowTimeout(idle, hard, false);
+    }
+
+    /**
+     * Verify the given flow timeout values.
+     *
+     * @param idle     The idle-timeout value.
+     * @param hard     The hard-timeout value.
+     * @param present  {@code true} means that the flow timeout configuration
+     *                 must be present.
+     * @throws RpcException  The given flow timeout values are invalid.
+     */
+    public static void verifyFlowTimeout(Integer idle, Integer hard,
+                                         boolean present)
+        throws RpcException {
+        verifyFlowTimeout(idle, DESC_IDLE_TIMEOUT, present);
+        verifyFlowTimeout(hard, DESC_HARD_TIMEOUT, present);
 
         if (hard == null) {
             if (idle != null) {
@@ -198,17 +213,20 @@ public final class FlowUtils {
      */
     public static void verifyFlowTimeout(VtnFlowTimeoutConfig vftc)
         throws RpcException {
-        verifyFlowTimeout(vftc.getIdleTimeout(), vftc.getHardTimeout());
+        verifyFlowTimeout(vftc.getIdleTimeout(), vftc.getHardTimeout(), false);
     }
 
     /**
      * Verify the given flow timeout value.
      *
-     * @param value  A value which indicates the flow timeout.
-     * @param desc   A brief description about the given value.
+     * @param value    A value which indicates the flow timeout.
+     * @param desc     A brief description about the given value.
+     * @param present  {@code true} means that {@code value} must not be
+     *                 {@code null}.
      * @throws RpcException  The given flow timeout value is invalid.
      */
-    private static void verifyFlowTimeout(Integer value, String desc)
+    private static void verifyFlowTimeout(Integer value, String desc,
+                                          boolean present)
         throws RpcException {
         if (value != null) {
             if ((value.intValue() & ~FLOW_TIMEOUT_MASK) != 0) {
@@ -216,6 +234,8 @@ public final class FlowUtils {
                     append(": ").append(value).toString();
                 throw RpcException.getBadArgumentException(msg);
             }
+        } else if (present) {
+            throw RpcException.getNullArgumentException(desc);
         }
     }
 
@@ -944,7 +964,7 @@ public final class FlowUtils {
                 child(NodeFlows.class, new NodeFlowsKey(snode.getNodeId())).
                 child(FlowIdList.class, idKey).
                 build();
-            if (DataStoreUtils.delete(tx, oper, idxPath)) {
+            if (DataStoreUtils.delete(tx, oper, idxPath) != null) {
                 // Remove node-flows if empty.
                 InstanceIdentifier<NodeFlows> lpath =
                     idxPath.firstIdentifierOf(NodeFlows.class);
@@ -959,7 +979,7 @@ public final class FlowUtils {
                       new PortFlowsKey(sport.getNodeConnectorId())).
                 child(FlowIdList.class, idKey).
                 build();
-            if (DataStoreUtils.delete(tx, oper, idxPath)) {
+            if (DataStoreUtils.delete(tx, oper, idxPath) != null) {
                 // Remove port-flows if empty.
                 InstanceIdentifier<PortFlows> lpath =
                     idxPath.firstIdentifierOf(PortFlows.class);
@@ -974,7 +994,7 @@ public final class FlowUtils {
                 child(SourceHostFlows.class, srcHost).
                 child(FlowIdList.class, idKey).
                 build();
-            if (DataStoreUtils.delete(tx, oper, idxPath)) {
+            if (DataStoreUtils.delete(tx, oper, idxPath) != null) {
                 // Remove source-host-flows if empty.
                 InstanceIdentifier<SourceHostFlows> lpath =
                     idxPath.firstIdentifierOf(SourceHostFlows.class);

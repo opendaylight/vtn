@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -66,6 +66,19 @@ public abstract class VTNInetAddrAction extends FlowFilterAction {
      *              IP address to be set.
      */
     protected VTNInetAddrAction(IpNetwork addr) {
+        address = addr;
+    }
+
+    /**
+     * Construct a new instance with specifying action order.
+     *
+     * @param addr  An {@link IpNetwork} instance which represents the
+     *              IP address to be set.
+     * @param ord  An integer which determines the order of flow actions
+     *             in a flow entry.
+     */
+    protected VTNInetAddrAction(IpNetwork addr, Integer ord) {
+        super(ord);
         address = addr;
     }
 

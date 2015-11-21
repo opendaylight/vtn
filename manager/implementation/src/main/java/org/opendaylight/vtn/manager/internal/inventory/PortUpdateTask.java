@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -111,7 +111,7 @@ final class PortUpdateTask
         }
 
         // Cache this port into the inventory reader.
-        InventoryReader reader = ctx.getInventoryReader();
+        InventoryReader reader = ctx.getReadSpecific(InventoryReader.class);
         reader.prefetch(sport, vport);
 
         if (old == null ||
@@ -147,7 +147,7 @@ final class PortUpdateTask
         }
 
         // Add negative cache for the removed port.
-        InventoryReader reader = ctx.getInventoryReader();
+        InventoryReader reader = ctx.getReadSpecific(InventoryReader.class);
         reader.prefetch(sport, (VtnPort)null);
     }
 
@@ -157,7 +157,7 @@ final class PortUpdateTask
     @Override
     protected void prepare(TxContext ctx) {
         ReadWriteTransaction tx = ctx.getReadWriteTransaction();
-        InventoryReader reader = ctx.getInventoryReader();
+        InventoryReader reader = ctx.getReadSpecific(InventoryReader.class);
         linkUpdater = new LinkUpdateContext(tx, reader);
     }
 

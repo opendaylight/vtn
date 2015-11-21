@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,7 +8,15 @@
 
 package org.opendaylight.vtn.manager.internal.util;
 
+import static org.opendaylight.vtn.manager.internal.util.flow.action.FlowActionUtilsTest.createVtnDropActionBuilder;
+import static org.opendaylight.vtn.manager.internal.util.flow.action.FlowActionUtilsTest.createVtnPopVlanActionBuilder;
+import static org.opendaylight.vtn.manager.internal.util.flow.action.FlowActionUtilsTest.createVtnSetPortDstAction;
+import static org.opendaylight.vtn.manager.internal.util.flow.action.FlowActionUtilsTest.createVtnSetPortDstActionBuilder;
+import static org.opendaylight.vtn.manager.internal.util.flow.action.FlowActionUtilsTest.createVtnSetPortSrcAction;
+import static org.opendaylight.vtn.manager.internal.util.flow.action.FlowActionUtilsTest.createVtnSetPortSrcActionBuilder;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
@@ -21,6 +29,16 @@ import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.yangtools.concepts.Builder;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.list.VtnFlowFilter;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.list.VtnFlowFilterBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.type.fields.vtn.flow.filter.type.VtnDropFilterCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.type.fields.vtn.flow.filter.type.VtnDropFilterCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.type.fields.vtn.flow.filter.type.VtnPassFilterCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.type.fields.vtn.flow.filter.type.VtnPassFilterCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.type.fields.vtn.flow.filter.type.vtn.drop.filter._case.VtnDropFilterBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.type.fields.vtn.flow.filter.type.vtn.pass.filter._case.VtnPassFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnNodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnNodesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnOpenflowVersion;
@@ -36,6 +54,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vt
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicyBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policy.config.VtnPathCost;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policy.config.VtnPathCostBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
@@ -248,9 +267,89 @@ public class DataObjectIdentityTest extends TestBase {
         policiesBuilder.setVtnPathPolicy(policies);
         doTest(set, policyContainers, policiesBuilder);
 
+        // Create flow actions.
+        List<VtnFlowAction> actions = new ArrayList<>();
+        VtnFlowActionBuilder actBuilder = createVtnDropActionBuilder(1);
+        doTest(set, actions, actBuilder);
+
+        actBuilder = createVtnDropActionBuilder(2);
+        doTest(set, actions, actBuilder);
+
+        actBuilder = createVtnPopVlanActionBuilder(1);
+        doTest(set, actions, actBuilder);
+
+        actBuilder = createVtnSetPortSrcActionBuilder(1, 12345);
+        doTest(set, actions, actBuilder);
+
+        actBuilder = createVtnSetPortDstActionBuilder(1, 12345);
+        doTest(set, actions, actBuilder);
+
+        actBuilder = createVtnSetPortDstActionBuilder(1, 12346);
+        doTest(set, actions, actBuilder);
+
+        // Create flow filters.
+        List<VtnFlowFilter> filters = new ArrayList<>();
+        VtnDropFilterCase drop = new VtnDropFilterCaseBuilder().
+            setVtnDropFilter(new VtnDropFilterBuilder().build()).
+            build();
+        VtnPassFilterCase pass = new VtnPassFilterCaseBuilder().
+            setVtnPassFilter(new VtnPassFilterBuilder().build()).
+            build();
+        VnodeName vcond1 = new VnodeName("cond1");
+        VnodeName vcond2 = new VnodeName("cond2");
+        VtnFlowFilterBuilder filterBuilder = new VtnFlowFilterBuilder().
+            setIndex(1).
+            setCondition(vcond1).
+            setVtnFlowFilterType(drop);
+        doTest(set, filters, filterBuilder);
+
+        filterBuilder = new VtnFlowFilterBuilder().
+            setIndex(2).
+            setCondition(vcond1).
+            setVtnFlowFilterType(drop);
+        doTest(set, filters, filterBuilder);
+
+        filterBuilder = new VtnFlowFilterBuilder().
+            setIndex(1).
+            setCondition(vcond2).
+            setVtnFlowFilterType(drop);
+        doTest(set, filters, filterBuilder);
+
+        filterBuilder = new VtnFlowFilterBuilder().
+            setIndex(1).
+            setCondition(vcond1).
+            setVtnFlowFilterType(pass);
+        doTest(set, filters, filterBuilder);
+
+        List<VtnFlowAction> filterActions = new ArrayList<>();
+        Collections.addAll(
+            filterActions,
+            createVtnSetPortSrcAction(1, 9999),
+            createVtnSetPortDstAction(2, 9999));
+
+        filterBuilder = new VtnFlowFilterBuilder().
+            setIndex(1).
+            setCondition(vcond1).
+            setVtnFlowFilterType(pass).
+            setVtnFlowAction(filterActions);
+        doTest(set, filters, filterBuilder);
+
+        filterActions = new ArrayList<>();
+        Collections.addAll(
+            filterActions,
+            createVtnSetPortSrcAction(2, 9999),
+            createVtnSetPortDstAction(1, 9999));
+
+        filterBuilder = new VtnFlowFilterBuilder().
+            setIndex(1).
+            setCondition(vcond1).
+            setVtnFlowFilterType(pass).
+            setVtnFlowAction(filterActions);
+        doTest(set, filters, filterBuilder);
+
         int expected = portLinks.size() + vtnPorts.size() + vtnNodes.size() +
             nodeContainers.size() + pathCosts.size() + pathPolicies.size() +
-            policyContainers.size();
+            policyContainers.size() + actions.size() + filters.size();
         assertEquals(expected, set.size());
 
         // Ensure that the order of elements in a list does not affect object
@@ -267,6 +366,8 @@ public class DataObjectIdentityTest extends TestBase {
                 assertTrue(set.contains(reorder((VtnPathPolicies)o)));
             } else if (o instanceof VtnPathPolicy) {
                 assertTrue(set.contains(reorder((VtnPathPolicy)o)));
+            } else if (o instanceof VtnFlowFilter) {
+                assertTrue(set.contains(reorder((VtnFlowFilter)o)));
             }
         }
     }
@@ -378,6 +479,30 @@ public class DataObjectIdentityTest extends TestBase {
         }
 
         return container;
+    }
+
+    /**
+     * Reorder flow action list in the given flow filter.
+     *
+     * @param filter  A {@link VtnFlowFilter} instance.
+     * @return  A {@link VtnFlowFilter} instance with reordering flow action
+     *          list.
+     */
+    private VtnFlowFilter reorder(VtnFlowFilter filter) {
+        List<VtnFlowAction> factions = filter.getVtnFlowAction();
+        if (factions != null && !factions.isEmpty()) {
+            int size = factions.size();
+            List<VtnFlowAction> l = new ArrayList<>();
+            for (ListIterator<VtnFlowAction> it = factions.listIterator(size);
+                 it.hasPrevious();) {
+                l.add(it.previous());
+            }
+            assertFalse(l.equals(factions));
+            return new VtnFlowFilterBuilder(filter).
+                setVtnFlowAction(l).build();
+        }
+
+        return filter;
     }
 
     /**

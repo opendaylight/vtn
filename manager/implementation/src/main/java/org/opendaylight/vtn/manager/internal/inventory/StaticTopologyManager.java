@@ -231,7 +231,7 @@ public final class StaticTopologyManager
             StaticEdgePort edge = edgeData.getValue();
             ectx.addUpdated(edge);
             LOG.info("Static edge port has been {}: {}",
-                     MiscUtils.toLowerCase(type.name()),
+                     MiscUtils.toLowerCase(type),
                      MiscUtils.getValue(edge.getPort()));
             return;
         }
@@ -242,7 +242,7 @@ public final class StaticTopologyManager
             StaticSwitchLink swlink = linkData.getValue();
             ectx.addUpdated(swlink);
             LOG.info("Static inter-switch link has been {}: {}",
-                     MiscUtils.toLowerCase(type.name()),
+                     MiscUtils.toLowerCase(type),
                      InventoryUtils.toString(swlink));
         }
     }

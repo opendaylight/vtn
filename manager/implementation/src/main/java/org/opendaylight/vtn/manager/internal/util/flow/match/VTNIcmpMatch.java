@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -237,9 +237,11 @@ public final class VTNIcmpMatch extends VTNLayer4Match {
      */
     @Override
     public VtnIcmpMatch toVtnLayer4Match() {
-        VtnIcmpMatchBuilder vimatch = null;
-        if (icmpType != null) {
-            vimatch = create(vimatch).setIcmpType(icmpType);
+        VtnIcmpMatchBuilder vimatch;
+        if (icmpType == null) {
+            vimatch = null;
+        } else {
+            vimatch = create((VtnIcmpMatchBuilder)null).setIcmpType(icmpType);
         }
 
         if (icmpCode != null) {
@@ -262,9 +264,11 @@ public final class VTNIcmpMatch extends VTNLayer4Match {
     @Override
     public void setMatch(MatchBuilder builder, IpVersion ver) {
         checkIpVersion(ver);
-        Icmpv4MatchBuilder imatch = null;
-        if (icmpType != null) {
-            imatch = create(imatch).setIcmpv4Type(icmpType);
+        Icmpv4MatchBuilder imatch;
+        if (icmpType == null) {
+            imatch = null;
+        } else {
+            imatch = create((Icmpv4MatchBuilder)null).setIcmpv4Type(icmpType);
         }
 
         if (icmpCode != null) {
@@ -332,7 +336,7 @@ public final class VTNIcmpMatch extends VTNLayer4Match {
         return (icmpType == null && icmpCode == null);
     }
 
-    // Objects
+    // Object
 
     /**
      * Determine whether the given object is identical to this object.

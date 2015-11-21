@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -73,21 +73,6 @@ public abstract class AbstractTxTask<T> implements TxTask<T> {
         return MAX_RETRY;
     }
 
-    /**
-     * Add a background task started by this task.
-     *
-     * @param future  A {@link VTNFuture} instance associated with background
-     *                task.
-     */
-    protected final void addBackgroundTask(VTNFuture<?> future) {
-        List<VTNFuture<?>> list = backgroundTasks;
-        if (list == null) {
-            list = new ArrayList<>();
-            backgroundTasks = list;
-        }
-        list.add(future);
-    }
-
     // TxTask
 
     /**
@@ -99,6 +84,9 @@ public abstract class AbstractTxTask<T> implements TxTask<T> {
             throw new VTNException("Data conflict could not be resolved.",
                                    null);
         }
+
+        // Clear background task.
+        backgroundTasks = null;
 
         return execute(ctx);
     }
@@ -116,7 +104,18 @@ public abstract class AbstractTxTask<T> implements TxTask<T> {
     }
 
     /**
-     * Invoked when the task has been completed successfully.
+     * Determine whether this instance is associated with an asynchronous
+     * task or not.
+     *
+     * @return  {@code false} is always returned.
+     */
+    @Override
+    public boolean isAsync() {
+        return false;
+    }
+
+    /**
+     * Invoked when the task has completed successfully.
      *
      * <p>
      *   This method of this class does nothing.
@@ -152,5 +151,18 @@ public abstract class AbstractTxTask<T> implements TxTask<T> {
         return (list == null)
             ? Collections.<VTNFuture<?>>emptyList()
             : Collections.unmodifiableList(list);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public final void addBackgroundTask(VTNFuture<?> future) {
+        List<VTNFuture<?>> list = backgroundTasks;
+        if (list == null) {
+            list = new ArrayList<>();
+            backgroundTasks = list;
+        }
+        list.add(future);
     }
 }

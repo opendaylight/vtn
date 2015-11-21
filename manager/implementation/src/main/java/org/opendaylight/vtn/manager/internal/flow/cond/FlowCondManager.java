@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
@@ -29,11 +28,11 @@ import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.cond.VTNFlowCondition;
+import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcFuture;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcUtils;
@@ -81,28 +80,24 @@ public final class FlowCondManager
     private final VTNManagerProvider  vtnProvider;
 
     /**
-     * A set of flow condition names loaded by {@link FlowCondLoadTask}.
-     */
-    private Set<String>  loadedConditions;
-
-    /**
      * MD-SAL transaction task to load flow condition configurations.
      *
      * <p>
      *   This task returns current {@link VtnFlowConditions} instance.
      * </p>
      */
-    private class FlowCondLoadTask extends AbstractTxTask<VtnFlowConditions> {
+    private static class FlowCondLoadTask
+        extends AbstractTxTask<VtnFlowConditions> {
         /**
          * Resume the configuration for the given flow condition.
          *
+         * @param ctx     MD-SAL datastore transaction context.
          * @param vlist   A list of {@link VtnFlowCondition} instance to store
          *                resumed configuration.
-         * @param loaded  A set of loaded flow condition names.
          * @param name    The name of the flow condition.
          * @param vfcond  A {@link VTNFlowCondition} instance.
          */
-        private void resume(List<VtnFlowCondition> vlist, Set<String> loaded,
+        private void resume(TxContext ctx, List<VtnFlowCondition> vlist,
                             String name, VTNFlowCondition vfcond) {
             try {
                 vfcond.verify();
@@ -114,12 +109,11 @@ public final class FlowCondManager
                     throw new IllegalArgumentException(msg);
                 }
                 vlist.add(vfcond.toVtnFlowConditionBuilder().build());
-                loaded.add(name);
+                ctx.log(LOG, VTNLogLevel.DEBUG,
+                        "{}: Flow condition has been loaded.", name);
             } catch (RpcException | RuntimeException e) {
-                String msg = MiscUtils.joinColon(
-                    "Ignore invalid flow condition configuration",
-                    name, e.getMessage());
-                LOG.warn(msg, e);
+                ctx.log(LOG, VTNLogLevel.WARN, e,
+                        "Ignore invalid flow condition configuration: %s", e);
             }
         }
 
@@ -128,9 +122,6 @@ public final class FlowCondManager
          */
         @Override
         public VtnFlowConditions execute(TxContext ctx) throws VTNException {
-            loadedConditions = null;
-            Set<String> loaded = new ConcurrentSkipListSet<>();
-
             // Load configuration from file.
             XmlConfigFile.Type ftype = XmlConfigFile.Type.FLOWCOND;
             List<VtnFlowCondition> vlist = new ArrayList<>();
@@ -138,7 +129,7 @@ public final class FlowCondManager
                 VTNFlowCondition vfcond = XmlConfigFile.
                     load(ftype, key, VTNFlowCondition.class);
                 if (vfcond != null) {
-                    resume(vlist, loaded, key, vfcond);
+                    resume(ctx, vlist, key, vfcond);
                 }
             }
 
@@ -156,26 +147,8 @@ public final class FlowCondManager
 
             VtnFlowConditions conditions = builder.build();
             tx.put(oper, path, conditions, true);
-            if (!loaded.isEmpty()) {
-                loadedConditions = loaded;
-            }
 
             return conditions;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void onSuccess(VTNManagerProvider provider,
-                              VtnFlowConditions result) {
-            List<VtnFlowCondition> vlist = result.getVtnFlowCondition();
-            if (vlist != null) {
-                for (VtnFlowCondition vfc: vlist) {
-                    String name = vfc.getName().getValue();
-                    LOG.info("{}: Flow condition has been loaded.", name);
-                }
-            }
         }
     }
 
@@ -310,19 +283,6 @@ public final class FlowCondManager
     @Override
     protected void onCreated(FlowCondChange ectx,
                              IdentifiedData<VtnFlowCondition> data) {
-        // Do nothing if the specified event was caused by the initial setup.
-        Set<String> loaded = loadedConditions;
-        if (loaded != null) {
-            String name = FlowCondUtils.getName(data.getIdentifier());
-            if (name != null && loaded.remove(name)) {
-                if (loaded.isEmpty()) {
-                    LOG.debug("All loaded flow conditions have been notified.");
-                    loadedConditions = null;
-                }
-                return;
-            }
-        }
-
         onUpdated(ectx, data, true);
     }
 

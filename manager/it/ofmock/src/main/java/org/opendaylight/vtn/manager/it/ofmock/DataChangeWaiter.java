@@ -26,6 +26,14 @@ public interface DataChangeWaiter<T extends DataObject> extends AutoCloseable {
     InstanceIdentifier<T> getPath();
 
     /**
+     * Return the latest data object notified by the data change listener.
+     *
+     * @return  The data object that keeps the latest value.
+     *          {@code null} if the data object is not present.
+     */
+    T getValue();
+
+    /**
      * Wait for the target data object to be updated.
      *
      * @param limit  The system time in milliseconds which specifies the limit

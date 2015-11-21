@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -101,7 +101,8 @@ public class RemovedDataFlows<T extends FlowRemover> implements RemovedFlows {
             }
         }
 
-        return removeFlowEntries(sfs, removedFlows, ctx.getInventoryReader());
+        return removeFlowEntries(
+            sfs, removedFlows, ctx.getReadSpecific(InventoryReader.class));
     }
 
     /**

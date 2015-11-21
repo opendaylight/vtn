@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,6 +51,7 @@ import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.binding.Notification;
+import org.opendaylight.yangtools.yang.binding.RpcService;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.VtnStaticTopology;
@@ -168,7 +171,8 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
     /**
      * A set of data change waiters.
      */
-    private Set<DataChangeWaiterImpl>  dataChangeWaiters = new HashSet<>();
+    private ConcurrentMap<DataChangeWaiter, Boolean>  dataChangeWaiters =
+        new ConcurrentHashMap<>();
 
     /**
      * Construct a new instance.
@@ -239,9 +243,9 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
     /**
      * Remove the given data change waiter.
      *
-     * @param dcw  A {@link DataChangeWaiterImpl} instance.
+     * @param dcw  A {@link DataChangeWaiter} instance.
      */
-    void remove(DataChangeWaiterImpl dcw) {
+    void remove(DataChangeWaiter dcw) {
         dataChangeWaiters.remove(dcw);
     }
 
@@ -596,6 +600,14 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
      */
     @Override
     public void initialize() throws InterruptedException {
+        // Wait for the VTN Manager to complete initialization.
+        try (VtnConfigWaiter waiter = new VtnConfigWaiter(this)) {
+            if (!waiter.await(TASK_TIMEOUT)) {
+                throw new AssertionError(
+                    "Initialization of the VTN Manager did not complete.");
+            }
+        }
+
         boolean done = false;
         List<OfPort> allPorts = new ArrayList<>();
         Map<String, String> links = null;
@@ -677,10 +689,14 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
         DataStoreUtils.submit(tx);
 
         // Clean up data change waiters.
-        Set<DataChangeWaiterImpl> waiters = new HashSet<>(dataChangeWaiters);
-        dataChangeWaiters.clear();
-        for (DataChangeWaiterImpl dcw: waiters) {
-            dcw.close();
+        while (!dataChangeWaiters.isEmpty()) {
+            Set<DataChangeWaiter> waiters = dataChangeWaiters.keySet();
+            for (Iterator<DataChangeWaiter> it = waiters.iterator();
+                 it.hasNext();) {
+                DataChangeWaiter dcw = it.next();
+                it.remove();
+                dcw.close();
+            }
         }
 
         Set<String> removedNodes = new HashSet<>();
@@ -1282,8 +1298,16 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
         LogicalDatastoreType store, InstanceIdentifier<T> path) {
         DataChangeWaiterImpl<T> dcw = new DataChangeWaiterImpl<>(
             this, store, path);
-        dataChangeWaiters.add(dcw);
+        dataChangeWaiters.put(dcw, Boolean.TRUE);
 
         return dcw;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public <T extends RpcService> T getRpcService(Class<T> type) {
+        return rpcRegistry.getRpcService(type);
     }
 }

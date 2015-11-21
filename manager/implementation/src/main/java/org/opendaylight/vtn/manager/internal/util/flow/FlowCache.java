@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -17,20 +17,20 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opendaylight.vtn.manager.VNodePath;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.vtn.manager.internal.L2Host;
-import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.OrderedComparator;
 import org.opendaylight.vtn.manager.internal.util.flow.action.FlowActionUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNMatch;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.inventory.L2Host;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
-import org.opendaylight.vtn.manager.internal.util.vnode.VNodeUtils;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.DataFlowMode;
@@ -106,7 +106,7 @@ public final class FlowCache implements VTNDataFlow {
     /**
      * The edge hosts of the data flow.
      */
-    private ObjectPair<L2Host, L2Host>  edgeHosts;
+    private Pair<L2Host, L2Host>  edgeHosts;
 
     /**
      * A set of MD-SAL node identifiers which indicates physical switches
@@ -129,12 +129,12 @@ public final class FlowCache implements VTNDataFlow {
     /**
      * Path to the virtual node which maps the ingress flow.
      */
-    private VNodePath  ingressPath;
+    private VirtualNodePath  ingressPath;
 
     /**
      * Path to the virtual node which maps the egress flow.
      */
-    private VNodePath  egressPath;
+    private VirtualNodePath  egressPath;
 
     /**
      * A list of {@link PhysicalRoute} instances which represents the packet
@@ -269,15 +269,15 @@ public final class FlowCache implements VTNDataFlow {
      * Get two {@link L2Host} instances which represents host information
      * matched by edge flow entries.
      *
-     * @return  A {@link ObjectPair} instance which contains two
-     *          {@link L2Host} instances. A {@link L2Host} instance which
-     *          represents incoming host address is set to the left side,
-     *          and outgoing host address is set to the right side.
+     * @return  A {@link Pair} instance which contains two {@link L2Host}
+     *          instances. A {@link L2Host} instance which represents incoming
+     *          host address is set to the left side, and outgoing host
+     *          address is set to the right side.
      *          Note that {@code null} may be set for outgoing host.
      *          {@code null} is returned if not found.
      */
-    public ObjectPair<L2Host, L2Host> getEdgeHosts() {
-        ObjectPair<L2Host, L2Host> edges = edgeHosts;
+    public Pair<L2Host, L2Host> getEdgeHosts() {
+        Pair<L2Host, L2Host> edges = edgeHosts;
         if (edges == null) {
             L2Host src = getSourceHost();
             L2Host dst;
@@ -291,9 +291,9 @@ public final class FlowCache implements VTNDataFlow {
                     ingress.getMatch());
                 List<Action> actions = getEgressActions();
                 dst = FlowActionUtils.getDestinationHost(
-                    actions, dmac, (int)src.getHost().getVlan());
+                    actions, dmac, (int)src.getHost().getVlanId());
             }
-            edges = new ObjectPair<>(src, dst);
+            edges = new ImmutablePair<>(src, dst);
             edgeHosts = edges;
         }
 
@@ -331,18 +331,17 @@ public final class FlowCache implements VTNDataFlow {
      *          {@code null} if not found.
      * @throws VTNException  An error occurred.
      */
-    public VNodePath getIngressPath() throws VTNException {
-        VNodePath path = ingressPath;
-        if (path == null) {
+    public VirtualNodePath getIngressPath() throws VTNException {
+        VirtualNodePath vpath = ingressPath;
+        if (vpath == null) {
             List<VirtualRoute> vroutes = getVirtualRoute();
             if (!vroutes.isEmpty()) {
-                VirtualRoute vr = vroutes.get(0);
-                path = VNodeUtils.toVNodePath(vr.getVirtualNodePath());
-                ingressPath = path;
+                vpath = vroutes.get(0).getVirtualNodePath();
+                ingressPath = vpath;
             }
         }
 
-        return path;
+        return vpath;
     }
 
     /**
@@ -352,19 +351,18 @@ public final class FlowCache implements VTNDataFlow {
      *          {@code null} if not found.
      * @throws VTNException  An error occurred.
      */
-    public VNodePath getEgressPath() throws VTNException {
-        VNodePath path = egressPath;
-        if (path == null) {
+    public VirtualNodePath getEgressPath() throws VTNException {
+        VirtualNodePath vpath = egressPath;
+        if (vpath == null) {
             List<VirtualRoute> vroutes = getVirtualRoute();
             int size = vroutes.size();
             if (size > 0) {
-                VirtualRoute vr = vroutes.get(size - 1);
-                path = VNodeUtils.toVNodePath(vr.getVirtualNodePath());
-                egressPath = path;
+                vpath = vroutes.get(size - 1).getVirtualNodePath();
+                egressPath = vpath;
             }
         }
 
-        return path;
+        return vpath;
     }
 
     /**

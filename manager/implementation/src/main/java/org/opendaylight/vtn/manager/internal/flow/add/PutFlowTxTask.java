@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -25,7 +25,7 @@ import org.opendaylight.vtn.manager.internal.util.flow.VTNFlowBuilder;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
-import org.opendaylight.vtn.manager.internal.util.vnode.VTenantUtils;
+import org.opendaylight.vtn.manager.internal.util.vnode.VTenantIdentifier;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -49,7 +49,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.ten
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.SourceHostFlowsKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.VtnDataFlow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.flows.VtnFlowTable;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 
 /**
  * {@code PutFlowTxTask} describes the MD-SAL datastore transaction task that
@@ -122,8 +121,8 @@ public final class PutFlowTxTask extends AbstractTxTask<VtnDataFlow> {
         ReadWriteTransaction tx = ctx.getReadWriteTransaction();
         VTNFlowBuilder builder = context.getFlowBuilder();
         String tname = builder.getTenantName();
-        VnodeName vname = new VnodeName(tname);
-        VTenantUtils.readVtn(tx, vname);
+        VTenantIdentifier vtnId = VTenantIdentifier.create(tname, true);
+        vtnId.fetch(tx);
 
         // Check to see if the data flow is already installed.
         String condKey = builder.getIngressMatchKey();
@@ -207,7 +206,7 @@ public final class PutFlowTxTask extends AbstractTxTask<VtnDataFlow> {
     // TxTask
 
     /**
-     * Invoked when the task has been completed successfully.
+     * Invoked when the task has completed successfully.
      *
      * @param provider  VTN Manager provider service.
      * @param result    The result of this task.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -13,13 +13,13 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.RouteResolver;
-import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondReader;
 import org.opendaylight.vtn.manager.internal.util.flow.cond.VTNFlowCondition;
 import org.opendaylight.vtn.manager.internal.util.pathmap.PathMapUtils;
+import org.opendaylight.vtn.manager.internal.util.vnode.VNodeIdentifier;
+import org.opendaylight.vtn.manager.internal.util.vnode.VTenantIdentifier;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 
@@ -42,9 +42,9 @@ public final class PathMapEvaluator {
     private static final String  GLOBAL = "<global>";
 
     /**
-     * A packet context that contains the packet.
+     * A runtime context to evaluate path map.
      */
-    private final PacketContext  packetContext;
+    private final PathMapContext  context;
 
     /**
      * VTN Manager provider service.
@@ -59,29 +59,29 @@ public final class PathMapEvaluator {
     /**
      * Construct a new instance.
      *
-     * @param pctx   A {@link PacketContext} instance that contains the packet.
+     * @param pmctx   A {@link PathMapContext} instance.
      */
-    public PathMapEvaluator(PacketContext pctx) {
-        packetContext = pctx;
-        TxContext ctx = pctx.getTxContext();
-        vtnProvider = ctx.getProvider();
-        conditionReader = ctx.getFlowCondReader();
+    public PathMapEvaluator(PathMapContext pmctx) {
+        context = pmctx;
+        vtnProvider = pmctx.getProvider();
+        conditionReader = pmctx.getFlowCondReader();
     }
 
     /**
      * Evaluate path maps against the given packet.
      *
-     * @param tname  The name of the VTN.
+     * @param ident  The identifier for the virtual node in the target VTN.
      * @return  A {@link RouteResolver} instance is returned if a path map
      *          matched the given packet. The default route resolver is
      *          returned if no path map matched the packet.
      */
-    public RouteResolver evaluate(String tname) {
+    public RouteResolver evaluate(VNodeIdentifier<?> ident) {
         // Evaluate VTN path map list.
+        VTenantIdentifier vtnId = new VTenantIdentifier(ident.getTenantName());
+        String tname = vtnId.getTenantNameString();
         ReadTransaction rtx = conditionReader.getReadTransaction();
         try {
-            List<VtnPathMap> list =
-                PathMapUtils.readPathMaps(rtx, new VnodeName(tname));
+            List<VtnPathMap> list = PathMapUtils.readPathMaps(rtx, vtnId);
             RouteResolver rr = evaluate(tname, list);
             if (rr != null) {
                 return rr;
@@ -156,13 +156,12 @@ public final class PathMapEvaluator {
             LOG.debug("{}.{}: Ignore path map: path policy not found: {}",
                       tname, vpm.getIndex(), policy);
         } else {
-            if (vfcond.match(packetContext)) {
+            if (vfcond.match(context)) {
                 Integer idle = vpm.getIdleTimeout();
                 if (idle != null) {
                     // Set flow timeout.
                     Integer hard = vpm.getHardTimeout();
-                    packetContext.setFlowTimeout(idle.intValue(),
-                                                 hard.intValue());
+                    context.setFlowTimeout(idle.intValue(), hard.intValue());
                 }
             } else {
                 rr = null;
@@ -172,7 +171,7 @@ public final class PathMapEvaluator {
                 LOG.trace("{}.{}: Path map {}: cond={}, policy={}, " +
                           "packet={}", tname, vpm.getIndex(),
                           (rr == null) ? "not matched" : "matched",
-                          cond, policy, packetContext.getDescription());
+                          cond, policy, context.getDescription());
             }
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -121,7 +121,7 @@ public final class FlowAddTask implements Runnable {
      */
     private void checkNodes(TxContext ctx, VTNFlowBuilder builder)
         throws VTNException {
-        InventoryReader reader = ctx.getInventoryReader();
+        InventoryReader reader = ctx.getReadSpecific(InventoryReader.class);
         for (SalNode snode: builder.getFlowNodes()) {
             if (reader.get(snode) == null) {
                 String msg = "Target node is not present: " + snode;
@@ -234,7 +234,8 @@ public final class FlowAddTask implements Runnable {
                           VTNFlowBuilder builder) {
         for (VtnFlowEntry vfent: builder.getDataFlow().getVtnFlowEntry()) {
             RemoveFlowInput input;
-            InventoryReader reader = ctx.getInventoryReader();
+            InventoryReader reader =
+                ctx.getReadSpecific(InventoryReader.class);
             try {
                 input = FlowUtils.createRemoveFlowInput(vfent, reader);
             } catch (VTNException e) {

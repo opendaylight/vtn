@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -23,7 +23,7 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcOutputGenerator;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcUtils;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
-import org.opendaylight.vtn.manager.internal.util.vnode.VTenantUtils;
+import org.opendaylight.vtn.manager.internal.util.vnode.VTenantIdentifier;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -36,7 +36,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.Clear
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.GlobalPathMaps;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.GlobalPathMapsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtn.info.VtnPathMaps;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
@@ -48,9 +47,13 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpda
 public final class ClearPathMapTask extends AbstractTxTask<VtnUpdateType>
     implements RpcOutputGenerator<VtnUpdateType, ClearPathMapOutput> {
     /**
-     * The name of the VTN.
+     * The identifier for the target VTN.
+     *
+     * <p>
+     *   {@code null} means that the global path map is targeted.
+     * </p>
      */
-    private final VnodeName  tenantName;
+    private final VTenantIdentifier  identifier;
 
     /**
      * Create a new task that clears the specified path map container.
@@ -67,20 +70,21 @@ public final class ClearPathMapTask extends AbstractTxTask<VtnUpdateType>
             throw RpcUtils.getNullInputException();
         }
 
-        String name = input.getTenantName();
-        VnodeName vname = (name == null)
-            ? null : VTenantUtils.getVnodeName(name);
-        return new ClearPathMapTask(vname);
+        String tname = input.getTenantName();
+        VTenantIdentifier ident = (tname == null)
+            ? null
+            : VTenantIdentifier.create(tname, true);
+        return new ClearPathMapTask(ident);
     }
 
     /**
      * Construct a new instance.
      *
-     * @param vname  A {@link VnodeName} instance that contains the target
-     *               VTN name. {@code null} means the global path map.
+     * @param ident  The identifier for the target VTN.
+     *               {@code null} means that the global path map is targeted.
      */
-    private ClearPathMapTask(VnodeName vname) {
-        tenantName = vname;
+    private ClearPathMapTask(VTenantIdentifier ident) {
+        identifier = ident;
     }
 
     /**
@@ -127,8 +131,10 @@ public final class ClearPathMapTask extends AbstractTxTask<VtnUpdateType>
     private VtnUpdateType clearVtn(TxContext ctx) throws VTNException {
         // Read the current value.
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
-        InstanceIdentifier<VtnPathMaps> path = VTenantUtils.
-            getIdentifierBuilder(tenantName).child(VtnPathMaps.class).build();
+        InstanceIdentifier<VtnPathMaps> path = identifier.
+            getIdentifierBuilder().
+            child(VtnPathMaps.class).
+            build();
         ReadWriteTransaction tx = ctx.getReadWriteTransaction();
         Optional<VtnPathMaps> opt = DataStoreUtils.read(tx, oper, path);
         VtnUpdateType removed;
@@ -140,7 +146,7 @@ public final class ClearPathMapTask extends AbstractTxTask<VtnUpdateType>
             tx.delete(oper, path);
         } else {
             // Ensure that the target VTN is present.
-            VTenantUtils.readVtn(tx, tenantName);
+            identifier.fetch(tx);
             removed = null;
         }
 
@@ -160,7 +166,7 @@ public final class ClearPathMapTask extends AbstractTxTask<VtnUpdateType>
      */
     @Override
     protected VtnUpdateType execute(TxContext ctx) throws VTNException {
-        return (tenantName == null) ? clearGlobal(ctx) : clearVtn(ctx);
+        return (identifier == null) ? clearGlobal(ctx) : clearVtn(ctx);
     }
 
     // TxTask
@@ -190,9 +196,9 @@ public final class ClearPathMapTask extends AbstractTxTask<VtnUpdateType>
     public void onSuccess(VTNManagerProvider provider, VtnUpdateType result) {
         if (result != null) {
             // REVISIT: Select flow entries affected by the change.
-            FlowRemover remover = (tenantName == null)
+            FlowRemover remover = (identifier == null)
                 ? new AllFlowRemover()
-                : new TenantFlowRemover(tenantName.getValue());
+                : new TenantFlowRemover(identifier);
             addBackgroundTask(provider.removeFlows(remover));
         }
     }

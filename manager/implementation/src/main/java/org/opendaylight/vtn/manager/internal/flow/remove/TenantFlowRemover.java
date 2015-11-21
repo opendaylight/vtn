@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -19,6 +19,7 @@ import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
+import org.opendaylight.vtn.manager.internal.util.vnode.VNodeIdentifier;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -45,6 +46,15 @@ public final class TenantFlowRemover implements FlowRemover {
      */
     public TenantFlowRemover(String tname) {
         tenantName = tname;
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param ident  The identifier for the virtual node in the target VTN.
+     */
+    public TenantFlowRemover(VNodeIdentifier<?> ident) {
+        this(ident.getTenantNameString());
     }
 
     // FlowRemover

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -12,7 +12,7 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
-import org.opendaylight.vtn.manager.internal.L2Host;
+import org.opendaylight.vtn.manager.internal.util.inventory.L2Host;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
@@ -86,15 +86,13 @@ public class FlowMatchUtilsTest extends TestBase {
         esrc = new EthernetSourceBuilder().
             setAddress(src).build();
         emb.setEthernetSource(esrc);
-        host = new L2Host(eaddr.getAddress(), (short)0,
-                          port.getAdNodeConnector());
+        host = new L2Host(eaddr.getAddress(), 0, port);
         match = mb.setEthernetMatch(emb.build()).build();
         assertEquals(host, FlowMatchUtils.getSourceHost(match));
 
         // Specify VLAN ID 4095.
         vid = new VlanId(4095);
-        host = new L2Host(eaddr.getAddress(), (short)4095,
-                          port.getAdNodeConnector());
+        host = new L2Host(eaddr.getAddress(), 4095, port);
         vib.setVlanIdPresent(true).setVlanId(vid);
         match = mb.setVlanMatch(vmb.setVlanId(vib.build()).build()).build();
         assertEquals(host, FlowMatchUtils.getSourceHost(match));

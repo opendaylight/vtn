@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -20,6 +20,8 @@ import org.opendaylight.vtn.manager.util.EtherTypes;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
+
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.DropActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.OutputActionCase;
@@ -50,6 +52,16 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.VlanMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.VlanMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.vlan.match.fields.VlanIdBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.Vtns;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.Vtn;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.VtnKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.vtn.vbridge.list.Vbridge;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.vtn.vbridge.list.VbridgeKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.vtn.mappable.vinterface.list.Vinterface;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.vtn.mappable.vinterface.list.VinterfaceKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vterminal.rev150907.vtn.vterminal.list.Vterminal;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vterminal.rev150907.vtn.vterminal.list.VterminalKey;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
@@ -69,6 +81,70 @@ public abstract class ModelDrivenTestBase extends TestBase {
      * The expected number of flow instructions.
      */
     private static final int  FLOW_INST_SIZE = 1;
+
+    /**
+     * Create a path to the vBridge.
+     *
+     * @param tname  The name of the VTN.
+     * @param bname  The name of the vBridge.
+     * @return  Path to the vBridge.
+     */
+    public static InstanceIdentifier<Vbridge> getBridgePath(
+        String tname, String bname) {
+        return InstanceIdentifier.builder(Vtns.class).
+            child(Vtn.class, new VtnKey(new VnodeName(tname))).
+            child(Vbridge.class, new VbridgeKey(new VnodeName(bname))).
+            build();
+    }
+
+    /**
+     * Create a path to the vInterface attached the vBridge.
+     *
+     * @param tname  The name of the VTN.
+     * @param bname  The name of the vBridge.
+     * @param iname  The name of the vInterface
+     * @return  Path to the vBridge interface.
+     */
+    public static InstanceIdentifier<Vinterface> getBridgeIfPath(
+        String tname, String bname, String iname) {
+        return InstanceIdentifier.builder(Vtns.class).
+            child(Vtn.class, new VtnKey(new VnodeName(tname))).
+            child(Vbridge.class, new VbridgeKey(new VnodeName(bname))).
+            child(Vinterface.class, new VinterfaceKey(new VnodeName(iname))).
+            build();
+    }
+
+    /**
+     * Create a path to the vTerminal.
+     *
+     * @param tname  The name of the VTN.
+     * @param bname  The name of the vTerminal.
+     * @return  Path to the vTerminal.
+     */
+    public static InstanceIdentifier<Vterminal> getTerminalPath(
+        String tname, String bname) {
+        return InstanceIdentifier.builder(Vtns.class).
+            child(Vtn.class, new VtnKey(new VnodeName(tname))).
+            child(Vterminal.class, new VterminalKey(new VnodeName(bname))).
+            build();
+    }
+
+    /**
+     * Create a path to the vInterface attached the vTerminal.
+     *
+     * @param tname  The name of the VTN.
+     * @param bname  The name of the vTerminal.
+     * @param iname  The name of the vInterface
+     * @return  Path to the vBridge interface.
+     */
+    public static InstanceIdentifier<Vinterface> getTerminalIfPath(
+        String tname, String bname, String iname) {
+        return InstanceIdentifier.builder(Vtns.class).
+            child(Vtn.class, new VtnKey(new VnodeName(tname))).
+            child(Vterminal.class, new VterminalKey(new VnodeName(bname))).
+            child(Vinterface.class, new VinterfaceKey(new VnodeName(iname))).
+            build();
+    }
 
     /**
      * Convert the given byte array into MD-SAL MAC address.

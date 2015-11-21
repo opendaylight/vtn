@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,11 +8,14 @@
 
 package org.opendaylight.vtn.manager.internal;
 
+import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
 import com.google.common.util.concurrent.FutureCallback;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.packet.Packet;
@@ -23,6 +26,9 @@ import org.opendaylight.vtn.manager.internal.util.flow.VTNFlowBuilder;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.common.api.clustering.CandidateAlreadyRegisteredException;
+import org.opendaylight.controller.md.sal.common.api.clustering.Entity;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipCandidateRegistration;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListener;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListenerRegistration;
 
@@ -36,23 +42,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnFlowI
  * VTN Manager services used by AD-SAL interface.
  */
 public interface VTNManagerProvider extends AutoCloseable, Executor, TxQueue {
-    /**
-     * Set AD-SAL VTN Manager service.
-     *
-     * @param mgr  VTN Manager service.
-     */
-    void setVTNManager(VTNManagerImpl mgr);
-
-    /**
-     * Shutdown all listener services.
-     */
-    void shutdown();
-
-    /**
-     * Notify that the configuration has been initialized.
-     */
-    void configLoaded();
-
     /**
      * Return a {@link VTNConfig} instance that contains current configuration.
      *
@@ -114,9 +103,18 @@ public interface VTNManagerProvider extends AutoCloseable, Executor, TxQueue {
      *
      * @param egress  A {@link SalPort} instance which specifies the egress
      *                switch port.
-     * @param packet  A {@link Packet} instance to be transmitted.
+     * @param packet  A {@link Packet} instance to transmit.
      */
     void transmit(SalPort egress, Packet packet);
+
+    /**
+     * Transmit all the given packets.
+     *
+     * @param packets  A list of packets to transmit.
+     *                 The left of each elements indicates the egress switch
+     *                 port, and the right indiciates a packet to transmit.
+     */
+    void transmit(List<Pair<SalPort, Packet>> packets);
 
     /**
      * Return the packet route resolver associated with the system default
@@ -153,6 +151,17 @@ public interface VTNManagerProvider extends AutoCloseable, Executor, TxQueue {
      * @return  A future associated with the task which removes VTN data flows.
      */
     VTNFuture<Void> removeFlows(FlowRemover remover);
+
+    /**
+     * Register a candidate for ownership of the given entity.
+     *
+     * @param ent  The entity tobe registered as a candidate of ownership.
+     * @return  An {@link EntityOwnershipCandidateRegistration} instance.
+     * @throws CandidateAlreadyRegisteredException
+     *    The given entity is already registered.
+     */
+    EntityOwnershipCandidateRegistration registerEntity(Entity ent)
+        throws CandidateAlreadyRegisteredException;
 
     /**
      * Register a listener that listens the ownership status of the entity

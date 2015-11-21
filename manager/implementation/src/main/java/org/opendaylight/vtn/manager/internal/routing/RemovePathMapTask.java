@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -9,10 +9,10 @@
 package org.opendaylight.vtn.manager.internal.routing;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 import org.opendaylight.vtn.manager.VTNException;
 
@@ -26,9 +26,7 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcOutputGenerator;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcUtils;
 import org.opendaylight.vtn.manager.internal.util.tx.CompositeTxTask;
-import org.opendaylight.vtn.manager.internal.util.vnode.VTenantUtils;
-
-import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
+import org.opendaylight.vtn.manager.internal.util.vnode.VTenantIdentifier;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
@@ -38,7 +36,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.Remov
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.remove.path.map.output.RemovePathMapResult;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.remove.path.map.output.RemovePathMapResultBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.vtn.path.map.list.VtnPathMap;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
@@ -52,13 +49,13 @@ public final class RemovePathMapTask
     extends CompositeTxTask<VtnUpdateType, RemoveMapTask>
     implements RpcOutputGenerator<List<VtnUpdateType>, RemovePathMapOutput> {
     /**
-     * The name of the target VTN.
+     * The identifier for the target VTN.
      *
      * <p>
      *   {@code null} means that the global path map is targeted.
      * </p>
      */
-    private final VnodeName  tenantName;
+    private final VTenantIdentifier  identifier;
 
     /**
      * Construct a new task that removes all the given path map configurations
@@ -77,45 +74,40 @@ public final class RemovePathMapTask
         }
 
         String tname = input.getTenantName();
-        VnodeName vname;
-        if (tname == null) {
-            // Global path map is targeted.
-            vname = null;
-        } else {
-            // VTN path map is targeted.
-            vname = VTenantUtils.getVnodeName(tname);
-        }
+        VTenantIdentifier ident = (tname == null)
+            ? null
+            : VTenantIdentifier.create(tname, true);
 
         List<Integer> indexList = input.getMapIndex();
         if (indexList == null || indexList.isEmpty()) {
             throw PathMapUtils.getNullMapIndexException();
         }
 
-        Map<Integer, RemoveMapTask> taskMap = new HashMap<>();
+        Set<Integer> idxSet = new HashSet<>();
+        List<RemoveMapTask> taskList = new ArrayList<>();
         for (Integer index: indexList) {
-            if (!taskMap.containsKey(index)) {
-                InstanceIdentifier<VtnPathMap> path = (vname == null)
+            if (idxSet.add(index)) {
+                InstanceIdentifier<VtnPathMap> path = (ident == null)
                     ? PathMapUtils.getIdentifier(index)
-                    : PathMapUtils.getIdentifier(vname, index);
-                taskMap.put(index, new RemoveMapTask(path, index));
+                    : PathMapUtils.getIdentifier(ident, index);
+                taskList.add(new RemoveMapTask(path, index));
             }
         }
 
-        List<RemoveMapTask> taskList = new ArrayList<>(taskMap.values());
-        return new RemovePathMapTask(vname, taskList);
+        return new RemovePathMapTask(ident, taskList);
     }
 
     /**
      * Construct a new instance.
      *
-     * @param vname  A {@link VnodeName} instance that contains the name of the
-     *               target VTN. {@code null} means that the global path map
-     *               is targeted.
+     * @param ident  The identifier for the target VTN.
+     *               {@code null} means that the global path map is targeted.
      * @param tasks  A list of tasks that delete path map configuration.
      */
-    private RemovePathMapTask(VnodeName vname, List<RemoveMapTask> tasks) {
+    private RemovePathMapTask(VTenantIdentifier ident,
+                              List<RemoveMapTask> tasks) {
         super(tasks);
-        tenantName = vname;
+        identifier = ident;
     }
 
     // CompositeTxTask
@@ -125,10 +117,9 @@ public final class RemovePathMapTask
      */
     @Override
     protected void onStarted(TxContext ctx) throws VTNException {
-        if (tenantName != null) {
+        if (identifier != null) {
             // Ensure that the target VTN is present.
-            ReadWriteTransaction tx = ctx.getReadWriteTransaction();
-            VTenantUtils.readVtn(tx, tenantName);
+            identifier.fetch(ctx.getReadWriteTransaction());
         }
     }
 
@@ -143,9 +134,9 @@ public final class RemovePathMapTask
         for (VtnUpdateType status: result) {
             if (status != null) {
                 // REVISIT: Select flow entries affected by the change.
-                FlowRemover remover = (tenantName == null)
+                FlowRemover remover = (identifier == null)
                     ? new AllFlowRemover()
-                    : new TenantFlowRemover(tenantName.getValue());
+                    : new TenantFlowRemover(identifier);
                 addBackgroundTask(provider.removeFlows(remover));
                 break;
             }

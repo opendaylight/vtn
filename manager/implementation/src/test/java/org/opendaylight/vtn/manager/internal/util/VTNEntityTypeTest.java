@@ -37,7 +37,10 @@ public class VTNEntityTypeTest extends TestBase {
         assertEquals(etype.getType(), ent.getType());
         assertSame(ent, VTNEntityType.getGlobalEntity(etype));
 
-        assertEquals(null, VTNEntityType.getGlobalEntity(null));
+        VTNEntityType[] invalid = {null, VTNEntityType.VBRIDGE};
+        for (VTNEntityType et: invalid) {
+            assertEquals(null, VTNEntityType.getGlobalEntity(et));
+        }
     }
 
     /**
@@ -60,5 +63,21 @@ public class VTNEntityTypeTest extends TestBase {
         assertTrue(set.remove(ent));
 
         assertTrue(set.isEmpty());
+    }
+
+    /**
+     * Test case for {@link VTNEntityType#getType()}.
+     */
+    @Test
+    public void testGetType() {
+        Set<String> set = new HashSet<>();
+        for (VTNEntityType etype: VTNEntityType.values()) {
+            // Every entity type must have "vtn:" prefix.
+            String type = etype.getType();
+            assertTrue(type.startsWith("vtn:"));
+
+            // Entity type string must be unique.
+            assertTrue(set.add(type));
+        }
     }
 }

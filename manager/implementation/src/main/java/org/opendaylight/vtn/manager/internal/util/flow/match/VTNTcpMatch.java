@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -164,13 +164,16 @@ public final class VTNTcpMatch extends VTNLayer4PortMatch<TcpHeader> {
      */
     @Override
     public VtnTcpMatch toVtnLayer4Match() {
-        VtnTcpMatchBuilder vtmatch = null;
+        VtnTcpMatchBuilder vtmatch;
         VTNPortRange src = getSourcePort();
-        if (src != null) {
+        if (src == null) {
+            vtmatch = null;
+        } else {
             TcpSourceRangeBuilder sb = new TcpSourceRangeBuilder().
                 setPortFrom(src.getPortNumberFrom()).
                 setPortTo(src.getPortNumberTo());
-            vtmatch = create(vtmatch).setTcpSourceRange(sb.build());
+            vtmatch = create((VtnTcpMatchBuilder)null).
+                setTcpSourceRange(sb.build());
         }
 
         VTNPortRange dst = getDestinationPort();
@@ -189,10 +192,13 @@ public final class VTNTcpMatch extends VTNLayer4PortMatch<TcpHeader> {
      */
     @Override
     public void setMatch(MatchBuilder builder, IpVersion ver) {
-        TcpMatchBuilder tmatch = null;
+        TcpMatchBuilder tmatch;
         VTNPortRange src = getSourcePort();
-        if (src != null) {
-            tmatch = create(tmatch).setTcpSourcePort(src.getPortNumberFrom());
+        if (src == null) {
+            tmatch = null;
+        } else {
+            tmatch = create((TcpMatchBuilder)null).
+                setTcpSourcePort(src.getPortNumberFrom());
         }
 
         VTNPortRange dst = getDestinationPort();

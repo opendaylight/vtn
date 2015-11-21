@@ -35,7 +35,7 @@ public final class SwitchLink {
     /**
      * True if this link is a static link.
      */
-    private Boolean  staticLink;
+    private boolean  staticLink;
 
     /**
      * Construct a new instance.
@@ -52,9 +52,7 @@ public final class SwitchLink {
         linkId = src;
         source = src;
         destination = dst;
-        if (st) {
-            staticLink = Boolean.TRUE;
-        }
+        staticLink = st;
     }
 
     /**
@@ -75,9 +73,7 @@ public final class SwitchLink {
      */
     public SwitchLink(VtnLink vlink) {
         this((VtnLinkInfo)vlink);
-        if (Boolean.TRUE.equals(vlink.isStaticLink())) {
-            staticLink = Boolean.TRUE;
-        }
+        staticLink = Boolean.TRUE.equals(vlink.isStaticLink());
     }
 
     /**
@@ -115,7 +111,7 @@ public final class SwitchLink {
      * @return {@code true} only if this link is a static link.
      */
     public boolean isStaticLink() {
-        return Boolean.TRUE.equals(staticLink);
+        return staticLink;
     }
 
     // Object
@@ -139,7 +135,7 @@ public final class SwitchLink {
         return (Objects.equals(linkId, swl.linkId) &&
                 Objects.equals(source, swl.source) &&
                 Objects.equals(destination, swl.destination) &&
-                Objects.equals(staticLink, swl.staticLink));
+                staticLink == swl.staticLink);
     }
 
     /**

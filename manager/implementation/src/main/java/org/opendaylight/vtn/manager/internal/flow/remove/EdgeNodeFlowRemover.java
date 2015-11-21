@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,15 +8,16 @@
 
 package org.opendaylight.vtn.manager.internal.flow.remove;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.vtn.manager.internal.L2Host;
-import org.opendaylight.vtn.manager.internal.PortFilter;
-import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
-import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
+import org.opendaylight.vtn.manager.internal.util.inventory.L2Host;
+import org.opendaylight.vtn.manager.internal.util.inventory.MacVlan;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
+import org.opendaylight.vtn.manager.internal.util.inventory.port.PortFilter;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
@@ -97,13 +98,13 @@ public final class EdgeNodeFlowRemover
      * @param l2h  A {@link L2Host} which represents the edge host of the
      *             data flow.
      * @return  {@code true} only if the given edge host meets the condition.
+     * @throws VTNException  An error occurred.
      */
-    private boolean match(L2Host l2h) {
+    private boolean match(L2Host l2h) throws VTNException {
         if (l2h != null) {
             MacVlan mv = l2h.getHost();
-            if ((int)mv.getVlan() == vlanId) {
-                return portFilter.accept(l2h.getPort().getAdNodeConnector(),
-                                         null);
+            if (mv.getVlanId() == vlanId) {
+                return portFilter.accept(l2h.getPort(), null);
             }
         }
 
@@ -129,7 +130,7 @@ public final class EdgeNodeFlowRemover
      */
     @Override
     protected boolean select(FlowCache fc) throws VTNException {
-        ObjectPair<L2Host, L2Host> edges = fc.getEdgeHosts();
+        Pair<L2Host, L2Host> edges = fc.getEdgeHosts();
         return (edges == null)
             ? false
             : (match(edges.getLeft()) || match(edges.getRight()));

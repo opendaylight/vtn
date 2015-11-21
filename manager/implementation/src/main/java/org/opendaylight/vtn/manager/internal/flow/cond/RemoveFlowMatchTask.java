@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -9,10 +9,10 @@
 package org.opendaylight.vtn.manager.internal.flow.cond;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 import org.opendaylight.vtn.manager.VTNException;
 
@@ -73,14 +73,14 @@ public final class RemoveFlowMatchTask
             throw FlowCondUtils.getMatchIndexMissingException();
         }
 
-        Map<Integer, RemoveMatchTask> taskMap = new HashMap<>();
+        Set<Integer> idxSet = new HashSet<>();
+        List<RemoveMatchTask> taskList = new ArrayList<>();
         for (Integer index: indexList) {
-            if (!taskMap.containsKey(index)) {
-                taskMap.put(index, new RemoveMatchTask(vname, index));
+            if (idxSet.add(index)) {
+                taskList.add(new RemoveMatchTask(vname, index));
             }
         }
 
-        List<RemoveMatchTask> taskList = new ArrayList<>(taskMap.values());
         return new RemoveFlowMatchTask(vname, taskList);
     }
 

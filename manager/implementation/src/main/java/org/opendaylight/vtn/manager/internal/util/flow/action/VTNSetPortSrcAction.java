@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -68,6 +68,17 @@ public final class VTNSetPortSrcAction extends VTNPortAction {
      */
     public VTNSetPortSrcAction(int p) {
         super(p);
+    }
+
+    /**
+     * Construct a new instance with specifying action order.
+     *
+     * @param p  The port numbet to be set.
+     * @param ord  An integer which determines the order of flow actions
+     *             in a flow entry.
+     */
+    public VTNSetPortSrcAction(int p, Integer ord) {
+        super(p, ord);
     }
 
     /**
@@ -178,5 +189,36 @@ public final class VTNSetPortSrcAction extends VTNPortAction {
         }
 
         return result;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public FlowAction toFlowAction() {
+        return new org.opendaylight.vtn.manager.flow.action.
+            SetTpSrcAction(getPort());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VTNSetPortSrcAction toFlowFilterAction(VtnAction vact, Integer ord)
+        throws RpcException {
+        VtnSetPortSrcActionCase ac = cast(VtnSetPortSrcActionCase.class, vact);
+        return new VTNSetPortSrcAction(ac, ord);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VTNSetPortSrcAction toFlowFilterAction(FlowAction fact, int ord)
+        throws RpcException {
+        org.opendaylight.vtn.manager.flow.action.SetTpSrcAction act =
+            cast(org.opendaylight.vtn.manager.flow.action.SetTpSrcAction.class,
+                 fact);
+        return new VTNSetPortSrcAction(act, ord);
     }
 }

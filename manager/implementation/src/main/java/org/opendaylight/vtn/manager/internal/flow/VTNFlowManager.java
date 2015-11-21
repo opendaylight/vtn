@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -70,6 +70,7 @@ import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipChange;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListener;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListenerRegistration;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.binding.api.NotificationService;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
@@ -166,6 +167,12 @@ public final class VTNFlowManager extends SalNotificationListener
      * A periodic timer task that updates the flow statistics.
      */
     private final AtomicReference<StatsTimerTask>  statsTimer =
+        new AtomicReference<>();
+
+    /**
+     * Registration of the entity ownership listener.
+     */
+    private final AtomicReference<EntityOwnershipListenerRegistration>  entityListener =
         new AtomicReference<>();
 
     /**
@@ -373,6 +380,14 @@ public final class VTNFlowManager extends SalNotificationListener
      * Shut down the VTN flow service.
      */
     public void shutdown() {
+        // Unregister entity ownership listener before stopping the
+        // flow service.
+        EntityOwnershipListenerRegistration reg =
+            entityListener.getAndSet(null);
+        if (reg != null) {
+            reg.close();
+        }
+
         shutdownFlowService();
         stopStatsTimer();
 
@@ -551,14 +566,12 @@ public final class VTNFlowManager extends SalNotificationListener
      * Start the flow statistics updater if not yet started.
      */
     private void startStatsTimer() {
-        if (flowService != null) {
-            StatsTimerTask current = statsTimer.get();
-            if (current == null) {
-                StatsTimerTask task = new StatsTimerTask(txQueue);
-                if (statsTimer.compareAndSet(current, task)) {
-                    task.start(vtnProvider.getTimer());
-                    LOG.info("Flow statistics timer task has been started.");
-                }
+        StatsTimerTask current = statsTimer.get();
+        if (current == null) {
+            StatsTimerTask task = new StatsTimerTask(txQueue);
+            if (statsTimer.compareAndSet(null, task)) {
+                task.start(vtnProvider.getTimer());
+                LOG.info("Flow statistics timer task has been started.");
             }
         }
     }
@@ -609,8 +622,8 @@ public final class VTNFlowManager extends SalNotificationListener
         // Register Entity ownership listener for the flow statistics.
         // Flow statistics timer will be started immediately if this process
         // is the owner of the flow statistics.
-        addCloseable(vtnProvider.
-                     registerListener(VTNEntityType.FLOW_STATS, this));
+        entityListener.set(
+            vtnProvider.registerListener(VTNEntityType.FLOW_STATS, this));
 
         return f;
     }
@@ -806,12 +819,21 @@ public final class VTNFlowManager extends SalNotificationListener
      *
      * @param change  An {@link EntityOwnershipChange} instance.
      */
+    @Override
     public void ownershipChanged(EntityOwnershipChange change) {
         LOG.debug("Received entity ownerchip change: {}", change);
-        if (change.isOwner()) {
-            startStatsTimer();
-        } else {
-            stopStatsTimer();
+
+        if (entityListener.get() != null) {
+            if (change.isOwner()) {
+                startStatsTimer();
+
+                // Ensure that the listener is still valid.
+                if (entityListener.get() == null) {
+                    stopStatsTimer();
+                }
+            } else {
+                stopStatsTimer();
+            }
         }
     }
 }

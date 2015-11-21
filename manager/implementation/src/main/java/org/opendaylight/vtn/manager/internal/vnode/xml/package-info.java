@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -20,6 +20,7 @@
     @XmlJavaTypeAdapter(value = LongAdapter.class, type = long.class),
     @XmlJavaTypeAdapter(value = DoubleAdapter.class, type = double.class),
     @XmlJavaTypeAdapter(value = DoubleAdapter.class, type = Double.class),
+    @XmlJavaTypeAdapter(value = VnodeNameAdapter.class, type = VnodeName.class),
 })
 package org.opendaylight.vtn.manager.internal.vnode.xml;
 
@@ -31,3 +32,6 @@ import org.opendaylight.vtn.manager.util.xml.adapters.DoubleAdapter;
 import org.opendaylight.vtn.manager.util.xml.adapters.IntegerAdapter;
 import org.opendaylight.vtn.manager.util.xml.adapters.LongAdapter;
 import org.opendaylight.vtn.manager.util.xml.adapters.ShortAdapter;
+import org.opendaylight.vtn.manager.util.xml.adapters.VnodeNameAdapter;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;

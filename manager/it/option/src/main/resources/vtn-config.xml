@@ -15,4 +15,7 @@
 <vtn-config>
   <!-- There is no need to wait for completion of topology detection. -->
   <topology-wait>0</topology-wait>
+
+  <!-- Disable host tracking. -->
+  <host-tracking>false</host-tracking>
 </vtn-config>
