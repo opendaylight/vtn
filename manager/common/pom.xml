@@ -524,13 +524,6 @@
       </dependency>
       <dependency>
         <groupId>org.opendaylight.vtn</groupId>
-        <artifactId>manager.config</artifactId>
-        <version>${project.version}</version>
-        <classifier>config</classifier>
-        <type>xml</type>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.vtn</groupId>
         <artifactId>manager.model</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -541,6 +534,13 @@
       </dependency>
       <dependency>
         <groupId>org.opendaylight.vtn</groupId>
+        <artifactId>manager.implementation</artifactId>
+        <version>${project.version}</version>
+        <classifier>config</classifier>
+        <type>xml</type>
+      </dependency>
+      <dependency>
+        <groupId>org.opendaylight.vtn</groupId>
         <artifactId>manager.northbound</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -548,6 +548,13 @@
         <groupId>org.opendaylight.vtn</groupId>
         <artifactId>manager.neutron</artifactId>
         <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.opendaylight.vtn</groupId>
+        <artifactId>manager.neutron</artifactId>
+        <version>${project.version}</version>
+        <classifier>config</classifier>
+        <type>xml</type>
       </dependency>
 
       <!-- VTN Manager feature -->

@@ -33,7 +33,7 @@
     <bundle>mvn:org.opendaylight.vtn/manager/${project.version}</bundle>
     <bundle>mvn:org.opendaylight.vtn/manager.model/${project.version}</bundle>
     <bundle>mvn:org.opendaylight.vtn/manager.implementation/${project.version}</bundle>
-    <configfile finalname="etc/opendaylight/karaf/80-vtn.xml">mvn:org.opendaylight.vtn/manager.config/${project.version}/xml/config</configfile>
+    <configfile finalname="etc/opendaylight/karaf/80-vtn.xml">mvn:org.opendaylight.vtn/manager.implementation/${project.version}/xml/config</configfile>
   </feature>
 
   <feature

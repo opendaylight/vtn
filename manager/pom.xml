@@ -36,7 +36,6 @@
   </properties>
 
   <modules>
-    <module>config</module>
     <module>model</module>
     <module>api</module>
     <module>implementation</module>

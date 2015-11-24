@@ -31,6 +31,9 @@
   </scm>
 
   <properties>
+    <vtn.config.srcdir>src/main/config</vtn.config.srcdir>
+    <vtn.config.builddir>${project.build.directory}/config</vtn.config.builddir>
+    <vtn.config.xml>default-config.xml</vtn.config.xml>
     <vtn.manager.dir>../..</vtn.manager.dir>
     <vtn.build.generated-sources>
       ${project.build.directory}/generated-sources
@@ -39,6 +42,68 @@
     <jmxGeneratorPath>${vtn.build.generated-sources}/config</jmxGeneratorPath>
     <docGeneratorPath>${project.build.directory}/site/models</docGeneratorPath>
   </properties>
+
+  <profiles>
+    <profile>
+      <activation>
+        <file>
+          <exists>${vtn.config.srcdir}/${vtn.config.xml}</exists>
+        </file>
+      </activation>
+      <build>
+        <plugins>
+          <!--
+              Copy config file into the build directory, or maven meta data
+              will be created under src directory.
+          -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-resources-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>copy-resources</id>
+                <phase>compile</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <resources>
+                    <resource>
+                      <directory>${vtn.config.srcdir}</directory>
+                    </resource>
+                  </resources>
+                  <outputDirectory>${vtn.config.builddir}</outputDirectory>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>attach-artifacts</id>
+                <goals>
+                  <goal>attach-artifact</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <artifacts>
+                    <artifact>
+                      <file>${vtn.config.builddir}/${vtn.config.xml}</file>
+                      <type>xml</type>
+                      <classifier>config</classifier>
+                    </artifact>
+                  </artifacts>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
   <build>
     <pluginManagement>
