@@ -42,8 +42,6 @@
       dav:http://nexus.opendaylight.org/content/sites/site
     </sitedeploy>
     <buildnumber.version>1.2</buildnumber.version>
-    <maven-dependency.version>2.8</maven-dependency.version>
-    <buildhelper.version>1.8</buildhelper.version>
     <execplugin.version>1.2.1</execplugin.version>
 
     <odl.odlparent.version>1.6.0-SNAPSHOT</odl.odlparent.version>
@@ -76,19 +74,26 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-dependency-plugin</artifactId>
-          <version>${maven-dependency.version}</version>
-        </plugin>
-        <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>buildnumber-maven-plugin</artifactId>
           <version>${buildnumber.version}</version>
         </plugin>
+
         <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>build-helper-maven-plugin</artifactId>
-          <version>${buildhelper.version}</version>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <configuration>
+            <finalName>${project.artifactId}-${build.suffix}</finalName>
+            <useStandardDocletOptions>true</useStandardDocletOptions>
+            <charset>${project.reporting.outputEncoding}</charset>
+            <encoding>${project.reporting.outputEncoding}</encoding>
+            <docencoding>${project.reporting.outputEncoding}</docencoding>
+            <breakiterator>true</breakiterator>
+            <version>true</version>
+            <author>true</author>
+            <keywords>true</keywords>
+            <additionalparam>${vtn.javadoc.args}</additionalparam>
+          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>
