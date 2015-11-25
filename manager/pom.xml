@@ -68,5 +68,43 @@
         <module>it</module>
       </modules>
     </profile>
+
+    <profile>
+      <id>docs</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+
+      <!-- Generate aggregated API javadoc. -->
+      <properties>
+        <doctitle>VTN Manager ${project.version} API</doctitle>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+              <windowtitle>${doctitle}</windowtitle>
+              <includeDependencySources>true</includeDependencySources>
+              <excludePackageNames>
+                ${javadoc.exclude},*.neutron
+              </excludePackageNames>
+              <sourceFileExcludes>
+                <sourceFileExclude>**\/$*.java</sourceFileExclude>
+              </sourceFileExcludes>
+            </configuration>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>aggregate-jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>
