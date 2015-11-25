@@ -27,11 +27,11 @@
             <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">binding:binding-broker-osgi-registry</type>
             <name>binding-osgi-broker</name>
           </broker>
-            <bridgeName>br-int</bridgeName>
-            <portName>ens33</portName>
-            <protocol>openflow13</protocol>
-            <failMode>secure</failMode>
-          </module>
+          <bridgeName>br-int</bridgeName>
+          <portName>ens33</portName>
+          <protocol>openflow13</protocol>
+          <failMode>secure</failMode>
+        </module>
       </modules>
     </data>
   </configuration>
