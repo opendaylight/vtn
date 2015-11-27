@@ -6,7 +6,7 @@
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.vtn.manager.neutron;
+package org.opendaylight.vtn.manager.neutron.impl;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
@@ -33,7 +33,7 @@ import com.google.common.util.concurrent.CheckedFuture;
 public class NeutronProvider implements BindingAwareProvider, AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(NeutronProvider.class);
-    private static DataBroker db;
+    private DataBroker  dataBroker;
     private OvsdbDataChangeListener ovsdbDataChangeListener;
     private NeutronNetworkChangeListener neutronNetworkChangeListener;
     private PortDataChangeListener portDataChangeListener;
@@ -45,12 +45,18 @@ public class NeutronProvider implements BindingAwareProvider, AutoCloseable {
     @Override
     public void onSessionInitiated(ProviderContext session) {
         LOG.trace("Neutron provider Session Initiated");
-        db = session.getSALService(DataBroker.class);
-        ovsdbDataChangeListener = new OvsdbDataChangeListener(db);
-        neutronNetworkChangeListener = new NeutronNetworkChangeListener(db);
+        DataBroker db = session.getSALService(DataBroker.class);
+        dataBroker = db;
+
+        MdsalUtils md = new MdsalUtils(db);
+        VTNManagerService vtn = new VTNManagerService(md, session);
+
+        ovsdbDataChangeListener = new OvsdbDataChangeListener(db, md, vtn);
+        neutronNetworkChangeListener =
+            new NeutronNetworkChangeListener(db, vtn);
         initializeOvsdbTopology(LogicalDatastoreType.OPERATIONAL);
         initializeOvsdbTopology(LogicalDatastoreType.CONFIGURATION);
-        portDataChangeListener = new PortDataChangeListener(db);
+        portDataChangeListener = new PortDataChangeListener(db, vtn);
     }
 
      /**
@@ -69,16 +75,18 @@ public class NeutronProvider implements BindingAwareProvider, AutoCloseable {
      * @param type
      */
     private void initializeOvsdbTopology(LogicalDatastoreType type) {
-        InstanceIdentifier<Topology> path = InstanceIdentifier
-                .create(NetworkTopology.class)
-                .child(Topology.class, new TopologyKey(new TopologyId(new Uri("ovsdb:1"))));
-        ReadWriteTransaction transaction = db.newReadWriteTransaction();
+        TopologyId topoId = new TopologyId(new Uri("ovsdb:1"));
+        InstanceIdentifier<Topology> path = InstanceIdentifier.
+            builder(NetworkTopology.class).
+            child(Topology.class, new TopologyKey(topoId)).
+            build();
+        ReadWriteTransaction transaction = dataBroker.newReadWriteTransaction();
         initializeTopology(transaction, type);
         CheckedFuture<Optional<Topology>, ReadFailedException> ovsdbTp = transaction.read(type, path);
         try {
             if (!ovsdbTp.get().isPresent()) {
-                TopologyBuilder tpb = new TopologyBuilder();
-                tpb.setTopologyId(new TopologyId(new Uri("ovsdb:1")));
+                TopologyBuilder tpb = new TopologyBuilder().
+                    setTopologyId(topoId);
                 transaction.put(type, path, tpb.build());
                 transaction.submit();
             } else {

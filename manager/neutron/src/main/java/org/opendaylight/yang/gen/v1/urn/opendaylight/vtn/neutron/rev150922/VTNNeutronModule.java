@@ -12,11 +12,11 @@ package org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.neutron.rev150922;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opendaylight.vtn.manager.neutron.NeutronProvider;
+import org.opendaylight.vtn.manager.neutron.impl.NeutronProvider;
+import org.opendaylight.vtn.manager.neutron.impl.OVSDBEventHandler;
 
 import org.opendaylight.controller.config.api.DependencyResolver;
 import org.opendaylight.controller.config.api.ModuleIdentifier;
-import org.opendaylight.vtn.manager.neutron.OVSDBEventHandler;
 
 public class VTNNeutronModule extends AbstractVTNNeutronModule {
     private static final Logger LOG =
