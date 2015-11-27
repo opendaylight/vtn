@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.vtn.manager.neutron;
+package org.opendaylight.vtn.manager.neutron.impl;
 
 import java.util.Set;
 import java.util.Map;
@@ -29,17 +29,13 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class NeutronNetworkChangeListener implements AutoCloseable, DataChangeListener {
+public final class NeutronNetworkChangeListener
+    implements AutoCloseable, DataChangeListener {
     /**
      * Logger instance.
      */
     private static final Logger  LOG =
         LoggerFactory.getLogger(NeutronNetworkChangeListener.class);
-
-    /**
-     * DataBroker Object to perform MDSAL operation.
-     */
-    private DataBroker dataBroker = null;
 
     /**
      * ListenerRegistration Object to perform registration.
@@ -54,24 +50,27 @@ public class NeutronNetworkChangeListener implements AutoCloseable, DataChangeLi
     /**
      * Class constructor setting the data broker.
      *
-     * @param dataBroker the {@link org.opendaylight.controller.md.sal.binding.api.DataBroker}
+     * @param db   A {@link DataBroker} instance.
+     * @param vtn  A {@link VTNManagerService} instance.
      */
-    public NeutronNetworkChangeListener(DataBroker dataBroker) {
+    public NeutronNetworkChangeListener(DataBroker db, VTNManagerService vtn) {
         LOG.info("Network DataChange Listener Registration()");
-        this.dataBroker = dataBroker;
-        InstanceIdentifier<Network> path = InstanceIdentifier.create(Neutron.class)
-                .child(Networks.class)
-                .child(Network.class);
-        networkHandler = new NetworkHandler();
-        registration = this.dataBroker.registerDataChangeListener(LogicalDatastoreType.CONFIGURATION, path, this, DataChangeScope.SUBTREE);
-
+        InstanceIdentifier<Network> path = InstanceIdentifier.
+            builder(Neutron.class).
+            child(Networks.class).
+            child(Network.class).
+            build();
+        networkHandler = new NetworkHandler(vtn);
+        registration = db.registerDataChangeListener(
+            LogicalDatastoreType.CONFIGURATION, path, this,
+            DataChangeScope.SUBTREE);
     }
 
     /**
-     * {@inheritDoc}
+     * Close the neutron network change listener.
      */
     @Override
-    public void close() throws Exception {
+    public void close() {
         registration.close();
     }
 
@@ -95,7 +94,7 @@ public class NeutronNetworkChangeListener implements AutoCloseable, DataChangeLi
         for (Entry<InstanceIdentifier<?>, DataObject> newNetwork : changes.getCreatedData().entrySet()) {
             if (newNetwork.getValue() instanceof Network) {
                 Network network = (Network)newNetwork.getValue();
-                if (!(null == newNetwork)) {
+                if (network != null) {
                     networkHandler.neutronNetworkCreated(network);
                 }
             }
@@ -111,7 +110,7 @@ public class NeutronNetworkChangeListener implements AutoCloseable, DataChangeLi
         for (Entry<InstanceIdentifier<?>, DataObject> modifyNetwork : changes.getUpdatedData().entrySet()) {
             if (modifyNetwork.getValue() instanceof Network) {
                 Network network = (Network)modifyNetwork.getValue();
-                if (!(null == modifyNetwork)) {
+                if (network != null) {
                     networkHandler.neutronNetworkUpdated(network);
                 }
             }

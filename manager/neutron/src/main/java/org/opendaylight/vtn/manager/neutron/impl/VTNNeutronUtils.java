@@ -1,46 +1,27 @@
 /*
- * Copyright (c) 2013, 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2013, 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.vtn.manager.neutron;
+package org.opendaylight.vtn.manager.neutron.impl;
 
-
-import java.net.HttpURLConnection;
 import java.util.UUID;
-
-import org.opendaylight.vtn.manager.IVTNManager;
-import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.VTenantPath;
-import org.opendaylight.vtn.manager.VBridgePath;
-import org.opendaylight.vtn.manager.VBridgeIfPath;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opendaylight.controller.sal.utils.ServiceHelper;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-
-
-
 /**
  * Base utility functions used by neutron handlers.
  */
-public class VTNNeutronUtils {
-
+public final class VTNNeutronUtils {
     /**
      * Logger instance.
      */
-    static final Logger LOG = LoggerFactory.getLogger(VTNNeutronUtils.class);
-
-    /**
-     * VTN manager service instance.
-     */
-    private IVTNManager vtnManager;
+    private static final Logger LOG =
+        LoggerFactory.getLogger(VTNNeutronUtils.class);
 
     /**
      * UUID version number position.
@@ -91,57 +72,9 @@ public class VTNNeutronUtils {
     private static final int KEYSTONE_ID_LEN = 32;
 
     /**
-     * Class constructor.
+     * Private constructor that protects this class from instantiating.
      */
-    public VTNNeutronUtils() {
-        vtnManager = getVTNManager();
-    }
-
-    /**
-     * get VTNManager instance.
-     *
-     * @return VTN manager service instance
-     */
-    protected IVTNManager getVTNManager() {
-        IVTNManager mgr = (IVTNManager)ServiceHelper.getInstance(
-                IVTNManager.class, "default", this);
-
-        if (mgr == null) {
-            LOG.error("manager instance is not available");
-        }
-        return mgr;
-    }
-
-    /**
-     * Convert failure status returned by the VTN manager into
-     * neutron API service errors.
-     *
-     * @param status VTN manager status
-     * @return  An error to be returned to neutron API service.
-     */
-    protected static final int getException(Status status) {
-        int result = HttpURLConnection.HTTP_INTERNAL_ERROR;
-
-        assert !status.isSuccess();
-
-        StatusCode code = status.getCode();
-        LOG.trace("Execption code - {}, description - {}",
-                  code, status.getDescription());
-
-        if (code == StatusCode.BADREQUEST) {
-            result = HttpURLConnection.HTTP_BAD_REQUEST;
-        } else if (code == StatusCode.CONFLICT) {
-            result = HttpURLConnection.HTTP_CONFLICT;
-        } else if (code == StatusCode.NOTACCEPTABLE) {
-            result = HttpURLConnection.HTTP_NOT_ACCEPTABLE;
-        } else if (code == StatusCode.NOTFOUND) {
-            result = HttpURLConnection.HTTP_NOT_FOUND;
-        } else {
-            result = HttpURLConnection.HTTP_INTERNAL_ERROR;
-        }
-
-        return result;
-    }
+    private VTNNeutronUtils() {}
 
     /**
      * Convert UUID to VTN key syntax.
@@ -149,7 +82,7 @@ public class VTNNeutronUtils {
      * @param id neutron object UUID.
      * @return key in compliance to VTN object key.
      */
-    protected static String convertUUIDToKey(String id) {
+    public static String convertUUIDToKey(String id) {
 
         String key = null;
         if (id == null) {
@@ -178,115 +111,12 @@ public class VTNNeutronUtils {
     }
 
     /**
-     * Check if tenant configuration exist.
-     *
-     * @param tenantID tenant identifier provided by neutron.
-     * @return tenant existing status in HTTP response status code.
-     */
-    protected int isTenantExist(String tenantID) {
-        int result = HttpURLConnection.HTTP_NOT_FOUND;
-        if (tenantID == null) {
-            return HttpURLConnection.HTTP_BAD_REQUEST;
-        }
-
-        VTenantPath path = new VTenantPath(tenantID);
-        try {
-            if (vtnManager.getTenant(path) != null) {
-                result = HttpURLConnection.HTTP_OK;
-            }
-        } catch (VTNException e) {
-            LOG.error("isTenantExist error, path - {}, e - {}", path,
-                      e.toString());
-            result = getException(e.getStatus());
-        }
-        return result;
-    }
-
-    /**
-     * Check if L2 virtual bridge configuration exist in tenant.
-     *
-     * @param tenantID tenant identifier provided by neutron.
-     * @param bridgeID bridge identifier provided by neutron.
-     * @return bridge existing status in HTTP response status code.
-     */
-    protected int isBridgeExist(String tenantID, String bridgeID) {
-        int result = HttpURLConnection.HTTP_NOT_FOUND;
-        if ((tenantID == null) || (bridgeID == null)) {
-            return HttpURLConnection.HTTP_BAD_REQUEST;
-        }
-        LOG.trace("Bridge exists");
-        VBridgePath path = new VBridgePath(tenantID, bridgeID);
-        try {
-            if (vtnManager.getBridge(path) != null) {
-                result = HttpURLConnection.HTTP_OK;
-                LOG.trace("Bridge exists succeeded" + result);
-            }
-        } catch (VTNException e) {
-            LOG.error("isBridgeExist error, path - {}, e - {}", path,
-                      e.toString());
-            result = getException(e.getStatus());
-        }
-        return result;
-    }
-
-    /**
-     * Check if interface configuration exist in L2 virtual bridge.
-     *
-     * @param tenantID tenant identifier provided by neutron.
-     * @param bridgeID bridge identifier provided by neutron.
-     * @param portID port identifier provided by neutron.
-     * @return interface existing status in HTTP response status code.
-     */
-    protected int isBridgeInterfaceExist(String tenantID,
-                                         String bridgeID,
-                                         String portID) {
-        int result = HttpURLConnection.HTTP_NOT_FOUND;
-        if ((tenantID == null) || (bridgeID == null) || (portID == null)) {
-            return HttpURLConnection.HTTP_BAD_REQUEST;
-        }
-
-        VBridgeIfPath path = new VBridgeIfPath(tenantID, bridgeID, portID);
-        try {
-            if (vtnManager.getInterface(path) != null) {
-                result = HttpURLConnection.HTTP_OK;
-            }
-        } catch (VTNException e) {
-            LOG.error("isBridgeInterfaceExist error, path - {}, e - {}", path,
-                      e.toString());
-            result = getException(e.getStatus());
-        }
-        return result;
-    }
-
-
-    /**
-     * Invoked when a vtn manager service is registered.
-     *
-     * @param service  VTN manager service.
-     */
-    void setVTNManager(IVTNManager service) {
-        LOG.trace("Set vtn manager: {}", service);
-        this.vtnManager = service;
-    }
-
-    /**
-     * Invoked when a vtn manager service is unregistered.
-     *
-     * @param service  VTN manager service.
-     */
-    void unsetVTNManager(IVTNManager service) {
-        if (this.vtnManager == service) {
-            LOG.trace("Unset vtn manager: {}", service);
-            this.vtnManager = null;
-        }
-    }
-    /**
      * Convert neutron object id to VTN key syntax.
      *
      * @param neutronID neutron object id.
      * @return key in compliance to VTN object key.
      */
-    protected static final String convertNeutronIDToVTNKey(String neutronID) {
+    public static String convertNeutronIDToVTNKey(String neutronID) {
         String key = null;
         if (neutronID == null) {
             return key;
@@ -314,7 +144,7 @@ public class VTNNeutronUtils {
      * @return {@code true} neutron identifier is valid.
      *         {@code false} neutron identifier is invalid.
      */
-    protected static final boolean isValidNeutronID(String id) {
+    public static boolean isValidNeutronID(String id) {
         if (id == null) {
             return false;
         }
