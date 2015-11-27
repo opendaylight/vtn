@@ -6,16 +6,23 @@
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.vtn.manager.neutron;
+package org.opendaylight.vtn.manager.neutron.impl;
 
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+
+import org.opendaylight.yangtools.yang.binding.DataObject;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+import org.opendaylight.yangtools.concepts.ListenerRegistration;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbNodeAugmentation;
@@ -25,14 +32,9 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.TopologyKey;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TopologyId;
-import org.opendaylight.yangtools.yang.binding.DataObject;
-import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-
-public class OvsdbDataChangeListener implements AutoCloseable, DataChangeListener {
+public final class OvsdbDataChangeListener
+    implements AutoCloseable, DataChangeListener {
     /**
      * Logger instance.
      */
@@ -40,33 +42,42 @@ public class OvsdbDataChangeListener implements AutoCloseable, DataChangeListene
         LoggerFactory.getLogger(OvsdbDataChangeListener.class);
 
     /**
-     * DataBroker Object to perform MDSAL operation.
-     */
-    private DataBroker dataBroker = null;
-    /**
      * OVSDBEventHandler instance.
      */
-    private OVSDBEventHandler ovsdbeventHandler = null;
+    private OVSDBEventHandler ovsdbeventHandler;
+
+    /**
+     * Registration of the data change listener.
+     */
+    private ListenerRegistration<DataChangeListener>  listenerRegistration;
 
     /**
      * Class constructor setting the data broker.
-     * @param dataBroker the {@link org.opendaylight.controller.md.sal.binding.api.DataBroker}
+     *
+     * @param db   A {@link DataBroker} instance.
+     * @param md   A {@link MdsalUtils} instance.
+     * @param vtn  A {@link VTNManagerService} instance.
      */
-    public OvsdbDataChangeListener(DataBroker dataBroker) {
-        this.dataBroker = dataBroker;
-        InstanceIdentifier<Node> path = InstanceIdentifier
-            .create(NetworkTopology.class)
-            .child(Topology.class, new TopologyKey(new TopologyId(new Uri("ovsdb:1"))))
-            .child(Node.class);
-        dataBroker.registerDataChangeListener(LogicalDatastoreType.OPERATIONAL, path, this, DataChangeScope.SUBTREE);
-        ovsdbeventHandler = new OVSDBEventHandler(dataBroker);
+    public OvsdbDataChangeListener(DataBroker db, MdsalUtils md,
+                                   VTNManagerService vtn) {
+        InstanceIdentifier<Node> path = InstanceIdentifier.
+            builder(NetworkTopology.class).
+            child(Topology.class,
+                  new TopologyKey(new TopologyId(new Uri("ovsdb:1")))).
+            child(Node.class).
+            build();
+        listenerRegistration = db.registerDataChangeListener(
+            LogicalDatastoreType.OPERATIONAL, path, this,
+            DataChangeScope.SUBTREE);
+        ovsdbeventHandler = new OVSDBEventHandler(md, vtn);
     }
 
     /**
-     * {@inheritDoc}
+     * Close the OVSDB data change listener.
      */
     @Override
-    public void close() throws Exception {
+    public void close() {
+        listenerRegistration.close();
     }
 
     /**

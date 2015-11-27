@@ -6,22 +6,33 @@
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.vtn.manager.neutron;
+package org.opendaylight.vtn.manager.neutron.impl;
 
-import java.net.HttpURLConnection;
+import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
+import static java.net.HttpURLConnection.HTTP_OK;
+
+import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.convertUUIDToKey;
+
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.ImmutableBiMap;
+
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.bridge.attributes.ControllerEntry;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.bridge.attributes.ControllerEntryBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.bridge.attributes.ProtocolEntry;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.bridge.attributes.ProtocolEntryBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.node.attributes.ConnectionInfo;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.port._interface.attributes.InterfaceExternalIds;
+
+import org.opendaylight.yangtools.yang.binding.DataObject;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.port.rev150907.SetPortMapInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.port.rev150907.SetPortMapInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.port.rev150907.RemovePortMapInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.port.rev150907.RemovePortMapInputBuilder;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.DatapathId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbBridgeAugmentation;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbBridgeAugmentationBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbBridgeName;
@@ -34,47 +45,44 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.re
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbNodeRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbTerminationPointAugmentation;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbTerminationPointAugmentationBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.bridge.attributes.ControllerEntry;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.bridge.attributes.ControllerEntryBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.bridge.attributes.ProtocolEntry;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.bridge.attributes.ProtocolEntryBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.node.attributes.ConnectionInfo;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.node.attributes.ManagedNodeEntry;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.port._interface.attributes.InterfaceExternalIds;
 
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.node.TerminationPoint;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.node.TerminationPointBuilder;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.node.TerminationPointKey;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeBuilder;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.Topology;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.TopologyKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.ports.rev150712.ports.attributes.Ports;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.ports.rev150712.ports.attributes.ports.Port;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.ports.rev150712.ports.attributes.ports.PortKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.rev150712.Neutron;
+
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TopologyId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TpId;
-import org.opendaylight.yangtools.yang.binding.DataObject;
-import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.ports.rev150712.ports.attributes.Ports;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.ports.rev150712.ports.attributes.ports.Port;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.ports.rev150712.ports.attributes.ports.PortKey;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.Topology;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.TopologyKey;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeBuilder;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.node.TerminationPoint;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.node.TerminationPointBuilder;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.node.TerminationPointKey;
+
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.Uuid;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.rev150712.Neutron;
-
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.NodeCreator;
-
-import org.opendaylight.vtn.manager.SwitchPort;
-import org.opendaylight.vtn.manager.VBridgeIfPath;
-import org.opendaylight.vtn.manager.PortMapConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableBiMap;
 
 /**
  * Handle events from OVSDB Southbound plugin.
  */
-public class OVSDBEventHandler extends VTNNeutronUtils {
+public final class OVSDBEventHandler {
     /**
      * Logger instance.
      */
-    static final Logger LOG = LoggerFactory.getLogger(OVSDBEventHandler.class);
+    private static final Logger LOG =
+        LoggerFactory.getLogger(OVSDBEventHandler.class);
 
      /**
      * identifier for the integration bridge name.
@@ -155,14 +163,15 @@ public class OVSDBEventHandler extends VTNNeutronUtils {
     private static final String CONFIG_PORTNAME = "portname";
 
     /**
-     * Instance of DataBroker.
+     * Instance of {@link MdsalUtils}.
      */
-    private DataBroker databroker = null;
+    private final MdsalUtils  mdsalUtils;
 
     /**
-     * Instance of mdsalUtils.
+     * VTN Manager service.
      */
-    private MdsalUtils mdsalUtils = null;
+    private final VTNManagerService  vtnManager;
+
     /**
      * identifier to read BRIDGE_URI_PREFIX.
      */
@@ -199,12 +208,30 @@ public class OVSDBEventHandler extends VTNNeutronUtils {
     public static String ovsdbFailMode;
 
     /**
-     * Method invoked when the open flow switch is Added.
-     * @param dataBroker Instance of DataBroker object to be added.
+     * Convert the given DPID into an {@link OfNode} instance.
+     *
+     * @param dpid  A {@link DatapathId} instance.
+     * @return  An {@link OfNode} instance on success.
+     *          {@code null} on return.
      */
-    public OVSDBEventHandler(DataBroker dataBroker) {
-        this.databroker = dataBroker;
-        mdsalUtils = new MdsalUtils(dataBroker);
+    static OfNode toOfNode(DatapathId dpid) {
+        try {
+            return new OfNode(dpid);
+        } catch (RuntimeException e) {
+            LOG.info("Ignore invalid DPID: " + dpid, e);
+            return null;
+        }
+    }
+
+    /**
+     * Method invoked when the open flow switch is Added.
+     *
+     * @param md   A {@link MdsalUtils} instance.
+     * @param vtn  A {@link VTNManagerService} instance.
+     */
+    public OVSDBEventHandler(MdsalUtils md, VTNManagerService vtn) {
+        mdsalUtils = md;
+        vtnManager = vtn;
     }
 
     /**
@@ -281,8 +308,8 @@ public class OVSDBEventHandler extends VTNNeutronUtils {
 
     /**
      * Read Node from the OVSDB path
-     * @param NodeKey is the instance of  nodeKey
-     * @param bridgeName
+     * @param ovsdbNodeKey  A {@link NodeKey} instance.
+     * @param bridgeName    The name of the bridge.
      * @return The {@link InstanceIdentifier} for the manager node.
      */
     private  InstanceIdentifier<Node> createInstanceIdentifier(NodeKey ovsdbNodeKey, String bridgeName) {
@@ -296,17 +323,17 @@ public class OVSDBEventHandler extends VTNNeutronUtils {
      * @return The {@link OvsdbBridgeAugmentation} for the manager node.
      */
     private InstanceIdentifier<Node> createInstanceIdentifier(NodeId nodeId) {
-        InstanceIdentifier<Node> nodePath = InstanceIdentifier
-                .create(NetworkTopology.class)
-                .child(Topology.class, new TopologyKey(new TopologyId(new Uri("ovsdb:1"))))
-                .child(Node.class, new NodeKey(nodeId));
-        return nodePath;
+        return InstanceIdentifier.builder(NetworkTopology.class).
+            child(Topology.class,
+                  new TopologyKey(new TopologyId(new Uri("ovsdb:1")))).
+            child(Node.class, new NodeKey(nodeId)).
+            build();
     }
 
     /**
      * Get the manager node for this bridge node
-     * @param ovsdbNodeId is instance of NodeId
-     * @param bridge name
+     * @param ovsdbNodeId  A {@link NodeId} instance.
+     * @param bridgeName   The name of the bridge.
      * @return The {@link OvsdbBridgeAugmentation} for the manager node.
      */
     private  NodeId createManagedNodeId(NodeId ovsdbNodeId, String bridgeName) {
@@ -404,8 +431,8 @@ public class OVSDBEventHandler extends VTNNeutronUtils {
 
     /**
      * Return the particular port detail of the given Node.
-     * @param the bridgeNode
-     * @param portName
+     * @param bridgeNode  A {@link Node} instance.
+     * @param portName    The name of the port.
      * @return OvsdbTerminationPointAugmentation.
      */
     private OvsdbTerminationPointAugmentation extractTerminationPointAugmentation(Node bridgeNode, String portName) {
@@ -422,8 +449,8 @@ public class OVSDBEventHandler extends VTNNeutronUtils {
 
     /**
      * Returns all port details of the given Node.
-     * @param the node
-     * @return OvsdbTerminationPointAugmentation.
+     * @param node  A {@link Node} instance.
+     * @return A list of {@link OvsdbTerminationPointAugmentation} instances.
      */
     private List<OvsdbTerminationPointAugmentation> extractTerminationPointAugmentations(Node node) {
         List<OvsdbTerminationPointAugmentation> tpAugmentations = new ArrayList<OvsdbTerminationPointAugmentation>();
@@ -442,10 +469,10 @@ public class OVSDBEventHandler extends VTNNeutronUtils {
 
     /**
      * Add a Port to the existing bridge.
-     * @params node is instance of Node
-     * @params bridgeName
-     * @params portName
-     * returns true on success
+     * @param node        A {@link Node} instance.
+     * @param bridgeName  The name of the bridge.
+     * @param portName    The name of the port.
+     * @return true on success
      */
     private boolean addPortToBridge(Node node, String bridgeName, String portName) throws Exception {
         boolean rv = true;
@@ -470,9 +497,9 @@ public class OVSDBEventHandler extends VTNNeutronUtils {
 
     /**
      * Set the manager node for the node
-     * @param ovsdbBridgeAugmentationBuilder is instance of the OvsdbBridgeAugmentationBuilder
-     * @param ovsdbNodeKey is instance of NodeKey
-     * @return The {@link OvsdbBridgeAugmentation} for the manager node.
+     * @param ovsdbBridgeAugmentationBuilder
+     *    A {@link OvsdbBridgeAugmentationBuilder} instance.
+     * @param ovsdbNodeKey  A {@link NodeKey} instance.
      */
     private void setManagedByForBridge(OvsdbBridgeAugmentationBuilder ovsdbBridgeAugmentationBuilder,
                 NodeKey ovsdbNodeKey) {
@@ -501,23 +528,26 @@ public class OVSDBEventHandler extends VTNNeutronUtils {
     }
 
     /**
-     * @params node instance of Node.
-     * @params portName is String value.
+     * @param node      A {@link Node} instance.
+     * @param portName  The name of the port.
      * @return InstanceIdentifier.
      */
     private static InstanceIdentifier<TerminationPoint> createTerminationPointInstanceIdentifier(Node node, String portName) {
-        InstanceIdentifier<TerminationPoint> terminationPointPath = InstanceIdentifier
-                .create(NetworkTopology.class)
-                .child(Topology.class, new TopologyKey(new TopologyId(new Uri("ovsdb:1"))))
-                .child(Node.class, node.getKey())
-                .child(TerminationPoint.class, new TerminationPointKey(new TpId(portName)));
+        InstanceIdentifier<TerminationPoint> terminationPointPath = InstanceIdentifier.
+            builder(NetworkTopology.class).
+            child(Topology.class,
+                  new TopologyKey(new TopologyId(new Uri("ovsdb:1")))).
+            child(Node.class, node.getKey()).
+            child(TerminationPoint.class,
+                  new TerminationPointKey(new TpId(portName))).
+            build();
 
         LOG.debug("Termination point InstanceIdentifier generated : {}", terminationPointPath);
         return terminationPointPath;
     }
 
     /**
-     * @params targetString is String value.
+     * @param targetString is String value.
      * @return ControllerEntry ,the Controller details to be set .
      */
     private List<ControllerEntry> createControllerEntries(String targetString) {
@@ -561,24 +591,24 @@ public class OVSDBEventHandler extends VTNNeutronUtils {
 
     /**
      * Read the node details of the provided node.
-     * @params node instance of Node.
+     * @param node instance of Node.
      */
     private OvsdbNodeAugmentation extractOvsdbNode(Node node) {
         return node.getAugmentation(OvsdbNodeAugmentation.class);
     }
 
     /**
-     * @params iid instance of InstanceIdentifier.
+     * @param iid instance of InstanceIdentifier.
      * Returns the NodeId of the Controller.
      */
-    private  NodeId createManagedNodeId(InstanceIdentifier<Node> iid) {
-        NodeKey nodeKey = iid.firstKeyOf(Node.class, NodeKey.class);
+    private NodeId createManagedNodeId(InstanceIdentifier<Node> iid) {
+        NodeKey nodeKey = iid.firstKeyOf(Node.class);
         return nodeKey.getNodeId();
     }
 
     /**
-     * @params ovsdbNode Node value
-     * @params bridgeName String value
+     * @param ovsdbNode Node value
+     * @param bridgeName String value
      * Returns false if bridge does not exist on the give node.
      */
     private boolean isBridgeOnOvsdbNode(Node ovsdbNode, String bridgeName) {
@@ -607,8 +637,8 @@ public class OVSDBEventHandler extends VTNNeutronUtils {
     public void readOVSDBPorts(Node node, String action) {
         InstanceIdentifier<Node> bridgeNodeIid = this
                 .createInstanceIdentifier(node.getNodeId());
-        Node operNode = mdsalUtils.read(LogicalDatastoreType.OPERATIONAL,
-                bridgeNodeIid);
+        Node operNode = mdsalUtils.
+            read(LogicalDatastoreType.OPERATIONAL, bridgeNodeIid).orNull();
         String value = "";
         if (operNode != null) {
             List<OvsdbTerminationPointAugmentation> ports = extractTerminationPointAugmentations(operNode);
@@ -626,10 +656,15 @@ public class OVSDBEventHandler extends VTNNeutronUtils {
                                 if ((action.equalsIgnoreCase(ACTION_PORT)) && ((neutronPort != null))) {
                                     deletePortMapForInterface(neutronPort);
                                 }
-                                String dataPathID = bridgeNode.getDatapathId().toString();
-                                String ofPort = Long.toString(port.getOfport());
-                                if ((neutronPort != null) && (dataPathID != null) && (ofPort != null)) {
-                                    setPortMapForInterface(neutronPort, dataPathID, ofPort, ovsPortName);
+
+                                OfNode ofNode = toOfNode(
+                                    bridgeNode.getDatapathId());
+                                Long ofPort = port.getOfport();
+                                if (neutronPort != null && ofNode != null &&
+                                    ofPort != null) {
+                                    setPortMapForInterface(
+                                        neutronPort, ofNode, ofPort,
+                                        ovsPortName);
                                 }
                                 break;
                             }
@@ -643,48 +678,43 @@ public class OVSDBEventHandler extends VTNNeutronUtils {
     /**
      * Set PortMap for an Interface.
      *
-     * @param intf
-     *            An instance of Interface object.
-     * @param neutronPort
-     *            An instance of NeutronPort object.
-     * @param switchId
-     *            the switch id .
-     * @param ofPort
-     *            ofport value .
-     * @return A HTTP status code to the PortMap request.
+     * @param neutronPort  A {@link Port} instance.
+     * @param ofNode       An {@link OfNode} instance that specifies the
+     *                     OpenFlow switch.
+     * @param ofPort       A long value that indicates the physical switch port
+     *                     number.
+     * @param portName     The name of the switch port.
+     * @return  A HTTP status code that indicates the result.
+     *          {@link java.net.HttpURLConnection#HTTP_OK} indicates
+     *          successful completion.
      */
-    private int setPortMapForInterface(Port neutronPort, String switchId,
-            String ofPort, String portName) {
-        int result = HttpURLConnection.HTTP_BAD_REQUEST;
+    private int setPortMapForInterface(
+        Port neutronPort, OfNode ofNode, Long ofPort, String portName) {
+        int vid = 0;
         short vlan = 0;
-        switchId = switchId.replaceAll("\\D+", "");
-        org.opendaylight.controller.sal.core.Node switchNode = NodeCreator
-                .createOFNode(Long.valueOf(switchId, RADIX_FOR_STRING));
-        SwitchPort switchPort = new SwitchPort(portName, "OF", ofPort);
-        PortMapConfig portMapConfig = new PortMapConfig(switchNode, switchPort,
-                vlan);
         String[] vtnIDs = new String[VTN_IDENTIFIERS_IN_PORT];
-        result = getVTNIdentifiers(neutronPort, vtnIDs);
-        if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(
-                    "processRowUpdated getVTNIdentifiers failed, result - {}",
-                    result);
-            return result;
-        }
-        String tenantID = vtnIDs[0];
-        String bridgeID = vtnIDs[1];
-        String portID = vtnIDs[2];
-        VBridgeIfPath path = new VBridgeIfPath(tenantID, bridgeID, portID);
-        Status status = getVTNManager().setPortMap(path, portMapConfig);
-        if (status.isSuccess()) {
-            LOG.info("PortMap Created Sucessfully.");
-            result = HttpURLConnection.HTTP_OK;
+        int result = getVTNIdentifiers(neutronPort, vtnIDs);
+        if (result != HTTP_OK) {
+            LOG.error("processRowUpdated getVTNIdentifiers failed, result - {}",
+                      result);
         } else {
-            LOG.error("Failed to create PortMap. {}", status.getDescription());
-            result = getException(status);
+            String tenantID = vtnIDs[0];
+            String bridgeID = vtnIDs[1];
+            String portID = vtnIDs[2];
+            SetPortMapInput input = new SetPortMapInputBuilder().
+                setTenantName(tenantID).
+                setBridgeName(bridgeID).
+                setInterfaceName(portID).
+                setNode(ofNode.getNodeId()).
+                setPortId(ofPort.toString()).
+                setPortName(portName).
+                build();
+            result = vtnManager.setPortMap(input);
         }
+
         return result;
     }
+
     /**
      * Validate and Return VTN identifiers for the given NeutronPort object.
      *
@@ -695,7 +725,7 @@ public class OVSDBEventHandler extends VTNNeutronUtils {
      * @return A HTTP status code to the validation request.
      */
     private int getVTNIdentifiers(Port port, String[] vtnIDs) {
-        int result = HttpURLConnection.HTTP_BAD_REQUEST;
+        int result = HTTP_BAD_REQUEST;
         /**
          * To basic validation of the request
          */
@@ -736,7 +766,7 @@ public class OVSDBEventHandler extends VTNNeutronUtils {
         vtnIDs[1] = bridgeID;
         vtnIDs[2] = portID;
 
-        return HttpURLConnection.HTTP_OK;
+        return HTTP_OK;
     }
 
     /**
@@ -747,28 +777,23 @@ public class OVSDBEventHandler extends VTNNeutronUtils {
      * @return A HTTP status code for delete PortMap request.
      */
     private int deletePortMapForInterface(Port neutronPort) {
-        int result = HttpURLConnection.HTTP_BAD_REQUEST;
         String[] vtnIDs = new String[VTN_IDENTIFIERS_IN_PORT];
-        result = getVTNIdentifiers(neutronPort, vtnIDs);
-        if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(
-                    "processRowUpdated getVTNIdentifiers failed, result - {}",
-                    result);
-            return result;
-        }
-        String tenantID = vtnIDs[0];
-        String bridgeID = vtnIDs[1];
-        String portID = vtnIDs[2];
-
-        VBridgeIfPath path = new VBridgeIfPath(tenantID, bridgeID, portID);
-        Status status = getVTNManager().setPortMap(path, null);
-        if (status.isSuccess()) {
-            LOG.info("PortMap deleted Sucessfully.");
-            result = HttpURLConnection.HTTP_OK;
+        int result = getVTNIdentifiers(neutronPort, vtnIDs);
+        if (result != HTTP_OK) {
+            LOG.error("processRowUpdated getVTNIdentifiers failed, result - {}",
+                      result);
         } else {
-            LOG.error("Failed to delete PortMap. {}", status.getDescription());
-            result = getException(status);
+            String tenantID = vtnIDs[0];
+            String bridgeID = vtnIDs[1];
+            String portID = vtnIDs[2];
+            RemovePortMapInput input = new RemovePortMapInputBuilder().
+                setTenantName(tenantID).
+                setBridgeName(bridgeID).
+                setInterfaceName(portID).
+                build();
+            result = vtnManager.removePortMap(input);
         }
+
         return result;
     }
 
@@ -781,9 +806,11 @@ public class OVSDBEventHandler extends VTNNeutronUtils {
         try {
             Uuid uid = new Uuid(uuid);
             InstanceIdentifier<Ports> path = InstanceIdentifier.builder(Neutron.class).child(Ports.class).build();
-            Ports ports = mdsalUtils.read(LogicalDatastoreType.CONFIGURATION, path);
+            Ports ports = mdsalUtils.
+                read(LogicalDatastoreType.CONFIGURATION, path).orNull();
             InstanceIdentifier<Port> portpath = InstanceIdentifier.builder(Neutron.class).child(Ports.class).child(Port.class ,   new PortKey(uid)).build();
-            Port port = mdsalUtils.read(LogicalDatastoreType.CONFIGURATION, portpath);
+            Port port = mdsalUtils.
+                read(LogicalDatastoreType.CONFIGURATION, portpath).orNull();
             return port;
         } catch (Exception ex) {
             LOG.error("exception obtained {}", ex);

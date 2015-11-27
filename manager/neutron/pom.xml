@@ -50,14 +50,14 @@
   </build>
 
   <dependencies>
-    <dependency>
-      <groupId>org.opendaylight.neutron</groupId>
-      <artifactId>model</artifactId>
-    </dependency>
-
+    <!-- VTN Manager bundles -->
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
       <artifactId>manager</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.vtn</groupId>
+      <artifactId>manager.model</artifactId>
     </dependency>
 
     <!-- OpenDaylight Controller -->
@@ -81,6 +81,12 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <!-- OpenDaylight neutron project -->
+    <dependency>
+      <groupId>org.opendaylight.neutron</groupId>
+      <artifactId>model</artifactId>
     </dependency>
 
     <!-- OpenDaylight OVSDB -->
@@ -121,6 +127,12 @@
     <dependency>
       <groupId>org.opendaylight.mdsal.model</groupId>
       <artifactId>ietf-yang-types</artifactId>
+    </dependency>
+
+    <!-- Google Guava -->
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
     </dependency>
   </dependencies>
 </project>
