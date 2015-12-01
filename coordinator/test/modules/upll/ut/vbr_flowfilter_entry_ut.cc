@@ -423,7 +423,7 @@ TEST(vbr_entry_test,Redirect_Field) {
   val_flowfilter_entry_t *val1 =
     reinterpret_cast<val_flowfilter_entry_t *>(malloc(sizeof(val_flowfilter_entry_t)));
   val1->valid[UPLL_IDX_REDIRECT_DIRECTION_FFE] = UNC_VF_VALID;
-  val1->redirect_direction = UPLL_IDX_L4_SRC_PORT_ENDPT_FLE ; 
+  val1->redirect_direction = UPLL_IDX_L4_SRC_PORT_ENDPT_FLE;
 
   EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX , obj.ValidateRedirectField(val1 , UNC_OP_CREATE));
   free (val1);
@@ -443,8 +443,10 @@ TEST(vbr_entry_test,Redirect_Field_2) {
   VbrFlowFilterEntryMoMgr obj;
   val_flowfilter_entry_t *val1 =
     reinterpret_cast<val_flowfilter_entry_t *>(malloc(sizeof(val_flowfilter_entry_t)));
+  val1->valid[UPLL_IDX_REDIRECT_DIRECTION_FFE] = UNC_VF_VALID;
   val1->valid[UPLL_IDX_REDIRECT_NODE_FFE] = UNC_VF_VALID_NO_VALUE;
-  val1->valid[UPLL_IDX_REDIRECT_PORT_FFE] = UNC_VF_VALID_NO_VALUE;
+  val1->valid[UPLL_IDX_REDIRECT_PORT_FFE] = UNC_VF_VALID;
+  val1->redirect_direction = UPLL_FLOWFILTER_DIR_IN;
 
   EXPECT_EQ(UPLL_RC_ERR_CFG_SYNTAX, obj.ValidateRedirectField(val1 , UNC_OP_CREATE));
   free (val1);
