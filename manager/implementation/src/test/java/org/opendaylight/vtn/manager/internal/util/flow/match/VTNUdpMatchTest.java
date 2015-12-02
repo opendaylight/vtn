@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,9 @@
  */
 
 package org.opendaylight.vtn.manager.internal.util.flow.match;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -17,8 +20,6 @@ import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.flow.cond.L4Match;
-import org.opendaylight.vtn.manager.flow.cond.UdpMatch;
 import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.internal.util.packet.Layer4Header;
@@ -27,12 +28,20 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
-import org.opendaylight.vtn.manager.internal.XmlNode;
+import org.opendaylight.vtn.manager.internal.TestPortNumber;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
+import org.opendaylight.vtn.manager.internal.XmlNode;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.vtn.layer4.match.VtnUdpMatch;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.vtn.layer4.match.VtnUdpMatchBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.udp.match.fields.UdpDestinationRange;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.udp.match.fields.UdpDestinationRangeBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.udp.match.fields.UdpSourceRange;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.udp.match.fields.UdpSourceRangeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpVersion;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 
 /**
  * JUnit test for {@link VTNUdpMatch}.
@@ -97,17 +106,14 @@ public class VTNUdpMatchTest extends TestBase {
             params.setSourcePortParams(src);
             VTNPortRange sr = (src == null)
                 ? null
-                : VTNPortRange.create(src.toPortMatch());
+                : VTNPortRange.create(src.toUdpSourceRange());
             for (PortRangeParams dst: dsts) {
                 params.setDestinationPortParams(dst);
-                UdpMatch um = params.toL4Match();
-                VTNUdpMatch umatch = new VTNUdpMatch(um);
-                params.verify(umatch);
-                assertEquals(umatch, VTNLayer4Match.create(um));
-
+                VTNUdpMatch umatch =
+                    new VTNUdpMatch(params.toVtnLayer4Match(false));
                 VTNPortRange dr = (dst == null)
                     ? null
-                    : VTNPortRange.create(dst.toPortMatch());
+                    : VTNPortRange.create(dst.toUdpDestinationRange());
                 VTNUdpMatch umatch1 = new VTNUdpMatch(sr, dr);
                 assertEquals(umatch, umatch1);
             }
@@ -115,15 +121,13 @@ public class VTNUdpMatchTest extends TestBase {
 
         // port-from is missing.
         VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
-        ArrayList<UdpMatch> list = new ArrayList<>();
-        params.reset().setSourcePortTo(Integer.valueOf(0));
-        list.add(params.toL4Match());
-
-        params.reset().setDestinationPortTo(Integer.valueOf(0));
-        list.add(params.toL4Match());
-        for (UdpMatch tm: list) {
+        List<VtnUdpMatch> list = new ArrayList<>();
+        list.add(params.reset().setSourcePortTo(0).toVtnLayer4Match(false));
+        params.reset().setDestinationPortTo(0);
+        list.add(params.toVtnLayer4Match(false));
+        for (VtnUdpMatch vum: list) {
             try {
-                new VTNUdpMatch(tm);
+                new VTNUdpMatch(vum);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
@@ -140,24 +144,38 @@ public class VTNUdpMatchTest extends TestBase {
             0x7fff0000, Integer.MAX_VALUE - 1, Integer.MAX_VALUE,
         };
         for (Integer port: badPorts) {
-            params.reset().setSourcePortFrom(port);
+            PortNumber pnum = new TestPortNumber(port);
+            UdpSourceRange srcRange = mock(UdpSourceRange.class);
+            when(srcRange.getPortFrom()).thenReturn(pnum);
+            VtnUdpMatch vumatch = new VtnUdpMatchBuilder().
+                setUdpSourceRange(srcRange).build();
             list.clear();
-            list.add(params.toL4Match());
+            list.add(vumatch);
 
-            params.reset().setDestinationPortFrom(port);
-            list.add(params.toL4Match());
+            UdpDestinationRange dstRange = mock(UdpDestinationRange.class);
+            when(dstRange.getPortFrom()).thenReturn(pnum);
+            vumatch = new VtnUdpMatchBuilder().
+                setUdpDestinationRange(dstRange).build();
+            list.add(vumatch);
 
-            params.reset().setSourcePortFrom(Integer.valueOf(0)).
-                setSourcePortTo(port);
-            list.add(params.toL4Match());
+            PortNumber pzero = new PortNumber(0);
+            srcRange = mock(UdpSourceRange.class);
+            when(srcRange.getPortFrom()).thenReturn(pzero);
+            when(srcRange.getPortTo()).thenReturn(pnum);
+            vumatch = new VtnUdpMatchBuilder().
+                setUdpSourceRange(srcRange).build();
+            list.add(vumatch);
 
-            params.reset().setDestinationPortFrom(Integer.valueOf(0)).
-                setDestinationPortTo(port);
-            list.add(params.toL4Match());
+            dstRange = mock(UdpDestinationRange.class);
+            when(dstRange.getPortFrom()).thenReturn(pzero);
+            when(dstRange.getPortTo()).thenReturn(pnum);
+            vumatch = new VtnUdpMatchBuilder().
+                setUdpDestinationRange(dstRange).build();
+            list.add(vumatch);
 
-            for (UdpMatch tm: list) {
+            for (VtnUdpMatch vum: list) {
                 try {
-                    new VTNUdpMatch(tm);
+                    new VTNUdpMatch(vum);
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
@@ -173,17 +191,23 @@ public class VTNUdpMatchTest extends TestBase {
         for (int port: ports) {
             int from = port + 1;
             int to = port;
+            PortNumber pfrom = new PortNumber(from);
+            PortNumber pto = new PortNumber(to);
             list.clear();
-            params.reset().setSourcePortFrom(Integer.valueOf(from)).
-                setSourcePortTo(Integer.valueOf(to));
-            list.add(params.toL4Match());
+            UdpSourceRange srcRange = new UdpSourceRangeBuilder().
+                setPortFrom(pfrom).setPortTo(pto).build();
+            VtnUdpMatch vumatch = new VtnUdpMatchBuilder().
+                setUdpSourceRange(srcRange).build();
+            list.add(vumatch);
 
-            params.reset().setDestinationPortFrom(Integer.valueOf(from)).
-                setDestinationPortTo(Integer.valueOf(to));
-            list.add(params.toL4Match());
-            for (UdpMatch tm: list) {
+            UdpDestinationRange dstRange = new UdpDestinationRangeBuilder().
+                setPortFrom(pfrom).setPortTo(pto).build();
+            vumatch = new VtnUdpMatchBuilder().
+                setUdpDestinationRange(dstRange).build();
+            list.add(vumatch);
+            for (VtnUdpMatch vum: list) {
                 try {
-                    new VTNUdpMatch(tm);
+                    new VTNUdpMatch(vum);
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
@@ -197,16 +221,23 @@ public class VTNUdpMatchTest extends TestBase {
             from = port;
             to = 0;
             list.clear();
-            params.reset().setSourcePortFrom(Integer.valueOf(from)).
-                setSourcePortTo(Integer.valueOf(to));
-            list.add(params.toL4Match());
+            pfrom = new PortNumber(from);
+            pto = new PortNumber(to);
+            srcRange = new UdpSourceRangeBuilder().
+                setPortFrom(pfrom).setPortTo(pto).build();
+            vumatch = new VtnUdpMatchBuilder().
+                setUdpSourceRange(srcRange).build();
+            list.add(vumatch);
 
-            params.reset().setDestinationPortFrom(Integer.valueOf(from)).
-                setDestinationPortTo(Integer.valueOf(to));
-            list.add(params.toL4Match());
-            for (UdpMatch tm: list) {
+            dstRange = new UdpDestinationRangeBuilder().
+                setPortFrom(pfrom).setPortTo(pto).build();
+            vumatch = new VtnUdpMatchBuilder().
+                setUdpDestinationRange(dstRange).build();
+            list.add(vumatch);
+
+            for (VtnUdpMatch vum: list) {
                 try {
-                    new VTNUdpMatch(tm);
+                    new VTNUdpMatch(vum);
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
@@ -217,9 +248,6 @@ public class VTNUdpMatchTest extends TestBase {
                 }
             }
         }
-
-        assertEquals(null, VTNLayer4Match.create((UdpMatch)null));
-        assertEquals(null, VTNLayer4Match.create((L4Match)null));
     }
 
     /**

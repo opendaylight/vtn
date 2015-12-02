@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -14,8 +14,6 @@ import org.opendaylight.vtn.manager.packet.PacketException;
 
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.tx.TxEvent;
-
-import org.opendaylight.controller.sal.core.ConstructionException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketReceived;
 
@@ -46,16 +44,13 @@ public final class PacketInEvent extends TxEvent {
      * @param rcv      A {@link PacketReceived} instance notified by MD-SAL.
      * @param ingress  A {@link SalPort} instance which indicates the
      *                 ingress switch port.
-     * @throws ConstructionException
-     *    Received packet is broken.
      * @throws PacketException
      *    Received packet is broken.
      * @throws IllegalArgumentException
      *    The given packet is not supprted.
      */
     public PacketInEvent(VTNPacketListener l, PacketReceived rcv,
-                         SalPort ingress)
-        throws ConstructionException, PacketException {
+                         SalPort ingress) throws PacketException {
         listener = l;
         ingressPort = ingress;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -10,12 +10,9 @@ package org.opendaylight.vtn.manager.internal.util.flow.action;
 
 import static org.opendaylight.vtn.manager.util.NumberUtils.HASH_PRIME;
 
-import org.opendaylight.vtn.manager.flow.action.FlowAction;
-
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanIdActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanIdActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.vlan.id.action._case.VtnSetVlanIdAction;
@@ -79,25 +76,6 @@ public final class VTNSetVlanIdAction extends VTNFlowAction {
     }
 
     // VTNFlowAction
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public FlowAction toFlowAction(VtnAction vact) throws RpcException {
-        VtnSetVlanIdActionCase ac = cast(VtnSetVlanIdActionCase.class, vact);
-        VtnSetVlanIdAction vaction = ac.getVtnSetVlanIdAction();
-        if (vaction != null) {
-            Integer arg = vaction.getVlanId();
-            if (arg != null) {
-                return new org.opendaylight.vtn.manager.flow.action.
-                    SetVlanIdAction(arg.shortValue());
-            }
-        }
-
-        String msg = getErrorMessage("No VLAN ID", vact);
-        throw RpcException.getMissingArgumentException(msg);
-    }
 
     /**
      * {@inheritDoc}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -19,7 +19,6 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPushVlanActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPushVlanActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.push.vlan.action._case.VtnPushVlanAction;
@@ -48,7 +47,6 @@ public class VTNPushVlanActionTest extends TestBase {
      *   <li>{@link VTNPushVlanAction#VTNPushVlanAction(VlanType)}</li>
      *   <li>{@link VTNPushVlanAction#set(VtnFlowActionBuilder)}</li>
      *   <li>{@link VTNPushVlanAction#set(ActionBuilder)}</li>
-     *   <li>{@link VTNPushVlanAction#toFlowAction(VtnAction)}</li>
      *   <li>{@link VTNPushVlanAction#toVtnAction(Action)}</li>
      *   <li>{@link VTNPushVlanAction#getDescription(Action)}</li>
      *   <li>{@link VTNFlowAction#toVtnFlowActionBuilder(Integer)}</li>
@@ -91,62 +89,9 @@ public class VTNPushVlanActionTest extends TestBase {
                 assertEquals(mact, mbuilder.getAction());
             }
 
-            // toFlowAction() test.
+            // toVtnAction() test.
             va = new VTNPushVlanAction();
             assertEquals(VlanType.VLAN, va.getVlanType());
-            assertEquals(0x8100, va.getVlanType().getIntValue());
-
-            VtnAction vaction = vac;
-            if (vtype == null) {
-                RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
-                VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
-                String emsg = "VTNPushVlanAction: No VLAN type: " + vaction;
-                try {
-                    va.toFlowAction(vaction);
-                    unexpected();
-                } catch (RpcException e) {
-                    assertEquals(etag, e.getErrorTag());
-                    assertEquals(vtag, e.getVtnErrorTag());
-                    assertEquals(emsg, e.getMessage());
-                }
-
-                vaction = vacBuilder.
-                    setVtnPushVlanAction(new VtnPushVlanActionBuilder().
-                                         build()).
-                    build();
-                emsg = "VTNPushVlanAction: No VLAN type: " + vaction;
-                try {
-                    va.toFlowAction(vaction);
-                    unexpected();
-                } catch (RpcException e) {
-                    assertEquals(etag, e.getErrorTag());
-                    assertEquals(vtag, e.getVtnErrorTag());
-                    assertEquals(emsg, e.getMessage());
-                }
-
-                vaction = VTNPopVlanAction.newVtnAction();
-                etag = RpcErrorTag.BAD_ELEMENT;
-                emsg = "VTNPushVlanAction: Unexpected type: " + vaction;
-                try {
-                    va.toFlowAction(vaction);
-                    unexpected();
-                } catch (RpcException e) {
-                    assertEquals(etag, e.getErrorTag());
-                    assertEquals(vtag, e.getVtnErrorTag());
-                    assertEquals(emsg, e.getMessage());
-                }
-            } else {
-                org.opendaylight.vtn.manager.flow.action.PushVlanAction vad =
-                    new org.opendaylight.vtn.manager.flow.action.
-                    PushVlanAction(vtype.getIntValue());
-                assertEquals(vad, va.toFlowAction(vaction));
-            }
-
-            // toFlowAction() should never affect instance variables.
-            assertEquals(VlanType.VLAN, va.getVlanType());
-            assertEquals(0x8100, va.getVlanType().getIntValue());
-
-            // toVtnAction() test.
             Action action = mact;
             if (etype == null) {
                 RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;

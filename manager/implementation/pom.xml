@@ -69,9 +69,6 @@
             <Export-Package>
               org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.*
             </Export-Package>
-            <Bundle-Activator>
-              org.opendaylight.vtn.manager.internal.adsal.Activator
-            </Bundle-Activator>
             <Service-Component />
           </instructions>
         </configuration>

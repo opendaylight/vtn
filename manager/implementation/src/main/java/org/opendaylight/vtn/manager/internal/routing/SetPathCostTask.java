@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -18,7 +18,6 @@ import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
-import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathCostConfigBuilder;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcOutputGenerator;
@@ -74,8 +73,7 @@ public final class SetPathCostTask
         List<SetCostTask> taskList = new ArrayList<>();
         Set<String> descSet = new HashSet<>();
         for (PathCostList pcl: list) {
-            VtnPathCost vpc = new PathCostConfigBuilder.Data().set(pcl).
-                getBuilder().build();
+            VtnPathCost vpc = PathPolicyUtils.newBuilder(pcl).build();
             String desc = vpc.getPortDesc().getValue();
             if (!descSet.add(desc)) {
                 throw PathPolicyUtils.getDuplicatePortException(desc);

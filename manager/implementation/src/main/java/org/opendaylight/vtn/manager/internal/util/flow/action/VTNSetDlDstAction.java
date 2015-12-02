@@ -12,10 +12,8 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.opendaylight.vtn.manager.flow.action.FlowAction;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.packet.EtherHeader;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
@@ -87,22 +85,6 @@ public final class VTNSetDlDstAction extends VTNDlAddrAction {
     /**
      * Construct a new instance.
      *
-     * @param act
-     *    A {@link org.opendaylight.vtn.manager.flow.action.SetDlDstAction}
-     *    instance.
-     * @param ord  An integer which determines the order of flow actions
-     *             in a flow entry.
-     * @throws RpcException  An invalid argument is specified.
-     */
-    public VTNSetDlDstAction(
-        org.opendaylight.vtn.manager.flow.action.SetDlDstAction act, int ord)
-        throws RpcException {
-        super(act, ord);
-    }
-
-    /**
-     * Construct a new instance.
-     *
      * @param ac   A {@link VtnSetDlDstActionCase} instance.
      * @param ord  An integer which determines the order of flow actions
      *             in a flow entry.
@@ -114,24 +96,6 @@ public final class VTNSetDlDstAction extends VTNDlAddrAction {
     }
 
     // VTNFlowAction
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public FlowAction toFlowAction(VtnAction vact) throws RpcException {
-        VtnSetDlDstActionCase ac = cast(VtnSetDlDstActionCase.class, vact);
-        VtnSetDlDstAction vaction = ac.getVtnSetDlDstAction();
-        if (vaction != null) {
-            EtherAddress addr = MiscUtils.toEtherAddress(vaction.getAddress());
-            if (addr != null) {
-                return new org.opendaylight.vtn.manager.flow.action.
-                    SetDlDstAction(addr);
-            }
-        }
-
-        throw noMacAddress(ac);
-    }
 
     /**
      * {@inheritDoc}
@@ -197,30 +161,9 @@ public final class VTNSetDlDstAction extends VTNDlAddrAction {
      * {@inheritDoc}
      */
     @Override
-    public FlowAction toFlowAction() {
-        return new org.opendaylight.vtn.manager.flow.action.
-            SetDlDstAction(getAddress());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public VTNSetDlDstAction toFlowFilterAction(VtnAction vact, Integer ord)
         throws RpcException {
         VtnSetDlDstActionCase ac = cast(VtnSetDlDstActionCase.class, vact);
         return new VTNSetDlDstAction(ac, ord);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public VTNSetDlDstAction toFlowFilterAction(FlowAction fact, int ord)
-        throws RpcException {
-        org.opendaylight.vtn.manager.flow.action.SetDlDstAction act =
-            cast(org.opendaylight.vtn.manager.flow.action.SetDlDstAction.class,
-                 fact);
-        return new VTNSetDlDstAction(act, ord);
     }
 }

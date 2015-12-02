@@ -313,7 +313,8 @@ public class TcpPacketTest extends TestBase {
 
         // Create a broken TCP packet.
         TCP pkt = new TCP();
-        Map<String, byte[]> header = getFieldValue(
+        @SuppressWarnings("unchecked")
+        Map<String, byte[]> header = (Map<String, byte[]>)getFieldValue(
             pkt, Packet.class, Map.class, "hdrFieldsMap");
         header.put("WindowSize", new byte[]{0});
 
@@ -387,8 +388,8 @@ public class TcpPacketTest extends TestBase {
         byte[] large = new byte[2048];
         Arrays.fill(large, (byte)0xff);
 
-        byte[] srcIp = {(byte)10, (byte)123, (byte)89, (byte)3};
-        byte[] dstIp = {(byte)192, (byte)168, (byte)35, (byte)11};
+        Ip4Network srcIp = new Ip4Network("10.123.89.3");
+        Ip4Network dstIp = new Ip4Network("192.168.35.11");
         int src = 37397;
         int dst = 9999;
 
@@ -426,11 +427,11 @@ public class TcpPacketTest extends TestBase {
 
         // Change IP addresses.
         pkt.setRawPayload(empty);
-        srcIp = new byte[]{(byte)212, (byte)39, (byte)43, (byte)254};
-        dstIp = new byte[]{(byte)127, (byte)0, (byte)0, (byte)1};
-        inet4.setSourceAddress(new Ip4Network(srcIp));
+        srcIp = new Ip4Network("212.39.43.254");
+        dstIp = new Ip4Network("127.0.0.1");
+        inet4.setSourceAddress(srcIp);
         assertTrue(inet4.isAddressModified());
-        inet4.setDestinationAddress(new Ip4Network(dstIp));
+        inet4.setDestinationAddress(dstIp);
         assertTrue(inet4.isAddressModified());
 
         list.clear();
@@ -476,7 +477,7 @@ public class TcpPacketTest extends TestBase {
      * @param tcp  A {@link TCP} instance.
      * @return  An {@link IPv4} instance.
      */
-    private IPv4 createIPv4(byte[] src, byte[] dst, TCP tcp) {
+    private IPv4 createIPv4(Ip4Network src, Ip4Network dst, TCP tcp) {
         return createIPv4(src, dst, InetProtocols.TCP.shortValue(), (byte)0,
                           tcp);
     }

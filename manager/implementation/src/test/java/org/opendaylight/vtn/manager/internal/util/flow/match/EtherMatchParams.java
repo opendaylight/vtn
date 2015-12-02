@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -177,20 +177,6 @@ public final class EtherMatchParams extends TestBase
     }
 
     /**
-     * Construct an
-     * {@link org.opendaylight.vtn.manager.flow.cond.EthernetMatch} instance.
-     *
-     * @return  An {@link org.opendaylight.vtn.manager.flow.cond.EthernetMatch}
-     *          instance.
-     */
-    public org.opendaylight.vtn.manager.flow.cond.EthernetMatch toEthernetMatch() {
-        Short vid = NumberUtils.toShort(vlanId);
-        Byte pcp = NumberUtils.toByte(vlanPriority);
-        return new org.opendaylight.vtn.manager.flow.cond.EthernetMatch(
-            sourceAddress, destinationAddress, etherType, vid, pcp);
-    }
-
-    /**
      * Construct a {@link VtnEtherMatch} instance.
      *
      * @return  A {@link VtnEtherMatch} instance.
@@ -288,14 +274,6 @@ public final class EtherMatchParams extends TestBase
      */
     public void verify(VTNEtherMatch ematch) throws Exception {
         verifyValues(ematch);
-
-        org.opendaylight.vtn.manager.flow.cond.EthernetMatch em =
-            ematch.toEthernetMatch();
-        assertEquals(sourceAddress, em.getSourceEtherAddress());
-        assertEquals(destinationAddress, em.getDestinationEtherAddress());
-        assertEquals(etherType, em.getType());
-        assertEquals(NumberUtils.toShort(vlanId), em.getVlan());
-        assertEquals(NumberUtils.toByte(vlanPriority), em.getVlanPriority());
 
         MatchBuilder mb = new MatchBuilder();
         ematch.setMatch(mb);

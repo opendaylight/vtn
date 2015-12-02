@@ -14,8 +14,6 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
-import org.opendaylight.vtn.manager.DataLinkHost;
-import org.opendaylight.vtn.manager.EthernetHost;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 import org.opendaylight.vtn.manager.util.xml.adapters.IntegerAdapter;
@@ -24,8 +22,6 @@ import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.VlanDescParser;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-
-import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.input.DataFlowSource;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.input.DataFlowSourceBuilder;
@@ -205,43 +201,6 @@ public final class MacVlan implements Comparable<MacVlan> {
     }
 
     /**
-     * Construct a new instance which represents the specified data link
-     * layer host.
-     *
-     * <p>
-     *   This constructor is used to create a new instance for MAC mapping
-     *   configuration.
-     * </p>
-     *
-     * @param dlhost  A {@link DataLinkHost} instance.
-     * @throws RpcException
-     *    An invalid value is specified to {@code dlhost}.
-     */
-    public MacVlan(DataLinkHost dlhost) throws RpcException {
-        if (dlhost == null) {
-            throw RpcException.getNullArgumentException("Data link layer host");
-        }
-
-        if (!(dlhost instanceof EthernetHost)) {
-            String msg = "Unsupported address type: " + dlhost;
-            throw RpcException.getBadArgumentException(msg);
-        }
-
-        EthernetHost ehost = (EthernetHost)dlhost;
-        EthernetAddress addr = ehost.getAddress();
-        long mac;
-        if (addr == null) {
-            mac = UNDEFINED;
-        } else {
-            mac = getMacAddress(addr);
-        }
-
-        int vlan = (int)ehost.getVlan();
-        ProtocolUtils.checkVlan(vlan);
-        encodedValue = encode(mac, vlan);
-    }
-
-    /**
      * Return a long value which represents a MAC address.
      *
      * @return  A long value which represent a MAC address.
@@ -342,31 +301,6 @@ public final class MacVlan implements Comparable<MacVlan> {
     }
 
     /**
-     * Return a {@link EthernetHost} instance which represents this instance.
-     *
-     * @return  A {@link EthernetHost} instance which represents this instance.
-     */
-    public EthernetHost getEthernetHost() {
-        try {
-            int vlan = getVlanId();
-            long mac = getAddress();
-            EthernetAddress eaddr;
-            if (mac == UNDEFINED) {
-                eaddr = null;
-            } else {
-                byte[] raw = EtherAddress.toBytes(mac);
-                eaddr = new EthernetAddress(raw);
-            }
-
-            return new EthernetHost(eaddr, (short)vlan);
-        } catch (Exception e) {
-            // This should never happen.
-            throw new IllegalStateException("Unable to create EthernetHost",
-                                            e);
-        }
-    }
-
-    /**
      * Return a {@link DataFlowSource} instance which represents this instance.
      *
      * @return  A {@link DataFlowSource} instance.
@@ -422,10 +356,8 @@ public final class MacVlan implements Comparable<MacVlan> {
     public void verify() throws RpcException {
         if (jaxbError != null) {
             String msg = jaxbError.getMessage();
-            RpcException e = RpcException.getBadArgumentException(
-                "Invalid mac-vlan: " + msg);
-            e.initCause(jaxbError);
-            throw e;
+            throw RpcException.getBadArgumentException(
+                "Invalid mac-vlan: " + msg, jaxbError);
         }
     }
 
@@ -496,21 +428,6 @@ public final class MacVlan implements Comparable<MacVlan> {
         return (((mac << ProtocolUtils.NBITS_VLAN_ID) |
                  ((long)vlan & ProtocolUtils.MASK_VLAN_ID)) &
                 MASK_ENCODED);
-    }
-
-    /**
-     * Convert a {@link EthernetAddress eth} into a long integer which
-     * represents a MAC address.
-     *
-     * @param eth  A {@link EthernetAddress} instance.
-     * @return     A long integer which represents a MAC address.
-     * @throws RpcException
-     *    An invalid address is specified to {@code eth}.
-     */
-    private long getMacAddress(EthernetAddress eth) throws RpcException {
-        EtherAddress eaddr = new EtherAddress(eth);
-        checkMacMap(eaddr);
-        return eaddr.getAddress();
     }
 
     /**

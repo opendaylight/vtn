@@ -23,11 +23,6 @@ import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.sal.core.Node.NodeIDType;
-import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
-import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
-import org.opendaylight.controller.sal.utils.NodeCreator;
-
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnNodes;
@@ -271,76 +266,11 @@ public class SalPortTest extends TestBase {
     }
 
     /**
-     * Test case for {@link SalPort#create(org.opendaylight.controller.sal.core.NodeConnector)},
-     * {@link SalPort#getNodeNumber()}, and
-     * {@link SalPort#getPortNumber()}
-     *
-     * @throws Exception   An error occurred.
-     */
-    @Test
-    public void testCreateAdNodeConnector() throws Exception {
-        org.opendaylight.controller.sal.core.Node node = null;
-        org.opendaylight.controller.sal.core.NodeConnector nc = null;
-        assertEquals(null, SalPort.create(nc));
-
-        // Unsupported node connector.
-        node = new org.opendaylight.controller.sal.core.Node(
-            NodeIDType.ONEPK, "node 1");
-        nc = new org.opendaylight.controller.sal.core.NodeConnector(
-            NodeConnectorIDType.ONEPK, "port 1", node);
-        assertEquals(null, SalPort.create(nc));
-        node = new org.opendaylight.controller.sal.core.Node(
-            NodeIDType.PRODUCTION, "node 2");
-        nc = new org.opendaylight.controller.sal.core.NodeConnector(
-            NodeConnectorIDType.PRODUCTION, "port 2", node);
-        assertEquals(null, SalPort.create(nc));
-
-        long[] ids = {
-            Long.MIN_VALUE,
-            -1L,
-            0L,
-            1L,
-            10000L,
-            Long.MAX_VALUE,
-        };
-        long[] ports = {
-            0L,
-            1L,
-            100L,
-            5000L,
-            0xff00L,
-            0xfffeL,
-            0xffffL,
-        };
-        org.opendaylight.controller.sal.core.NodeConnector nullnc = null;
-
-        for (long dpid: ids) {
-            for (long port: ports) {
-                node = new org.opendaylight.controller.sal.core.Node(
-                    NodeIDType.OPENFLOW, Long.valueOf(dpid));
-                Short portId = Short.valueOf((short)port);
-                nc = new org.opendaylight.controller.sal.core.NodeConnector(
-                    NodeConnectorIDType.OPENFLOW, portId, node);
-
-                SalPort sport = SalPort.create(nc);
-                assertNotNull(sport);
-                assertEquals(dpid, sport.getNodeNumber());
-                assertEquals(port, sport.getPortNumber());
-
-                // AD-SAL node and node connector should be cached.
-                assertSame(node, sport.getAdNode());
-                assertSame(nc, sport.getAdNodeConnector());
-            }
-        }
-    }
-
-    /**
      * Test case for constructors.
      *
      * <ul>
      *   <li>{@link SalPort#SalPort(long, long)}</li>
      *   <li>{@link SalPort#SalPort(long, long, String)}</li>
-     *   <li>{@link SalPort#SalPort(long, long, org.opendaylight.controller.sal.core.NodeConnector)}</li>
      * </ul>
      */
     @Test
@@ -365,7 +295,6 @@ public class SalPortTest extends TestBase {
             0xffffff00L,
         };
 
-        org.opendaylight.controller.sal.core.NodeConnector nc = null;
         for (long dpid: ids) {
             for (long port: ports) {
                 SalPort sport = new SalPort(dpid, port);
@@ -373,10 +302,6 @@ public class SalPortTest extends TestBase {
                 assertEquals(port, sport.getPortNumber());
 
                 sport = new SalPort(dpid, port, (String)null);
-                assertEquals(dpid, sport.getNodeNumber());
-                assertEquals(port, sport.getPortNumber());
-
-                sport = new SalPort(dpid, port, nc);
                 assertEquals(dpid, sport.getNodeNumber());
                 assertEquals(port, sport.getPortNumber());
             }
@@ -395,7 +320,6 @@ public class SalPortTest extends TestBase {
      *   <li>{@link SalPort#getVtnPortKey()}</li>
      *   <li>{@link SalPort#getVtnPortIdentifier()}</li>
      *   <li>{@link SalPort#getPortLinkIdentifier(LinkId)}</li>
-     *   <li>{@link SalPort#getAdNodeConnector()}</li>
      *   <li>{@link SalPort#getVtnPortIdentifierBuilder()}</li>
      *   <li>{@link SalPort#getNodeId()}</li>
      *   <li>{@link SalPort#getNodeKey()}</li>
@@ -403,7 +327,6 @@ public class SalPortTest extends TestBase {
      *   <li>{@link SalPort#getNodeRef()}</li>
      *   <li>{@link SalPort#getVtnNodeKey()}</li>
      *   <li>{@link SalPort#getVtnNodeIdentifier()}</li>
-     *   <li>{@link SalPort#getAdNode()}</li>
      *   <li>{@link SalPort#toStringBuilder()}</li>
      *   <li>{@link SalPort#toNodeString()}</li>
      *   <li>{@link SalPort#toNodeStringBuilder()}</li>
@@ -521,24 +444,6 @@ public class SalPortTest extends TestBase {
                     child(VtnPort.class, vpKey).
                     child(PortLink.class, new PortLinkKey(linkId)).build();
                 assertEquals(plPath, sport.getPortLinkIdentifier(linkId));
-
-                org.opendaylight.controller.sal.core.Node adnode = NodeCreator.
-                    createOFNode(Long.valueOf(id));
-                assertNotNull(adnode);
-                org.opendaylight.controller.sal.core.Node ad =
-                    sport.getAdNode();
-                assertEquals(adnode, ad);
-
-                Short pid = Short.valueOf((short)portNum);
-                org.opendaylight.controller.sal.core.NodeConnector adport = NodeConnectorCreator.
-                    createOFNodeConnector(pid, adnode);
-                org.opendaylight.controller.sal.core.NodeConnector adnc =
-                    sport.getAdNodeConnector();
-                assertEquals(adport, adnc);
-
-                // AD-SAL node and node connector should be cached.
-                assertSame(ad, sport.getAdNode());
-                assertSame(adnc, sport.getAdNodeConnector());
 
                 assertEquals(portStr, sport.toStringBuilder().toString());
                 assertEquals(nodeStr, sport.toNodeStringBuilder().toString());

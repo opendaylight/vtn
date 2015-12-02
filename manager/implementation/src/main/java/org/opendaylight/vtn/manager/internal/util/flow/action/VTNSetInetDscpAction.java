@@ -15,9 +15,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.opendaylight.vtn.manager.flow.action.FlowAction;
-import org.opendaylight.vtn.manager.flow.action.SetDscpAction;
-
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.packet.InetHeader;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
@@ -99,21 +96,6 @@ public final class VTNSetInetDscpAction extends FlowFilterAction {
     /**
      * Construct a new instance.
      *
-     * @param act  A {@link SetDscpAction} instance.
-     * @param ord  An integer which determines the order of flow actions
-     *             in a flow entry.
-     * @throws RpcException  An invalid argument is specified.
-     */
-    public VTNSetInetDscpAction(SetDscpAction act, int ord)
-        throws RpcException {
-        super(Integer.valueOf(ord));
-        dscp = (short)act.getDscp();
-        verify();
-    }
-
-    /**
-     * Construct a new instance.
-     *
      * @param ac   A {@link VtnSetInetDscpActionCase} instance.
      * @param ord  An integer which determines the order of flow actions
      *             in a flow entry.
@@ -156,17 +138,6 @@ public final class VTNSetInetDscpAction extends FlowFilterAction {
     }
 
     // VTNFlowAction
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public FlowAction toFlowAction(VtnAction vact) throws RpcException {
-        VtnSetInetDscpActionCase ac =
-            cast(VtnSetInetDscpActionCase.class, vact);
-        short arg = getDscpValue(ac.getVtnSetInetDscpAction());
-        return new SetDscpAction((byte)arg);
-    }
 
     /**
      * {@inheritDoc}
@@ -257,29 +228,11 @@ public final class VTNSetInetDscpAction extends FlowFilterAction {
      * {@inheritDoc}
      */
     @Override
-    public FlowAction toFlowAction() {
-        return new SetDscpAction((byte)dscp);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public VTNSetInetDscpAction toFlowFilterAction(VtnAction vact, Integer ord)
         throws RpcException {
         VtnSetInetDscpActionCase ac =
             cast(VtnSetInetDscpActionCase.class, vact);
         return new VTNSetInetDscpAction(ac, ord);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public VTNSetInetDscpAction toFlowFilterAction(FlowAction fact, int ord)
-        throws RpcException {
-        SetDscpAction act = cast(SetDscpAction.class, fact);
-        return new VTNSetInetDscpAction(act, ord);
     }
 
     /**

@@ -381,8 +381,7 @@ public class Inet4PacketTest extends TestBase {
      */
     private IPv4 createIPv4Packet(Ip4Network src, Ip4Network dst, short proto,
                                   short dscp) {
-        IPv4 pkt = createIPv4(src.getInetAddress(), dst.getInetAddress(),
-                              proto, (byte)dscp);
+        IPv4 pkt = createIPv4(src, dst, proto, (byte)dscp);
         pkt.setRawPayload(EtherPacketTest.RAW_PAYLOAD);
 
         return pkt;

@@ -17,7 +17,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,35 +32,10 @@ import org.slf4j.Logger;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.DataLinkHost;
-import org.opendaylight.vtn.manager.EthernetHost;
-import org.opendaylight.vtn.manager.NodeRoute;
-import org.opendaylight.vtn.manager.PortLocation;
-import org.opendaylight.vtn.manager.SwitchPort;
-import org.opendaylight.vtn.manager.VBridgeIfPath;
-import org.opendaylight.vtn.manager.VBridgePath;
-import org.opendaylight.vtn.manager.VNodePath;
-import org.opendaylight.vtn.manager.VNodeRoute;
-import org.opendaylight.vtn.manager.VTerminalIfPath;
-import org.opendaylight.vtn.manager.VTerminalPath;
-import org.opendaylight.vtn.manager.flow.AveragedFlowStats;
-import org.opendaylight.vtn.manager.flow.DataFlow;
-import org.opendaylight.vtn.manager.flow.FlowStats;
-import org.opendaylight.vtn.manager.flow.action.FlowAction;
-import org.opendaylight.vtn.manager.flow.action.SetDscpAction;
-import org.opendaylight.vtn.manager.flow.action.SetVlanIdAction;
-import org.opendaylight.vtn.manager.flow.cond.EthernetMatch;
-import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
-import org.opendaylight.vtn.manager.flow.cond.Inet4Match;
-import org.opendaylight.vtn.manager.flow.cond.TcpMatch;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
-import org.opendaylight.vtn.manager.internal.adsal.MacMapPath;
-import org.opendaylight.vtn.manager.internal.adsal.MacMappedHostPath;
-import org.opendaylight.vtn.manager.internal.adsal.VlanMapPath;
-import org.opendaylight.vtn.manager.internal.util.OrderedComparator;
 import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNActionList;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNFlowAction;
@@ -72,13 +46,11 @@ import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetDstActio
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetSrcAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetPortDstAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetPortSrcAction;
-import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetVlanIdAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetVlanPcpAction;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNEtherMatch;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNInet4Match;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNMatch;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNPortRange;
-import org.opendaylight.vtn.manager.internal.util.flow.match.VTNTcpMatch;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNUdpMatch;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.MacVlan;
@@ -87,53 +59,18 @@ import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.pathmap.PathMapUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-import org.opendaylight.vtn.manager.internal.util.vnode.VTenantUtils;
+import org.opendaylight.vtn.manager.internal.util.vnode.VTenantIdentifier;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
-import org.opendaylight.vtn.manager.internal.TestDataLink;
-import org.opendaylight.vtn.manager.internal.TestDataLinkHost;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
-import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.DataFlowMode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnDataFlowInfo;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnFlowId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.input.DataFlowSource;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.output.DataFlowInfoBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.physical.route.info.PhysicalEgressPort;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.physical.route.info.PhysicalEgressPortBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.physical.route.info.PhysicalIngressPort;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.physical.route.info.PhysicalIngressPortBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePath;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePathBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.common.VirtualRoute;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.common.VirtualRouteBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.AveragedDataFlowStats;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.AveragedDataFlowStatsBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataEgressNode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataEgressNodeBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataEgressPort;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataEgressPortBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataFlowStats;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataFlowStatsBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataIngressNode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataIngressNodeBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataIngressPort;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataIngressPortBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.PhysicalRoute;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.PhysicalRouteBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.BridgeMapInfo;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.VtnFlows;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.VtnFlowsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.flow.id.set.FlowIdList;
@@ -163,9 +100,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev15020
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNodeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnFlowTimeoutConfig;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnSwitchPort;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.Ordered;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowTableRef;
@@ -185,9 +120,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.model.statistics.types.rev1
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.Counter32;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.Counter64;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanId;
 
 /**
  * JUnit test for {@link FlowUtils}.
@@ -489,325 +421,6 @@ public class FlowUtilsTest extends TestBase {
     }
 
     /**
-     * Test case for {@link FlowUtils#toDataFlowSource(DataLinkHost)}.
-     *
-     * @throws Exception  An error occurred.
-     */
-    @Test
-    public void testToDataFlowSource() throws Exception {
-        assertEquals(null, FlowUtils.toDataFlowSource((DataLinkHost)null));
-
-        short[] vlans = new short[]{0, 1, 1000, 4095};
-        for (EthernetAddress ea: createEthernetAddresses()) {
-            MacAddress mac = (ea == null)
-                ? null : EtherAddress.create(ea).getMacAddress();
-            for (short vlan: vlans) {
-                EthernetHost ehost = new EthernetHost(ea, vlan);
-                DataFlowSource dfs = FlowUtils.toDataFlowSource(ehost);
-                assertEquals(mac, dfs.getMacAddress());
-                assertEquals(new VlanId((int)vlan), dfs.getVlanId());
-            }
-        }
-
-        // Invalid DataLinkHost.
-        TestDataLink dladdr = new TestDataLink("addr");
-        TestDataLinkHost dlhost = new TestDataLinkHost(dladdr);
-        try {
-            FlowUtils.toDataFlowSource(dlhost);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
-            assertEquals("Unsupported address type: " + dlhost,
-                         e.getMessage());
-        }
-    }
-
-    /**
-     * Test case for {@link FlowUtils#toVirtualRouteList(List)}.
-     */
-    @Test
-    public void testToVirtualRouteList() {
-        List<VNodeRoute> vroutes = null;
-        assertEquals(null, FlowUtils.toVirtualRouteList(vroutes));
-        vroutes = new ArrayList<>();
-        assertEquals(null, FlowUtils.toVirtualRouteList(vroutes));
-
-        vroutes = createVNodeRouteList();
-        List<VirtualRoute> result = FlowUtils.toVirtualRouteList(vroutes);
-        int size = vroutes.size();
-        assertEquals(size, result.size());
-        for (int order = 0; order < size; order++) {
-            checkVirtualRoute(result.get(order), vroutes.get(order), order);
-        }
-    }
-
-    /**
-     * Test case for {@link FlowUtils#toDataFlow(VtnDataFlowInfo, DataFlowMode)}.
-     *
-     * @throws Exception  An error occurred.
-     */
-    @Test
-    public void testToDataFlow() throws Exception {
-        long flowId = 12345;
-        VtnFlowId vfId = new VtnFlowId(BigInteger.valueOf(flowId));
-        long created = System.currentTimeMillis() - 100000000L;
-        int idle = 300;
-        int hard = 10000;
-        EtherAddress srcMac = new EtherAddress(0x001122334455L);
-        EtherAddress dstMac = new EtherAddress(0x80aabbccddeeL);
-        int srcVlan = 10;
-        int dstVlan = 4095;
-        VBridgePath inpath = new VBridgePath("vtn_1", "vbr_1");
-        VBridgeIfPath rpath = new VBridgeIfPath(inpath, "if_1");
-        VBridgeIfPath outpath = new VBridgeIfPath("vtn_1", "vbr_5", "if_10");
-        List<VirtualRoute> vrlist = new ArrayList<>();
-        List<VNodeRoute> vroutes = new ArrayList<>();
-        VirtualNodePath vnp = new VirtualNodePathBuilder().
-            setTenantName(inpath.getTenantName()).
-            setBridgeName(inpath.getBridgeName()).
-            build();
-        VirtualRouteReason reason = VirtualRouteReason.MACMAPPED;
-        VirtualRoute vr = new VirtualRouteBuilder().
-            setOrder(vrlist.size()).
-            setVirtualNodePath(vnp).
-            setReason(reason).
-            build();
-        vrlist.add(vr);
-        vroutes.add(new VNodeRoute(inpath, reason));
-        DataIngressNode inNode = new DataIngressNodeBuilder(vnp).build();
-
-        vnp = new VirtualNodePathBuilder().
-            setTenantName(rpath.getTenantName()).
-            setBridgeName(rpath.getBridgeName()).
-            setInterfaceName(rpath.getInterfaceName()).
-            build();
-        reason = VirtualRouteReason.FORWARDED;
-        vr = new VirtualRouteBuilder().
-            setOrder(vrlist.size()).
-            setVirtualNodePath(vnp).
-            setReason(reason).
-            build();
-        vrlist.add(vr);
-        vroutes.add(new VNodeRoute(rpath, reason));
-
-        vnp = new VirtualNodePathBuilder().
-            setTenantName(outpath.getTenantName()).
-            setBridgeName(outpath.getBridgeName()).
-            setInterfaceName(outpath.getInterfaceName()).
-            build();
-        vr = new VirtualRouteBuilder().
-            setOrder(vrlist.size()).
-            setVirtualNodePath(vnp).
-            setReason(reason).
-            build();
-        vrlist.add(vr);
-        vroutes.add(new VNodeRoute(outpath, reason));
-        DataEgressNode outNode = new DataEgressNodeBuilder(vnp).build();
-
-        List<PhysicalRoute> phlist = new ArrayList<>();
-        List<NodeRoute> nroutes = new ArrayList<>();
-        createPhysicalRoute(phlist, nroutes, 1L, 2L, "eth-2", 5L, "eth-5");
-        createPhysicalRoute(phlist, nroutes, 333L, 19L, "eth-19", 4L, "eth-4");
-        createPhysicalRoute(phlist, nroutes, -1L, 7L, "eth-7", 3L, "eth-3");
-        createPhysicalRoute(phlist, nroutes, 12345L, 40L, "eth-40", 98L,
-                            "eth-98");
-        PhysicalRoute pr = phlist.get(0);
-        VtnSwitchPort vswp = pr.getPhysicalIngressPort();
-        DataIngressPort inPort = new DataIngressPortBuilder(vswp).
-            setNode(pr.getNode()).build();
-        NodeRoute nr = nroutes.get(0);
-        PortLocation inLoc = new PortLocation(nr.getNode(), nr.getInputPort());
-
-        pr = phlist.get(phlist.size() - 1);
-        vswp = pr.getPhysicalEgressPort();
-        DataEgressPort outPort = new DataEgressPortBuilder(vswp).
-            setNode(pr.getNode()).build();
-        nr = nroutes.get(nroutes.size() - 1);
-        PortLocation outLoc =
-            new PortLocation(nr.getNode(), nr.getOutputPort());
-
-        int dstPort = 63;
-        VTNTcpMatch vtmatch = new VTNTcpMatch(null, new VTNPortRange(dstPort));
-        VTNEtherMatch vematch =
-            new VTNEtherMatch(srcMac, dstMac, null, srcVlan, null);
-        VTNMatch vmatch = new VTNMatch(vematch, null, vtmatch);
-        TcpMatch tmatch = new TcpMatch(null, dstPort);
-        Inet4Match imatch = new Inet4Match(null, null, null, null,
-                                           (short)6, null);
-        EthernetMatch ematch = new EthernetMatch(srcMac, dstMac, 0x800,
-                                                 (short)srcVlan, null);
-        FlowMatch fmatch = new FlowMatch(ematch, imatch, tmatch);
-
-        List<VtnFlowAction> vactions = new ArrayList<>();
-        List<FlowAction> factions = new ArrayList<>();
-        VtnAction vact = VTNSetVlanIdAction.newVtnAction(dstVlan);
-        VtnFlowAction vfact = new VtnFlowActionBuilder().
-            setVtnAction(vact).
-            setOrder(vactions.size()).
-            build();
-        vactions.add(vfact);
-        factions.add(new SetVlanIdAction((short)dstVlan));
-
-        short dscp = 59;
-        vact = VTNSetInetDscpAction.newVtnAction(dscp);
-        vfact = new VtnFlowActionBuilder().
-            setVtnAction(vact).
-            setOrder(vactions.size()).
-            build();
-        vactions.add(vfact);
-        factions.add(new SetDscpAction((byte)dscp));
-
-        long packets = 3456L;
-        long bytes = 109876L;
-        long duration = System.currentTimeMillis() - created;
-        long sec = duration / 1000L;
-        long nsec = (duration % 1000L) * 1000000L;
-        Duration d = createDuration(sec, nsec);
-        DataFlowStats dfs = new DataFlowStatsBuilder().
-            setPacketCount(new Counter64(BigInteger.valueOf(packets))).
-            setByteCount(new Counter64(BigInteger.valueOf(bytes))).
-            setDuration(d).
-            build();
-        FlowStats fstats = new FlowStats(packets, bytes, duration);
-
-        double avePacktes = 5432.1987D;
-        double aveBytes = 1234567.89D;
-        long aveStart = created + 5000000L;
-        long aveEnd = aveStart + 10000L;
-        AveragedDataFlowStats adfs = new AveragedDataFlowStatsBuilder().
-            setPacketCount(BigDecimal.valueOf(avePacktes)).
-            setByteCount(BigDecimal.valueOf(aveBytes)).
-            setStartTime(aveStart).
-            setEndTime(aveEnd).
-            build();
-        AveragedFlowStats aveStats = new AveragedFlowStats(
-            avePacktes, aveBytes, aveStart, aveEnd);
-
-        // Reverse lists to ensure that they are sorted by "order" field.
-        Collections.reverse(vrlist);
-        Collections.reverse(phlist);
-        Collections.reverse(vactions);
-
-        DataFlowInfoBuilder builder = new DataFlowInfoBuilder().
-            setFlowId(vfId).
-            setCreationTime(created).
-            setIdleTimeout(idle).
-            setHardTimeout(hard).
-            setDataIngressNode(inNode).
-            setDataEgressNode(outNode).
-            setDataIngressPort(inPort).
-            setDataEgressPort(outPort).
-            setVirtualRoute(vrlist).
-            setPhysicalRoute(phlist).
-            setDataFlowMatch(vmatch.toDataFlowMatchBuilder().build()).
-            setVtnFlowAction(vactions);
-        VtnDataFlowInfo vdfNoStats = builder.build();
-        VtnDataFlowInfo vdfStats = builder.
-            setDataFlowStats(dfs).
-            setAveragedDataFlowStats(adfs).
-            build();
-
-        DataFlowMode[] modes = {
-            null,
-            DataFlowMode.SUMMARY,
-            DataFlowMode.DETAIL,
-            DataFlowMode.UPDATESTATS,
-        };
-
-        for (DataFlowMode mode: modes) {
-            DataFlow df = FlowUtils.toDataFlow(vdfNoStats, mode);
-            assertEquals(flowId, df.getFlowId());
-            assertEquals(created, df.getCreationTime());
-            assertEquals((short)idle, df.getIdleTimeout());
-            assertEquals((short)hard, df.getHardTimeout());
-            assertEquals(inpath, df.getIngressNodePath());
-            assertEquals(inLoc, df.getIngressPort());
-            assertEquals(outpath, df.getEgressNodePath());
-            assertEquals(outLoc, df.getEgressPort());
-            assertEquals(null, df.getStatistics());
-            assertEquals(null, df.getAveragedStatistics());
-
-            if (DataFlowMode.SUMMARY.equals(mode)) {
-                assertEquals(null, df.getMatch());
-                assertEquals(null, df.getActions());
-                assertEquals(null, df.getVirtualRoute());
-                assertEquals(null, df.getPhysicalRoute());
-            } else {
-                assertEquals(fmatch, df.getMatch());
-                assertEquals(factions, df.getActions());
-                assertEquals(vroutes, df.getVirtualRoute());
-                assertEquals(nroutes, df.getPhysicalRoute());
-            }
-
-            df = FlowUtils.toDataFlow(vdfStats, mode);
-            assertEquals(flowId, df.getFlowId());
-            assertEquals(created, df.getCreationTime());
-            assertEquals((short)idle, df.getIdleTimeout());
-            assertEquals((short)hard, df.getHardTimeout());
-            assertEquals(inpath, df.getIngressNodePath());
-            assertEquals(inLoc, df.getIngressPort());
-            assertEquals(outpath, df.getEgressNodePath());
-            assertEquals(outLoc, df.getEgressPort());
-
-            if (DataFlowMode.SUMMARY.equals(mode)) {
-                assertEquals(null, df.getMatch());
-                assertEquals(null, df.getActions());
-                assertEquals(null, df.getVirtualRoute());
-                assertEquals(null, df.getPhysicalRoute());
-                assertEquals(null, df.getStatistics());
-                assertEquals(null, df.getAveragedStatistics());
-            } else {
-                assertEquals(fmatch, df.getMatch());
-                assertEquals(factions, df.getActions());
-                assertEquals(vroutes, df.getVirtualRoute());
-                assertEquals(nroutes, df.getPhysicalRoute());
-                assertEquals(fstats, df.getStatistics());
-                assertEquals(aveStats, df.getAveragedStatistics());
-            }
-        }
-    }
-
-    /**
-     * Test case for {@link FlowUtils#toMillis(Duration)}.
-     */
-    @Test
-    public void testToMillis() {
-        assertEquals(0L, FlowUtils.toMillis((Duration)null));
-
-        long[] seconds = {0L, 1L, 100L, 12345678L, 0xffffffffL};
-        long[] milli0 = {0L, 1L, 100L, 1000L, 999999L};
-        for (long sec: seconds) {
-            for (long milli: milli0) {
-                long expected = sec * 1000L;
-                DurationBuilder builder = new DurationBuilder().
-                    setSecond(new Counter32(sec));
-                Duration d = builder.setNanosecond(new Counter32(milli)).
-                    build();
-                assertEquals(expected, FlowUtils.toMillis(d));
-
-                // Round up 1 milliseconds.
-                expected++;
-                d = builder.setNanosecond(new Counter32(milli + 1000000L)).
-                    build();
-                assertEquals(expected, FlowUtils.toMillis(d));
-
-                // Round up 10 milliseconds.
-                expected += 9;
-                d = builder.setNanosecond(new Counter32(milli + 10000000L)).
-                    build();
-                assertEquals(expected, FlowUtils.toMillis(d));
-
-                // Round up 999 milliseconds.
-                expected = sec * 1000L + 999L;
-                d = builder.setNanosecond(new Counter32(milli + 999000000L)).
-                    build();
-                assertEquals(expected, FlowUtils.toMillis(d));
-            }
-        }
-    }
-
-    /**
      * Test case for {@link FlowUtils#compare(Duration,Duration)}.
      */
     @Test
@@ -850,57 +463,6 @@ public class FlowUtilsTest extends TestBase {
 
         Collections.sort(list, comp);
         assertEquals(expected, list);
-    }
-
-    /**
-     * Test case for {@link FlowUtils#toVNodeRoutes(List, Comparator)}.
-     *
-     * @throws Exception  An error occurred.
-     */
-    @Test
-    public void testToVNodeRoutes() throws Exception {
-        Comparator<Ordered> comp = new OrderedComparator();
-        List<VirtualRoute> vrlist = null;
-        assertEquals(null, FlowUtils.toVNodeRoutes(vrlist, comp));
-        vrlist = new ArrayList<>();
-        assertEquals(0, FlowUtils.toVNodeRoutes(vrlist, comp).size());
-
-        List<VNodeRoute> vroutes = createVNodeRouteList();
-        vrlist = FlowUtils.toVirtualRouteList(vroutes);
-        Collections.reverse(vrlist);
-
-        assertEquals(vroutes, FlowUtils.toVNodeRoutes(vrlist, comp));
-    }
-
-    /**
-     * Test case for {@link FlowUtils#toNodeRoutes(List, Comparator)}.
-     */
-    @Test
-    public void testToNodeRoutes() {
-        Comparator<Ordered> comp = new OrderedComparator();
-        List<PhysicalRoute> phlist = null;
-        assertEquals(null, FlowUtils.toNodeRoutes(phlist, comp));
-        phlist = new ArrayList<>();
-        assertEquals(0, FlowUtils.toNodeRoutes(phlist, comp).size());
-
-        List<NodeRoute> nroutes = new ArrayList<>();
-        long[] nodes = {
-            1L,
-            2L,
-            -1L,
-            0x123456789abcdL,
-            3344455566668788999L,
-        };
-
-        for (long node: nodes) {
-            long in = (node % 19) & 0xffffL;
-            long out = (node % 127) & 0xffffL;
-            createPhysicalRoute(phlist, nroutes, node, in, "in-" + in,
-                                out, "out-" + out);
-        }
-
-        Collections.reverse(phlist);
-        assertEquals(nroutes, FlowUtils.toNodeRoutes(phlist, comp));
     }
 
     /**
@@ -1242,7 +804,7 @@ public class FlowUtilsTest extends TestBase {
             paths.clear();
             Collections.addAll(
                 paths,
-                VTenantUtils.getIdentifier(tname),
+                VTenantIdentifier.create(tname, true).getIdentifier(),
                 PathMapUtils.getIdentifier(tname, 1));
             paths.addAll(badList);
             for (InstanceIdentifier<?> path: paths) {
@@ -2557,184 +2119,6 @@ public class FlowUtilsTest extends TestBase {
                 verify(logger).debug(format, desc, flowId);
             }
         }
-    }
-
-    /**
-     * Create a list of {@link VNodeRoute} instances for test.
-     *
-     * @return  A list of {@link VNodeRoute} instances.
-     */
-    private List<VNodeRoute> createVNodeRouteList() {
-        List<VNodeRoute> vroutes = new ArrayList<>();
-
-        String[] tenants = {"vtn1", "vtn2"};
-        String[] bridges = {"vbr1", "vbr2"};
-        String[] interfaces = {"if1", "if2"};
-        String[] vlanMaps = {"ANY.0", "OF:00:00:00:00:00:00:00:00.4095"};
-        MacVlan[] hosts = {
-            new MacVlan(0x1000L), new MacVlan(0xfffffffffffffffL),
-        };
-        VirtualRouteReason forwarded = VirtualRouteReason.FORWARDED;
-        VirtualRouteReason redirected = VirtualRouteReason.REDIRECTED;
-        VirtualRouteReason portmapped = VirtualRouteReason.PORTMAPPED;
-        VirtualRouteReason vlanmapped = VirtualRouteReason.VLANMAPPED;
-        VirtualRouteReason macmapped = VirtualRouteReason.MACMAPPED;
-
-        for (String tname: tenants) {
-            for (String bname: bridges) {
-                VBridgePath bpath = new VBridgePath(tname, bname);
-                vroutes.add(new VNodeRoute(bpath, forwarded));
-                vroutes.add(new VNodeRoute(bpath, redirected));
-
-                VNodePath path = new MacMapPath(bpath);
-                vroutes.add(new VNodeRoute(path, macmapped));
-                vroutes.add(new VNodeRoute(path, forwarded));
-
-                for (MacVlan host: hosts) {
-                    path = new MacMappedHostPath(bpath, host);
-                    vroutes.add(new VNodeRoute(path, macmapped));
-                    vroutes.add(new VNodeRoute(path, forwarded));
-                }
-
-                for (String vmap: vlanMaps) {
-                    path = new VlanMapPath(bpath, vmap);
-                    vroutes.add(new VNodeRoute(path, vlanmapped));
-                    vroutes.add(new VNodeRoute(path, forwarded));
-                }
-
-                VTerminalPath vtpath = new VTerminalPath(tname, bname);
-                vroutes.add(new VNodeRoute(vtpath, forwarded));
-                vroutes.add(new VNodeRoute(vtpath, redirected));
-
-                for (String iname: interfaces) {
-                    path = new VBridgeIfPath(bpath, iname);
-                    vroutes.add(new VNodeRoute(path, portmapped));
-                    vroutes.add(new VNodeRoute(path, redirected));
-                    vroutes.add(new VNodeRoute(path, forwarded));
-
-                    path = new VTerminalIfPath(vtpath, iname);
-                    vroutes.add(new VNodeRoute(path, portmapped));
-                    vroutes.add(new VNodeRoute(path, redirected));
-                    vroutes.add(new VNodeRoute(path, forwarded));
-                }
-            }
-        }
-        vroutes.add(new VNodeRoute());
-
-        return vroutes;
-    }
-
-    /**
-     * Verify the given {@link VirtualRoute} instance.
-     *
-     * @param vr      A {@link VirtualRoute} instance to be verified.
-     * @param vroute  A {@link VNodeRoute} instance identical to {@code vr}.
-     * @param order   The expected order value.
-     */
-    private void checkVirtualRoute(VirtualRoute vr, VNodeRoute vroute,
-                                   int order) {
-        assertEquals(Integer.valueOf(order), vr.getOrder());
-        assertEquals(vroute.getReason(), vr.getReason());
-
-        VNodePath vpath = vroute.getPath();
-        VirtualNodePath vnp = vr.getVirtualNodePath();
-        if (vpath == null) {
-            assertEquals(null, vnp);
-            return;
-        }
-
-        assertEquals(vpath.getTenantName(), vnp.getTenantName());
-        BridgeMapInfo minfo = vnp.getAugmentation(BridgeMapInfo.class);
-
-        if (vpath instanceof VBridgePath) {
-            VBridgePath bpath = (VBridgePath)vpath;
-            assertEquals(bpath.getBridgeName(), vnp.getBridgeName());
-            assertEquals(null, vnp.getTerminalName());
-            assertEquals(null, vnp.getRouterName());
-
-            if (vpath instanceof VBridgeIfPath) {
-                VBridgeIfPath ipath = (VBridgeIfPath)vpath;
-                assertEquals(ipath.getInterfaceName(), vnp.getInterfaceName());
-                assertEquals(null, minfo);
-            } else {
-                assertEquals(null, vnp.getInterfaceName());
-                if (vpath instanceof VlanMapPath) {
-                    VlanMapPath vmpath = (VlanMapPath)vpath;
-                    assertEquals(vmpath.getMapId(), minfo.getVlanMapId());
-                    assertEquals(null, minfo.getMacMappedHost());
-                } else if (vpath instanceof MacMapPath) {
-                    assertEquals(null, minfo.getVlanMapId());
-                    if (vpath instanceof MacMappedHostPath) {
-                        MacMappedHostPath mhpath = (MacMappedHostPath)vpath;
-                        MacVlan mv = mhpath.getMappedHost();
-                        assertEquals(Long.valueOf(mv.getEncodedValue()),
-                                     minfo.getMacMappedHost());
-                    } else {
-                        assertEquals(Long.valueOf(-1L),
-                                     minfo.getMacMappedHost());
-                    }
-                } else {
-                    assertEquals(null, minfo);
-                }
-            }
-        } else if (vpath instanceof VTerminalPath) {
-            VTerminalPath vtpath = (VTerminalPath)vpath;
-            assertEquals(vtpath.getTerminalName(), vnp.getTerminalName());
-            assertEquals(null, vnp.getBridgeName());
-            assertEquals(null, vnp.getRouterName());
-            assertEquals(null, minfo);
-
-            if (vpath instanceof VTerminalIfPath) {
-                VTerminalIfPath ipath = (VTerminalIfPath)vpath;
-                assertEquals(ipath.getInterfaceName(), vnp.getInterfaceName());
-            } else {
-                assertEquals(null, vnp.getInterfaceName());
-            }
-        } else {
-            fail("Unexpected path: " + vpath);
-        }
-    }
-
-    /**
-     * Create a list of physical packet route for test.
-     *
-     * @param phlist   A list to store {@link PhysicalRoute} instance.
-     * @param nroutes  A list to store {@link NodeRoute} instance.
-     * @param node     The identifier of the switch.
-     * @param inPort   The identifier of the ingress switch port.
-     * @param inName   The name of the ingress switch port.
-     * @param outPort  The identifier of the egress switch port.
-     * @param outName  The name of the egress switch port.
-     */
-    private void createPhysicalRoute(
-        List<PhysicalRoute> phlist, List<NodeRoute> nroutes, long node,
-        long inPort, String inName, long outPort, String outName) {
-        String sin = Long.toString(inPort);
-        String sout = Long.toString(outPort);
-        PhysicalIngressPort in = new PhysicalIngressPortBuilder().
-            setPortId(sin).
-            setPortName(inName).
-            build();
-        PhysicalEgressPort out = new PhysicalEgressPortBuilder().
-            setPortId(sout).
-            setPortName(outName).
-            build();
-        BigInteger dpid = BigInteger.valueOf(node);
-        NodeId nid = new NodeId("openflow:" + dpid);
-        PhysicalRoute pr = new PhysicalRouteBuilder().
-            setNode(nid).
-            setOrder(phlist.size()).
-            setPhysicalIngressPort(in).
-            setPhysicalEgressPort(out).
-            build();
-        phlist.add(pr);
-
-        String type = "OF";
-        SwitchPort inSw = new SwitchPort(inName, type, sin);
-        SwitchPort outSw = new SwitchPort(outName, type, sout);
-        SalNode snode = SalNode.create(nid);
-        NodeRoute nr = new NodeRoute(snode.getAdNode(), inSw, outSw);
-        nroutes.add(nr);
     }
 
     /**

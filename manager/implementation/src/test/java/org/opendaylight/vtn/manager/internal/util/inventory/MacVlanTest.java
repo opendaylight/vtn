@@ -23,8 +23,6 @@ import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.EthernetHost;
-import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.ByteUtils;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
@@ -32,13 +30,9 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
-import org.opendaylight.vtn.manager.internal.TestDataLink;
-import org.opendaylight.vtn.manager.internal.TestDataLinkHost;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
 import org.opendaylight.vtn.manager.internal.XmlValueType;
 import org.opendaylight.vtn.manager.internal.XmlNode;
-
-import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.input.DataFlowSource;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.input.DataFlowSourceBuilder;
@@ -220,60 +214,6 @@ public class MacVlanTest extends TestBase {
         assertEquals(MASK_VLAN_ID, mvlan.getVlanId());
         assertEquals(MASK_ENCODED, mvlan.getEncodedValue());
 
-        // Specify invalid DataLinkHost.
-        try {
-            mvlan = new MacVlan((EthernetHost)null);
-            unexpected();
-        } catch (VTNException e) {
-            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
-        }
-
-        TestDataLink dladdr = new TestDataLink("addr");
-        TestDataLinkHost dlhost = new TestDataLinkHost(dladdr);
-        try {
-            mvlan = new MacVlan(dlhost);
-            unexpected();
-        } catch (VTNException e) {
-            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
-        }
-
-        ArrayList<Long> invaddrs = new ArrayList<Long>();
-        invaddrs.add(0L);
-        invaddrs.add(MASK_MAC);
-        for (int i = 0; i < 10; i++) {
-            invaddrs.add((rand.nextLong() & MASK_MAC) | BIT_MULTICAST);
-        }
-        for (Long addr: invaddrs) {
-            byte[] raw = EtherAddress.toBytes(addr.longValue());
-            EthernetAddress eth = new EthernetAddress(raw);
-            EthernetHost ehost = new EthernetHost(eth, (short)0);
-            try {
-                mvlan = new MacVlan(dlhost);
-                unexpected();
-            } catch (VTNException e) {
-                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
-            }
-        }
-
-        for (int v = -10; v < 0; v++) {
-            EthernetHost ehost = new EthernetHost(null, (short)v);
-            try {
-                mvlan = new MacVlan(dlhost);
-                unexpected();
-            } catch (VTNException e) {
-                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
-            }
-        }
-        for (int v = 4096; v < 4100; v++) {
-            EthernetHost ehost = new EthernetHost(null, (short)v);
-            try {
-                mvlan = new MacVlan(dlhost);
-                unexpected();
-            } catch (VTNException e) {
-                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
-            }
-        }
-
         try {
             new MacVlan((DataFlowSource)null);
             unexpected();
@@ -406,7 +346,7 @@ public class MacVlanTest extends TestBase {
             }
 
             for (int vlan: vlans) {
-                long mac = eaddr.getAddress() | 0x010000000000L;
+                long mac = eaddr.getAddress() | BIT_MULTICAST;
                 EtherAddress eaddr1 = new EtherAddress(mac);
                 String text = eaddr1.getText();
                 emsg = "Multicast address cannot be specified: " + text;

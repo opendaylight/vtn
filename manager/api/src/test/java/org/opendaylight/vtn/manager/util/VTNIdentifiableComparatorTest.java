@@ -19,22 +19,6 @@ import java.util.Random;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.PathMap;
-import org.opendaylight.vtn.manager.PathPolicy;
-import org.opendaylight.vtn.manager.VBridge;
-import org.opendaylight.vtn.manager.VBridgeConfig;
-import org.opendaylight.vtn.manager.VInterface;
-import org.opendaylight.vtn.manager.VInterfaceConfig;
-import org.opendaylight.vtn.manager.VTenant;
-import org.opendaylight.vtn.manager.VTenantConfig;
-import org.opendaylight.vtn.manager.VTerminal;
-import org.opendaylight.vtn.manager.VTerminalConfig;
-import org.opendaylight.vtn.manager.VlanMap;
-import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
-import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
-import org.opendaylight.vtn.manager.flow.filter.DropFilter;
-import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
-
 import org.opendaylight.vtn.manager.TestBase;
 
 /**
@@ -57,6 +41,40 @@ public class VTNIdentifiableComparatorTest extends TestBase {
      */
     private VTNIdentifiableComparator<String> stringComparator =
         new VTNIdentifiableComparator<String>(String.class);
+
+    /**
+     * Describes a test data associated with an identifier.
+     *
+     * @param <T>  The type of the identifier.
+     */
+    private static final class TestData<T extends Comparable>
+        implements VTNIdentifiable<T> {
+        /**
+         * The identifier assigned to this instance.
+         */
+        private final T  identifier;
+
+        /**
+         * Construct a new instance.
+         *
+         * @param ident  The identifier for this instance.
+         */
+        private TestData(T ident) {
+            identifier = ident;
+        }
+
+        // VTNIdentifiable
+
+        /**
+         * Return the identifier assigned for this instance.
+         *
+         * @return  The identifier assigned for this instance.
+         */
+        @Override
+        public T getIdentifier() {
+            return identifier;
+        }
+    }
 
     /**
      * Counter for identifiers.
@@ -121,15 +139,15 @@ public class VTNIdentifiableComparatorTest extends TestBase {
     }
 
     /**
-     * Ensure that {@link PathMap} instances can be compared.
+     * Ensure that instances identified by an integer can be compared.
      */
     @Test
-    public void testPathMap() {
-        List<PathMap> list = new ArrayList<>();
+    public void testInteger() {
+        List<TestData<Integer>> list = new ArrayList<>();
         Counter<Integer> counter = new Counter<>();
         for (int i = 0; i < 100; i++) {
-            int index = random.nextInt();
-            list.add(new PathMap(index, "cond", i));
+            Integer index = Integer.valueOf(random.nextInt());
+            list.add(new TestData<Integer>(index));
             counter.add(index);
         }
 
@@ -137,53 +155,27 @@ public class VTNIdentifiableComparatorTest extends TestBase {
         Collections.sort(list, intComparator);
 
         int prev = Integer.MIN_VALUE;
-        for (PathMap pmap: list) {
-            int index = pmap.getIndex().intValue();
-            assertTrue(prev <= index);
+        for (TestData<Integer> data: list) {
+            Integer index = data.getIdentifier();
+            int idx = index.intValue();
+            assertTrue(prev <= idx);
             assertEquals(true, counter.remove(index));
-            prev = index;
+            prev = idx;
         }
         assertEquals(0, counter.getSize());
     }
 
     /**
-     * Ensure that {@link PathPolicy} instances can be compared.
+     * Ensure that instances identified by a string can be compared.
      */
     @Test
-    public void testPathPolicy() {
-        List<PathPolicy> list = new ArrayList<>();
-        Counter<Integer> counter = new Counter<>();
-        for (int i = 0; i < 100; i++) {
-            int index = random.nextInt();
-            list.add(new PathPolicy(index, 1L, null));
-            counter.add(index);
-        }
-
-        assertEquals(Integer.class, intComparator.getIdentifierType());
-        Collections.sort(list, intComparator);
-
-        int prev = Integer.MIN_VALUE;
-        for (PathPolicy pp: list) {
-            int index = pp.getPolicyId().intValue();
-            assertEquals(true, counter.remove(index));
-            assertTrue(prev <= index);
-            prev = index;
-        }
-        assertEquals(0, counter.getSize());
-    }
-
-    /**
-     * Ensure that {@link VBridge} instances can be compared.
-     */
-    @Test
-    public void testVBridge() {
-        List<VBridge> list = new ArrayList<>();
+    public void testString() {
+        List<TestData<String>> list = new ArrayList<>();
         Counter<String> counter = new Counter<>();
-        VBridgeConfig cf = new VBridgeConfig(null);
         for (int i = 0; i < 100; i++) {
             int index = random.nextInt();
-            String name = "vbr" + index;
-            list.add(new VBridge(name, null, 0, cf));
+            String name = "id_" + index;
+            list.add(new TestData<String>(name));
             counter.add(name);
         }
 
@@ -191,213 +183,13 @@ public class VTNIdentifiableComparatorTest extends TestBase {
         Collections.sort(list, stringComparator);
 
         String prev = null;
-        for (VBridge vbridge: list) {
-            String name = vbridge.getName();
+        for (TestData<String> data: list) {
+            String name = data.getIdentifier();
             if (prev != null) {
                 assertTrue(prev.compareTo(name) <= 0);
             }
             assertEquals(true, counter.remove(name));
             prev = name;
-        }
-        assertEquals(0, counter.getSize());
-    }
-
-    /**
-     * Ensure that {@link VInterface} instances can be compared.
-     */
-    @Test
-    public void testVInterface() {
-        List<VInterface> list = new ArrayList<>();
-        Counter<String> counter = new Counter<>();
-        VInterfaceConfig cf = new VInterfaceConfig(null, null);
-        for (int i = 0; i < 100; i++) {
-            int index = random.nextInt();
-            String name = "if" + index;
-            list.add(new VInterface(name, null, null, cf));
-            counter.add(name);
-        }
-
-        assertEquals(String.class, stringComparator.getIdentifierType());
-        Collections.sort(list, stringComparator);
-
-        String prev = null;
-        for (VInterface vif: list) {
-            String name = vif.getName();
-            if (prev != null) {
-                assertTrue(prev.compareTo(name) <= 0);
-            }
-            assertEquals(true, counter.remove(name));
-            prev = name;
-        }
-        assertEquals(0, counter.getSize());
-    }
-
-    /**
-     * Ensure that {@link VTenant} instances can be compared.
-     */
-    @Test
-    public void testVTenant() {
-        List<VTenant> list = new ArrayList<>();
-        Counter<String> counter = new Counter<>();
-        VTenantConfig cf = new VTenantConfig(null);
-        for (int i = 0; i < 100; i++) {
-            int index = random.nextInt();
-            String name = "vtn" + index;
-            list.add(new VTenant(name, cf));
-            counter.add(name);
-        }
-
-        assertEquals(String.class, stringComparator.getIdentifierType());
-        Collections.sort(list, stringComparator);
-
-        String prev = null;
-        for (VTenant vtn: list) {
-            String name = vtn.getName();
-            if (prev != null) {
-                assertTrue(prev.compareTo(name) <= 0);
-            }
-            assertEquals(true, counter.remove(name));
-            prev = name;
-        }
-        assertEquals(0, counter.getSize());
-    }
-
-    /**
-     * Ensure that {@link VTerminal} instances can be compared.
-     */
-    @Test
-    public void testVTerminal() {
-        List<VTerminal> list = new ArrayList<>();
-        Counter<String> counter = new Counter<>();
-        VTerminalConfig cf = new VTerminalConfig(null);
-        for (int i = 0; i < 100; i++) {
-            int index = random.nextInt();
-            String name = "vterm" + index;
-            list.add(new VTerminal(name, null, 0, cf));
-            counter.add(name);
-        }
-
-        assertEquals(String.class, stringComparator.getIdentifierType());
-        Collections.sort(list, stringComparator);
-
-        String prev = null;
-        for (VTerminal vterm: list) {
-            String name = vterm.getName();
-            if (prev != null) {
-                assertTrue(prev.compareTo(name) <= 0);
-            }
-            assertEquals(true, counter.remove(name));
-            prev = name;
-        }
-        assertEquals(0, counter.getSize());
-    }
-
-    /**
-     * Ensure that {@link VlanMap} instances can be compared.
-     */
-    @Test
-    public void testVlanMap() {
-        List<VlanMap> list = new ArrayList<>();
-        Counter<String> counter = new Counter<>();
-        for (int i = 0; i < 100; i++) {
-            int index = random.nextInt();
-            String id = "map." + index;
-            list.add(new VlanMap(id, null, (short)0));
-            counter.add(id);
-        }
-
-        assertEquals(String.class, stringComparator.getIdentifierType());
-        Collections.sort(list, stringComparator);
-
-        String prev = null;
-        for (VlanMap vmap: list) {
-            String id = vmap.getId();
-            if (prev != null) {
-                assertTrue(prev.compareTo(id) <= 0);
-            }
-            assertEquals(true, counter.remove(id));
-            prev = id;
-        }
-    }
-
-    /**
-     * Ensure that {@link FlowCondition} instances can be compared.
-     */
-    @Test
-    public void testFlowCondition() {
-        List<FlowCondition> list = new ArrayList<>();
-        Counter<String> counter = new Counter<>();
-        for (int i = 0; i < 100; i++) {
-            int index = random.nextInt();
-            String name = "fcond." + index;
-            list.add(new FlowCondition(name, null));
-            counter.add(name);
-        }
-
-        assertEquals(String.class, stringComparator.getIdentifierType());
-        Collections.sort(list, stringComparator);
-
-        String prev = null;
-        for (FlowCondition fcond: list) {
-            String name = fcond.getName();
-            if (prev != null) {
-                assertTrue(prev.compareTo(name) <= 0);
-            }
-            assertEquals(true, counter.remove(name));
-            prev = name;
-        }
-        assertEquals(0, counter.getSize());
-    }
-
-    /**
-     * Ensure that {@link FlowMatch} instances can be compared.
-     */
-    @Test
-    public void testFlowMatch() {
-        List<FlowMatch> list = new ArrayList<>();
-        Counter<Integer> counter = new Counter<>();
-        for (int i = 0; i < 100; i++) {
-            int index = random.nextInt();
-            list.add(new FlowMatch(index, null, null, null));
-            counter.add(index);
-        }
-
-        assertEquals(Integer.class, intComparator.getIdentifierType());
-        Collections.sort(list, intComparator);
-
-        int prev = Integer.MIN_VALUE;
-        for (FlowMatch match: list) {
-            int index = match.getIndex().intValue();
-            assertTrue(prev <= index);
-            assertEquals(true, counter.remove(index));
-            prev = index;
-        }
-        assertEquals(0, counter.getSize());
-    }
-
-    /**
-     * Ensure that {@link FlowFilter} instances can be compared.
-     */
-    @Test
-    public void testFlowFilter() {
-        List<FlowFilter> list = new ArrayList<>();
-        Counter<Integer> counter = new Counter<>();
-        DropFilter drop = new DropFilter();
-        for (int i = 0; i < 100; i++) {
-            int index = random.nextInt();
-            list.add(new FlowFilter(index, "cond", drop, null));
-            counter.add(index);
-        }
-
-        assertEquals(Integer.class, intComparator.getIdentifierType());
-        Collections.sort(list, intComparator);
-
-        int prev = Integer.MIN_VALUE;
-        for (FlowFilter ff: list) {
-            int index = ff.getIndex().intValue();
-            assertTrue(prev <= index);
-            assertEquals(true, counter.remove(index));
-            prev = index;
         }
         assertEquals(0, counter.getSize());
     }

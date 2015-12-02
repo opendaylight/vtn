@@ -75,7 +75,7 @@ public abstract class Packet implements Cloneable {
      * {@code HeaderField} describes the location of the header field in the
      * packet header.
      */
-    static final class HeaderField {
+    protected static final class HeaderField {
         /**
          * The start bit offset for the header field.
          */

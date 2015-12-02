@@ -15,18 +15,13 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.opendaylight.vtn.manager.flow.cond.EthernetMatch;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.packet.EtherHeader;
-import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-
-import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.Status;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnEtherMatchFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.VtnEtherMatchBuilder;
@@ -156,30 +151,6 @@ public final class VTNEtherMatch {
     }
 
     /**
-     * Construct a new instance from the given {@link EthernetMatch} instance.
-     *
-     * @param ematch  An {@link EthernetMatch} instance.
-     * @throws NullPointerException
-     *    {@code ematch} is {@code null}.
-     * @throws RpcException
-     *    {@code ematch} contains invalid value.
-     */
-    public VTNEtherMatch(EthernetMatch ematch) throws RpcException {
-        Status st = ematch.getValidationStatus();
-        if (st != null) {
-            throw new RpcException(RpcErrorTag.BAD_ELEMENT, st);
-        }
-
-        sourceAddress = EtherAddress.create(ematch.getSourceAddress());
-        destinationAddress =
-            EtherAddress.create(ematch.getDestinationAddress());
-        etherType = ematch.getType();
-        vlanId = NumberUtils.toInteger(ematch.getVlan());
-        vlanPriority = NumberUtils.toShort(ematch.getVlanPriority());
-        verify();
-    }
-
-    /**
      * Construct a new instance from the given {@link VtnEtherMatchFields}.
      *
      * @param vematch  A {@link VtnEtherMatchFields} instance.
@@ -302,23 +273,6 @@ public final class VTNEtherMatch {
      */
     public Short getVlanPriority() {
         return vlanPriority;
-    }
-
-    /**
-     * Return an {@link EthernetMatch} instance which represents this
-     * condition.
-     *
-     * @return  An {@link EthernetMatch} instance.
-     */
-    public EthernetMatch toEthernetMatch() {
-        EthernetAddress src = (sourceAddress == null)
-            ? null : sourceAddress.getEthernetAddress();
-        EthernetAddress dst = (destinationAddress == null)
-            ? null : destinationAddress.getEthernetAddress();
-        Short vid = NumberUtils.toShort(vlanId);
-        Byte pri = NumberUtils.toByte(vlanPriority);
-
-        return new EthernetMatch(src, dst, etherType, vid, pri);
     }
 
     /**
@@ -524,9 +478,7 @@ public final class VTNEtherMatch {
             return EtherAddress.create(mac);
         } catch (RuntimeException e) {
             String msg = MiscUtils.joinColon(mac, e.getMessage());
-            RpcException re = invalidMacAddress(msg, desc);
-            re.initCause(e);
-            throw re;
+            throw invalidMacAddress(msg, desc, e);
         }
     }
 
@@ -547,9 +499,7 @@ public final class VTNEtherMatch {
             return EtherAddress.create(mf);
         } catch (RuntimeException e) {
             String msg = MiscUtils.joinColon(mf, e.getMessage());
-            RpcException re = invalidMacAddress(msg, desc);
-            re.initCause(e);
-            throw re;
+            throw invalidMacAddress(msg, desc, e);
         }
     }
 
@@ -557,14 +507,16 @@ public final class VTNEtherMatch {
      * Return an {@link RpcException} instance which notifies an invalid MAC
      * address.
      *
-     * @param obj   An object which contains invalid MAC address.
-     * @param desc  A brief description about the MAC address.
+     * @param obj    An object which contains invalid MAC address.
+     * @param desc   A brief description about the MAC address.
+     * @param cause  A throwable that indicates the cause of error.
      * @return  An {@link RpcException} instance.
      */
-    private RpcException invalidMacAddress(Object obj, String desc) {
+    private RpcException invalidMacAddress(Object obj, String desc,
+                                           Throwable cause) {
         StringBuilder builder = new StringBuilder("Invalid ").
             append(desc).append(" MAC address: ").append(obj);
-        return RpcException.getBadArgumentException(builder.toString());
+        return RpcException.getBadArgumentException(builder.toString(), cause);
     }
 
     /**

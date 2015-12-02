@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,74 +8,98 @@
 
 package org.opendaylight.vtn.manager.internal.inventory;
 
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
+
+import org.slf4j.Logger;
+
+import org.junit.Before;
 import org.junit.Test;
-import org.opendaylight.vtn.manager.internal.TestBase;
-import java.util.List;
-import java.util.ArrayList;
-import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
-import org.mockito.Mockito;
+
+import org.mockito.Mock;
+
 import org.opendaylight.vtn.manager.internal.TxQueue;
-import org.opendaylight.vtn.manager.internal.util.tx.TxQueueImpl;
 import org.opendaylight.vtn.manager.internal.TxTask;
-import org.opendaylight.vtn.manager.internal.util.tx.CompositeTxTask;
+
+import org.opendaylight.vtn.manager.internal.TestBase;
+
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
+import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
+import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+
+import org.opendaylight.yangtools.concepts.ListenerRegistration;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 /**
- * InventoryMaintainer test Class is to test whether InventoryMaintainer class maintains
- *  the VTN inventory data or not.
- *
  * JUnit test for {@link InventoryMaintainer}
  */
-
 public class InventoryMaintainerTest extends TestBase {
     /**
-     * create a mock object for DataBroker class
+     * Mock-up of {@link TxQueue}.
      */
-    DataBroker broker = Mockito.mock(DataBroker.class);
-    /**
-     * create a mock object for VTNManagerProvider class
-     */
-    VTNManagerProvider provider = Mockito.mock(VTNManagerProvider.class);
-    /**
-     * create a transaction submit queue to test the VTN inventory data models.
-     */
-    TxQueue txQueue = new TxQueueImpl("QUEUE1", provider);
-    /**
-     * create a object for InventoryMaintainer
-     */
-    InventoryMaintainer inventoryMaintainer = new NodeConnectorListener(txQueue, broker);
+    @Mock
+    private TxQueue  txQueue;
 
     /**
-     * Test method for
-     * {@link InventoryMaintainer#submit}.
-     * whether execute the given transaction task on the transaction queue or not.
+     * Mock-up of {@link DataBroker}.
+     */
+    @Mock
+    private DataBroker  dataBroker;
+
+    /**
+     * Mock-up of {@link ListenerRegistration}.
+     */
+    @Mock
+    private ListenerRegistration<DataChangeListener>  registration;
+
+    /**
+     * Mock-up of {@link Logger}.
+     */
+    @Mock
+    private Logger  logger;
+
+    /**
+     * A {@link NodeConnectorListener} instance for test.
+     */
+    private NodeConnectorListener  ncListener;
+
+    /**
+     * Set up test environment.
+     */
+    @Before
+    public void setUp() {
+        initMocks(this);
+
+        when(dataBroker.registerDataChangeListener(
+                 any(LogicalDatastoreType.class), any(InstanceIdentifier.class),
+                 any(NodeConnectorListener.class), any(DataChangeScope.class))).
+            thenReturn(registration);
+        ncListener = new NodeConnectorListener(txQueue, dataBroker);
+    }
+
+    /**
+     * Test case for {@link InventoryMaintainer#submit(TxTask)}.
      */
     @Test
     public void testSubmit() {
-
-        List<String> taskList = new ArrayList<String>();
-        taskList.add("Task1");
-        taskList.add("Task2");
-        taskList.add("Task3");
-        TxTask txTask = new CompositeTxTask(taskList);
-        inventoryMaintainer.submit(txTask);
+        TxTask<?> task = new PortUpdateTask(logger);
+        ncListener.submit(task);
+        verify(txQueue).post(task);
+        verifyNoMoreInteractions(txQueue, logger);
     }
 
     /**
-     * Test method for
-     * {@link InventoryMaintainer#submitInitial}.
-     * whether execute the given transaction task for initialization on the
-     * transaction queue or not
+     * Test case for {@link InventoryMaintainer#submitInitial(TxTask)}.
      */
     @Test
     public void testSubmitInitial() {
-
-        List<String> taskList = new ArrayList<String>();
-        taskList.add("Task4");
-        taskList.add("Task5");
-        taskList.add("Task6");
-        TxTask txTask = new CompositeTxTask(taskList);
-        inventoryMaintainer.submitInitial(txTask);
+        TxTask<?> task = new PortUpdateTask(logger);
+        ncListener.submitInitial(task);
+        verify(txQueue).postFirst(task);
+        verifyNoMoreInteractions(txQueue, logger);
     }
-
 }

@@ -16,8 +16,6 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import org.opendaylight.vtn.manager.flow.cond.PortProtoMatch;
-
 import org.opendaylight.vtn.manager.internal.util.packet.Layer4Header;
 import org.opendaylight.vtn.manager.internal.util.packet.Layer4PortHeader;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
@@ -72,21 +70,6 @@ public abstract class VTNLayer4PortMatch<H extends Layer4PortHeader>
     VTNLayer4PortMatch(VTNPortRange src, VTNPortRange dst) {
         sourcePort = src;
         destinationPort = dst;
-    }
-
-    /**
-     * Construct a new instance from the given {@link PortProtoMatch} instance.
-     *
-     * @param pmatch   A {@link PortProtoMatch} instance.
-     * @throws NullPointerException
-     *    {@code pmatch} is {@code null}.
-     * @throws RpcException
-     *    {@code pmatch} contains invalid value.
-     */
-    VTNLayer4PortMatch(PortProtoMatch pmatch)
-        throws RpcException {
-        sourcePort = VTNPortRange.create(pmatch.getSourcePort());
-        destinationPort = VTNPortRange.create(pmatch.getDestinationPort());
     }
 
     /**

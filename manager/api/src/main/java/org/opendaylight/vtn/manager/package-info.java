@@ -7,34 +7,8 @@
  */
 
 /**
- * This package contains public APIs provided by the VTN Manager.
- *
- * <h2 id="osgi-bundle" style="border-bottom: 4px double #aaaaaa; padding-top: 0.5em;">
- *   OSGi bundles
- * </h2>
- * <div style="margin-left: 1em;">
- *   <p>
- *     The VTN Manager consists of the following OSGi bundles.
- *   </p>
- *   <dl style="margin-left: 1em;">
- *     <dt style="font-weight: bold; margin-top: 0.5em;">manager
- *     <dd style="margin-left: 2em;">
- *       This provides public APIs. Only this bundle exposes the VTN Manager
- *       classes and interfaces to external applications.
- *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">manager.implementation
- *     <dd style="margin-left: 2em;">
- *       This implements the VTN Manager service.
- *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">manager.northbound
- *     <dd style="margin-left: 2em;">
- *       This implements the REST API provided by the VTN Manager.
- *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">manager.neutron
- *     <dd style="margin-left: 2em;">
- *       This provides OpenStack Neutron API support for the VTN Manager.
- *   </dl>
- * </div>
+ * The VTN Manager provides a network virtualization support with
+ * multi-tenancy.
  *
  * <h2 id="function-overview" style="border-bottom: 4px double #aaaaaa; padding-top: 0.5em;">
  *   Function overview
@@ -48,10 +22,10 @@
  *     setting up virtual network using the VTN Manager.
  *   </p>
  *   <p>
- *     VTN is a virtual network environment that gets created inside the
- *     container of the OpenDaylight controller. The VTN Manager sets up
- *     virtual network environment inside VTN by configuring virtual network
- *     elements (virtual node) like <a href="#vBridge">vBridge</a> in VTN.
+ *     VTN is a virtual network environment inside the network manager by the
+ *     OpenDaylight controller. The VTN Manager sets up virtual network
+ *     environment inside VTN by configuring virtual network elements
+ *     (virtual node) like <a href="#vBridge">vBridge</a> in VTN.
  *     If multiple VTNs are created, then networks inside different VTNs are
  *     managed as different individual networks.
  *   </p>
@@ -197,12 +171,11 @@
  *     </ul>
  *     <p>
  *       Also, it is possible to specify one physical switch for VLAN mapping.
- *       If the {@link org.opendaylight.controller.sal.core.Node}
- *       corresponding to physical switch is specified during VLAN mapping,
- *       then only the input and output of that physical switch is mapped to
- *       vBridge. If a physical switch is not specified, then it will be used
- *       for all the physical switches recognized by the OpenDaylight
- *       controller.
+ *       If the node identifier (node-id) corresponding to physical switch
+ *       is specified during VLAN mapping, then only the input and output of
+ *       that physical switch is mapped to vBridge. If a physical switch is
+ *       not specified, then it will be used for all the physical switches
+ *       recognized by the OpenDaylight controller.
  *     </p>
  *     <p>
  *       Further, if the same VLAN ID specified with and without the physical
@@ -1003,10 +976,8 @@
  *       each virtual interface.
  *     </p>
  *     <p>
- *       While configuring port mapping, specify
- *       {@link org.opendaylight.controller.sal.core.NodeConnector}
- *       corresponding to the port of physical switch and VLAN ID that is to
- *       be mapped.
+ *       While configuring port mapping, specify a pair of physical switch port
+ *       and VLAN ID that is to be mapped.
  *     </p>
  *     <ul>
  *       <li>
@@ -1196,330 +1167,343 @@
  *   </div>
  * </div>
  *
- * <h3 id="dependencies" style="border-bottom: 2px solid #aaaaaa;">
- *   Dependencies
+ * <h3 id="flow.cond" style="border-bottom: 2px solid #aaaaaa;">
+ *   Flow Condition
  * </h3>
  * <div style="margin-left: 1em;">
  *   <p>
- *     The VTN Manager uses the following OSGi services provided by the
- *     OpenDaylight controller.
+ *     A flow condition is a named list of flow match conditions, and it is
+ *     used to select packets. Each flow match condition must have a match
+ *     index, which is an unique index in a flow condition. When a flow
+ *     condition tests a packet, flow match conditions in a flow condition are
+ *     evaluated in ascending order of match indices. A packet is selected
+ *     if at least one flow match condition matches the packet.
  *   </p>
- *
- *   <dl style="margin-left: 1em;">
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       IClusterGlobalServices
- *     <dd style="margin-left: 2em;">
- *       This is used to create cache for storing information used in all
- *       containers and share management information with controllers in the
- *       cluster.
- *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       IClusterContainerServices
- *     <dd style="margin-left: 2em;">
- *       This is used to create cache for storing information used in each
- *       container and share management information with controllers in the
- *       cluster.
- *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       ISwitchManager
- *     <dd style="margin-left: 2em;">
- *       This is used to acquire information about switches managed by the
- *       OpenDaylight controller.
- *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       ITopologyManager
- *     <dd style="margin-left: 2em;">
- *       This is used to understand the connection state of switches managed
- *       by the OpenDaylight controller.
- *       This is mainly used to distinguish the internal port
- *       (port connecting two switches) of the switch.
- *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       IDataPacketService
- *     <dd style="margin-left: 2em;">
- *       This is used to instruct packet transmission to switch.
- *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       IForwardingRulesManager
- *     <dd style="margin-left: 2em;">
- *       This is used to set flow entry against switch.
- *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       IConnectionManager
- *     <dd style="margin-left: 2em;">
- *       This is used to determine whether physical switch is connected to
-         the OpenDaylight controller or not.
- *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       IRouting
- *     <dd style="margin-left: 2em;">
- *       This is used to determine the route between switches.
- *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       IfHostListener
- *     <dd style="margin-left: 2em;">
- *       This is used to notify the host information detected inside
- *       <a href="#vBridge">vBridge</a> to hosttracker.
- *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       IfIptoHost
- *     <dd style="margin-left: 2em;">
- *       This is used to refer the host information maintained in hosttracker.
- *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       IStatisticsManager
- *     <dd style="margin-left: 2em;">
- *       This is used to get flow statistics information. (Helium onwards)
- *   </dl>
- *
  *   <p>
- *     In addition, the VTN Manager registers the following OSGi listener
- *     services.
+ *     Flow conditions are shared with all the VTNs.
+ *   </p>
+ * </div>
+ *
+ * <h3 id="flow.filter" style="border-bottom: 2px solid #aaaaaa;">
+ *   Flow Filter
+ * </h3>
+ * <div style="margin-left: 1em;">
+ *   <p>
+ *     Flow filter provides packet filtering feature for packets forwarded
+ *     in <a href="#VTN">VTN</a>.
+ *     Flow filter can not only filter out the specified packets but also
+ *     modify the specified packets.
+ *   </p>
+ *   <p>
+ *     Each flow filter must specify a <a href="#flow.cond">flow condition</a>
+ *     by name. If a packet matches the condition described by the flow
+ *     condition in a flow filter, then actions configured in the same flow
+ *     filter is applied to that packet.
  *   </p>
  *
- *   <dl style="margin-left: 1em;">
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       ICacheUpdateAware
- *     <dd style="margin-left: 2em;">
- *       This is used to receive instruction issued by another controller in
- *       the cluster.
+ *   <h4 id="flow.filter.type" style="border-bottom: 1px dashed #aaaaaa;">
+ *     Type of flow filter
+ *   </h4>
+ *   <div style="margin-left: 1em;">
+ *     <p>
+ *       There are three types of flow filter as follows.
+ *     </p>
+ *     <dl style="margin-left: 1em;">
+ *       <dt id="flow.filter.type.PASS" style="font-weight: bold; margin-top: 0.5em;">PASS
+ *       <dd style="margin-left: 2em;">
+ *         Let the packet through the virtual node if the packet matches the
+ *         flow condition configured in a flow filter.
+ *         This type of flow filter can be used to modify the specified
+ *         packets.
  *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       IConfigurationContainerAware
- *     <dd style="margin-left: 2em;">
- *       This is used to receive instruction to store configuration
- *       information of the OpenDaylight controller.
- *       The VTN Manager will store the VTN configuration information in
- *       file when it receives the instruction.
+ *       <dt id="flow.filter.type.DROP" style="font-weight: bold; margin-top: 0.5em;">DROP
+ *       <dd style="margin-left: 2em;">
+ *         Discard the packet if the packet matches the flow condition
+ *         configured in a flow filter.
  *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       IListenDataPacket
- *     <dd style="margin-left: 2em;">
- *       This is used to acquire the packets received by switch.
+ *       <dt id="flow.filter.type.REDIRECT" style="font-weight: bold; margin-top: 0.5em;">REDIRECT
+ *       <dd style="margin-left: 2em;">
+ *         Forward the packet to another virtual interface in the same VTN
+ *         if the packet matches the flow condition configured in a flow
+ *         filter. This type of flow filter also can modify the matched packet.
+ *         See description about
+ *         <a href="#flow.filter.redirect">packet redirection</a> for
+ *         more details.
+ *     </dl>
+ *   </div>
  *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       IInventoryListener
- *     <dd style="margin-left: 2em;">
- *       This is used to detect status change of switches managed by
- *       the OpenDaylight controller.
+ *   <h4 id="flow.filter.actions" style="border-bottom: 1px dashed #aaaaaa;">
+ *     Flow action list
+ *   </h4>
+ *   <div style="margin-left: 1em;">
+ *     <p>
+ *       <strong>Flow action list</strong> is a list of rules to modify packet.
+ *     </p>
+ *     <ul>
+ *       <li>
+ *         When a <a href="#flow.filter.type.PASS">PASS</a> or a
+ *         <a href="#flow.filter.type.REDIRECT">REDIRECT</a> flow filter is
+ *         applied to a packet, flow actions configured in the same flow
+ *         filter are applied to the packet in order.
+ *       </li>
+ *       <li>
+ *         Although a <a href="#flow.filter.type.DROP">DROP</a> flow filter can
+ *         have flow actions, they will be always ignored.
+ *       </li>
+ *     </ul>
  *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       ITopologyManagerAware
- *     <dd style="margin-left: 2em;">
- *       This is used to detect connection status change of switches managed
- *       by the OpenDaylight controller.
+ *     <p>
+ *       Note that modification done by flow actions in a flow filter is
+ *        visible to succeeding evaluation of flow filters.
+ *     </p>
+ *   </div>
  *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       IContainerListener
- *     <dd style="margin-left: 2em;">
- *       This is used to detect creation and deletion of container.
- *       This OSGi listener service is registered only by the VTN Manager in
- *       the default container. The VTN Manager in the default container will
- *       get disabled if container other than the default container is created.
+ *   <h4 id="flow.filter.place" style="border-bottom: 1px dashed #aaaaaa;">
+ *     Place to configure flow filter
+ *   </h4>
+ *   <div style="margin-left: 1em;">
+ *     <p>
+ *       One or more flow filters can be configured in virtual node in VTN as
+ *       a list, and it is evaluated when a packet is forwarded to the
+ *       virtual node. Each flow filter has a unique index in the list, and
+ *       they are evaluated in ascending order of indices, and only the first
+ *       matched flow filter is applied to the packet.
+ *       If none of flow filter in the list matches the packet, then the
+ *       VTN Manager lets the packet through the virtual node without modifying
+ *       the packet.
+ *     </p>
+ *     <p>
+ *       Flow filter can be configured in the following places.
+ *     </p>
+ *     <dl style="margin-left: 1em;">
+ *       <dt id="flow.filter.place.VTN" style="font-weight: bold; margin-top: 0.5em;">VTN
+ *       <dd style="margin-left: 2em;">
+ *         <p>
+ *           Flow filters in this list are evaluated when an incoming packet is
+ *           mapped to the VTN. Note that the VTN flow filter list is evaluated
+ *           only once before other flow filter lists are evaluated.
+ *         </p>
  *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       IListenRoutingUpdates
- *     <dd style="margin-left: 2em;">
- *       This is used to detect completion of route calculation between
- *       switches.
+ *       <dt id="flow.filter.place.vBridge.in" style="font-weight: bold; margin-top: 0.5em;">vBridge (input)
+ *       <dd style="margin-left: 2em;">
+ *         <p>
+ *           Flow filters in this list are evaluated when a packet is forwarded
+ *           to the specified <a href="#vBridge">vBridge</a>.
+ *           This list is evaluated at the following instances.
+ *         </p>
+ *         <ul>
+ *           <li>
+ *             When a packet is forwarded from the virtual interface to the
+ *             vBridge.
+ *           </li>
+ *           <li>
+ *             When an incoming packet is mapped to the vBridge by
+ *             <a href="#VLAN-map">VLAN mapping</a> or
+ *             <a href="#MAC-map">MAC mapping</a>.
+ *           </li>
+ *         </ul>
  *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       IFlowProgrammerListener
- *     <dd style="margin-left: 2em;">
- *       This is used to detect flow entries removed from physical switch.
+ *       <dt id="flow.filter.place.vBridge.out" style="font-weight: bold; margin-top: 0.5em;">vBridge (output)
+ *       <dd style="margin-left: 2em;">
+ *         <p>
+ *           Flow filters in this list are evaluated when a packet is going to
+ *           be transmitted to the physical network mapped to the
+ *           <a href="#vBridge">vBridge</a> by <a href="#VLAN-map">VLAN
+ *           mapping</a> or <a href="#MAC-map">MAC mapping</a>.
+ *           Note that this list is not evaluated when a packet is forwarded to
+ *           the virtual interface in the same vBridge.
+ *         </p>
  *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       IHostFinder
- *     <dd style="margin-left: 2em;">
- *       This provides <a href="#IHostFinder">IHostFinder</a> service instead
- *       of <a href="#arphandler">arphandler</a>.
- *   </dl>
+ *       <dt id="flow.filter.place.vBridge.vif.in" style="font-weight: bold; margin-top: 0.5em;">vBridge interface (input)
+ *       <dd style="margin-left: 2em;">
+ *         <p>
+ *           Flow filters in this list are evaluated when a packet is forwarded
+ *           to the specified
+ *           <a href="#vInterface">virtual interface</a>   in the
+ *           <a href="#vBridge">vBridge</a>.
+ *           This list is evaluated at the following instances.
+ *         </p>
+ *         <ul>
+ *           <li>
+ *             When an incoming packet is mapped to the vBridge interface by
+ *             <a href="#port-map">port mapping</a>.
+ *           </li>
+ *           <li>
+ *             When a packet is redirected by another flow filter to the
+ *             vBridge interface as an incoming packet.
+ *           </li>
+ *         </ul>
+ *
+ *       <dt id="flow.filter.place.vBridge.vif.out" style="font-weight: bold; margin-top: 0.5em;">vBridge interface (output)
+ *       <dd style="margin-left: 2em;">
+ *         <p>
+ *           Flow filters in this list are evaluated when a packet is going to
+ *           be transmitted to the physical network mapped to the
+ *           <a href="#vInterface">virtual interface</a>
+ *           in the <a href="#vBridge">vBridge</a>.
+ *           This list is evaluated at the following instances.
+ *         </p>
+ *         <ul>
+ *           <li>
+ *             When a packet is forwarded from the vBridge to the virtual
+ *             interface.
+ *           </li>
+ *           <li>
+ *             When a packet is redirected by another flow filter to the
+ *             vBridge interface as an outgoing packet.
+ *           </li>
+ *         </ul>
+ *
+ *       <dt id="flow.filter.place.vTerminal.vif.in" style="font-weight: bold; margin-top: 0.5em;">vTerminal interface (input)
+ *       <dd style="margin-left: 2em;">
+ *         <p>
+ *           Flow filters in this list are evaluated when a packet is forwarded
+ *           to the specified
+ *           <a href="#vInterface">virtual interface</a> in the
+ *           <a href="#vTerminal">vTerminal</a>.
+ *           This list is evaluated at the following instances.
+ *         </p>
+ *         <ul>
+ *           <li>
+ *             When an incoming packet is mapped to the vTerminal interface by
+ *             <a href="#port-map">port mapping</a>.
+ *           </li>
+ *           <li>
+ *             When a packet is redirected by another flow filter to the
+ *             vTerminal interface as an incoming packet.
+ *           </li>
+ *         </ul>
+ *         <p>
+ *           vTerminal is an isolated input/output terminal.
+ *           So an incoming packet is always discarded unless it is redirected
+ *           to another virtual interface by the flow filter.
+ *         </p>
+ *
+ *       <dt id="flow.filter.place.vTerminal.vif.out" style="font-weight: bold; margin-top: 0.5em;">vTerminal interface (output)
+ *       <dd style="margin-left: 2em;">
+ *         <p>
+ *           Flow filters in this list are evaluated when a packet is going to
+ *           be transmitted to the physical network mapped to the
+ *           <a href="#vInterface">virtual interface</a> in the
+ *           <a href="#vTerminal">vTerminal</a>.
+ *         </p>
+ *         <p>
+ *           This list is evaluated only when a packet is redirected by another
+ *           flow filter to the vTerminal interface as an outgoing packet.
+ *         </p>
+ *     </dl>
+ *   </div>
+ *
+ *   <h4 id="flow.filter.redirect" style="border-bottom: 1px dashed #aaaaaa;">
+ *     Packet redirection
+ *   </h4>
+ *   <div style="margin-left: 1em;">
+ *     <p>
+ *       A <a href="#flow.filter.type.REDIRECT">REDIRECT</a> flow filter
+ *       forwards the packet to another <a href="#vInterface">virtual
+ *       interface</a> in the same <a href="#VTN">VTN</a>.
+ *       A REDIRECT flow filter has the following configurations.
+ *     </p>
+ *     <dl style="margin-left: 1em;">
+ *       <dt id="flow.filter.redirect.destination" style="font-weight: bold; margin-top: 0.5em;">Destination virtual interface
+ *       <dd style="margin-left: 2em;">
+ *         <p>
+ *           The location of the destination virtual interface must be
+ *           configured in every REDIRECT flow filter.
+ *         </p>
+ *         <ul>
+ *           <li>
+ *             Self-redirection (specifying the virtual interface that contains
+ *             the REDIRECT flow filter itself as the destination) is always
+ *             forbidden.
+ *           </li>
+ *           <li>
+ *             If the specified destination node does not exist, every packets
+ *             matched to that REDIRECT flow filter will be discarded.
+ *           </li>
+ *         </ul>
+ *
+ *       <dt id="flow.filter.redirect.destination" style="font-weight: bold; margin-top: 0.5em;">Direction
+ *       <dd style="margin-left: 2em;">
+ *         <p>
+ *           Every REDIRECT flow filter must choose the direction of the packet
+ *           redirection, <strong>input</strong> or <strong>output</strong>.
+ *         </p>
+ *         <ul>
+ *           <li>
+ *             <p>
+ *               <strong>input</strong> means that a redirected packet should
+ *               be treated as an incoming packet as if it is forwarded or
+ *               mapped to the specified virtual interface.
+ *             </p>
+ *             <p>
+ *               A list of flow filters for incoming packets configured in the
+ *               destination virtual interface is evaluated against the
+ *               redirected packet. If the flow filter passes the packet,
+ *               the packet is forwarded to the virtual node which contains the
+ *               destination virtual interface.
+ *               <ul>
+ *                 <li>
+ *                   If the destination virtual interface is attached to the
+ *                   <a href="#vBridge">vBridge</a>, then the packet is routed
+ *                   according to the vBridge configuration.
+ *                   Note that the source MAC address of the redirected packet
+ *                   is never learned into the
+ *                   <a href="#macTable">MAC address table</a> in the vBridge.
+ *                 </li>
+ *                 <li>
+ *                   If the destination virtual interface is attached to the
+ *                   <a href="#vTerminal">vTerminal</a>, then the packet is
+ *                   always discarded. In other words, the packet is always
+ *                   discarded unless the packet is redirected to another
+ *                   interface by the flow filter configured in the destination
+ *                   virtual interface.
+ *                 </li>
+ *               </ul>
+ *             </p>
+ *           </li>
+ *           <li>
+ *             <p>
+ *               <strong>output</strong> means that a redirected packet should
+ *               be treated as an outgoing packet as if it is going to be
+ *               transmitted to the physical network mapped to the specified
+ *               virtual interface.
+ *             </p>
+ *             <p>
+ *               A list of flow filters for outgoing packets configured in the
+ *               destination virtual interface is evaluated against the
+ *               redirected packet. If the flow filter passes the packet,
+ *               the packet is transmitted to the physical network mapped to
+ *               the virtual interface by
+ *               <a href="#port-map">port mapping</a>.
+ *               Note that the packet is discarded if the port mapping is not
+ *               configured in the virtual interface.
+ *             </p>
+ *           </li>
+ *         </ul>
+ *     </dl>
+ *
+ *     <h5 id="flow.filter.redirect.loop" style="border-bottom: 1px dotted #aaaaaa;">
+ *       Packet loop detection
+ *     </h5>
+ *     <div style="margin-left: 1em;">
+ *       <p>
+ *         <a href="#flow.filter.type.REDIRECT">REDIRECT</a> flow filter should
+ *         be configured not to cause the packet loop. The number of virtual
+ *         node hops per a flow (the number of packet redirections per a flow)
+ *         is limited to <strong>100</strong>. If the number of virtual node
+ *         hops exceeds the limit, it is treated as the packet loop and then
+ *         the packet is discarded.
+ *       </p>
+ *     </div>
+ *   </div>
  * </div>
  *
  * <h2 id="limitations" style="border-bottom: 4px double #aaaaaa; padding-top: 0.5em;">
  *   Limitations
  * </h2>
  *
- * <h3 id="proactive" style="border-bottom: 2px solid #aaaaaa;">
- *   Proactive Mode
- * </h3>
- * <p style="margin-left: 1em;">
- *   When building virtual environment with the VTN Manager, all the switches
- *   to be used in the VTN environment have to be set to reactive mode.
- *   If you set the switch to proactive mode, the virtual network environment
- *   built by the VTN Manager will not operate properly.
- * </p>
- *
- * <h3 id="subnet" style="border-bottom: 2px solid #aaaaaa;">
- *   Subnet
- * </h3>
- * <div style="margin-left: 1em;">
- *   <p>
- *     If <a href="#VTN">VTN</a> is present inside the container, then the
- *     VTN Manager functions without using any of the subnet information set
- *     in the OpenDaylight controller.
- *     While sending broadcast packets like ARP request, the broadcast domain
- *     is decided by the settings of <a href="#vBridge">vBridge</a>.
- *   </p>
- *   <p>
- *     If VTN is not present inside the container, it refers the subnet
- *     information for providing exactly the same functionalities as
- *     <a href="#arphandler">arphandler</a>.
- *   </p>
- * </div>
- *
- * <h3 id="arphandler" style="border-bottom: 2px solid #aaaaaa;">
- *   arphandler
- * </h3>
- * <div style="margin-left: 1em;">
- *   <p>
- *     Following functionalities implemented in arphandler are inconsistent
- *     with the functionalities of the VTN Manager. Thus arphandler and
- *     the VTN Manager cannot co-exist.
- *   </p>
- *
- *   <dl style="margin-left: 1em;">
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       New host detection
- *     <dd style="margin-left: 2em;">
- *       If arphandler receives ARP or IP packets, it will notify host
- *       information to hosttracker only when the host IP address is included
- *       in the <a href="#subnet">subnet</a> information set in the
- *       OpenDaylight controller.
- *       Subnet settings by the OpenDaylight controller is inconsistent with
- *       broadcast domain settings by <a href="#vBridge">vBridge</a>.
- *
- *     <dt style="font-weight: bold; margin-top: 0.5em;">
- *       ARP proxy
- *     <dd style="margin-left: 2em;">
- *       If arphandler detects ARP request, irrespective of whether packets
- *       can actually reach the hosts, it will instead send the ARP response
- *       if the target is a known host. This operation is inconsistent with
- *       broadcast domain settings by <a href="#vBridge">vBridge</a>.
- *   </dl>
- *   <p>
- *     Thus arphandler must be uninstalled for installing the VTN Manager in
- *     OpenDaylight controller. Functionalities that are being provided by
- *     arphandler will be provided by the VTN Manager.
- *   </p>
- *   <ul>
- *     <li>
- *       New host detection notification to hosttracker will be done by the
- *       VTN Manager.
- *     </li>
- *     <li>
- *       The VTN Manager will provide the
- *       <a href="#IHostFinder">IHostFinder</a> service.
- *     </li>
- *     <li>
- *       ARP packet forwarding will be done by the VTN Manager.
- *     </li>
- *   </ul>
- *
- *   <h4 id="IHostFinder" style="border-bottom: 1px dashed #aaaaaa;">
- *     IHostFinder
- *   </h4>
- *   <div style="margin-left: 1em;">
- *     <p>
- *       {@code IHostFinder} interface provides the functionality for sending
- *       ARP request to search host information.
- *       Normally this OSGi service is registered by
- *       <a href="#arphandler">arphandler</a>. However, since it is necessary
- *       to uninstall arphandler for the VTN Manager, instead this service is
- *       provided by the VTN Manager.
- *     </p>
- *
- *     <h5 id="IHostFinder.find" style="border-bottom: 1px dotted #aaaaaa;">
- *       find(InetAddress)
- *     </h5>
- *     <pre style="font-family: courier, monospace; border: 1px dashed #2f6fab; background-color: #f9f9f9; padding: 1em 0 1em 0">
- *  public void find(InetAddress networkAddress)</pre>
- *     <p>
- *       Initiate the discoverty of a host based on its IP address.
- *     </p>
- *     <p>
- *       <span style="text-decoration: underline">networkAddress</span> is
- *       an {@link java.net.InetAddress} object that indicates the IP address
- *       that you want to search. Currently this method sends a broadcast ARP
- *       request to search for the specified host. So this method will return
- *       without doing anything if {@code null} or an IPv6 address is passed to
- *       <span style="text-decoration: underline">networkAddress</span>.
- *     </p>
- *     <p>
- *       The behavior of this method will vary depending upon whether
- *       <a href="#VTN">VTN</a> is present in the container or not.
- *     </p>
- *     <dl style="margin-left: 1em;">
- *       <dt style="font-weight: bold; margin-top: 0.5em;">
- *         If VTN is present inside the container
- *       <dd style="margin-left: 2em;">
- *         A broadcast ARP request is sent to all the
- *         <a href="#vBridge">vBridge</a> present inside the container.
- *
- *       <dt style="font-weight: bold; margin-top: 0.5em;">
- *         If VTN is not present inside the container
- *       <dd style="margin-left: 2em;">
- *         This method will behave exactly as the same method provided by
- *         <a href="#arphandler">arphandler</a>.
- *         <ul>
- *           <li>
- *             Only when the <a href="#subnet">subnet</a> information that
- *             includes
- *             <span style="text-decoration: underline">networkAddress</span>
- *             is registered, a broadcast ARP request is sent to the port of
- *             the switch defined by that subnet information.
- *           </li>
- *         </ul>
- *     </dl>
- *
- *     <h5 id="IHostFinder.probe" style="border-bottom: 1px dotted #aaaaaa;">
- *       probe(HostNodeConnector)
- *     </h5>
- *     <pre style="font-family: courier, monospace; border: 1px dashed #2f6fab; background-color: #f9f9f9; padding: 1em 0 1em 0">
- *  public void probe(HostNodeConnector host)</pre>
- *     <p>
- *       Check to see if a learned host is still in the network.
- *     </p>
- *     <p>
- *       <span style="text-decoration: underline">host</span> is a
- *       {@code HostNodeConnector} object corresponding to the target host.
- *       If a non-{@code null} value is specified, this method sends a unicast
- *       ARP request to the host specified by
- *       <span style="text-decoration: underline">host</span>.
- *       This method will return without doing anything if {@code null} is
- *       passed to <span style="text-decoration: underline">host</span>.
- *     </p>
- *     <p>
- *       The behavior of this method will vary depending upon whether
- *       <a href="#VTN">VTN</a> is present in the container or not.
- *     </p>
- *     <dl style="margin-left: 1em;">
- *       <dt style="font-weight: bold; margin-top: 0.5em;">
- *         If VTN is present inside the container
- *       <dd style="margin-left: 2em;">
- *         This method carries out the same process as
- *         {@link org.opendaylight.vtn.manager.IVTNManager#probeHost(org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector) IVTNManager.probeHost(HostNodeConnector)}.
- *
- *       <dt style="font-weight: bold; margin-top: 0.5em;">
- *         If VTN is not present inside the container
- *       <dd style="margin-left: 2em;">
- *         This method will behave exactly as the same method provided by
- *         <a href="#arphandler">arphandler</a>.
- *         <ul>
- *           <li>
- *             Only when the <a href="#subnet">subnet</a> information that
- *             includes IP address of
- *             <span style="text-decoration: underline">host</span> is
- *             registered, a unicast ARP request is sent to the port of
- *             the switch corresponding to {@code NodeConnector} configured
- *             in <span style="text-decoration: underline">host</span>.
- *           </li>
- *         </ul>
- *     </dl>
- *   </div>
- * </div>
- *
- * <h3 id="appflow" style="border-bottom: 2px solid #aaaaaa;">
+ * <h3 id="limit.appflow" style="border-bottom: 2px solid #aaaaaa;">
  *   Applications for setting flow entry
  * </h3>
  * <div style="margin-left: 1em;">
@@ -1529,48 +1513,82 @@
  *     running because this might be inconsistent with flow entry set by
  *     the VTN manager.
  *   </p>
- *   <p>
- *     The following applications in the OpenDaylight controller set flow
- *     entry for switch.
- *   </p>
- *   <ul>
- *     <li>
- *       <strong>simpleforwarding</strong>
- *       (opendaylight/samples/simpleforwarding)
- *     </li>
- *     <li>
- *       <strong>loadbalancer</strong>
- *       (opendaylight/samples/loadbalancer)
- *     </li>
- *   </ul>
- *   <p>
- *     Consequently, you cannot use the VTN Manager simultaneously with
- *     the above applications. The VTN Manager will not run successfully
- *     especially if you do not stop or uninstall
- *     <strong>simpleforwarding</strong> because it sets flow entry
- *     automatically after detecting host information.
- *   </p>
+ * </div>
+ *
+ * <h3 id="limit.filter" style="border-bottom: 2px solid #aaaaaa;">
+ *   Limitations on flow filter
+ * </h3>
+ * <div style="margin-left: 1em;">
+ *   <h4 id="limit.filter.multicast" style="border-bottom: 1px dashed #aaaaaa;">
+ *     Broadcast/Multicast packet
+ *   </h4>
+ *   <div style="margin-left: 1em;">
+ *     <p>
+ *       Basically, flow filter can be applied to unicast packets.
+ *       So flow filter ignores broadcast and multicast packets except for
+ *       <a href="#flow.filter.type.DROP">DROP</a> flow filter.
+ *     </p>
+ *     <p>
+ *       For example, a broadcast packet is mapped to the VTN, flow filters
+ *       in the <a href="#flow.filter.place.VTN">VTN flow filter</a> are
+ *       evaluated as follows.
+ *     </p>
+ *     <ul>
+ *       <li>
+ *         A flow filter is ignored if its type is
+ *         <a href="#flow.filter.type.PASS">PASS</a> or
+ *         <a href="#flow.filter.type.REDIRECT">REDIRECT</a>.
+ *       </li>
+ *       <li>
+ *         A flow filter is evaluated if its type is
+ *         <a href="#flow.filter.type.DROP">DROP</a>. It the broadcast packet
+ *         matches that flow filter, then the packet is discarded.
+ *       </li>
+ *     </ul>
+ *     <p>
+ *       If an unicast packet is mapped to the vBridge, and its destination
+ *       MAC address is not learned in the vBridge, the packet is broadcasted
+ *       to all physical network elements mapped to the vBridge.
+ *       In that case all <a href="#flow.filter.type.REDIRECT">REDIRECT</a>
+ *       flow filters configured in the vBridge and vBridge interface for
+ *       outgoing packets are ignored.
+ *     </p>
+ *   </div>
+ *
+ *   <h4 id="limit.filter.self" style="border-bottom: 1px dashed #aaaaaa;">
+ *     Self-originated packet
+ *   </h4>
+ *   <div style="margin-left: 1em;">
+ *     <p>
+ *       Flow filters never affect packets originated by the VTN Manager.
+ *     </p>
+ *   </div>
+ *
+ *   <h4 id="limit.filter.controller" style="border-bottom: 1px dashed #aaaaaa;">
+ *     Packet sent to the controller
+ *   </h4>
+ *   <div style="margin-left: 1em;">
+ *     <p>
+ *       Flow filters never affect packets sent to the controller.
+ *       If the destination MAC address of the packet is equal to the
+ *       controller's MAC address, the VTN Manager ignores all flow filters.
+ *     </p>
+ *   </div>
+ *
+ *   <h4 id="limit.filter.fragment" style="border-bottom: 1px dashed #aaaaaa;">
+ *     Fragmented layer 4 packet
+ *   </h4>
+ *   <div style="margin-left: 1em;">
+ *     <p>
+ *       A flow condtition which specifies layer 4 protocol header fields
+ *       (e.g. TCP/UDP port, ICMP type and code) never matches fragments of
+ *       layer 4 packet except the first fragment because layer protocol
+ *       header is present only in the first fragment.
+ *       If a flow filter is configured with such a flow condition,
+ *       it will never be applied to fragments of layer 4 packet except the
+ *       first fragment.
+ *     </p>
+ *   </div>
  * </div>
  */
-@XmlJavaTypeAdapters({
-    @XmlJavaTypeAdapter(value = ByteAdapter.class, type = Byte.class),
-    @XmlJavaTypeAdapter(value = ByteAdapter.class, type = byte.class),
-    @XmlJavaTypeAdapter(value = ShortAdapter.class, type = Short.class),
-    @XmlJavaTypeAdapter(value = ShortAdapter.class, type = short.class),
-    @XmlJavaTypeAdapter(value = IntegerAdapter.class, type = Integer.class),
-    @XmlJavaTypeAdapter(value = IntegerAdapter.class, type = int.class),
-    @XmlJavaTypeAdapter(value = LongAdapter.class, type = Long.class),
-    @XmlJavaTypeAdapter(value = LongAdapter.class, type = long.class),
-    @XmlJavaTypeAdapter(value = DoubleAdapter.class, type = double.class),
-    @XmlJavaTypeAdapter(value = DoubleAdapter.class, type = Double.class),
-})
 package org.opendaylight.vtn.manager;
-
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapters;
-
-import org.opendaylight.vtn.manager.util.xml.adapters.ByteAdapter;
-import org.opendaylight.vtn.manager.util.xml.adapters.DoubleAdapter;
-import org.opendaylight.vtn.manager.util.xml.adapters.IntegerAdapter;
-import org.opendaylight.vtn.manager.util.xml.adapters.LongAdapter;
-import org.opendaylight.vtn.manager.util.xml.adapters.ShortAdapter;

@@ -24,8 +24,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
-import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 import org.opendaylight.vtn.manager.util.VTNIdentifiable;
 import org.opendaylight.vtn.manager.util.VTNIdentifiableComparator;
 
@@ -180,58 +178,12 @@ public final class VTNFlowCondition implements VTNIdentifiable<String> {
     }
 
     /**
-     * {@code MatchConverter} converts the given list into a list of
-     * {@link VTNFlowMatch} instances.
-     *
-     * @param <T>  The type of object to be used to create a
-     *             {@link VTNFlowMatch} instance.
-     */
-    private abstract static class MatchConverter<T>
-        extends MatchInitializer<T> {
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        protected final List<VTNFlowMatch> newList(List<T> srcList) {
-            return new ArrayList<VTNFlowMatch>(srcList.size());
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        protected final void add(List<VTNFlowMatch> list,
-                                 VTNFlowMatch vfmatch) {
-            list.add(vfmatch);
-        }
-    }
-
-    /**
-     * {@code FlowMatchConverter} converts the given list of {@link FlowMatch}
-     * instances into a list of {@link VTNFlowMatch} instances.
-     */
-    public static final class FlowMatchConverter
-        extends MatchConverter<FlowMatch> {
-        /**
-         * Convert the given {@link FlowMatch} instance into a
-         * {@link VTNFlowMatch} instance.
-         *
-         * @param fm  A {@link FlowMatch} instance to be converted.
-         * @return  A {@link VTNFlowMatch} instance.
-         * @throws RpcException  An error occurred.
-         */
-        protected VTNFlowMatch convert(FlowMatch fm) throws RpcException {
-            return new VTNFlowMatch(fm);
-        }
-    }
-
-    /**
      * {@code VtnFlowMatchConverter} converts the given list of
-     * {@link VtnFlowMatch}
-     * instances into a list of {@link VTNFlowMatch} instances.
+     * {@link VtnFlowMatch} instances into a list of {@link VTNFlowMatch}
+     * instances.
      */
-    public static final class VtnFlowMatchConverter
-        extends MatchConverter<VtnFlowMatch> {
+    private static final class VtnFlowMatchConverter
+        extends MatchInitializer<VtnFlowMatch> {
         /**
          * Convert the given {@link VtnFlowMatch} instance into a
          * {@link VTNFlowMatch} instance.
@@ -240,8 +192,26 @@ public final class VTNFlowCondition implements VTNIdentifiable<String> {
          * @return  A {@link VTNFlowMatch} instance.
          * @throws RpcException  An error occurred.
          */
+        @Override
         protected VTNFlowMatch convert(VtnFlowMatch vfm) throws RpcException {
             return new VTNFlowMatch(vfm);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        protected List<VTNFlowMatch> newList(List<VtnFlowMatch> srcList) {
+            return new ArrayList<>(srcList.size());
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        protected void add(List<VTNFlowMatch> list,
+                                 VTNFlowMatch vfmatch) {
+            list.add(vfmatch);
         }
     }
 
@@ -271,23 +241,6 @@ public final class VTNFlowCondition implements VTNIdentifiable<String> {
     }
 
     /**
-     * Construct a new instance from the given name and {@link FlowCondition}
-     * instance.
-     *
-     * @param nm     The name of the flow condition.
-     * @param fcond  A {@link FlowCondition} instance.
-     * @throws RpcException   An error occurred.
-     */
-    public VTNFlowCondition(String nm, FlowCondition fcond)
-        throws RpcException {
-        name = FlowCondUtils.checkName(nm);
-
-        List<FlowMatch> list = (fcond == null)
-            ? null : fcond.getMatches();
-        matches = new FlowMatchConverter().initialize(list);
-    }
-
-    /**
      * Construct a new instance from the given {@link VtnFlowCondConfig}
      * instance.
      *
@@ -300,25 +253,6 @@ public final class VTNFlowCondition implements VTNIdentifiable<String> {
 
         List<VtnFlowMatch> list = vfconf.getVtnFlowMatch();
         matches = new VtnFlowMatchConverter().initialize(list);
-    }
-
-    /**
-     * Return a {@link FlowCondition} instance which represents this condition.
-     *
-     * @return  A {@link FlowCondition} instance.
-     */
-    public FlowCondition toFlowCondition() {
-        List<FlowMatch> list;
-        if (matches.isEmpty()) {
-            list = null;
-        } else {
-            list = new ArrayList<FlowMatch>();
-            for (VTNFlowMatch vfmatch: matches) {
-                list.add(vfmatch.toFlowMatch());
-            }
-        }
-
-        return new FlowCondition(name.getValue(), list);
     }
 
     /**

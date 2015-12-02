@@ -12,8 +12,6 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.opendaylight.vtn.manager.flow.cond.PortMatch;
-import org.opendaylight.vtn.manager.flow.cond.TcpMatch;
 import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.internal.util.packet.TcpHeader;
@@ -60,19 +58,6 @@ public final class VTNTcpMatch extends VTNLayer4PortMatch<TcpHeader> {
      */
     public VTNTcpMatch(VTNPortRange src, VTNPortRange dst) {
         super(src, dst);
-    }
-
-    /**
-     * Construct a new instance from the given {@link TcpMatch} instance.
-     *
-     * @param tmatch   A {@link TcpMatch} instance.
-     * @throws NullPointerException
-     *    {@code tmatch} is {@code null}.
-     * @throws RpcException
-     *    {@code tmatch} contains invalid value.
-     */
-    public VTNTcpMatch(TcpMatch tmatch) throws RpcException {
-        super(tmatch);
     }
 
     /**
@@ -141,17 +126,6 @@ public final class VTNTcpMatch extends VTNLayer4PortMatch<TcpHeader> {
      */
     public short getInetProtocol(IpVersion ver) {
         return InetProtocols.TCP.shortValue();
-    }
-
-    /**
-     * Return a {@link TcpMatch} instance which represents this condition.
-     *
-     * @return  A {@link TcpMatch} instance.
-     */
-    public TcpMatch toL4Match() {
-        PortMatch src = VTNPortRange.toPortMatch(getSourcePort());
-        PortMatch dst = VTNPortRange.toPortMatch(getDestinationPort());
-        return new TcpMatch(src, dst);
     }
 
     /**

@@ -8,14 +8,8 @@
 
 package org.opendaylight.vtn.manager.internal.vnode;
 
-import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
@@ -24,36 +18,23 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Optional;
-
-import org.opendaylight.vtn.manager.MacAddressEntry;
-import org.opendaylight.vtn.manager.VBridgePath;
-import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.util.EtherAddress;
-import org.opendaylight.vtn.manager.util.IpNetwork;
-
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
-import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
-import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcFuture;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcUtils;
 import org.opendaylight.vtn.manager.internal.util.vnode.VBridgeIdentifier;
-import org.opendaylight.vtn.manager.internal.util.vnode.VTenantUtils;
 
-import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.common.api.clustering.Entity;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipChange;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListener;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListenerRegistration;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 
-import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.GetMacMappedHostInput;
@@ -76,18 +57,14 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.RemoveMacEntryInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.RemoveMacEntryOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.VtnMacEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.VtnMacTableService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.remove.mac.entry.output.RemoveMacEntryResult;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.vtn.mac.table.entry.MacTableEntry;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.vtn.mac.table.list.MacAddressTable;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.RemoveVbridgeInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.UpdateVbridgeInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.UpdateVbridgeOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.VtnVbridgeService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.vtn.vbridge.info.VbridgeConfig;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
 
 /**
@@ -118,156 +95,6 @@ public final class VBridgeManager
      */
     private final AtomicReference<EntityOwnershipListenerRegistration> listener =
         new AtomicReference<>();
-
-    // AD-SAL API support [
-
-    /**
-     * Return a list of MAC address entries learned by the specified virtual
-     * L2 bridge.
-     *
-     * @param provider  VTN Manager provider service.
-     * @param path      Path to the bridge.
-     * @return  A list of MAC address entries.
-     * @throws VTNException  An error occurred.
-     */
-    public static List<MacAddressEntry> getMacEntries(
-        VTNManagerProvider provider, VBridgePath path) throws VTNException {
-        String name = VTenantUtils.getName(path);
-        VBridgeIdentifier ident =
-            VBridgeIdentifier.create(name, path.getBridgeName(), true);
-        InstanceIdentifier<MacAddressTable> mpath =
-            VBridgeIdentifier.getMacTablePath(ident);
-
-        // Sort table entries by MAC address.
-        Map<Long, MacAddressEntry> map = new TreeMap<>();
-
-        TxContext ctx = provider.newTxContext();
-        try {
-            ReadTransaction rtx = ctx.getTransaction();
-            Optional<MacAddressTable> opt = DataStoreUtils.read(rtx, mpath);
-            if (opt.isPresent()) {
-                List<MacTableEntry> entries = opt.get().getMacTableEntry();
-                if (entries != null) {
-                    for (MacTableEntry ment: entries) {
-                        EtherAddress eaddr =
-                            new EtherAddress(ment.getMacAddress());
-                        Long key = eaddr.getAddress();
-                        map.put(key, toMacAddressEntry(eaddr, ment));
-                    }
-                }
-            } else {
-                // The target vBridge is not present.
-                throw ident.getNotFoundException();
-            }
-        } finally {
-            ctx.cancelTransaction();
-        }
-
-        return new ArrayList<MacAddressEntry>(map.values());
-    }
-
-    /**
-     * Search for a MAC address entry from the MAC address table in the
-     * specified virtual L2 bridge.
-     *
-     * @param provider  VTN Manager provider service.
-     * @param path      Path to the bridge.
-     * @param mac       MAC address.
-     * @return  A MAC address entry associated with the specified MAC address.
-     *          {@code null} is returned if not found.
-     * @throws VTNException  An error occurred.
-     */
-    public static MacAddressEntry getMacEntry(
-        VTNManagerProvider provider, VBridgePath path, MacAddress mac)
-        throws VTNException {
-        String name = VTenantUtils.getName(path);
-        VBridgeIdentifier ident =
-            VBridgeIdentifier.create(name, path.getBridgeName(), true);
-        MacAddressEntry ment = null;
-        if (mac != null) {
-            InstanceIdentifier<MacTableEntry> mpath =
-                VBridgeIdentifier.getMacEntryPath(ident, mac);
-            TxContext ctx = provider.newTxContext();
-            try {
-                ReadTransaction rtx = ctx.getTransaction();
-                Optional<MacTableEntry> opt = DataStoreUtils.read(rtx, mpath);
-                if (opt.isPresent()) {
-                    ment = toMacAddressEntry(opt.get());
-                } else {
-                    // Ensure that the target vBridge is present.
-                    ident.fetch(rtx);
-                }
-            } finally {
-                ctx.cancelTransaction();
-            }
-        }
-
-        return ment;
-    }
-
-    /**
-     * Read the specifiedMAC address table entry.
-     *
-     * @param rtx    Read transaction for the MD-SAL datastore.
-     * @param ident  The identifier for the target vBridge.
-     * @param mac    The MAC address.
-     * @return  A {@link MacAddressEntry} instance if found.
-     *          {@code null} if not found.
-     * @throws VTNException  An error occurred.
-     */
-    public static MacAddressEntry readMacAddressEntry(
-        ReadTransaction rtx, VBridgeIdentifier ident, MacAddress mac)
-        throws VTNException {
-        InstanceIdentifier<MacTableEntry> mpath =
-            VBridgeIdentifier.getMacEntryPath(ident, mac);
-        Optional<MacTableEntry> opt = DataStoreUtils.read(rtx, mpath);
-        MacAddressEntry ment = (opt.isPresent())
-            ? toMacAddressEntry(opt.get()) : null;
-
-        return ment;
-    }
-
-    /**
-     * Convert the given {@link VtnMacEntry} instance into a
-     * {@link MacAddressEntry} instance.
-     *
-     * @param vment  A {@link VtnMacEntry} instance.
-     * @return  A {@link MacAddressEntry} instance.
-     */
-    public static MacAddressEntry toMacAddressEntry(VtnMacEntry vment) {
-        EtherAddress eaddr = new EtherAddress(vment.getMacAddress());
-        return toMacAddressEntry(eaddr, vment);
-    }
-
-    /**
-     * Convert the given {@link VtnMacEntry} instance into a
-     * {@link MacAddressEntry} instance.
-     *
-     * @param eaddr  An {@link EtherAddress} instance which represents the
-     *               MAC address configured in {@code vment}.
-     * @param vment  A {@link VtnMacEntry} instance.
-     * @return  A {@link MacAddressEntry} instance.
-     */
-    private static MacAddressEntry toMacAddressEntry(EtherAddress eaddr,
-                                                     VtnMacEntry vment) {
-        short vid = vment.getVlanId().shortValue();
-        SalPort sport = SalPort.create(vment);
-        Set<InetAddress> ipSet;
-        List<IpAddress> ipAddrs = vment.getIpAddresses();
-        if (ipAddrs == null) {
-            ipSet = null;
-        } else {
-            ipSet = new HashSet<>();
-            for (IpAddress ip: ipAddrs) {
-                ipSet.add(IpNetwork.create(ip).getInetAddress());
-            }
-        }
-
-        return new MacAddressEntry(eaddr.getEthernetAddress(), vid,
-                                   sport.getAdNodeConnector(), ipSet);
-    }
-
-    // ] AD-SAL API support
 
     /**
      * Create a new entity descriptor for the given vBridge.

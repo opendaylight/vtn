@@ -14,15 +14,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.ListIterator;
 
-import org.opendaylight.vtn.manager.flow.action.FlowAction;
-
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.L2Host;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.packet.EtherHeader;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.VtnOrderedFlowAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
@@ -160,45 +157,10 @@ public final class FlowActionUtils {
     }
 
     /**
-     * Convert the given VTN flow action list into a list of {@link FlowAction}
-     * instances.
-     *
-     * @param actions  A list of {@link VtnOrderedFlowAction} instances.
-     * @param comp     A comparator for the given list.
-     * @param <T>      The type of the action in {@code actions}.
-     * @return  A list of {@link FlowAction} instances.
-     * @throws RpcException
-     *    Failed to convert the given instance.
-     */
-    public static <T extends VtnOrderedFlowAction> List<FlowAction> toFlowActions(
-        List<T> actions, Comparator<? super T> comp) throws RpcException {
-        if (actions == null) {
-            return null;
-        }
-        if (actions.isEmpty()) {
-            return Collections.<FlowAction>emptyList();
-        }
-
-        // Sort the given list.
-        List<T> list = MiscUtils.sortedCopy(actions, comp);
-        List<FlowAction> facts = new ArrayList<>(list.size());
-        FlowActionConverter conv = FlowActionConverter.getInstance();
-        for (T vaction: list) {
-            VtnAction vact = vaction.getVtnAction();
-            FlowAction fact = conv.toFlowAction(vact);
-            if (fact != null) {
-                facts.add(fact);
-            }
-        }
-
-        return facts;
-    }
-
-    /**
      * Convert the given MD-SAL action list into a list of
      * {@link VtnFlowAction} instances.
      *
-     * @param actions  A list of {@link VtnOrderedFlowAction} instances.
+     * @param actions  A list of {@link Action} instances.
      * @param comp     A comparator for the given list.
      * @param ipproto  An IP protocol number configured in the flow match.
      * @return  A list of {@link VtnFlowAction} instances.

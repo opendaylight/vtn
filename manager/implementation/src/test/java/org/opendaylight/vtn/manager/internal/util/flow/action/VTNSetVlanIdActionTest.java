@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -47,7 +47,6 @@ public class VTNSetVlanIdActionTest extends TestBase {
      *   <li>{@link VTNSetVlanIdAction#getVlanId()}</li>
      *   <li>{@link VTNSetVlanIdAction#set(VtnFlowActionBuilder)}</li>
      *   <li>{@link VTNSetVlanIdAction#set(ActionBuilder)}</li>
-     *   <li>{@link VTNSetVlanIdAction#toFlowAction(VtnAction)}</li>
      *   <li>{@link VTNSetVlanIdAction#toVtnAction(Action)}</li>
      *   <li>{@link VTNSetVlanIdAction#getDescription(Action)}</li>
      *   <li>{@link VTNFlowAction#toVtnFlowActionBuilder(Integer)}</li>
@@ -91,63 +90,16 @@ public class VTNSetVlanIdActionTest extends TestBase {
                 assertEquals(mact, mbuilder.getAction());
             }
 
-            // toFlowAction() test.
-            va = new VTNSetVlanIdAction();
-            VtnAction vaction = vac;
-            org.opendaylight.vtn.manager.flow.action.SetVlanIdAction vad =
-                new org.opendaylight.vtn.manager.flow.action.
-                SetVlanIdAction((short)vid);
-            assertEquals(vad, va.toFlowAction(vaction));
-
-            vaction = VTNPopVlanAction.newVtnAction();
-            RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
-            VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
-            String emsg = "VTNSetVlanIdAction: Unexpected type: " + vaction;
-            try {
-                va.toFlowAction(vaction);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(etag, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals(emsg, e.getMessage());
-            }
-
-            etag = RpcErrorTag.MISSING_ELEMENT;
-            vaction = vacBuilder.setVtnSetVlanIdAction(null).build();
-            emsg = "VTNSetVlanIdAction: No VLAN ID: " + vaction;
-            try {
-                va.toFlowAction(vaction);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(etag, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals(emsg, e.getMessage());
-            }
-
-            vaction = vacBuilder.
-                setVtnSetVlanIdAction(new VtnSetVlanIdActionBuilder().build()).
-                build();
-            emsg = "VTNSetVlanIdAction: No VLAN ID: " + vaction;
-            try {
-                va.toFlowAction(vaction);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(etag, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals(emsg, e.getMessage());
-            }
-
-            // toFlowAction() should never affect instance variables.
-            assertEquals(0, va.getVlanId());
-
             // toVtnAction() test.
+            va = new VTNSetVlanIdAction();
             Action action = mact;
-            vaction = vac;
+            VtnAction vaction = vac;
             assertEquals(vaction, va.toVtnAction(action));
 
-            etag = RpcErrorTag.BAD_ELEMENT;
             action = new PushVlanActionCaseBuilder().build();
-            emsg = "VTNSetVlanIdAction: Unexpected type: " + action;
+            RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
+            VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
+            String emsg = "VTNSetVlanIdAction: Unexpected type: " + action;
             try {
                 va.toVtnAction(action);
                 unexpected();

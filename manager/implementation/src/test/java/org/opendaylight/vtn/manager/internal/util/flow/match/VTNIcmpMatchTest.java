@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -18,9 +18,6 @@ import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.flow.cond.IcmpMatch;
-import org.opendaylight.vtn.manager.flow.cond.L4Match;
-
 import org.opendaylight.vtn.manager.internal.util.packet.Layer4Header;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
@@ -30,6 +27,7 @@ import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
 import org.opendaylight.vtn.manager.internal.XmlValueType;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.vtn.layer4.match.VtnIcmpMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
@@ -83,10 +81,10 @@ public class VTNIcmpMatchTest extends TestBase {
             params.setType(type);
             for (Short code: codes) {
                 params.setCode(code);
-                IcmpMatch im = params.toL4Match();
-                VTNIcmpMatch imatch = new VTNIcmpMatch(im);
+                VtnIcmpMatch vim = params.toVtnLayer4Match(false);
+                VTNIcmpMatch imatch = new VTNIcmpMatch(vim);
                 params.verify(imatch);
-                assertEquals(imatch, VTNLayer4Match.create(im));
+                assertEquals(imatch, VTNLayer4Match.create(vim));
 
                 VTNIcmpMatch imatch1 = new VTNIcmpMatch(type, code);
                 assertEquals(imatch, imatch1);
@@ -102,17 +100,6 @@ public class VTNIcmpMatchTest extends TestBase {
             Short.MAX_VALUE - 1, Short.MAX_VALUE,
         };
         for (Short value: invalidValues) {
-            params.reset().setType(value);
-            IcmpMatch im = params.toL4Match();
-            try {
-                new VTNIcmpMatch(im);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals("Invalid ICMP type: " + value, e.getMessage());
-            }
-
             try {
                 new VTNIcmpMatch(value, null);
                 unexpected();
@@ -120,17 +107,6 @@ public class VTNIcmpMatchTest extends TestBase {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
                 assertEquals(vtag, e.getVtnErrorTag());
                 assertEquals("Invalid ICMP type: " + value, e.getMessage());
-            }
-
-            params.reset().setCode(value);
-            im = params.toL4Match();
-            try {
-                new VTNIcmpMatch(im);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals("Invalid ICMP code: " + value, e.getMessage());
             }
 
             try {
@@ -142,9 +118,6 @@ public class VTNIcmpMatchTest extends TestBase {
                 assertEquals("Invalid ICMP code: " + value, e.getMessage());
             }
         }
-
-        assertEquals(null, VTNLayer4Match.create((IcmpMatch)null));
-        assertEquals(null, VTNLayer4Match.create((L4Match)null));
     }
 
     /**

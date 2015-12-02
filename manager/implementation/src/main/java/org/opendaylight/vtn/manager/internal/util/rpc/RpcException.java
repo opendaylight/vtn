@@ -10,8 +10,6 @@ package org.opendaylight.vtn.manager.internal.util.rpc;
 
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.controller.sal.utils.Status;
-
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
@@ -172,17 +170,6 @@ public class RpcException extends VTNException {
     public RpcException(String message, Throwable cause) {
         super(message, cause);
         errorTag = null;
-    }
-
-    /**
-     * Construct a new instance from the given AD-SAL status.
-     *
-     * @param tag  A {@link RpcErrorTag} instance.
-     * @param st   An AD-SAL status.
-     */
-    public RpcException(RpcErrorTag tag, Status st) {
-        super(st);
-        errorTag = tag;
     }
 
     /**

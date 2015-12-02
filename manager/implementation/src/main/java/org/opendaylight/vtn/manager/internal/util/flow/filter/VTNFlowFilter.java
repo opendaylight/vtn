@@ -28,12 +28,6 @@ import org.slf4j.Logger;
 
 import com.google.common.collect.ImmutableSet;
 
-import org.opendaylight.vtn.manager.flow.action.FlowAction;
-import org.opendaylight.vtn.manager.flow.filter.FilterType;
-import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
-import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
-import org.opendaylight.vtn.manager.flow.filter.DropFilter;
-import org.opendaylight.vtn.manager.flow.filter.PassFilter;
 import org.opendaylight.vtn.manager.util.VTNIdentifiable;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
@@ -208,40 +202,6 @@ public abstract class VTNFlowFilter implements VTNIdentifiable<Integer> {
     }
 
     /**
-     * Create a new flow filter.
-     *
-     * @param idx     An index number to be assigned.
-     * @param filter  A {@link FlowFilter} instance which contains flow filter
-     *                configuration.
-     * @return  A {@link VTNFlowFilter} instance.
-     * @throws RpcException
-     *    {@code filter} contains invalid value.
-     */
-    public static final VTNFlowFilter create(int idx, FlowFilter filter)
-        throws RpcException {
-        if (filter == null) {
-            throw RpcException.getNullArgumentException("Flow filter");
-        }
-
-        VTNFlowFilter vff;
-        FilterType type = filter.getFilterType();
-        if (type instanceof PassFilter) {
-            vff = new VTNPassFilter(idx, filter);
-        } else if (type instanceof DropFilter) {
-            vff = new VTNDropFilter(idx, filter);
-        } else if (type instanceof RedirectFilter) {
-            vff = new VTNRedirectFilter(idx, filter, (RedirectFilter)type);
-        } else if (type == null) {
-            throw RpcException.getNullArgumentException("Flow filter type");
-        } else {
-            // This should never happen.
-            throw getUnknownTypeException(type);
-        }
-
-        return vff;
-    }
-
-    /**
      * Ensure that the given flow filter index is not null.
      *
      * @param index  A flow filter index to be tested.
@@ -302,36 +262,6 @@ public abstract class VTNFlowFilter implements VTNIdentifiable<Integer> {
     }
 
     /**
-     * Construct a new instance.
-     *
-     * @param idx     An index number to be assigned to the flow filter.
-     * @param filter  A {@link FlowFilter} instance which contains flow filter
-     *                configuration.
-     * @throws RpcException
-     *    {@code vffc} contains invalid value.
-     */
-    VTNFlowFilter(int idx, FlowFilter filter) throws RpcException {
-        index = verifyIndex(idx);
-        condition = FlowCondUtils.checkName(filter.getFlowConditionName());
-
-        FlowActionConverter conv = FlowActionConverter.getInstance();
-        List<FlowAction> factions = filter.getActions();
-        Map<Integer, FlowFilterAction> map;
-        if (factions == null || factions.isEmpty()) {
-            map = null;
-        } else {
-            map = new TreeMap<>();
-            int order = MiscUtils.ORDER_MIN;
-            for (FlowAction act: factions) {
-                FlowFilterAction ffact = conv.toFlowFilterAction(order, act);
-                putFlowAction(map, ffact);
-                order++;
-            }
-        }
-        actions = MiscUtils.toValueList(map);
-    }
-
-    /**
      * Return the name of the flow condition that selects packets to be
      * filtered.
      *
@@ -363,26 +293,6 @@ public abstract class VTNFlowFilter implements VTNIdentifiable<Integer> {
             setVtnFlowAction(vfactions).
             setVtnFlowFilterType(getVtnFlowFilterType()).
             build();
-    }
-
-    /**
-     * Convert this instance into a {@link FlowFilter} instance.
-     *
-     * @return  A {@link FlowFilter} instance.
-     */
-    public final FlowFilter toFlowFilter() {
-        List<FlowAction> vfactions;
-        if (actions == null || actions.isEmpty()) {
-            vfactions = null;
-        } else {
-            vfactions = new ArrayList<>(actions.size());
-            for (FlowFilterAction ffact: actions) {
-                vfactions.add(ffact.toFlowAction());
-            }
-        }
-
-        return new FlowFilter(index.intValue(), condition.getValue(),
-                              getFilterType(), vfactions);
     }
 
     /**
@@ -541,9 +451,7 @@ public abstract class VTNFlowFilter implements VTNIdentifiable<Integer> {
             new VtnFlowFilterBuilder().setIndex(index);
         } catch (RuntimeException e) {
             String msg = "Invalid filter index: " + index;
-            RpcException re = RpcException.getBadArgumentException(msg);
-            re.initCause(e);
-            throw re;
+            throw RpcException.getBadArgumentException(msg, e);
         }
 
         return index;
@@ -606,14 +514,6 @@ public abstract class VTNFlowFilter implements VTNIdentifiable<Integer> {
      * @throws RpcException  Verification failed.
      */
     protected abstract void verifyImpl() throws RpcException;
-
-    /**
-     * Return a {@link FilterType} instance which indicates the type of
-     * this flow filter.
-     *
-     * @return  A {@link FilterType} instance.
-     */
-    protected abstract FilterType getFilterType();
 
     /**
      * Return a {@link VtnFlowFilterType} instance which indicates the type of

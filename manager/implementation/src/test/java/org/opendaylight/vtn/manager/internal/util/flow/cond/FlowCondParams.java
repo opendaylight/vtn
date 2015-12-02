@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -13,10 +13,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
-
-import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
-import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.vtn.manager.internal.XmlNode;
@@ -167,7 +163,7 @@ public final class FlowCondParams extends TestBase implements Cloneable {
      * @throws Exception  An error occurred.
      */
     public VTNFlowCondition toVTNFlowCondition() throws Exception {
-        return new VTNFlowCondition(name, toFlowCondition());
+        return new VTNFlowCondition(toVtnFlowConditionBuilder().build());
     }
 
     /**
@@ -184,26 +180,6 @@ public final class FlowCondParams extends TestBase implements Cloneable {
     /**
      * Return a list of {@link VtnFlowMatch} instances.
      *
-     * @return  A list of {@link FlowMatch} instances.
-     */
-    public List<FlowMatch> getFlowMatchList() {
-        if (matchParams == null) {
-            return null;
-        }
-
-        Map<Integer, FlowMatch> map = new TreeMap<>();
-        for (FlowMatchParams params: matchParams) {
-            FlowMatch fm = params.toFlowMatch();
-            Integer index = fm.getIndex();
-            assertEquals(null, map.put(index, fm));
-        }
-
-        return new ArrayList<FlowMatch>(map.values());
-    }
-
-    /**
-     * Return a list of {@link FlowMatch} instances.
-     *
      * @return  A list of {@link VtnFlowMatch} instances.
      */
     public List<VtnFlowMatch> getVtnFlowMatchList() {
@@ -217,15 +193,6 @@ public final class FlowCondParams extends TestBase implements Cloneable {
         }
 
         return list;
-    }
-
-    /**
-     * Construct a new {@link FlowCondition} instance.
-     *
-     * @return  A {@link FlowCondition} instance.
-     */
-    public FlowCondition toFlowCondition() {
-        return new FlowCondition(name, getFlowMatchList());
     }
 
     /**
@@ -269,16 +236,7 @@ public final class FlowCondParams extends TestBase implements Cloneable {
      * @throws Exception  An error occurred.
      */
     public void verify(VTNFlowCondition vfcond) throws Exception {
-        FlowCondition fc = vfcond.toFlowCondition();
-        assertEquals(toFlowCondition(), fc);
         assertEquals(getPath(), vfcond.getPath());
-
-        int prev = 0;
-        for (FlowMatch fm: fc.getMatches()) {
-            int idx = fm.getIndex().intValue();
-            assertTrue(idx > prev);
-            prev = idx;
-        }
 
         VtnFlowCondition vfc = toVtnFlowConditionBuilder().build();
         assertEquals(vfcond, VTNFlowCondition.create(vfc));

@@ -8,7 +8,6 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow.match;
 
-import java.net.InetAddress;
 import java.util.Objects;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -18,19 +17,13 @@ import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import org.opendaylight.vtn.manager.flow.cond.Inet4Match;
-import org.opendaylight.vtn.manager.flow.cond.InetMatch;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.IpNetwork;
-import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.packet.InetHeader;
-import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-
-import org.opendaylight.controller.sal.utils.Status;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnInetMatchFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.VtnInetMatch;
@@ -84,30 +77,6 @@ public abstract class VTNInetMatch {
      */
     @XmlElement
     private Short  dscp;
-
-    /**
-     * Construct a new instance from the given {@link InetMatch} instance.
-     *
-     * @param imatch  An {@link InetMatch} instance.
-     * @return  A {@link VTNInetMatch} instance which represents the given
-     *          {@link InetMatch} instance. Note that {@code null} is returned
-     *          if {@code imatch} is {@code null}.
-     * @throws RpcException
-     *    An invalid instance is specified to {@code imatch}.
-     */
-    public static final VTNInetMatch create(InetMatch imatch)
-        throws RpcException {
-        if (imatch == null) {
-            return null;
-        }
-        if (imatch instanceof Inet4Match) {
-            return new VTNInet4Match((Inet4Match)imatch);
-        }
-
-        // This should never hanppen.
-        String msg = "Unexpected inet match instance: " + imatch;
-        throw RpcException.getBadArgumentException(msg);
-    }
 
     /**
      * Construct a new instance from the given pair of {@link VTNEtherMatch}
@@ -190,33 +159,6 @@ public abstract class VTNInetMatch {
         destinationNetwork = dst;
         protocol = proto;
         dscp = d;
-        verify();
-    }
-
-    /**
-     * Construct a new instance from the given {@link InetMatch} instance.
-     *
-     * @param imatch  An {@link InetMatch} instance.
-     * @throws NullPointerException
-     *    {@code imatch} is {@code null}.
-     * @throws RpcException
-     *    {@code imatch} contains invalid value.
-     */
-    VTNInetMatch(InetMatch imatch) throws RpcException {
-        Status st = imatch.getValidationStatus();
-        if (st != null) {
-            throw new RpcException(RpcErrorTag.BAD_ELEMENT, st);
-        }
-
-        Class<? extends IpNetwork> itype = getIpNetworkType();
-        sourceNetwork = getIpNetwork(itype, imatch.getSourceAddress(),
-                                     imatch.getSourceSuffix(),
-                                     VTNMatch.DESC_SRC);
-        destinationNetwork = getIpNetwork(
-            itype, imatch.getDestinationAddress(),
-            imatch.getDestinationSuffix(), VTNMatch.DESC_DST);
-        protocol = imatch.getProtocol();
-        dscp = NumberUtils.toShort(imatch.getDscp());
         verify();
     }
 
@@ -501,64 +443,16 @@ public abstract class VTNInetMatch {
      * Return an {@link RpcException} instance which notifies an invalid
      * IP address or CIDR prefix length.
      *
-     * @param obj   An object which contains invalid value.
-     * @param desc  A brief description about the IP address.
+     * @param obj    An object which contains invalid value.
+     * @param desc   A brief description about the IP address.
+     * @param cause  A throwable that indicates the cause of error.
      * @return  An {@link RpcException} instance.
      */
-    final RpcException invalidInetAddress(Object obj, String desc) {
+    final RpcException invalidInetAddress(Object obj, String desc,
+                                          Throwable cause) {
         StringBuilder builder = new StringBuilder("Invalid ").
             append(desc).append(" IP address: ").append(obj);
-        return RpcException.getBadArgumentException(builder.toString());
-    }
-
-    /**
-     * Construct a new {@link IpNetwork} instance which represents the IP
-     * network specified by a pair of IP address and CIDR prefix length.
-     *
-     * @param type    A class which specifies the type of {@link IpNetwork}
-     *                instance.
-     * @param iaddr   An {@link InetAddress} instance.
-     * @param length  CIDR prefix length.
-     * @param desc    A brief description about the specified IP network.
-     * @return  An {@link IpNetwork} instance or {@code null}.
-     * @throws RpcException
-     *    The given parameter is invalid.
-     */
-    private IpNetwork getIpNetwork(Class<? extends IpNetwork> type,
-                                   InetAddress iaddr, Short length,
-                                   String desc) throws RpcException {
-        int prefix = 0;
-        boolean zero = false;
-        try {
-            if (length != null) {
-                prefix = length.intValue();
-                zero = (prefix == 0);
-            }
-
-            IpNetwork ipn = IpNetwork.create(iaddr, prefix);
-            if (ipn != null) {
-                if (!type.isInstance(ipn)) {
-                    throw new IllegalArgumentException(
-                        "Unexpected IP address type");
-                }
-                if (zero) {
-                    // Reject zero prefix length to keep backward
-                    // compatibility.
-                    throw new IllegalArgumentException(
-                        "Invalid prefix length: " + prefix);
-                }
-            }
-
-            return ipn;
-        } catch (RuntimeException e) {
-            // iaddr should be a non-null value.
-            String msg = new StringBuilder(iaddr.getHostAddress()).
-                append(IpNetwork.CIDR_SEPARATOR).append(prefix).append(": ").
-                append(e.getMessage()).toString();
-            RpcException re = invalidInetAddress(msg, desc);
-            re.initCause(e);
-            throw re;
-        }
+        return RpcException.getBadArgumentException(builder.toString(), cause);
     }
 
     /**
@@ -586,9 +480,7 @@ public abstract class VTNInetMatch {
             return ipn;
         } catch (RuntimeException e) {
             String msg = MiscUtils.joinColon(ipp, e.getMessage());
-            RpcException re = invalidInetAddress(msg, desc);
-            re.initCause(e);
-            throw re;
+            throw invalidInetAddress(msg, desc, e);
         }
     }
 
@@ -663,13 +555,6 @@ public abstract class VTNInetMatch {
      * @return  A class to represent an IP address.
      */
     public abstract Class<? extends IpNetwork> getIpNetworkType();
-
-    /**
-     * Return an {@link InetMatch} instance which represents this condition.
-     *
-     * @return  An {@link InetMatch} instance.
-     */
-    public abstract InetMatch toInetMatch();
 
     /**
      * Return An {@link IpVersion} instance which describes the IP version.

@@ -16,7 +16,6 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 import org.opendaylight.vtn.manager.util.VTNIdentifiable;
 
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNEtherMatch;
@@ -53,23 +52,6 @@ public class VTNFlowMatch extends VTNMatch
      */
     @SuppressWarnings("unused")
     private VTNFlowMatch() {
-    }
-
-    /**
-     * Construct a new flow match from the given {@link FlowMatch} instance.
-     *
-     * @param fmatch  A {@link FlowMatch} instance.
-     * @throws RpcException
-     *    {@code fmatch} contains invalid value.
-     */
-    public VTNFlowMatch(FlowMatch fmatch) throws RpcException {
-        if (fmatch == null) {
-            throw RpcException.getNullArgumentException("Flow match");
-        }
-
-        index = fmatch.getIndex();
-        FlowCondUtils.verifyMatchIndex(index);
-        set(fmatch);
     }
 
     /**
@@ -129,16 +111,6 @@ public class VTNFlowMatch extends VTNMatch
     }
 
     // VTNMatch
-
-    /**
-     * Return a {@link FlowMatch} instance which represents this condition.
-     *
-     * @return  A {@link FlowMatch} instance.
-     */
-    @Override
-    public FlowMatch toFlowMatch() {
-        return toFlowMatch(index);
-    }
 
     /**
      * Verify the contents of this instance.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -14,7 +14,6 @@ import org.opendaylight.vtn.manager.internal.FlowRemover;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.flow.remove.AllFlowRemover;
-import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyConfigBuilder;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcOutputGenerator;
@@ -80,8 +79,7 @@ public final class SetPathPolicyTask extends PutDataTask<VtnPathPolicy>
             throw RpcUtils.getInvalidOperationException(op);
         }
 
-        VtnPathPolicyBuilder builder = new PathPolicyConfigBuilder.Data().
-            set(input).getBuilder();
+        VtnPathPolicyBuilder builder = PathPolicyUtils.newBuilder(input);
         boolean repl = VtnUpdateOperationType.SET.equals(op);
         if (repl && builder.getDefaultCost() == null) {
             // Use default value for "default-cost".

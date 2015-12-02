@@ -15,7 +15,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.opendaylight.vtn.manager.flow.cond.IcmpMatch;
 import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
@@ -75,21 +74,6 @@ public final class VTNIcmpMatch extends VTNLayer4Match {
     public VTNIcmpMatch(Short type, Short code) throws RpcException {
         icmpType = type;
         icmpCode = code;
-        verify();
-    }
-
-    /**
-     * Create a new instance from the given {@link IcmpMatch} instance.
-     *
-     * @param imatch  An {@link IcmpMatch} instance.
-     * @throws NullPointerException
-     *    {@code imatch} is {@code null}.
-     * @throws RpcException
-     *    {@code imatch} contains invalid value.
-     */
-    public VTNIcmpMatch(IcmpMatch imatch) throws RpcException {
-        icmpType = imatch.getType();
-        icmpCode = imatch.getCode();
         verify();
     }
 
@@ -217,14 +201,6 @@ public final class VTNIcmpMatch extends VTNLayer4Match {
     public short getInetProtocol(IpVersion ver) {
         checkIpVersion(ver);
         return InetProtocols.ICMP.shortValue();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public IcmpMatch toL4Match() {
-        return new IcmpMatch(icmpType, icmpCode);
     }
 
     /**

@@ -48,11 +48,9 @@
           level="ERROR"/>
   <logger name="org.opendaylight.vtn.manager.internal.util.flow.cond.VTNFlowCondition"
           level="OFF"/>
+  <logger name="org.opendaylight.vtn.manager.internal.util.tx.TxSyncFuture"
+          level="ERROR"/>
   <logger name="org.opendaylight.vtn.manager.internal.util.tx.TxQueueImpl"
           level="OFF"/>
-
-  <logger name="org.opendaylight.controller.sal.utils.ServiceHelper"
-          level="OFF"/>
-  <logger name="org.opendaylight.controller.sal.action.Action" level="OFF"/>
 
 </configuration>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,9 @@
  */
 
 package org.opendaylight.vtn.manager.internal.util.flow.cond;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,7 +22,6 @@ import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 import org.opendaylight.vtn.manager.util.VTNIdentifiableComparator;
 
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
@@ -100,15 +102,6 @@ public class VTNFlowMatchTest extends TestBase {
 
         // Null argument.
         try {
-            new VTNFlowMatch((FlowMatch)null);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
-            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
-            assertEquals("Flow match cannot be null", e.getMessage());
-        }
-
-        try {
             new VTNFlowMatch((VtnFlowMatchConfig)null);
             unexpected();
         } catch (RpcException e) {
@@ -133,10 +126,10 @@ public class VTNFlowMatchTest extends TestBase {
                 etag = RpcErrorTag.BAD_ELEMENT;
             }
 
-            params = new FlowMatchParams().setIndex(idx);
-            FlowMatch fm = params.toFlowMatch();
+            VtnFlowMatchConfig vfmc = mock(VtnFlowMatchConfig.class);
+            when(vfmc.getIndex()).thenReturn(idx);
             try {
-                new VTNFlowMatch(fm);
+                new VTNFlowMatch(vfmc);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());

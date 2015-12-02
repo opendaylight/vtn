@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -21,7 +21,6 @@ import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.EtherTypes;
 import org.opendaylight.vtn.manager.util.InetProtocols;
@@ -84,7 +83,6 @@ public class VTNMatchTest extends TestBase {
      *   <li>{@link VTNMatch#VTNMatch()}</li>
      *   <li>{@link VTNMatch#VTNMatch(VTNEtherMatch,VTNInetMatch,VTNLayer4Match)}</li>
      *   <li>{@link VTNMatch#VTNMatch(Match)}</li>
-     *   <li>{@link VTNMatch#set(FlowMatch)}</li>
      *   <li>{@link VTNMatch#complete()}</li>
      *   <li>{@link VTNMatch#toDataFlowMatchBuilder()}</li>
      *   <li>Getter methods</li>
@@ -134,10 +132,9 @@ public class VTNMatchTest extends TestBase {
             Integer.toHexString(EtherTypes.IPV4.intValue());
         params = new MatchParams().setEtherParams(eparams).
             setInet4Params(i4params);
-        FlowMatch fm = params.toFlowMatch();
         VTNMatch vmatch = new VTNMatch();
         try {
-            vmatch.set(fm);
+            vmatch.set(params.toVtnFlowMatchBuilder().build());
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
@@ -165,9 +162,8 @@ public class VTNMatchTest extends TestBase {
         params = new MatchParams().
             setInet4Params(i4params).
             setLayer4Params(tparams);
-        fm = params.toFlowMatch();
         try {
-            vmatch.set(fm);
+            vmatch.set(params.toVtnFlowMatchBuilder().build());
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());

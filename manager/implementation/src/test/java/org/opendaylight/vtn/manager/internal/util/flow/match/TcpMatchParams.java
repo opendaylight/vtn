@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,7 +8,6 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow.match;
 
-import org.opendaylight.vtn.manager.flow.cond.PortMatch;
 import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.internal.util.packet.TcpHeader;
@@ -39,15 +38,6 @@ public final class TcpMatchParams extends Layer4PortMatchParams<TcpMatchParams>
      * {@inheritDoc}
      */
     @Override
-    public org.opendaylight.vtn.manager.flow.cond.TcpMatch toL4Match() {
-        return new org.opendaylight.vtn.manager.flow.cond.TcpMatch(
-            getSourcePortMatch(), getDestinationPortMatch());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public VtnTcpMatch toVtnLayer4Match(boolean comp) {
         PortRangeParams r = getSourcePortParams();
         TcpSourceRange src = (r == null) ? null : r.toTcpSourceRange(comp);
@@ -64,7 +54,7 @@ public final class TcpMatchParams extends Layer4PortMatchParams<TcpMatchParams>
      */
     @Override
     public VTNTcpMatch toVTNLayer4Match() throws Exception {
-        return new VTNTcpMatch(toL4Match());
+        return new VTNTcpMatch(toVtnLayer4Match(false));
     }
 
     /**
@@ -123,10 +113,10 @@ public final class TcpMatchParams extends Layer4PortMatchParams<TcpMatchParams>
     public void verify(VTNLayer4Match l4m) throws Exception {
         assertTrue(l4m instanceof VTNTcpMatch);
         VTNTcpMatch tmatch = (VTNTcpMatch)l4m;
-        PortMatch srcMatch = getSourcePortMatch();
-        PortMatch dstMatch = getDestinationPortMatch();
-        VTNPortRange src = VTNPortRange.create(srcMatch);
-        VTNPortRange dst = VTNPortRange.create(dstMatch);
+        TcpSourceRange srcRange = getTcpSourceRange();
+        TcpDestinationRange dstRange = getTcpDestinationRange();
+        VTNPortRange src = VTNPortRange.create(srcRange);
+        VTNPortRange dst = VTNPortRange.create(dstRange);
         assertEquals(src, tmatch.getSourcePort());
         assertEquals(dst, tmatch.getDestinationPort());
         assertEquals(InetProtocols.TCP.shortValue(),
@@ -137,35 +127,28 @@ public final class TcpMatchParams extends Layer4PortMatchParams<TcpMatchParams>
         assertEquals(FlowMatchType.TCP_SRC, tmatch.getSourceMatchType());
         assertEquals(FlowMatchType.TCP_DST, tmatch.getDestinationMatchType());
 
-        org.opendaylight.vtn.manager.flow.cond.TcpMatch tm =
-            tmatch.toL4Match();
-        assertEquals(srcMatch, tm.getSourcePort());
-        assertEquals(dstMatch, tm.getDestinationPort());
-
         VtnLayer4Match vl4 = tmatch.toVtnLayer4Match();
         if (vl4 == null) {
-            assertEquals(null, srcMatch);
-            assertEquals(null, dstMatch);
             assertEquals(null, VTNLayer4Match.create(vl4));
         } else {
             assertTrue(vl4 instanceof VtnTcpMatch);
             VtnTcpMatch vtm = (VtnTcpMatch)vl4;
             TcpSourceRange vsrc = vtm.getTcpSourceRange();
-            if (srcMatch == null) {
+            if (srcRange == null) {
                 assertEquals(null, vsrc);
             } else {
-                assertEquals(srcMatch.getPortFrom(),
+                assertEquals(src.getPortFrom(),
                              vsrc.getPortFrom().getValue());
-                assertEquals(srcMatch.getPortTo(),
+                assertEquals(src.getPortTo(),
                              vsrc.getPortTo().getValue());
             }
             TcpDestinationRange vdst = vtm.getTcpDestinationRange();
-            if (dstMatch == null) {
+            if (dstRange == null) {
                 assertEquals(null, vdst);
             } else {
-                assertEquals(dstMatch.getPortFrom(),
+                assertEquals(dst.getPortFrom(),
                              vdst.getPortFrom().getValue());
-                assertEquals(dstMatch.getPortTo(),
+                assertEquals(dst.getPortTo(),
                              vdst.getPortTo().getValue());
             }
             assertEquals(tmatch, VTNLayer4Match.create(vl4));
@@ -182,19 +165,19 @@ public final class TcpMatchParams extends Layer4PortMatchParams<TcpMatchParams>
 
             // MD-SAL port match cannot represent the range of port numbers.
             src = tmatch1.getSourcePort();
-            if (srcMatch == null) {
+            if (srcRange == null) {
                 assertEquals(null, src);
             } else {
-                Integer from = srcMatch.getPortFrom();
+                Integer from = srcRange.getPortFrom().getValue();
                 assertEquals(from, src.getPortFrom());
                 assertEquals(from, src.getPortTo());
             }
 
             dst = tmatch1.getDestinationPort();
-            if (dstMatch == null) {
+            if (dstRange == null) {
                 assertEquals(null, dst);
             } else {
-                Integer from = dstMatch.getPortFrom();
+                Integer from = dstRange.getPortFrom().getValue();
                 assertEquals(from, dst.getPortFrom());
                 assertEquals(from, dst.getPortTo());
             }

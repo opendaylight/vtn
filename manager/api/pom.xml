@@ -40,28 +40,6 @@
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
-        <configuration>
-          <instructions>
-            <Export-Package>
-              org.opendaylight.vtn.manager*
-            </Export-Package>
-            <Import-Package>
-              org.opendaylight.controller.hosttracker.hostAware,
-              org.opendaylight.controller.sal.action,
-              org.opendaylight.controller.sal.core,
-              org.opendaylight.controller.sal.flowprogrammer,
-              org.opendaylight.controller.sal.match,
-              org.opendaylight.controller.sal.packet.address,
-              org.opendaylight.controller.sal.utils,
-              org.opendaylight.yang.gen.v1.*,
-              org.slf4j,
-              com.google.common.*,
-              com.fasterxml.jackson.databind.annotation,
-              javax.xml.bind.annotation,
-              javax.xml.bind.annotation.adapters
-            </Import-Package>
-          </instructions>
-        </configuration>
       </plugin>
     </plugins>
   </build>
@@ -86,40 +64,10 @@
       <artifactId>opendaylight-l2-types</artifactId>
     </dependency>
 
-    <!-- OpenDaylight openflowplugin -->
-    <dependency>
-      <groupId>org.opendaylight.openflowplugin.model</groupId>
-      <artifactId>model-flow-base</artifactId>
-    </dependency>
-
-    <!-- OpenDaylight AD-SAL -->
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>sal</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>hosttracker</artifactId>
-    </dependency>
-
     <!-- Google Guava -->
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-    </dependency>
-
-    <!-- Jackson -->
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-    </dependency>
-
-    <!-- Jackson JAXB support is used in unit tests. -->
-    <dependency>
-      <groupId>com.fasterxml.jackson.module</groupId>
-      <artifactId>jackson-module-jaxb-annotations</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <!-- SLF4J API -->

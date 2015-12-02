@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -46,8 +46,8 @@ public class RpcErrorCallbackTest extends TestBase {
         Long arg2 = System.currentTimeMillis();
         String emsg = desc + ": " + String.format(format, arg1, arg2);
 
-        RpcErrorCallback cb =
-            new RpcErrorCallback(logger, desc, format, arg1, arg2);
+        RpcErrorCallback<Long> cb =
+            new RpcErrorCallback<>(logger, desc, format, arg1, arg2);
         cb.onSuccess(result);
         Mockito.verify(logger).
             trace("{}: RPC completed successfully: result={}", desc, ret);

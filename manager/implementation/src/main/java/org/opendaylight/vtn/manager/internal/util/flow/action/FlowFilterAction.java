@@ -18,7 +18,6 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import org.opendaylight.vtn.manager.flow.action.FlowAction;
 import org.opendaylight.vtn.manager.util.VTNIdentifiable;
 
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
@@ -110,13 +109,6 @@ public abstract class FlowFilterAction extends VTNFlowAction
     public abstract boolean apply(FlowActionContext ctx);
 
     /**
-     * Convert this instance into a {@link FlowAction} instance.
-     *
-     * @return  A {@link FlowAction} instance.
-     */
-    public abstract FlowAction toFlowAction();
-
-    /**
      * Convert the given {@link VtnAction} instance into a
      * {@link FlowFilterAction} instance.
      *
@@ -129,20 +121,6 @@ public abstract class FlowFilterAction extends VTNFlowAction
      */
     public abstract FlowFilterAction toFlowFilterAction(
         VtnAction vact, Integer ord) throws RpcException;
-
-    /**
-     * Convert the given {@link FlowAction} instance into a
-     * {@link FlowFilterAction} instance.
-     *
-     * @param fact  A {@link FlowAction} instance.
-     * @param ord   An integer which determines the order of flow actions
-     *              in a flow filter.
-     * @return  A {@link FlowFilterAction} instance.
-     * @throws RpcException
-     *    Failed to convert the given instance.
-     */
-    public abstract FlowFilterAction toFlowFilterAction(
-        FlowAction fact, int ord) throws RpcException;
 
     /**
      * Verify the contents of this instance.

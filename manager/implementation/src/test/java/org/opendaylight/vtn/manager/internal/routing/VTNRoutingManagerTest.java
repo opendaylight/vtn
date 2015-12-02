@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -12,7 +12,6 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.isA;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -60,6 +59,7 @@ import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
@@ -140,13 +140,13 @@ public class VTNRoutingManagerTest extends TestBase {
      * Registration to be associated with {@link PathPolicyListener}.
      */
     @Mock
-    private ListenerRegistration  ppListenerReg;
+    private ListenerRegistration<DataChangeListener>  ppListenerReg;
 
     /**
      * Registration to be associated with {@link VTNRoutingManager}.
      */
     @Mock
-    private ListenerRegistration  routingListenerReg;
+    private ListenerRegistration<DataChangeListener>  routingListenerReg;
 
     /**
      * A {@link VtnTopology} instance which contains the initial network
@@ -284,7 +284,7 @@ public class VTNRoutingManagerTest extends TestBase {
             expected.add(l);
             routingManager.addListener(l);
 
-            List<VTNRoutingListener> listeners =
+            List listeners =
                 getFieldValue(routingManager, List.class, "vtnListeners");
             assertEquals(expected, listeners);
         }
@@ -292,7 +292,7 @@ public class VTNRoutingManagerTest extends TestBase {
         // Below calls should do nothing because listeners are already added.
         for (VTNRoutingListener l: expected) {
             routingManager.addListener(l);
-            List<VTNRoutingListener> listeners =
+            List listeners =
                 getFieldValue(routingManager, List.class, "vtnListeners");
             assertEquals(expected, listeners);
         }
@@ -344,7 +344,7 @@ public class VTNRoutingManagerTest extends TestBase {
             routingManager.addListener(l);
         }
 
-        List<VTNRoutingListener> listeners =
+        List listeners =
             getFieldValue(routingManager, List.class, "vtnListeners");
         assertEquals(expected, listeners);
 
@@ -369,7 +369,7 @@ public class VTNRoutingManagerTest extends TestBase {
      */
     @Test
     public void testEnterEvent() {
-        AsyncDataChangeEvent ev = null;
+        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev = null;
         TopologyEventContext ectx = routingManager.enterEvent(ev);
         assertNotNull(ectx);
         assertEquals(0, ectx.getCreated().size());
@@ -395,8 +395,7 @@ public class VTNRoutingManagerTest extends TestBase {
         reset(vtnProvider);
         TopologyEventContext ectx = new TopologyEventContext();
         routingManager.exitEvent(ectx);
-        verify(vtnProvider, never()).post(any(TxTask.class));
-        verify(vtnProvider, never()).publish(any(Notification.class));
+        verifyZeroInteractions(vtnProvider);
         for (VTNRoutingListener l: listeners) {
             verifyZeroInteractions(l);
         }
@@ -727,8 +726,10 @@ public class VTNRoutingManagerTest extends TestBase {
         assertTrue(addedSet.add(new AddedLinkBuilder(newLink).build()));
 
         // Construct an AsyncDataChangeEvent.
+        @SuppressWarnings("unchecked")
         AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> event =
-            mock(AsyncDataChangeEvent.class);
+            (AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject>)mock(
+                AsyncDataChangeEvent.class);
         when(event.getCreatedData()).
             thenReturn(Collections.unmodifiableMap(created));
         when(event.getUpdatedData()).
@@ -834,7 +835,8 @@ public class VTNRoutingManagerTest extends TestBase {
         for (Map.Entry<Boolean, String> entry: cases.entrySet()) {
             reset(vtnProvider);
             boolean master = entry.getKey().booleanValue();
-            VTNFuture future = mock(VTNFuture.class);
+            @SuppressWarnings("unchecked")
+            VTNFuture<?> future = (VTNFuture<?>)mock(VTNFuture.class);
             when(vtnProvider.post(any(TxTask.class))).thenReturn(future);
             assertEquals(future, routingManager.initConfig(master));
             ArgumentCaptor<TxTask> captor =
@@ -856,7 +858,9 @@ public class VTNRoutingManagerTest extends TestBase {
         Logger logger = mock(Logger.class);
         CompositeAutoCloseable closeables = new CompositeAutoCloseable(logger);
         RpcProviderRegistry rpcReg = mock(RpcProviderRegistry.class);
-        RpcRegistration reg = mock(RpcRegistration.class);
+        @SuppressWarnings("unchecked")
+        RpcRegistration<VtnPathPolicyService> reg =
+            (RpcRegistration<VtnPathPolicyService>)mock(RpcRegistration.class);
         Class<VtnPathPolicyService> type = VtnPathPolicyService.class;
         when(rpcReg.addRpcImplementation(type, routingManager)).
             thenReturn(reg);

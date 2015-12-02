@@ -16,8 +16,6 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import org.opendaylight.vtn.manager.flow.action.TpPortAction;
-
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
@@ -69,21 +67,6 @@ public abstract class VTNPortAction extends FlowFilterAction {
     protected VTNPortAction(int p, Integer ord) {
         super(ord);
         port = p;
-    }
-
-    /**
-     * Construct a new instance.
-     *
-     * @param act  A {@link TpPortAction} instance.
-     * @param ord  An integer which determines the order of flow actions
-     *             in a flow entry.
-     * @throws RpcException  An invalid argument is specified.
-     */
-    protected VTNPortAction(TpPortAction act, int ord)
-        throws RpcException {
-        super(Integer.valueOf(ord));
-        port = act.getPort();
-        verify();
     }
 
     /**

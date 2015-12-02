@@ -12,8 +12,6 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.opendaylight.vtn.manager.flow.action.FlowAction;
-import org.opendaylight.vtn.manager.flow.action.SetInet4SrcAction;
 import org.opendaylight.vtn.manager.util.IpNetwork;
 
 import org.opendaylight.vtn.manager.internal.util.packet.InetHeader;
@@ -86,19 +84,6 @@ public final class VTNSetInetSrcAction extends VTNInetAddrAction {
     /**
      * Construct a new instance.
      *
-     * @param act  A {@link SetInet4SrcAction} instance.
-     * @param ord  An integer which determines the order of flow actions
-     *             in a flow entry.
-     * @throws RpcException  An invalid argument is specified.
-     */
-    public VTNSetInetSrcAction(SetInet4SrcAction act, int ord)
-        throws RpcException {
-        super(act, ord);
-    }
-
-    /**
-     * Construct a new instance.
-     *
      * @param ac   A {@link VtnSetInetSrcActionCase} instance.
      * @param ord  An integer which determines the order of flow actions
      *             in a flow entry.
@@ -110,27 +95,6 @@ public final class VTNSetInetSrcAction extends VTNInetAddrAction {
     }
 
     // VTNFlowAction
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public FlowAction toFlowAction(VtnAction vact) throws RpcException {
-        VtnSetInetSrcActionCase ac = cast(VtnSetInetSrcActionCase.class, vact);
-        VtnSetInetSrcAction vaction = ac.getVtnSetInetSrcAction();
-        if (vaction != null) {
-            IpNetwork addr = IpNetwork.create(vaction.getAddress());
-            if (addr != null) {
-                try {
-                    return new SetInet4SrcAction(addr);
-                } catch (RuntimeException e) {
-                    throw invalidIpAddress(vact, e);
-                }
-            }
-        }
-
-        throw noIpAddress(ac);
-    }
 
     /**
      * {@inheritDoc}
@@ -202,27 +166,9 @@ public final class VTNSetInetSrcAction extends VTNInetAddrAction {
      * {@inheritDoc}
      */
     @Override
-    public FlowAction toFlowAction() {
-        return new SetInet4SrcAction(getAddress());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public VTNSetInetSrcAction toFlowFilterAction(VtnAction vact, Integer ord)
         throws RpcException {
         VtnSetInetSrcActionCase ac = cast(VtnSetInetSrcActionCase.class, vact);
         return new VTNSetInetSrcAction(ac, ord);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public VTNSetInetSrcAction toFlowFilterAction(FlowAction fact, int ord)
-        throws RpcException {
-        SetInet4SrcAction act = cast(SetInet4SrcAction.class, fact);
-        return new VTNSetInetSrcAction(act, ord);
     }
 }

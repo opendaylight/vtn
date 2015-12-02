@@ -8,6 +8,9 @@
 
 package org.opendaylight.vtn.manager.internal.util.pathmap;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -18,20 +21,16 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import javax.xml.bind.Unmarshaller;
-
 import org.junit.Test;
 
 import org.mockito.Mockito;
-
-import org.opendaylight.vtn.manager.PathMap;
 
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.vnode.VTenantIdentifier;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
-import org.opendaylight.vtn.manager.internal.XmlNode;
+import org.opendaylight.vtn.manager.internal.TestVnodeName;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtilsTest;
 
@@ -72,7 +71,7 @@ public class PathMapUtilsTest extends TestBase {
      *
      * <ul>
      *   <li>{@link PathMapUtils#getNullMapIndexException()}</li>
-     *   <li>{@link PathMapUtils#getInvalidMapIndexException(Integer)}</li>
+     *   <li>{@link PathMapUtils#getInvalidMapIndexException(Integer, Throwable)}</li>
      * </ul>
      */
     @Test
@@ -84,8 +83,9 @@ public class PathMapUtilsTest extends TestBase {
         assertEquals("Path map index cannot be null", e.getMessage());
 
         for (int i = 0; i <= 10; i++) {
-            e = PathMapUtils.getInvalidMapIndexException(i);
-            assertEquals(null, e.getCause());
+            IllegalArgumentException cause = new IllegalArgumentException();
+            e = PathMapUtils.getInvalidMapIndexException(i, cause);
+            assertEquals(cause, e.getCause());
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
             assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
             assertEquals("Invalid path map index: " + i, e.getMessage());
@@ -96,10 +96,7 @@ public class PathMapUtilsTest extends TestBase {
      * Test case for the following methods.
      *
      * <ul>
-     *   <li>{@link PathMapUtils#toVtnPathMapBuilder(PathMap)}</li>
      *   <li>{@link PathMapUtils#toVtnPathMapBuilder(VtnPathMapConfig)}</li>
-     *   <li>{@link PathMapUtils#toPathMapListBuilder(Integer, PathMap)}</li>
-     *   <li>{@link PathMapUtils#toPathMap(VtnPathMapConfig)}</li>
      * </ul>
      *
      * @throws Exception  An error occurred.
@@ -145,34 +142,11 @@ public class PathMapUtilsTest extends TestBase {
             }
         }
 
-        // Null PathMap.
-        PathMap pmap = null;
+        // Null VtnPathMapConfig.
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
         VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
-        String msg = "PathMap cannot be null";
-        try {
-            PathMapUtils.toVtnPathMapBuilder(pmap);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(null, e.getCause());
-            assertEquals(etag, e.getErrorTag());
-            assertEquals(vtag, e.getVtnErrorTag());
-            assertEquals(msg, e.getMessage());
-        }
-
-        try {
-            PathMapUtils.toPathMapListBuilder(1, pmap);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(null, e.getCause());
-            assertEquals(etag, e.getErrorTag());
-            assertEquals(vtag, e.getVtnErrorTag());
-            assertEquals(msg, e.getMessage());
-        }
-
-        // Null VtnPathMapConfig.
         VtnPathMapConfig vpmc = null;
-        msg = "Path map configuration cannot be null";
+        String msg = "Path map configuration cannot be null";
         try {
             PathMapUtils.toVtnPathMapBuilder(vpmc);
             unexpected();
@@ -183,33 +157,10 @@ public class PathMapUtilsTest extends TestBase {
             assertEquals(msg, e.getMessage());
         }
 
-        assertEquals(null, PathMapUtils.toPathMap(vpmc));
-
         // Map index is null.
+        msg = "Path map index cannot be null";
         String condition = "fcond";
         VnodeName vcondition = new VnodeName(condition);
-        pmap = new PathMap(condition, 1);
-        msg = "Path map index cannot be null";
-        try {
-            PathMapUtils.toVtnPathMapBuilder(pmap);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(null, e.getCause());
-            assertEquals(etag, e.getErrorTag());
-            assertEquals(vtag, e.getVtnErrorTag());
-            assertEquals(msg, e.getMessage());
-        }
-
-        try {
-            PathMapUtils.toPathMapListBuilder(null, pmap);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(null, e.getCause());
-            assertEquals(etag, e.getErrorTag());
-            assertEquals(vtag, e.getVtnErrorTag());
-            assertEquals(msg, e.getMessage());
-        }
-
         vpmc = new VtnPathMapBuilder().
             setCondition(vcondition).build();
         try {
@@ -222,71 +173,8 @@ public class PathMapUtilsTest extends TestBase {
             assertEquals(msg, e.getMessage());
         }
 
-        try {
-            PathMapUtils.toPathMap(vpmc);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(null, e.getCause());
-            assertEquals(etag, e.getErrorTag());
-            assertEquals(vtag, e.getVtnErrorTag());
-            assertEquals(msg, e.getMessage());
-        }
-
-        // Invalid map index.
-        int[] invalidIndices = {
-            Integer.MIN_VALUE, -20000, -2, -1, 0,
-            65536, 65537, 100000, 3000000, Integer.MAX_VALUE,
-        };
-        etag = RpcErrorTag.BAD_ELEMENT;
-        for (int index: invalidIndices) {
-            msg = "Invalid path map index: " + index;
-            pmap = new PathMap(index, condition, 0);
-            try {
-                PathMapUtils.toVtnPathMapBuilder(pmap);
-                unexpected();
-            } catch (RpcException e) {
-                assertTrue(e.getCause() instanceof IllegalArgumentException);
-                assertEquals(etag, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals(msg, e.getMessage());
-            }
-
-            pmap = new PathMap(1, condition, 0);
-            try {
-                PathMapUtils.toPathMapListBuilder(index, pmap);
-                unexpected();
-            } catch (RpcException e) {
-                assertTrue(e.getCause() instanceof IllegalArgumentException);
-                assertEquals(etag, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals(msg, e.getMessage());
-            }
-        }
-
         // Null flow condition.
-        etag = RpcErrorTag.MISSING_ELEMENT;
         msg = "Flow condition name cannot be null";
-        pmap = new PathMap(1, null, 0);
-        try {
-            PathMapUtils.toVtnPathMapBuilder(pmap);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(null, e.getCause());
-            assertEquals(etag, e.getErrorTag());
-            assertEquals(vtag, e.getVtnErrorTag());
-            assertEquals(msg, e.getMessage());
-        }
-
-        try {
-            PathMapUtils.toPathMapListBuilder(1, pmap);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(null, e.getCause());
-            assertEquals(etag, e.getErrorTag());
-            assertEquals(vtag, e.getVtnErrorTag());
-            assertEquals(msg, e.getMessage());
-        }
-
         vpmc = new VtnPathMapBuilder().setIndex(1).build();
         try {
             PathMapUtils.toVtnPathMapBuilder(vpmc);
@@ -298,8 +186,11 @@ public class PathMapUtilsTest extends TestBase {
             assertEquals(msg, e.getMessage());
         }
 
+        vpmc = mock(VtnPathMap.class);
+        when(vpmc.getIndex()).thenReturn(1);
+        when(vpmc.getCondition()).thenReturn(new TestVnodeName());
         try {
-            PathMapUtils.toPathMap(vpmc);
+            PathMapUtils.toVtnPathMapBuilder(vpmc);
             unexpected();
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
@@ -311,19 +202,11 @@ public class PathMapUtilsTest extends TestBase {
         // Empty flow condition.
         etag = RpcErrorTag.BAD_ELEMENT;
         msg = "Flow condition name cannot be empty";
-        pmap = new PathMap(1, "", 0);
+        vpmc = mock(VtnPathMap.class);
+        when(vpmc.getIndex()).thenReturn(1);
+        when(vpmc.getCondition()).thenReturn(new TestVnodeName(""));
         try {
-            PathMapUtils.toVtnPathMapBuilder(pmap);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(null, e.getCause());
-            assertEquals(etag, e.getErrorTag());
-            assertEquals(vtag, e.getVtnErrorTag());
-            assertEquals(msg, e.getMessage());
-        }
-
-        try {
-            PathMapUtils.toPathMapListBuilder(1, pmap);
+            PathMapUtils.toVtnPathMapBuilder(vpmc);
             unexpected();
         } catch (RpcException e) {
             assertEquals(null, e.getCause());
@@ -345,22 +228,15 @@ public class PathMapUtilsTest extends TestBase {
         };
         msg = "Flow condition name is invalid";
         for (String name: invalidNames) {
-            pmap = new PathMap(1, name, 0);
+            vpmc = mock(VtnPathMap.class);
+            when(vpmc.getIndex()).thenReturn(1);
+            when(vpmc.getCondition()).thenReturn(new TestVnodeName(name));
             try {
-                PathMapUtils.toVtnPathMapBuilder(pmap);
+                PathMapUtils.toVtnPathMapBuilder(vpmc);
                 unexpected();
             } catch (RpcException e) {
-                assertTrue(e.getCause() instanceof IllegalArgumentException);
-                assertEquals(etag, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals(msg, e.getMessage());
-            }
-
-            try {
-                PathMapUtils.toPathMapListBuilder(1, pmap);
-                unexpected();
-            } catch (RpcException e) {
-                assertTrue(e.getCause() instanceof IllegalArgumentException);
+                assertEquals(IllegalArgumentException.class,
+                             e.getCause().getClass());
                 assertEquals(etag, e.getErrorTag());
                 assertEquals(vtag, e.getVtnErrorTag());
                 assertEquals(msg, e.getMessage());
@@ -368,30 +244,25 @@ public class PathMapUtilsTest extends TestBase {
         }
 
         // Invalid path policy ID.
-        int[] invalidPolicies = {
+        Integer[] invalidPolicies = {
             Integer.MIN_VALUE, -9999999, -333333, -2, -1,
             PathPolicyUtilsTest.PATH_POLICY_MAX + 1,
             PathPolicyUtilsTest.PATH_POLICY_MAX + 2,
             10000000, 222222222, Integer.MAX_VALUE,
         };
-        for (int policy: invalidPolicies) {
+        vcondition = new VnodeName(condition);
+        for (Integer policy: invalidPolicies) {
             msg = "Invalid path policy ID: " + policy;
-            pmap = new PathMap(1, condition, policy);
+            vpmc = mock(VtnPathMapConfig.class);
+            when(vpmc.getIndex()).thenReturn(1);
+            when(vpmc.getCondition()).thenReturn(vcondition);
+            when(vpmc.getPolicy()).thenReturn(policy);
             try {
-                PathMapUtils.toVtnPathMapBuilder(pmap);
+                PathMapUtils.toVtnPathMapBuilder(vpmc);
                 unexpected();
             } catch (RpcException e) {
-                assertTrue(e.getCause() instanceof IllegalArgumentException);
-                assertEquals(etag, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals(msg, e.getMessage());
-            }
-
-            try {
-                PathMapUtils.toPathMapListBuilder(null, pmap);
-                unexpected();
-            } catch (RpcException e) {
-                assertTrue(e.getCause() instanceof IllegalArgumentException);
+                assertEquals(IllegalArgumentException.class,
+                             e.getCause().getClass());
                 assertEquals(etag, e.getErrorTag());
                 assertEquals(vtag, e.getVtnErrorTag());
                 assertEquals(msg, e.getMessage());
@@ -399,25 +270,19 @@ public class PathMapUtilsTest extends TestBase {
         }
 
         // Invalid idle/hard timeout.
-        int[] invalidTimeouts = {
+        Integer[] invalidTimeouts = {
             Integer.MIN_VALUE, -99999999, -65535, -3333, -2, -1,
             65536, 65537, 1000000, 33333333, Integer.MAX_VALUE,
         };
-        for (int timeout: invalidTimeouts) {
+        for (Integer timeout: invalidTimeouts) {
             msg = "Invalid idle-timeout: " + timeout;
-            pmap = new PathMap(1, condition, 0, timeout, 0);
+            vpmc = mock(VtnPathMapConfig.class);
+            when(vpmc.getIndex()).thenReturn(1);
+            when(vpmc.getCondition()).thenReturn(vcondition);
+            when(vpmc.getPolicy()).thenReturn(0);
+            when(vpmc.getIdleTimeout()).thenReturn(timeout);
             try {
-                PathMapUtils.toVtnPathMapBuilder(pmap);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(null, e.getCause());
-                assertEquals(etag, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals(msg, e.getMessage());
-            }
-
-            try {
-                PathMapUtils.toPathMapListBuilder(1, pmap);
+                PathMapUtils.toVtnPathMapBuilder(vpmc);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
@@ -427,19 +292,13 @@ public class PathMapUtilsTest extends TestBase {
             }
 
             msg = "Invalid hard-timeout: " + timeout;
-            pmap = new PathMap(1, condition, 0, 0, timeout);
+            vpmc = mock(VtnPathMapConfig.class);
+            when(vpmc.getIndex()).thenReturn(1);
+            when(vpmc.getCondition()).thenReturn(vcondition);
+            when(vpmc.getPolicy()).thenReturn(0);
+            when(vpmc.getHardTimeout()).thenReturn(timeout);
             try {
-                PathMapUtils.toVtnPathMapBuilder(pmap);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(null, e.getCause());
-                assertEquals(etag, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals(msg, e.getMessage());
-            }
-
-            try {
-                PathMapUtils.toPathMapListBuilder(1, pmap);
+                PathMapUtils.toVtnPathMapBuilder(vpmc);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
@@ -450,33 +309,7 @@ public class PathMapUtilsTest extends TestBase {
         }
 
         // Inconsistent flow timeouts.
-        Unmarshaller um = createUnmarshaller(PathMap.class);
-        String xml = new XmlNode("pathmap").
-            setAttribute("index", 1).setAttribute("condition", condition).
-            setAttribute("policy", 0).setAttribute("hardTimeout", 0).
-            toString();
-        pmap = unmarshal(um, xml, PathMap.class);
         msg = "idle-timeout must be specified.";
-        try {
-            PathMapUtils.toVtnPathMapBuilder(pmap);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(null, e.getCause());
-            assertEquals(etag, e.getErrorTag());
-            assertEquals(vtag, e.getVtnErrorTag());
-            assertEquals(msg, e.getMessage());
-        }
-
-        try {
-            PathMapUtils.toPathMapListBuilder(1, pmap);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(null, e.getCause());
-            assertEquals(etag, e.getErrorTag());
-            assertEquals(vtag, e.getVtnErrorTag());
-            assertEquals(msg, e.getMessage());
-        }
-
         vpmc = new VtnPathMapBuilder().setIndex(1).setCondition(vcondition).
             setPolicy(0).setHardTimeout(0).build();
         try {
@@ -489,42 +322,7 @@ public class PathMapUtilsTest extends TestBase {
             assertEquals(msg, e.getMessage());
         }
 
-        try {
-            PathMapUtils.toPathMap(vpmc);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(null, e.getCause());
-            assertEquals(etag, e.getErrorTag());
-            assertEquals(vtag, e.getVtnErrorTag());
-            assertEquals(msg, e.getMessage());
-        }
-
-        xml = new XmlNode("pathmap").
-            setAttribute("index", 1).setAttribute("condition", condition).
-            setAttribute("policy", 0).setAttribute("idleTimeout", 0).
-            toString();
-        pmap = unmarshal(um, xml, PathMap.class);
         msg = "hard-timeout must be specified.";
-        try {
-            PathMapUtils.toVtnPathMapBuilder(pmap);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(null, e.getCause());
-            assertEquals(etag, e.getErrorTag());
-            assertEquals(vtag, e.getVtnErrorTag());
-            assertEquals(msg, e.getMessage());
-        }
-
-        try {
-            PathMapUtils.toPathMapListBuilder(1, pmap);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(null, e.getCause());
-            assertEquals(etag, e.getErrorTag());
-            assertEquals(vtag, e.getVtnErrorTag());
-            assertEquals(msg, e.getMessage());
-        }
-
         vpmc = new VtnPathMapBuilder().setIndex(1).setCondition(vcondition).
             setPolicy(0).setIdleTimeout(0).build();
         try {
@@ -537,74 +335,29 @@ public class PathMapUtilsTest extends TestBase {
             assertEquals(msg, e.getMessage());
         }
 
-        try {
-            PathMapUtils.toPathMap(vpmc);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(null, e.getCause());
-            assertEquals(etag, e.getErrorTag());
-            assertEquals(vtag, e.getVtnErrorTag());
-            assertEquals(msg, e.getMessage());
-        }
-
         timeouts = new Integer[]{
             1, 4000, 65534, 65535,
         };
         msg = "idle-timeout must be less than hard-timeout.";
-        List<PathMap> pmapList = new ArrayList<>();
         List<VtnPathMapConfig> vpmcList = new ArrayList<>();
         for (Integer tmout: timeouts) {
             int timeout = tmout.intValue();
-            pmapList.add(new PathMap(1, condition, 0, timeout, timeout));
             vpmcList.add(new VtnPathMapBuilder().setIndex(1).
                          setCondition(vcondition).setPolicy(0).
                          setIdleTimeout(tmout).setHardTimeout(tmout).build());
 
             if (timeout > 1) {
                 int hard = timeout - 1;
-                pmapList.add(new PathMap(1, condition, 0, timeout, hard));
                 vpmcList.add(new VtnPathMapBuilder().setIndex(1).
                              setCondition(vcondition).setPolicy(0).
-                             setIdleTimeout(tmout).setHardTimeout(hard)
-                             .build());
-            }
-        }
-
-        for (PathMap pm: pmapList) {
-            try {
-                PathMapUtils.toVtnPathMapBuilder(pm);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(null, e.getCause());
-                assertEquals(etag, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals(msg, e.getMessage());
-            }
-
-            try {
-                PathMapUtils.toPathMapListBuilder(1, pm);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(null, e.getCause());
-                assertEquals(etag, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals(msg, e.getMessage());
+                             setIdleTimeout(tmout).setHardTimeout(hard).
+                             build());
             }
         }
 
         for (VtnPathMapConfig vpm: vpmcList) {
             try {
                 PathMapUtils.toVtnPathMapBuilder(vpm);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(null, e.getCause());
-                assertEquals(etag, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals(msg, e.getMessage());
-            }
-
-            try {
-                PathMapUtils.toPathMap(vpm);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(null, e.getCause());
@@ -1196,40 +949,12 @@ public class PathMapUtilsTest extends TestBase {
             setIndex(index).setCondition(vcond).
             setPolicy(policy).setIdleTimeout(idle).setHardTimeout(hard).
             build();
-        PathMap pmap = PathMapUtils.toPathMap(pml);
-        assertEquals(index, pmap.getIndex());
-        assertEquals(cond, pmap.getFlowConditionName());
-        int pid = (policy == null) ? 0 : policy.intValue();
-        assertEquals(pid, pmap.getPathPolicyId());
-        assertEquals(idle, pmap.getIdleTimeout());
-        assertEquals(hard, pmap.getHardTimeout());
-
         Integer policyId = policy;
         if (policyId == null) {
-            policyId = Integer.valueOf(pid);
+            policyId = 0;
         }
-        VtnPathMap vpm = PathMapUtils.toVtnPathMapBuilder(pmap).build();
+        VtnPathMap vpm = PathMapUtils.toVtnPathMapBuilder(pml).build();
         assertEquals(index, vpm.getIndex());
-        assertEquals(vcond, vpm.getCondition());
-        assertEquals(policyId, vpm.getPolicy());
-        assertEquals(idle, vpm.getIdleTimeout());
-        assertEquals(hard, vpm.getHardTimeout());
-
-        int idx = index.intValue() + 1;
-        if (idx > 65535) {
-            idx = 1;
-        }
-
-        Integer anotherIndex = Integer.valueOf(idx);
-        pml = PathMapUtils.toPathMapListBuilder(anotherIndex, pmap).build();
-        assertEquals(anotherIndex, pml.getIndex());
-        assertEquals(vcond, pml.getCondition());
-        assertEquals(policyId, pml.getPolicy());
-        assertEquals(idle, pml.getIdleTimeout());
-        assertEquals(hard, pml.getHardTimeout());
-
-        vpm = PathMapUtils.toVtnPathMapBuilder(pml).build();
-        assertEquals(anotherIndex, vpm.getIndex());
         assertEquals(vcond, vpm.getCondition());
         assertEquals(policyId, vpm.getPolicy());
         assertEquals(idle, vpm.getIdleTimeout());

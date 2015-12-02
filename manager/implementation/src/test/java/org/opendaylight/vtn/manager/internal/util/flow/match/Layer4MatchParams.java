@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,8 +7,6 @@
  */
 
 package org.opendaylight.vtn.manager.internal.util.flow.match;
-
-import org.opendaylight.vtn.manager.flow.cond.L4Match;
 
 import org.opendaylight.vtn.manager.internal.util.packet.Layer4Header;
 
@@ -36,14 +34,6 @@ public abstract class Layer4MatchParams<T extends Layer4MatchParams>
     public final VtnLayer4Match toVtnLayer4Match() {
         return toVtnLayer4Match(false);
     }
-
-    /**
-     * Construct a {@link L4Match} instance.
-     *
-     * @return  A {@link L4Match} instance that contains the settings
-     *          configured in this instance.
-     */
-    public abstract L4Match toL4Match();
 
     /**
      * Construct a {@link VtnLayer4Match} instance.

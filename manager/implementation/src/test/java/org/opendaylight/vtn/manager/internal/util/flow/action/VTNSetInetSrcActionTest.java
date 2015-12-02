@@ -8,7 +8,12 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow.action;
 
-import java.net.InetAddress;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -19,9 +24,6 @@ import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
-import org.mockito.Mockito;
-
-import org.opendaylight.vtn.manager.flow.action.SetInet4SrcAction;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.IpNetwork;
 
@@ -91,12 +93,9 @@ public class VTNSetInetSrcActionTest extends TestBase {
      *
      * <ul>
      *   <li>{@link VTNSetInetSrcAction#VTNSetInetSrcAction(IpNetwork)}</li>
-     *   <li>{@link VTNSetInetSrcAction#VTNSetInetSrcAction(SetInet4SrcAction, int)}</li>
      *   <li>{@link VTNSetInetSrcAction#VTNSetInetSrcAction(VtnSetInetSrcActionCase, Integer)}</li>
      *   <li>{@link VTNSetInetSrcAction#set(VtnFlowActionBuilder)}</li>
      *   <li>{@link VTNSetInetSrcAction#set(ActionBuilder)}</li>
-     *   <li>{@link VTNSetInetSrcAction#toFlowAction(VtnAction)}</li>
-     *   <li>{@link VTNSetInetSrcAction#toFlowAction()}</li>
      *   <li>{@link VTNSetInetSrcAction#toFlowFilterAction(VtnAction,Integer)}</li>
      *   <li>{@link VTNSetInetSrcAction#toVtnAction(Action)}</li>
      *   <li>{@link VTNSetInetSrcAction#getDescription(Action)}</li>
@@ -131,8 +130,6 @@ public class VTNSetInetSrcActionTest extends TestBase {
                 Address mdaddr = new Ipv4Builder().
                     setIpv4Address(new Ipv4Prefix(iaddr.getCidrText())).
                     build();
-                SetInet4SrcAction vad =
-                    new SetInet4SrcAction(iaddr.getInetAddress());
                 VtnSetInetSrcAction vact = new VtnSetInetSrcActionBuilder().
                     setAddress(mdaddr).build();
                 VtnSetInetSrcActionCase vac = vacBuilder.
@@ -148,11 +145,6 @@ public class VTNSetInetSrcActionTest extends TestBase {
                     va = new VTNSetInetSrcAction(iaddr);
                     anotherOrder = 0;
                 } else {
-                    va = new VTNSetInetSrcAction(vad, order);
-                    assertEquals(order, va.getIdentifier());
-                    assertEquals(iaddr, va.getAddress());
-                    assertEquals(mdaddr, va.getMdAddress());
-
                     va = new VTNSetInetSrcAction(vac, order);
                     anotherOrder = order.intValue() + 1;
                 }
@@ -163,8 +155,6 @@ public class VTNSetInetSrcActionTest extends TestBase {
                 VtnFlowAction vfact = va.toVtnFlowAction();
                 assertEquals(order, vfact.getOrder());
                 assertEquals(vac, vfact.getVtnAction());
-
-                assertEquals(vad, va.toFlowAction());
 
                 VtnFlowActionBuilder vbuilder =
                     va.toVtnFlowActionBuilder(anotherOrder);
@@ -191,71 +181,24 @@ public class VTNSetInetSrcActionTest extends TestBase {
 
         VTNSetInetSrcAction va = new VTNSetInetSrcAction();
         for (IpNetwork iaddr: addresses) {
-            // toFlowAction() test.
+            // toVtnAction() test.
             Address mdaddr = new Ipv4Builder().
                 setIpv4Address(new Ipv4Prefix(iaddr.getCidrText())).
                 build();
-            SetInet4SrcAction vad =
-                new SetInet4SrcAction(iaddr.getInetAddress());
             VtnSetInetSrcAction vact = new VtnSetInetSrcActionBuilder().
                 setAddress(mdaddr).build();
             VtnAction vaction = vacBuilder.
                 setVtnSetInetSrcAction(vact).build();
-            assertEquals(vad, va.toFlowAction(vaction));
-
-            vaction = VTNSetInetDstAction.newVtnAction(mdaddr);
-            RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
-            VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
-            String emsg = "VTNSetInetSrcAction: Unexpected type: " + vaction;
-            try {
-                va.toFlowAction(vaction);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(etag, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals(emsg, e.getMessage());
-            }
-
-            etag = RpcErrorTag.MISSING_ELEMENT;
-            vaction = vacBuilder.
-                setVtnSetInetSrcAction(new VtnSetInetSrcActionBuilder().
-                                       build()).
-                build();
-            emsg = "VTNSetInetSrcAction: No IP address: " + vaction;
-            try {
-                va.toFlowAction(vaction);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(etag, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals(emsg, e.getMessage());
-            }
-
-            vaction = vacBuilder.setVtnSetInetSrcAction(null).build();
-            emsg = "VTNSetInetSrcAction: No IP address: " + vaction;
-            try {
-                va.toFlowAction(vaction);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(etag, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals(emsg, e.getMessage());
-            }
-
-            // toFlowAction() should never affect instance variables.
-            assertEquals(null, va.getAddress());
-
-            // toVtnAction() test.
             SetNwSrcAction ma = new SetNwSrcActionBuilder().
                 setAddress(mdaddr).build();
             Action action = new SetNwSrcActionCaseBuilder().
                 setSetNwSrcAction(ma).build();
-            vaction = vacBuilder.setVtnSetInetSrcAction(vact).build();
             assertEquals(vaction, va.toVtnAction(action));
 
-            etag = RpcErrorTag.BAD_ELEMENT;
             action = new SetNwDstActionCaseBuilder().build();
-            emsg = "VTNSetInetSrcAction: Unexpected type: " + action;
+            RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
+            VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
+            String emsg = "VTNSetInetSrcAction: Unexpected type: " + action;
             try {
                 va.toVtnAction(action);
                 unexpected();
@@ -370,16 +313,6 @@ public class VTNSetInetSrcActionTest extends TestBase {
 
         // Null IP address.
         emsg = "VTNSetInetSrcAction: IP address cannot be null";
-        SetInet4SrcAction vad = new SetInet4SrcAction((InetAddress)null);
-        try {
-            new VTNSetInetSrcAction(vad, 1);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(etag, e.getErrorTag());
-            assertEquals(vtag, e.getVtnErrorTag());
-            assertEquals(emsg, e.getMessage());
-        }
-
         vact = new VtnSetInetSrcActionBuilder().build();
         vac = vacBuilder.setVtnSetInetSrcAction(vact).build();
         try {
@@ -560,62 +493,38 @@ public class VTNSetInetSrcActionTest extends TestBase {
         VTNSetInetSrcAction va = new VTNSetInetSrcAction(vac, order);
 
         // In case of IPv4 packet.
-        FlowActionContext ctx = Mockito.mock(FlowActionContext.class);
-        InetHeader inet = Mockito.mock(InetHeader.class);
-        Mockito.when(ctx.getInetHeader()).thenReturn(inet);
-        Mockito.when(inet.setSourceAddress(iaddr)).thenReturn(true);
+        FlowActionContext ctx = mock(FlowActionContext.class);
+        InetHeader inet = mock(InetHeader.class);
+        when(ctx.getInetHeader()).thenReturn(inet);
+        when(inet.setSourceAddress(iaddr)).thenReturn(true);
 
         assertEquals(true, va.apply(ctx));
-        Mockito.verify(ctx).getInetHeader();
-        Mockito.verify(ctx).addFilterAction(va);
-        Mockito.verify(ctx, Mockito.never()).
-            removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterActions();
+        verify(ctx).getInetHeader();
+        verify(ctx).addFilterAction(va);
 
-        Mockito.verify(inet).setSourceAddress(iaddr);
-        Mockito.verify(inet, Mockito.never()).getSourceAddress();
-        Mockito.verify(inet, Mockito.never()).getDestinationAddress();
-        Mockito.verify(inet, Mockito.never()).
-            setDestinationAddress(Mockito.any(IpNetwork.class));
-        Mockito.verify(inet, Mockito.never()).getProtocol();
-        Mockito.verify(inet, Mockito.never()).getDscp();
-        Mockito.verify(inet, Mockito.never()).setDscp(Mockito.anyShort());
+        verify(inet).setSourceAddress(iaddr);
+        verifyNoMoreInteractions(ctx, inet);
 
         // In case of IPv6 packet.
         // InetHeader.setSourceAddress() will return false.
-        Mockito.reset(ctx, inet);
-        Mockito.when(ctx.getInetHeader()).thenReturn(inet);
-        Mockito.when(inet.setSourceAddress(iaddr)).thenReturn(false);
+        reset(ctx, inet);
+        when(ctx.getInetHeader()).thenReturn(inet);
+        when(inet.setSourceAddress(iaddr)).thenReturn(false);
 
         assertEquals(false, va.apply(ctx));
-        Mockito.verify(ctx).getInetHeader();
-        Mockito.verify(ctx, Mockito.never()).
-            addFilterAction(Mockito.any(FlowFilterAction.class));
-        Mockito.verify(ctx, Mockito.never()).
-            removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterActions();
+        verify(ctx).getInetHeader();
 
-        Mockito.verify(inet).setSourceAddress(iaddr);
-        Mockito.verify(inet, Mockito.never()).getSourceAddress();
-        Mockito.verify(inet, Mockito.never()).getDestinationAddress();
-        Mockito.verify(inet, Mockito.never()).
-            setDestinationAddress(Mockito.any(IpNetwork.class));
-        Mockito.verify(inet, Mockito.never()).getProtocol();
-        Mockito.verify(inet, Mockito.never()).getDscp();
-        Mockito.verify(inet, Mockito.never()).setDscp(Mockito.anyShort());
+        verify(inet).setSourceAddress(iaddr);
+        verifyNoMoreInteractions(ctx, inet);
 
         // In case of non-IP packet.
         inet = null;
-        Mockito.reset(ctx);
-        Mockito.when(ctx.getInetHeader()).thenReturn(inet);
+        reset(ctx);
+        when(ctx.getInetHeader()).thenReturn(inet);
 
         assertEquals(false, va.apply(ctx));
-        Mockito.verify(ctx).getInetHeader();
-        Mockito.verify(ctx, Mockito.never()).
-            addFilterAction(Mockito.any(FlowFilterAction.class));
-        Mockito.verify(ctx, Mockito.never()).
-            removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterActions();
+        verify(ctx).getInetHeader();
+        verifyNoMoreInteractions(ctx);
     }
 
     /**

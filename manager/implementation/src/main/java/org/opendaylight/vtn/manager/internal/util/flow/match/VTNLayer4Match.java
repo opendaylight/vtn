@@ -13,11 +13,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import org.opendaylight.vtn.manager.flow.cond.IcmpMatch;
-import org.opendaylight.vtn.manager.flow.cond.L4Match;
-import org.opendaylight.vtn.manager.flow.cond.TcpMatch;
-import org.opendaylight.vtn.manager.flow.cond.UdpMatch;
-
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnIcmpMatchFields;
@@ -46,35 +41,6 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlSeeAlso({VTNTcpMatch.class, VTNUdpMatch.class, VTNIcmpMatch.class})
 public abstract class VTNLayer4Match {
-    /**
-     * Create a new instance from the given {@link L4Match} instance.
-     *
-     * @param l4  A {@link L4Match} instance.
-     * @return  A {@link VTNLayer4Match} instance created from the given
-     *          {@link L4Match} instance. Note that {@code null} is returned
-     *          if {@code l4} is {@code null}.
-     * @throws RpcException
-     *    The given {@link L4Match} instance is invalid.
-     */
-    public static final VTNLayer4Match create(L4Match l4) throws RpcException {
-        if (l4 == null) {
-            return null;
-        }
-        if (l4 instanceof TcpMatch) {
-            return new VTNTcpMatch((TcpMatch)l4);
-        }
-        if (l4 instanceof UdpMatch) {
-            return new VTNUdpMatch((UdpMatch)l4);
-        }
-        if (l4 instanceof IcmpMatch) {
-            return new VTNIcmpMatch((IcmpMatch)l4);
-        }
-
-        // This should never hanppen.
-        String msg = "Unexpected L4 match instance: " + l4;
-        throw RpcException.getBadArgumentException(msg);
-    }
-
     /**
      * Create a new instance from the given {@link VtnLayer4Match} instance.
      *
@@ -162,13 +128,6 @@ public abstract class VTNLayer4Match {
      *    This layer 4 protocol is unavailable on the given IP version.
      */
     public abstract short getInetProtocol(IpVersion ver);
-
-    /**
-     * Return a {@link L4Match} instance which represents this condition.
-     *
-     * @return  A {@link L4Match} instance.
-     */
-    public abstract L4Match toL4Match();
 
     /**
      * Return a {@link VtnLayer4Match} instance which contains the condition

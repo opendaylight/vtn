@@ -74,7 +74,7 @@ public class Ethernet extends Packet {
 
         // Initialize the payload types.
         EnumMap<EtherTypes, Class<? extends Packet>> typeMap =
-            new EnumMap(EtherTypes.class);
+            new EnumMap<>(EtherTypes.class);
         typeMap.put(EtherTypes.IPV4, IPv4.class);
         typeMap.put(EtherTypes.ARP, ARP.class);
         typeMap.put(EtherTypes.VLAN, IEEE8021Q.class);

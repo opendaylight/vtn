@@ -12,26 +12,12 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
 
-import org.opendaylight.vtn.manager.flow.action.FlowAction;
-import org.opendaylight.vtn.manager.flow.action.SetDlDstAction;
-import org.opendaylight.vtn.manager.flow.action.SetDlSrcAction;
-import org.opendaylight.vtn.manager.flow.action.SetDscpAction;
-import org.opendaylight.vtn.manager.flow.action.SetIcmpCodeAction;
-import org.opendaylight.vtn.manager.flow.action.SetIcmpTypeAction;
-import org.opendaylight.vtn.manager.flow.action.SetInet4DstAction;
-import org.opendaylight.vtn.manager.flow.action.SetInet4SrcAction;
-import org.opendaylight.vtn.manager.flow.action.SetTpDstAction;
-import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
-import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
 import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.VtnOrderedFlowAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnDropActionCase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPopVlanActionCase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPushVlanActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlDstActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlSrcActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpCodeActionCase;
@@ -41,7 +27,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.v
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetSrcActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetPortDstActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetPortSrcActionCase;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanIdActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanPcpActionCase;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
@@ -92,9 +77,9 @@ public final class FlowActionConverter {
 
     /**
      * A map that keeps adapters for conversion from {@link VtnAction} to
-     * {@link FlowAction}.
+     * {@link FlowFilterAction}.
      */
-    private final Map<Class<?>, VTNFlowAction>  flowConverters;
+    private final Map<Class<?>, FlowFilterAction>  filterConverters;
 
     /**
      * A map that keeps adapters for conversion from MD-SAL action to
@@ -119,12 +104,6 @@ public final class FlowActionConverter {
     private final Map<Class<?>, VTNFlowAction>  mdStringifiers;
 
     /**
-     * A map that keeps adapters for conversion from {@link FlowAction} to
-     * {@link FlowFilterAction}.
-     */
-    private final Map<Class<?>, FlowFilterAction>  adFilterConverters;
-
-    /**
      * Construct a new instance.
      */
     private FlowActionConverter() {
@@ -144,11 +123,9 @@ public final class FlowActionConverter {
         VTNSetVlanPcpAction vlanPcp = new VTNSetVlanPcpAction();
         VTNOutputAction output = new VTNOutputAction();
 
-        // Initialize adapters for conversion from VtnAction into FlowAction.
-        flowConverters = ImmutableMap.<Class<?>, VTNFlowAction>builder().
-            put(VtnDropActionCase.class, drop).
-            put(VtnPopVlanActionCase.class, popVlan).
-            put(VtnPushVlanActionCase.class, pushVlan).
+        // Initialize adapters for conversion from VtnAction into
+        // FlowFilterAction.
+        filterConverters = ImmutableMap.<Class<?>, FlowFilterAction>builder().
             put(VtnSetDlDstActionCase.class, dlDst).
             put(VtnSetDlSrcActionCase.class, dlSrc).
             put(VtnSetIcmpCodeActionCase.class, icmpCode).
@@ -158,7 +135,6 @@ public final class FlowActionConverter {
             put(VtnSetInetSrcActionCase.class, inetSrc).
             put(VtnSetPortDstActionCase.class, portDst).
             put(VtnSetPortSrcActionCase.class, portSrc).
-            put(VtnSetVlanIdActionCase.class, vlanId).
             put(VtnSetVlanPcpActionCase.class, vlanPcp).
             build();
 
@@ -207,44 +183,6 @@ public final class FlowActionConverter {
             put(SetTpDstActionCase.class, portDst).
             put(SetTpSrcActionCase.class, portSrc).
             build();
-
-        // Initialize adapters for conversion from FlowAction into
-        // FlowFilterAction.
-        adFilterConverters = ImmutableMap.<Class<?>, FlowFilterAction>builder().
-            put(SetDlSrcAction.class, dlSrc).
-            put(SetDlDstAction.class, dlDst).
-            put(SetInet4SrcAction.class, inetSrc).
-            put(SetInet4DstAction.class, inetDst).
-            put(SetDscpAction.class, dscp).
-            put(SetTpSrcAction.class, portSrc).
-            put(SetTpDstAction.class, portDst).
-            put(SetIcmpTypeAction.class, icmpType).
-            put(SetIcmpCodeAction.class, icmpCode).
-            put(SetVlanPcpAction.class, vlanPcp).
-            build();
-    }
-
-    /**
-     * Convert the given {@link VtnAction} instance into a {@link FlowAction}
-     * instance.
-     *
-     * @param vact  A {@link VtnAction} instance.
-     * @return  A {@link FlowAction} instance.
-     *          {@code null} if the given {@link VtnAction} is not bound to
-     *          {@code FlowAction} class.
-     * @throws RpcException
-     *    Failed to convert the given instance.
-     */
-    public FlowAction toFlowAction(VtnAction vact) throws RpcException {
-        if (vact != null) {
-            Class<?> type = vact.getImplementedInterface();
-            VTNFlowAction conv = flowConverters.get(type);
-            if (conv != null) {
-                return conv.toFlowAction(vact);
-            }
-        }
-
-        return null;
     }
 
     /**
@@ -267,41 +205,13 @@ public final class FlowActionConverter {
         }
 
         Class<?> type = vact.getImplementedInterface();
-        VTNFlowAction conv = flowConverters.get(type);
-        if (!(conv instanceof FlowFilterAction)) {
+        FlowFilterAction conv = filterConverters.get(type);
+        if (conv == null) {
             throw RpcException.getBadArgumentException(
                 "Unsupported vtn-action: " + type.getName());
         }
 
-        FlowFilterAction fact = (FlowFilterAction)conv;
-        return fact.toFlowFilterAction(vact, vaction.getOrder());
-    }
-
-    /**
-     * Convert the given AD-SAL flow action into a {@link FlowFilterAction}
-     * instance.
-     *
-     * @param ord   An integer which determines the order of flow actions
-     *              in a flow filter.
-     * @param fact  A {@link FlowAction} instance to be converted.
-     * @return  A converted {@link FlowFilterAction} instance.
-     * @throws RpcException
-     *    Failed to convert the given instance.
-     */
-    public FlowFilterAction toFlowFilterAction(int ord, FlowAction fact)
-        throws RpcException {
-        if (fact == null) {
-            throw RpcException.getNullArgumentException("Flow action");
-        }
-
-        Class<?> type = fact.getClass();
-        FlowFilterAction conv = adFilterConverters.get(type);
-        if (conv == null) {
-            throw RpcException.getBadArgumentException(
-                "Unsupported flow action: " + type.getSimpleName());
-        }
-
-        return conv.toFlowFilterAction(fact, ord);
+        return conv.toFlowFilterAction(vact, vaction.getOrder());
     }
 
     /**

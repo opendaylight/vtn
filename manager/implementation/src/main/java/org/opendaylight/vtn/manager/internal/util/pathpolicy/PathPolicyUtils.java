@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -10,11 +10,10 @@ package org.opendaylight.vtn.manager.internal.util.pathpolicy;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-import org.opendaylight.vtn.manager.PathCost;
-import org.opendaylight.vtn.manager.PathPolicy;
-import org.opendaylight.vtn.manager.PortLocation;
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
@@ -31,11 +30,12 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.Vt
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.VtnPathPolicies;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.VtnPathPolicyConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicy;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicyBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicyKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policy.config.VtnPathCost;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policy.config.VtnPathCostBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policy.config.VtnPathCostKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateOperationType;
 
 /**
  * {@code PathPolicyUtils} class is a collection of utility class methods
@@ -90,36 +90,42 @@ public final class PathPolicyUtils {
      * Return a new {@link RpcException} that indicates the given path policy
      * ID is invalid.
      *
-     * @param id  The identifier of the path policy.
+     * @param id     The identifier of the path policy.
+     * @param cause  A throwable that indicates the cause of error.
      * @return  An {@link RpcException}.
      */
-    public static RpcException getInvalidPolicyIdException(Integer id) {
+    public static RpcException getInvalidPolicyIdException(
+        Integer id, Throwable cause) {
         String msg = MiscUtils.joinColon("Invalid path policy ID", id);
-        return RpcException.getBadArgumentException(msg);
+        return RpcException.getBadArgumentException(msg, cause);
     }
 
     /**
      * Return a new {@link RpcException} that indicates the given default cost
      * valud is invalid.
      *
-     * @param cost  Value for default cost.
+     * @param cost   Value for default cost.
+     * @param cause  A throwable that indicates the cause of error.
      * @return  An {@link RpcException}.
      */
-    public static RpcException getInvalidDefaultCostException(Long cost) {
+    public static RpcException getInvalidDefaultCostException(
+        Long cost, Throwable cause) {
         String msg = MiscUtils.joinColon("Invalid default cost", cost);
-        return RpcException.getBadArgumentException(msg);
+        return RpcException.getBadArgumentException(msg, cause);
     }
 
     /**
      * Return a new {@link RpcException} that indicates the given link cost
      * valud is invalid.
      *
-     * @param cost  Link cost.
+     * @param cost   Link cost.
+     * @param cause  A throwable that indicates the cause of error.
      * @return  An {@link RpcException}.
      */
-    public static RpcException getInvalidCostException(Long cost) {
+    public static RpcException getInvalidCostException(
+        Long cost, Throwable cause) {
         String msg = MiscUtils.joinColon("Invalid cost value", cost);
-        return RpcException.getBadArgumentException(msg);
+        return RpcException.getBadArgumentException(msg, cause);
     }
 
     /**
@@ -219,48 +225,141 @@ public final class PathPolicyUtils {
     }
 
     /**
-     * Create a {@link PathCost} instance which describes the given
-     * {@link VtnPathCost} instance.
+     * Set the path policy identifier into the given path policy builder.
      *
-     * @param vpc  A {@link VtnPathCost} instance.
-     * @return  A {@link PathCost} instance or {@code null}.
+     * @param builder  A {@link VtnPathPolicyBuilder} instance.
+     * @param id       The identifier for the path policy.
+     * @throws RpcException  The given path policy ID is invalid.
+     * @throws NullPointerException
+     *    {@code builder} is {@code null}.
      */
-    public static PathCost toPathCost(VtnPathCost vpc) {
-        Long c = vpc.getCost();
-        if (c == null) {
-            c = DEFAULT_LINK_COST;
+    public static void setId(VtnPathPolicyBuilder builder, Integer id)
+        throws RpcException {
+        if (id == null) {
+            throw PathPolicyUtils.getNullPolicyIdException();
         }
 
-        PortLocation ploc = NodeUtils.toPortLocation(vpc.getPortDesc());
-        if (ploc == null) {
-            return null;
+        try {
+            builder.setId(id);
+        } catch (IllegalArgumentException e) {
+            throw getInvalidPolicyIdException(id, e);
         }
-
-        return new PathCost(ploc, c.longValue());
     }
 
     /**
-     * Create a {@link PathPolicy} instance which describes the given
-     * {@link VtnPathPolicy} instance.
+     * Set the default cost into the given path policy builder.
      *
-     * @param vpp  A {@link VtnPathPolicy} instance.
-     * @return  A {@link PathPolicy} instance.
+     * @param builder  A {@link VtnPathPolicyBuilder} instance.
+     * @param cost     The default cost value.
+     * @throws RpcException  The given default cost is invalid.
+     * @throws NullPointerException
+     *    {@code builder} is {@code null}.
      */
-    public static PathPolicy toPathPolicy(VtnPathPolicy vpp) {
-        Long c = vpp.getDefaultCost();
-        long defc = (c == null) ? COST_UNDEF : c.longValue();
-        List<PathCost> costs = new ArrayList<>();
-        List<VtnPathCost> vlist = vpp.getVtnPathCost();
-        if (vlist != null) {
-            for (VtnPathCost vpc: vlist) {
-                PathCost pc = toPathCost(vpc);
-                if (pc != null) {
-                    costs.add(pc);
-                }
-            }
+    public static void setDefaultCost(VtnPathPolicyBuilder builder, Long cost)
+        throws RpcException {
+        try {
+            builder.setDefaultCost(cost);
+        } catch (IllegalArgumentException e) {
+            throw getInvalidDefaultCostException(cost, e);
+        }
+    }
+
+    /**
+     * Set the path cost into the given path cost builder.
+     *
+     * @param builder  A {@link VtnPathCostBuilder} instance.
+     * @param cost     The path cost value.
+     * @throws RpcException  The given path cost is invalid.
+     * @throws NullPointerException
+     *    {@code builder} is {@code null}.
+     */
+    public static void setCost(VtnPathCostBuilder builder, Long cost)
+        throws RpcException {
+        Long value = cost;
+        if (value == null) {
+            // Use default value.
+            value = DEFAULT_LINK_COST;
         }
 
-        return new PathPolicy(vpp.getId(), defc, costs);
+        try {
+            builder.setCost(value);
+        } catch (IllegalArgumentException e) {
+            throw getInvalidCostException(value, e);
+        }
+    }
+
+    /**
+     * Set the switch port descriptor into the given path cost builder.
+     *
+     * @param builder  A {@link VtnPathCostBuilder} instance.
+     * @param vdesc    The switch port descriptor.
+     * @throws RpcException  The given switch port descriptor is invalid.
+     * @throws NullPointerException
+     *    {@code builder} is {@code null}.
+     */
+    public static void setPortDesc(VtnPathCostBuilder builder,
+                                   VtnPortDesc vdesc) throws RpcException {
+        NodeUtils.checkVtnPortDesc(vdesc);
+        builder.setPortDesc(vdesc);
+    }
+
+    /**
+     * Create a new {@link VtnPathPolicyBuilder} instance that contains the
+     * given path policy configuration.
+     *
+     * @param vppc  A {@link VtnPathPolicyConfig} instance that contains the
+     *              path policy configuration.
+     * @return  A {@link VtnPathPolicyBuilder} instance.
+     * @throws RpcException
+     *    The given configuration contains invalid value.
+     * @throws NullPointerException
+     *    {@code vppc} is {@code null}.
+     */
+    public static VtnPathPolicyBuilder newBuilder(VtnPathPolicyConfig vppc)
+        throws RpcException {
+        VtnPathPolicyBuilder builder = new VtnPathPolicyBuilder();
+        setId(builder, vppc.getId());
+        setDefaultCost(builder, vppc.getDefaultCost());
+
+        List<VtnPathCost> costs = vppc.getVtnPathCost();
+        if (!MiscUtils.isEmpty(costs)) {
+            Set<String> descSet = new HashSet<>();
+            List<VtnPathCost> newCosts = new ArrayList<>(costs.size());
+            for (VtnPathCost vpc: costs) {
+                VtnPathCost v = newBuilder(vpc).build();
+                String desc = v.getPortDesc().getValue();
+                if (!descSet.add(desc)) {
+                    throw getDuplicatePortException(desc);
+                }
+                newCosts.add(v);
+            }
+            builder.setVtnPathCost(newCosts);
+        }
+
+        return builder;
+    }
+
+    /**
+     * Create a new {@link VtnPathCostBuilder} instance that contains the
+     * given path cost configuration.
+     *
+     * @param vpcc  A {@link VtnPathCostConfig} instance that contains the
+     *              path cost configuration.
+     * @return  A {@link VtnPathCostBuilder} instance.
+     * @throws RpcException
+     *    The given configuration contains invalid value.
+     */
+    public static VtnPathCostBuilder newBuilder(VtnPathCostConfig vpcc)
+        throws RpcException {
+        if (vpcc == null) {
+            throw getNullPathCostException();
+        }
+
+        VtnPathCostBuilder builder = new VtnPathCostBuilder();
+        setPortDesc(builder, vpcc.getPortDesc());
+        setCost(builder, vpcc.getCost());
+
+        return builder;
     }
 
     /**
@@ -336,33 +435,5 @@ public final class PathPolicyUtils {
         }
 
         return vpc;
-    }
-
-    /**
-     * Create an RPC input builder used to update existing path policy
-     * configuration.
-     *
-     * @param id  The path policy ID.
-     * @return  Builder instance for RPC input.
-     * @throws RpcException
-     *    The given path policy ID is invalid.
-     */
-    public static PathPolicyConfigBuilder.Rpc createRpcInput(int id)
-        throws RpcException {
-        PathPolicyConfigBuilder.Rpc builder =
-            new PathPolicyConfigBuilder.Rpc();
-        Integer pid = Integer.valueOf(id);
-
-        try {
-            builder.setId(pid);
-        } catch (VTNException e) {
-            // Invalid path policy ID is specified.
-            throw getNotFoundException(id, e);
-        }
-
-        builder.getBuilder().setOperation(VtnUpdateOperationType.ADD).
-            setPresent(Boolean.TRUE);
-
-        return builder;
     }
 }

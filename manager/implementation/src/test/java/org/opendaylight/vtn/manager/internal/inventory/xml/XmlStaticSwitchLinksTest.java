@@ -36,8 +36,6 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-import org.opendaylight.controller.sal.utils.GlobalConstants;
-
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.VtnStaticTopology;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.VtnStaticTopologyBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology.StaticSwitchLinks;
@@ -69,12 +67,8 @@ public class XmlStaticSwitchLinksTest extends TestBase {
      *          link configuration file.
      */
     public static File getConfigFile() {
-        File baseDir = new File(GlobalConstants.STARTUPHOME.toString(),
-                                GlobalConstants.DEFAULT.toString());
-        File vtnDir = new File(baseDir, "vtn");
-        File confDir =
-            new File(vtnDir, XmlConfigFile.Type.TOPOLOGY.toString());
-
+        File confDir = new File(
+            getConfigDir(), XmlConfigFile.Type.TOPOLOGY.toString());
         return new File(confDir, CONFIG_KEY + ".xml");
     }
 

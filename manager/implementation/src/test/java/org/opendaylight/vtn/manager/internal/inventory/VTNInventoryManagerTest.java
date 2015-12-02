@@ -48,6 +48,7 @@ import org.opendaylight.vtn.manager.internal.util.tx.TxEvent;
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -102,25 +103,25 @@ public class VTNInventoryManagerTest extends TestBase {
      * Registration to be associated with {@link NodeListener}.
      */
     @Mock
-    private ListenerRegistration  nodeListenerReg;
+    private ListenerRegistration<DataChangeListener>  nodeListenerReg;
 
     /**
      * Registration to be associated with {@link NodeConnectorListener}.
      */
     @Mock
-    private ListenerRegistration  ncListenerReg;
+    private ListenerRegistration<DataChangeListener>  ncListenerReg;
 
     /**
      * Registration to be associated with {@link TopologyListener}.
      */
     @Mock
-    private ListenerRegistration  topoListenerReg;
+    private ListenerRegistration<DataChangeListener>  topoListenerReg;
 
     /**
      * Registration to be associated with {@link VTNInventoryManager}.
      */
     @Mock
-    private ListenerRegistration  inventoryListenerReg;
+    private ListenerRegistration<DataChangeListener>  inventoryListenerReg;
 
     /**
      * A {@link VTNInventoryManager} instance for test.
@@ -223,7 +224,7 @@ public class VTNInventoryManagerTest extends TestBase {
             expected.add(l);
             inventoryManager.addListener(l);
 
-            List<VTNInventoryListener> listeners =
+            List listeners =
                 getFieldValue(inventoryManager, List.class, "vtnListeners");
             assertEquals(expected, listeners);
         }
@@ -231,7 +232,7 @@ public class VTNInventoryManagerTest extends TestBase {
         // Below calls should do nothing because listeners are already added.
         for (VTNInventoryListener l: expected) {
             inventoryManager.addListener(l);
-            List<VTNInventoryListener> listeners =
+            List listeners =
                 getFieldValue(inventoryManager, List.class, "vtnListeners");
             assertEquals(expected, listeners);
         }
@@ -278,7 +279,7 @@ public class VTNInventoryManagerTest extends TestBase {
             inventoryManager.addListener(l);
         }
 
-        List<VTNInventoryListener> listeners =
+        List listeners =
             getFieldValue(inventoryManager, List.class, "vtnListeners");
         assertEquals(expected, listeners);
 
@@ -357,7 +358,7 @@ public class VTNInventoryManagerTest extends TestBase {
      */
     @Test
     public void testEnterEvent() {
-        AsyncDataChangeEvent ev = null;
+        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev = null;
         assertEquals(null, inventoryManager.enterEvent(ev));
     }
 
@@ -655,7 +656,7 @@ public class VTNInventoryManagerTest extends TestBase {
 
         // 3 nodes have been created.
         Map<InstanceIdentifier<?>, DataObject> created = new HashMap<>();
-        Map<SalNode, VtnNodeEvent> createdNodes = new HashMap();
+        Map<SalNode, VtnNodeEvent> createdNodes = new HashMap<>();
         VtnOpenflowVersion[] vers = {
             null,
             VtnOpenflowVersion.OF10,
@@ -880,8 +881,10 @@ public class VTNInventoryManagerTest extends TestBase {
         assertNull(original.put(vpPath, vport));
 
         // Construct an AsyncDataChangeEvent.
+        @SuppressWarnings("unchecked")
         AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> event =
-            mock(AsyncDataChangeEvent.class);
+            (AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject>)mock(
+                AsyncDataChangeEvent.class);
         when(event.getCreatedData()).
             thenReturn(Collections.unmodifiableMap(created));
         when(event.getUpdatedData()).

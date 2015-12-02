@@ -15,8 +15,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.opendaylight.vtn.manager.flow.action.FlowAction;
-
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.packet.EtherHeader;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
@@ -99,24 +97,6 @@ public final class VTNSetVlanPcpAction extends FlowFilterAction {
     /**
      * Construct a new instance.
      *
-     * @param act
-     *    A {@link org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction}
-     *    instance.
-     * @param ord  An integer which determines the order of flow actions
-     *             in a flow entry.
-     * @throws RpcException  An invalid argument is specified.
-     */
-    public VTNSetVlanPcpAction(
-        org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction act, int ord)
-        throws RpcException {
-        super(Integer.valueOf(ord));
-        priority = (short)act.getPriority();
-        verify();
-    }
-
-    /**
-     * Construct a new instance.
-     *
      * @param ac   A {@link VtnSetVlanPcpActionCase} instance.
      * @param ord  An integer which determines the order of flow actions
      *             in a flow entry.
@@ -159,17 +139,6 @@ public final class VTNSetVlanPcpAction extends FlowFilterAction {
     }
 
     // VTNFlowAction
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public FlowAction toFlowAction(VtnAction vact) throws RpcException {
-        VtnSetVlanPcpActionCase ac = cast(VtnSetVlanPcpActionCase.class, vact);
-        short pri = getVlanPriority(ac.getVtnSetVlanPcpAction());
-        return new org.opendaylight.vtn.manager.flow.action.
-            SetVlanPcpAction((byte)pri);
-    }
 
     /**
      * {@inheritDoc}
@@ -252,31 +221,10 @@ public final class VTNSetVlanPcpAction extends FlowFilterAction {
      * {@inheritDoc}
      */
     @Override
-    public FlowAction toFlowAction() {
-        return new org.opendaylight.vtn.manager.flow.action.
-            SetVlanPcpAction((byte)priority);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public VTNSetVlanPcpAction toFlowFilterAction(VtnAction vact, Integer ord)
         throws RpcException {
         VtnSetVlanPcpActionCase ac = cast(VtnSetVlanPcpActionCase.class, vact);
         return new VTNSetVlanPcpAction(ac, ord);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public VTNSetVlanPcpAction toFlowFilterAction(FlowAction fact, int ord)
-        throws RpcException {
-        org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction act =
-            cast(org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction.class,
-                 fact);
-        return new VTNSetVlanPcpAction(act, ord);
     }
 
     /**

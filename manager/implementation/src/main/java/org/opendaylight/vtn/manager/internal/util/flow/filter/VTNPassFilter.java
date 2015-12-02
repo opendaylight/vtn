@@ -15,9 +15,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
-import org.opendaylight.vtn.manager.flow.filter.PassFilter;
-
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.vnode.VNodeIdentifier;
 
@@ -64,19 +61,6 @@ public final class VTNPassFilter extends VTNFlowFilter {
         }
     }
 
-    /**
-     * Construct a new instance.
-     *
-     * @param idx     An index number to be assigned to the flow filter.
-     * @param filter  A {@link FlowFilter} instance which contains flow filter
-     *                configuration.
-     * @throws RpcException
-     *    {@code vffc} contains invalid value.
-     */
-    VTNPassFilter(int idx, FlowFilter filter) throws RpcException {
-        super(idx, filter);
-    }
-
     // VTNFlowFilter
 
     /**
@@ -93,17 +77,6 @@ public final class VTNPassFilter extends VTNFlowFilter {
      */
     @Override
     public void canSet(VNodeIdentifier<?> ident) {
-    }
-
-    /**
-     * Return a {@link org.opendaylight.vtn.manager.flow.filter.FilterType}
-     * instance which indicates the type of this flow filter.
-     *
-     * @return  A {@link PassFilter} instance.
-     */
-    @Override
-    protected PassFilter getFilterType() {
-        return new PassFilter();
     }
 
     /**

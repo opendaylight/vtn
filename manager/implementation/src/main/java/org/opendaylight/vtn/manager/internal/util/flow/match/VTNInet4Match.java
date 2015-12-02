@@ -8,17 +8,13 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow.match;
 
-import java.net.InetAddress;
-
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.opendaylight.vtn.manager.flow.cond.Inet4Match;
 import org.opendaylight.vtn.manager.util.EtherTypes;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.IpNetwork;
-import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
@@ -86,19 +82,6 @@ public final class VTNInet4Match extends VTNInetMatch {
     }
 
     /**
-     * Construct a new instance from the given {@link Inet4Match} instance.
-     *
-     * @param imatch  An {@link Inet4Match} instance.
-     * @throws NullPointerException
-     *    {@code imatch} is {@code null}.
-     * @throws RpcException
-     *    {@code imatch} contains invalid value.
-     */
-    public VTNInet4Match(Inet4Match imatch) throws RpcException {
-        super(imatch);
-    }
-
-    /**
      * Construct a new instance from the given {@link VtnInetMatchFields}
      * instance.
      *
@@ -159,9 +142,7 @@ public final class VTNInet4Match extends VTNInetMatch {
             return new Ip4Network(value);
         } catch (RuntimeException e) {
             String msg = MiscUtils.joinColon(ipp4, e.getMessage());
-            RpcException re = invalidInetAddress(msg, desc);
-            re.initCause(e);
-            throw re;
+            throw invalidInetAddress(msg, desc, e);
         }
     }
 
@@ -223,42 +204,6 @@ public final class VTNInet4Match extends VTNInetMatch {
     @Override
     public Class<Ip4Network> getIpNetworkType() {
         return Ip4Network.class;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Inet4Match toInetMatch() {
-        InetAddress srcAddr;
-        Short srcSuff;
-        IpNetwork ipn = getSourceNetwork();
-        if (ipn == null) {
-            srcAddr = null;
-            srcSuff = null;
-        } else {
-            srcAddr = ipn.getInetAddress();
-            srcSuff = (ipn.isAddress())
-                ? null
-                : Short.valueOf((short)ipn.getPrefixLength());
-        }
-
-        InetAddress dstAddr;
-        Short dstSuff;
-        ipn = getDestinationNetwork();
-        if (ipn == null) {
-            dstAddr = null;
-            dstSuff = null;
-        } else {
-            dstAddr = ipn.getInetAddress();
-            dstSuff = (ipn.isAddress())
-                ? null
-                : Short.valueOf((short)ipn.getPrefixLength());
-        }
-
-        Short proto = getProtocol();
-        Byte d = NumberUtils.toByte(getDscp());
-        return new Inet4Match(srcAddr, srcSuff, dstAddr, dstSuff, proto, d);
     }
 
     /**

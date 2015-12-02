@@ -18,14 +18,10 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import org.opendaylight.vtn.manager.flow.action.DlAddrAction;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
-import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-
-import org.opendaylight.controller.sal.utils.Status;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.VtnDladdrActionFields;
 
@@ -72,25 +68,6 @@ public abstract class VTNDlAddrAction extends FlowFilterAction {
     protected VTNDlAddrAction(EtherAddress addr, Integer ord) {
         super(ord);
         address = addr;
-    }
-
-    /**
-     * Construct a new instance.
-     *
-     * @param act  A {@link DlAddrAction} instance.
-     * @param ord  An integer which determines the order of flow actions
-     *             in a flow entry.
-     * @throws RpcException  An invalid argument is specified.
-     */
-    protected VTNDlAddrAction(DlAddrAction act, int ord)
-        throws RpcException {
-        super(Integer.valueOf(ord));
-        Status st = act.getValidationStatus();
-        if (st != null) {
-            throw new RpcException(RpcErrorTag.BAD_ELEMENT, st);
-        }
-        address = act.getEtherAddress();
-        verify();
     }
 
     /**

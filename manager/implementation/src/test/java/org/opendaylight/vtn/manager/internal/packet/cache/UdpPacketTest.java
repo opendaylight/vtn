@@ -278,7 +278,8 @@ public class UdpPacketTest extends TestBase {
 
         // Create a broken UDP packet.
         UDP pkt = new UDP();
-        Map<String, byte[]> header = getFieldValue(
+        @SuppressWarnings("unchecked")
+        Map<String, byte[]> header = (Map<String, byte[]>)getFieldValue(
             pkt, Packet.class, Map.class, "hdrFieldsMap");
         header.put("Length", new byte[]{0});
         pkt.setChecksum((short)1);
@@ -335,8 +336,8 @@ public class UdpPacketTest extends TestBase {
         byte[] large = new byte[2048];
         Arrays.fill(large, (byte)0xff);
 
-        byte[] srcIp = {(byte)172, (byte)16, (byte)253, (byte)150};
-        byte[] dstIp = {(byte)192, (byte)168, (byte)3, (byte)200};
+        Ip4Network srcIp = new Ip4Network("172.16.253.150");
+        Ip4Network dstIp = new Ip4Network("192.168.3.200");
         int src = 54321;
         int dst = 7777;
 
@@ -379,11 +380,11 @@ public class UdpPacketTest extends TestBase {
 
         // Change IP addresses.
         pkt.setRawPayload(empty);
-        srcIp = new byte[]{(byte)123, (byte)89, (byte)118, (byte)91};
-        dstIp = new byte[]{(byte)100, (byte)200, (byte)73, (byte)183};
-        inet4.setSourceAddress(new Ip4Network(srcIp));
+        srcIp = new Ip4Network("123.89.118.91");
+        dstIp = new Ip4Network("100.200.73.183");
+        inet4.setSourceAddress(srcIp);
         assertTrue(inet4.isAddressModified());
-        inet4.setDestinationAddress(new Ip4Network(dstIp));
+        inet4.setDestinationAddress(dstIp);
         assertTrue(inet4.isAddressModified());
 
         list.clear();
@@ -437,7 +438,7 @@ public class UdpPacketTest extends TestBase {
      * @param udp  A {@link UDP} instance.
      * @return  An {@link IPv4} instance.
      */
-    private IPv4 createIPv4(byte[] src, byte[] dst, UDP udp) {
+    private IPv4 createIPv4(Ip4Network src, Ip4Network dst, UDP udp) {
         return createIPv4(src, dst, InetProtocols.UDP.shortValue(), (byte)0,
                           udp);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -10,7 +10,6 @@ package org.opendaylight.vtn.manager.internal.util.flow.match;
 
 import java.util.ArrayList;
 
-import org.opendaylight.vtn.manager.flow.cond.IcmpMatch;
 import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.internal.util.packet.IcmpHeader;
@@ -177,14 +176,6 @@ public final class IcmpMatchParams extends Layer4MatchParams<IcmpMatchParams>
      * {@inheritDoc}
      */
     @Override
-    public IcmpMatch toL4Match() {
-        return new IcmpMatch(icmpType, icmpCode);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public VtnIcmpMatch toVtnLayer4Match(boolean comp) {
         return new VtnIcmpMatchBuilder().
             setIcmpType(icmpType).
@@ -197,7 +188,7 @@ public final class IcmpMatchParams extends Layer4MatchParams<IcmpMatchParams>
      */
     @Override
     public VTNIcmpMatch toVTNLayer4Match() throws Exception {
-        return new VTNIcmpMatch(toL4Match());
+        return new VTNIcmpMatch(toVtnLayer4Match(false));
     }
 
     /**
@@ -252,10 +243,6 @@ public final class IcmpMatchParams extends Layer4MatchParams<IcmpMatchParams>
     public void verify(VTNLayer4Match l4m) throws Exception {
         VTNIcmpMatch imatch = verifyValues(l4m);
         checkInetProtocol(imatch);
-
-        IcmpMatch im = imatch.toL4Match();
-        assertEquals(icmpType, im.getType());
-        assertEquals(icmpCode, im.getCode());
 
         VtnLayer4Match vl4 = imatch.toVtnLayer4Match();
         if (vl4 == null) {

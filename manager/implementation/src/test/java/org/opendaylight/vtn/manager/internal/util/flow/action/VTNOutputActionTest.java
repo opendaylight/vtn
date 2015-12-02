@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -18,7 +18,6 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
@@ -42,7 +41,6 @@ public class VTNOutputActionTest extends TestBase {
      *   <li>{@link VTNOutputAction#getOutputPort()}</li>
      *   <li>{@link VTNOutputAction#set(VtnFlowActionBuilder)}</li>
      *   <li>{@link VTNOutputAction#set(ActionBuilder)}</li>
-     *   <li>{@link VTNOutputAction#toFlowAction(VtnAction)}</li>
      *   <li>{@link VTNOutputAction#toVtnAction(Action)}</li>
      *   <li>{@link VTNOutputAction#getDescription(Action)}</li>
      *   <li>{@link VTNFlowAction#toVtnFlowActionBuilder(Integer)}</li>
@@ -95,12 +93,6 @@ public class VTNOutputActionTest extends TestBase {
                 ActionBuilder mbuilder = va.toActionBuilder(order);
                 assertEquals(order, mbuilder.getOrder());
                 assertEquals(mact, mbuilder.getAction());
-            }
-
-            try {
-                va.toFlowAction((VtnAction)null);
-                unexpected();
-            } catch (IllegalStateException e) {
             }
 
             try {

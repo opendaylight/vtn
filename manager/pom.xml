@@ -40,7 +40,6 @@
     <module>api</module>
     <module>implementation</module>
     <module>neutron</module>
-    <module>northbound</module>
 
     <!-- Karaf distribution -->
     <module>features</module>
@@ -65,7 +64,8 @@
       </activation>
       <modules>
         <!-- Run integration tests if integrationtests profile is active. -->
-        <module>it</module>
+        <!-- TODO: IT will be enabled again when it is migrated to MD-SAL -->
+        <!-- <module>it</module> -->
       </modules>
     </profile>
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,7 +8,13 @@
 
 package org.opendaylight.vtn.manager.internal.util.pathpolicy;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -16,32 +22,25 @@ import org.junit.Test;
 
 import org.mockito.Mockito;
 
-import org.opendaylight.vtn.manager.PathCost;
-import org.opendaylight.vtn.manager.PathPolicy;
-import org.opendaylight.vtn.manager.PortLocation;
-import org.opendaylight.vtn.manager.SwitchPort;
-
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
-import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
+import org.opendaylight.vtn.manager.internal.TestVtnPortDesc;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-
-import org.opendaylight.controller.sal.core.Node;
-import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier.IdentifiableItem;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier.Item;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier.PathArgument;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.SetPathPolicyInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.VtnPathCostConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.VtnPathPolicies;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.VtnPathPoliciesBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.VtnPathPolicyConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicy;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicyBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicyKey;
@@ -50,7 +49,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vt
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policy.config.VtnPathCostKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateOperationType;
 
 /**
  * JUnit test for {@link PathPolicyUtils}.
@@ -72,8 +70,9 @@ public class PathPolicyUtilsTest extends TestBase {
      * <ul>
      *   <li>{@link PathPolicyUtils#getNotFoundException(int)}</li>
      *   <li>{@link PathPolicyUtils#getNotFoundException(int, Throwable)}</li>
-     *   <li>{@link PathPolicyUtils#getInvalidPolicyIdException(Integer)}</li>
-     *   <li>{@link PathPolicyUtils#getInvalidDefaultCostException(Long)}</li>
+     *   <li>{@link PathPolicyUtils#getInvalidPolicyIdException(Integer, Throwable)}</li>
+     *   <li>{@link PathPolicyUtils#getInvalidDefaultCostException(Long, Throwable)}</li>
+     *   <li>{@link PathPolicyUtils#getInvalidCostException(Long, Throwable)}</li>
      *   <li>{@link PathPolicyUtils#getNullPolicyIdException()}</li>
      *   <li>{@link PathPolicyUtils#getNullPathCostException()}</li>
      *   <li>{@link PathPolicyUtils#getDuplicatePortException(Object)}</li>
@@ -99,22 +98,32 @@ public class PathPolicyUtilsTest extends TestBase {
             assertEquals(msg, e.getMessage());
         }
 
-        // getInvalidPolicyIdException(int)
+        // getInvalidPolicyIdException(int, Throwable)
         for (int i = PATH_POLICY_MAX + 1; i < PATH_POLICY_MAX + 10; i++) {
-            RpcException e = PathPolicyUtils.getInvalidPolicyIdException(i);
+            RpcException e =
+                PathPolicyUtils.getInvalidPolicyIdException(i, cause);
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-            assertEquals(null, e.getCause());
+            assertEquals(cause, e.getCause());
             String msg = "Invalid path policy ID: " + i;
             assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
             assertEquals(msg, e.getMessage());
         }
 
-        // getInvalidDefaultCostException(Long)
         for (long c = -5L; c < 0; c++) {
-            RpcException e = PathPolicyUtils.getInvalidDefaultCostException(c);
+            // getInvalidDefaultCostException(Long, Throwable)
+            RpcException e =
+                PathPolicyUtils.getInvalidDefaultCostException(c, cause);
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-            assertEquals(null, e.getCause());
+            assertEquals(cause, e.getCause());
             String msg = "Invalid default cost: " + c;
+            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
+
+            // getInvalidCostException(Long, Throwable)
+            e = PathPolicyUtils.getInvalidCostException(c, cause);
+            assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+            assertEquals(cause, e.getCause());
+            msg = "Invalid cost value: " + c;
             assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
             assertEquals(msg, e.getMessage());
         }
@@ -134,10 +143,9 @@ public class PathPolicyUtilsTest extends TestBase {
         assertEquals("Path cost cannot be null", e.getMessage());
 
         // getDuplicatePortException()
-        SalPort sport = new SalPort(1L, 2L);
         Object[] locs = {
-            new PortLocation(sport.getAdNodeConnector(), null),
             "openflow:1,,,,",
+            "openflow:123,4,port-4",
         };
         for (Object loc: locs) {
             e = PathPolicyUtils.getDuplicatePortException(loc);
@@ -149,7 +157,7 @@ public class PathPolicyUtilsTest extends TestBase {
     }
 
     /**
-     * Test case for {@link PathPolicyUtils#getIdentifier(org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.VtnPathPolicyConfig)}
+     * Test case for {@link PathPolicyUtils#getIdentifier(VtnPathPolicyConfig)}
      * and {@link PathPolicyUtils#getIdentifier(Integer)}.
      */
     @Test
@@ -183,7 +191,8 @@ public class PathPolicyUtilsTest extends TestBase {
     }
 
     /**
-     * Test case for {@link PathPolicyUtils#getIdentifier(int, org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.VtnPathCostConfig)}
+     * Test case for
+     * {@link PathPolicyUtils#getIdentifier(int, VtnPathCostConfig)}
      * and {@link PathPolicyUtils#getIdentifier(Integer, VtnPortDesc)}.
      */
     @Test
@@ -234,82 +243,218 @@ public class PathPolicyUtilsTest extends TestBase {
     }
 
     /**
-     * Test case for {@link PathPolicyUtils#toPathCost(VtnPathCost)}.
+     * Test case for
+     * {@link PathPolicyUtils#setId(VtnPathPolicyBuilder, Integer)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void testToPathCost() {
-        VtnPortDesc[] invalidDescs = {
-            null,
-            new VtnPortDesc("unknown,,"),
-            new VtnPortDesc("openflow:bad,1,?"),
-        };
-        for (VtnPortDesc vdesc: invalidDescs) {
-            VtnPathCost vpc = new VtnPathCostBuilder().setPortDesc(vdesc).
-                build();
-            assertEquals(null, PathPolicyUtils.toPathCost(vpc));
+    public void testSetId() throws Exception {
+        VtnPathPolicyBuilder builder = new VtnPathPolicyBuilder();
+        for (int id = PATH_POLICY_MIN; id <= PATH_POLICY_MAX; id++) {
+            PathPolicyUtils.setId(builder, id);
+            assertEquals(id, builder.getId().intValue());
         }
 
-        Long[] costs = {
-            null, Long.valueOf(1L), Long.valueOf(2L), Long.valueOf(100L),
-            Long.valueOf(12345678L), Long.valueOf(Long.MAX_VALUE),
+        int[] invalid = {
+            Integer.MIN_VALUE, -1000, -1, 0,
+            PATH_POLICY_MAX + 1, PATH_POLICY_MAX + 2,
+            PATH_POLICY_MAX + 1000, Integer.MAX_VALUE,
+        };
+        for (int id: invalid) {
+            try {
+                PathPolicyUtils.setId(builder, id);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                Throwable t = e.getCause();
+                assertTrue("Unexpected cause: " + t,
+                           t instanceof IllegalArgumentException);
+                String msg = "Invalid path policy ID: " + id;
+                assertEquals(msg, e.getMessage());
+            }
+        }
+
+        try {
+            PathPolicyUtils.setId(builder, (Integer)null);
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
+            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+            assertEquals(null, e.getCause());
+            assertEquals("Path policy ID cannot be null", e.getMessage());
+        }
+    }
+
+    /**
+     * Test case for
+     * {@link PathPolicyUtils#setDefaultCost(VtnPathPolicyBuilder, Long)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testSetDefaultCost() throws Exception {
+        Long[] defCosts = {
+            null, 0L, 1L, 12345L, 34567L, 99999999L, Long.MAX_VALUE,
         };
 
-        long[] dpids = {
-            Long.MIN_VALUE, -0x123456789abcdefL, -1L,
-            0L, 1L, 10L, 12345L, 0xabcdef1234567L, Long.MAX_VALUE,
-        };
-        String[] ports = {
-            null, "1", "2", "3",
-        };
-        String[] names = {
-            null, "port-1", "port-2", "port-3",
-        };
+        VtnPathPolicyBuilder builder = new VtnPathPolicyBuilder();
+        for (Long cost: defCosts) {
+            PathPolicyUtils.setDefaultCost(builder, cost);
+            assertEquals(cost, builder.getDefaultCost());
+        }
 
-        for (long dpid: dpids) {
-            SalNode snode = new SalNode(dpid);
-            Node node = snode.getAdNode();
-            for (String port: ports) {
-                String p;
-                String type;
-                if (port == null) {
-                    p = "";
-                    type = null;
-                } else {
-                    p = port;
-                    type = NodeConnectorIDType.OPENFLOW;
-                }
-                for (String name: names) {
-                    String n = (name == null) ? "" : name;
-                    String pd = joinStrings(null, null, ",", snode, p, n);
-                    VtnPortDesc vdesc = new VtnPortDesc(pd);
-                    SwitchPort swport = (port == null && name == null)
-                        ? null
-                        : new SwitchPort(name, type, port);
-                    PortLocation ploc = new PortLocation(node, swport);
-                    for (Long cost: costs) {
-                        VtnPathCost vpc = new VtnPathCostBuilder().
-                            setPortDesc(vdesc).setCost(cost).build();
-                        long c = (cost == null) ? 1L : cost.longValue();
-                        PathCost expected = new PathCost(ploc, c);
-                        PathCost pc = PathPolicyUtils.toPathCost(vpc);
-                        assertEquals(expected, pc);
-                    }
-                }
+        long[] invalid = {
+            Long.MIN_VALUE, -100000L, -2L, -1L,
+        };
+        for (long cost: invalid) {
+            try {
+                PathPolicyUtils.setDefaultCost(builder, cost);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                String msg = "Invalid default cost: " + cost;
+                assertEquals(msg, e.getMessage());
             }
         }
     }
 
     /**
-     * Test case for {@link PathPolicyUtils#toPathPolicy(VtnPathPolicy)}.
+     * Test case for
+     * {@link PathPolicyUtils#setCost(VtnPathCostBuilder, Long)}.
      *
      * @throws Exception  An error occurred.
      */
     @Test
-    public void testToPathPolicy() throws Exception {
+    public void testSetCost() throws Exception {
+        Long[] costs = {
+            1L, 2L, 3124L, 9876543L, Long.MAX_VALUE,
+        };
+
+        VtnPathCostBuilder builder = new VtnPathCostBuilder();
+        for (Long cost: costs) {
+            PathPolicyUtils.setCost(builder, cost);
+            assertEquals(cost, builder.getCost());
+        }
+
+        // null should be treated as a default value.
+        PathPolicyUtils.setCost(builder, (Long)null);
+        assertEquals(1L, builder.getCost().longValue());
+
+        long[] invalid = {
+            Long.MIN_VALUE, -100000L, -3333L, -2L, -1L, 0L,
+        };
+        for (long cost: invalid) {
+            try {
+                PathPolicyUtils.setCost(builder, cost);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                String msg = "Invalid cost value: " + cost;
+                assertEquals(msg, e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Test case for
+     * {@link PathPolicyUtils#setPortDesc(VtnPathCostBuilder, VtnPortDesc)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testSetPortDesc() throws Exception {
+        VtnPortDesc[] vdescs = {
+            new VtnPortDesc("openflow:1,,"),
+            new VtnPortDesc("openflow:23,45,port-45"),
+            new VtnPortDesc("openflow:18446744073709551615,,port-1"),
+        };
+
+        VtnPathCostBuilder builder = new VtnPathCostBuilder();
+        for (VtnPortDesc vdesc: vdescs) {
+            PathPolicyUtils.setPortDesc(builder, vdesc);
+            assertEquals(vdesc, builder.getPortDesc());
+        }
+
+        // Empty vtn-port-desc.
+        RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
+        String msg = "vtn-port-desc cannot be null";
+        VtnPortDesc[] empty = {
+            null,
+            new TestVtnPortDesc(),
+        };
+
+        for (VtnPortDesc vdesc: empty) {
+            try {
+                PathPolicyUtils.setPortDesc(builder, vdesc);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
+            }
+        }
+
+        // Invalid node-id.
+        String[] badNodes = {
+            "",
+            "openflow:1:2",
+            "openflow:18446744073709551616",
+            "unknown:1",
+        };
+        etag = RpcErrorTag.BAD_ELEMENT;
+        for (String node: badNodes) {
+            VtnPortDesc vdesc = new TestVtnPortDesc(node + ",,");
+            try {
+                PathPolicyUtils.setPortDesc(builder, vdesc);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                msg = "Invalid vtn-port-desc: " + vdesc.getValue() +
+                    ": Invalid node ID: " + node;
+                assertEquals(msg, e.getMessage());
+                Throwable t = e.getCause();
+                assertTrue("Unexpected cause: " + t,
+                           t instanceof RpcException);
+            }
+        }
+
+        // Invalid format.
+        VtnPortDesc[] badFormats = {
+            new TestVtnPortDesc(",2"),
+            new TestVtnPortDesc("unknown:1,"),
+            new TestVtnPortDesc("openflow:1"),
+            new TestVtnPortDesc("openflow:1,2"),
+        };
+        for (VtnPortDesc vdesc: badFormats) {
+            try {
+                PathPolicyUtils.setPortDesc(builder, vdesc);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                msg = "Invalid vtn-port-desc format: " + vdesc.getValue();
+                assertEquals(msg, e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Test case for
+     * {@link PathPolicyUtils#newBuilder(VtnPathPolicyConfig)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testNewPolicyBuilder() throws Exception {
         // Create a list of VtnPathCost.
+        List<VtnPathCost> vpcomplete = new ArrayList<>();
         List<VtnPathCost> vpcosts = new ArrayList<>();
-        List<VtnPathCost> vpcosts1 = new ArrayList<>();
-        List<PathCost> pcosts = new ArrayList<>();
         long[] dpids = {
             Long.MIN_VALUE, -1234567L,  -1L,
             1L, 0xabcdef1234567L, Long.MAX_VALUE,
@@ -321,76 +466,258 @@ public class PathPolicyUtilsTest extends TestBase {
             null, "port-1", "port-10",
         };
 
-        // This VtnPathCost should be ignored.
-        vpcosts.add(new VtnPathCostBuilder().setCost(Long.valueOf(1L)).
-                    build());
-
         long cost = 0;
         for (long dpid: dpids) {
             SalNode snode = new SalNode(dpid);
-            Node node = snode.getAdNode();
             for (String port: ports) {
-                String p;
-                String type;
-                if (port == null) {
-                    p = "";
-                    type = null;
-                } else {
-                    p = port;
-                    type = NodeConnectorIDType.OPENFLOW;
-                }
+                String p = (port == null) ? "" : port;
                 for (String name: names) {
                     String n = (name == null) ? "" : name;
                     String pd = joinStrings(null, null, ",", snode, p, n);
                     VtnPortDesc vdesc = new VtnPortDesc(pd);
-                    SwitchPort swport = (port == null && name == null)
-                        ? null
-                        : new SwitchPort(name, type, port);
-                    PortLocation ploc = new PortLocation(node, swport);
                     Long c = (cost == 0) ? null : Long.valueOf(cost);
                     VtnPathCost vpc = new VtnPathCostBuilder().
                         setPortDesc(vdesc).setCost(c).build();
                     vpcosts.add(vpc);
-                    vpcosts1.add(vpc);
 
-                    PathCost pc = new PathCost(ploc, Math.max(cost, 1L));
-                    pcosts.add(pc);
+                    if (cost == 0) {
+                        vpc = new VtnPathCostBuilder().setPortDesc(vdesc).
+                            setCost(1L).build();
+                    }
+                    vpcomplete.add(vpc);
                     cost++;
                 }
             }
         }
 
         List<Integer> ids = new ArrayList<>();
-        ids.add(null);
-        for (int id = PATH_POLICY_MIN; id <= PATH_POLICY_MAX; id++) {
-            ids.add(Integer.valueOf(id));
+        List<Integer> badIds = new ArrayList<>();
+        badIds.add(null);
+        final int delta = 5;
+        for (int i = PATH_POLICY_MIN - delta; i <= PATH_POLICY_MAX + delta;
+             i++) {
+            Integer id = Integer.valueOf(i);
+            if (i >= PATH_POLICY_MIN && i <= PATH_POLICY_MAX) {
+                ids.add(id);
+            } else {
+                badIds.add(id);
+            }
         }
 
         Long[] defCosts = {
-            null, Long.valueOf(1L), Long.valueOf(777L), Long.valueOf(3333L),
-            Long.valueOf(9999999L), Long.valueOf(Long.MAX_VALUE),
+            null, 1L, 777L, 3333L, 9999999L, Long.MAX_VALUE,
         };
 
         for (Integer id: ids) {
             for (Long defCost: defCosts) {
-                long defc = (defCost == null)
-                    ? PathPolicy.COST_UNDEF : defCost.longValue();
-
-                VtnPathPolicy vpp = new VtnPathPolicyBuilder().
-                    setId(id).setDefaultCost(defCost).build();
-                PathPolicy expected = new PathPolicy(id, defc, null);
-                assertEquals(expected, PathPolicyUtils.toPathPolicy(vpp));
-
-                vpp = new VtnPathPolicyBuilder().
+                VtnPathPolicyConfig vppc = new VtnPathPolicyBuilder().
+                    setId(id).setDefaultCost(defCost).setVtnPathCost(vpcosts).
+                    build();
+                VtnPathPolicy vpp = PathPolicyUtils.newBuilder(vppc).build();
+                VtnPathPolicy expected = new VtnPathPolicyBuilder().
                     setId(id).setDefaultCost(defCost).
-                    setVtnPathCost(new ArrayList<VtnPathCost>()).build();
-                assertEquals(expected, PathPolicyUtils.toPathPolicy(vpp));
+                    setVtnPathCost(vpcomplete).build();
+                assertEquals(expected, vpp);
 
-                vpp = new VtnPathPolicyBuilder().
-                    setId(id).setDefaultCost(defCost).setVtnPathCost(vpcosts1)
-                    .build();
-                expected = new PathPolicy(id, defc, pcosts);
-                assertEquals(expected, PathPolicyUtils.toPathPolicy(vpp));
+                // Null vtn-path-cost list.
+                vppc = new VtnPathPolicyBuilder().
+                    setId(id).setDefaultCost(defCost).build();
+                vpp = PathPolicyUtils.newBuilder(vppc).build();
+                expected = new VtnPathPolicyBuilder().
+                    setId(id).setDefaultCost(defCost).build();
+                assertEquals(expected, vpp);
+
+                // Empty vtn-path-cost-list.
+                vppc = new VtnPathPolicyBuilder().
+                    setId(id).setDefaultCost(defCost).
+                    setVtnPathCost(Collections.<VtnPathCost>emptyList()).
+                    build();
+                vpp = PathPolicyUtils.newBuilder(vppc).build();
+                assertEquals(expected, vpp);
+            }
+        }
+
+        // Invalid default cost test.
+        Long[] badDefCosts = {
+            Long.MIN_VALUE, Long.MIN_VALUE + 1, -1000000000000L, -99999999L,
+            -10L, -5L, -2L, -1L,
+        };
+        RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
+
+        for (Long defCost: badDefCosts) {
+            VtnPathPolicyConfig vppc = mock(VtnPathPolicyConfig.class);
+            when(vppc.getId()).thenReturn(1);
+            when(vppc.getDefaultCost()).thenReturn(defCost);
+            when(vppc.getVtnPathCost()).thenReturn((List<VtnPathCost>)null);
+            try {
+                PathPolicyUtils.newBuilder(vppc).build();
+                unexpected();
+            } catch (RpcException e) {
+                String msg = "Invalid default cost: " + defCost;
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
+                Throwable t = e.getCause();
+                assertTrue("Unexpected cause: " + t,
+                           t instanceof IllegalArgumentException);
+            }
+        }
+
+        // Invalid path policy ID test.
+        Integer validId = Integer.valueOf(PATH_POLICY_MAX);
+        long defc = 0L;
+        for (Integer badId: badIds) {
+            VtnPathPolicyConfig vppc = mock(VtnPathPolicyConfig.class);
+            when(vppc.getId()).thenReturn(badId);
+            when(vppc.getDefaultCost()).thenReturn(0L);
+            when(vppc.getVtnPathCost()).thenReturn((List<VtnPathCost>)null);
+            try {
+                PathPolicyUtils.newBuilder(vppc).build();
+                unexpected();
+            } catch (RpcException e) {
+                Throwable t = e.getCause();
+                if (badId == null) {
+                    assertEquals(null, t);
+                    assertEquals("Path policy ID cannot be null",
+                                 e.getMessage());
+                    assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
+                } else {
+                    assertTrue("Unexpected cause: " + t,
+                               t instanceof IllegalArgumentException);
+                    assertEquals("Invalid path policy ID: " + badId,
+                                 e.getMessage());
+                    assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                }
+
+                assertEquals(vtag, e.getVtnErrorTag());
+            }
+        }
+
+        // Dupliacte vtn-port-desc test.
+        for (VtnPathCost vpc: vpcosts) {
+            List<VtnPathCost> badCosts = new ArrayList<>(vpcosts);
+            VtnPortDesc vdesc = vpc.getPortDesc();
+            VtnPathCost dup = new VtnPathCostBuilder().
+                setPortDesc(vdesc).setCost(12345678L).build();
+            badCosts.add(dup);
+
+            VtnPathPolicyConfig vppc = mock(VtnPathPolicyConfig.class);
+            when(vppc.getId()).thenReturn(1);
+            when(vppc.getDefaultCost()).thenReturn(0L);
+            when(vppc.getVtnPathCost()).thenReturn(badCosts);
+            try {
+                PathPolicyUtils.newBuilder(vppc).build();
+                unexpected();
+            } catch (RpcException e) {
+                String msg = "Duplicate port descriptor: " + vdesc.getValue();
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
+                assertEquals(null, e.getCause());
+            }
+        }
+    }
+
+    /**
+     * Test case for
+     * {@link PathPolicyUtils#newBuilder(VtnPathCostConfig)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testNewCostBuilder() throws Exception {
+        long[] dpids = {
+            Long.MIN_VALUE, -1234567L,  -1L,
+            1L, 0xabcdef1234567L, Long.MAX_VALUE,
+        };
+        String[] ports = {
+            null, "1", "10",
+        };
+        String[] names = {
+            null, "port-1", "port-10",
+        };
+
+        long cost = 0;
+        for (long dpid: dpids) {
+            SalNode snode = new SalNode(dpid);
+            for (String port: ports) {
+                String p = (port == null) ? "" : port;
+                for (String name: names) {
+                    String n = (name == null) ? "" : name;
+                    String pd = joinStrings(null, null, ",", snode, p, n);
+                    VtnPortDesc vdesc = new VtnPortDesc(pd);
+                    Long c = (cost == 0) ? null : Long.valueOf(cost);
+                    VtnPathCost expected = new VtnPathCostBuilder().
+                        setPortDesc(vdesc).setCost(c).build();
+                    VtnPathCostConfig vpcc = expected;
+                    if (cost == 0) {
+                        expected = new VtnPathCostBuilder(expected).
+                            setCost(1L).build();
+                    }
+
+                    VtnPathCost vpc = PathPolicyUtils.newBuilder(vpcc).build();
+                    assertEquals(expected, vpc);
+                    cost++;
+                }
+            }
+        }
+
+        // Null configuration.
+        RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
+        String msg = "Path cost cannot be null";
+        VtnPathCostConfig vpcc = null;
+        try {
+            PathPolicyUtils.newBuilder(vpcc);
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(etag, e.getErrorTag());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
+            assertEquals(null, e.getCause());
+        }
+
+        // Invalid cost.
+        etag = RpcErrorTag.BAD_ELEMENT;
+        Long[] invalid = {
+            Long.MIN_VALUE, -99999L, -222L, -2L, -1L, 0L,
+        };
+        for (Long c: invalid) {
+            VtnPortDesc vdesc = new VtnPortDesc("openflow:1,2,");
+            vpcc = mock(VtnPathCostConfig.class);
+            when(vpcc.getCost()).thenReturn(c);
+            when(vpcc.getPortDesc()).thenReturn(vdesc);
+            try {
+                PathPolicyUtils.newBuilder(vpcc);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                msg = "Invalid cost value: " + c;
+                assertEquals(msg, e.getMessage());
+            }
+        }
+
+        // Invalid vtn-port-desc format.
+        VtnPortDesc[] badFormats = {
+            new TestVtnPortDesc(",2"),
+            new TestVtnPortDesc("unknown:1,"),
+            new TestVtnPortDesc("openflow:1"),
+            new TestVtnPortDesc("openflow:1,2"),
+        };
+        for (VtnPortDesc vdesc: badFormats) {
+            vpcc = mock(VtnPathCostConfig.class);
+            when(vpcc.getCost()).thenReturn(1L);
+            when(vpcc.getPortDesc()).thenReturn(vdesc);
+            try {
+                PathPolicyUtils.newBuilder(vpcc);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                msg = "Invalid vtn-port-desc format: " + vdesc.getValue();
+                assertEquals(msg, e.getMessage());
             }
         }
     }
@@ -409,28 +736,25 @@ public class PathPolicyUtilsTest extends TestBase {
 
         // Root container does not exist.
         VtnPathPolicies policies = null;
-        ReadTransaction rtx = Mockito.mock(ReadTransaction.class);
-        Mockito.when(rtx.read(store, path)).
-            thenReturn(getReadResult(policies));
+        ReadTransaction rtx = mock(ReadTransaction.class);
+        when(rtx.read(store, path)).thenReturn(getReadResult(policies));
         assertTrue(PathPolicyUtils.readVtnPathPolicies(rtx).isEmpty());
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path);
+        verify(rtx).read(store, path);
 
         // No path policy is defined.
         VtnPathPoliciesBuilder builder = new VtnPathPoliciesBuilder();
         policies = builder.build();
         rtx = Mockito.mock(ReadTransaction.class);
-        Mockito.when(rtx.read(store, path)).
-            thenReturn(getReadResult(policies));
+        when(rtx.read(store, path)).thenReturn(getReadResult(policies));
         assertTrue(PathPolicyUtils.readVtnPathPolicies(rtx).isEmpty());
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path);
+        verify(rtx).read(store, path);
 
         policies = builder.setVtnPathPolicy(new ArrayList<VtnPathPolicy>()).
             build();
         rtx = Mockito.mock(ReadTransaction.class);
-        Mockito.when(rtx.read(store, path)).
-            thenReturn(getReadResult(policies));
+        when(rtx.read(store, path)).thenReturn(getReadResult(policies));
         assertTrue(PathPolicyUtils.readVtnPathPolicies(rtx).isEmpty());
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path);
+        verify(rtx).read(store, path);
 
         // Only one path policy is defined.
         VtnPathPolicy vpp = new VtnPathPolicyBuilder().setId(1).build();
@@ -438,10 +762,9 @@ public class PathPolicyUtilsTest extends TestBase {
         vpplist.add(vpp);
         policies = builder.setVtnPathPolicy(vpplist).build();
         rtx = Mockito.mock(ReadTransaction.class);
-        Mockito.when(rtx.read(store, path)).
-            thenReturn(getReadResult(policies));
+        when(rtx.read(store, path)).thenReturn(getReadResult(policies));
         assertEquals(vpplist, PathPolicyUtils.readVtnPathPolicies(rtx));
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path);
+        verify(rtx).read(store, path);
 
         // 3 path policies are defined.
         VtnPortDesc vdesc = new VtnPortDesc("openflow:1,,");
@@ -466,10 +789,9 @@ public class PathPolicyUtilsTest extends TestBase {
 
         policies = builder.setVtnPathPolicy(vpplist).build();
         rtx = Mockito.mock(ReadTransaction.class);
-        Mockito.when(rtx.read(store, path)).
-            thenReturn(getReadResult(policies));
+        when(rtx.read(store, path)).thenReturn(getReadResult(policies));
         assertEquals(vpplist, PathPolicyUtils.readVtnPathPolicies(rtx));
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path);
+        verify(rtx).read(store, path);
     }
 
     /**
@@ -506,19 +828,19 @@ public class PathPolicyUtilsTest extends TestBase {
 
         LogicalDatastoreType store = LogicalDatastoreType.OPERATIONAL;
         ReadTransaction rtx = Mockito.mock(ReadTransaction.class);
-        Mockito.when(rtx.read(store, path1)).thenReturn(getReadResult(vpp1));
-        Mockito.when(rtx.read(store, path2)).thenReturn(getReadResult(vpp2));
-        Mockito.when(rtx.read(store, path3)).thenReturn(getReadResult(vpp3));
+        when(rtx.read(store, path1)).thenReturn(getReadResult(vpp1));
+        when(rtx.read(store, path2)).thenReturn(getReadResult(vpp2));
+        when(rtx.read(store, path3)).thenReturn(getReadResult(vpp3));
 
         assertEquals(vpp1, PathPolicyUtils.readVtnPathPolicy(rtx, 1));
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path1);
-        Mockito.verify(rtx, Mockito.never()).read(store, path2);
-        Mockito.verify(rtx, Mockito.never()).read(store, path3);
+        verify(rtx).read(store, path1);
+        verify(rtx, Mockito.never()).read(store, path2);
+        verify(rtx, Mockito.never()).read(store, path3);
 
         assertEquals(vpp2, PathPolicyUtils.readVtnPathPolicy(rtx, 2));
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path1);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path2);
-        Mockito.verify(rtx, Mockito.never()).read(store, path3);
+        verify(rtx).read(store, path1);
+        verify(rtx).read(store, path2);
+        verify(rtx, Mockito.never()).read(store, path3);
 
         try {
             PathPolicyUtils.readVtnPathPolicy(rtx, 3);
@@ -531,9 +853,9 @@ public class PathPolicyUtilsTest extends TestBase {
             assertEquals(msg, e.getMessage());
         }
 
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path1);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path2);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path3);
+        verify(rtx).read(store, path1);
+        verify(rtx).read(store, path2);
+        verify(rtx).read(store, path3);
     }
 
     /**
@@ -579,13 +901,10 @@ public class PathPolicyUtilsTest extends TestBase {
         vpclist1.add(vpc13);
         VtnPathPolicy vpp1 = new VtnPathPolicyBuilder().setId(1).
             setVtnPathCost(vpclist1).setDefaultCost(100L).build();
-        Mockito.when(rtx.read(store, path1)).thenReturn(getReadResult(vpp1));
-        Mockito.when(rtx.read(store, cpath11)).
-            thenReturn(getReadResult(vpc11));
-        Mockito.when(rtx.read(store, cpath12)).
-            thenReturn(getReadResult(vpc12));
-        Mockito.when(rtx.read(store, cpath13)).
-            thenReturn(getReadResult(vpc13));
+        when(rtx.read(store, path1)).thenReturn(getReadResult(vpp1));
+        when(rtx.read(store, cpath11)).thenReturn(getReadResult(vpc11));
+        when(rtx.read(store, cpath12)).thenReturn(getReadResult(vpc12));
+        when(rtx.read(store, cpath13)).thenReturn(getReadResult(vpc13));
 
         VtnPathPolicyKey vppkey2 = new VtnPathPolicyKey(2);
         InstanceIdentifier<VtnPathPolicy> path2 = InstanceIdentifier.
@@ -613,13 +932,10 @@ public class PathPolicyUtilsTest extends TestBase {
         vpclist1.add(vpc22);
         VtnPathPolicy vpp2 = new VtnPathPolicyBuilder().setId(2).
             setVtnPathCost(vpclist2).setDefaultCost(50L).build();
-        Mockito.when(rtx.read(store, path2)).thenReturn(getReadResult(vpp2));
-        Mockito.when(rtx.read(store, cpath21)).
-            thenReturn(getReadResult(vpc21));
-        Mockito.when(rtx.read(store, cpath22)).
-            thenReturn(getReadResult(vpc22));
-        Mockito.when(rtx.read(store, cpath23)).
-            thenReturn(getReadResult(vpc23));
+        when(rtx.read(store, path2)).thenReturn(getReadResult(vpp2));
+        when(rtx.read(store, cpath21)).thenReturn(getReadResult(vpc21));
+        when(rtx.read(store, cpath22)).thenReturn(getReadResult(vpc22));
+        when(rtx.read(store, cpath23)).thenReturn(getReadResult(vpc23));
 
         VtnPathPolicyKey vppkey3 = new VtnPathPolicyKey(3);
         InstanceIdentifier<VtnPathPolicy> path3 = InstanceIdentifier.
@@ -641,97 +957,94 @@ public class PathPolicyUtilsTest extends TestBase {
         VtnPathCost vpc32 = null;
         VtnPathCost vpc33 = null;
         VtnPathPolicy vpp3 = null;
-        Mockito.when(rtx.read(store, path3)).thenReturn(getReadResult(vpp3));
-        Mockito.when(rtx.read(store, cpath31)).
-            thenReturn(getReadResult(vpc31));
-        Mockito.when(rtx.read(store, cpath32)).
-            thenReturn(getReadResult(vpc32));
-        Mockito.when(rtx.read(store, cpath33)).
-            thenReturn(getReadResult(vpc33));
+        when(rtx.read(store, path3)).thenReturn(getReadResult(vpp3));
+        when(rtx.read(store, cpath31)).thenReturn(getReadResult(vpc31));
+        when(rtx.read(store, cpath32)).thenReturn(getReadResult(vpc32));
+        when(rtx.read(store, cpath33)).thenReturn(getReadResult(vpc33));
 
         assertEquals(vpc11, PathPolicyUtils.readVtnPathCost(rtx, 1, vdesc1));
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path1);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath11);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath12);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath13);
-        Mockito.verify(rtx, Mockito.never()).read(store, path2);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath21);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath22);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath23);
-        Mockito.verify(rtx, Mockito.never()).read(store, path3);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath31);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath32);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath33);
+        verify(rtx).read(store, path1);
+        verify(rtx).read(store, cpath11);
+        verify(rtx, Mockito.never()).read(store, cpath12);
+        verify(rtx, Mockito.never()).read(store, cpath13);
+        verify(rtx, Mockito.never()).read(store, path2);
+        verify(rtx, Mockito.never()).read(store, cpath21);
+        verify(rtx, Mockito.never()).read(store, cpath22);
+        verify(rtx, Mockito.never()).read(store, cpath23);
+        verify(rtx, Mockito.never()).read(store, path3);
+        verify(rtx, Mockito.never()).read(store, cpath31);
+        verify(rtx, Mockito.never()).read(store, cpath32);
+        verify(rtx, Mockito.never()).read(store, cpath33);
 
         assertEquals(vpc12, PathPolicyUtils.readVtnPathCost(rtx, 1, vdesc2));
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path1);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath11);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath12);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath13);
-        Mockito.verify(rtx, Mockito.never()).read(store, path2);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath21);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath22);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath23);
-        Mockito.verify(rtx, Mockito.never()).read(store, path3);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath31);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath32);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath33);
+        verify(rtx).read(store, path1);
+        verify(rtx).read(store, cpath11);
+        verify(rtx).read(store, cpath12);
+        verify(rtx, Mockito.never()).read(store, cpath13);
+        verify(rtx, Mockito.never()).read(store, path2);
+        verify(rtx, Mockito.never()).read(store, cpath21);
+        verify(rtx, Mockito.never()).read(store, cpath22);
+        verify(rtx, Mockito.never()).read(store, cpath23);
+        verify(rtx, Mockito.never()).read(store, path3);
+        verify(rtx, Mockito.never()).read(store, cpath31);
+        verify(rtx, Mockito.never()).read(store, cpath32);
+        verify(rtx, Mockito.never()).read(store, cpath33);
 
         assertEquals(vpc13, PathPolicyUtils.readVtnPathCost(rtx, 1, vdesc3));
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path1);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath11);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath12);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath13);
-        Mockito.verify(rtx, Mockito.never()).read(store, path2);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath21);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath22);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath23);
-        Mockito.verify(rtx, Mockito.never()).read(store, path3);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath31);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath32);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath33);
+        verify(rtx).read(store, path1);
+        verify(rtx).read(store, cpath11);
+        verify(rtx).read(store, cpath12);
+        verify(rtx).read(store, cpath13);
+        verify(rtx, Mockito.never()).read(store, path2);
+        verify(rtx, Mockito.never()).read(store, cpath21);
+        verify(rtx, Mockito.never()).read(store, cpath22);
+        verify(rtx, Mockito.never()).read(store, cpath23);
+        verify(rtx, Mockito.never()).read(store, path3);
+        verify(rtx, Mockito.never()).read(store, cpath31);
+        verify(rtx, Mockito.never()).read(store, cpath32);
+        verify(rtx, Mockito.never()).read(store, cpath33);
 
         assertEquals(vpc21, PathPolicyUtils.readVtnPathCost(rtx, 2, vdesc1));
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path1);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath11);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath12);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath13);
-        Mockito.verify(rtx, Mockito.never()).read(store, path2);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath21);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath22);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath23);
-        Mockito.verify(rtx, Mockito.never()).read(store, path3);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath31);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath32);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath33);
+        verify(rtx).read(store, path1);
+        verify(rtx).read(store, cpath11);
+        verify(rtx).read(store, cpath12);
+        verify(rtx).read(store, cpath13);
+        verify(rtx, Mockito.never()).read(store, path2);
+        verify(rtx).read(store, cpath21);
+        verify(rtx, Mockito.never()).read(store, cpath22);
+        verify(rtx, Mockito.never()).read(store, cpath23);
+        verify(rtx, Mockito.never()).read(store, path3);
+        verify(rtx, Mockito.never()).read(store, cpath31);
+        verify(rtx, Mockito.never()).read(store, cpath32);
+        verify(rtx, Mockito.never()).read(store, cpath33);
 
         assertEquals(vpc22, PathPolicyUtils.readVtnPathCost(rtx, 2, vdesc2));
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path1);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath11);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath12);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath13);
-        Mockito.verify(rtx, Mockito.never()).read(store, path2);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath21);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath22);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath23);
-        Mockito.verify(rtx, Mockito.never()).read(store, path3);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath31);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath32);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath33);
+        verify(rtx).read(store, path1);
+        verify(rtx).read(store, cpath11);
+        verify(rtx).read(store, cpath12);
+        verify(rtx).read(store, cpath13);
+        verify(rtx, Mockito.never()).read(store, path2);
+        verify(rtx).read(store, cpath21);
+        verify(rtx).read(store, cpath22);
+        verify(rtx, Mockito.never()).read(store, cpath23);
+        verify(rtx, Mockito.never()).read(store, path3);
+        verify(rtx, Mockito.never()).read(store, cpath31);
+        verify(rtx, Mockito.never()).read(store, cpath32);
+        verify(rtx, Mockito.never()).read(store, cpath33);
 
         assertEquals(vpc23, PathPolicyUtils.readVtnPathCost(rtx, 2, vdesc3));
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path1);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath11);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath12);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath13);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path2);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath21);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath22);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath23);
-        Mockito.verify(rtx, Mockito.never()).read(store, path3);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath31);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath32);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath33);
+        verify(rtx).read(store, path1);
+        verify(rtx).read(store, cpath11);
+        verify(rtx).read(store, cpath12);
+        verify(rtx).read(store, cpath13);
+        verify(rtx).read(store, path2);
+        verify(rtx).read(store, cpath21);
+        verify(rtx).read(store, cpath22);
+        verify(rtx).read(store, cpath23);
+        verify(rtx, Mockito.never()).read(store, path3);
+        verify(rtx, Mockito.never()).read(store, cpath31);
+        verify(rtx, Mockito.never()).read(store, cpath32);
+        verify(rtx, Mockito.never()).read(store, cpath33);
 
         try {
             PathPolicyUtils.readVtnPathCost(rtx, 3, vdesc1);
@@ -744,18 +1057,18 @@ public class PathPolicyUtilsTest extends TestBase {
             assertEquals(msg, e.getMessage());
         }
 
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path1);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath11);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath12);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath13);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path2);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath21);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath22);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath23);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path3);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath31);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath32);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath33);
+        verify(rtx).read(store, path1);
+        verify(rtx).read(store, cpath11);
+        verify(rtx).read(store, cpath12);
+        verify(rtx).read(store, cpath13);
+        verify(rtx).read(store, path2);
+        verify(rtx).read(store, cpath21);
+        verify(rtx).read(store, cpath22);
+        verify(rtx).read(store, cpath23);
+        verify(rtx).read(store, path3);
+        verify(rtx).read(store, cpath31);
+        verify(rtx, Mockito.never()).read(store, cpath32);
+        verify(rtx, Mockito.never()).read(store, cpath33);
 
         try {
             PathPolicyUtils.readVtnPathCost(rtx, 3, vdesc2);
@@ -768,18 +1081,18 @@ public class PathPolicyUtilsTest extends TestBase {
             assertEquals(msg, e.getMessage());
         }
 
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path1);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath11);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath12);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath13);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path2);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath21);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath22);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath23);
-        Mockito.verify(rtx, Mockito.times(2)).read(store, path3);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath31);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath32);
-        Mockito.verify(rtx, Mockito.never()).read(store, cpath33);
+        verify(rtx).read(store, path1);
+        verify(rtx).read(store, cpath11);
+        verify(rtx).read(store, cpath12);
+        verify(rtx).read(store, cpath13);
+        verify(rtx).read(store, path2);
+        verify(rtx).read(store, cpath21);
+        verify(rtx).read(store, cpath22);
+        verify(rtx).read(store, cpath23);
+        verify(rtx, times(2)).read(store, path3);
+        verify(rtx).read(store, cpath31);
+        verify(rtx).read(store, cpath32);
+        verify(rtx, Mockito.never()).read(store, cpath33);
 
         try {
             PathPolicyUtils.readVtnPathCost(rtx, 3, vdesc3);
@@ -792,68 +1105,17 @@ public class PathPolicyUtilsTest extends TestBase {
             assertEquals(msg, e.getMessage());
         }
 
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path1);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath11);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath12);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath13);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, path2);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath21);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath22);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath23);
-        Mockito.verify(rtx, Mockito.times(3)).read(store, path3);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath31);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath32);
-        Mockito.verify(rtx, Mockito.times(1)).read(store, cpath33);
-    }
-
-    /**
-     * Test case for {@link PathPolicyUtils#createRpcInput(int)}.
-     *
-     * @throws Exception  An error occurred.
-     */
-    @Test
-    public void testCreateRpcInput() throws Exception {
-        final int delta = 5;
-        for (int i = PATH_POLICY_MIN - delta; i <= PATH_POLICY_MAX + delta;
-             i++) {
-            if (i >= PATH_POLICY_MIN && i <= PATH_POLICY_MAX) {
-                // Valid path policy ID.
-                PathPolicyConfigBuilder.Rpc input =
-                    PathPolicyUtils.createRpcInput(i);
-                SetPathPolicyInputBuilder builder = input.getBuilder();
-                assertEquals(Integer.valueOf(i), builder.getId());
-                assertEquals(null, builder.getDefaultCost());
-                assertEquals(null, builder.getVtnPathCost());
-                assertEquals(VtnUpdateOperationType.ADD,
-                             builder.getOperation());
-                assertEquals(Boolean.TRUE, builder.isPresent());
-            } else {
-                // Invalid path policy ID.
-                try {
-                    PathPolicyUtils.createRpcInput(i);
-                    unexpected();
-                } catch (RpcException e) {
-                    // This error should be treated as if the target path
-                    // policy is not present.
-                    String msg = i + ": Path policy does not exist.";
-                    assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
-                    assertEquals(msg, e.getMessage());
-                    assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
-
-                    Throwable t = e.getCause();
-                    assertTrue(t instanceof RpcException);
-                    RpcException cause = (RpcException)t;
-                    assertEquals(RpcErrorTag.BAD_ELEMENT, cause.getErrorTag());
-                    msg = "Invalid path policy ID: " + i;
-                    assertEquals(VtnErrorTag.BADREQUEST,
-                                 cause.getVtnErrorTag());
-                    assertEquals(msg, cause.getMessage());
-
-                    t = cause.getCause();
-                    assertTrue("Unexpected cause: " + t,
-                               t instanceof IllegalArgumentException);
-                }
-            }
-        }
+        verify(rtx).read(store, path1);
+        verify(rtx).read(store, cpath11);
+        verify(rtx).read(store, cpath12);
+        verify(rtx).read(store, cpath13);
+        verify(rtx).read(store, path2);
+        verify(rtx).read(store, cpath21);
+        verify(rtx).read(store, cpath22);
+        verify(rtx).read(store, cpath23);
+        verify(rtx, times(3)).read(store, path3);
+        verify(rtx).read(store, cpath31);
+        verify(rtx).read(store, cpath32);
+        verify(rtx).read(store, cpath33);
     }
 }

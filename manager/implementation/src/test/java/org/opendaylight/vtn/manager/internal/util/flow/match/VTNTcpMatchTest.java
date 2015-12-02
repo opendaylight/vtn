@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,9 @@
  */
 
 package org.opendaylight.vtn.manager.internal.util.flow.match;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -17,8 +20,6 @@ import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.flow.cond.L4Match;
-import org.opendaylight.vtn.manager.flow.cond.TcpMatch;
 import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.internal.util.packet.Layer4Header;
@@ -27,12 +28,20 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
-import org.opendaylight.vtn.manager.internal.XmlNode;
+import org.opendaylight.vtn.manager.internal.TestPortNumber;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
+import org.opendaylight.vtn.manager.internal.XmlNode;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.vtn.layer4.match.VtnTcpMatch;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.vtn.layer4.match.VtnTcpMatchBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.tcp.match.fields.TcpDestinationRange;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.tcp.match.fields.TcpDestinationRangeBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.tcp.match.fields.TcpSourceRange;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.tcp.match.fields.TcpSourceRangeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpVersion;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 
 /**
  * JUnit test for {@link VTNTcpMatch}.
@@ -97,33 +106,28 @@ public class VTNTcpMatchTest extends TestBase {
             params.setSourcePortParams(src);
             VTNPortRange sr = (src == null)
                 ? null
-                : VTNPortRange.create(src.toPortMatch());
+                : VTNPortRange.create(src.toTcpSourceRange());
             for (PortRangeParams dst: dsts) {
                 params.setDestinationPortParams(dst);
-                TcpMatch tm = params.toL4Match();
-                VTNTcpMatch tmatch = new VTNTcpMatch(tm);
-                params.verify(tmatch);
-                assertEquals(tmatch, VTNLayer4Match.create(tm));
-
+                VTNTcpMatch tmatch =
+                    new VTNTcpMatch(params.toVtnLayer4Match(false));
                 VTNPortRange dr = (dst == null)
                     ? null
-                    : VTNPortRange.create(dst.toPortMatch());
+                    : VTNPortRange.create(dst.toTcpDestinationRange());
                 VTNTcpMatch tmatch1 = new VTNTcpMatch(sr, dr);
                 assertEquals(tmatch, tmatch1);
             }
         }
 
         // port-from is missing.
-        ArrayList<TcpMatch> list = new ArrayList<>();
-        params.reset().setSourcePortTo(Integer.valueOf(0));
-        list.add(params.toL4Match());
-
         VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
-        params.reset().setDestinationPortTo(Integer.valueOf(0));
-        list.add(params.toL4Match());
-        for (TcpMatch tm: list) {
+        List<VtnTcpMatch> list = new ArrayList<>();
+        list.add(params.reset().setSourcePortTo(0).toVtnLayer4Match(false));
+        params.reset().setDestinationPortTo(0);
+        list.add(params.toVtnLayer4Match(false));
+        for (VtnTcpMatch vtm: list) {
             try {
-                new VTNTcpMatch(tm);
+                new VTNTcpMatch(vtm);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
@@ -140,24 +144,38 @@ public class VTNTcpMatchTest extends TestBase {
             0x7fff0000, Integer.MAX_VALUE - 1, Integer.MAX_VALUE,
         };
         for (Integer port: badPorts) {
-            params.reset().setSourcePortFrom(port);
+            PortNumber pnum = new TestPortNumber(port);
+            TcpSourceRange srcRange = mock(TcpSourceRange.class);
+            when(srcRange.getPortFrom()).thenReturn(pnum);
+            VtnTcpMatch vtmatch = new VtnTcpMatchBuilder().
+                setTcpSourceRange(srcRange).build();
             list.clear();
-            list.add(params.toL4Match());
+            list.add(vtmatch);
 
-            params.reset().setDestinationPortFrom(port);
-            list.add(params.toL4Match());
+            TcpDestinationRange dstRange = mock(TcpDestinationRange.class);
+            when(dstRange.getPortFrom()).thenReturn(pnum);
+            vtmatch = new VtnTcpMatchBuilder().
+                setTcpDestinationRange(dstRange).build();
+            list.add(vtmatch);
 
-            params.reset().setSourcePortFrom(Integer.valueOf(0)).
-                setSourcePortTo(port);
-            list.add(params.toL4Match());
+            PortNumber pzero = new PortNumber(0);
+            srcRange = mock(TcpSourceRange.class);
+            when(srcRange.getPortFrom()).thenReturn(pzero);
+            when(srcRange.getPortTo()).thenReturn(pnum);
+            vtmatch = new VtnTcpMatchBuilder().
+                setTcpSourceRange(srcRange).build();
+            list.add(vtmatch);
 
-            params.reset().setDestinationPortFrom(Integer.valueOf(0)).
-                setDestinationPortTo(port);
-            list.add(params.toL4Match());
+            dstRange = mock(TcpDestinationRange.class);
+            when(dstRange.getPortFrom()).thenReturn(pzero);
+            when(dstRange.getPortTo()).thenReturn(pnum);
+            vtmatch = new VtnTcpMatchBuilder().
+                setTcpDestinationRange(dstRange).build();
+            list.add(vtmatch);
 
-            for (TcpMatch tm: list) {
+            for (VtnTcpMatch vtm: list) {
                 try {
-                    new VTNTcpMatch(tm);
+                    new VTNTcpMatch(vtm);
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
@@ -173,17 +191,23 @@ public class VTNTcpMatchTest extends TestBase {
         for (int port: ports) {
             int from = port + 1;
             int to = port;
+            PortNumber pfrom = new PortNumber(port + 1);
+            PortNumber pto = new PortNumber(port);
             list.clear();
-            params.reset().setSourcePortFrom(Integer.valueOf(from)).
-                setSourcePortTo(Integer.valueOf(to));
-            list.add(params.toL4Match());
+            TcpSourceRange srcRange = new TcpSourceRangeBuilder().
+                setPortFrom(pfrom).setPortTo(pto).build();
+            VtnTcpMatch vtmatch = new VtnTcpMatchBuilder().
+                setTcpSourceRange(srcRange).build();
+            list.add(vtmatch);
 
-            params.reset().setDestinationPortFrom(Integer.valueOf(from)).
-                setDestinationPortTo(Integer.valueOf(to));
-            list.add(params.toL4Match());
-            for (TcpMatch tm: list) {
+            TcpDestinationRange dstRange = new TcpDestinationRangeBuilder().
+                setPortFrom(pfrom).setPortTo(pto).build();
+            vtmatch = new VtnTcpMatchBuilder().
+                setTcpDestinationRange(dstRange).build();
+            list.add(vtmatch);
+            for (VtnTcpMatch vtm: list) {
                 try {
-                    new VTNTcpMatch(tm);
+                    new VTNTcpMatch(vtm);
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
@@ -197,16 +221,23 @@ public class VTNTcpMatchTest extends TestBase {
             from = port;
             to = 0;
             list.clear();
-            params.reset().setSourcePortFrom(Integer.valueOf(from)).
-                setSourcePortTo(Integer.valueOf(to));
-            list.add(params.toL4Match());
+            pfrom = new PortNumber(from);
+            pto = new PortNumber(to);
+            srcRange = new TcpSourceRangeBuilder().
+                setPortFrom(pfrom).setPortTo(pto).build();
+            vtmatch = new VtnTcpMatchBuilder().
+                setTcpSourceRange(srcRange).build();
+            list.add(vtmatch);
 
-            params.reset().setDestinationPortFrom(Integer.valueOf(from)).
-                setDestinationPortTo(Integer.valueOf(to));
-            list.add(params.toL4Match());
-            for (TcpMatch tm: list) {
+            dstRange = new TcpDestinationRangeBuilder().
+                setPortFrom(pfrom).setPortTo(pto).build();
+            vtmatch = new VtnTcpMatchBuilder().
+                setTcpDestinationRange(dstRange).build();
+            list.add(vtmatch);
+
+            for (VtnTcpMatch vtm: list) {
                 try {
-                    new VTNTcpMatch(tm);
+                    new VTNTcpMatch(vtm);
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
@@ -217,9 +248,6 @@ public class VTNTcpMatchTest extends TestBase {
                 }
             }
         }
-
-        assertEquals(null, VTNLayer4Match.create((TcpMatch)null));
-        assertEquals(null, VTNLayer4Match.create((L4Match)null));
     }
 
     /**

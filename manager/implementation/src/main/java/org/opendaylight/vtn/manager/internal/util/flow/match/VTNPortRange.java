@@ -15,8 +15,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.opendaylight.vtn.manager.flow.cond.PortMatch;
-
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
@@ -50,19 +48,6 @@ public final class VTNPortRange {
     private Integer  portTo;
 
     /**
-     * Construct a new instance from the given {@link PortMatch} instance.
-     *
-     * @param pmatch  A {@link PortMatch} instance.
-     * @return  A {@link VTNPortRange} instance if {@code pmatch} is not
-     *          {@code null}. Otherwise {@code null}.
-     * @throws RpcException
-     *    {@code pmatch} contains invalid value.
-     */
-    public static VTNPortRange create(PortMatch pmatch) throws RpcException {
-        return (pmatch == null) ? null : new VTNPortRange(pmatch);
-    }
-
-    /**
      * Construct a new instance from the given {@link VtnPortRange} instance.
      *
      * @param range  A {@link VtnPortRange} instance.
@@ -90,18 +75,6 @@ public final class VTNPortRange {
     }
 
     /**
-     * Return a {@link PortMatch} instance which represents the given
-     * condition.
-     *
-     * @param range  A {@link VTNPortRange} instance.
-     * @return  A {@link PortMatch} instance if {@code range} is not
-     *          {@code null}. Otherwise {@code null}.
-     */
-    public static PortMatch toPortMatch(VTNPortRange range) {
-        return (range == null) ? null : range.toPortMatch();
-    }
-
-    /**
      * Private constructor only for JAXB.
      */
     @SuppressWarnings("unused")
@@ -118,30 +91,6 @@ public final class VTNPortRange {
         portFrom = Integer.valueOf(port);
         portTo = portFrom;
         checkPortFrom();
-    }
-
-    /**
-     * Construct a new instance from the given {@link PortMatch} instance.
-     *
-     * @param pmatch  A {@link PortMatch} instance.
-     * @throws NullPointerException
-     *    {@code pmatch} is {@code null}.
-     * @throws RpcException
-     *    {@code pmatch} contains invalid value.
-     */
-    public VTNPortRange(PortMatch pmatch) throws RpcException {
-        portFrom = pmatch.getPortFrom();
-        checkPortFrom();
-        ProtocolUtils.checkPortNumber(portFrom.intValue());
-
-        Integer to = pmatch.getPortTo();
-        if (to == null) {
-            portTo = portFrom;
-        } else {
-            portTo = to;
-            ProtocolUtils.checkPortNumber(portTo.intValue());
-            checkPortRange();
-        }
     }
 
     /**
@@ -220,15 +169,6 @@ public final class VTNPortRange {
      */
     public PortNumber getPortNumberTo() {
         return new PortNumber(portTo);
-    }
-
-    /**
-     * Return a {@link PortMatch} instance which represents this condition.
-     *
-     * @return  A {@link PortMatch} instance.
-     */
-    public PortMatch toPortMatch() {
-        return new PortMatch(portFrom, portTo);
     }
 
     /**

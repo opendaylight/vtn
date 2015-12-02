@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -9,8 +9,6 @@
 package org.opendaylight.vtn.manager.internal.util.flow.action;
 
 import static org.opendaylight.vtn.manager.util.NumberUtils.HASH_PRIME;
-
-import org.opendaylight.vtn.manager.flow.action.FlowAction;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
@@ -74,18 +72,6 @@ public final class VTNOutputAction extends VTNFlowAction {
     }
 
     // VTNFlowAction
-
-    /**
-     * This method is not supported.
-     *
-     * @param vact  A {@link VtnAction} instance.
-     * @return  Never returns.
-     * @throws IllegalStateException  Always thrown.
-     */
-    @Override
-    public FlowAction toFlowAction(VtnAction vact) {
-        throw MiscUtils.unexpected();
-    }
 
     /**
      * This method is not supported.

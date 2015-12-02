@@ -16,11 +16,6 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.opendaylight.vtn.manager.flow.cond.EthernetMatch;
-import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
-import org.opendaylight.vtn.manager.flow.cond.InetMatch;
-import org.opendaylight.vtn.manager.flow.cond.L4Match;
-
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
@@ -130,32 +125,6 @@ public class VTNMatch {
     }
 
     /**
-     * Set flow conditions configured in the given {@link FlowMatch} instance.
-     *
-     * <p>
-     *   This method completes the condition specified by the given
-     *   {@link FlowMatch} instance. For instance, ethernet type is added
-     *   if IP condition is configured in the given {@link FlowMatch} instance.
-     * </p>
-     *
-     * @param fmatch  A {@link FlowMatch} instance.
-     * @throws NullPointerException
-     *    {@code fmatch} is {@code null}.
-     * @throws RpcException
-     *    {@code fmatch} contains invalid value.
-     */
-    public final void set(FlowMatch fmatch) throws RpcException {
-        EthernetMatch eth = fmatch.getEthernetMatch();
-        InetMatch inet = fmatch.getInetMatch();
-        L4Match l4 = fmatch.getLayer4Match();
-
-        etherMatch = (eth == null) ? null : new VTNEtherMatch(eth);
-        inetMatch = VTNInetMatch.create(inet);
-        layer4Match = VTNLayer4Match.create(l4);
-        complete();
-    }
-
-    /**
      * Set flow conditions configured in the given {@link VtnMatchFields}
      * instance.
      *
@@ -211,40 +180,6 @@ public class VTNMatch {
      */
     public final VTNLayer4Match getLayer4Match() {
         return layer4Match;
-    }
-
-    /**
-     * Return a {@link FlowMatch} instance which represents this condition.
-     *
-     * @return  A {@link FlowMatch} instance.
-     */
-    public FlowMatch toFlowMatch() {
-        return toFlowMatch(null);
-    }
-
-    /**
-     * Return a {@link FlowMatch} instance which represents this condition.
-     *
-     * @param index  A index to be assigned to {@code FlowMatch}.
-     * @return  A {@link FlowMatch} instance.
-     */
-    public final FlowMatch toFlowMatch(Integer index) {
-        EthernetMatch eth = null;
-        InetMatch inet = null;
-        L4Match l4 = null;
-        if (etherMatch != null) {
-            eth = etherMatch.toEthernetMatch();
-            if (inetMatch != null) {
-                inet = inetMatch.toInetMatch();
-                if (layer4Match != null) {
-                    l4 = layer4Match.toL4Match();
-                }
-            }
-        }
-
-        return (index == null)
-            ? new FlowMatch(eth, inet, l4)
-            : new FlowMatch(index.intValue(), eth, inet, l4);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -11,8 +11,6 @@ package org.opendaylight.vtn.manager.internal.util.flow.action;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import org.opendaylight.vtn.manager.flow.action.FlowAction;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
@@ -97,22 +95,6 @@ public abstract class VTNFlowAction {
 
         return value;
     }
-
-    /**
-     * Convert the given {@link VtnAction} instance into a {@link FlowAction}
-     * instance.
-     *
-     * <p>
-     *   Note that this method must not affect instance variables.
-     * </p>
-     *
-     * @param vact  A {@link VtnAction} instance.
-     * @return  A {@link FlowAction} instance.
-     * @throws RpcException
-     *    Failed to convert the given instance.
-     */
-    public abstract FlowAction toFlowAction(VtnAction vact)
-        throws RpcException;
 
     /**
      * Convert the given MD-SAL action instance into a {@link VtnAction}

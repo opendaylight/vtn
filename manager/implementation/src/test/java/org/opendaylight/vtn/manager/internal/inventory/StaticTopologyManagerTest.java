@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
 
 import static org.opendaylight.vtn.manager.internal.util.inventory.LinkUpdateContextTest.newStaticEdgePorts;
 import static org.opendaylight.vtn.manager.internal.util.inventory.LinkUpdateContextTest.newStaticSwitchLinks;
@@ -32,6 +33,7 @@ import org.slf4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.mockito.Mock;
 import org.mockito.ArgumentCaptor;
 
 import org.opendaylight.vtn.manager.internal.TxContext;
@@ -54,6 +56,7 @@ import org.opendaylight.vtn.manager.internal.inventory.xml.XmlStaticEdgePortsTes
 import org.opendaylight.vtn.manager.internal.inventory.xml.XmlStaticSwitchLinksTest;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
@@ -62,6 +65,7 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
+import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.VtnStaticTopology;
@@ -85,22 +89,26 @@ public class StaticTopologyManagerTest extends TestBase {
     /**
      * Mock-up of {@link VTNManagerProvider}.
      */
+    @Mock
     private VTNManagerProvider  vtnProvider;
 
     /**
      * Mock-up of {@link TxQueue}.
      */
+    @Mock
     private TxQueue  txQueue;
 
     /**
      * Mock-up of {@link DataBroker}.
      */
+    @Mock
     private DataBroker  dataBroker;
 
     /**
      * Mock-up of {@link ListenerRegistration}.
      */
-    private ListenerRegistration  registration;
+    @Mock
+    private ListenerRegistration<DataChangeListener>  registration;
 
     /**
      * A {@link StaticTopologyManager} instance for test.
@@ -112,10 +120,7 @@ public class StaticTopologyManagerTest extends TestBase {
      */
     @Before
     public void setUp() {
-        vtnProvider = mock(VTNManagerProvider.class);
-        txQueue = mock(TxQueue.class);
-        dataBroker = mock(DataBroker.class);
-        registration = mock(ListenerRegistration.class);
+        initMocks(this);
 
         when(vtnProvider.getDataBroker()).thenReturn(dataBroker);
         when(dataBroker.registerDataChangeListener(
@@ -165,7 +170,7 @@ public class StaticTopologyManagerTest extends TestBase {
      */
     @Test
     public void testEnterEvent() {
-        AsyncDataChangeEvent ev = null;
+        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev = null;
         StaticLinkUpdateTask task = testInstance.enterEvent(ev);
         assertTrue(task instanceof StaticLinkUpdateTask);
         StaticLinkUpdateTask task1 = testInstance.enterEvent(ev);
@@ -761,7 +766,7 @@ public class StaticTopologyManagerTest extends TestBase {
 
         InstanceIdentifier<VtnStaticTopology> path3 = getPath();
         IdentifiedData<VtnStaticTopology> data3 =
-            new IdentifiedData(path3, new VtnStaticTopologyBuilder().build());
+            new IdentifiedData<>(path3, new VtnStaticTopologyBuilder().build());
 
         List<IdentifiedData<?>> list = new ArrayList<>();
         Collections.addAll(list, data1, data2, data3);
@@ -793,7 +798,7 @@ public class StaticTopologyManagerTest extends TestBase {
             new StaticSwitchLinksBuilder().build());
 
         InstanceIdentifier<VtnStaticTopology> path3 = getPath();
-        ChangedData<VtnStaticTopology> data3 = new ChangedData(
+        ChangedData<VtnStaticTopology> data3 = new ChangedData<>(
             path3, new VtnStaticTopologyBuilder().build(),
             new VtnStaticTopologyBuilder().build());
 
@@ -808,7 +813,7 @@ public class StaticTopologyManagerTest extends TestBase {
             child(StaticEdgePorts.class).
             child(StaticEdgePort.class, ep.getKey()).
             build();
-        ChangedData<StaticEdgePort> data4 = new ChangedData(path4, ep, ep);
+        ChangedData<StaticEdgePort> data4 = new ChangedData<>(path4, ep, ep);
 
         List<ChangedData<?>> list = new ArrayList<>();
         Collections.addAll(list, data1, data2, data3, data4);

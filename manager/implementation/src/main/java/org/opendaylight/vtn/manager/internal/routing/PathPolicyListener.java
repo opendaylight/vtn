@@ -29,7 +29,7 @@ import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
-import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyConfigBuilder;
+import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 
@@ -69,7 +69,7 @@ final class PathPolicyListener
      *   This task returns current {@link VtnPathPolicies} instance.
      * </p>
      */
-    private static class PathPolicyLoadTask
+    private static final class PathPolicyLoadTask
         extends AbstractTxTask<VtnPathPolicies> {
         /**
          * A graph that keeps network topology.
@@ -104,8 +104,7 @@ final class PathPolicyListener
                         toString();
                     throw new IllegalArgumentException(msg);
                 }
-                VtnPathPolicy vpp = new PathPolicyConfigBuilder.Data().
-                    set(xpp).getBuilder().build();
+                VtnPathPolicy vpp = PathPolicyUtils.newBuilder(xpp).build();
                 vlist.add(vpp);
             } catch (RpcException | RuntimeException e) {
                 ctx.log(LOG, VTNLogLevel.WARN, e,
@@ -172,7 +171,7 @@ final class PathPolicyListener
      *   This task returns current {@link VtnPathPolicies} instance.
      * </p>
      */
-    private static class PathPolicySaveTask
+    private static final class PathPolicySaveTask
         extends AbstractTxTask<VtnPathPolicies> {
         /**
          * Set {@code true} if the root container has been created.

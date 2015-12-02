@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -10,11 +10,12 @@ package org.opendaylight.vtn.manager.internal.inventory;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,8 +25,9 @@ import org.slf4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.mockito.Mock;
+
 import org.opendaylight.vtn.manager.internal.TxQueue;
-import org.opendaylight.vtn.manager.internal.TxTask;
 import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
@@ -33,11 +35,13 @@ import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
+import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeConnector;
@@ -56,17 +60,20 @@ public class NodeConnectorListenerTest extends TestBase{
     /**
      * Mock-up of {@link TxQueue}.
      */
+    @Mock
     private TxQueue  txQueue;
 
     /**
      * Mock-up of {@link DataBroker}.
      */
+    @Mock
     private DataBroker  dataBroker;
 
     /**
      * Mock-up of {@link ListenerRegistration}.
      */
-    private ListenerRegistration  registration;
+    @Mock
+    private ListenerRegistration<DataChangeListener>  registration;
 
     /**
      * A {@link NodeConnectorListener} instance for test.
@@ -78,9 +85,7 @@ public class NodeConnectorListenerTest extends TestBase{
      */
     @Before
     public void setUp() {
-        dataBroker = mock(DataBroker.class);
-        txQueue = mock(TxQueue.class);
-        registration = mock(ListenerRegistration.class);
+        initMocks(this);
 
         when(dataBroker.registerDataChangeListener(
                  any(LogicalDatastoreType.class), any(InstanceIdentifier.class),
@@ -112,7 +117,7 @@ public class NodeConnectorListenerTest extends TestBase{
      */
     @Test
     public void testEnterEvent() {
-        AsyncDataChangeEvent ev = null;
+        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev = null;
         PortUpdateTask task = ncListener.enterEvent(ev);
         assertTrue(task instanceof PortUpdateTask);
         PortUpdateTask task1 = ncListener.enterEvent(ev);
@@ -141,9 +146,8 @@ public class NodeConnectorListenerTest extends TestBase{
             build();
         task.addUpdated(path, sport);
         ncListener.exitEvent(task);
-        verify(txQueue, never()).postFirst(any(TxTask.class));
         verify(txQueue).post(task);
-        verifyZeroInteractions(logger);
+        verifyNoMoreInteractions(txQueue, logger);
     }
 
     /**

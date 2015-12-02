@@ -18,8 +18,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import javax.xml.bind.annotation.XmlValue;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.Address;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.address.Ipv4;
 
@@ -33,7 +31,6 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
  *
  * @since  Lithium
  */
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "ip-network")
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlSeeAlso(Ip4Network.class)
@@ -41,7 +38,7 @@ public abstract class IpNetwork implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 3737221435886671810L;
+    private static final long  serialVersionUID = -4267382458485247100L;
 
     /**
      * A character that separates prefix length from IP address in CIDR

@@ -205,7 +205,7 @@ public final class IPv4 extends Packet {
 
         // Initialize the payload types.
         EnumMap<InetProtocols, Class<? extends Packet>> typeMap =
-            new EnumMap(InetProtocols.class);
+            new EnumMap<>(InetProtocols.class);
         typeMap.put(InetProtocols.ICMP, ICMP.class);
         typeMap.put(InetProtocols.TCP, TCP.class);
         typeMap.put(InetProtocols.UDP, UDP.class);

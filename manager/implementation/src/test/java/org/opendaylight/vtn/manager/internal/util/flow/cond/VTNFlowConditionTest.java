@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,9 @@
  */
 
 package org.opendaylight.vtn.manager.internal.util.flow.cond;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,8 +24,6 @@ import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
-import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.EtherTypes;
 import org.opendaylight.vtn.manager.util.InetProtocols;
@@ -36,6 +37,7 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.DataGenerator;
 import org.opendaylight.vtn.manager.internal.TestBase;
+import org.opendaylight.vtn.manager.internal.TestVnodeName;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
 import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlValueType;
@@ -46,6 +48,7 @@ import org.opendaylight.vtn.manager.internal.util.flow.match.TcpMatchParams;
 import org.opendaylight.vtn.manager.internal.util.flow.match.TestMatchContext;
 import org.opendaylight.vtn.manager.internal.util.flow.match.UdpMatchParams;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnFlowCondConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.flow.cond.config.VtnFlowMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.flow.cond.config.VtnFlowMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.flow.conditions.VtnFlowCondition;
@@ -127,22 +130,14 @@ public class VTNFlowConditionTest extends TestBase {
             "B",
         };
         for (String name: names) {
-            FlowCondition fc = new FlowCondition(null, null);
-            VTNFlowCondition vfcond = new VTNFlowCondition(name, fc);
+            VtnFlowCondition vfc = new VtnFlowConditionBuilder().
+                setName(new VnodeName(name)).build();
+            VTNFlowCondition vfcond = new VTNFlowCondition(vfc);
             assertEquals(name, vfcond.getIdentifier());
         }
 
         // Null name.
         String msg = "Flow condition name cannot be null";
-        try {
-            new VTNFlowCondition(null, null);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
-            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
-            assertEquals(msg, e.getMessage());
-        }
-
         VtnFlowCondition vfc = new VtnFlowConditionBuilder().build();
         try {
             new VTNFlowCondition(vfc);
@@ -157,8 +152,10 @@ public class VTNFlowConditionTest extends TestBase {
 
         // Empty name
         msg = "Flow condition name cannot be empty";
+        VtnFlowCondConfig vfconf = mock(VtnFlowCondConfig.class);
+        when(vfconf.getName()).thenReturn(new TestVnodeName(""));
         try {
-            new VTNFlowCondition("", null);
+            new VTNFlowCondition(vfconf);
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
@@ -186,8 +183,10 @@ public class VTNFlowConditionTest extends TestBase {
         };
 
         for (String name: invalidNames) {
+            vfconf = mock(VtnFlowCondConfig.class);
+            when(vfconf.getName()).thenReturn(new TestVnodeName(name));
             try {
-                new VTNFlowCondition(name, null);
+                new VTNFlowCondition(vfconf);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
@@ -199,26 +198,13 @@ public class VTNFlowConditionTest extends TestBase {
         // Duplicate index.
         int badIndex = 20;
         msg = "Duplicate match index: " + badIndex;
-        List<FlowMatch> matches = new ArrayList<>();
         List<VtnFlowMatch> vmatches = new ArrayList<>();
         for (int i = 1; i <= badIndex + 20; i++) {
-            matches.add(new FlowMatch(i, null, null, null));
             vmatches.add(new VtnFlowMatchBuilder().setIndex(i).build());
         }
-        matches.add(new FlowMatch(badIndex, null, null, null));
         vmatches.add(new VtnFlowMatchBuilder().setIndex(badIndex).build());
 
         String name = "fcond";
-        FlowCondition fc = new FlowCondition(null, matches);
-        try {
-            new VTNFlowCondition(name, fc);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
-            assertEquals(msg, e.getMessage());
-        }
-
         vfc = new VtnFlowConditionBuilder().
             setName(new VnodeName(name)).setVtnFlowMatch(vmatches).build();
         try {
@@ -246,23 +232,16 @@ public class VTNFlowConditionTest extends TestBase {
         HashSet<Object> set = new HashSet<>();
 
         final int numEmpties = 10;
-        List<FlowMatch> matches = Collections.<FlowMatch>emptyList();
         List<VtnFlowMatch> vmatches = Collections.<VtnFlowMatch>emptyList();
         for (int i = 0; i < numEmpties; i++) {
-            String name = "empty" + i;
-            FlowCondition fc = new FlowCondition(null, matches);
-            VTNFlowCondition vfcond1 = new VTNFlowCondition(name, null);
-            VTNFlowCondition vfcond2 = new VTNFlowCondition(name, fc);
+            VnodeName vname = new VnodeName("empty" + i);
+            VtnFlowCondition vfc1 = new VtnFlowConditionBuilder().
+                setName(vname).build();
+            VtnFlowCondition vfc2 = new VtnFlowConditionBuilder().
+                setName(vname).setVtnFlowMatch(vmatches).build();
+            VTNFlowCondition vfcond1 = new VTNFlowCondition(vfc1);
+            VTNFlowCondition vfcond2 = new VTNFlowCondition(vfc2);
             testEquals(set, vfcond1, vfcond2);
-
-            VtnFlowConditionBuilder builder = new VtnFlowConditionBuilder().
-                setName(new VnodeName(name));
-            VTNFlowCondition vfcond = new VTNFlowCondition(builder.build());
-            assertEquals(false, set.add(vfcond));
-
-            builder.setVtnFlowMatch(vmatches);
-            vfcond = new VTNFlowCondition(builder.build());
-            assertEquals(false, set.add(vfcond));
         }
 
         int count = 0;
@@ -279,8 +258,8 @@ public class VTNFlowConditionTest extends TestBase {
             String name = "another_cond_" + count;
             VtnFlowCondition vfc = params.toVtnFlowConditionBuilder().
                 setName(new VnodeName(name)).build();
-            vfcond1 = new VTNFlowCondition(name, params.toFlowCondition());
-            vfcond2 = new VTNFlowCondition(vfc);
+            vfcond1 = new VTNFlowCondition(vfc);
+            vfcond2 = params.setName(name).toVTNFlowCondition();
             testEquals(set, vfcond1, vfcond2);
         }
 
@@ -422,7 +401,9 @@ public class VTNFlowConditionTest extends TestBase {
     @Test
     public void testMatch() throws Exception {
         // Create an empty flow condition.
-        VTNFlowCondition empty = new VTNFlowCondition("empty", null);
+        VtnFlowCondition vfc = new VtnFlowConditionBuilder().
+            setName(new VnodeName("empty")).build();
+        VTNFlowCondition empty = new VTNFlowCondition(vfc);
 
         // 10000: IP DSCP == 35
         List<VtnFlowMatch> vmatches = new ArrayList<>();
@@ -462,7 +443,7 @@ public class VTNFlowConditionTest extends TestBase {
         params.reset().setIndex(150).setInet4Params(i4params);
         vmatches.add(params.toVtnFlowMatchBuilder().build());
 
-        VtnFlowCondition vfc = new VtnFlowConditionBuilder().
+        vfc = new VtnFlowConditionBuilder().
             setName(new VnodeName("fcond")).
             setVtnFlowMatch(vmatches).build();
         VTNFlowCondition vfcond = new VTNFlowCondition(vfc);

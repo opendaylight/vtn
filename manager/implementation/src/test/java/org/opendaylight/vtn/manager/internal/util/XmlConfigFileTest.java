@@ -18,8 +18,9 @@ import java.util.HashSet;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.util.EtherAddress;
+
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetDlSrcAction;
 
 import org.opendaylight.vtn.manager.internal.config.VTNConfigImpl;
 
@@ -64,7 +65,7 @@ public class XmlConfigFileTest extends TestBase {
         }
         assertEquals(types.length, dir.list().length);
 
-        deleteStartUpHome();
+        deleteConfigDir();
 
         // Put unexpected regular files.
         assertTrue(dir.mkdirs());
@@ -107,12 +108,13 @@ public class XmlConfigFileTest extends TestBase {
     public void testSaveLoad() throws Exception {
         Object obj = new Object();
         File baseDir = getConfigDir();
-        Class<VTenantConfig> cls = VTenantConfig.class;
+        Class<VTNSetDlSrcAction> cls = VTNSetDlSrcAction.class;
 
         // Try to access configuration file before initialization.
         String badKey = "badkey";
         XmlConfigFile.Type[] types = XmlConfigFile.Type.values();
-        VTenantConfig dummy = new VTenantConfig("tenant 1", 100, 200);
+        VTNSetDlSrcAction dummy =
+            new VTNSetDlSrcAction(new EtherAddress(123L), 3);
         for (XmlConfigFile.Type type: types) {
             assertFalse(XmlConfigFile.save(type, badKey, dummy));
             assertEquals(null, XmlConfigFile.load(type, badKey, cls));
@@ -137,12 +139,12 @@ public class XmlConfigFileTest extends TestBase {
             "broken_2",
             "broken_3",
         };
-        Map<XmlConfigFile.Type, Map<String, VTenantConfig>> saved =
+        Map<XmlConfigFile.Type, Map<String, VTNSetDlSrcAction>> saved =
             new HashMap<>();
         int idle = 0;
         int hard = 10;
         for (XmlConfigFile.Type type: types) {
-            Map<String, VTenantConfig> map = new HashMap<>();
+            Map<String, VTNSetDlSrcAction> map = new HashMap<>();
             assertEquals(null, saved.put(type, map));
             assertEquals(0, XmlConfigFile.getKeys(type).size());
 
@@ -172,10 +174,10 @@ public class XmlConfigFileTest extends TestBase {
                 // Try to save non-JAXB object.
                 assertFalse(XmlConfigFile.save(type, key, obj));
 
-                String desc = key + ": " + idle;
-                VTenantConfig tconf = new VTenantConfig(desc, idle, hard);
-                assertEquals(null, map.put(key, tconf));
-                assertTrue(XmlConfigFile.save(type, key, tconf));
+                EtherAddress src = new EtherAddress(0x123450000L + i);
+                VTNSetDlSrcAction dlSrc = new VTNSetDlSrcAction(src, i);
+                assertEquals(null, map.put(key, dlSrc));
+                assertTrue(XmlConfigFile.save(type, key, dlSrc));
 
                 Set<String> names = new HashSet<>(XmlConfigFile.getKeys(type));
                 assertEquals(map.keySet(), names);
@@ -187,37 +189,37 @@ public class XmlConfigFileTest extends TestBase {
         assertEquals(types.length, saved.size());
 
         // Load data from configuration files.
-        Map<XmlConfigFile.Type, Map<String, VTenantConfig>> loaded =
+        Map<XmlConfigFile.Type, Map<String, VTNSetDlSrcAction>> loaded =
             new HashMap<>();
         for (XmlConfigFile.Type type: types) {
-            Map<String, VTenantConfig> map = new HashMap<>();
+            Map<String, VTNSetDlSrcAction> map = new HashMap<>();
             assertEquals(null, loaded.put(type, map));
 
             for (String key: XmlConfigFile.getKeys(type)) {
                 // Note that this will remove broken files.
-                VTenantConfig tconf = XmlConfigFile.load(type, key, cls);
+                VTNSetDlSrcAction dlSrc = XmlConfigFile.load(type, key, cls);
                 if (key.startsWith("broken")) {
-                    assertEquals(null, tconf);
+                    assertEquals(null, dlSrc);
                 } else {
-                    assertNotNull(tconf);
+                    assertNotNull(dlSrc);
                 }
-                map.put(key, tconf);
+                map.put(key, dlSrc);
             }
         }
         assertEquals(saved, loaded);
 
         // Delete configuration files.
         for (XmlConfigFile.Type type: types) {
-            Map<String, VTenantConfig> map = loaded.get(type);
+            Map<String, VTNSetDlSrcAction> map = loaded.get(type);
             Set<String> names = new HashSet<>(XmlConfigFile.getKeys(type));
-            for (Map.Entry<String, VTenantConfig> entry: map.entrySet()) {
+            for (Map.Entry<String, VTNSetDlSrcAction> entry: map.entrySet()) {
                 String key = entry.getKey();
-                VTenantConfig tconf = entry.getValue();
+                VTNSetDlSrcAction dlSrc = entry.getValue();
                 if (key.startsWith("broken")) {
                     assertEquals(null, XmlConfigFile.load(type, key, cls));
                     assertFalse(XmlConfigFile.delete(type, key));
                 } else {
-                    assertEquals(tconf, XmlConfigFile.load(type, key, cls));
+                    assertEquals(dlSrc, XmlConfigFile.load(type, key, cls));
                     assertTrue(XmlConfigFile.delete(type, key));
                     assertTrue(names.remove(key));
                 }
@@ -252,13 +254,13 @@ public class XmlConfigFileTest extends TestBase {
             int idle = 0;
             int hard = 10;
             Set<String> retain = new HashSet<>();
-            Map<String, VTenantConfig> saved = new HashMap<>();
+            Map<String, VTNSetDlSrcAction> saved = new HashMap<>();
             for (int i = 0; i < NUM_KEYS; i++) {
                 String key = "key_" + i;
-                String desc = key + ": " + idle;
-                VTenantConfig tconf = new VTenantConfig(desc, idle, hard);
-                assertEquals(null, saved.put(key, tconf));
-                assertTrue(XmlConfigFile.save(type, key, tconf));
+                EtherAddress src = new EtherAddress(0xaabbcc0000L + i);
+                VTNSetDlSrcAction dlSrc = new VTNSetDlSrcAction(src, i);
+                assertEquals(null, saved.put(key, dlSrc));
+                assertTrue(XmlConfigFile.save(type, key, dlSrc));
                 if ((i % 4) == 0) {
                     assertTrue(retain.add(key));
                 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,9 @@
  */
 
 package org.opendaylight.vtn.manager.internal.util.flow.match;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,7 +22,6 @@ import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.flow.cond.EthernetMatch;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.util.packet.EtherHeader;
@@ -27,10 +29,14 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
-import org.opendaylight.vtn.manager.internal.XmlNode;
+import org.opendaylight.vtn.manager.internal.TestEtherType;
+import org.opendaylight.vtn.manager.internal.TestVlanId;
+import org.opendaylight.vtn.manager.internal.TestVlanPcp;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
+import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlValueType;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnEtherMatchFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.VtnEtherMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.VtnEtherMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
@@ -140,7 +146,6 @@ public class VTNEtherMatchTest extends TestBase {
      * Test case for the following methods.
      *
      * <ul>
-     *   <li>{@link VTNEtherMatch#VTNEtherMatch(EthernetMatch)}</li>
      *   <li>{@link VTNEtherMatch#VTNEtherMatch(EtherAddress,EtherAddress,Integer,Integer,Short)}</li>
      *   <li>{@link VTNEtherMatch#create(Match)}</li>
      *   <li>{@link VTNEtherMatch#setMatch(MatchBuilder)}</li>
@@ -196,42 +201,18 @@ public class VTNEtherMatchTest extends TestBase {
             }
         }
 
-        // Create broken EthernetMatch.
-        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
-        String[] badAddrs = {
-            "", "aa:bb:cc:dd:ee:ff:11", "00:11", "bad_address",
-        };
-        Unmarshaller um = createUnmarshaller(EthernetMatch.class);
-        for (String addr: badAddrs) {
-            String xml = new XmlNode("ethermatch").
-                setAttribute("src", addr).toString();
-            EthernetMatch em = unmarshal(um, xml, EthernetMatch.class);
-            assertNotNull(em.getValidationStatus());
-            try {
-                new VTNEtherMatch(em);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-
-                String msg = "Invalid source MAC address: " + addr + ": ";
-                String desc = e.getMessage();
-                assertTrue("Unexpected error message: " + desc,
-                           desc.startsWith(msg));
-            }
-        }
-
         // Invalid ether types.
-        Integer[] badTypes = {
-            Integer.MIN_VALUE, -10, -1,
-            0x10000, 0x10001, 0x33333333, Integer.MAX_VALUE,
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
+        Long[] badTypes = {
+            (long)Integer.MIN_VALUE, -9999999L, -10L, -1L,
+            0x10000L, 0x10001L, 0x3333333L, 0xaaaaaaaL,
+            (long)Integer.MAX_VALUE,
         };
-        for (Integer type: badTypes) {
-            params.setEtherType(type);
-            EthernetMatch em = params.toEthernetMatch();
-            assertEquals(null, em.getValidationStatus());
+        for (Long type: badTypes) {
+            VtnEtherMatchFields vether = mock(VtnEtherMatchFields.class);
+            when(vether.getEtherType()).thenReturn(new TestEtherType(type));
             try {
-                new VTNEtherMatch(em);
+                new VTNEtherMatch(vether);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
@@ -240,7 +221,7 @@ public class VTNEtherMatchTest extends TestBase {
             }
 
             try {
-                new VTNEtherMatch(null, null, type, null, null);
+                new VTNEtherMatch(null, null, type.intValue(), null, null);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
@@ -252,16 +233,15 @@ public class VTNEtherMatchTest extends TestBase {
         // Invalid VLAN ID.
         params.setEtherType(0x800);
         params.setVlanPriority((Short)null);
-        Short[] badVlanIds = {
-            Short.MIN_VALUE, -30000, -10000, -3, -2, -1,
-            0x1000, 0x1001, 0x5000, Short.MAX_VALUE,
+        Integer[] badVlanIds = {
+            Integer.MIN_VALUE, -12345678, -30000, -10000, -3, -2, -1,
+            0x1000, 0x1001, 0x5000, 33333333, Integer.MAX_VALUE,
         };
-        for (Short vid: badVlanIds) {
-            params.setVlanId(vid);
-            EthernetMatch em = params.toEthernetMatch();
-            assertEquals(null, em.getValidationStatus());
+        for (Integer vid: badVlanIds) {
+            VtnEtherMatchFields vether = mock(VtnEtherMatchFields.class);
+            when(vether.getVlanId()).thenReturn(new TestVlanId(vid));
             try {
-                new VTNEtherMatch(em);
+                new VTNEtherMatch(vether);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
@@ -281,16 +261,15 @@ public class VTNEtherMatchTest extends TestBase {
 
         // Invalid VLAN priority.
         params.setVlanId(1);
-        Byte[] badPcps = {
-            Byte.MIN_VALUE, -100, -50, -2, -1,
-            8, 9, 10, 50, 100, Byte.MAX_VALUE,
+        Short[] badPcps = {
+            Byte.MIN_VALUE, -31000, -100, -50, -2, -1,
+            8, 9, 10, 50, 100, 32000, Short.MAX_VALUE,
         };
-        for (Byte pcp: badPcps) {
-            params.setVlanPriority(pcp);
-            EthernetMatch em = params.toEthernetMatch();
-            assertEquals(null, em.getValidationStatus());
+        for (Short pcp: badPcps) {
+            VtnEtherMatchFields vether = mock(VtnEtherMatchFields.class);
+            when(vether.getVlanPcp()).thenReturn(new TestVlanPcp(pcp));
             try {
-                new VTNEtherMatch(em);
+                new VTNEtherMatch(vether);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
@@ -311,13 +290,11 @@ public class VTNEtherMatchTest extends TestBase {
         // Specifying VLAN priority without VLAN ID.
         Integer[] untagged = {null, EtherHeader.VLAN_NONE};
         for (Integer vid: untagged) {
-            params.setVlanId(vid);
-            for (byte pcp = 0; pcp <= 7; pcp++) {
-                params.setVlanPriority(pcp);
-                EthernetMatch em = params.toEthernetMatch();
-                assertEquals(null, em.getValidationStatus());
+            for (short pcp = 0; pcp <= 7; pcp++) {
+                VtnEtherMatchFields vether = mock(VtnEtherMatchFields.class);
+                when(vether.getVlanPcp()).thenReturn(new TestVlanPcp(pcp));
                 try {
-                    new VTNEtherMatch(em);
+                    new VTNEtherMatch(vether);
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
@@ -374,7 +351,7 @@ public class VTNEtherMatchTest extends TestBase {
      * Test case for the following methods.
      *
      * <ul>
-     *   <li>{@link VTNEtherMatch#VTNEtherMatch(org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnEtherMatchFields)}</li>
+     *   <li>{@link VTNEtherMatch#VTNEtherMatch(VtnEtherMatchFields)}</li>
      *   <li>{@link VTNEtherMatch#create(Match)}</li>
      *   <li>{@link VTNEtherMatch#setMatch(MatchBuilder)}</li>
      *   <li>Getter methods.</li>

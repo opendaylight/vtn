@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -10,11 +10,7 @@ package org.opendaylight.vtn.manager.internal.util.flow.match;
 
 import java.net.InetAddress;
 
-import org.opendaylight.vtn.manager.flow.cond.Inet4Match;
-import org.opendaylight.vtn.manager.flow.cond.InetMatch;
-
 import org.opendaylight.vtn.manager.util.IpNetwork;
-import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.util.packet.InetHeader;
 
@@ -189,21 +185,6 @@ public final class Inet4MatchParams extends TestBase
     }
 
     /**
-     * Construct an {@link Inet4Match} instance.
-     *
-     * @return  An {@link Inet4Match} instance.
-     */
-    public Inet4Match toInet4Match() {
-        InetAddress src = (sourceAddress == null)
-            ? null : sourceAddress.getInetAddress();
-        InetAddress dst = (destinationAddress == null)
-            ? null : destinationAddress.getInetAddress();
-        Byte d = NumberUtils.toByte(dscp);
-        return new Inet4Match(src, sourcePrefix, dst, destinationPrefix,
-                              protocol, d);
-    }
-
-    /**
      * Construct a {@link VtnInetMatch} instance.
      *
      * @return  A {@link VtnInetMatch} instance.
@@ -250,7 +231,7 @@ public final class Inet4MatchParams extends TestBase
      * @throws Exception  An error occurred.
      */
     public VTNInet4Match toVTNInet4Match() throws Exception {
-        return new VTNInet4Match(toInet4Match());
+        return new VTNInet4Match(toVtnInetMatch(false));
     }
 
     /**
@@ -324,17 +305,6 @@ public final class Inet4MatchParams extends TestBase
         IpNetwork src = getIpNetwork(sourceAddress, sourcePrefix);
         IpNetwork dst = getIpNetwork(destinationAddress, destinationPrefix);
         verifyValues(imatch, src, dst);
-
-        InetMatch im = imatch.toInetMatch();
-        assertTrue(im instanceof Inet4Match);
-        InetAddress srcAddr = im.getSourceAddress();
-        Short srcSuff = im.getSourceSuffix();
-        InetAddress dstAddr = im.getDestinationAddress();
-        Short dstSuff = im.getDestinationSuffix();
-        assertEquals(src, getIpNetwork(srcAddr, srcSuff));
-        assertEquals(dst, getIpNetwork(dstAddr, dstSuff));
-        assertEquals(protocol, im.getProtocol());
-        assertEquals(NumberUtils.toByte(dscp), im.getDscp());
 
         VtnInetMatch vim = imatch.toVtnInetMatchBuilder().build();
         assertEquals(src, IpNetwork.create(vim.getSourceNetwork()));

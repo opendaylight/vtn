@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -43,6 +43,7 @@ import org.opendaylight.vtn.manager.internal.util.tx.TxQueueImpl;
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.clustering.Entity;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipChange;
@@ -115,13 +116,13 @@ public class VTNConfigManagerTest extends TestBase {
      * Registration to be associated with {@link ConfigListener}.
      */
     @Mock
-    private ListenerRegistration  cfgListenerReg;
+    private ListenerRegistration<DataChangeListener>  cfgListenerReg;
 
     /**
      * Registration to be associated with {@link OperationalListener}.
      */
     @Mock
-    private ListenerRegistration  operListenerReg;
+    private ListenerRegistration<DataChangeListener>  operListenerReg;
 
     /**
      * Registration to be associated with {@link EntityOwnershipListener}.

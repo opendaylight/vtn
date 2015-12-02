@@ -19,14 +19,10 @@ import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import org.opendaylight.vtn.manager.flow.action.InetAddressAction;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.IpNetwork;
 
-import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-
-import org.opendaylight.controller.sal.utils.Status;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.VtnIpaddrActionFields;
 
@@ -85,25 +81,6 @@ public abstract class VTNInetAddrAction extends FlowFilterAction {
     /**
      * Construct a new instance.
      *
-     * @param act  A {@link InetAddressAction} instance.
-     * @param ord  An integer which determines the order of flow actions
-     *             in a flow entry.
-     * @throws RpcException  An invalid argument is specified.
-     */
-    protected VTNInetAddrAction(InetAddressAction act, int ord)
-        throws RpcException {
-        super(Integer.valueOf(ord));
-        Status st = act.getValidationStatus();
-        if (st != null) {
-            throw new RpcException(RpcErrorTag.BAD_ELEMENT, st);
-        }
-        address = act.getIpNetwork();
-        verify();
-    }
-
-    /**
-     * Construct a new instance.
-     *
      * @param act  A {@link VtnIpaddrActionFields} instance.
      * @param ord  An integer which determines the order of flow actions
      *             in a flow entry.
@@ -145,20 +122,6 @@ public abstract class VTNInetAddrAction extends FlowFilterAction {
     protected final RpcException noIpAddress(Object obj) {
         String msg = getErrorMessage("No IP address", obj);
         return RpcException.getMissingArgumentException(msg);
-    }
-
-    /**
-     * Return an exception which indicates an invalid IP address is specified.
-     *
-     * @param obj    An object to be added to the error message.
-     * @param cause  A throwable which indicates the cause of error.
-     * @return  An {@link RpcException} instance.
-     */
-    protected final RpcException invalidIpAddress(Object obj, Throwable cause) {
-        String msg = getErrorMessage("Invalid IP address", obj);
-        RpcException re = RpcException.getMissingArgumentException(msg);
-        re.initCause(cause);
-        return re;
     }
 
     /**

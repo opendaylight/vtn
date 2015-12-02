@@ -10,9 +10,6 @@ package org.opendaylight.vtn.manager.internal.util.inventory;
 
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
-import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
-import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
-
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier.InstanceIdentifierBuilder;
 
@@ -46,15 +43,6 @@ public final class SalPort extends SalNode {
      * Port number.
      */
     private final long  portNumber;
-
-    /**
-     * Cache for AD-SAL node connector.
-     *
-     * <p>
-     *   Note that this field does not affect object identity.
-     * </p>
-     */
-    private org.opendaylight.controller.sal.core.NodeConnector  adNodeConnector;
 
     /**
      * Determine whether the given MD-SAL node connector ID indicates a
@@ -223,37 +211,6 @@ public final class SalPort extends SalNode {
     }
 
     /**
-     * Convert a AD-SAL node connector into a {@code SalPort} instance.
-     *
-     * @param nc  An AD-SAL node connector instance.
-     * @return  A {@code SalPort} instance on success.
-     *          {@code null} on failure.
-     */
-    public static SalPort create(
-        org.opendaylight.controller.sal.core.NodeConnector nc) {
-        if (nc == null || !NodeConnectorIDType.OPENFLOW.equals(nc.getType())) {
-            return null;
-        }
-
-        SalNode snode = SalNode.create(nc.getNode());
-        if (snode == null) {
-            return null;
-        }
-
-        Object o = nc.getID();
-        SalPort sport;
-        if (o instanceof Short) {
-            short s = ((Short)o).shortValue();
-            long num = (s >= 0) ? s : (long)s & NumberUtils.MASK_SHORT;
-            sport = new SalPort(snode.getNodeNumber(), num, nc);
-        } else {
-            sport = null;
-        }
-
-        return sport;
-    }
-
-    /**
      * Parse the given MD-SAL node connector ID.
      *
      * @param id  A MD-SAL node connector ID.
@@ -309,21 +266,6 @@ public final class SalPort extends SalNode {
     public SalPort(long nodeId, long portId, String str) {
         super(nodeId, str);
         portNumber = portId;
-    }
-
-    /**
-     * Construct a new instance with specifying an AD-SAL node connector
-     * corresponding to this instance.
-     *
-     * @param nodeId  A node identifier.
-     * @param portId  A port identifier.
-     * @param nc      An AD-SAL node connector instance.
-     */
-    public SalPort(long nodeId, long portId,
-                   org.opendaylight.controller.sal.core.NodeConnector nc) {
-        super(nodeId, (nc == null) ? null : nc.getNode());
-        portNumber = portId;
-        adNodeConnector = nc;
     }
 
     /**
@@ -414,22 +356,6 @@ public final class SalPort extends SalNode {
     public InstanceIdentifier<PortLink> getPortLinkIdentifier(LinkId linkId) {
         return getVtnPortIdentifierBuilder().
             child(PortLink.class, new PortLinkKey(linkId)).build();
-    }
-
-    /**
-     * Return an AD-SAL node connector.
-     *
-     * @return  An AD-SAL node connector that represents this instance.
-     */
-    public org.opendaylight.controller.sal.core.NodeConnector getAdNodeConnector() {
-        if (adNodeConnector == null) {
-            org.opendaylight.controller.sal.core.Node node = getAdNode();
-            Short num = Short.valueOf((short)portNumber);
-            adNodeConnector =
-                NodeConnectorCreator.createOFNodeConnector(num, node);
-        }
-
-        return adNodeConnector;
     }
 
     /**

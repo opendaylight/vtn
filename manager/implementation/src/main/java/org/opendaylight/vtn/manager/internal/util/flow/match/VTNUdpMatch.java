@@ -12,8 +12,6 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.opendaylight.vtn.manager.flow.cond.PortMatch;
-import org.opendaylight.vtn.manager.flow.cond.UdpMatch;
 import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.internal.util.packet.UdpHeader;
@@ -60,19 +58,6 @@ public final class VTNUdpMatch extends VTNLayer4PortMatch<UdpHeader> {
      */
     public VTNUdpMatch(VTNPortRange src, VTNPortRange dst) {
         super(src, dst);
-    }
-
-    /**
-     * Construct a new instance from the given {@link UdpMatch} instance.
-     *
-     * @param umatch   A {@link UdpMatch} instance.
-     * @throws NullPointerException
-     *    {@code umatch} is {@code null}.
-     * @throws RpcException
-     *    {@code umatch} contains invalid value.
-     */
-    public VTNUdpMatch(UdpMatch umatch) throws RpcException {
-        super(umatch);
     }
 
     /**
@@ -141,17 +126,6 @@ public final class VTNUdpMatch extends VTNLayer4PortMatch<UdpHeader> {
      */
     public short getInetProtocol(IpVersion ver) {
         return InetProtocols.UDP.shortValue();
-    }
-
-    /**
-     * Return a {@link UdpMatch} instance which represents this condition.
-     *
-     * @return  A {@link UdpMatch} instance.
-     */
-    public UdpMatch toL4Match() {
-        PortMatch src = VTNPortRange.toPortMatch(getSourcePort());
-        PortMatch dst = VTNPortRange.toPortMatch(getDestinationPort());
-        return new UdpMatch(src, dst);
     }
 
     /**

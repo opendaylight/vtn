@@ -17,10 +17,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlValue;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.MacAddressFilter;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
@@ -30,14 +26,13 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.
  *
  * @since  Lithium
  */
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "ether-address")
 @XmlAccessorType(XmlAccessType.NONE)
 public final class EtherAddress implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -5338324896227836920L;
+    private static final long  serialVersionUID = -6991049559218523393L;
 
     /**
      * The number of octets in an ethernet address.
@@ -257,19 +252,6 @@ public final class EtherAddress implements Serializable {
     }
 
     /**
-     * Create a new {@link EtherAddress} instance.
-     *
-     * @param eaddr  An {@link EthernetAddress} instance.
-     * @return  An {@link EtherAddress} instance if {@code eaddr} is not
-     *          {@code null}. {@code null} if {@code eaddr} is {@code null}.
-     * @throws IllegalArgumentException
-     *    The given instance contains an invalid value.
-     */
-    public static EtherAddress create(EthernetAddress eaddr) {
-        return (eaddr == null) ? null : new EtherAddress(eaddr);
-    }
-
-    /**
      * Verify the given byte array which represents an ethernet address.
      *
      * @param b  A byte array to be tested.
@@ -352,19 +334,6 @@ public final class EtherAddress implements Serializable {
     }
 
     /**
-     * Construct a new instance.
-     *
-     * @param eaddr  An {@link EthernetAddress} instance.
-     * @throws NullPointerException
-     *    {@code eaddr} is {@code null}.
-     * @throws IllegalArgumentException
-     *    The given instance contains an invalid value.
-     */
-    public EtherAddress(EthernetAddress eaddr) {
-        this(eaddr.getValue());
-    }
-
-    /**
      * Return a long number which represents this ethernet address.
      *
      * @return  A long number.
@@ -398,25 +367,6 @@ public final class EtherAddress implements Serializable {
         }
 
         return mac;
-    }
-
-    /**
-     * Return a {@link EthernetAddress} instance which represents this ethernet
-     * address.
-     *
-     * @return  A {@link EthernetAddress} instance.
-     */
-    public EthernetAddress getEthernetAddress() {
-        // EthernetAddress has a vulnerability that can corrupt internal byte
-        // array. So we don't cache it.
-        byte[] bytes = getBytesImpl();
-        try {
-            return new EthernetAddress(bytes);
-        } catch (Exception e) {
-            // This should never happen.
-            String msg = "Failed to create EthernetAddress: " + getText();
-            throw new IllegalStateException(msg, e);
-        }
     }
 
     /**
@@ -462,6 +412,19 @@ public final class EtherAddress implements Serializable {
     }
 
     /**
+     * Set a hex string which represents an ethernet address.
+     *
+     * <p>
+     *   This method is called by JAXB.
+     * </p>
+     *
+     * @param hex  A hex strin which represents an ethernet address.
+     */
+    void setText(String hex) {
+        address = toLong(hex.trim());
+    }
+
+    /**
      * Create a byte array that represents this ethernet address, and cache it
      * in this instance.
      *
@@ -475,20 +438,6 @@ public final class EtherAddress implements Serializable {
         }
 
         return bytes;
-    }
-
-    /**
-     * Set a hex string which represents an ethernet address.
-     *
-     * <p>
-     *   This method is called by JAXB.
-     * </p>
-     *
-     * @param hex  A hex strin which represents an ethernet address.
-     */
-    @SuppressWarnings("unused")
-    private void setText(String hex) {
-        address = toLong(hex.trim());
     }
 
     // Object

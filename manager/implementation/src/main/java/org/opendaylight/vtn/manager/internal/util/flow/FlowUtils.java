@@ -11,39 +11,22 @@ package org.opendaylight.vtn.manager.internal.util.flow;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 
 import com.google.common.base.Optional;
 
-import org.opendaylight.vtn.manager.DataLinkHost;
-import org.opendaylight.vtn.manager.NodeRoute;
-import org.opendaylight.vtn.manager.PortLocation;
-import org.opendaylight.vtn.manager.SwitchPort;
-import org.opendaylight.vtn.manager.VNodePath;
-import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.flow.AveragedFlowStats;
-import org.opendaylight.vtn.manager.flow.DataFlow;
-import org.opendaylight.vtn.manager.flow.FlowStats;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
-import org.opendaylight.vtn.manager.internal.util.OrderedComparator;
-import org.opendaylight.vtn.manager.internal.util.flow.action.FlowActionUtils;
-import org.opendaylight.vtn.manager.internal.util.flow.match.VTNMatch;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
-import org.opendaylight.vtn.manager.internal.util.inventory.MacVlan;
-import org.opendaylight.vtn.manager.internal.util.inventory.NodeUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-import org.opendaylight.vtn.manager.internal.util.vnode.VNodeUtils;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
@@ -51,15 +34,7 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.DataFlowMode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnDataFlowInfo;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnFlowId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.input.DataFlowSource;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.common.VirtualRoute;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.common.VirtualRouteBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.AveragedDataFlowStats;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataFlowStats;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.PhysicalRoute;;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.FlowIdSet;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.VtnFlows;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.flow.id.set.FlowIdList;
@@ -79,7 +54,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.flows.VtnFlowTableKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnFlowTimeoutConfig;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.Ordered;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowTableRef;
@@ -273,133 +247,6 @@ public final class FlowUtils {
     }
 
     /**
-     * Convert the given {@link DataLinkHost} instance into a
-     * {@link DataFlowSource} instance.
-     *
-     * @param dlhost  A {@link DataLinkHost} instance to be converted.
-     * @return  A converted {@link DataFlowSource} instance.
-     *          Note that {@code null} is returned if {@code dlhost} is
-     *          {@code null}.
-     * @throws RpcException  The given value is invalid.
-     */
-    public static DataFlowSource toDataFlowSource(DataLinkHost dlhost)
-        throws RpcException {
-        if (dlhost == null) {
-            return null;
-        }
-
-        MacVlan mvlan = new MacVlan(dlhost);
-        return mvlan.getDataFlowSource();
-    }
-
-    /**
-     * Convert the given list of {@link VNodeRoute} instances into a list of
-     * {@link VirtualRoute} instances.
-     *
-     * @param routes  A list of {@link VNodeRoute} instances.
-     * @return  A list of {@link VirtualRoute} instances.
-     *          {@code null} if the given list is {@code null} or empty.
-     */
-    public static List<VirtualRoute> toVirtualRouteList(
-        List<VNodeRoute> routes) {
-        if (routes == null || routes.isEmpty()) {
-            return null;
-        }
-
-        List<VirtualRoute> list = new ArrayList<>(routes.size());
-        int order = MiscUtils.ORDER_MIN;
-        for (VNodeRoute vnr: routes) {
-            VNodePath vpath = vnr.getPath();
-            VirtualRoute vroute = new VirtualRouteBuilder().
-                setOrder(order).
-                setReason(vnr.getReason()).
-                setVirtualNodePath(VNodeUtils.toVirtualNodePath(vpath)).
-                build();
-            list.add(vroute);
-            order++;
-        }
-
-        return list;
-    }
-
-    /**
-     * Convert the given {@link VtnDataFlowInfo} into a {@link DataFlow}
-     * instance.
-     *
-     * @param vdf   A {@link VtnDataFlowInfo} instance.
-     * @param mode  A {@link DataFlowMode} instance.
-     * @return  A {@link DataFlow} instance.
-     * @throws RpcException
-     *    Unable to convert the given instance.
-     */
-    public static DataFlow toDataFlow(VtnDataFlowInfo vdf, DataFlowMode mode)
-        throws RpcException {
-        long flowId = vdf.getFlowId().getValue().longValue();
-        long created = vdf.getCreationTime().longValue();
-        short idle = vdf.getIdleTimeout().shortValue();
-        short hard = vdf.getHardTimeout().shortValue();
-        VNodePath inpath = VNodeUtils.toVNodePath(vdf.getDataIngressNode());
-        VNodePath outpath = VNodeUtils.toVNodePath(vdf.getDataEgressNode());
-        PortLocation inport =
-            NodeUtils.toPortLocation(vdf.getDataIngressPort());
-        PortLocation outport =
-            NodeUtils.toPortLocation(vdf.getDataEgressPort());
-
-        DataFlow df = new DataFlow(flowId, created, idle, hard, inpath,
-                                   inport, outpath, outport);
-        if (mode != DataFlowMode.SUMMARY) {
-            VTNMatch vmatch = new VTNMatch();
-            vmatch.set(vdf.getDataFlowMatch());
-            df.setMatch(vmatch.toFlowMatch());
-
-            OrderedComparator comp = new OrderedComparator();
-            df.setActions(FlowActionUtils.
-                          toFlowActions(vdf.getVtnFlowAction(), comp));
-            df.setVirtualRoute(toVNodeRoutes(vdf.getVirtualRoute(), comp));
-            df.setPhysicalRoute(toNodeRoutes(vdf.getPhysicalRoute(), comp));
-
-            DataFlowStats stats = vdf.getDataFlowStats();
-            if (stats != null) {
-                long packets = MiscUtils.longValue(stats.getPacketCount());
-                long bytes = MiscUtils.longValue(stats.getByteCount());
-                long duration = toMillis(stats.getDuration());
-                df.setStatistics(new FlowStats(packets, bytes, duration));
-            }
-
-            AveragedDataFlowStats average = vdf.getAveragedDataFlowStats();
-            if (average != null) {
-                double packets = average.getPacketCount().doubleValue();
-                double bytes = average.getByteCount().doubleValue();
-                long start = average.getStartTime().longValue();
-                long end = average.getEndTime().longValue();
-                AveragedFlowStats avs =
-                    new AveragedFlowStats(packets, bytes, start, end);
-                df.setAveragedStatistics(avs);
-            }
-        }
-
-        return df;
-    }
-
-    /**
-     * Convert the given flow duration into the number of milliseconds.
-     *
-     * @param duration  A MD-SAL duration.
-     * @return  The number of milliseconds.
-     */
-    public static long toMillis(Duration duration) {
-        if (duration != null) {
-            long sec = MiscUtils.longValue(duration.getSecond());
-            long nsec = MiscUtils.longValue(duration.getNanosecond());
-
-            return TimeUnit.SECONDS.toMillis(sec) +
-                TimeUnit.NANOSECONDS.toMillis(nsec);
-        }
-
-        return 0;
-    }
-
-    /**
      * Compare the given two {@link Duration} instances.
      *
      * @param d1  The first instance to be compared.
@@ -418,72 +265,6 @@ public final class FlowUtils {
             ret = Long.compare(n1, n2);
         }
 
-        return ret;
-    }
-
-    /**
-     * Convert the given {@link VirtualRoute} instances into a list of
-     * {@link VNodeRoute} instances.
-     *
-     * @param vroutes  A list of {@link VirtualRoute} instances.
-     * @param comp     A comparator for {@link Ordered} instance.
-     * @return  A list of {@link VNodeRoute} instances.
-     *          {@code null} if {@code vroutes} is {@code null}.
-     * @throws RpcException
-     *    Unable to convert the given list.
-     */
-    public static List<VNodeRoute> toVNodeRoutes(List<VirtualRoute> vroutes,
-                                                 Comparator<Ordered> comp)
-        throws RpcException {
-        if (vroutes == null) {
-            return null;
-        }
-        if (vroutes.isEmpty()) {
-            return Collections.<VNodeRoute>emptyList();
-        }
-
-        List<VirtualRoute> list = MiscUtils.sortedCopy(vroutes, comp);
-        List<VNodeRoute> ret = new ArrayList<>(list.size());
-        for (VirtualRoute vr: list) {
-            VNodePath path = VNodeUtils.toVNodePath(vr.getVirtualNodePath());
-            ret.add(new VNodeRoute(path, vr.getReason()));
-        }
-        return ret;
-    }
-
-    /**
-     * Convert the given list of {@link PhysicalRoute} instances into a list
-     * of {@link NodeRoute} instances.
-     *
-     * <p>
-     *   Note that this method assumes that the given list contains valid
-     *   values.
-     * </p>
-     *
-     * @param proutes  A list of {@link PhysicalRoute} instances.
-     * @param comp     A comparator for {@link Ordered} instance.
-     * @return  A list of {@link NodeRoute} instances.
-     *          {@code null} if {@code proutes} is {@code null}.
-     */
-    public static List<NodeRoute> toNodeRoutes(List<PhysicalRoute> proutes,
-                                               Comparator<Ordered> comp) {
-        if (proutes == null) {
-            return null;
-        }
-        if (proutes.isEmpty()) {
-            return Collections.<NodeRoute>emptyList();
-        }
-
-        List<PhysicalRoute> list = MiscUtils.sortedCopy(proutes, comp);
-        List<NodeRoute> ret = new ArrayList<>(list.size());
-        for (PhysicalRoute proute: list) {
-            SalNode snode = SalNode.create(proute.getNode());
-            SwitchPort ingress = NodeUtils.
-                toSwitchPort(proute.getPhysicalIngressPort());
-            SwitchPort egress = NodeUtils.
-                toSwitchPort(proute.getPhysicalEgressPort());
-            ret.add(new NodeRoute(snode.getAdNode(), ingress, egress));
-        }
         return ret;
     }
 

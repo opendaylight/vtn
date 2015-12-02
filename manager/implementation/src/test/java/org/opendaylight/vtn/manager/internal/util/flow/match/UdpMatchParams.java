@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,7 +8,6 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow.match;
 
-import org.opendaylight.vtn.manager.flow.cond.PortMatch;
 import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.internal.util.packet.UdpHeader;
@@ -39,15 +38,6 @@ public final class UdpMatchParams extends Layer4PortMatchParams<UdpMatchParams>
      * {@inheritDoc}
      */
     @Override
-    public org.opendaylight.vtn.manager.flow.cond.UdpMatch toL4Match() {
-        return new org.opendaylight.vtn.manager.flow.cond.UdpMatch(
-            getSourcePortMatch(), getDestinationPortMatch());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public VtnUdpMatch toVtnLayer4Match(boolean comp) {
         PortRangeParams r = getSourcePortParams();
         UdpSourceRange src = (r == null) ? null : r.toUdpSourceRange(comp);
@@ -64,7 +54,7 @@ public final class UdpMatchParams extends Layer4PortMatchParams<UdpMatchParams>
      */
     @Override
     public VTNUdpMatch toVTNLayer4Match() throws Exception {
-        return new VTNUdpMatch(toL4Match());
+        return new VTNUdpMatch(toVtnLayer4Match(false));
     }
 
     /**
@@ -123,10 +113,10 @@ public final class UdpMatchParams extends Layer4PortMatchParams<UdpMatchParams>
     public void verify(VTNLayer4Match l4m) throws Exception {
         assertTrue(l4m instanceof VTNUdpMatch);
         VTNUdpMatch umatch = (VTNUdpMatch)l4m;
-        PortMatch srcMatch = getSourcePortMatch();
-        PortMatch dstMatch = getDestinationPortMatch();
-        VTNPortRange src = VTNPortRange.create(srcMatch);
-        VTNPortRange dst = VTNPortRange.create(dstMatch);
+        UdpSourceRange srcRange = getUdpSourceRange();
+        UdpDestinationRange dstRange = getUdpDestinationRange();
+        VTNPortRange src = VTNPortRange.create(srcRange);
+        VTNPortRange dst = VTNPortRange.create(dstRange);
         assertEquals(src, umatch.getSourcePort());
         assertEquals(dst, umatch.getDestinationPort());
         assertEquals(InetProtocols.UDP.shortValue(),
@@ -137,35 +127,30 @@ public final class UdpMatchParams extends Layer4PortMatchParams<UdpMatchParams>
         assertEquals(FlowMatchType.UDP_SRC, umatch.getSourceMatchType());
         assertEquals(FlowMatchType.UDP_DST, umatch.getDestinationMatchType());
 
-        org.opendaylight.vtn.manager.flow.cond.UdpMatch um =
-            umatch.toL4Match();
-        assertEquals(srcMatch, um.getSourcePort());
-        assertEquals(dstMatch, um.getDestinationPort());
-
         VtnLayer4Match vl4 = umatch.toVtnLayer4Match();
         if (vl4 == null) {
-            assertEquals(null, srcMatch);
-            assertEquals(null, dstMatch);
+            assertEquals(null, srcRange);
+            assertEquals(null, dstRange);
             assertEquals(null, VTNLayer4Match.create(vl4));
         } else {
             assertTrue(vl4 instanceof VtnUdpMatch);
             VtnUdpMatch vum = (VtnUdpMatch)vl4;
             UdpSourceRange vsrc = vum.getUdpSourceRange();
-            if (srcMatch == null) {
+            if (srcRange == null) {
                 assertEquals(null, vsrc);
             } else {
-                assertEquals(srcMatch.getPortFrom(),
+                assertEquals(src.getPortFrom(),
                              vsrc.getPortFrom().getValue());
-                assertEquals(srcMatch.getPortTo(),
+                assertEquals(src.getPortTo(),
                              vsrc.getPortTo().getValue());
             }
             UdpDestinationRange vdst = vum.getUdpDestinationRange();
-            if (dstMatch == null) {
+            if (dstRange == null) {
                 assertEquals(null, vdst);
             } else {
-                assertEquals(dstMatch.getPortFrom(),
+                assertEquals(dst.getPortFrom(),
                              vdst.getPortFrom().getValue());
-                assertEquals(dstMatch.getPortTo(),
+                assertEquals(dst.getPortTo(),
                              vdst.getPortTo().getValue());
             }
             assertEquals(umatch, VTNLayer4Match.create(vl4));
@@ -182,19 +167,19 @@ public final class UdpMatchParams extends Layer4PortMatchParams<UdpMatchParams>
 
             // MD-SAL port match cannot represent the range of port numbers.
             src = umatch1.getSourcePort();
-            if (srcMatch == null) {
+            if (srcRange == null) {
                 assertEquals(null, src);
             } else {
-                Integer from = srcMatch.getPortFrom();
+                Integer from = srcRange.getPortFrom().getValue();
                 assertEquals(from, src.getPortFrom());
                 assertEquals(from, src.getPortTo());
             }
 
             dst = umatch1.getDestinationPort();
-            if (dstMatch == null) {
+            if (dstRange == null) {
                 assertEquals(null, dst);
             } else {
-                Integer from = dstMatch.getPortFrom();
+                Integer from = dstRange.getPortFrom().getValue();
                 assertEquals(from, dst.getPortFrom());
                 assertEquals(from, dst.getPortTo());
             }

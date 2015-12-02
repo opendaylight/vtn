@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -11,10 +11,6 @@ package org.opendaylight.vtn.manager.internal.util.flow.match;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.opendaylight.vtn.manager.flow.cond.EthernetMatch;
-import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
-import org.opendaylight.vtn.manager.flow.cond.InetMatch;
-import org.opendaylight.vtn.manager.flow.cond.L4Match;
 import org.opendaylight.vtn.manager.util.EtherTypes;
 import org.opendaylight.vtn.manager.util.InetProtocols;
 import org.opendaylight.vtn.manager.util.IpNetwork;
@@ -347,33 +343,6 @@ public class MatchParams extends TestBase implements PacketHeader, Cloneable {
     }
 
     /**
-     * Return an {@link EthernetMatch} instance.
-     *
-     * @return  An {@link EthernetMatch} instance.
-     */
-    public final EthernetMatch getEthernetMatch() {
-        return (etherParams == null) ? null : etherParams.toEthernetMatch();
-    }
-
-    /**
-     * Return an {@link InetMatch} instance.
-     *
-     * @return  An {@link InetMatch} instance.
-     */
-    public final InetMatch getInetMatch() {
-        return (inet4Params == null) ? null : inet4Params.toInet4Match();
-    }
-
-    /**
-     * Return an {@link L4Match} instance.
-     *
-     * @return  An {@link L4Match} instance.
-     */
-    public final L4Match getL4Match() {
-        return (layer4Params == null) ? null : layer4Params.toL4Match();
-    }
-
-    /**
      * Return a {@link VtnEtherMatch} instance.
      *
      * @return  A {@link VtnEtherMatch} instance.
@@ -435,16 +404,6 @@ public class MatchParams extends TestBase implements PacketHeader, Cloneable {
     }
 
     /**
-     * Construct a new {@link FlowMatch} instance.
-     *
-     * @return  A {@link FlowMatch} instance.
-     */
-    public FlowMatch toFlowMatch() {
-        return new FlowMatch(getEthernetMatch(), getInetMatch(),
-                             getL4Match());
-    }
-
-    /**
      * Create a {@link VtnFlowMatchBuilder} instance that contains the settings
      * configured in this instance.
      *
@@ -479,7 +438,7 @@ public class MatchParams extends TestBase implements PacketHeader, Cloneable {
      */
     public final VTNMatch toVTNMatch() throws Exception {
         VTNMatch vmatch = new VTNMatch();
-        vmatch.set(toFlowMatch());
+        vmatch.set(toVtnFlowMatchBuilder().build());
         return vmatch;
     }
 
@@ -514,8 +473,6 @@ public class MatchParams extends TestBase implements PacketHeader, Cloneable {
      * @throws Exception  An error occurred.
      */
     public void verify(VTNMatch vmatch) throws Exception {
-        FlowMatch fm = vmatch.toFlowMatch();
-        assertEquals(toFlowMatch(), fm);
         assertEquals(toDataFlowMatch(),
                      vmatch.toDataFlowMatchBuilder().build());
 

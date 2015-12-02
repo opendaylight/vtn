@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,11 +8,14 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow.match;
 
-import org.opendaylight.vtn.manager.flow.cond.PortMatch;
-
 import org.opendaylight.vtn.manager.internal.util.packet.Layer4PortHeader;
 
 import org.opendaylight.vtn.manager.internal.XmlNode;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.tcp.match.fields.TcpDestinationRange;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.tcp.match.fields.TcpSourceRange;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.udp.match.fields.UdpDestinationRange;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.udp.match.fields.UdpSourceRange;
 
 /**
  * {@code Layer4PortMatchParams} describes parameters for condition to match
@@ -193,25 +196,47 @@ public abstract class Layer4PortMatchParams<T extends Layer4PortMatchParams>
     }
 
     /**
-     * Return a {@link PortMatch} instance which represents the range of
+     * Return a {@link TcpSourceRange} instance which represents the range of
      * source port numbers.
      *
-     * @return  A {@link PortMatch} instance or {@code null}.
+     * @return  A {@link TcpSourceRange} instance or {@code null}.
      */
-    public final PortMatch getSourcePortMatch() {
+    public final TcpSourceRange getTcpSourceRange() {
         PortRangeParams range = sourcePort;
-        return (range == null) ? null : range.toPortMatch();
+        return (range == null) ? null : range.toTcpSourceRange();
     }
 
     /**
-     * Return a {@link PortMatch} instance which represents the range of
-     * destination port numbers.
+     * Return a {@link TcpDestinationRange} instance which represents the range
+     * desitnation port numbers.
      *
-     * @return  A {@link PortMatch} instance or {@code null}.
+     * @return  A {@link TcpDestinationRange} instance or {@code null}.
      */
-    public final PortMatch getDestinationPortMatch() {
+    public final TcpDestinationRange getTcpDestinationRange() {
         PortRangeParams range = destinationPort;
-        return (range == null) ? null : range.toPortMatch();
+        return (range == null) ? null : range.toTcpDestinationRange();
+    }
+
+    /**
+     * Return a {@link UdpSourceRange} instance which represents the range of
+     * source port numbers.
+     *
+     * @return  A {@link UdpSourceRange} instance or {@code null}.
+     */
+    public final UdpSourceRange getUdpSourceRange() {
+        PortRangeParams range = sourcePort;
+        return (range == null) ? null : range.toUdpSourceRange();
+    }
+
+    /**
+     * Return a {@link UdpDestinationRange} instance which represents the range
+     * desitnation port numbers.
+     *
+     * @return  A {@link UdpDestinationRange} instance or {@code null}.
+     */
+    public final UdpDestinationRange getUdpDestinationRange() {
+        PortRangeParams range = destinationPort;
+        return (range == null) ? null : range.toUdpDestinationRange();
     }
 
     // Layer4MatchParams

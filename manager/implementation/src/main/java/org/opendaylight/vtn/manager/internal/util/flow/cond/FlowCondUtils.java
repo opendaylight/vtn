@@ -270,9 +270,7 @@ public final class FlowCondUtils {
             new VtnFlowMatchBuilder().setIndex(index);
         } catch (RuntimeException e) {
             String msg = "Invalid match index: " + index;
-            RpcException re = RpcException.getBadArgumentException(msg);
-            re.initCause(e);
-            throw re;
+            throw RpcException.getBadArgumentException(msg, e);
         }
     }
 

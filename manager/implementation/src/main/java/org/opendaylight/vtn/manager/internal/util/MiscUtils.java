@@ -36,8 +36,6 @@ import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
-import org.opendaylight.controller.sal.core.UpdateType;
-
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
@@ -133,9 +131,7 @@ public final class MiscUtils {
         } catch (RuntimeException e) {
             // This should never happen.
             String msg = "Invalid MAC address: " + mac;
-            RpcException re = RpcException.getBadArgumentException(msg);
-            re.initCause(e);
-            throw re;
+            throw RpcException.getBadArgumentException(msg, e);
         }
     }
 
@@ -162,9 +158,7 @@ public final class MiscUtils {
             return new VnodeName(name);
         } catch (RuntimeException e) {
             String msg = desc + " name is invalid";
-            RpcException re = RpcException.getBadArgumentException(msg);
-            re.initCause(e);
-            throw re;
+            throw RpcException.getBadArgumentException(msg, e);
         }
     }
 
@@ -311,26 +305,6 @@ public final class MiscUtils {
         }
 
         return builder.toString();
-    }
-
-    /**
-     * Convert the given {@link VtnUpdateType} into {@link UpdateType}.
-     *
-     * @param vu  A {@link VtnUpdateType} instance.
-     * @return  A {@link UpdateType} instance.
-     */
-    public static UpdateType toUpdateType(VtnUpdateType vu) {
-        if (vu == null) {
-            return null;
-        }
-        if (vu.equals(VtnUpdateType.CREATED)) {
-            return UpdateType.ADDED;
-        }
-        if (vu.equals(VtnUpdateType.REMOVED)) {
-            return UpdateType.REMOVED;
-        }
-
-        return UpdateType.CHANGED;
     }
 
     /**

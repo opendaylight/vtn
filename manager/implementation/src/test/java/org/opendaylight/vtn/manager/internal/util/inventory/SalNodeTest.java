@@ -20,9 +20,6 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.sal.core.Node.NodeIDType;
-import org.opendaylight.controller.sal.utils.NodeCreator;
-
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnNodes;
@@ -159,52 +156,11 @@ public class SalNodeTest extends TestBase {
     }
 
     /**
-     * Test case for {@link SalNode#create(org.opendaylight.controller.sal.core.Node)} and
-     * {@link SalNode#getNodeNumber()}.
-     *
-     * @throws Exception   An error occurred.
-     */
-    @Test
-    public void testCreateAdNode() throws Exception {
-        org.opendaylight.controller.sal.core.Node node = null;
-        assertEquals(null, SalNode.create(node));
-
-        // Unsupported nodes.
-        node = new org.opendaylight.controller.sal.core.Node(
-            NodeIDType.ONEPK, "node 1");
-        assertEquals(null, SalNode.create(node));
-        node = new org.opendaylight.controller.sal.core.Node(
-            NodeIDType.PRODUCTION, "node 2");
-        assertEquals(null, SalNode.create(node));
-
-        long[] ids = {
-            Long.MIN_VALUE,
-            -1L,
-            0L,
-            1L,
-            10000L,
-            Long.MAX_VALUE,
-        };
-        for (long dpid: ids) {
-            node = new org.opendaylight.controller.sal.core.Node(
-                NodeIDType.OPENFLOW, Long.valueOf(dpid));
-            SalNode snode = SalNode.create(node);
-            assertNotNull(snode);
-            assertEquals(dpid, snode.getNodeNumber());
-
-            // AD-SAL node should be cached.
-            assertSame(node, snode.getAdNode());
-            assertSame(node, snode.getAdNode());
-        }
-    }
-
-    /**
      * Test case for constructors.
      *
      * <ul>
      *   <li>{@link SalNode#SalNode(long)}</li>
      *   <li>{@link SalNode#SalNode(long, String)}</li>
-     *   <li>{@link SalNode#SalNode(long, org.opendaylight.controller.sal.core.Node)}</li>
      * </ul>
      */
     @Test
@@ -218,15 +174,11 @@ public class SalNodeTest extends TestBase {
             Long.MAX_VALUE,
         };
 
-        org.opendaylight.controller.sal.core.Node node = null;
         for (long dpid: ids) {
             SalNode snode = new SalNode(dpid);
             assertEquals(dpid, snode.getNodeNumber());
 
             snode = new SalNode(dpid, (String)null);
-            assertEquals(dpid, snode.getNodeNumber());
-
-            snode = new SalNode(dpid, node);
             assertEquals(dpid, snode.getNodeNumber());
         }
     }
@@ -243,7 +195,6 @@ public class SalNodeTest extends TestBase {
      *   <li>{@link SalNode#getFlowTableIdentifier(Short)}</li>
      *   <li>{@link SalNode#getVtnNodeKey()}</li>
      *   <li>{@link SalNode#getVtnNodeIdentifier()}</li>
-     *   <li>{@link SalNode#getAdNode()}</li>
      *   <li>{@link SalNode#toStringBuilder()}</li>
      *   <li>{@link SalNode#toNodeString()}</li>
      *   <li>{@link SalNode#toNodeStringBuilder()}</li>
@@ -306,15 +257,6 @@ public class SalNodeTest extends TestBase {
                 child(VtnNode.class, vkey).build();
             assertEquals(vpath, snode.getVtnNodeIdentifier());
             assertEquals(vpath, snode.getVtnNodeIdentifierBuilder().build());
-
-            org.opendaylight.controller.sal.core.Node adnode = NodeCreator.
-                createOFNode(Long.valueOf(id));
-            assertNotNull(adnode);
-            org.opendaylight.controller.sal.core.Node ad = snode.getAdNode();
-            assertEquals(adnode, ad);
-
-            // AD-SAL node should be cached.
-            assertSame(ad, snode.getAdNode());
 
             assertEquals(idstr, snode.toStringBuilder().toString());
             assertEquals(idstr, snode.toNodeStringBuilder().toString());

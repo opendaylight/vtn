@@ -14,7 +14,6 @@ import java.util.Set;
 
 import com.google.common.base.Optional;
 
-import org.opendaylight.vtn.manager.PathMap;
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
@@ -34,7 +33,6 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.GlobalPathMaps;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.VtnPathMapConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.VtnPathMapList;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.set.path.map.input.PathMapListBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.vtn.path.map.list.VtnPathMap;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.vtn.path.map.list.VtnPathMapBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.vtn.path.map.list.VtnPathMapKey;
@@ -67,26 +65,13 @@ public final class PathMapUtils {
      * index is invalid.
      *
      * @param index  The path map index.
+     * @param cause  A throwable that indicates the cause of error.
      * @return  An {@link RpcException}.
      */
-    public static RpcException getInvalidMapIndexException(Integer index) {
+    public static RpcException getInvalidMapIndexException(
+        Integer index, Throwable cause) {
         String msg = MiscUtils.joinColon("Invalid path map index", index);
-        return RpcException.getBadArgumentException(msg);
-    }
-
-    /**
-     * Convert the given {@link PathMap} instance into a
-     * {@link VtnPathMapBuilder} instance.
-     *
-     * @param pmap  A {@link PathMap} instance.
-     * @return  A {@link VtnPathMapBuilder} instance that contains values
-     *          in the given {@link PathMap} instance.
-     * @throws RpcException
-     *    The given {@link PathMap} instance contains invalid data.
-     */
-    public static VtnPathMapBuilder toVtnPathMapBuilder(PathMap pmap)
-        throws RpcException {
-        return toVtnPathMapBuilder(null, pmap);
+        return RpcException.getBadArgumentException(msg, cause);
     }
 
     /**
@@ -124,53 +109,6 @@ public final class PathMapUtils {
         FlowUtils.verifyFlowTimeout(vpmc);
 
         return builder;
-    }
-
-    /**
-     * Convert the given {@link PathMap} instance into a
-     * {@link PathMapListBuilder} instance.
-     *
-     * @param index  The index to be associated with the path map.
-     *               If {@code null}, the map index in {@code pmap} is used.
-     * @param pmap   A {@link PathMap} instance.
-     * @return  A {@link PathMapListBuilder} instance that contains values
-     *          in the given {@link PathMap} instance.
-     * @throws RpcException
-     *    The given {@link PathMap} instance contains invalid data.
-     */
-    public static PathMapListBuilder toPathMapListBuilder(
-        Integer index, PathMap pmap) throws RpcException {
-        VtnPathMapBuilder builder = toVtnPathMapBuilder(index, pmap);
-        return new PathMapListBuilder(builder.build());
-    }
-
-    /**
-     * Convert the given {@link VtnPathMapConfig} instance into a
-     * {@link PathMap} instance.
-     *
-     * @param vpmc  A {@link VtnPathMapConfig} instance.
-     * @return  A {@link PathMap} instance.
-     *          {@code null} is returned if {@code vpmc} is {@code null}.
-     * @throws RpcException
-     *    The given {@link VtnPathMapConfig} instance contains invalid data.
-     */
-    public static PathMap toPathMap(VtnPathMapConfig vpmc)
-        throws RpcException {
-        if (vpmc == null) {
-            return null;
-        }
-
-        // Verify the given path map configuration.
-        VtnPathMapBuilder builder = toVtnPathMapBuilder(vpmc);
-
-        int index = vpmc.getIndex().intValue();
-        String cond = vpmc.getCondition().getValue();
-        int policy = builder.getPolicy().intValue();
-        Integer idle = vpmc.getIdleTimeout();
-
-        return (idle == null)
-            ? new PathMap(index, cond, policy)
-            : new PathMap(index, cond, policy, idle, vpmc.getHardTimeout());
     }
 
     /**
@@ -389,38 +327,6 @@ public final class PathMapUtils {
     }
 
     /**
-     * Convert the given {@link PathMap} instance into a
-     * {@link VtnPathMapBuilder} instance.
-     *
-     * @param index  The index to be associated with the path map.
-     *               If {@code null}, the map index in {@code pmap} is used.
-     * @param pmap  A {@link PathMap} instance.
-     * @return  A {@link VtnPathMapBuilder} instance that contains values
-     *          in the given {@link PathMap} instance.
-     * @throws RpcException
-     *    The given {@link PathMap} instance contains invalid data.
-     */
-    private static VtnPathMapBuilder toVtnPathMapBuilder(Integer index,
-                                                         PathMap pmap)
-        throws RpcException {
-        if (pmap == null) {
-            throw RpcException.getNullArgumentException("PathMap");
-        }
-
-        Integer idx = (index == null) ? pmap.getIndex() : index;
-        VtnPathMapBuilder builder = new VtnPathMapBuilder();
-        setIndex(builder, idx);
-        setCondition(builder, pmap.getFlowConditionName());
-        setPolicy(builder, pmap.getPathPolicyId());
-
-        Integer idle = pmap.getIdleTimeout();
-        Integer hard = pmap.getHardTimeout();
-        FlowUtils.verifyFlowTimeout(idle, hard);
-
-        return builder.setIdleTimeout(idle).setHardTimeout(hard);
-    }
-
-    /**
      * Set the map index into the given {@link VtnPathMapBuilder} instance.
      *
      * @param builder  A {@link VtnPathMapBuilder} instance.
@@ -435,23 +341,8 @@ public final class PathMapUtils {
         try {
             builder.setIndex(index);
         } catch (RuntimeException e) {
-            RpcException re = getInvalidMapIndexException(index);
-            re.initCause(e);
-            throw re;
+            throw getInvalidMapIndexException(index, e);
         }
-    }
-
-    /**
-     * Set the flow condition name into the given {@link VtnPathMapBuilder}
-     * instance.
-     *
-     * @param builder  A {@link VtnPathMapBuilder} instance.
-     * @param name     The name of the flow condition.
-     * @throws RpcException  The given flow condition name is invalid.
-     */
-    private static void setCondition(VtnPathMapBuilder builder, String name)
-        throws RpcException {
-        builder.setCondition(FlowCondUtils.checkName(name));
     }
 
     /**
@@ -483,10 +374,7 @@ public final class PathMapUtils {
         try {
             builder.setPolicy(policy);
         } catch (RuntimeException e) {
-            RpcException re =
-                PathPolicyUtils.getInvalidPolicyIdException(policy);
-            re.initCause(e);
-            throw re;
+            throw PathPolicyUtils.getInvalidPolicyIdException(policy, e);
         }
     }
 }

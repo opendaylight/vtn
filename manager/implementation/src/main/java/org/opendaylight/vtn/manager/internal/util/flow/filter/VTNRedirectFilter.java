@@ -21,13 +21,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opendaylight.vtn.manager.ErrorVNodePath;
-import org.opendaylight.vtn.manager.VBridgeIfPath;
-import org.opendaylight.vtn.manager.VInterfacePath;
-import org.opendaylight.vtn.manager.VTerminalIfPath;
-import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
-import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
-
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
@@ -103,53 +96,6 @@ public final class VTNRedirectFilter extends VTNFlowFilter {
         output = Boolean.TRUE.equals(vrf.isOutput());
     }
 
-    /**
-     * Construct a new instance.
-     *
-     * @param idx     An index number to be assigned to the flow filter.
-     * @param filter  A {@link FlowFilter} instance which contains flow filter
-     *                configuration.
-     * @param rdf     A {@link RedirectFilter} instance configured in
-     *                {@code filter}.
-     * @throws RpcException
-     *    {@code vffc} contains invalid value.
-     */
-    VTNRedirectFilter(int idx, FlowFilter filter, RedirectFilter rdf)
-        throws RpcException {
-        super(idx, filter);
-
-        VInterfacePath path = rdf.getDestination();
-        if (path == null) {
-            throw RpcException.getNullArgumentException(
-                "RedirectFilter: Destination");
-        }
-
-        if (path instanceof ErrorVNodePath) {
-            ErrorVNodePath epath = (ErrorVNodePath)path;
-            throw RpcException.getBadArgumentException(epath.getError());
-        }
-
-        // Ignore VTN name in the destination because the VTN name is always
-        // determined by the virtual node path.
-        VnodeName bname;
-        VnodeName iname;
-        try {
-            bname = MiscUtils.checkName("Virtual node",
-                                        path.getTenantNodeName());
-            iname = MiscUtils.checkName("Interface", path.getInterfaceName());
-        } catch (RpcException e) {
-            RpcException re = RpcException.getBadArgumentException(
-                "RedirectFilter: Invalid destination: " + e.getMessage());
-            re.initCause(e);
-            throw re;
-        }
-
-        destination = (path instanceof VBridgeIfPath)
-            ? new VBridgeIfIdentifier(null, bname, iname)
-            : new VTerminalIfIdentifier(null, bname, iname);
-        output = rdf.isOutput();
-    }
-
     // VTNFlowFilter
 
     /**
@@ -212,23 +158,6 @@ public final class VTNRedirectFilter extends VTNFlowFilter {
             dest = dest.replaceTenantName(null);
             destination = dest;
         }
-    }
-
-    /**
-     * Return a {@link org.opendaylight.vtn.manager.flow.filter.FilterType}
-     * instance which indicates the type of this flow filter.
-     *
-     * @return  A {@link RedirectFilter} instance.
-     */
-    @Override
-    protected RedirectFilter getFilterType() {
-        String bname = destination.getBridgeNameString();
-        String iname = destination.getInterfaceNameString();
-        VInterfacePath ipath = (destination.getType() == VNodeType.VBRIDGE_IF)
-            ? new VBridgeIfPath(null, bname, iname)
-            : new VTerminalIfPath(null, bname, iname);
-
-        return ipath.getRedirectFilter(output);
     }
 
     /**

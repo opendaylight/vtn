@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -35,11 +35,13 @@ import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
+import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfig;
@@ -59,7 +61,7 @@ public class OperationalListenerTest extends TestBase {
      * Registration to be associated with {@link OperationalListener}.
      */
     @Mock
-    private ListenerRegistration  listenerReg;
+    private ListenerRegistration<DataChangeListener>  listenerReg;
 
     /**
      * Reference to current configuration.
@@ -178,7 +180,7 @@ public class OperationalListenerTest extends TestBase {
      */
     @Test
     public void testEnterEvent() {
-        AsyncDataChangeEvent ev = null;
+        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev = null;
         assertEquals(null, operListener.enterEvent(ev));
     }
 

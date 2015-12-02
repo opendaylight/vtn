@@ -9,25 +9,17 @@
 
 package org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.provider.rev150209;
 
-import java.util.Dictionary;
-import java.util.Hashtable;
-
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
-import org.osgi.framework.ServiceReference;
-import org.osgi.framework.ServiceRegistration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.provider.VTNManagerProviderImpl;
 
 import org.opendaylight.controller.config.api.DependencyResolver;
 import org.opendaylight.controller.config.api.ModuleIdentifier;
-
-import org.opendaylight.controller.sal.utils.GlobalConstants;
 
 /**
  * MD-SAL provider module for the VTN Manager service.
@@ -38,11 +30,6 @@ public final class VTNProviderModule extends AbstractVTNProviderModule {
      */
     private static final Logger  LOG =
         LoggerFactory.getLogger(VTNProviderModule.class);
-
-    /**
-     * OSGi service registration.
-     */
-    private ServiceRegistration<VTNManagerProvider>  osgiRegistration;
 
     /**
      * Construct a VTN Manager provider module.
@@ -74,7 +61,6 @@ public final class VTNProviderModule extends AbstractVTNProviderModule {
                              VTNProviderModule oldModule,
                              AutoCloseable oldInstance) {
         super(identifier, dependencyResolver, oldModule, oldInstance);
-        osgiRegistration = oldModule.osgiRegistration;
     }
 
     /**
@@ -85,9 +71,7 @@ public final class VTNProviderModule extends AbstractVTNProviderModule {
     @Override
     public AutoCloseable createInstance() {
         BundleContext bc = getBundle().getBundleContext();
-        VTNManagerProviderImpl provider = createProvider(bc);
-        registerService(bc, provider);
-        return provider;
+        return createProvider(bc);
     }
 
     /**
@@ -106,30 +90,26 @@ public final class VTNProviderModule extends AbstractVTNProviderModule {
         // Check the bundle state.
         Bundle b = getBundle();
         int state = b.getState();
+        AutoCloseable instance = old;
         if (state != Bundle.ACTIVE) {
             // The VTN Manager bundle is not active.
-            // In this case we should reuse the given instance without
-            // registering any service.
+            // In this case we should reuse the given instance.
             LOG.trace("Reuse inactive provider: state={}, this={}, old={}",
                       state, this, old);
-            return old;
-        }
-
-        BundleContext bc = b.getBundleContext();
-        VTNManagerProviderImpl oldProvider = (VTNManagerProviderImpl)old;
-        VTNManagerProviderImpl provider;
-        if (oldProvider.canReuse()) {
-            LOG.trace("Reuse provider: this={}, old={}", this, old);
-            provider = oldProvider;
         } else {
-            oldProvider.close();
-            provider = createProvider(bc);
-            LOG.trace("Create new provider: this={}, old={}, new={}",
-                      this, oldProvider, provider);
+            BundleContext bc = b.getBundleContext();
+            VTNManagerProviderImpl oldProvider = (VTNManagerProviderImpl)old;
+            if (oldProvider.canReuse()) {
+                LOG.trace("Reuse provider: this={}, old={}", this, old);
+            } else {
+                oldProvider.close();
+                instance = createProvider(bc);
+                LOG.trace("Create new provider: this={}, old={}, new={}",
+                          this, oldProvider, instance);
+            }
         }
 
-        registerService(bc, provider);
-        return provider;
+        return instance;
     }
 
     /**
@@ -144,73 +124,6 @@ public final class VTNProviderModule extends AbstractVTNProviderModule {
             bc, getDataBrokerDependency(), getRpcRegistryDependency(),
             getNotificationServiceDependency(),
             getEntityOwnershipServiceDependency());
-    }
-
-    /**
-     * Register VTN Manager provider to the OSGi service registry.
-     *
-     * @param bc        A {@link BundleContext} instance associated with the
-     *                  OSGi bundle that contains this class.
-     * @param provider  A {@link VTNManagerProviderImpl} instance.
-     */
-    private void registerService(BundleContext bc,
-                                 VTNManagerProviderImpl provider) {
-        if (isOsgiServiceRequired(bc, provider)) {
-            Dictionary<String, Object> prop = new Hashtable<>();
-            prop.put("containerName", GlobalConstants.DEFAULT.toString());
-            try {
-                osgiRegistration = bc.
-                    registerService(VTNManagerProvider.class, provider, prop);
-            } catch (RuntimeException e) {
-                String msg = "Failed to register OSGi service.";
-                LOG.error(msg, e);
-                throw new IllegalStateException(msg, e);
-            }
-
-            LOG.trace("Registered OSGi service: provider={}, reg={}",
-                      provider, osgiRegistration);
-        }
-    }
-
-    /**
-     * Determine whether the given VTN Manager provider needs to be registered
-     * to the OSGi service registry or not.
-     *
-     * @param bc        A {@link BundleContext} instance.
-     * @param provider  A {@link VTNManagerProviderImpl} instance.
-     * @return  {@code true} only if the given VTN Manager provider needs to
-     *          be registered as an OSGi service.
-     */
-    private boolean isOsgiServiceRequired(BundleContext bc,
-                                          VTNManagerProviderImpl provider) {
-        if (osgiRegistration == null) {
-            LOG.trace("No OSGi service: this={}", this);
-            return true;
-        }
-
-        try {
-            ServiceReference<VTNManagerProvider> ref =
-                osgiRegistration.getReference();
-            if (provider.equals(bc.getService(ref))) {
-                LOG.trace("Reuse OSGI service: provider={}, reg={}",
-                          provider, osgiRegistration);
-                return false;
-            }
-        } catch (Exception e) {
-            LOG.trace("OSGi service registration is obsolete", e);
-            osgiRegistration = null;
-            return true;
-        }
-
-        // Unregister old service.
-        try {
-            osgiRegistration.unregister();
-        } catch (Exception e) {
-            LOG.trace("Failed to unregister OSGi service", e);
-        }
-
-        osgiRegistration = null;
-        return false;
     }
 
     /**

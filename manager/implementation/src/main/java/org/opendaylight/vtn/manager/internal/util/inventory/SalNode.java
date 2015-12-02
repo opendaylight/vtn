@@ -14,9 +14,6 @@ import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
-import org.opendaylight.controller.sal.core.Node.NodeIDType;
-import org.opendaylight.controller.sal.utils.NodeCreator;
-
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier.InstanceIdentifierBuilder;
 
@@ -63,15 +60,6 @@ public class SalNode {
      * </p>
      */
     private String  identString;
-
-    /**
-     * Cache for AD-SAL node.
-     *
-     * <p>
-     *   Note that this field does not affect object identity.
-     * </p>
-     */
-    private org.opendaylight.controller.sal.core.Node  adNode;
 
     /**
      * Convert a MD-SAL node ID into a {@code SalNode} instance.
@@ -137,31 +125,6 @@ public class SalNode {
     }
 
     /**
-     * Convert a AD-SAL node into a {@code SalNode} instance.
-     *
-     * @param node  An AD-SAL node instance.
-     * @return  A {@code SalNode} instance on success.
-     *          {@code null} on failure.
-     */
-    public static final SalNode create(
-        org.opendaylight.controller.sal.core.Node node) {
-        if (node == null || !NodeIDType.OPENFLOW.equals(node.getType())) {
-            return null;
-        }
-
-        Object o = node.getID();
-        SalNode snode;
-        if (o instanceof Long) {
-            Long l = (Long)o;
-            snode = new SalNode(l.longValue(), node);
-        } else {
-            snode = null;
-        }
-
-        return snode;
-    }
-
-    /**
      * Convert the given MD-SAL node ID into a {@code SalNode} instance
      * with value checking.
      *
@@ -216,18 +179,6 @@ public class SalNode {
     public SalNode(long id, String str) {
         nodeNumber = id;
         identString = str;
-    }
-
-    /**
-     * Construct a new instance with specifying an AD-SAL node corresponding
-     * to this instance.
-     *
-     * @param id    A node identifier.
-     * @param node  An AD-SAL node instance.
-     */
-    public SalNode(long id, org.opendaylight.controller.sal.core.Node node) {
-        nodeNumber = id;
-        adNode = node;
     }
 
     /**
@@ -318,19 +269,6 @@ public class SalNode {
      */
     public final InstanceIdentifier<VtnNode> getVtnNodeIdentifier() {
         return getVtnNodeIdentifierBuilder().build();
-    }
-
-    /**
-     * Return an AD-SAL node.
-     *
-     * @return  An AD-SAL node that represents this instance.
-     */
-    public final org.opendaylight.controller.sal.core.Node getAdNode() {
-        if (adNode == null) {
-            adNode = NodeCreator.createOFNode(Long.valueOf(nodeNumber));
-        }
-
-        return adNode;
     }
 
     /**

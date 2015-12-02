@@ -12,8 +12,6 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.opendaylight.vtn.manager.flow.action.FlowAction;
-
 import org.opendaylight.vtn.manager.internal.util.packet.Layer4Header;
 import org.opendaylight.vtn.manager.internal.util.packet.Layer4PortHeader;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
@@ -84,22 +82,6 @@ public final class VTNSetPortDstAction extends VTNPortAction {
     /**
      * Construct a new instance.
      *
-     * @param act
-     *    A {@link org.opendaylight.vtn.manager.flow.action.SetTpDstAction}
-     *    instance.
-     * @param ord  An integer which determines the order of flow actions
-     *             in a flow entry.
-     * @throws RpcException  An invalid argument is specified.
-     */
-    public VTNSetPortDstAction(
-        org.opendaylight.vtn.manager.flow.action.SetTpDstAction act, int ord)
-        throws RpcException {
-        super(act, ord);
-    }
-
-    /**
-     * Construct a new instance.
-     *
      * @param ac   A {@link VtnSetPortDstActionCase} instance.
      * @param ord  An integer which determines the order of flow actions
      *             in a flow entry.
@@ -111,17 +93,6 @@ public final class VTNSetPortDstAction extends VTNPortAction {
     }
 
     // VTNFlowAction
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public FlowAction toFlowAction(VtnAction vact) throws RpcException {
-        VtnSetPortDstActionCase ac = cast(VtnSetPortDstActionCase.class, vact);
-        int arg = getPortNumber(ac.getVtnSetPortDstAction());
-        return new org.opendaylight.vtn.manager.flow.action.
-            SetTpDstAction(arg);
-    }
 
     /**
      * {@inheritDoc}
@@ -195,30 +166,9 @@ public final class VTNSetPortDstAction extends VTNPortAction {
      * {@inheritDoc}
      */
     @Override
-    public FlowAction toFlowAction() {
-        return new org.opendaylight.vtn.manager.flow.action.
-            SetTpDstAction(getPort());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public VTNSetPortDstAction toFlowFilterAction(VtnAction vact, Integer ord)
         throws RpcException {
         VtnSetPortDstActionCase ac = cast(VtnSetPortDstActionCase.class, vact);
         return new VTNSetPortDstAction(ac, ord);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public VTNSetPortDstAction toFlowFilterAction(FlowAction fact, int ord)
-        throws RpcException {
-        org.opendaylight.vtn.manager.flow.action.SetTpDstAction act =
-            cast(org.opendaylight.vtn.manager.flow.action.SetTpDstAction.class,
-                 fact);
-        return new VTNSetPortDstAction(act, ord);
     }
 }

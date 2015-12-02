@@ -93,32 +93,22 @@ public class EtherPacketTest extends TestBase {
     public void testGetter() {
         TxContext ctx = mock(TxContext.class);
         SalPort ingress = new SalPort(1L, 3L);
-        byte[] bytes = {
-            (byte)0x00, (byte)0x0a, (byte)0x7f, (byte)0x88, (byte)0xff,
-        };
+        long[] octets = {0x00, 0x0a, 0x7f, 0x88, 0xff};
         int[] types = {0x0001, 0x0815, 0x9999};
         int[] vlans = {0, 1, 2, 4095};
         ARP arp = createArp();
-        for (byte src: bytes) {
-            byte[] srcAddr = {
-                (byte)0x00, (byte)0x11, (byte)0x22,
-                (byte)0x33, (byte)0x44, src,
-            };
-            EtherAddress srcMac = new EtherAddress(srcAddr);
-            for (byte dst: bytes) {
-                byte[] dstAddr = {
-                    (byte)0xf0, (byte)0xf1, (byte)0xf2,
-                    (byte)0xf3, (byte)0xf4, dst,
-                };
-                EtherAddress dstMac = new EtherAddress(dstAddr);
+        for (long srcOctet: octets) {
+            EtherAddress src = new EtherAddress(0x001122334400L + srcOctet);
+            for (long dstOctet: octets) {
+                EtherAddress dst = new EtherAddress(0xf0f1f2f3f400L + dstOctet);
                 for (int type: types) {
                     for (int vlan: vlans) {
                         // Create Ethernet frame using ARP packet.
-                        Ethernet pkt = createEthernet(srcMac, dstMac, type,
-                                                      (short)vlan, arp);
+                        Ethernet pkt = createEthernet(
+                            src, dst, type, (short)vlan, arp);
                         EtherPacket ether = new EtherPacket(pkt);
-                        assertEquals(srcMac, ether.getSourceAddress());
-                        assertEquals(dstMac, ether.getDestinationAddress());
+                        assertEquals(src, ether.getSourceAddress());
+                        assertEquals(dst, ether.getDestinationAddress());
                         assertEquals(type, ether.getEtherType());
                         assertEquals(vlan, ether.getOriginalVlan());
                         assertEquals(vlan, ether.getVlanId());
@@ -138,11 +128,10 @@ public class EtherPacketTest extends TestBase {
                         assertSame(pkt, ether.getPacket());
 
                         // Create another Ethernet frame using raw packet.
-                        pkt = createEthernet(srcMac, dstMac, type, vlan,
-                                             RAW_PAYLOAD);
+                        pkt = createEthernet(src, dst, type, vlan, RAW_PAYLOAD);
                         ether = new EtherPacket(pkt);
-                        assertEquals(srcMac, ether.getSourceAddress());
-                        assertEquals(dstMac, ether.getDestinationAddress());
+                        assertEquals(src, ether.getSourceAddress());
+                        assertEquals(dst, ether.getDestinationAddress());
                         assertEquals(type, ether.getEtherType());
                         assertEquals(vlan, ether.getOriginalVlan());
                         if (vlan == EtherHeader.VLAN_NONE) {
@@ -458,8 +447,7 @@ public class EtherPacketTest extends TestBase {
             vlanPcp = pcp;
         }
 
-        return createEthernet(src.getBytes(), dst.getBytes(), type,
-                              (short)vid, (byte)pcp, payload);
+        return createEthernet(src, dst, type, (short)vid, (byte)pcp, payload);
     }
 
     /**
@@ -482,8 +470,7 @@ public class EtherPacketTest extends TestBase {
             vlanPcp = pcp;
         }
 
-        return createEthernet(src.getBytes(), dst.getBytes(), type,
-                              (short)vid, (byte)pcp, raw);
+        return createEthernet(src, dst, type, (short)vid, (byte)pcp, raw);
     }
 
     /**

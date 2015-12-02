@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,9 @@
  */
 
 package org.opendaylight.vtn.manager.internal.util.flow.match;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,14 +21,13 @@ import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.flow.cond.PortMatch;
-
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
-import org.opendaylight.vtn.manager.internal.XmlNode;
+import org.opendaylight.vtn.manager.internal.TestPortNumber;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
+import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlValueType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnPortRange;
@@ -65,12 +67,9 @@ public class VTNPortRangeTest extends TestBase {
      * Test case for the following methods.
      *
      * <ul>
-     *   <li>{@link VTNPortRange#create(PortMatch)}</li>
      *   <li>{@link VTNPortRange#create(VtnPortRange)}</li>
      *   <li>{@link VTNPortRange#create(PortNumber)}</li>
-     *   <li>{@link VTNPortRange#toPortMatch(VTNPortRange)}</li>
      *   <li>{@link VTNPortRange#VTNPortRange(int)}</li>
-     *   <li>{@link VTNPortRange#VTNPortRange(PortMatch)}</li>
      *   <li>{@link VTNPortRange#VTNPortRange(VtnPortRange)}</li>
      *   <li>{@link VTNPortRange#VTNPortRange(PortNumber)}</li>
      *   <li>Getter methods.</li>
@@ -80,7 +79,6 @@ public class VTNPortRangeTest extends TestBase {
      */
     @Test
     public void testGetter() throws Exception {
-        assertEquals(null, VTNPortRange.create((PortMatch)null));
         assertEquals(null, VTNPortRange.create((VtnPortRange)null));
         assertEquals(null, VTNPortRange.create((PortNumber)null));
 
@@ -91,19 +89,18 @@ public class VTNPortRangeTest extends TestBase {
         };
 
         for (PortRangeParams range: ranges) {
-            PortMatch pm = range.toPortMatch();
-            VTNPortRange vr = VTNPortRange.create(pm);
-            PortNumber pfrom = new PortNumber(pm.getPortFrom());
-            PortNumber pto = new PortNumber(pm.getPortTo());
-            assertEquals(pm.getPortFrom(), vr.getPortFrom());
-            assertEquals(pm.getPortTo(), vr.getPortTo());
-            assertEquals(pfrom, vr.getPortNumberFrom());
-            assertEquals(pto, vr.getPortNumberTo());
+            Integer from = range.getPortFrom();
+            Integer to = range.getPortTo();
+            if (to == null) {
+                to = from;
+            }
+            PortNumber pfrom = new PortNumber(from);
+            PortNumber pto = new PortNumber(to);
 
             VtnPortRange vpr = range.toTcpSourceRange();
-            vr = VTNPortRange.create(vpr);
-            assertEquals(pm.getPortFrom(), vr.getPortFrom());
-            assertEquals(pm.getPortTo(), vr.getPortTo());
+            VTNPortRange vr = VTNPortRange.create(vpr);
+            assertEquals(from, vr.getPortFrom());
+            assertEquals(to, vr.getPortTo());
             assertEquals(pfrom, vr.getPortNumberFrom());
             assertEquals(pto, vr.getPortNumberTo());
 
@@ -124,23 +121,10 @@ public class VTNPortRangeTest extends TestBase {
 
         // port-from is missing.
         VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
-        ArrayList<PortMatch> pmList = new ArrayList<>();
         ArrayList<VtnPortRange> vprList = new ArrayList<>();
         PortRangeParams params = new PortRangeParams();
-        pmList.add(params.setPortTo(0).toPortMatch());
-        vprList.add(params.toTcpSourceRange());
-        pmList.add(params.reset().setPortTo(0).toPortMatch());
-        vprList.add(params.toTcpSourceRange());
-        for (PortMatch pm: pmList) {
-            try {
-                new VTNPortRange(pm);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals("port-from cannot be null", e.getMessage());
-            }
-        }
+        vprList.add(params.setPortTo(0).toTcpSourceRange());
+        vprList.add(params.reset().setPortTo(1234).toTcpSourceRange());
         for (VtnPortRange vpr: vprList) {
             try {
                 new VTNPortRange(vpr);
@@ -169,13 +153,19 @@ public class VTNPortRangeTest extends TestBase {
             0x7fff0000, Integer.MAX_VALUE - 1, Integer.MAX_VALUE,
         };
         for (int port: badPorts) {
-            pmList.clear();
-            pmList.add(params.reset().setPortFrom(port).toPortMatch());
-            pmList.add(params.reset().setPortFrom(0).setPortTo(port).
-                       toPortMatch());
-            for (PortMatch pm: pmList) {
+            vprList.clear();
+            PortNumber pnum = new TestPortNumber(port);
+            VtnPortRange pr = mock(VtnPortRange.class);
+            when(pr.getPortFrom()).thenReturn(pnum);
+            vprList.add(pr);
+
+            pr = mock(VtnPortRange.class);
+            when(pr.getPortFrom()).thenReturn(new PortNumber(0));
+            when(pr.getPortTo()).thenReturn(pnum);
+            vprList.add(pr);
+            for (VtnPortRange vpr: vprList) {
                 try {
-                    new VTNPortRange(pm);
+                    new VTNPortRange(vpr);
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
@@ -192,6 +182,14 @@ public class VTNPortRangeTest extends TestBase {
                 assertEquals(vtag, e.getVtnErrorTag());
                 assertEquals("Invalid port number: " + port, e.getMessage());
             }
+
+            try {
+                new VTNPortRange(pnum);
+            } catch (RpcException e) {
+                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals("Invalid port number: " + port, e.getMessage());
+            }
         }
 
         // Invalid port range.
@@ -199,20 +197,8 @@ public class VTNPortRangeTest extends TestBase {
         for (int port: ports) {
             int from = port + 1;
             int to = port;
-            PortMatch pm = params.reset().setPortFrom(from).setPortTo(to).
-                toPortMatch();
-            try {
-                new VTNPortRange(pm);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                String msg = "Invalid port range: from=" + from +
-                    ", to=" + to;
-                assertEquals(msg, e.getMessage());
-            }
-
-            VtnPortRange vpr = params.toTcpSourceRange();
+            VtnPortRange vpr = params.reset().setPortFrom(from).setPortTo(to).
+                toTcpSourceRange();
             try {
                 new VTNPortRange(vpr);
                 unexpected();
@@ -226,17 +212,8 @@ public class VTNPortRangeTest extends TestBase {
 
             from = port;
             to = 0;
-            pm = params.reset().setPortFrom(from).setPortTo(to).toPortMatch();
-            try {
-                new VTNPortRange(pm);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                String msg = "Invalid port range: from=" + from + ", to=" + to;
-                assertEquals(msg, e.getMessage());
-            }
-
+            vpr = params.reset().setPortFrom(from).setPortTo(to).
+                toTcpSourceRange();
             vpr = params.toTcpSourceRange();
             try {
                 new VTNPortRange(vpr);
@@ -272,7 +249,7 @@ public class VTNPortRangeTest extends TestBase {
         int from = 100;
         int to = 200;
         PortRangeParams params = new PortRangeParams(from, to);
-        vr = new VTNPortRange(params.toPortMatch());
+        vr = new VTNPortRange(params.toTcpSourceRange());
         for (int i = from; i <= to; i++) {
             assertEquals(true, vr.match(i));
         }
@@ -316,8 +293,8 @@ public class VTNPortRangeTest extends TestBase {
 
         StringBuilder b = new StringBuilder();
         for (PortRangeParams range: ranges) {
-            VTNPortRange vr1 = new VTNPortRange(range.toPortMatch());
-            VTNPortRange vr2 = new VTNPortRange(range.toPortMatch());
+            VTNPortRange vr1 = new VTNPortRange(range.toTcpSourceRange());
+            VTNPortRange vr2 = new VTNPortRange(range.toUdpSourceRange());
             testEquals(set, vr1, vr2);
 
             b.setLength(0);

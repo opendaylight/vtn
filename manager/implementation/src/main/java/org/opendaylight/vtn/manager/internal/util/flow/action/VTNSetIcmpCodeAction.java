@@ -15,8 +15,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.opendaylight.vtn.manager.flow.action.FlowAction;
-import org.opendaylight.vtn.manager.flow.action.SetIcmpCodeAction;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
@@ -102,21 +100,6 @@ public final class VTNSetIcmpCodeAction extends FlowFilterAction {
     /**
      * Construct a new instance.
      *
-     * @param act  A {@link SetIcmpCodeAction} instance.
-     * @param ord  An integer which determines the order of flow actions
-     *             in a flow entry.
-     * @throws RpcException  An invalid argument is specified.
-     */
-    public VTNSetIcmpCodeAction(SetIcmpCodeAction act, int ord)
-        throws RpcException {
-        super(Integer.valueOf(ord));
-        code = act.getCode();
-        verify();
-    }
-
-    /**
-     * Construct a new instance.
-     *
      * @param ac   A {@link VtnSetIcmpCodeActionCase} instance.
      * @param ord  An integer which determines the order of flow actions
      *             in a flow entry.
@@ -156,17 +139,6 @@ public final class VTNSetIcmpCodeAction extends FlowFilterAction {
     }
 
     // VTNFlowAction
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public FlowAction toFlowAction(VtnAction vact) throws RpcException {
-        VtnSetIcmpCodeActionCase ac =
-            cast(VtnSetIcmpCodeActionCase.class, vact);
-        short icmpCode = getIcmpCode(ac.getVtnSetIcmpCodeAction());
-        return new SetIcmpCodeAction(icmpCode);
-    }
 
     /**
      * {@inheritDoc}
@@ -252,29 +224,11 @@ public final class VTNSetIcmpCodeAction extends FlowFilterAction {
      * {@inheritDoc}
      */
     @Override
-    public FlowAction toFlowAction() {
-        return new SetIcmpCodeAction(code);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public VTNSetIcmpCodeAction toFlowFilterAction(VtnAction vact, Integer ord)
         throws RpcException {
         VtnSetIcmpCodeActionCase ac =
             cast(VtnSetIcmpCodeActionCase.class, vact);
         return new VTNSetIcmpCodeAction(ac, ord);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public VTNSetIcmpCodeAction toFlowFilterAction(FlowAction fact, int ord)
-        throws RpcException {
-        SetIcmpCodeAction act = cast(SetIcmpCodeAction.class, fact);
-        return new VTNSetIcmpCodeAction(act, ord);
     }
 
     /**

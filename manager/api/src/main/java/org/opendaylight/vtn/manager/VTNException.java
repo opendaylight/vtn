@@ -8,25 +8,17 @@
 
 package org.opendaylight.vtn.manager;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
- * {@code VTNException} is an exception for notifying errors that occur in
- *  OSGi services provided by the VTN Manager.
- *
- * <p>
- *   This exception is used for notifying the {@link Status} which indicates
- *   the result of the operation.
- * </p>
+ * {@code VTNException} is an exception for notifying errors caused by the
+ *  VTN Manager.
  */
 public class VTNException extends Exception {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -1262222199567926358L;
+    private static final long  serialVersionUID = -6030375836343768899L;
 
     /**
      * The {@link VtnErrorTag} object which indicates the result of the
@@ -43,7 +35,7 @@ public class VTNException extends Exception {
      */
     public VTNException(VtnErrorTag etag, String msg) {
         super(msg);
-        errorTag = (etag == null) ? VtnErrorTag.INTERNALERROR : etag;
+        errorTag = etag;
     }
 
     /**
@@ -57,7 +49,7 @@ public class VTNException extends Exception {
      */
     public VTNException(VtnErrorTag etag, String msg, Throwable cause) {
         super(msg, cause);
-        errorTag = (etag == null) ? VtnErrorTag.INTERNALERROR : etag;
+        errorTag = etag;
     }
 
     /**
@@ -94,55 +86,12 @@ public class VTNException extends Exception {
     }
 
     /**
-     * Construct a new instance from the given {@link Status} instance.
-     *
-     * @param status  A {@link Status} instance.
-     */
-    public VTNException(Status status) {
-        super(status.getDescription());
-        errorTag = toVtnErrorTag(status.getCode());
-    }
-
-    /**
      * Return the {@link VtnErrorTag} instance which indicates the result of
      * the operation.
      *
      * @return  A {@link VtnErrorTag} instance.
      */
     public final VtnErrorTag getVtnErrorTag() {
-        return errorTag;
-    }
-
-    /**
-     * Return the {@link Status} object which indicates the result of the
-     * operation.
-     *
-     * @return  The {@link Status} object which indicates the result of the
-     *          operation.
-     */
-    public final Status getStatus() {
-        StatusCode code;
-        try {
-            code = StatusCode.valueOf(errorTag.name());
-        } catch (Exception e) {
-            // This should never happen.
-            code = StatusCode.UNDEFINED;
-        }
-
-        return new Status(code, getMessage());
-    }
-
-    /**
-     * Convert the given {@link StatusCode} into a {@link VtnErrorTag}.
-     *
-     * @param code  A {@link StatusCode}.
-     * @return  A {@link VtnErrorTag} instance associated with {@code code}.
-     */
-    private VtnErrorTag toVtnErrorTag(StatusCode code) {
-        try {
-            return VtnErrorTag.valueOf(code.name());
-        } catch (Exception e) {
-            return VtnErrorTag.INTERNALERROR;
-        }
+        return (errorTag == null) ? VtnErrorTag.INTERNALERROR : errorTag;
     }
 }

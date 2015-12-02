@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -15,7 +15,6 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPopVlanActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPopVlanActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.pop.vlan.action._case.VtnPopVlanAction;
@@ -42,7 +41,6 @@ public class VTNPopVlanActionTest extends TestBase {
      *   <li>{@link VTNPopVlanAction#VTNPopVlanAction()}</li>
      *   <li>{@link VTNPopVlanAction#set(VtnFlowActionBuilder)}</li>
      *   <li>{@link VTNPopVlanAction#set(ActionBuilder)}</li>
-     *   <li>{@link VTNPopVlanAction#toFlowAction(VtnAction)}</li>
      *   <li>{@link VTNPopVlanAction#toVtnAction(Action)}</li>
      *   <li>{@link VTNPopVlanAction#getDescription(Action)}</li>
      *   <li>{@link VTNFlowAction#toVtnFlowActionBuilder(Integer)}</li>
@@ -78,30 +76,14 @@ public class VTNPopVlanActionTest extends TestBase {
             assertEquals(mact, mbuilder.getAction());
         }
 
-        org.opendaylight.vtn.manager.flow.action.PopVlanAction vad =
-            new org.opendaylight.vtn.manager.flow.action.PopVlanAction();
-        VtnAction vaction = vac;
-        assertEquals(vad, va.toFlowAction(vaction));
-
         Action action = mact;
         assertEquals(vac, va.toVtnAction(action));
         assertEquals("POP_VLAN", va.getDescription(action));
 
-        vaction = VTNDropAction.newVtnAction();
+        action = new DropActionCaseBuilder().build();
         RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
         VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
-        String emsg = "VTNPopVlanAction: Unexpected type: " + vaction;
-        try {
-            va.toFlowAction(vaction);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(etag, e.getErrorTag());
-            assertEquals(vtag, e.getVtnErrorTag());
-            assertEquals(emsg, e.getMessage());
-        }
-
-        action = new DropActionCaseBuilder().build();
-        emsg = "VTNPopVlanAction: Unexpected type: " + action;
+        String emsg = "VTNPopVlanAction: Unexpected type: " + action;
         try {
             va.toVtnAction(action);
             unexpected();

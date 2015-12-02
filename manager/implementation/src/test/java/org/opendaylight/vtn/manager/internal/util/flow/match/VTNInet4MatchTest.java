@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,9 @@
  */
 
 package org.opendaylight.vtn.manager.internal.util.flow.match;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,8 +20,6 @@ import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.flow.cond.Inet4Match;
-import org.opendaylight.vtn.manager.flow.cond.InetMatch;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.IpNetwork;
 
@@ -26,13 +27,17 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
-import org.opendaylight.vtn.manager.internal.XmlNode;
+import org.opendaylight.vtn.manager.internal.TestDscp;
+import org.opendaylight.vtn.manager.internal.TestIpv4Prefix;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
+import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlValueType;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnInetMatchFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.VtnInetMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.Match;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.layer._3.match.ArpMatchBuilder;
@@ -125,9 +130,7 @@ public class VTNInet4MatchTest extends TestBase {
      *
      * <ul>
      *   <li>{@link VTNInet4Match#VTNInet4Match(IpNetwork,IpNetwork,Short,Short)}</li>
-     *   <li>{@link VTNInet4Match#VTNInet4Match(Inet4Match)}</li>
      *   <li>{@link VTNInet4Match#setMatch(MatchBuilder)}</li>
-     *   <li>{@link VTNInetMatch#create(org.opendaylight.vtn.manager.flow.cond.InetMatch)}</li>
      *   <li>{@link VTNInetMatch#create(Match)}</li>
      *   <li>Getter methods.</li>
      * </ul>
@@ -182,10 +185,9 @@ public class VTNInet4MatchTest extends TestBase {
                             params.setProtocol(proto);
                             for (Short dscp: dscps) {
                                 params.setDscp(dscp);
-                                Inet4Match im = params.toInet4Match();
-                                VTNInet4Match imatch = new VTNInet4Match(im);
+                                VtnInetMatch vim = params.toVtnInetMatch();
+                                VTNInet4Match imatch = new VTNInet4Match(vim);
                                 params.verify(imatch);
-                                assertEquals(imatch, VTNInetMatch.create(im));
 
                                 VTNInet4Match imatch1 = new VTNInet4Match(
                                     srcNw, dstNw, proto, dscp);
@@ -197,52 +199,20 @@ public class VTNInet4MatchTest extends TestBase {
             }
         }
 
-        // Create broken Inet4Match.
-        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
-        String v6addr = "::1";
-        String[] badAddrs = {
-            "", "192.168.100.256", v6addr, "bad_address",
-        };
-        Unmarshaller um = createUnmarshaller(Inet4Match.class);
-        for (String addr: badAddrs) {
-            String xml = new XmlNode("inet4match").
-                setAttribute("src", addr).toString();
-            Inet4Match im = unmarshal(um, xml, Inet4Match.class);
-            assertNotNull(im.getValidationStatus());
-            try {
-                new VTNInet4Match(im);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                String desc = e.getMessage();
-                if (addr.isEmpty()) {
-                    assertEquals("Empty source address.", desc);
-                } else if (addr.equals(v6addr)) {
-                    String msg = "Unexpected source address type: addr=" +
-                        addr + ", expected=Inet4Address";
-                    assertEquals(msg, desc);
-                } else {
-                    String msg = "Invalid source IP address: " + addr + ": ";
-                    assertTrue("Unexpected error message: " + desc,
-                               desc.startsWith(msg));
-                }
-            }
-        }
-
         // Invalid prefix length.
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         Short[] badPrefix = {
-            Short.MIN_VALUE, -30000, -10000, -0x100, -3, -2, -1, 0,
+            Short.MIN_VALUE, -30000, -10000, -0x100, -3, -2, -1,
             33, 34, 1000, 0x1f00, Short.MAX_VALUE - 1, Short.MAX_VALUE,
         };
-        IpNetwork ipaddr = new Ip4Network("192.168.10.20");
         for (Short prefix: badPrefix) {
-            params.reset().setSourceAddress(ipaddr);
-            params.setSourcePrefix(prefix);
-            Inet4Match im = params.toInet4Match();
-            assertEquals(null, im.getValidationStatus());
+            TestIpv4Prefix ipv4 =
+                new TestIpv4Prefix("192.168.10.20/" + prefix);
+            IpPrefix ipp = new IpPrefix(ipv4);
+            VtnInetMatchFields vimatch = mock(VtnInetMatchFields.class);
+            when(vimatch.getSourceNetwork()).thenReturn(ipp);
             try {
-                new VTNInet4Match(im);
+                new VTNInet4Match(vimatch);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
@@ -251,12 +221,10 @@ public class VTNInet4MatchTest extends TestBase {
                 assertTrue(msg.startsWith("Invalid source IP address: "));
             }
 
-            params.reset().setDestinationAddress(ipaddr);
-            params.setDestinationPrefix(prefix);
-            im = params.toInet4Match();
-            assertEquals(null, im.getValidationStatus());
+            vimatch = mock(VtnInetMatchFields.class);
+            when(vimatch.getDestinationNetwork()).thenReturn(ipp);
             try {
-                new VTNInet4Match(im);
+                new VTNInet4Match(vimatch);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
@@ -272,11 +240,10 @@ public class VTNInet4MatchTest extends TestBase {
             256, 257, 999, 0x1f00, Short.MAX_VALUE - 1, Short.MAX_VALUE,
         };
         for (Short proto: badProtocols) {
-            params.reset().setProtocol(proto);
-            Inet4Match im = params.toInet4Match();
-            assertEquals(null, im.getValidationStatus());
+            VtnInetMatchFields vimatch = mock(VtnInetMatchFields.class);
+            when(vimatch.getProtocol()).thenReturn(proto);
             try {
-                new VTNInet4Match(im);
+                new VTNInet4Match(vimatch);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
@@ -299,15 +266,14 @@ public class VTNInet4MatchTest extends TestBase {
         // Invalid DSCP values.
         params.setProtocol((short)6);
         Short[] badDscps = {
-            Byte.MIN_VALUE, -127, -100, -50, -16, -3, -2, -1,
-            64, 65, 70, 80, 99, 127, Byte.MAX_VALUE,
+            Short.MIN_VALUE, -32000, -127, -100, -50, -16, -3, -2, -1,
+            64, 65, 70, 80, 99, 127, 30000, Short.MAX_VALUE,
         };
         for (Short dscp: badDscps) {
-            params.setDscp(dscp);
-            Inet4Match im = params.toInet4Match();
-            assertEquals(null, im.getValidationStatus());
+            VtnInetMatchFields vimatch = mock(VtnInetMatchFields.class);
+            when(vimatch.getDscp()).thenReturn(new TestDscp(dscp));
             try {
-                new VTNInet4Match(im);
+                new VTNInet4Match(vimatch);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
@@ -330,7 +296,6 @@ public class VTNInet4MatchTest extends TestBase {
         MatchBuilder mb = new MatchBuilder();
         Match match = mb.build();
         assertEquals(null, VTNInetMatch.create(match));
-        assertEquals(null, VTNInetMatch.create((InetMatch)null));
 
         // Unsupported L3 match type.
         mb.setLayer3Match(new ArpMatchBuilder().build());
@@ -351,7 +316,7 @@ public class VTNInet4MatchTest extends TestBase {
      * Test case for the following methods.
      *
      * <ul>
-     *   <li>{@link VTNInet4Match#VTNInet4Match(org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnInetMatchFields)}</li>
+     *   <li>{@link VTNInet4Match#VTNInet4Match(VtnInetMatchFields)}</li>
      *   <li>{@link VTNInet4Match#setMatch(MatchBuilder)}</li>
      *   <li>{@link VTNInetMatch#create(Match)}</li>
      *   <li>{@link VTNInetMatch#create(VTNEtherMatch, VtnInetMatch)}</li>

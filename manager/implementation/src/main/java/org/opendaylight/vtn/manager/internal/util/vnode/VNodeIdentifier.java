@@ -23,12 +23,7 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 
 import com.google.common.base.Optional;
 
-import org.opendaylight.vtn.manager.VBridgeIfPath;
-import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.VTenantPath;
-import org.opendaylight.vtn.manager.VTerminalIfPath;
-import org.opendaylight.vtn.manager.VTerminalPath;
 
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
@@ -279,48 +274,6 @@ public abstract class VNodeIdentifier<T extends DataObject> {
                                                        find);
                 }
             }
-        }
-
-        return ident;
-    }
-
-    /**
-     * Convert the given {@link VTenantPath} instance into a
-     * {@link VNodeIdentifier} instance.
-     *
-     * @param path  A {@link VTenantPath} instance.
-     * @param find  {@code true} indicates the given name is used for
-     *              finding existing virtual node.
-     * @return  A {@link VNodeIdentifier} instance.
-     * @throws RpcException  An error occurred.
-     */
-    public static final VNodeIdentifier<?> create(
-        VTenantPath path, boolean find) throws RpcException {
-        if (path == null) {
-            throw RpcException.getNullArgumentException("VTenantPath");
-        }
-
-        VNodeIdentifier<?> ident;
-        if (path instanceof VBridgeIfPath) {
-            VBridgeIfPath p = (VBridgeIfPath)path;
-            ident = VBridgeIfIdentifier.create(
-                p.getTenantName(), p.getBridgeName(), p.getInterfaceName(),
-                find);
-        } else if (path instanceof VBridgePath) {
-            VBridgePath p = (VBridgePath)path;
-            ident = VBridgeIdentifier.create(
-                p.getTenantName(), p.getBridgeName(), find);
-        } else if (path instanceof VTerminalIfPath) {
-            VTerminalIfPath p = (VTerminalIfPath)path;
-            ident = VTerminalIfIdentifier.create(
-                p.getTenantName(), p.getTerminalName(), p.getInterfaceName(),
-                find);
-        } else if (path instanceof VTerminalPath) {
-            VTerminalPath p = (VTerminalPath)path;
-            ident = VTerminalIdentifier.create(
-                p.getTenantName(), p.getTerminalName(), find);
-        } else {
-            ident = VTenantIdentifier.create(path.getTenantName(), find);
         }
 
         return ident;

@@ -148,13 +148,6 @@
 
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
-      <artifactId>manager.implementation</artifactId>
-      <classifier>config</classifier>
-      <type>xml</type>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opendaylight.vtn</groupId>
       <artifactId>manager.model</artifactId>
     </dependency>
 
@@ -165,6 +158,13 @@
 
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
+      <artifactId>manager.implementation</artifactId>
+      <classifier>config</classifier>
+      <type>xml</type>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opendaylight.vtn</groupId>
       <artifactId>manager.neutron</artifactId>
     </dependency>
 
@@ -175,32 +175,39 @@
       <type>xml</type>
     </dependency>
 
-    <dependency>
-      <groupId>org.opendaylight.vtn</groupId>
-      <artifactId>manager.northbound</artifactId>
-    </dependency>
-
-    <!-- feature dependencies -->
+    <!-- OpenDaylight controller -->
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>features-mdsal</artifactId>
       <classifier>features</classifier>
       <type>xml</type>
     </dependency>
+
+    <!-- OpenDaylight MD-SAL -->
     <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>features-nsf</artifactId>
+      <groupId>org.opendaylight.mdsal.model</groupId>
+      <artifactId>features-mdsal-model</artifactId>
       <classifier>features</classifier>
       <type>xml</type>
     </dependency>
 
+    <!-- OpenDaylight netconf -->
     <dependency>
       <groupId>org.opendaylight.netconf</groupId>
       <artifactId>features-restconf</artifactId>
       <classifier>features</classifier>
       <type>xml</type>
     </dependency>
-    <!-- NEUTRON DEPENDENCY -->
+
+    <!-- OpenDaylight openflowplugin -->
+    <dependency>
+      <groupId>org.opendaylight.openflowplugin</groupId>
+      <artifactId>features-openflowplugin</artifactId>
+      <classifier>features</classifier>
+      <type>xml</type>
+    </dependency>
+
+    <!-- OpenDaylight neutron -->
     <dependency>
       <groupId>org.opendaylight.neutron</groupId>
       <artifactId>dummyprovider</artifactId>
@@ -213,6 +220,7 @@
       <type>xml</type>
     </dependency>
 
+    <!-- OpenDaylight ovsdb -->
     <dependency>
       <groupId>org.opendaylight.ovsdb</groupId>
       <artifactId>features-ovsdb</artifactId>
@@ -240,13 +248,6 @@
       <version>${odl.ovsdb.version}</version>
     </dependency>
 
-    <dependency>
-      <groupId>org.opendaylight.openflowplugin</groupId>
-      <artifactId>features-openflowplugin</artifactId>
-      <classifier>features</classifier>
-      <type>xml</type>
-    </dependency>
-
     <!-- test to validate features.xml -->
     <dependency>
       <groupId>org.opendaylight.odlparent</groupId>
@@ -261,33 +262,6 @@
       <type>zip</type>
       <scope>test</scope>
     </dependency>
-
-    <dependency>
-      <groupId>org.opendaylight.mdsal.model</groupId>
-      <artifactId>ietf-inet-types</artifactId>
-      <version>2010.09.24.8-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.mdsal.model</groupId>
-      <artifactId>ietf-topology</artifactId>
-      <version>2013.10.21.8-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.mdsal.model</groupId>
-      <artifactId>opendaylight-l2-types</artifactId>
-      <version>2013.08.27.8-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.mdsal.model</groupId>
-      <artifactId>ietf-yang-types-20130715</artifactId>
-      <version>2013.07.15.8-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.mdsal.model</groupId>
-      <artifactId>ietf-yang-types</artifactId>
-      <version>2010.09.24.8-SNAPSHOT</version>
-    </dependency>
-
   </dependencies>
 
 </project>

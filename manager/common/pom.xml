@@ -67,10 +67,6 @@
     <karaf.empty.version>1.6.0-SNAPSHOT</karaf.empty.version>
     <karaf.resources.version>1.6.0-SNAPSHOT</karaf.resources.version>
 
-    <!-- Karaf features -->
-    <!-- Use AD-SAL NSF services in Lithium release temporarily. -->
-    <feature.nsf.version>0.5.3-SNAPSHOT</feature.nsf.version>
-
     <!-- ODL Branding -->
     <branding.version>1.2.0-SNAPSHOT</branding.version>
 
@@ -88,9 +84,7 @@
     <odl.openflowplugin.version>0.2.0-SNAPSHOT</odl.openflowplugin.version>
     <odl.neutron.version>0.6.0-SNAPSHOT</odl.neutron.version>
     <odl.ovsdb.version>1.2.1-SNAPSHOT</odl.ovsdb.version>
-
-    <!-- Spring framework used by AD-SAL -->
-    <adsal.spring.version>3.1.3.RELEASE</adsal.spring.version>
+    <odl.thirdparty.jung2.version>2.0.1</odl.thirdparty.jung2.version>
   </properties>
 
   <profiles>
@@ -349,20 +343,6 @@
 
                 <pluginExecution>
                   <pluginExecutionFilter>
-                    <groupId>org.codehaus.enunciate</groupId>
-                    <artifactId>maven-enunciate-plugin</artifactId>
-                    <versionRange>[0.0,)</versionRange>
-                    <goals>
-                      <goal>docs</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore />
-                  </action>
-                </pluginExecution>
-
-                <pluginExecution>
-                  <pluginExecutionFilter>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
                     <versionRange>[0.0,)</versionRange>
@@ -407,21 +387,6 @@
               </pluginExecutions>
             </lifecycleMappingMetadata>
           </configuration>
-        </plugin>
-
-        <plugin>
-          <groupId>org.codehaus.enunciate</groupId>
-          <artifactId>maven-enunciate-plugin</artifactId>
-          <configuration>
-            <configFile>enunciate.xml</configFile>
-          </configuration>
-          <executions>
-            <execution>
-              <goals>
-                <goal>docs</goal>
-              </goals>
-            </execution>
-          </executions>
         </plugin>
 
         <plugin>
@@ -527,11 +492,6 @@
       </dependency>
       <dependency>
         <groupId>org.opendaylight.vtn</groupId>
-        <artifactId>manager.northbound</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.vtn</groupId>
         <artifactId>manager.neutron</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -552,180 +512,14 @@
         <type>xml</type>
       </dependency>
 
-      <!-- OpenDaylight controller projects -->
-      <!-- Use AD-SAL bundles in Lithium release temporarily. -->
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>sal</artifactId>
-        <version>0.9.3-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>sal.implementation</artifactId>
-        <version>0.5.3-SNAPSHOT</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>sal.connection</artifactId>
-        <version>0.2.3-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>sal.connection.implementation</artifactId>
-        <version>0.2.3-SNAPSHOT</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>sal.networkconfiguration</artifactId>
-        <version>0.1.3-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>sal.networkconfiguration.implementation</artifactId>
-        <version>0.1.3-SNAPSHOT</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>connectionmanager</artifactId>
-        <version>0.2.3-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>connectionmanager.implementation</artifactId>
-        <version>0.2.3-SNAPSHOT</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>clustering.services</artifactId>
-        <version>0.6.3-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>clustering.services-implementation</artifactId>
-        <version>0.5.3-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>clustering.test</artifactId>
-        <version>0.5.3-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>clustering.stub</artifactId>
-        <version>0.5.3-SNAPSHOT</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>configuration</artifactId>
-        <version>0.5.3-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>configuration.implementation</artifactId>
-        <version>0.5.3-SNAPSHOT</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>forwardingrulesmanager</artifactId>
-        <version>0.7.3-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>forwardingrulesmanager.implementation</artifactId>
-        <version>0.5.3-SNAPSHOT</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>hosttracker</artifactId>
-        <version>0.6.3-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>hosttracker.implementation</artifactId>
-        <version>0.6.3-SNAPSHOT</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>containermanager</artifactId>
-        <version>0.6.3-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>containermanager.it.implementation</artifactId>
-        <version>0.6.3-SNAPSHOT</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>switchmanager</artifactId>
-        <version>0.8.3-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>switchmanager.implementation</artifactId>
-        <version>0.5.3-SNAPSHOT</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>statisticsmanager</artifactId>
-        <version>0.6.3-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>statisticsmanager.implementation</artifactId>
-        <version>0.5.3-SNAPSHOT</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>usermanager</artifactId>
-        <version>0.5.3-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>usermanager.implementation</artifactId>
-        <version>0.5.3-SNAPSHOT</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>security</artifactId>
-        <version>0.5.3-SNAPSHOT</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>topologymanager</artifactId>
-        <version>0.5.3-SNAPSHOT</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>commons.northbound</artifactId>
-        <version>0.5.3-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>bundlescanner</artifactId>
-        <version>0.5.3-SNAPSHOT</version>
-      </dependency>
-
+      <!-- OpenDaylight third party -->
       <dependency>
         <groupId>org.opendaylight.controller.thirdparty</groupId>
         <artifactId>net.sf.jung2</artifactId>
-        <version>2.0.1</version>
+        <version>${odl.thirdparty.jung2.version}</version>
       </dependency>
 
-      <!-- OpenDaylight controller projects (MD-SAL) -->
+      <!-- OpenDaylight MD-SAL -->
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>mdsal-artifacts</artifactId>
@@ -767,12 +561,30 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+
       <dependency>
         <groupId>org.opendaylight.mdsal.model</groupId>
         <artifactId>mdsal-model-artifacts</artifactId>
         <version>${odl.mdsal.model.version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.opendaylight.mdsal.model</groupId>
+        <artifactId>features-mdsal-model</artifactId>
+        <version>${odl.mdsal.model.version}</version>
+        <classifier>features</classifier>
+        <type>xml</type>
+      </dependency>
+
+      <!-- OpenDaylight netconf -->
+      <dependency>
+        <groupId>org.opendaylight.netconf</groupId>
+        <artifactId>features-restconf</artifactId>
+        <version>${odl.netconf.version}</version>
+        <classifier>features</classifier>
+        <type>xml</type>
       </dependency>
 
       <!-- OpenDaylight openflowplugin -->
@@ -789,6 +601,14 @@
         <groupId>org.opendaylight.neutron</groupId>
         <artifactId>model</artifactId>
         <version>${odl.neutron.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.opendaylight.neutron</groupId>
+        <artifactId>features-neutron</artifactId>
+        <version>${odl.neutron.version}</version>
+        <classifier>features</classifier>
+        <type>xml</type>
       </dependency>
 
       <!-- OpenDaylight OVSDB project -->
@@ -818,6 +638,14 @@
         <version>${odl.ovsdb.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>org.opendaylight.ovsdb</groupId>
+        <artifactId>features-ovsdb</artifactId>
+        <version>${odl.ovsdb.version}</version>
+        <classifier>features</classifier>
+        <type>xml</type>
+      </dependency>
+
       <!-- Karaf features -->
       <dependency>
         <groupId>org.apache.karaf.features</groupId>
@@ -843,14 +671,6 @@
 
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
-        <artifactId>features-nsf</artifactId>
-        <version>${feature.nsf.version}</version>
-        <classifier>features</classifier>
-        <type>xml</type>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
         <artifactId>karaf.branding</artifactId>
         <version>${branding.version}</version>
       </dependency>
@@ -866,114 +686,10 @@
         <type>zip</type>
         <scope>test</scope>
       </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.netconf</groupId>
-        <artifactId>features-restconf</artifactId>
-        <version>${odl.netconf.version}</version>
-        <classifier>features</classifier>
-        <type>xml</type>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.neutron</groupId>
-        <artifactId>features-neutron</artifactId>
-        <version>${odl.neutron.version}</version>
-        <classifier>features</classifier>
-        <type>xml</type>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.ovsdb</groupId>
-        <artifactId>features-ovsdb</artifactId>
-        <version>${odl.ovsdb.version}</version>
-        <classifier>features</classifier>
-        <type>xml</type>
-      </dependency>
-
-      <!-- Spring framework used by AD-SAL -->
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>org.springframework.asm</artifactId>
-        <version>${adsal.spring.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>org.springframework.aop</artifactId>
-        <version>${adsal.spring.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>org.springframework.context</artifactId>
-        <version>${adsal.spring.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>org.springframework.context.support</artifactId>
-        <version>${adsal.spring.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>org.springframework.core</artifactId>
-        <version>${adsal.spring.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>org.springframework.beans</artifactId>
-        <version>${adsal.spring.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>org.springframework.expression</artifactId>
-        <version>${adsal.spring.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>org.springframework.web</artifactId>
-        <version>${adsal.spring.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>org.springframework.web.servlet</artifactId>
-        <version>${adsal.spring.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-config</artifactId>
-        <version>${adsal.spring.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-core</artifactId>
-        <version>${adsal.spring.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-web</artifactId>
-        <version>${adsal.spring.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-taglibs</artifactId>
-        <version>${adsal.spring.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>org.springframework.transaction</artifactId>
-        <version>${adsal.spring.version}</version>
-      </dependency>
     </dependencies>
   </dependencyManagement>
 
   <dependencies>
-    <!-- Use Jettison in unit tests. -->
-    <dependency>
-      <groupId>org.codehaus.jettison</groupId>
-      <artifactId>jettison</artifactId>
-      <scope>test</scope>
-    </dependency>
-
     <!-- Use SLF4J/Logback in unit tests. -->
     <dependency>
       <groupId>org.slf4j</groupId>

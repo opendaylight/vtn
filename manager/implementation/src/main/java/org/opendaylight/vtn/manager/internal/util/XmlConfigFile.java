@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -31,8 +31,6 @@ import org.slf4j.LoggerFactory;
 import org.opendaylight.vtn.manager.internal.util.log.FixedLogger;
 import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
 
-import org.opendaylight.controller.sal.utils.GlobalConstants;
-
 /**
  * Helper class used to write configurations into a file in XML format.
  */
@@ -44,10 +42,15 @@ public final class XmlConfigFile {
         LoggerFactory.getLogger(XmlConfigFile.class);
 
     /**
+     * A relative path to the configuration file directory.
+     */
+    private static final String  VTN_CONFIG_DIR = "configuration/startup/vtn";
+
+    /**
      * A {@link File} instance which represents the configuration file
      * directory.
      */
-    private static final File  BASE_DIRECTORY;
+    private static final File  BASE_DIRECTORY = new File(VTN_CONFIG_DIR);
 
     /**
      * Suffix of the name of the map entry file.
@@ -87,15 +90,6 @@ public final class XmlConfigFile {
          * Indicates the configuratoin for the static network topology.
          */
         TOPOLOGY;
-    }
-
-    /**
-     * Initialize the configuration file directory.
-     */
-    static {
-        String base = GlobalConstants.STARTUPHOME.toString();
-        File parent = new File(base, GlobalConstants.DEFAULT.toString());
-        BASE_DIRECTORY = new File(parent, "vtn");
     }
 
     /**

@@ -8,6 +8,12 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow.action;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -18,10 +24,6 @@ import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
-import org.mockito.Mockito;
-
-import org.opendaylight.vtn.manager.flow.action.SetIcmpCodeAction;
-
 import org.opendaylight.vtn.manager.internal.util.packet.IcmpHeader;
 import org.opendaylight.vtn.manager.internal.util.packet.TcpHeader;
 import org.opendaylight.vtn.manager.internal.util.packet.UdpHeader;
@@ -29,8 +31,8 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
-import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
+import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlValueType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
@@ -84,14 +86,11 @@ public class VTNSetIcmpCodeActionTest extends TestBase {
      *
      * <ul>
      *   <li>{@link VTNSetIcmpCodeAction#VTNSetIcmpCodeAction(short)}</li>
-     *   <li>{@link VTNSetIcmpCodeAction#VTNSetIcmpCodeAction(SetIcmpCodeAction, int)}</li>
      *   <li>{@link VTNSetIcmpCodeAction#VTNSetIcmpCodeAction(VtnSetIcmpCodeActionCase, Integer)}</li>
      *   <li>{@link VTNSetIcmpCodeAction#set(VtnFlowActionBuilder)}</li>
      *   <li>{@link VTNSetIcmpCodeAction#set(ActionBuilder)}</li>
      *   <li>{@link VTNSetIcmpCodeAction#getCode()}</li>
      *   <li>{@link VTNSetIcmpCodeAction#verifyImpl()}</li>
-     *   <li>{@link VTNSetIcmpCodeAction#toFlowAction(VtnAction)}</li>
-     *   <li>{@link VTNSetIcmpCodeAction#toFlowAction()}</li>
      *   <li>{@link VTNSetIcmpCodeAction#toFlowFilterAction(VtnAction,Integer)}</li>
      *   <li>{@link VTNSetIcmpCodeAction#toVtnAction(Action)}</li>
      *   <li>{@link FlowFilterAction#verify()}</li>
@@ -118,7 +117,6 @@ public class VTNSetIcmpCodeActionTest extends TestBase {
         for (Integer order: orders) {
             for (short code: codes) {
                 PortNumber pnum = new PortNumber((int)code);
-                SetIcmpCodeAction vad = new SetIcmpCodeAction(code);
                 VtnSetIcmpCodeAction vact = new VtnSetIcmpCodeActionBuilder().
                     setCode(code).build();
                 VtnSetIcmpCodeActionCase vac = vacBuilder.
@@ -134,10 +132,6 @@ public class VTNSetIcmpCodeActionTest extends TestBase {
                     va = new VTNSetIcmpCodeAction(code);
                     anotherOrder = 0;
                 } else {
-                    va = new VTNSetIcmpCodeAction(vad, order);
-                    assertEquals(order, va.getIdentifier());
-                    assertEquals(code, va.getCode());
-
                     va = new VTNSetIcmpCodeAction(vac, order);
                     anotherOrder = order.intValue() + 1;
                 }
@@ -147,8 +141,6 @@ public class VTNSetIcmpCodeActionTest extends TestBase {
                 VtnFlowAction vfact = va.toVtnFlowAction();
                 assertEquals(order, vfact.getOrder());
                 assertEquals(vac, vfact.getVtnAction());
-
-                assertEquals(vad, va.toFlowAction());
 
                 VtnFlowActionBuilder vbuilder =
                     va.toVtnFlowActionBuilder(anotherOrder);
@@ -191,31 +183,11 @@ public class VTNSetIcmpCodeActionTest extends TestBase {
 
         VTNSetIcmpCodeAction va = new VTNSetIcmpCodeAction();
         for (short code: codes) {
-            // toFlowAction() test.
-            SetIcmpCodeAction vad = new SetIcmpCodeAction(code);
+            // toVtnAction() test.
             VtnSetIcmpCodeAction vact = new VtnSetIcmpCodeActionBuilder().
                 setCode(code).build();
             VtnAction vaction = vacBuilder.
                 setVtnSetIcmpCodeAction(vact).build();
-            assertEquals(vad, va.toFlowAction(vaction));
-
-            vaction = VTNSetIcmpTypeAction.newVtnAction(code);
-            RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
-            VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
-            String emsg = "VTNSetIcmpCodeAction: Unexpected type: " + vaction;
-            try {
-                va.toFlowAction(vaction);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(etag, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals(emsg, e.getMessage());
-            }
-
-            // toFlowAction() should never affect instance variables.
-            assertEquals(0, va.getCode());
-
-            // toVtnAction() test.
             SetTpDstAction ma = new SetTpDstActionBuilder().
                 setPort(new PortNumber((int)code)).build();
             Action action = new SetTpDstActionCaseBuilder().
@@ -224,7 +196,9 @@ public class VTNSetIcmpCodeActionTest extends TestBase {
             assertEquals(vaction, va.toVtnAction(action));
 
             action = new SetTpSrcActionCaseBuilder().build();
-            emsg = "VTNSetIcmpCodeAction: Unexpected type: " + action;
+            RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
+            VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
+            String emsg = "VTNSetIcmpCodeAction: Unexpected type: " + action;
             try {
                 va.toVtnAction(action);
                 unexpected();
@@ -292,15 +266,17 @@ public class VTNSetIcmpCodeActionTest extends TestBase {
 
         // Invalid ICMP code.
         etag = RpcErrorTag.BAD_ELEMENT;
-        short[] invalid = {
+        Short[] invalid = {
             Short.MIN_VALUE, -0x7fc0, -2000, -3, -2, -1,
             256, 257, 1000, 0xc01, 0x7fc0, Short.MAX_VALUE,
         };
-        for (short code: invalid) {
+        for (Short code: invalid) {
             emsg = "VTNSetIcmpCodeAction: Invalid ICMP code: " + code;
-            SetIcmpCodeAction vad = new SetIcmpCodeAction(code);
+            vact = mock(VtnSetIcmpCodeAction.class);
+            vac = vacBuilder.setVtnSetIcmpCodeAction(vact).build();
+            when(vact.getCode()).thenReturn(code);
             try {
-                new VTNSetIcmpCodeAction(vad, 1);
+                new VTNSetIcmpCodeAction(vac, 1);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
@@ -308,16 +284,6 @@ public class VTNSetIcmpCodeActionTest extends TestBase {
                 assertEquals(emsg, e.getMessage());
             }
         }
-
-        // Default value test for toFlowAction().
-        SetIcmpCodeAction vad = new SetIcmpCodeAction((short)0);
-        vac = vacBuilder.setVtnSetIcmpCodeAction(null).build();
-        assertEquals(vad, va.toFlowAction(vac));
-
-        vac = vacBuilder.
-            setVtnSetIcmpCodeAction(new VtnSetIcmpCodeActionBuilder().build()).
-            build();
-        assertEquals(vad, va.toFlowAction(vac));
     }
 
     /**
@@ -424,63 +390,42 @@ public class VTNSetIcmpCodeActionTest extends TestBase {
         VTNSetIcmpCodeAction va = new VTNSetIcmpCodeAction(vac, order);
 
         // In case of TCP packet.
-        FlowActionContext ctx = Mockito.mock(FlowActionContext.class);
-        TcpHeader tcp = Mockito.mock(TcpHeader.class);
-        Mockito.when(ctx.getLayer4Header()).thenReturn(tcp);
+        FlowActionContext ctx = mock(FlowActionContext.class);
+        TcpHeader tcp = mock(TcpHeader.class);
+        when(ctx.getLayer4Header()).thenReturn(tcp);
 
         assertEquals(false, va.apply(ctx));
-        Mockito.verify(ctx).getLayer4Header();
-        Mockito.verify(ctx, Mockito.never()).
-            addFilterAction(Mockito.any(FlowFilterAction.class));
-        Mockito.verify(ctx, Mockito.never()).
-            removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterActions();
-
-        Mockito.verifyZeroInteractions(tcp);
+        verify(ctx).getLayer4Header();
+        verifyNoMoreInteractions(ctx, tcp);
 
         // In case of UDP packet.
-        Mockito.reset(ctx);
-        UdpHeader udp = Mockito.mock(UdpHeader.class);
-        Mockito.when(ctx.getLayer4Header()).thenReturn(udp);
+        reset(ctx);
+        UdpHeader udp = mock(UdpHeader.class);
+        when(ctx.getLayer4Header()).thenReturn(udp);
 
         assertEquals(false, va.apply(ctx));
-        Mockito.verify(ctx).getLayer4Header();
-        Mockito.verify(ctx, Mockito.never()).
-            addFilterAction(Mockito.any(FlowFilterAction.class));
-        Mockito.verify(ctx, Mockito.never()).
-            removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterActions();
-
-        Mockito.verifyZeroInteractions(udp);
+        verify(ctx).getLayer4Header();
+        verifyNoMoreInteractions(ctx, udp);
 
         // In case of ICMP packet.
-        Mockito.reset(ctx);
-        IcmpHeader icmp = Mockito.mock(IcmpHeader.class);
-        Mockito.when(ctx.getLayer4Header()).thenReturn(icmp);
+        reset(ctx);
+        IcmpHeader icmp = mock(IcmpHeader.class);
+        when(ctx.getLayer4Header()).thenReturn(icmp);
 
         assertEquals(true, va.apply(ctx));
-        Mockito.verify(ctx).getLayer4Header();
-        Mockito.verify(ctx).addFilterAction(va);
-        Mockito.verify(ctx, Mockito.never()).
-            removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterActions();
+        verify(ctx).getLayer4Header();
+        verify(ctx).addFilterAction(va);
 
-        Mockito.verify(icmp).setIcmpCode(code);
-        Mockito.verify(icmp, Mockito.never()).getIcmpType();
-        Mockito.verify(icmp, Mockito.never()).setIcmpType(Mockito.anyShort());
-        Mockito.verify(icmp, Mockito.never()).getIcmpCode();
+        verify(icmp).setIcmpCode(code);
+        verifyNoMoreInteractions(ctx, tcp);
 
         // In case of non-L4 packet.
-        Mockito.reset(ctx);
-        Mockito.when(ctx.getLayer4Header()).thenReturn(null);
+        reset(ctx);
+        when(ctx.getLayer4Header()).thenReturn(null);
 
         assertEquals(false, va.apply(ctx));
-        Mockito.verify(ctx).getLayer4Header();
-        Mockito.verify(ctx, Mockito.never()).
-            addFilterAction(Mockito.any(FlowFilterAction.class));
-        Mockito.verify(ctx, Mockito.never()).
-            removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterActions();
+        verify(ctx).getLayer4Header();
+        verifyNoMoreInteractions(ctx);
     }
 
     /**

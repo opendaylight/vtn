@@ -8,6 +8,12 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow.action;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -18,8 +24,6 @@ import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
-import org.mockito.Mockito;
-
 import org.opendaylight.vtn.manager.internal.util.packet.IcmpHeader;
 import org.opendaylight.vtn.manager.internal.util.packet.TcpHeader;
 import org.opendaylight.vtn.manager.internal.util.packet.UdpHeader;
@@ -27,8 +31,9 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
-import org.opendaylight.vtn.manager.internal.XmlNode;
+import org.opendaylight.vtn.manager.internal.TestPortNumber;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
+import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlValueType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
@@ -83,12 +88,9 @@ public class VTNSetPortSrcActionTest extends TestBase {
      *
      * <ul>
      *   <li>{@link VTNSetPortSrcAction#VTNSetPortSrcAction(int)}</li>
-     *   <li>{@link VTNSetPortSrcAction#VTNSetPortSrcAction(org.opendaylight.vtn.manager.flow.action.SetTpSrcAction, int)}</li>
      *   <li>{@link VTNSetPortSrcAction#VTNSetPortSrcAction(VtnSetPortSrcActionCase, Integer)}</li>
      *   <li>{@link VTNSetPortSrcAction#set(VtnFlowActionBuilder)}</li>
      *   <li>{@link VTNSetPortSrcAction#set(ActionBuilder)}</li>
-     *   <li>{@link VTNSetPortSrcAction#toFlowAction(VtnAction)}</li>
-     *   <li>{@link VTNSetPortSrcAction#toFlowAction()}</li>
      *   <li>{@link VTNSetPortSrcAction#toFlowFilterAction(VtnAction,Integer)}</li>
      *   <li>{@link VTNSetPortSrcAction#toVtnAction(Action)}</li>
      *   <li>{@link VTNSetPortSrcAction#getDescription(Action)}</li>
@@ -116,12 +118,9 @@ public class VTNSetPortSrcActionTest extends TestBase {
 
         VtnSetPortSrcActionCaseBuilder vacBuilder =
             new VtnSetPortSrcActionCaseBuilder();
-        org.opendaylight.vtn.manager.flow.action.SetTpSrcAction vad;
         for (Integer order: orders) {
             for (int port: ports) {
                 PortNumber pnum = new PortNumber(port);
-                vad = new org.opendaylight.vtn.manager.flow.action.
-                    SetTpSrcAction(port);
                 VtnSetPortSrcAction vact = new VtnSetPortSrcActionBuilder().
                     setPort(pnum).build();
                 VtnSetPortSrcActionCase vac = vacBuilder.
@@ -137,11 +136,6 @@ public class VTNSetPortSrcActionTest extends TestBase {
                     va = new VTNSetPortSrcAction(port);
                     anotherOrder = 0;
                 } else {
-                    va = new VTNSetPortSrcAction(vad, order);
-                    assertEquals(order, va.getIdentifier());
-                    assertEquals(port, va.getPort());
-                    assertEquals(pnum, va.getPortNumber());
-
                     va = new VTNSetPortSrcAction(vac, order);
                     anotherOrder = order.intValue() + 1;
                 }
@@ -152,8 +146,6 @@ public class VTNSetPortSrcActionTest extends TestBase {
                 VtnFlowAction vfact = va.toVtnFlowAction();
                 assertEquals(order, vfact.getOrder());
                 assertEquals(vac, vfact.getVtnAction());
-
-                assertEquals(vad, va.toFlowAction());
 
                 VtnFlowActionBuilder vbuilder =
                     va.toVtnFlowActionBuilder(anotherOrder);
@@ -196,42 +188,22 @@ public class VTNSetPortSrcActionTest extends TestBase {
 
         VTNSetPortSrcAction va = new VTNSetPortSrcAction();
         for (int port: ports) {
-            // toFlowAction() test.
+            // toVtnAction() test.
             PortNumber pnum = new PortNumber(port);
-            vad = new org.opendaylight.vtn.manager.flow.action.
-                SetTpSrcAction(port);
             VtnSetPortSrcAction vact = new VtnSetPortSrcActionBuilder().
                 setPort(pnum).build();
             VtnAction vaction = vacBuilder.
                 setVtnSetPortSrcAction(vact).build();
-            assertEquals(vad, va.toFlowAction(vaction));
-
-            vaction = VTNSetPortDstAction.newVtnAction(pnum);
-            RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
-            VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
-            String emsg = "VTNSetPortSrcAction: Unexpected type: " + vaction;
-            try {
-                va.toFlowAction(vaction);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(etag, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals(emsg, e.getMessage());
-            }
-
-            // toFlowAction() should never affect instance variables.
-            assertEquals(0, va.getPort());
-
-            // toVtnAction() test.
             SetTpSrcAction ma = new SetTpSrcActionBuilder().
                 setPort(pnum).build();
             Action action = new SetTpSrcActionCaseBuilder().
                 setSetTpSrcAction(ma).build();
-            vaction = vacBuilder.setVtnSetPortSrcAction(vact).build();
             assertEquals(vaction, va.toVtnAction(action));
 
             action = new SetTpDstActionCaseBuilder().build();
-            emsg = "VTNSetPortSrcAction: Unexpected type: " + action;
+            RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
+            VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
+            String emsg = "VTNSetPortSrcAction: Unexpected type: " + action;
             try {
                 va.toVtnAction(action);
                 unexpected();
@@ -325,10 +297,11 @@ public class VTNSetPortSrcActionTest extends TestBase {
         };
         for (int port: invalid) {
             emsg = "VTNSetPortSrcAction: Invalid port number: " + port;
-            vad = new org.opendaylight.vtn.manager.flow.action.
-                SetTpSrcAction(port);
+            vact = mock(VtnSetPortSrcAction.class);
+            when(vact.getPort()).thenReturn(new TestPortNumber(port));
+            vac = vacBuilder.setVtnSetPortSrcAction(vact).build();
             try {
-                new VTNSetPortSrcAction(vad, 1);
+                new VTNSetPortSrcAction(vac, 1);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
@@ -336,16 +309,6 @@ public class VTNSetPortSrcActionTest extends TestBase {
                 assertEquals(emsg, e.getMessage());
             }
         }
-
-        // Default value test for toFlowAction().
-        vad = new org.opendaylight.vtn.manager.flow.action.SetTpSrcAction(0);
-        vac = vacBuilder.setVtnSetPortSrcAction(null).build();
-        assertEquals(vad, va.toFlowAction(vac));
-
-        vac = vacBuilder.
-            setVtnSetPortSrcAction(new VtnSetPortSrcActionBuilder().build()).
-            build();
-        assertEquals(vad, va.toFlowAction(vac));
     }
 
     /**
@@ -480,67 +443,45 @@ public class VTNSetPortSrcActionTest extends TestBase {
         VTNSetPortSrcAction va = new VTNSetPortSrcAction(vac, order);
 
         // In case of TCP packet.
-        FlowActionContext ctx = Mockito.mock(FlowActionContext.class);
-        TcpHeader tcp = Mockito.mock(TcpHeader.class);
-        Mockito.when(ctx.getLayer4Header()).thenReturn(tcp);
+        FlowActionContext ctx = mock(FlowActionContext.class);
+        TcpHeader tcp = mock(TcpHeader.class);
+        when(ctx.getLayer4Header()).thenReturn(tcp);
 
         assertEquals(true, va.apply(ctx));
-        Mockito.verify(ctx).getLayer4Header();
-        Mockito.verify(ctx).addFilterAction(va);
-        Mockito.verify(ctx, Mockito.never()).
-            removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterActions();
+        verify(ctx).getLayer4Header();
+        verify(ctx).addFilterAction(va);
 
-        Mockito.verify(tcp).setSourcePort(port);
-        Mockito.verify(tcp, Mockito.never()).getSourcePort();
-        Mockito.verify(tcp, Mockito.never()).getDestinationPort();
-        Mockito.verify(tcp, Mockito.never()).
-            setDestinationPort(Mockito.anyInt());
+        verify(tcp).setSourcePort(port);
+        verifyNoMoreInteractions(ctx, tcp);
 
         // In case of UDP packet.
-        Mockito.reset(ctx);
-        UdpHeader udp = Mockito.mock(UdpHeader.class);
-        Mockito.when(ctx.getLayer4Header()).thenReturn(udp);
+        reset(ctx);
+        UdpHeader udp = mock(UdpHeader.class);
+        when(ctx.getLayer4Header()).thenReturn(udp);
 
         assertEquals(true, va.apply(ctx));
-        Mockito.verify(ctx).getLayer4Header();
-        Mockito.verify(ctx).addFilterAction(va);
-        Mockito.verify(ctx, Mockito.never()).
-            removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterActions();
+        verify(ctx).getLayer4Header();
+        verify(ctx).addFilterAction(va);
 
-        Mockito.verify(udp).setSourcePort(port);
-        Mockito.verify(udp, Mockito.never()).getSourcePort();
-        Mockito.verify(udp, Mockito.never()).getDestinationPort();
-        Mockito.verify(udp, Mockito.never()).
-            setDestinationPort(Mockito.anyInt());
+        verify(udp).setSourcePort(port);
+        verifyNoMoreInteractions(ctx, tcp);
 
         // In case of ICMP packet.
-        Mockito.reset(ctx);
-        IcmpHeader icmp = Mockito.mock(IcmpHeader.class);
-        Mockito.when(ctx.getLayer4Header()).thenReturn(icmp);
+        reset(ctx);
+        IcmpHeader icmp = mock(IcmpHeader.class);
+        when(ctx.getLayer4Header()).thenReturn(icmp);
 
         assertEquals(false, va.apply(ctx));
-        Mockito.verify(ctx).getLayer4Header();
-        Mockito.verify(ctx, Mockito.never()).
-            addFilterAction(Mockito.any(FlowFilterAction.class));
-        Mockito.verify(ctx, Mockito.never()).
-            removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterActions();
-
-        Mockito.verifyZeroInteractions(icmp);
+        verify(ctx).getLayer4Header();
+        verifyNoMoreInteractions(ctx, icmp);
 
         // In case of non-L4 packet.
-        Mockito.reset(ctx);
-        Mockito.when(ctx.getLayer4Header()).thenReturn(null);
+        reset(ctx);
+        when(ctx.getLayer4Header()).thenReturn(null);
 
         assertEquals(false, va.apply(ctx));
-        Mockito.verify(ctx).getLayer4Header();
-        Mockito.verify(ctx, Mockito.never()).
-            addFilterAction(Mockito.any(FlowFilterAction.class));
-        Mockito.verify(ctx, Mockito.never()).
-            removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterActions();
+        verify(ctx).getLayer4Header();
+        verifyNoMoreInteractions(ctx);
     }
 
     /**

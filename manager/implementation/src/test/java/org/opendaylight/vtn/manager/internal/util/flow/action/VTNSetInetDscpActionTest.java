@@ -8,6 +8,12 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow.action;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -18,22 +24,17 @@ import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
-import org.mockito.Mockito;
-
-import org.opendaylight.vtn.manager.flow.action.SetDscpAction;
-import org.opendaylight.vtn.manager.util.IpNetwork;
-
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.packet.InetHeader;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
-import org.opendaylight.vtn.manager.internal.XmlNode;
+import org.opendaylight.vtn.manager.internal.TestDscp;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
+import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlValueType;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDscpActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDscpActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.inet.dscp.action._case.VtnSetInetDscpAction;
@@ -84,14 +85,11 @@ public class VTNSetInetDscpActionTest extends TestBase {
      *
      * <ul>
      *   <li>{@link VTNSetInetDscpAction#VTNSetInetDscpAction(short)}</li>
-     *   <li>{@link VTNSetInetDscpAction#VTNSetInetDscpAction(SetDscpAction, int)}</li>
      *   <li>{@link VTNSetInetDscpAction#VTNSetInetDscpAction(VtnSetInetDscpActionCase, Integer)}</li>
      *   <li>{@link VTNSetInetDscpAction#set(VtnFlowActionBuilder)}</li>
      *   <li>{@link VTNSetInetDscpAction#set(ActionBuilder)}</li>
      *   <li>{@link VTNSetInetDscpAction#getDscp()}</li>
      *   <li>{@link VTNSetInetDscpAction#verifyImpl()}</li>
-     *   <li>{@link VTNSetInetDscpAction#toFlowAction(VtnAction)}</li>
-     *   <li>{@link VTNSetInetDscpAction#toFlowAction()}</li>
      *   <li>{@link VTNSetInetDscpAction#toFlowFilterAction(VtnAction,Integer)}</li>
      *   <li>{@link VTNSetInetDscpAction#toVtnAction(Action)}</li>
      *   <li>{@link FlowFilterAction#verify()}</li>
@@ -119,7 +117,6 @@ public class VTNSetInetDscpActionTest extends TestBase {
             for (short dscp: dscps) {
                 Dscp mdscp = new Dscp(dscp);
                 Integer tos = Integer.valueOf(ProtocolUtils.dscpToTos(dscp));
-                SetDscpAction vad = new SetDscpAction((byte)dscp);
                 VtnSetInetDscpAction vact = new VtnSetInetDscpActionBuilder().
                     setDscp(mdscp).build();
                 VtnSetInetDscpActionCase vac = vacBuilder.
@@ -135,10 +132,6 @@ public class VTNSetInetDscpActionTest extends TestBase {
                     va = new VTNSetInetDscpAction(dscp);
                     anotherOrder = 0;
                 } else {
-                    va = new VTNSetInetDscpAction(vad, order);
-                    assertEquals(order, va.getIdentifier());
-                    assertEquals(dscp, va.getDscp());
-
                     va = new VTNSetInetDscpAction(vac, order);
                     anotherOrder = order.intValue() + 1;
                 }
@@ -148,8 +141,6 @@ public class VTNSetInetDscpActionTest extends TestBase {
                 VtnFlowAction vfact = va.toVtnFlowAction();
                 assertEquals(order, vfact.getOrder());
                 assertEquals(vac, vfact.getVtnAction());
-
-                assertEquals(vad, va.toFlowAction());
 
                 VtnFlowActionBuilder vbuilder =
                     va.toVtnFlowActionBuilder(anotherOrder);
@@ -192,41 +183,22 @@ public class VTNSetInetDscpActionTest extends TestBase {
 
         VTNSetInetDscpAction va = new VTNSetInetDscpAction();
         for (short dscp: dscps) {
-            // toFlowAction() test.
-            SetDscpAction vad = new SetDscpAction((byte)dscp);
-            VtnSetInetDscpAction vact = new VtnSetInetDscpActionBuilder().
-                setDscp(new Dscp(dscp)).build();
-            VtnAction vac = vacBuilder.
-                setVtnSetInetDscpAction(vact).build();
-            assertEquals(vad, va.toFlowAction(vac));
-
-            vac = VTNSetIcmpTypeAction.newVtnAction(dscp);
-            RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
-            VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
-            String emsg = "VTNSetInetDscpAction: Unexpected type: " + vac;
-            try {
-                va.toFlowAction(vac);
-                unexpected();
-            } catch (RpcException e) {
-                assertEquals(etag, e.getErrorTag());
-                assertEquals(vtag, e.getVtnErrorTag());
-                assertEquals(emsg, e.getMessage());
-            }
-
-            // toFlowAction() should never affect instance variables.
-            assertEquals(0, va.getDscp());
-
             // toVtnAction() test.
             Integer tos = Integer.valueOf(ProtocolUtils.dscpToTos(dscp));
             SetNwTosAction ma = new SetNwTosActionBuilder().
                 setTos(tos).build();
             Action action = new SetNwTosActionCaseBuilder().
                 setSetNwTosAction(ma).build();
-            vac = vacBuilder.setVtnSetInetDscpAction(vact).build();
+            VtnSetInetDscpAction vact = new VtnSetInetDscpActionBuilder().
+                setDscp(new Dscp(dscp)).build();
+            VtnSetInetDscpActionCase vac = vacBuilder.
+                setVtnSetInetDscpAction(vact).build();
             assertEquals(vac, va.toVtnAction(action));
 
+            RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
+            VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
             action = new SetTpSrcActionCaseBuilder().build();
-            emsg = "VTNSetInetDscpAction: Unexpected type: " + action;
+            String emsg = "VTNSetInetDscpAction: Unexpected type: " + action;
             try {
                 va.toVtnAction(action);
                 unexpected();
@@ -314,15 +286,17 @@ public class VTNSetInetDscpActionTest extends TestBase {
 
         // Invalid DSCP.
         etag = RpcErrorTag.BAD_ELEMENT;
-        byte[] invalid = {
-            Byte.MIN_VALUE, -100, -50, -3, -2, -1,
-            64, 65, 70, 85, 99, 120, Byte.MAX_VALUE,
+        Short[] invalid = {
+            Short.MIN_VALUE, -20000, -50, -3, -2, -1,
+            64, 65, 70, 85, 99, 120, 30000, Short.MAX_VALUE,
         };
-        for (byte dscp: invalid) {
-            SetDscpAction vad = new SetDscpAction(dscp);
+        for (Short dscp: invalid) {
+            vact = mock(VtnSetInetDscpAction.class);
+            when(vact.getDscp()).thenReturn(new TestDscp(dscp));
+            vac = vacBuilder.setVtnSetInetDscpAction(vact).build();
             emsg = "VTNSetInetDscpAction: Invalid IP DSCP value: " + dscp;
             try {
-                new VTNSetInetDscpAction(vad, 1);
+                new VTNSetInetDscpAction(vac, 1);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
@@ -330,16 +304,6 @@ public class VTNSetInetDscpActionTest extends TestBase {
                 assertEquals(emsg, e.getMessage());
             }
         }
-
-        // Default value test for toFlowAction().
-        SetDscpAction vad = new SetDscpAction((byte)0);
-        vac = vacBuilder.setVtnSetInetDscpAction(null).build();
-        assertEquals(vad, va.toFlowAction(vac));
-
-        vac = vacBuilder.
-            setVtnSetInetDscpAction(new VtnSetInetDscpActionBuilder().build()).
-            build();
-        assertEquals(vad, va.toFlowAction(vac));
     }
 
     /**
@@ -448,39 +412,25 @@ public class VTNSetInetDscpActionTest extends TestBase {
         VTNSetInetDscpAction va = new VTNSetInetDscpAction(vac, order);
 
         // In case of IP packet.
-        FlowActionContext ctx = Mockito.mock(FlowActionContext.class);
-        InetHeader inet = Mockito.mock(InetHeader.class);
-        Mockito.when(ctx.getInetHeader()).thenReturn(inet);
+        FlowActionContext ctx = mock(FlowActionContext.class);
+        InetHeader inet = mock(InetHeader.class);
+        when(ctx.getInetHeader()).thenReturn(inet);
 
         assertEquals(true, va.apply(ctx));
-        Mockito.verify(ctx).getInetHeader();
-        Mockito.verify(ctx).addFilterAction(va);
-        Mockito.verify(ctx, Mockito.never()).
-            removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterActions();
+        verify(ctx).getInetHeader();
+        verify(ctx).addFilterAction(va);
 
-        Mockito.verify(inet).setDscp(dscp);
-        Mockito.verify(inet, Mockito.never()).getSourceAddress();
-        Mockito.verify(inet, Mockito.never()).
-            setSourceAddress(Mockito.any(IpNetwork.class));
-        Mockito.verify(inet, Mockito.never()).getDestinationAddress();
-        Mockito.verify(inet, Mockito.never()).
-            setDestinationAddress(Mockito.any(IpNetwork.class));
-        Mockito.verify(inet, Mockito.never()).getProtocol();
-        Mockito.verify(inet, Mockito.never()).getDscp();
+        verify(inet).setDscp(dscp);
+        verifyNoMoreInteractions(ctx, inet);
 
         // In case of non-IP packet.
         inet = null;
-        Mockito.reset(ctx);
-        Mockito.when(ctx.getInetHeader()).thenReturn(inet);
+        reset(ctx);
+        when(ctx.getInetHeader()).thenReturn(inet);
 
         assertEquals(false, va.apply(ctx));
-        Mockito.verify(ctx).getInetHeader();
-        Mockito.verify(ctx, Mockito.never()).
-            addFilterAction(Mockito.any(FlowFilterAction.class));
-        Mockito.verify(ctx, Mockito.never()).
-            removeFilterAction(Mockito.any(Class.class));
-        Mockito.verify(ctx, Mockito.never()).getFilterActions();
+        verify(ctx).getInetHeader();
+        verifyNoMoreInteractions(ctx);
     }
 
     /**

@@ -15,9 +15,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
-import org.opendaylight.vtn.manager.flow.filter.DropFilter;
-
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.vnode.VNodeIdentifier;
 
@@ -62,19 +59,6 @@ public final class VTNDropFilter extends VTNFlowFilter {
         if (drop.getVtnDropFilter() == null) {
             throw RpcException.getNullArgumentException("vtn-drop-filter");
         }
-    }
-
-    /**
-     * Construct a new instance.
-     *
-     * @param idx     An index number to be assigned to the flow filter.
-     * @param filter  A {@link FlowFilter} instance which contains flow filter
-     *                configuration.
-     * @throws RpcException
-     *    {@code vffc} contains invalid value.
-     */
-    VTNDropFilter(int idx, FlowFilter filter) throws RpcException {
-        super(idx, filter);
     }
 
     // VTNFlowFilter
@@ -123,17 +107,6 @@ public final class VTNDropFilter extends VTNFlowFilter {
      */
     @Override
     public void canSet(VNodeIdentifier<?> ident) {
-    }
-
-    /**
-     * Return a {@link org.opendaylight.vtn.manager.flow.filter.FilterType}
-     * instance which indicates the type of this flow filter.
-     *
-     * @return  A {@link DropFilter} instance.
-     */
-    @Override
-    protected DropFilter getFilterType() {
-        return new DropFilter();
     }
 
     /**

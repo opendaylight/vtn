@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -12,11 +12,8 @@ import static org.opendaylight.vtn.manager.util.NumberUtils.HASH_PRIME;
 
 import java.util.Objects;
 
-import org.opendaylight.vtn.manager.flow.action.FlowAction;
-
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPushVlanActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPushVlanActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.push.vlan.action._case.VtnPushVlanAction;
@@ -92,24 +89,6 @@ public final class VTNPushVlanAction extends VTNFlowAction {
     }
 
     // VTNFlowAction
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public FlowAction toFlowAction(VtnAction vact) throws RpcException {
-        VtnPushVlanActionCase ac = cast(VtnPushVlanActionCase.class, vact);
-        VtnPushVlanAction vaction = ac.getVtnPushVlanAction();
-        if (vaction != null) {
-            VlanType vtype = vaction.getVlanType();
-            if (vtype != null) {
-                return new org.opendaylight.vtn.manager.flow.action.
-                    PushVlanAction(vtype.getIntValue());
-            }
-        }
-
-        throw noVlanType(ac);
-    }
 
     /**
      * {@inheritDoc}
