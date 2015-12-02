@@ -68,9 +68,6 @@
     <karaf.resources.version>1.6.0-SNAPSHOT</karaf.resources.version>
 
     <!-- Karaf features -->
-    <!-- Use AD-SAL NSF services in Lithium release temporarily. -->
-    <feature.nsf.version>0.5.3-SNAPSHOT</feature.nsf.version>
-
     <!-- ODL Branding -->
     <branding.version>1.2.0-SNAPSHOT</branding.version>
 
@@ -839,14 +836,6 @@
         <artifactId>features-test</artifactId>
         <version>${odl.odlparent.version}</version>
         <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>features-nsf</artifactId>
-        <version>${feature.nsf.version}</version>
-        <classifier>features</classifier>
-        <type>xml</type>
       </dependency>
 
       <dependency>

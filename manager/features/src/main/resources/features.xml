@@ -16,7 +16,6 @@
    xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.2.0 http://karaf.apache.org/xmlns/features/v1.2.0">
 
   <repository>mvn:org.opendaylight.controller/features-mdsal/${odl.controller.mdsal.version}/xml/features</repository>
-  <repository>mvn:org.opendaylight.controller/features-nsf/${feature.nsf.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.netconf/features-restconf/${odl.netconf.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.neutron/features-neutron/${odl.neutron.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.ovsdb/southbound-features/${odl.ovsdb.version}/xml/features</repository>
@@ -29,7 +28,6 @@
     <feature version="${odl.controller.mdsal.version}">odl-mdsal-broker</feature>
     <feature version="${odl.openflowplugin.version}">odl-openflowplugin-flow-services</feature>
     <feature version="${odl.openflowplugin.version}">odl-openflowplugin-nsf-model</feature>
-    <feature version="${feature.nsf.version}">odl-nsf-service</feature>
     <bundle>mvn:org.opendaylight.vtn/manager/${project.version}</bundle>
     <bundle>mvn:org.opendaylight.vtn/manager.model/${project.version}</bundle>
     <bundle>mvn:org.opendaylight.vtn/manager.implementation/${project.version}</bundle>
