@@ -836,7 +836,7 @@ public abstract class TestBase extends Assert {
 
         RpcError error = errors.iterator().next();
         assertEquals(ErrorType.APPLICATION, error.getErrorType());
-        assertEquals(tag.toString(), error.getTag());
+        assertEquals(tag.getErrorTag(), error.getTag());
         assertEquals(apTag, error.getApplicationTag());
         assertEquals(msg, error.getMessage());
     }
