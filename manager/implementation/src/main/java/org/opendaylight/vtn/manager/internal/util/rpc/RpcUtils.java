@@ -99,7 +99,7 @@ public final class RpcUtils {
         Class<T> type, RpcErrorTag tag, String msg, VtnErrorTag vtnTag,
         String info) {
         RpcResultBuilder<T> builder = RpcResultBuilder.<T>failed().
-            withError(ErrorType.APPLICATION, tag.toString(), msg,
+            withError(ErrorType.APPLICATION, tag.getErrorTag(), msg,
                       vtnTag.toString(), info, null);
         return builder;
     }
