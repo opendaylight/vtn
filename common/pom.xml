@@ -19,13 +19,13 @@
 
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>common</artifactId>
-  <version>0.3.3-Lithium-SR3</version>
+  <version>0.3.4-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <parent>
     <groupId>org.opendaylight.odlparent</groupId>
     <artifactId>odlparent</artifactId>
-    <version>1.5.3-Lithium-SR3</version>
+    <version>1.5.4-SNAPSHOT</version>
     <relativePath/>
   </parent>
 
@@ -46,7 +46,7 @@
     <buildhelper.version>1.8</buildhelper.version>
     <execplugin.version>1.2.1</execplugin.version>
 
-    <odl.odlparent.version>1.5.3-Lithium-SR3</odl.odlparent.version>
+    <odl.odlparent.version>1.5.4-SNAPSHOT</odl.odlparent.version>
   </properties>
 
   <distributionManagement>

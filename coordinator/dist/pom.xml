@@ -16,7 +16,7 @@
   <parent>
     <groupId>org.opendaylight.vtn</groupId>
     <artifactId>common</artifactId>
-    <version>0.3.3-Lithium-SR3</version>
+    <version>0.3.4-SNAPSHOT</version>
     <relativePath>../../common</relativePath>
   </parent>
 
@@ -29,7 +29,7 @@
 
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>distribution.vtn-coordinator</artifactId>
-  <version>6.1.3-Lithium-SR3</version>
+  <version>6.1.4-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <profiles>
