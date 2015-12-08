@@ -28,9 +28,6 @@ import java.util.Set;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.internal.util.inventory.port.PortFilter;
-import org.opendaylight.vtn.manager.internal.util.inventory.port.SpecificPortFilter;
-
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;

@@ -562,7 +562,7 @@ public final class VTNManagerService {
                 msg = "A virtual interface is present and not changed";
             }
 
-            LOG.debug("{}: input={}", msg, input);
+            logInput(msg, input);
         }
 
         return code;
@@ -619,7 +619,7 @@ public final class VTNManagerService {
                 msg = "Port mapping is already configured";
             }
 
-            LOG.debug("{}: input={}", msg, input);
+            logInput(msg, input);
         }
 
         return code;
@@ -651,9 +651,19 @@ public final class VTNManagerService {
                 msg = "Port mapping is not configured";
             }
 
-            LOG.debug("{}: input={}", msg, input);
+            logInput(msg, input);
         }
 
         return code;
+    }
+
+    /**
+     * Record the given RPC input as a debug log.
+     *
+     * @param msg    A debug log message.
+     * @param input  An input of the RPC.
+     */
+    private void logInput(String msg, Object input) {
+        LOG.debug("{}: input={}", msg, input);
     }
 }

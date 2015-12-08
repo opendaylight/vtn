@@ -98,7 +98,7 @@ public final class OvsdbDataChangeListener
      * @param changes
      */
     private void processOvsdbConnections(AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> changes) {
-        for (Map.Entry<InstanceIdentifier<?>, DataObject> created : changes.getCreatedData().entrySet()) {
+        for (Entry<InstanceIdentifier<?>, DataObject> created : changes.getCreatedData().entrySet()) {
             if (created.getValue() instanceof OvsdbNodeAugmentation) {
                 Node ovsdbNode = getNode(changes.getCreatedData(), created);
                 LOG.trace("process Ovsdb Node: <{}>, ovsdbNode: <{}>", created, ovsdbNode);
@@ -113,7 +113,7 @@ public final class OvsdbDataChangeListener
     private void processOvsdbConnectionAttributeUpdates(
             AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> changes) {
 
-        for (Map.Entry<InstanceIdentifier<?>, DataObject> updatedOvsdbNode : changes.getUpdatedData().entrySet()) {
+        for (Entry<InstanceIdentifier<?>, DataObject> updatedOvsdbNode : changes.getUpdatedData().entrySet()) {
             if (updatedOvsdbNode.getKey().getTargetType().equals(OvsdbNodeAugmentation.class)) {
                 LOG.trace("processOvsdbConnectionAttributeUpdates: {}", updatedOvsdbNode);
                 Node parentNode  = getNode(changes.getUpdatedData(), updatedOvsdbNode);
@@ -135,7 +135,7 @@ public final class OvsdbDataChangeListener
      * @param change
      */
     private Node getNode(Map<InstanceIdentifier<?>, DataObject> changes,
-                         Map.Entry<InstanceIdentifier<?>, DataObject> change) {
+                         Entry<InstanceIdentifier<?>, DataObject> change) {
         InstanceIdentifier<Node> nodeInstanceIdentifier = change.getKey().firstIdentifierOf(Node.class);
         return (Node)changes.get(nodeInstanceIdentifier);
     }
@@ -156,7 +156,7 @@ public final class OvsdbDataChangeListener
      */
     private void processPortCreation(
             AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> changes) {
-        for (Map.Entry<InstanceIdentifier<?>, DataObject> newPort : changes.getCreatedData().entrySet()) {
+        for (Entry<InstanceIdentifier<?>, DataObject> newPort : changes.getCreatedData().entrySet()) {
             if (newPort.getKey().getTargetType().equals(OvsdbTerminationPointAugmentation.class)) {
                 try {
                     LOG.trace("processPortCreation: port details {}", newPort);

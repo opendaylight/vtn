@@ -67,7 +67,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.vtn.mac.table.entry.MacTableEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.vtn.mac.table.list.MacAddressTable;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.VtnVbridgeConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.vtn.vbridge.list.Vbridge;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.vtn.vbridge.list.VbridgeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.VtnVinterfaceConfig;
@@ -88,11 +87,6 @@ public final class VBridge extends VirtualBridge<Vbridge> {
      * The default value for age-interval.
      */
     public static final int  DEFAULT_AGE_INTERVAL = 600;
-
-    /**
-     * The number of seconds between MAC address table aging.
-     */
-    private int  ageInterval;
 
     /**
      * VLAN mappings configured in this vBridge.
@@ -183,7 +177,6 @@ public final class VBridge extends VirtualBridge<Vbridge> {
      */
     public VBridge(BridgeIdentifier<Vbridge> vbrId, Vbridge vbr) {
         super(vbrId, vbr);
-        initConfig(vbr.getVbridgeConfig());
         vlanMaps = new VlanMapCache(vbr.getVlanMap());
     }
 
@@ -214,7 +207,6 @@ public final class VBridge extends VirtualBridge<Vbridge> {
         // Initialize vBridge configuration.
         BridgeIdentifier<Vbridge> vbrId = getIdentifier();
         VbridgeBuilder builder = xvbr.toVbridgeBuilder(xlogger, vbrId);
-        initConfig(builder.getVbridgeConfig());
 
         // Resume MAC mapping.
         VTNMacMapConfig cfg = xvbr.getMacMap();
@@ -258,17 +250,6 @@ public final class VBridge extends VirtualBridge<Vbridge> {
                     vbrId, getState());
 
         return builder.build();
-    }
-
-    /**
-     * Initialize configuration of the vBridge.
-     *
-     * @param vbrc   Configuration of the vBridge.
-     */
-    private void initConfig(VtnVbridgeConfig vbrc) {
-        Integer age = vbrc.getAgeInterval();
-        ageInterval = (age == null) ? DEFAULT_AGE_INTERVAL : age.intValue();
-        setDescription(vbrc.getDescription());
     }
 
     /**

@@ -10,8 +10,8 @@ package org.opendaylight.vtn.manager.internal.util.vnode.mac;
 
 import org.opendaylight.vtn.manager.VTNException;
 
+import org.opendaylight.vtn.manager.internal.util.inventory.PortFilter;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
-import org.opendaylight.vtn.manager.internal.util.inventory.port.PortFilter;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.vtn.mac.table.entry.MacTableEntry;
 

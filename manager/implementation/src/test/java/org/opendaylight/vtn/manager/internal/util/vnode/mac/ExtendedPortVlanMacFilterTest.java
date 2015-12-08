@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
-import org.opendaylight.vtn.manager.internal.util.inventory.port.SpecificPortFilter;
+import org.opendaylight.vtn.manager.internal.util.inventory.SpecificPortFilter;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 

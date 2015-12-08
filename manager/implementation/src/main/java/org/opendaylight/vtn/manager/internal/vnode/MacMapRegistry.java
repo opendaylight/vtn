@@ -87,11 +87,6 @@ public final class MacMapRegistry extends VirtualMapRegistry<MacMapCleaner> {
     private final Set<VBridgeIdentifier>  downBridges = new HashSet<>();
 
     /**
-     * Set {@code true} if the target MAC mapping is going to be removed.
-     */
-    private final boolean  removing;
-
-    /**
      * A boolean value whicih indicates obsolete network caches need to be
      * purged or not.
      */
@@ -111,7 +106,7 @@ public final class MacMapRegistry extends VirtualMapRegistry<MacMapCleaner> {
         super(ctx);
         targetId = ident;
         configChange = change;
-        removing = change.isRemoving();
+        boolean removing = change.isRemoving();
         doPurge = !(removing || change.dontPurge());
 
         // Set up cache for the MAC mapping status.

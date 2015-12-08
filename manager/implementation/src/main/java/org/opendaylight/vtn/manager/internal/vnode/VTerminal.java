@@ -28,7 +28,6 @@ import org.opendaylight.vtn.manager.internal.vnode.xml.XmlVTerminal;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.VtnVinterfaceConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.vtn.mappable.vinterface.list.Vinterface;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vterminal.rev150907.VtnVterminalConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vterminal.rev150907.vtn.vterminal.list.Vterminal;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vterminal.rev150907.vtn.vterminal.list.VterminalBuilder;
 
@@ -66,7 +65,6 @@ public final class VTerminal extends VirtualBridge<Vterminal> {
      */
     public VTerminal(BridgeIdentifier<Vterminal> vtmId, Vterminal vterm) {
         super(vtmId, vterm);
-        initConfig(vterm.getVterminalConfig());
     }
 
     /**
@@ -84,7 +82,6 @@ public final class VTerminal extends VirtualBridge<Vterminal> {
                             XmlVTerminal xvtm) throws VTNException {
         // Initialize vTerminal configuration.
         VterminalBuilder builder = xvtm.toVterminalBuilder();
-        initConfig(builder.getVterminalConfig());
 
         // Resume virtual interfaces.
         builder.setVinterface(resume(ctx, xlogger, xvtm.getInterfaces())).
@@ -95,15 +92,6 @@ public final class VTerminal extends VirtualBridge<Vterminal> {
                     getIdentifier(), getState());
 
         return builder.build();
-    }
-
-    /**
-     * Initialize configuration of the vTerminal.
-     *
-     * @param vtmc   Configuration of the vTerminal.
-     */
-    private void initConfig(VtnVterminalConfig vtmc) {
-        setDescription(vtmc.getDescription());
     }
 
     // VirtualBridge

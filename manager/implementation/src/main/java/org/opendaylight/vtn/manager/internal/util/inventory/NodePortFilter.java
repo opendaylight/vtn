@@ -6,10 +6,7 @@
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.vtn.manager.internal.util.inventory.port;
-
-import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
-import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
+package org.opendaylight.vtn.manager.internal.util.inventory;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 

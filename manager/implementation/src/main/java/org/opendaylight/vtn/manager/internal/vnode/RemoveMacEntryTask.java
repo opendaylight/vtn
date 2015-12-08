@@ -94,7 +94,7 @@ public final class RemoveMacEntryTask
             }
         } catch (RuntimeException e) {
             throw RpcException.getBadArgumentException(
-                "Invalid MAC address: " + mac);
+                "Invalid MAC address: " + mac, e);
         }
 
         return mac;

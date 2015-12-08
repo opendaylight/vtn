@@ -16,8 +16,8 @@ import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.L2Host;
 import org.opendaylight.vtn.manager.internal.util.inventory.MacVlan;
+import org.opendaylight.vtn.manager.internal.util.inventory.PortFilter;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
-import org.opendaylight.vtn.manager.internal.util.inventory.port.PortFilter;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 

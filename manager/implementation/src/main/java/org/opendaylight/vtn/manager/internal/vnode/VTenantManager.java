@@ -1435,7 +1435,7 @@ public final class VTenantManager
     @Override
     public VTNFuture<?> initConfig(boolean master) {
         TxTask<?> task = (master)
-            ? new VTenantLoadTask(this, vBridgeManager)
+            ? new VTenantLoadTask(vBridgeManager)
             : new VTenantSaveTask();
         return vtnProvider.post(task);
     }

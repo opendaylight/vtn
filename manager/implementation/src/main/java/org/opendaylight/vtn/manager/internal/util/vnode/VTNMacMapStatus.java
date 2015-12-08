@@ -28,9 +28,9 @@ import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.util.inventory.MacVlan;
+import org.opendaylight.vtn.manager.internal.util.inventory.PortFilter;
 import org.opendaylight.vtn.manager.internal.util.inventory.PortVlan;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
-import org.opendaylight.vtn.manager.internal.util.inventory.port.PortFilter;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;

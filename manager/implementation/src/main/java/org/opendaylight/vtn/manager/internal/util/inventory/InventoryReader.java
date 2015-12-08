@@ -23,7 +23,6 @@ import com.google.common.base.Optional;
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
-import org.opendaylight.vtn.manager.internal.util.inventory.port.PortFilter;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -518,12 +517,11 @@ public final class InventoryReader {
             if (opt.isPresent()) {
                 StaticSwitchLink swlink = opt.get();
                 dst = SalPort.create(swlink.getDestination());
-                if (dst != null) {
-                    // Eliminate broken configuration.
-                    if (src.equals(dst) || isStaticEdgePort(src) ||
-                        isStaticEdgePort(dst)) {
-                        dst = null;
-                    }
+
+                // Eliminate broken configuration.
+                if (dst != null &&
+                    (src.equalsPort(dst) || isStaticEdgePort(src, dst))) {
+                    dst = null;
                 }
             }
 
@@ -825,5 +823,21 @@ public final class InventoryReader {
                 staticEdgePorts.put(sport, Boolean.TRUE);
             }
         }
+    }
+
+    /**
+     * Determine whether either the source or the destination port of the
+     * link is configured as a static edge port or not.
+     *
+     * @param src  The source port of the link.
+     * @param dst  The destination port of the link.
+     * @return  {@code true} if either {@code src} or {@code dst} is configured
+     *          as a static edge port. {@code false} otherwise.
+     * @throws VTNException
+     *    Failed to reead static edge port configuration.
+     */
+    private boolean isStaticEdgePort(SalPort src, SalPort dst)
+        throws VTNException {
+        return (isStaticEdgePort(src) || isStaticEdgePort(dst));
     }
 }

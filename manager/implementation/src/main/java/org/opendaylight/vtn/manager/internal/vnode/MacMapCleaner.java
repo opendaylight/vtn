@@ -220,12 +220,11 @@ public final class MacMapCleaner implements MapCleaner, MacEntryFilter {
         Integer vid = Integer.valueOf(mvlan.getVlanId());
         boolean result = (mappedHosts.contains(mvlan) ||
                           (mappedVlans.contains(vid) && isMapped(mvlan)));
-        if (!result) {
-            // Check hosts removed from the MAC mapping.
-            if (macMapId.contains(vpath)) {
-                result = (unmappedHosts.contains(mvlan) ||
-                          (unmappedVlans.contains(vid) && !isMapped(mvlan)));
-            }
+
+        // Check hosts removed from the MAC mapping.
+        if (!result && macMapId.contains(vpath)) {
+            result = (unmappedHosts.contains(mvlan) ||
+                      (unmappedVlans.contains(vid) && !isMapped(mvlan)));
         }
 
         return result;

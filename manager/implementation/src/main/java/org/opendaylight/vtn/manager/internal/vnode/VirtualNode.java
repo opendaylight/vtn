@@ -31,11 +31,6 @@ public abstract class VirtualNode
     <T extends DataObject, I extends VNodeIdentifier<T>>
     extends VirtualElement<T, I> {
     /**
-     * Description about the virtual node.
-     */
-    private String  description;
-
-    /**
      * Construct a new instance.
      *
      * @param ident  The identifier for the virtual node.
@@ -52,24 +47,6 @@ public abstract class VirtualNode
      */
     protected VirtualNode(I ident, T value) {
         super(ident, value);
-    }
-
-    /**
-     * Return the description about the virtual node.
-     *
-     * @return  The description about the virtual node.
-     */
-    public final String getDescription() {
-        return description;
-    }
-
-    /**
-     * Set the description about the virtual node.
-     *
-     * @param desc  The description about the virtual node.
-     */
-    public final void setDescription(String desc) {
-        description = desc;
     }
 
     /**

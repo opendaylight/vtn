@@ -365,7 +365,7 @@ public final class VTNMacMapConfig {
                     retained.add(mvlan);
                 } else {
                     long mac = mvlan.getAddress();
-                    if (mac != MacVlan.UNDEFINED && !macSet.add(mac)) {
+                    if (!addMacAddress(macSet, mac)) {
                         throw getDuplicateMacAddressException(mac);
                     }
                     added.add(mvlan);
@@ -376,7 +376,7 @@ public final class VTNMacMapConfig {
             for (MacVlan mvlan: allowedHosts) {
                 if (retained.contains(mvlan)) {
                     long mac = mvlan.getAddress();
-                    if (mac != MacVlan.UNDEFINED && !macSet.add(mac)) {
+                    if (!addMacAddress(macSet, mac)) {
                         throw getAlreadyMappedException(mac);
                     }
                 } else {
@@ -636,7 +636,7 @@ public final class VTNMacMapConfig {
         for (MacVlan mv: allowedHosts) {
             mv.checkMacMap();
             long mac = mv.getAddress();
-            if (mac != MacVlan.UNDEFINED && !macSet.add(mac)) {
+            if (!addMacAddress(macSet, mac)) {
                 throw getDuplicateMacAddressException(mac);
             }
         }
@@ -753,6 +753,21 @@ public final class VTNMacMapConfig {
         }
 
         return list;
+    }
+
+    /**
+     * Add the specified MAC address into the specified set of MAC addresses.
+     *
+     * @param macSet  A set of MAC addresses.
+     * @param mac     A long integer value that indicates the MAC address.
+     *                Note that {@code MacVlan#UNDEFINED} is never be added
+     *                to {@code macSet}.
+     * @return  {@code true} if {@code mac} was added to {@code macSet} or
+     *          {@code mac} is equal to {@link MacVlan#UNDEFINED}.
+     *          {@code false} otherwise.
+     */
+    private boolean addMacAddress(Set<Long> macSet, long mac) {
+        return (mac == MacVlan.UNDEFINED || macSet.add(mac));
     }
 
     // Object

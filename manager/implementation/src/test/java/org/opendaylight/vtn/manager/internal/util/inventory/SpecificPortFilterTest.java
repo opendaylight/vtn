@@ -6,14 +6,12 @@
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.vtn.manager.internal.util.inventory.port;
+package org.opendaylight.vtn.manager.internal.util.inventory;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
 import org.junit.Test;
-
-import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 

@@ -82,7 +82,6 @@ public final class VTNVlanMapConfig {
         // Determine node ID in the given configuration.
         NodeId nid = cfg.getNode();
         String nodeId = (nid == null) ? null : nid.getValue();
-        SalNode snode;
         if (nodeId == null) {
             nodeId = NODE_ID_ANY;
         } else if (SalNode.create(nodeId) == null) {

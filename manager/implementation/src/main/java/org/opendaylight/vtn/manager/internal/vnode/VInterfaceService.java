@@ -10,9 +10,6 @@ package org.opendaylight.vtn.manager.internal.vnode;
 
 import java.util.concurrent.Future;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
@@ -41,12 +38,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.Vt
  */
 public final class VInterfaceService
     implements VtnVinterfaceService, VtnPortMapService {
-    /**
-     * Logger instance.
-     */
-    private static final Logger  LOG =
-        LoggerFactory.getLogger(VInterfaceService.class);
-
     /**
      * VTN Manager provider service.
      */

@@ -200,7 +200,7 @@ public abstract class IpNetwork implements Serializable {
             return null;
         }
 
-        throw new IllegalArgumentException("Unsupported IP address: " + iaddr);
+        throw getUnsupportedAddressException(iaddr);
     }
 
     /**
@@ -252,8 +252,7 @@ public abstract class IpNetwork implements Serializable {
                 return ip4;
             }
             if (ip.getIpv6Address() != null) {
-                throw new IllegalArgumentException(
-                    "Unsupported IP address: " + ip);
+                throw getUnsupportedAddressException(ip);
             }
         }
 
@@ -281,7 +280,7 @@ public abstract class IpNetwork implements Serializable {
             return null;
         }
 
-        throw new IllegalArgumentException("Unsupported IP address: " + addr);
+        throw getUnsupportedAddressException(addr);
     }
 
     /**
@@ -304,6 +303,18 @@ public abstract class IpNetwork implements Serializable {
 
         InetAddressPrefix ipfx = new InetAddressPrefix(cidr);
         return create(ipfx.getAddress(), ipfx.getPrefix());
+    }
+
+    /**
+     * Return an {@link IllegalArgumentException} that indicates the specified
+     * IP address is not supported.
+     *
+     * @param ip  An object that specifies an unsupported IP address.
+     * @return  An {@link IllegalArgumentException} instance.
+     */
+    private static IllegalArgumentException getUnsupportedAddressException(
+        Object ip) {
+        return new IllegalArgumentException("Unsupported IP address: " + ip);
     }
 
     /**

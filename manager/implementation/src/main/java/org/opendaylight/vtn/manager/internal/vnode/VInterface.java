@@ -637,7 +637,6 @@ public abstract class VInterface<B extends VtnPortMappableBridge>
      * @param vifc  Configuration of the virtual interface.
      */
     private void initConfig(VtnVinterfaceConfig vifc) {
-        setDescription(vifc.getDescription());
         Boolean en = vifc.isEnabled();
         boolean newEn = (en == null || en.booleanValue());
         enabled = newEn;

@@ -78,11 +78,6 @@ class VTenantLoadTask extends AbstractTxTask<Vtns> implements XmlLogger {
         LoggerFactory.getLogger(VTenantLoadTask.class);
 
     /**
-     * The virtual tenant manager.
-     */
-    private final VTenantManager  tenantManager;
-
-    /**
      * The vBridge manager instance.
      */
     private final VBridgeManager  vBridgeManager;
@@ -100,11 +95,9 @@ class VTenantLoadTask extends AbstractTxTask<Vtns> implements XmlLogger {
     /**
      * Construct a new instance.
      *
-     * @param tmgr   The virtual tenant manager.
      * @param vbmgr  The vBridge manager.
      */
-    VTenantLoadTask(VTenantManager tmgr, VBridgeManager vbmgr) {
-        tenantManager = tmgr;
+    VTenantLoadTask(VBridgeManager vbmgr) {
         vBridgeManager = vbmgr;
     }
 

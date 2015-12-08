@@ -17,6 +17,7 @@ import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,13 +132,13 @@ public class PacketContext
     /**
      * A sequence of virtual packet routing.
      */
-    private List<VNodeHop>  virtualRoute = new ArrayList<>();
+    private final List<VNodeHop>  virtualRoute = new ArrayList<>();
 
     /**
      * A set of {@link FlowMatchType} instances which represents match fields
      * to be configured.
      */
-    private EnumSet<FlowMatchType>  matchFields =
+    private final Set<FlowMatchType>  matchFields =
         EnumSet.noneOf(FlowMatchType.class);
 
     /**

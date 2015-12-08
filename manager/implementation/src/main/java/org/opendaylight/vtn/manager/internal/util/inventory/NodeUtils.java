@@ -83,10 +83,7 @@ public final class NodeUtils {
      */
     public static void checkVtnPortDesc(VtnPortDesc vdesc)
         throws RpcException {
-        String value = (vdesc == null) ? null : vdesc.getValue();
-        if (value == null) {
-            throw getNullPortDescException();
-        }
+        String value = getValue(vdesc);
 
         int idx = value.indexOf(PORT_DESC_SEPARATOR);
         if (idx >= 0) {
@@ -208,5 +205,22 @@ public final class NodeUtils {
         }
 
         return sport;
+    }
+
+    /**
+     * Return the port descriptor in the given {@link VtnPortDesc} instance.
+     *
+     * @param vdesc  A {@link VtnPortDesc} instance.
+     * @return  The port descriptor in {@code vdesc}.
+     * @throws RpcException
+     *    {@code vdesc} does not contain the port descriptor.
+     */
+    private static String getValue(VtnPortDesc vdesc) throws RpcException {
+        String value = (vdesc == null) ? null : vdesc.getValue();
+        if (value == null) {
+            throw getNullPortDescException();
+        }
+
+        return value;
     }
 }

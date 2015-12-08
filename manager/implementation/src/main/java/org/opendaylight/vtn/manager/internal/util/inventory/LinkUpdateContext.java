@@ -134,7 +134,7 @@ public final class LinkUpdateContext {
      */
     public VtnLink addVtnLink(LinkId lid, SalPort src, SalPort dst)
         throws VTNException {
-        String cause = canCreateVtnLink(lid, src, dst);
+        String cause = canCreateVtnLink(src, dst);
         if (cause == null) {
             // Create link information.
             return createVtnLink(lid, src, dst, false);
@@ -184,7 +184,7 @@ public final class LinkUpdateContext {
             LinkId lid = ignored.getLinkId();
             SalPort src = SalPort.create(ignored.getSource());
             SalPort dst = SalPort.create(ignored.getDestination());
-            String cause = canCreateVtnLink(lid, src, dst);
+            String cause = canCreateVtnLink(src, dst);
             if (cause == null) {
                 // Move this link to vtn-topology.
                 InstanceIdentifier<IgnoredLink> ipath =
@@ -446,7 +446,6 @@ public final class LinkUpdateContext {
      * Determine whether the given link detected by the topology-manager
      * can be created or not.
      *
-     * @param lid  The identifier of the created link.
      * @param src  A {@link SalPort} instance corresponding to the source
      *             of the created link.
      * @param dst  A {@link SalPort} instance corresponding to the destination
@@ -455,25 +454,24 @@ public final class LinkUpdateContext {
      *          Otherwise a string which indicates the cause is returned.
      * @throws VTNException  An error occurred.
      */
-    private String canCreateVtnLink(LinkId lid, SalPort src, SalPort dst)
+    private String canCreateVtnLink(SalPort src, SalPort dst)
         throws VTNException {
+        String msg;
         if (inventoryReader.isStaticEdgePort(src)) {
-            return "Source port is configured as static edge port.";
-        }
-        if (inventoryReader.isStaticEdgePort(dst)) {
-            return "Destination port is configured as static edge port.";
-        }
-        if (inventoryReader.getStaticLink(src) != null) {
-            return "Static inter-switch link is configured.";
-        }
-        if (inventoryReader.get(src) == null) {
-            return "Source port is not present.";
-        }
-        if (inventoryReader.get(dst) == null) {
-            return "Destination port is not present.";
+            msg = "Source port is configured as static edge port.";
+        } else if (inventoryReader.isStaticEdgePort(dst)) {
+            msg = "Destination port is configured as static edge port.";
+        } else if (inventoryReader.getStaticLink(src) != null) {
+            msg = "Static inter-switch link is configured.";
+        } else if (inventoryReader.get(src) == null) {
+            msg = "Source port is not present.";
+        } else if (inventoryReader.get(dst) == null) {
+            msg = "Destination port is not present.";
+        } else {
+            msg = null;
         }
 
-        return null;
+        return msg;
     }
 
     /**
