@@ -33,11 +33,27 @@
   <modules>
     <module>common</module>
     <module>manager</module>
-    <module>coordinator/dist</module>
-    <module>application</module>
   </modules>
 
   <profiles>
+    <profile>
+      <id>buildvtncoordinator</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <modules>
+        <module>coordinator/dist</module>
+      </modules>
+    </profile>
+    <profile>
+      <id>buildvtnapps</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <modules>
+        <module>application</module>
+      </modules>
+    </profile>
     <!-- Turn off doclint on aggregated API javadoc build. -->
     <profile>
       <id>jdk8</id>
