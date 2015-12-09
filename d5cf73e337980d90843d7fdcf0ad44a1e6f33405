@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "1aa4ed85_00afd7e4",
+        "filename": "pom.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-12-09T22:22:25Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "1aa4ed85_05512962",
+      "range": {
+        "startLine": 39,
+        "startChar": 0,
+        "endLine": 39,
+        "endChar": 13
+      },
+      "revId": "d5cf73e337980d90843d7fdcf0ad44a1e6f33405",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "1aa4ed85_45d641c7",
         "filename": "pom.xml",
         "patchSetId": 2
@@ -36,6 +60,30 @@
       "writtenOn": "2015-12-09T21:03:51Z",
       "side": 1,
       "message": "I think the id should be shorter like \"coordinator\". If you change the ID, please also update the comment.",
+      "range": {
+        "startLine": 40,
+        "startChar": 10,
+        "endLine": 40,
+        "endChar": 29
+      },
+      "revId": "d5cf73e337980d90843d7fdcf0ad44a1e6f33405",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_20ac53ed",
+        "filename": "pom.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-12-09T22:22:25Z",
+      "side": 1,
+      "message": "Added as vtncoordinator",
+      "parentUuid": "1aa4ed85_45d641c7",
       "range": {
         "startLine": 40,
         "startChar": 10,
@@ -71,6 +119,30 @@
     },
     {
       "key": {
+        "uuid": "1aa4ed85_c0b8df2c",
+        "filename": "pom.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 48,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-12-09T22:22:25Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "1aa4ed85_85cc3937",
+      "range": {
+        "startLine": 47,
+        "startChar": 0,
+        "endLine": 48,
+        "endChar": 13
+      },
+      "revId": "d5cf73e337980d90843d7fdcf0ad44a1e6f33405",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "1aa4ed85_a5e4d5ac",
         "filename": "pom.xml",
         "patchSetId": 2
@@ -94,6 +166,30 @@
     },
     {
       "key": {
+        "uuid": "1aa4ed85_8082e750",
+        "filename": "pom.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-12-09T22:22:25Z",
+      "side": 1,
+      "message": "Added as vtnapps",
+      "parentUuid": "1aa4ed85_a5e4d5ac",
+      "range": {
+        "startLine": 49,
+        "startChar": 10,
+        "endLine": 49,
+        "endChar": 22
+      },
+      "revId": "d5cf73e337980d90843d7fdcf0ad44a1e6f33405",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "1aa4ed85_25d1c5cd",
         "filename": "pom.xml",
         "patchSetId": 2
@@ -105,6 +201,30 @@
       "writtenOn": "2015-12-09T21:03:51Z",
       "side": 1,
       "message": "Could you insert an empty line?",
+      "range": {
+        "startLine": 56,
+        "startChar": 0,
+        "endLine": 56,
+        "endChar": 14
+      },
+      "revId": "d5cf73e337980d90843d7fdcf0ad44a1e6f33405",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_a087e360",
+        "filename": "pom.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-12-09T22:22:25Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "1aa4ed85_25d1c5cd",
       "range": {
         "startLine": 56,
         "startChar": 0,
