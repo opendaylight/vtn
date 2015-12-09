@@ -1,0 +1,119 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1aa4ed85_05512962",
+        "filename": "pom.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 39,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-12-09T21:03:51Z",
+      "side": 1,
+      "message": "Could you insert a comment like;\n\u003c!-- Build VTN Coordinator only if coordinator profile is activated --\u003e",
+      "range": {
+        "startLine": 39,
+        "startChar": 0,
+        "endLine": 39,
+        "endChar": 13
+      },
+      "revId": "d5cf73e337980d90843d7fdcf0ad44a1e6f33405",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_45d641c7",
+        "filename": "pom.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 40,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-12-09T21:03:51Z",
+      "side": 1,
+      "message": "I think the id should be shorter like \"coordinator\". If you change the ID, please also update the comment.",
+      "range": {
+        "startLine": 40,
+        "startChar": 10,
+        "endLine": 40,
+        "endChar": 29
+      },
+      "revId": "d5cf73e337980d90843d7fdcf0ad44a1e6f33405",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_85cc3937",
+        "filename": "pom.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 48,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-12-09T21:03:51Z",
+      "side": 1,
+      "message": "Could you insert an empty line, and a comment line like;\n\u003c!-- Build VTN applications only if apps profile is activated --\u003e",
+      "range": {
+        "startLine": 47,
+        "startChar": 0,
+        "endLine": 48,
+        "endChar": 13
+      },
+      "revId": "d5cf73e337980d90843d7fdcf0ad44a1e6f33405",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_a5e4d5ac",
+        "filename": "pom.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-12-09T21:03:51Z",
+      "side": 1,
+      "message": "I think the id should be shorter like \"apps\". If you change the ID, please also update the comment.",
+      "range": {
+        "startLine": 49,
+        "startChar": 10,
+        "endLine": 49,
+        "endChar": 22
+      },
+      "revId": "d5cf73e337980d90843d7fdcf0ad44a1e6f33405",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_25d1c5cd",
+        "filename": "pom.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-12-09T21:03:51Z",
+      "side": 1,
+      "message": "Could you insert an empty line?",
+      "range": {
+        "startLine": 56,
+        "startChar": 0,
+        "endLine": 56,
+        "endChar": 14
+      },
+      "revId": "d5cf73e337980d90843d7fdcf0ad44a1e6f33405",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
