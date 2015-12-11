@@ -2701,7 +2701,7 @@ public class FlowUtilsTest extends TestBase {
             setPortId(sout).
             setPortName(outName).
             build();
-        BigInteger dpid = BigInteger.valueOf(node);
+        BigInteger dpid = NumberUtils.getUnsigned(node);
         NodeId nid = new NodeId("openflow:" + dpid);
         PhysicalRoute pr = new PhysicalRouteBuilder().
             setNode(nid).

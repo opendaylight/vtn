@@ -67,6 +67,15 @@ public class SalNodeTest extends TestBase {
             "openflow:18446744073709551616",
             "openflow:18446744073709551617",
             "openflow:99999999999999999999999",
+
+            // Negative DPID.
+            "openflow:-1",
+            "openflow:-12345",
+
+            // Invalid DPID.
+            "openflow:0x12345678",
+            "openflow:1234abcd",
+            "openflow:Bad DPID",
         };
         for (String id: bad) {
             assertEquals(null, SalNode.create(id));
@@ -89,8 +98,8 @@ public class SalNodeTest extends TestBase {
         assertEquals(null, SalPort.create(new NodeRef(invalidPath)));
 
         BigInteger[] ids = {
-            BigInteger.valueOf(0L),
-            BigInteger.valueOf(1L),
+            BigInteger.ZERO,
+            BigInteger.ONE,
             new BigInteger("9223372036854775807"),
             new BigInteger("9223372036854775808"),
             new BigInteger("18446744073709551614"),
@@ -209,8 +218,8 @@ public class SalNodeTest extends TestBase {
     @Test
     public void testGetter() {
         BigInteger[] ids = {
-            BigInteger.valueOf(0L),
-            BigInteger.valueOf(1L),
+            BigInteger.ZERO,
+            BigInteger.ONE,
             BigInteger.valueOf(10L),
             BigInteger.valueOf(12345L),
             BigInteger.valueOf(0xaabbccddeeff01L),
@@ -291,8 +300,8 @@ public class SalNodeTest extends TestBase {
         HashSet<Object> set = new HashSet<Object>();
 
         BigInteger[] ids = {
-            BigInteger.valueOf(0L),
-            BigInteger.valueOf(1L),
+            BigInteger.ZERO,
+            BigInteger.ONE,
             BigInteger.valueOf(10L),
             BigInteger.valueOf(12345L),
             BigInteger.valueOf(0xaabbccddeeff01L),
