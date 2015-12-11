@@ -117,11 +117,8 @@ public class SalNode {
             return null;
         }
 
-        if (bi.bitLength() > Long.SIZE) {
-            return null;
-        }
-
-        return new SalNode(bi.longValue(), id);
+        return (bi.bitLength() > Long.SIZE || bi.signum() < 0)
+            ? null : new SalNode(bi.longValue(), id);
     }
 
     /**

@@ -102,6 +102,16 @@ public class SalPortTest extends TestBase {
             "openflow:18446744073709551617:2",
             "openflow:99999999999999999999999:2",
             "openflow:999999999999999999999999:LOCAL",
+
+            // Negative DPID.
+            "openflow:-1:1",
+            "openflow:-12345678:2",
+            "openflow:-3333333333333333333333333:2",
+
+            // Invalid DPID.
+            "openflow:0x12345678:1",
+            "openflow:1234abcd:1",
+            "openflow:Bad DPID:1",
         };
         for (String id: bad) {
             for (SalPort sport: createSalPorts(id, false)) {
@@ -110,8 +120,8 @@ public class SalPortTest extends TestBase {
         }
 
         BigInteger[] ids = {
-            BigInteger.valueOf(0L),
-            BigInteger.valueOf(1L),
+            BigInteger.ZERO,
+            BigInteger.ONE,
             new BigInteger("9223372036854775807"),
             new BigInteger("9223372036854775808"),
             new BigInteger("18446744073709551614"),
@@ -338,8 +348,8 @@ public class SalPortTest extends TestBase {
     @Test
     public void testGetter() {
         BigInteger[] ids = {
-            BigInteger.valueOf(0L),
-            BigInteger.valueOf(1L),
+            BigInteger.ZERO,
+            BigInteger.ONE,
             BigInteger.valueOf(10L),
             BigInteger.valueOf(12345L),
             BigInteger.valueOf(0xaabbccddeeff01L),
@@ -484,8 +494,8 @@ public class SalPortTest extends TestBase {
         HashSet<Object> set = new HashSet<Object>();
 
         BigInteger[] ids = {
-            BigInteger.valueOf(0L),
-            BigInteger.valueOf(1L),
+            BigInteger.ZERO,
+            BigInteger.ONE,
             BigInteger.valueOf(10L),
             BigInteger.valueOf(12345L),
             BigInteger.valueOf(0xaabbccddeeff01L),
