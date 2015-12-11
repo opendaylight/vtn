@@ -231,9 +231,12 @@ public abstract class UpdateVinterfaceTask<B extends VtnPortMappableBridge>
 
             // Update the vTerminal status.
             // The given interface state can be used as the vTerminal state
-            // because vTerminal can contains only one interface.
-            VinterfaceStatus ist = vintf.getVinterfaceStatus();
-            VnodeState bstate = ist.getState();
+            // as long as the interface is enabled because vTerminal can
+            // contains only one interface.
+            VinterfaceConfig iconf = vintf.getVinterfaceConfig();
+            VnodeState bstate = (iconf.isEnabled().booleanValue())
+                ? vintf.getVinterfaceStatus().getState()
+                : VnodeState.UNKNOWN;
             BridgeStatus bst = builder.getBridgeStatus();
             bst = new BridgeStatusBuilder(bst).setState(bstate).build();
 
