@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -31,7 +31,7 @@ public final class Icmp4FlowFactory extends Inet4FlowFactory {
     /**
      * ICMPv4 type.
      */
-    private Byte  icmpType;
+    private Short  icmpType;
 
     /**
      * Construct a new instance.
@@ -40,15 +40,15 @@ public final class Icmp4FlowFactory extends Inet4FlowFactory {
      */
     public Icmp4FlowFactory(OfMockService ofmock) {
         super(ofmock);
-        setProtocol(InetProtocols.ICMP.byteValue());
+        setProtocol(InetProtocols.ICMP.shortValue());
     }
 
     /**
      * Return the ICMPv4 type to be used for test.
      *
-     * @return  A {@link Byte} instance or {@code null}.
+     * @return  A {@link Short} instance or {@code null}.
      */
-    public Byte getType() {
+    public Short getType() {
         return icmpType;
     }
 
@@ -58,8 +58,8 @@ public final class Icmp4FlowFactory extends Inet4FlowFactory {
      * @param type  ICMPv4 type.
      * @return  This instance.
      */
-    public Icmp4FlowFactory setType(byte type) {
-        icmpType = Byte.valueOf(type);
+    public Icmp4FlowFactory setType(short type) {
+        icmpType = Short.valueOf(type);
         return this;
     }
 
@@ -87,7 +87,7 @@ public final class Icmp4FlowFactory extends Inet4FlowFactory {
         ic4fc.setRawPayload(PAYLOAD);
 
         if (icmpType != null) {
-            ic4fc.setType(icmpType.byteValue());
+            ic4fc.setType(icmpType.shortValue());
         }
 
         return efc;

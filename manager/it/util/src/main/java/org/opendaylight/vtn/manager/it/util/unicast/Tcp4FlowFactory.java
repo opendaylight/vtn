@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -35,8 +35,8 @@ public final class Tcp4FlowFactory extends Inet4PortFlowFactory {
      * @param src     The source port.
      * @param dst     The destination port.
      */
-    public Tcp4FlowFactory(OfMockService ofmock, short src, short dst) {
-        super(ofmock, InetProtocols.TCP.byteValue(), src, dst);
+    public Tcp4FlowFactory(OfMockService ofmock, int src, int dst) {
+        super(ofmock, InetProtocols.TCP.shortValue(), src, dst);
     }
 
     // UnicastFlowFactory

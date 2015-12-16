@@ -33,4 +33,18 @@
   <properties>
     <vtn.manager.dir>../..</vtn.manager.dir>
   </properties>
+
+  <dependencies>
+    <!-- Pax Exam -->
+    <dependency>
+      <groupId>org.ops4j.pax.exam</groupId>
+      <artifactId>pax-exam-container-native</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.ops4j.pax.exam</groupId>
+      <artifactId>pax-exam-link-mvn</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 </project>

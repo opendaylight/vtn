@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -11,8 +11,6 @@ package org.opendaylight.vtn.manager.it.util.packet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import static org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase.toPortNumber;
-
 import java.util.Set;
 
 import org.opendaylight.vtn.manager.packet.Packet;
@@ -23,6 +21,8 @@ import org.opendaylight.vtn.manager.it.util.match.FlowMatchType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.layer._4.match.TcpMatchBuilder;
+
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 
 /**
  * {@code TcpFactory} is a utility class used to create or to verify a
@@ -67,12 +67,12 @@ public final class TcpFactory extends PacketFactory {
     /**
      * The source port number.
      */
-    private short  sourcePort;
+    private int  sourcePort;
 
     /**
      * The destination port number.
      */
-    private short  destinationPort;
+    private int  destinationPort;
 
     /**
      * Construct a new instance.
@@ -82,7 +82,7 @@ public final class TcpFactory extends PacketFactory {
      */
     public static TcpFactory newInstance(Inet4Factory i4fc) {
         TcpFactory tfc = new TcpFactory();
-        i4fc.setProtocol(InetProtocols.TCP.byteValue()).setNextFactory(tfc);
+        i4fc.setProtocol(InetProtocols.TCP.shortValue()).setNextFactory(tfc);
 
         return tfc;
     }
@@ -95,10 +95,9 @@ public final class TcpFactory extends PacketFactory {
      * @param dst   The destination port number.
      * @return  An {@link TcpFactory} instance.
      */
-    public static TcpFactory newInstance(Inet4Factory i4fc, short src,
-                                         short dst) {
+    public static TcpFactory newInstance(Inet4Factory i4fc, int src, int dst) {
         TcpFactory tfc = new TcpFactory(src, dst);
-        i4fc.setProtocol(InetProtocols.TCP.byteValue()).setNextFactory(tfc);
+        i4fc.setProtocol(InetProtocols.TCP.shortValue()).setNextFactory(tfc);
 
         return tfc;
     }
@@ -114,7 +113,7 @@ public final class TcpFactory extends PacketFactory {
      * @param src  The source port number.
      * @param dst  The destination port number.
      */
-    TcpFactory(short src, short dst) {
+    TcpFactory(int src, int dst) {
         sourcePort = src;
         destinationPort = dst;
     }
@@ -124,7 +123,7 @@ public final class TcpFactory extends PacketFactory {
      *
      * @return  The source port number.
      */
-    public short getSourcePort() {
+    public int getSourcePort() {
         return sourcePort;
     }
 
@@ -133,7 +132,7 @@ public final class TcpFactory extends PacketFactory {
      *
      * @return  The destination port number.
      */
-    public short getDestinationPort() {
+    public int getDestinationPort() {
         return destinationPort;
     }
 
@@ -143,7 +142,7 @@ public final class TcpFactory extends PacketFactory {
      * @param port  The source port number.
      * @return  This instance.
      */
-    public TcpFactory setSourcePort(short port) {
+    public TcpFactory setSourcePort(int port) {
         sourcePort = port;
         return this;
     }
@@ -154,7 +153,7 @@ public final class TcpFactory extends PacketFactory {
      * @param port  The destination port number.
      * @return  This instance.
      */
-    public TcpFactory setDestinationPort(short port) {
+    public TcpFactory setDestinationPort(int port) {
         destinationPort = port;
         return this;
     }
@@ -164,8 +163,8 @@ public final class TcpFactory extends PacketFactory {
      */
     @Override
     Packet createPacket() {
-        TCP tcp = new TCP().setSourcePort(sourcePort).
-            setDestinationPort(destinationPort).
+        TCP tcp = new TCP().setSourcePort((short)sourcePort).
+            setDestinationPort((short)destinationPort).
             setSequenceNumber(DEFAULT_SEQ).
             setAckNumber(DEFAULT_ACK).
             setDataOffset(DEFAULT_OFF).
@@ -186,8 +185,8 @@ public final class TcpFactory extends PacketFactory {
         TCP tcp = (TCP)packet;
 
         // Checksum is not supported.
-        assertEquals(sourcePort, tcp.getSourcePort());
-        assertEquals(destinationPort, tcp.getDestinationPort());
+        assertEquals((short)sourcePort, tcp.getSourcePort());
+        assertEquals((short)destinationPort, tcp.getDestinationPort());
     }
 
     /**
@@ -199,11 +198,11 @@ public final class TcpFactory extends PacketFactory {
         int count = 0;
 
         if (types.contains(FlowMatchType.TCP_SRC)) {
-            tmb.setTcpSourcePort(toPortNumber(sourcePort));
+            tmb.setTcpSourcePort(new PortNumber(sourcePort));
             count++;
         }
         if (types.contains(FlowMatchType.TCP_DST)) {
-            tmb.setTcpDestinationPort(toPortNumber(destinationPort));
+            tmb.setTcpDestinationPort(new PortNumber(destinationPort));
             count++;
         }
 

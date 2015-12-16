@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,11 +8,12 @@
 
 package org.opendaylight.vtn.manager.it.util.action;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 import java.util.ListIterator;
 
-import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
+import org.opendaylight.vtn.manager.util.EtherAddress;
+
 import org.opendaylight.vtn.manager.it.util.packet.EthernetFactory;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.SetDlSrcActionCase;
@@ -27,7 +28,7 @@ public final class SetDlSrcVerifier extends ActionVerifier {
     /**
      * The source MAC address to be set.
      */
-    private final byte[]  macAddress;
+    private final EtherAddress  macAddress;
 
     /**
      * Ensure that the specified action is an expected SET_DL_SRC action.
@@ -35,10 +36,10 @@ public final class SetDlSrcVerifier extends ActionVerifier {
      * @param it   Action list iterator.
      * @param mac  Expected MAC address.
      */
-    public static void verify(ListIterator<Action> it, byte[] mac) {
+    public static void verify(ListIterator<Action> it, EtherAddress mac) {
         SetDlSrcActionCase act = verify(it, SetDlSrcActionCase.class);
         SetDlSrcAction sdsa = act.getSetDlSrcAction();
-        assertArrayEquals(mac, OfMockUtils.getMacAddress(sdsa.getAddress()));
+        assertEquals(mac.getMacAddress(), sdsa.getAddress());
     }
 
     /**
@@ -46,8 +47,8 @@ public final class SetDlSrcVerifier extends ActionVerifier {
      *
      * @param mac  The MAC address to be set as the source MAC address.
      */
-    public SetDlSrcVerifier(byte[] mac) {
-        macAddress = mac.clone();
+    public SetDlSrcVerifier(EtherAddress mac) {
+        macAddress = mac;
     }
 
     /**
@@ -55,8 +56,8 @@ public final class SetDlSrcVerifier extends ActionVerifier {
      *
      * @return  The source MAC address.
      */
-    public byte[] getAddress() {
-        return macAddress.clone();
+    public EtherAddress getAddress() {
+        return macAddress;
     }
 
     // ActionVerifier

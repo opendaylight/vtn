@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -15,6 +15,7 @@ import java.util.Set;
 
 import org.opendaylight.vtn.manager.packet.Packet;
 import org.opendaylight.vtn.manager.util.ByteUtils;
+import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
 import org.opendaylight.vtn.manager.it.util.match.FlowMatchType;
@@ -182,6 +183,17 @@ public abstract class PacketFactory implements Cloneable {
      */
     byte[] getBytes(byte[] b) {
         return (b == null) ? null : b.clone();
+    }
+
+    /**
+     * Return a byte array that indicates the specified MAC address.
+     *
+     * @param mac  An {@link EtherAddress} instance.
+     * @return   A byte array that indicates the specified MAC address.
+     *           {@code null} is returned if {@code null} is specified.
+     */
+    byte[] getBytes(EtherAddress mac) {
+        return (mac == null) ? null : mac.getBytes();
     }
 
     /**

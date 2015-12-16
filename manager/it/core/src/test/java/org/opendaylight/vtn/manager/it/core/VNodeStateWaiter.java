@@ -9,13 +9,8 @@
 package org.opendaylight.vtn.manager.it.core;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-import static org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase.getBridgeIfPath;
-import static org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase.getBridgePath;
-import static org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase.getTerminalIfPath;
-import static org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase.getTerminalPath;
 import static org.opendaylight.vtn.manager.it.util.TestBase.unexpected;
 
 import java.util.Collection;
@@ -33,32 +28,23 @@ import org.slf4j.LoggerFactory;
 import org.opendaylight.vtn.manager.it.ofmock.DataChangeWaiter;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockService;
 
-import org.opendaylight.vtn.manager.VBridgeIfPath;
-import org.opendaylight.vtn.manager.VBridgePath;
-import org.opendaylight.vtn.manager.VTerminalIfPath;
-import org.opendaylight.vtn.manager.VTerminalPath;
+import org.opendaylight.vtn.manager.it.util.vnode.BridgeIdentifier;
+import org.opendaylight.vtn.manager.it.util.vnode.VInterfaceIdentifier;
+import org.opendaylight.vtn.manager.it.util.vnode.VNodeIdentifier;
 
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.Vtn;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.VtnKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.vtn.bridge.status.FaultedPaths;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.vtn.port.mappable.bridge.BridgeStatus;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.vtn.vbridge.list.Vbridge;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.vtn.vbridge.list.VbridgeKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.vtn.mappable.vinterface.VinterfaceStatus;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.vtn.mappable.vinterface.list.Vinterface;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.vtn.mappable.vinterface.list.VinterfaceKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vterminal.rev150907.vtn.vterminal.list.Vterminal;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vterminal.rev150907.vtn.vterminal.list.VterminalKey;
 
 /**
  * {@code VNodeStateWaiter} is a utility class used to wait for the virtual
- * node status be changed.
+ * node status to be changed.
  */
 public final class VNodeStateWaiter implements Runnable {
     /**
@@ -75,7 +61,7 @@ public final class VNodeStateWaiter implements Runnable {
     /**
      * A set of expected virtual node status.
      */
-    private final Map<InstanceIdentifier<?>, VNodeCond<?>>  conditions =
+    private final Map<VNodeIdentifier<?>, VNodeCond<?>>  conditions =
         new HashMap<>();
 
     /**
@@ -91,6 +77,11 @@ public final class VNodeStateWaiter implements Runnable {
      */
     private abstract static class VNodeCond<T extends DataObject> {
         /**
+         * The identifier for the target virtual node.
+         */
+        private final VNodeIdentifier<?>  vnodeId;
+
+        /**
          * Path to the target data object.
          */
         private final InstanceIdentifier<T>  targetPath;
@@ -103,42 +94,22 @@ public final class VNodeStateWaiter implements Runnable {
         /**
          * Construct a new instance.
          *
-         * @param path  Path to the target virtual node.
+         * @param ident  The identifier for the target virtual node.
+         * @param path   Path to the target virtual node.
          */
-        private VNodeCond(InstanceIdentifier<T> path) {
+        private VNodeCond(VNodeIdentifier<?> ident,
+                          InstanceIdentifier<T> path) {
+            vnodeId = ident;
             targetPath = path;
         }
 
         /**
-         * Return a string that describes the target virtual node path.
+         * Return the identifier for the target virtual node.
          *
-         * @return  A string that describes the target virtual node path.
+         * @return  A {@link VNodeIdentifier} instance.
          */
-        protected final String getPathString() {
-            VtnKey vtnKey = targetPath.firstKeyOf(Vtn.class);
-            assertNotNull(vtnKey);
-            String tname = vtnKey.getName().getValue();
-
-            VbridgeKey vbrKey = targetPath.firstKeyOf(Vbridge.class);
-            String bname;
-            String type;
-            if (vbrKey == null) {
-                VterminalKey vtmKey = targetPath.firstKeyOf(Vterminal.class);
-                assertNotNull(vtmKey);
-                bname = vtmKey.getName().getValue();
-                type = "vTerminal";
-            } else {
-                bname = vbrKey.getName().getValue();
-                type = "vBridge";
-            }
-
-            VinterfaceKey vifKey = targetPath.firstKeyOf(Vinterface.class);
-            if (vifKey != null) {
-                return String.format("%s-IF:%s/%s/%s", type, tname, bname,
-                                     vifKey.getName().getValue());
-            }
-
-            return String.format("%s:%s/%s", type, tname, bname);
+        protected final VNodeIdentifier<?> getIdentifier() {
+            return vnodeId;
         }
 
         /**
@@ -242,15 +213,15 @@ public final class VNodeStateWaiter implements Runnable {
         /**
          * Construct a new instance.
          *
-         * @param path    A path to the target virtual bridge.
+         * @param ident   The identifier for the target virtual bridge.
          * @param state   The expected state of the virtual bridge.
          * @param faults  The expected set of faulted paths.
          *                A negative value means that the path fault count
          *                should not be observed.
          */
-        private BridgeStatusCond(InstanceIdentifier<BridgeStatus> path,
-                                 VnodeState state, Set<NodePath> faults) {
-            super(path);
+        private BridgeStatusCond(BridgeIdentifier<?> ident, VnodeState state,
+                                 Set<NodePath> faults) {
+            super(ident, ident.getStatusPath());
             expectedState = state;
             faultedPaths = (faults == null)
                 ? Collections.<NodePath>emptySet()
@@ -346,7 +317,7 @@ public final class VNodeStateWaiter implements Runnable {
          */
         @Override
         public String toString() {
-            return "path=" + getPathString() + ", " +
+            return "path=" + getIdentifier() + ", " +
                 getDescription(expectedState, faultedPaths.size(),
                                faultedPaths);
         }
@@ -372,14 +343,14 @@ public final class VNodeStateWaiter implements Runnable {
         /**
          * Construct a new instance.
          *
-         * @param path    A path to the target virtual interface status.
+         * @param ident   The identifier for the target virtual interface.
          * @param state   The expected state of the virtual interface.
          * @param estate  The expected state of the network element mapped to
          *                the virtual interface.
          */
-        private VInterfaceStatusCond(InstanceIdentifier<VinterfaceStatus> path,
+        private VInterfaceStatusCond(VInterfaceIdentifier<?> ident,
                                      VnodeState state, VnodeState estate) {
-            super(path);
+            super(ident, ident.getStatusPath());
             expectedState = state;
             expectedEntityState = estate;
         }
@@ -442,7 +413,7 @@ public final class VNodeStateWaiter implements Runnable {
          */
         @Override
         public String toString() {
-            return "path=" + getPathString() + ", " +
+            return "path=" + getIdentifier() + ", " +
                 getDescription(expectedState, expectedEntityState);
         }
     }
@@ -521,115 +492,47 @@ public final class VNodeStateWaiter implements Runnable {
     }
 
     /**
-     * Set condition for the vBridge.
+     * Set condition for the vBridge or vTerminal.
      *
      * <p>
      *   This method specifies zero as the expected path fault count.
      * </p>
      *
-     * @param path   Path to the target vBridge.
+     * @param ident  The identifier for the target virtual bridge.
      * @param state  The expected state of the vBridge.
      * @return  This instance.
      */
-    public VNodeStateWaiter set(VBridgePath path, VnodeState state) {
-        return set(path, state, null);
+    public VNodeStateWaiter set(BridgeIdentifier<?> ident, VnodeState state) {
+        return set(ident, state, null);
     }
 
     /**
      * Set condition for the vBridge.
      *
-     * @param path    Path to the target vBridge.
+     * @param ident   The identifier for the target virtual bridge.
      * @param state   The expected state of the vBridge.
      * @param faults  A set of expected faulted paths.
      * @return  This instance.
      */
-    public VNodeStateWaiter set(VBridgePath path, VnodeState state,
+    public VNodeStateWaiter set(BridgeIdentifier<?> ident, VnodeState state,
                                 Set<NodePath> faults) {
-        String tname = path.getTenantName();
-        String bname = path.getBridgeName();
-        InstanceIdentifier<BridgeStatus> spath = getBridgePath(tname, bname).
-            child(BridgeStatus.class);
-
-        conditions.put(spath, new BridgeStatusCond(spath, state, faults));
+        InstanceIdentifier<BridgeStatus> spath = ident.getStatusPath();
+        conditions.put(ident, new BridgeStatusCond(ident, state, faults));
         return this;
     }
 
     /**
-     * Set condition for the vTerminal.
+     * Set condition for the virtual interface attached to the virtual bridge.
      *
-     * <p>
-     *   This method specifies zero as the expected path fault count.
-     * </p>
-     *
-     * @param path   Path to the target vTerminal.
-     * @param state  The expected state of the vTerminal
-     * @return  This instance.
-     */
-    public VNodeStateWaiter set(VTerminalPath path, VnodeState state) {
-        return set(path, state, null);
-    }
-
-    /**
-     * Set condition for the vTerminal.
-     *
-     * @param path    Path to the target vTerminal.
-     * @param state   The expected state of the vTerminal.
-     * @param faults  A set of expected path faults.
-     * @return  This instance.
-     */
-    public VNodeStateWaiter set(VTerminalPath path, VnodeState state,
-                                Set<NodePath> faults) {
-        String tname = path.getTenantName();
-        String bname = path.getTerminalName();
-        InstanceIdentifier<BridgeStatus> spath = getTerminalPath(tname, bname).
-            child(BridgeStatus.class);
-
-        conditions.put(spath, new BridgeStatusCond(spath, state, faults));
-        return this;
-    }
-
-    /**
-     * Set condition for the virtual interface attached to the
-     * vBridge.
-     *
-     * @param path    Path to the target vBridge interface.
+     * @param ident   The identifier for the target virtual interface.
      * @param state   The expected state of the interface.
      * @param estate  The expected state of the network element mapped to the
      *                target interface.
      * @return  This instance.
      */
-    public VNodeStateWaiter set(VBridgeIfPath path, VnodeState state,
-                                VnodeState estate) {
-        String tname = path.getTenantName();
-        String bname = path.getBridgeName();
-        String iname = path.getInterfaceName();
-        InstanceIdentifier<VinterfaceStatus> spath =
-            getBridgeIfPath(tname, bname, iname).
-            child(VinterfaceStatus.class);
-
-        conditions.put(spath, new VInterfaceStatusCond(spath, state, estate));
-        return this;
-    }
-
-    /**
-     * Set condition for the virtual interface attached to the vTerminal.
-     *
-     * @param path    Path to the target vTerminal interface.
-     * @param state   The expected state of the interface.
-     * @param estate  The expected state of the network element mapped to the
-     *                target interface.
-     * @return  This instance.
-     */
-    public VNodeStateWaiter set(VTerminalIfPath path, VnodeState state,
-                                VnodeState estate) {
-        String tname = path.getTenantName();
-        String bname = path.getTerminalName();
-        String iname = path.getInterfaceName();
-        InstanceIdentifier<VinterfaceStatus> spath =
-            getTerminalIfPath(tname, bname, iname).
-            child(VinterfaceStatus.class);
-
-        conditions.put(spath, new VInterfaceStatusCond(spath, state, estate));
+    public VNodeStateWaiter set(VInterfaceIdentifier<?> ident,
+                                VnodeState state, VnodeState estate) {
+        conditions.put(ident, new VInterfaceStatusCond(ident, state, estate));
         return this;
     }
 
@@ -650,13 +553,15 @@ public final class VNodeStateWaiter implements Runnable {
      *   An error will be thrown if at least one condition is not satisfied.
      * </p>
      *
+     * @return  This instance.
      * @throws InterruptedException
      *    The calling thread was interrupted.
      */
-    public void await() throws InterruptedException {
+    public VNodeStateWaiter await() throws InterruptedException {
         try (Evaluator eval = new Evaluator(ofMock, conditions.values())) {
             eval.evaluate();
         }
+        return this;
     }
 
     // Runnable

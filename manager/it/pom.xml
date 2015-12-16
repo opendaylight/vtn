@@ -42,6 +42,5 @@
     <module>util</module>
     <module>common</module>
     <module>core</module>
-    <module>northbound</module>
   </modules>
 </project>

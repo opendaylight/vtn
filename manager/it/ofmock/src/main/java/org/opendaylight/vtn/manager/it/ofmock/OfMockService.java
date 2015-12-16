@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
+import org.opendaylight.vtn.manager.util.EtherAddress;
+
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -470,10 +472,10 @@ public interface OfMockService {
      * Return MAC address of the controller used as source MAC address of
      * ARP packet.
      *
-     * @return  A byte array which represents a MAC address.
+     * @return  An {@link EtherAddress} that represents a MAC address.
      * @throws Exception  An error occurred.
      */
-    byte[] getControllerMacAddress() throws Exception;
+    EtherAddress getControllerMacAddress() throws Exception;
 
     /**
      * Return flow priority for layer 2 flow.

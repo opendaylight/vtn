@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -11,8 +11,6 @@ package org.opendaylight.vtn.manager.it.util.packet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import static org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase.toPortNumber;
-
 import java.util.Set;
 
 import org.opendaylight.vtn.manager.packet.Packet;
@@ -23,6 +21,8 @@ import org.opendaylight.vtn.manager.it.util.match.FlowMatchType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.layer._4.match.UdpMatchBuilder;
+
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 
 /**
  * {@code UdpFactory} is a utility class used to create or to verify an
@@ -42,12 +42,12 @@ public final class UdpFactory extends PacketFactory {
     /**
      * The source port number.
      */
-    private short  sourcePort;
+    private int  sourcePort;
 
     /**
      * The destination port number.
      */
-    private short  destinationPort;
+    private int  destinationPort;
 
     /**
      * Construct a new instance.
@@ -57,7 +57,7 @@ public final class UdpFactory extends PacketFactory {
      */
     public static UdpFactory newInstance(Inet4Factory i4fc) {
         UdpFactory ufc = new UdpFactory();
-        i4fc.setProtocol(InetProtocols.UDP.byteValue()).setNextFactory(ufc);
+        i4fc.setProtocol(InetProtocols.UDP.shortValue()).setNextFactory(ufc);
 
         return ufc;
     }
@@ -70,10 +70,9 @@ public final class UdpFactory extends PacketFactory {
      * @param dst   The destination port number.
      * @return  An {@link UdpFactory} instance.
      */
-    public static UdpFactory newInstance(Inet4Factory i4fc, short src,
-                                         short dst) {
+    public static UdpFactory newInstance(Inet4Factory i4fc, int src, int dst) {
         UdpFactory ufc = new UdpFactory(src, dst);
-        i4fc.setProtocol(InetProtocols.UDP.byteValue()).setNextFactory(ufc);
+        i4fc.setProtocol(InetProtocols.UDP.shortValue()).setNextFactory(ufc);
 
         return ufc;
     }
@@ -89,7 +88,7 @@ public final class UdpFactory extends PacketFactory {
      * @param src  The source port number.
      * @param dst  The destination port number.
      */
-    UdpFactory(short src, short dst) {
+    UdpFactory(int src, int dst) {
         sourcePort = src;
         destinationPort = dst;
     }
@@ -99,7 +98,7 @@ public final class UdpFactory extends PacketFactory {
      *
      * @return  The source port number.
      */
-    public short getSourcePort() {
+    public int getSourcePort() {
         return sourcePort;
     }
 
@@ -108,7 +107,7 @@ public final class UdpFactory extends PacketFactory {
      *
      * @return  The destination port number.
      */
-    public short getDestinationPort() {
+    public int getDestinationPort() {
         return destinationPort;
     }
 
@@ -118,7 +117,7 @@ public final class UdpFactory extends PacketFactory {
      * @param port  The source port number.
      * @return  This instance.
      */
-    public UdpFactory setSourcePort(short port) {
+    public UdpFactory setSourcePort(int port) {
         sourcePort = port;
         return this;
     }
@@ -129,7 +128,7 @@ public final class UdpFactory extends PacketFactory {
      * @param port  The destination port number.
      * @return  This instance.
      */
-    public UdpFactory setDestinationPort(short port) {
+    public UdpFactory setDestinationPort(int port) {
         destinationPort = port;
         return this;
     }
@@ -139,8 +138,8 @@ public final class UdpFactory extends PacketFactory {
      */
     @Override
     Packet createPacket() {
-        UDP udp = new UDP().setSourcePort(sourcePort).
-            setDestinationPort(destinationPort).
+        UDP udp = new UDP().setSourcePort((short)sourcePort).
+            setDestinationPort((short)destinationPort).
             setChecksum(DEFAULT_CHECKSUM);
 
         short size = UDP_HEADER_SIZE;
@@ -161,8 +160,8 @@ public final class UdpFactory extends PacketFactory {
         UDP udp = (UDP)packet;
 
         // Checksum is not supported.
-        assertEquals(sourcePort, udp.getSourcePort());
-        assertEquals(destinationPort, udp.getDestinationPort());
+        assertEquals((short)sourcePort, udp.getSourcePort());
+        assertEquals((short)destinationPort, udp.getDestinationPort());
 
         short size = UDP_HEADER_SIZE;
         byte[] payload = udp.getRawPayload();
@@ -181,11 +180,11 @@ public final class UdpFactory extends PacketFactory {
         int count = 0;
 
         if (types.contains(FlowMatchType.UDP_SRC)) {
-            umb.setUdpSourcePort(toPortNumber(sourcePort));
+            umb.setUdpSourcePort(new PortNumber(sourcePort));
             count++;
         }
         if (types.contains(FlowMatchType.UDP_DST)) {
-            umb.setUdpDestinationPort(toPortNumber(destinationPort));
+            umb.setUdpDestinationPort(new PortNumber(destinationPort));
             count++;
         }
 

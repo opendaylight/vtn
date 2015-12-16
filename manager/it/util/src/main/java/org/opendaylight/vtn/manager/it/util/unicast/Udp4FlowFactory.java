@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -36,8 +36,8 @@ public final class Udp4FlowFactory extends Inet4PortFlowFactory {
      * @param src     The source port.
      * @param dst     The destination port.
      */
-    public Udp4FlowFactory(OfMockService ofmock, short src, short dst) {
-        super(ofmock, InetProtocols.UDP.byteValue(), src, dst);
+    public Udp4FlowFactory(OfMockService ofmock, int src, int dst) {
+        super(ofmock, InetProtocols.UDP.shortValue(), src, dst);
     }
 
     // UnicastFlowFactory

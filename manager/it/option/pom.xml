@@ -37,16 +37,44 @@
   </properties>
 
   <dependencies>
-    <!-- OpenDaylight MD-SAL -->
+    <!-- OpenDaylight controller -->
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
-      <artifactId>sal-binding-it</artifactId>
+      <artifactId>sal-dom-broker-config</artifactId>
     </dependency>
 
-    <!-- OpenDaylight AD-SAL -->
+    <!-- OpenDaylight config subsystem -->
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
-      <artifactId>sal</artifactId>
+      <artifactId>config-manager</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>config-manager-facade-xml</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>config-persister-file-xml-adapter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>config-persister-impl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>logback-config</artifactId>
+    </dependency>
+
+    <!-- OpenDaylight MD-SAL -->
+    <dependency>
+      <groupId>org.opendaylight.mdsal</groupId>
+      <artifactId>yang-binding</artifactId>
+    </dependency>
+
+    <!-- OpenDaylight YANG Tools -->
+    <dependency>
+      <groupId>org.opendaylight.yangtools</groupId>
+      <artifactId>object-cache-guava</artifactId>
     </dependency>
 
     <!-- Pax Exam -->
@@ -55,6 +83,32 @@
       <artifactId>pax-exam</artifactId>
       <version>${exam.version}</version>
       <scope>compile</scope>
+    </dependency>
+
+    <!-- SLF4J API -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <!-- Commons IO -->
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+    </dependency>
+
+    <!-- Eclipse -->
+    <dependency>
+      <groupId>equinoxSDK381</groupId>
+      <artifactId>org.eclipse.osgi</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.persistence</groupId>
+      <artifactId>org.eclipse.persistence.core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.persistence</groupId>
+      <artifactId>org.eclipse.persistence.moxy</artifactId>
     </dependency>
   </dependencies>
 </project>

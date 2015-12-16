@@ -45,6 +45,10 @@
     <!-- Ignore maven-site-plugin goals if true -->
     <vtn.site.skip>false</vtn.site.skip>
 
+    <!-- VM options for test -->
+    <vtn.vm.maxHeap>-Xmx2048m</vtn.vm.maxHeap>
+    <vtn.vm.argLine>${vtn.vm.maxHeap}</vtn.vm.argLine>
+
     <!-- Sonar properties -->
     <sonar.host.url>https://sonar.opendaylight.org/</sonar.host.url>
     <sonar.language>java</sonar.language>
@@ -60,8 +64,6 @@
 
     <!-- Use checkstyle 6.5. -->
     <checkstyle.engine.version>6.5</checkstyle.engine.version>
-
-    <testvm.argLine>-Xmx2048m -XX:MaxPermSize=1024m</testvm.argLine>
 
     <!-- Karaf properties -->
     <karaf.empty.version>1.6.0-SNAPSHOT</karaf.empty.version>
@@ -121,6 +123,19 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+
+    <profile>
+      <!-- Specify MaxPermSize to the test VM option. -->
+      <id>jdk8</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <jdk>(,1.8)</jdk>
+      </activation>
+      <properties>
+        <vtn.vm.maxPerm>-XX:MaxPermSize=1024m</vtn.vm.maxPerm>
+        <vtn.vm.argLine>${vtn.vm.maxHeap} ${vtn.vm.maxPerm}</vtn.vm.argLine>
+      </properties>
     </profile>
   </profiles>
 
@@ -270,7 +285,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>${testvm.argLine} ${jacoco.agent.ut.arg}</argLine>
+          <argLine>${vtn.vm.argLine} ${jacoco.agent.ut.arg}</argLine>
           <excludedGroups>${vtn.test.slowtest}</excludedGroups>
           <properties>
             <property>
@@ -519,20 +534,13 @@
         <version>${odl.thirdparty.jung2.version}</version>
       </dependency>
 
-      <!-- OpenDaylight MD-SAL -->
+      <!-- OpenDaylight controller -->
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>mdsal-artifacts</artifactId>
         <version>${odl.controller.mdsal.version}</version>
         <type>pom</type>
         <scope>import</scope>
-      </dependency>
-
-      <!-- sal-binding-it is required to build IT helper. -->
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>sal-binding-it</artifactId>
-        <version>${odl.controller.mdsal.version}</version>
       </dependency>
 
       <!-- OpenDaylight config subsystem -->

@@ -53,15 +53,9 @@
       <groupId>org.opendaylight.vtn</groupId>
       <artifactId>manager.implementation</artifactId>
     </dependency>
-
-    <!-- TODO: Enable test after VTN Manager Neutron implementation -->
-    <!--dependency>
-      <groupId>org.opendaylight.vtn</groupId>
-      <artifactId>manager.neutron</artifactId>
-    </dependency-->
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
-      <artifactId>manager.northbound</artifactId>
+      <artifactId>manager.neutron</artifactId>
     </dependency>
 
     <!-- VTN Manager bundles only for IT -->
@@ -94,11 +88,6 @@
 
     <!-- OpenDaylight controller (MD-SAL) -->
     <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>sal-binding-it</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.opendaylight.controller.model</groupId>
       <artifactId>model-inventory</artifactId>
     </dependency>
@@ -107,72 +96,10 @@
       <artifactId>model-topology</artifactId>
     </dependency>
 
-    <!-- OpenDaylight controller (AD-SAL) -->
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>sal</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>clustering.services</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>clustering.services-implementation</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>clustering.test</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>clustering.stub</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>configuration</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>configuration.implementation</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>hosttracker</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>containermanager</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>containermanager.it.implementation</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>switchmanager</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>usermanager</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>usermanager.implementation</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>security</artifactId>
-    </dependency>
-
     <!-- OpenDaylight third-party modules -->
     <dependency>
       <groupId>org.opendaylight.controller.thirdparty</groupId>
       <artifactId>net.sf.jung2</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller.thirdparty</groupId>
-      <artifactId>com.sun.jersey.jersey-servlet</artifactId>
     </dependency>
 
     <!-- OpenDaylight MD-SAL -->
@@ -217,161 +144,10 @@
       <artifactId>forwardingrules-manager</artifactId>
     </dependency>
 
-    <!-- TODO: Enable test after VTN Manager Neutron implementation -->
-    <!-- OpenDaylight neutron project  -->
-    <!--dependency>
-      <groupId>org.opendaylight.neutron</groupId>
-      <artifactId>neutron-spi</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.neutron</groupId>
-      <artifactId>transcriber</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.neutron</groupId>
-      <artifactId>model</artifactId>
-    </dependency-->
-
-    <!-- OpenDaylight OVSDB project and requisites -->
-    <dependency>
-      <groupId>org.opendaylight.ovsdb</groupId>
-      <artifactId>library</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.ovsdb</groupId>
-      <artifactId>schema.openvswitch</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.ovsdb</groupId>
-      <artifactId>schema.hardwarevtep</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-buffer</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-codec</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-transport</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-handler</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-all</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>equinoxSDK381</groupId>
-      <artifactId>org.eclipse.equinox.ds</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>equinoxSDK381</groupId>
-      <artifactId>org.eclipse.equinox.util</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>equinoxSDK381</groupId>
-      <artifactId>org.eclipse.osgi.services</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>equinoxSDK381</groupId>
-      <artifactId>org.apache.felix.gogo.command</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>equinoxSDK381</groupId>
-      <artifactId>org.apache.felix.gogo.runtime</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>equinoxSDK381</groupId>
-      <artifactId>org.apache.felix.gogo.shell</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>equinoxSDK381</groupId>
-      <artifactId>org.eclipse.equinox.cm</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>equinoxSDK381</groupId>
-      <artifactId>org.eclipse.equinox.console</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>equinoxSDK381</groupId>
-      <artifactId>org.eclipse.equinox.launcher</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>equinoxSDK381</groupId>
-      <artifactId>javax.servlet</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>commons-net</groupId>
-      <artifactId>commons-net</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.dependencymanager</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.dependencymanager.shell</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.fileinstall</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jboss.spec.javax.transaction</groupId>
-      <artifactId>jboss-transaction-api_1.1_spec</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>virgomirror</groupId>
-      <artifactId>org.eclipse.jdt.core.compiler.batch</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>eclipselink</groupId>
-      <artifactId>javax.persistence</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>eclipselink</groupId>
-      <artifactId>javax.resource</artifactId>
-    </dependency>
-
     <!-- Pax Exam -->
     <dependency>
       <groupId>org.ops4j.pax.exam</groupId>
-      <artifactId>pax-exam-container-native</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.ops4j.pax.exam</groupId>
       <artifactId>pax-exam-junit4</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.ops4j.pax.exam</groupId>
-      <artifactId>pax-exam-link-mvn</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -383,15 +159,7 @@
     <!-- SLF4J -->
     <dependency>
       <groupId>org.slf4j</groupId>
-      <artifactId>jcl-over-slf4j</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>log4j-over-slf4j</artifactId>
     </dependency>
 
     <!-- Logback -->
@@ -404,44 +172,10 @@
       <artifactId>logback-classic</artifactId>
     </dependency>
 
-    <!-- Jackson -->
+    <!-- Mockito -->
     <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.jaxrs</groupId>
-      <artifactId>jackson-jaxrs-base</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.jaxrs</groupId>
-      <artifactId>jackson-jaxrs-json-provider</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.module</groupId>
-      <artifactId>jackson-module-jaxb-annotations</artifactId>
-    </dependency>
-
-    <!-- Jersey for JAXRS -->
-    <dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-server</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-client</artifactId>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-all</artifactId>
     </dependency>
   </dependencies>
 
@@ -459,10 +193,11 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
-          <argLine>
-            ${testvm.argLine} -Djava.io.tmpdir=${vtn.it.tmpdir}
-            ${jacoco.agent.it.arg}
-          </argLine>
+          <argLine>${vtn.vm.argLine} ${jacoco.agent.it.arg}</argLine>
+          <systemPropertyVariables>
+            <java.io.tmpdir>${vtn.it.tmpdir}</java.io.tmpdir>
+            <vtn.it.tmpdir>${vtn.it.tmpdir}</vtn.it.tmpdir>
+          </systemPropertyVariables>
           <properties>
             <property>
               <name>listener</name>
@@ -520,34 +255,8 @@
             <fileset>
               <directory>configuration</directory>
             </fileset>
-            <fileset>
-              <directory>ObjectStore</directory>
-            </fileset>
-            <fileset>
-              <directory>PutObjectStoreDirHere</directory>
-            </fileset>
           </filesets>
         </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>properties-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>set-system-properties</goal>
-            </goals>
-            <configuration>
-              <properties>
-                <property>
-                  <name>logback.configurationFile</name>
-                  <value>${project.parent.parent.basedir}/logback.xml</value>
-                </property>
-              </properties>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

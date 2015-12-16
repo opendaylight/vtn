@@ -33,6 +33,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.CheckedFuture;
 
+import org.opendaylight.vtn.manager.util.EtherAddress;
+
 import org.opendaylight.vtn.manager.it.ofmock.DataChangeWaiter;
 import org.opendaylight.vtn.manager.it.ofmock.DataStoreUtils;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockFlow;
@@ -1245,10 +1247,10 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
      * {@inheritDoc}
      */
     @Override
-    public byte[] getControllerMacAddress() throws Exception {
+    public EtherAddress getControllerMacAddress() throws Exception {
         VtnConfig vcfg = getVtnConfig();
         MacAddress maddr = vcfg.getControllerMacAddress();
-        byte[] mac = OfMockUtils.getMacAddress(maddr);
+        EtherAddress mac = EtherAddress.create(maddr);
         if (mac == null) {
             throw new IllegalStateException("Invalid MAC address: " + maddr);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -26,7 +26,7 @@ public abstract class InetPortVerifier<T extends PacketFactory>
     /**
      * The value to be set.
      */
-    private final short  value;
+    private final int  value;
 
     /**
      * Construct a new instance.
@@ -34,7 +34,7 @@ public abstract class InetPortVerifier<T extends PacketFactory>
      * @param cls  Packet factory class corresponding to the target packet.
      * @param v    The value to be set.
      */
-    InetPortVerifier(Class<T> cls, short v) {
+    InetPortVerifier(Class<T> cls, int v) {
         factoryType = cls;
         value = v;
     }
@@ -53,7 +53,7 @@ public abstract class InetPortVerifier<T extends PacketFactory>
      *
      * @return  The short integer value to be set.
      */
-    public final short getValue() {
+    public final int getValue() {
         return value;
     }
 }

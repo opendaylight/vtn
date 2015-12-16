@@ -8,20 +8,43 @@
 
 package org.opendaylight.vtn.manager.it.util;
 
-import java.net.Inet4Address;
-import java.net.InetAddress;
+import static org.opendaylight.vtn.manager.it.ofmock.OfMockService.ID_OPENFLOW;
+
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.EtherTypes;
-import org.opendaylight.vtn.manager.util.NumberUtils;
 
-import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
+import org.opendaylight.vtn.manager.it.ofmock.DataStoreUtils;
+
+import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
+import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
+import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
+import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+import org.opendaylight.yangtools.yang.common.RpcError;
+import org.opendaylight.yangtools.yang.common.RpcResult;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.Vtns;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.Vtn;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.VtnStaticTopology;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology.StaticEdgePorts;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePort;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePortBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePortKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnRpcResult;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.DropActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.OutputActionCase;
@@ -52,20 +75,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.VlanMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.VlanMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.vlan.match.fields.VlanIdBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.Vtns;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.Vtn;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.VtnKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.vtn.vbridge.list.Vbridge;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.vtn.vbridge.list.VbridgeKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.vtn.mappable.vinterface.list.Vinterface;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.vtn.mappable.vinterface.list.VinterfaceKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vterminal.rev150907.vtn.vterminal.list.Vterminal;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vterminal.rev150907.vtn.vterminal.list.VterminalKey;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.EtherType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanPcp;
 
@@ -83,77 +93,34 @@ public abstract class ModelDrivenTestBase extends TestBase {
     private static final int  FLOW_INST_SIZE = 1;
 
     /**
-     * Create a path to the vBridge.
-     *
-     * @param tname  The name of the VTN.
-     * @param bname  The name of the vBridge.
-     * @return  Path to the vBridge.
+     * A list of invalid node-id.
      */
-    public static InstanceIdentifier<Vbridge> getBridgePath(
-        String tname, String bname) {
-        return InstanceIdentifier.builder(Vtns.class).
-            child(Vtn.class, new VtnKey(new VnodeName(tname))).
-            child(Vbridge.class, new VbridgeKey(new VnodeName(bname))).
-            build();
-    }
+    public static final List<String>  INVALID_NODE_IDS;
 
     /**
-     * Create a path to the vInterface attached the vBridge.
-     *
-     * @param tname  The name of the VTN.
-     * @param bname  The name of the vBridge.
-     * @param iname  The name of the vInterface
-     * @return  Path to the vBridge interface.
+     * A list of invalid port identifiers.
      */
-    public static InstanceIdentifier<Vinterface> getBridgeIfPath(
-        String tname, String bname, String iname) {
-        return InstanceIdentifier.builder(Vtns.class).
-            child(Vtn.class, new VtnKey(new VnodeName(tname))).
-            child(Vbridge.class, new VbridgeKey(new VnodeName(bname))).
-            child(Vinterface.class, new VinterfaceKey(new VnodeName(iname))).
-            build();
-    }
+    public static final List<String>  INVALID_PORT_IDS;
 
     /**
-     * Create a path to the vTerminal.
-     *
-     * @param tname  The name of the VTN.
-     * @param bname  The name of the vTerminal.
-     * @return  Path to the vTerminal.
+     * Initialize static field.
      */
-    public static InstanceIdentifier<Vterminal> getTerminalPath(
-        String tname, String bname) {
-        return InstanceIdentifier.builder(Vtns.class).
-            child(Vtn.class, new VtnKey(new VnodeName(tname))).
-            child(Vterminal.class, new VterminalKey(new VnodeName(bname))).
+    static {
+        INVALID_NODE_IDS = ImmutableList.<String>builder().
+            add("").
+            add(ID_OPENFLOW + "-1").
+            add(ID_OPENFLOW + "18446744073709551616").
+            add(ID_OPENFLOW + "bad dpid").
+            add("unknown:1").
             build();
-    }
 
-    /**
-     * Create a path to the vInterface attached the vTerminal.
-     *
-     * @param tname  The name of the VTN.
-     * @param bname  The name of the vTerminal.
-     * @param iname  The name of the vInterface
-     * @return  Path to the vBridge interface.
-     */
-    public static InstanceIdentifier<Vinterface> getTerminalIfPath(
-        String tname, String bname, String iname) {
-        return InstanceIdentifier.builder(Vtns.class).
-            child(Vtn.class, new VtnKey(new VnodeName(tname))).
-            child(Vterminal.class, new VterminalKey(new VnodeName(bname))).
-            child(Vinterface.class, new VinterfaceKey(new VnodeName(iname))).
+        INVALID_PORT_IDS = ImmutableList.<String>builder().
+            add("").
+            add("LOCAL").
+            add("bad port ID").
+            add("4294967041").
+            add("-1").
             build();
-    }
-
-    /**
-     * Convert the given byte array into MD-SAL MAC address.
-     *
-     * @param mac  A byte array which represents the MAC address.
-     * @return  A {@link MacAddress} instance.
-     */
-    public static MacAddress toMacAddress(byte[] mac) {
-        return new EtherAddress(mac).getMacAddress();
     }
 
     /**
@@ -163,17 +130,17 @@ public abstract class ModelDrivenTestBase extends TestBase {
      * @param dst  The destination MAC address.
      * @return  A {@link EthernetMatchBuilder} instance.
      */
-    public static EthernetMatchBuilder createEthernetMatch(
-        byte[] src, byte[] dst) {
+    public static final EthernetMatchBuilder createEthernetMatch(
+        EtherAddress src, EtherAddress dst) {
         EthernetMatchBuilder builder = new EthernetMatchBuilder();
         if (src != null) {
             EthernetSourceBuilder sb = new EthernetSourceBuilder().
-                setAddress(toMacAddress(src));
+                setAddress(src.getMacAddress());
             builder.setEthernetSource(sb.build());
         }
         if (dst != null) {
             EthernetDestinationBuilder db = new EthernetDestinationBuilder().
-                setAddress(toMacAddress(dst));
+                setAddress(dst.getMacAddress());
             builder.setEthernetDestination(db.build());
         }
 
@@ -188,8 +155,8 @@ public abstract class ModelDrivenTestBase extends TestBase {
      * @param type  The ethernet type. Zero means an undefined type.
      * @return  A {@link EthernetMatchBuilder} instance.
      */
-    public static EthernetMatchBuilder createEthernetMatch(
-        byte[] src, byte[] dst, int type) {
+    public static final EthernetMatchBuilder createEthernetMatch(
+        EtherAddress src, EtherAddress dst, int type) {
         EthernetMatchBuilder builder = createEthernetMatch(src, dst);
         if (type != 0) {
             EthernetTypeBuilder etb = new EthernetTypeBuilder().
@@ -203,25 +170,25 @@ public abstract class ModelDrivenTestBase extends TestBase {
     /**
      * Create VLAN match builder.
      *
-     * @param vlan  VLAN ID. Zero means untagged ethernet frame.
+     * @param vid  VLAN ID. Zero means untagged ethernet frame.
      * @return  A {@link VlanMatchBuilder} instance.
      */
-    public static VlanMatchBuilder createVlanMatch(short vlan) {
-        return createVlanMatch(vlan, null);
+    public static final VlanMatchBuilder createVlanMatch(int vid) {
+        return createVlanMatch(vid, null);
     }
 
     /**
      * Create VLAN match builder.
      *
-     * @param vlan  VLAN ID. Zero means untagged ethernet frame.
-     * @param pcp   VLAN priority. {@code null} means undefined.
+     * @param vid  VLAN ID. Zero means untagged ethernet frame.
+     * @param pcp  VLAN priority. {@code null} means undefined.
      * @return  A {@link VlanMatchBuilder} instance.
      */
-    public static VlanMatchBuilder createVlanMatch(short vlan, Short pcp) {
+    public static final VlanMatchBuilder createVlanMatch(int vid, Short pcp) {
         VlanIdBuilder ib = new VlanIdBuilder();
-        boolean present = (vlan != 0);
-        VlanId vid = new VlanId(NumberUtils.getUnsigned(vlan));
-        ib.setVlanId(vid).setVlanIdPresent(present);
+        boolean present = (vid != 0);
+        VlanId vlanId = new VlanId(vid);
+        ib.setVlanId(vlanId).setVlanIdPresent(present);
         VlanMatchBuilder builder = new VlanMatchBuilder().
             setVlanId(ib.build());
         if (pcp != null) {
@@ -235,13 +202,13 @@ public abstract class ModelDrivenTestBase extends TestBase {
      * Create flow match builder to match packet from the given port.
      *
      * @param ingress  The ingress port identifier.
-     * @param vlan     VLAN ID. Zero means untagged ethernet frame.
+     * @param vid      VLAN ID. Zero means untagged ethernet frame.
      * @return  A {@link MatchBuilder} instance.
      */
-    public static MatchBuilder createMatch(String ingress, short vlan) {
+    public static final MatchBuilder createMatch(String ingress, int vid) {
         MatchBuilder builder = new MatchBuilder();
-        if (vlan >= 0) {
-            builder.setVlanMatch(createVlanMatch(vlan).build());
+        if (vid >= 0) {
+            builder.setVlanMatch(createVlanMatch(vid).build());
         }
         if (ingress != null) {
             builder.setInPort(new NodeConnectorId(ingress));
@@ -254,55 +221,19 @@ public abstract class ModelDrivenTestBase extends TestBase {
      * Create flow match builder to match the given packet.
      *
      * @param ingress  The ingress port identifier.
-     * @param vlan     VLAN ID. Zero means untagged ethernet frame.
+     * @param vid      VLAN ID. Zero means untagged ethernet frame.
      * @param src      The source MAC address.
      * @param dst      The destination MAC address.
      * @return  A {@link MatchBuilder} instance.
      */
-    public static MatchBuilder createMatch(String ingress, short vlan,
-                                           byte[] src, byte[] dst) {
-        MatchBuilder builder = createMatch(ingress, vlan);
+    public static final MatchBuilder createMatch(
+        String ingress, int vid, EtherAddress src, EtherAddress dst) {
+        MatchBuilder builder = createMatch(ingress, vid);
         if (src != null || dst != null) {
             builder.setEthernetMatch(createEthernetMatch(src, dst).build());
         }
 
         return builder;
-    }
-
-    /**
-     * Convert the given {@link InetAddress} instance into a {@link Ipv4Prefix}
-     * instance.
-     *
-     * @param ip  An {@link InetAddress} instance.
-     * @return  A {@link Ipv4Prefix} instance.
-     */
-    public static Ipv4Prefix toIpv4Prefix(InetAddress ip) {
-        return toIpv4Prefix(ip, Integer.SIZE);
-    }
-
-    /**
-     * Convert the given {@link InetAddress} instance into a {@link Ipv4Prefix}
-     * instance.
-     *
-     * @param ip      An {@link InetAddress} instance.
-     * @param prefix  CIDR prefix length.
-     * @return  A {@link Ipv4Prefix} instance.
-     */
-    public static Ipv4Prefix toIpv4Prefix(InetAddress ip, int prefix) {
-        assertTrue(ip instanceof Inet4Address);
-        String value = String.format("%s/%d", ip.getHostAddress(), prefix);
-        return new Ipv4Prefix(value);
-    }
-
-    /**
-     * Convert the given short value into a {@link PortNumber} instance.
-     *
-     * @param port  A short value.
-     * @return  A {@link PortNumber} instance.
-     */
-    public static PortNumber toPortNumber(short port) {
-        Integer value = Integer.valueOf((int)(port & OfMockUtils.MASK_SHORT));
-        return new PortNumber(value);
     }
 
     /**
@@ -313,7 +244,8 @@ public abstract class ModelDrivenTestBase extends TestBase {
      * @param <T>  The type of flow action.
      * @return  Flow action instance.
      */
-    public static <T> T verifyAction(ListIterator<Action> it, Class<T> cls) {
+    public static final <T> T verifyAction(ListIterator<Action> it,
+                                           Class<T> cls) {
         if (!it.hasNext()) {
             String msg = String.format("action[%d]: Expected %s action.",
                                        it.nextIndex(), cls.getSimpleName());
@@ -337,7 +269,7 @@ public abstract class ModelDrivenTestBase extends TestBase {
      *
      * @param it  Action list iterator.
      */
-    public static void verifyPopVlanAction(ListIterator<Action> it) {
+    public static final void verifyPopVlanAction(ListIterator<Action> it) {
         PopVlanActionCase act = verifyAction(it, PopVlanActionCase.class);
         PopVlanAction pva = act.getPopVlanAction();
         assertNotNull(pva);
@@ -349,8 +281,8 @@ public abstract class ModelDrivenTestBase extends TestBase {
      * @param it       Action list iterator.
      * @param ethType  Expected ethernet type.
      */
-    public static void verifyPushVlanAction(ListIterator<Action> it,
-                                            int ethType) {
+    public static final void verifyPushVlanAction(ListIterator<Action> it,
+                                                  int ethType) {
         PushVlanActionCase act = verifyAction(it, PushVlanActionCase.class);
         PushVlanAction pva = act.getPushVlanAction();
         assertNotNull(pva);
@@ -360,35 +292,34 @@ public abstract class ModelDrivenTestBase extends TestBase {
     /**
      * Verify SET_VLAN_ID action.
      *
-     * @param it    Action list iterator.
-     * @param vlan  Expected VLAN ID.
+     * @param it   Action list iterator.
+     * @param vid  Expected VLAN ID.
      */
-    public static void verifySetVlanIdAction(ListIterator<Action> it,
-                                             short vlan) {
+    public static final void verifySetVlanIdAction(ListIterator<Action> it,
+                                                   int vid) {
         SetVlanIdActionCase act = verifyAction(it, SetVlanIdActionCase.class);
         SetVlanIdAction sva = act.getSetVlanIdAction();
-        VlanId vid = new VlanId(NumberUtils.getUnsigned(vlan));
-        assertEquals(vid, sva.getVlanId());
+        assertEquals(vid, sva.getVlanId().getValue().intValue());
     }
 
     /**
      * Verify the flow action that specifies the VLAN for the outgoing packet.
      *
-     * @param it       A list iterator associated with a list of flow actions.
-     * @param inVlan   The VLAN ID for incoming packet.
-     * @param outVlan  The VLAN ID for outgoing packet.
+     * @param it      A list iterator associated with a list of flow actions.
+     * @param inVid   The VLAN ID for incoming packet.
+     * @param outVid  The VLAN ID for outgoing packet.
      */
-    public static void verifyVlanAction(ListIterator<Action> it, short inVlan,
-                                        short outVlan) {
-        if (inVlan != outVlan) {
-            if (outVlan == 0) {
+    public static final void verifyVlanAction(ListIterator<Action> it,
+                                              int inVid, int outVid) {
+        if (inVid != outVid) {
+            if (outVid == 0) {
                 verifyPopVlanAction(it);
             } else {
-                if (inVlan == 0) {
+                if (inVid == 0) {
                     int ethType = EtherTypes.VLAN.intValue();
                     verifyPushVlanAction(it, ethType);
                 }
-                verifySetVlanIdAction(it, outVlan);
+                verifySetVlanIdAction(it, outVid);
             }
         }
     }
@@ -398,7 +329,7 @@ public abstract class ModelDrivenTestBase extends TestBase {
      *
      * @param it  Action list iterator.
      */
-    public static void verifyDropAction(ListIterator<Action> it) {
+    public static final void verifyDropAction(ListIterator<Action> it) {
         DropActionCase act = verifyAction(it, DropActionCase.class);
         DropAction da = act.getDropAction();
         assertNotNull(da);
@@ -410,7 +341,7 @@ public abstract class ModelDrivenTestBase extends TestBase {
      * @param it      Action list iterator.
      * @param egress  Expected egress port identifier.
      */
-    public static void verifyOutputAction(ListIterator<Action> it,
+    public static final void verifyOutputAction(ListIterator<Action> it,
                                           String egress) {
         OutputActionCase act = verifyAction(it, OutputActionCase.class);
         OutputAction oa = act.getOutputAction();
@@ -421,15 +352,15 @@ public abstract class ModelDrivenTestBase extends TestBase {
      * Verify that the given flow instruction forwards the packet to the
      * specified network.
      *
-     * @param it       A list iterator associated with a list of flow actions.
-     * @param egress   The egress port identifier.
-     * @param inVlan   The VLAN ID for incoming packet.
-     * @param outVlan  The VLAN ID for outgoing packet.
+     * @param it      A list iterator associated with a list of flow actions.
+     * @param egress  The egress port identifier.
+     * @param inVid   The VLAN ID for incoming packet.
+     * @param outVid  The VLAN ID for outgoing packet.
      */
-    public static void verifyOutputAction(ListIterator<Action> it,
-                                          String egress, short inVlan,
-                                          short outVlan) {
-        verifyVlanAction(it, inVlan, outVlan);
+    public static final void verifyOutputAction(ListIterator<Action> it,
+                                                String egress, int inVid,
+                                                int outVid) {
+        verifyVlanAction(it, inVid, outVid);
         verifyOutputAction(it, egress);
     }
 
@@ -439,7 +370,7 @@ public abstract class ModelDrivenTestBase extends TestBase {
      * @param inst  A flow instructions.
      * @return  A list of flow actions.
      */
-    public static List<Action> getActionList(Instructions inst) {
+    public static final List<Action> getActionList(Instructions inst) {
         List<Instruction> instList = inst.getInstruction();
         assertNotNull("Instruction is null.", instList);
 
@@ -470,15 +401,15 @@ public abstract class ModelDrivenTestBase extends TestBase {
      * Verify that the given flow instruction forwards the packet to the
      * specified network.
      *
-     * @param inst     A flow instructions.
-     * @param egress   The egress port identifier.
-     * @param inVlan   The VLAN ID for incoming packet.
-     * @param outVlan  The VLAN ID for outgoing packet.
+     * @param inst    A flow instructions.
+     * @param egress  The egress port identifier.
+     * @param inVid   The VLAN ID for incoming packet.
+     * @param outVid  The VLAN ID for outgoing packet.
      */
-    public static void verifyOutputFlow(Instructions inst, String egress,
-                                        short inVlan, short outVlan) {
+    public static final void verifyOutputFlow(Instructions inst, String egress,
+                                              int inVid, int outVid) {
         ListIterator<Action> it = getActionList(inst).listIterator();
-        verifyOutputAction(it, egress, inVlan, outVlan);
+        verifyOutputAction(it, egress, inVid, outVid);
         assertFalse(it.hasNext());
     }
 
@@ -487,7 +418,7 @@ public abstract class ModelDrivenTestBase extends TestBase {
      *
      * @param inst     A flow instructions.
      */
-    public static void verifyDropFlow(Instructions inst) {
+    public static final void verifyDropFlow(Instructions inst) {
         ListIterator<Action> it = getActionList(inst).listIterator();
         verifyDropAction(it);
         assertFalse(it.hasNext());
@@ -501,7 +432,7 @@ public abstract class ModelDrivenTestBase extends TestBase {
      *          Zero is returned if the given instance matches untagged
      *          network.
      */
-    public static short getVlanMatch(Match match) {
+    public static final int getVlanMatch(Match match) {
         VlanMatch vmatch = match.getVlanMatch();
         org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.vlan.match.fields.VlanId vid =
             vmatch.getVlanId();
@@ -512,55 +443,51 @@ public abstract class ModelDrivenTestBase extends TestBase {
             return 0;
         }
 
-        return vid.getVlanId().getValue().shortValue();
+        return vid.getVlanId().getValue().intValue();
     }
 
     /**
      * Return the source MAC address configured in the given flow match.
      *
      * @param match  A {@link Match} instance.
-     * @return  A byte array which represents the source MAC address
-     *          configured in the given match.
+     * @return  An {@link EtherAddress} instance that represents the
+     *          source MAC address configured in the given match.
      *          {@code null} is returned if the source MAC address is not
      *          configured.
      */
-    public static byte[] getEthernetSourceMatch(Match match) {
+    public static final EtherAddress getEthernetSourceMatch(Match match) {
+        EtherAddress eaddr = null;
         EthernetMatch ematch = match.getEthernetMatch();
-        if (ematch == null) {
-            return null;
+        if (ematch != null) {
+            EthernetSource esrc = ematch.getEthernetSource();
+            if (esrc != null) {
+                eaddr = EtherAddress.create(esrc.getAddress());
+            }
         }
 
-        EthernetSource esrc = ematch.getEthernetSource();
-        if (esrc == null) {
-            return null;
-        }
-
-        MacAddress maddr = esrc.getAddress();
-        return (maddr == null) ? null : OfMockUtils.getMacAddress(maddr);
+        return eaddr;
     }
 
     /**
      * Return the destination MAC address configured in the given flow match.
      *
      * @param match  A {@link Match} instance.
-     * @return  A byte array which represents the destination MAC address
-     *          configured in the given match.
+     * @return  An {@link EtherAddress} instance that represents the
+     *          destination MAC address configured in the given match.
      *          {@code null} is returned if the destination MAC address is not
      *          configured.
      */
-    public static byte[] getEthernetDestinationMatch(Match match) {
+    public static final EtherAddress getEthernetDestinationMatch(Match match) {
+        EtherAddress eaddr = null;
         EthernetMatch ematch = match.getEthernetMatch();
-        if (ematch == null) {
-            return null;
+        if (ematch != null) {
+            EthernetDestination edst = ematch.getEthernetDestination();
+            if (edst != null) {
+                eaddr = EtherAddress.create(edst.getAddress());
+            }
         }
 
-        EthernetDestination edst = ematch.getEthernetDestination();
-        if (edst == null) {
-            return null;
-        }
-
-        MacAddress maddr = edst.getAddress();
-        return (maddr == null) ? null : OfMockUtils.getMacAddress(maddr);
+        return eaddr;
     }
 
     /**
@@ -570,7 +497,7 @@ public abstract class ModelDrivenTestBase extends TestBase {
      * @return  The ingress port identifier if found.
      *          {@code null} if not found.
      */
-    public static String getInPortMatch(Match match) {
+    public static final String getInPortMatch(Match match) {
         NodeConnectorId ncId = match.getInPort();
         return (ncId == null) ? null : ncId.getValue();
     }
@@ -579,20 +506,20 @@ public abstract class ModelDrivenTestBase extends TestBase {
      * Determine whether the given flow instructions forwards packets to
      * the given network or not.
      *
-     * @param inst    Flow instructions.
-     * @param pid     The egress port identifier.
-     * @param vlan    VLAN ID of the egress network.
-     * @param inVlan  VLAN ID configured in the incoming packet.
+     * @param inst   Flow instructions.
+     * @param pid    The egress port identifier.
+     * @param vid    VLAN ID of the egress network.
+     * @param inVid  VLAN ID configured in the incoming packet.
      * @return  {@code true} only if the given flow instructions forwards
      *          packets to the given network.
      */
-    public static boolean hasOutput(Instructions inst, String pid,
-                                    short vlan, short inVlan) {
-        short vid = inVlan;
+    public static final boolean hasOutput(Instructions inst, String pid,
+                                          int vid, int inVid) {
+        int vlan = inVid;
         for (Action act: getActionList(inst)) {
             Object a = act.getAction();
             if (a instanceof PopVlanActionCase) {
-                vid = 0;
+                vlan = 0;
             } else if (a instanceof SetVlanIdActionCase) {
                 SetVlanIdActionCase s = (SetVlanIdActionCase)a;
                 SetVlanIdAction sva = s.getSetVlanIdAction();
@@ -600,7 +527,7 @@ public abstract class ModelDrivenTestBase extends TestBase {
                 if (vlanId != null) {
                     Integer value = vlanId.getValue();
                     if (value != null) {
-                        vid = value.shortValue();
+                        vlan = value.intValue();
                     }
                 }
             } else if (a instanceof OutputActionCase) {
@@ -608,7 +535,7 @@ public abstract class ModelDrivenTestBase extends TestBase {
                 OutputAction oa = o.getOutputAction();
                 if (oa != null) {
                     String out = oa.getOutputNodeConnector().getValue();
-                    if (pid.equals(out) && vlan == vid) {
+                    if (pid.equals(out) && vid == vlan) {
                         return true;
                     }
                 }
@@ -616,5 +543,184 @@ public abstract class ModelDrivenTestBase extends TestBase {
         }
 
         return false;
+    }
+
+    /**
+     * Wait for completion of the RPC task associated with the given future.
+     *
+     * @param f    A {@link Future} instance associated with the RPC task.
+     * @param <T>  The type of the RPC output.
+     * @return  The output of the RPC task.
+     */
+    public static final <T> T getRpcOutput(Future<RpcResult<T>> f) {
+        return getRpcOutput(f, false);
+    }
+
+    /**
+     * Wait for completion of the RPC task associated with the given future.
+     *
+     * @param f         A {@link Future} instance associated with the RPC task.
+     * @param nillable  Set {@code true} if the result can be {@code null}.
+     * @param <T>  The type of the RPC output.
+     * @return  The output of the RPC task.
+     */
+    public static final <T> T getRpcOutput(
+        Future<RpcResult<T>> f, boolean nillable) {
+        try {
+            RpcResult<T> result = f.get(TASK_TIMEOUT, TimeUnit.SECONDS);
+            assertNotNull(result);
+            if (!result.isSuccessful()) {
+                fail("RPC failed: " + result);
+            }
+
+            T output = result.getResult();
+            if (!nillable && output == null) {
+                fail("RPC output is null: " + result);
+            }
+
+            return output;
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        return null;
+    }
+
+    /**
+     * Return the vtn-update-type that indicates the result of the RPC task.
+     *
+     * @param f    A {@link Future} instance associated with the RPC task.
+     * @param <T>  The type of the RPC output.
+     * @return  A {@link VtnUpdateType} instance in the RPC output.
+     */
+    public static final <T extends VtnRpcResult> VtnUpdateType getRpcResult(
+        Future<RpcResult<T>> f) {
+        return getRpcOutput(f).getStatus();
+    }
+
+    /**
+     * Ensure that the given RPC returns the specified error status.
+     *
+     * @param f     A {@link Future} instance associated with the RPC task.
+     * @param etag  A {@link RpcErrorTag} that specifies the expected RPC
+     *              error tag.
+     * @param vtag  A {@link VtnErrorTag} that specifies the expected RPC
+     *              application tag.
+     * @param <T>  The type of the RPC output.
+     */
+    public static final <T> void checkRpcError(
+        Future<RpcResult<T>> f, RpcErrorTag etag, VtnErrorTag vtag) {
+        try {
+            RpcResult<T> result = f.get(TASK_TIMEOUT, TimeUnit.SECONDS);
+            assertNotNull(result);
+            if (result.isSuccessful()) {
+                fail("RPC succeeded unexpectedly: " + result);
+            }
+
+            Collection<RpcError> errors = result.getErrors();
+            if (errors == null || errors.isEmpty()) {
+                fail("RPC did not set error information: " + result);
+            }
+            if (errors.size() != 1) {
+                fail("RPC set more than one error: " + result);
+            }
+
+            RpcError rerr = errors.iterator().next();
+            assertEquals(etag.getErrorTag(), rerr.getTag());
+            assertEquals(vtag.toString(), rerr.getApplicationTag());
+        } catch (Exception e) {
+            unexpected(e);
+        }
+    }
+
+    /**
+     * Get all the VTNs.
+     *
+     * @param service  A {@link VTNServices} instance.
+     * @return  A list of VTNs.
+     */
+    public static List<Vtn> getVtns(VTNServices service) {
+        try (ReadOnlyTransaction rtx = service.newReadOnlyTransaction()) {
+            return getVtns(rtx);
+        }
+    }
+
+    /**
+     * Get all the VTNs.
+     *
+     * @param rtx  A read-only MD-SAL datastore transaction.
+     * @return  A list of VTNs.
+     */
+    public static List<Vtn> getVtns(ReadTransaction rtx) {
+        InstanceIdentifier<Vtns> path = InstanceIdentifier.create(Vtns.class);
+        Optional<Vtns> opt = DataStoreUtils.read(rtx, path);
+        List<Vtn> vtns = null;
+        if (opt.isPresent()) {
+            vtns = opt.get().getVtn();
+        }
+
+        if (vtns == null) {
+            vtns = Collections.<Vtn>emptyList();
+        }
+
+        return vtns;
+    }
+
+    /**
+     * Add the given switch port identifier to the static-edge-ports.
+     *
+     * @param service  A {@link VTNServices} instance.
+     * @param pid      The MD-SAL port identifier.
+     */
+    public static void addStaticEdgePort(VTNServices service, String pid) {
+        NodeConnectorId ncId = new NodeConnectorId(pid);
+        StaticEdgePortKey key = new StaticEdgePortKey(ncId);
+        InstanceIdentifier<StaticEdgePort> epath = InstanceIdentifier.
+            builder(VtnStaticTopology.class).
+            child(StaticEdgePorts.class).
+            child(StaticEdgePort.class, key).
+            build();
+        StaticEdgePort stEdge = new StaticEdgePortBuilder().
+            setPort(ncId).
+            setKey(key).
+            build();
+        LogicalDatastoreType config = LogicalDatastoreType.CONFIGURATION;
+        ReadWriteTransaction tx = service.newReadWriteTransaction();
+        tx.put(config, epath, stEdge, true);
+        DataStoreUtils.submit(tx);
+    }
+
+    /**
+     * Remove the given switch port identifier from the static-edge-ports.
+     *
+     * @param service  A {@link VTNServices} instance.
+     * @param pid      The MD-SAL port identifier.
+     */
+    public static void removeStaticEdgePort(VTNServices service, String pid) {
+        NodeConnectorId ncId = new NodeConnectorId(pid);
+        StaticEdgePortKey key = new StaticEdgePortKey(ncId);
+        InstanceIdentifier<StaticEdgePort> epath = InstanceIdentifier.
+            builder(VtnStaticTopology.class).
+            child(StaticEdgePorts.class).
+            child(StaticEdgePort.class, key).
+            build();
+        LogicalDatastoreType config = LogicalDatastoreType.CONFIGURATION;
+        ReadWriteTransaction tx = service.newReadWriteTransaction();
+        tx.delete(config, epath);
+        DataStoreUtils.submit(tx);
+    }
+
+    /**
+     * Delete the vtn-static-topology container.
+     *
+     * @param service  A {@link VTNServices} instance.
+     */
+    public static void removeVtnStaticTopology(VTNServices service) {
+        InstanceIdentifier<VtnStaticTopology> vsPath = InstanceIdentifier.
+            create(VtnStaticTopology.class);
+        LogicalDatastoreType config = LogicalDatastoreType.CONFIGURATION;
+        ReadWriteTransaction tx = service.newReadWriteTransaction();
+        tx.delete(config, vsPath);
+        DataStoreUtils.submit(tx);
     }
 }

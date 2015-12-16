@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -29,7 +29,7 @@ public final class SetVlanPcpVerifier extends ActionVerifier {
     /**
      * The VLAN priority to be set.
      */
-    private final byte  vlanPcp;
+    private final short  vlanPcp;
 
     /**
      * Ensure that the specified action is an expected SET_VLAN_PCP action.
@@ -37,7 +37,7 @@ public final class SetVlanPcpVerifier extends ActionVerifier {
      * @param it   Action list iterator.
      * @param pcp  Expected VLAN priority.
      */
-    public static void verify(ListIterator<Action> it, byte pcp) {
+    public static void verify(ListIterator<Action> it, short pcp) {
         SetVlanPcpActionCase act = verify(it, SetVlanPcpActionCase.class);
         SetVlanPcpAction svpa = act.getSetVlanPcpAction();
         VlanPcp vpcp = svpa.getVlanPcp();
@@ -45,7 +45,7 @@ public final class SetVlanPcpVerifier extends ActionVerifier {
 
         Short value = vpcp.getValue();
         assertNotNull(value);
-        assertEquals(pcp, value.byteValue());
+        assertEquals(pcp, value.shortValue());
     }
 
     /**
@@ -53,7 +53,7 @@ public final class SetVlanPcpVerifier extends ActionVerifier {
      *
      * @param pcp  VLAN priority to be set.
      */
-    public SetVlanPcpVerifier(byte pcp) {
+    public SetVlanPcpVerifier(short pcp) {
         vlanPcp = pcp;
     }
 
@@ -62,7 +62,7 @@ public final class SetVlanPcpVerifier extends ActionVerifier {
      *
      * @return  The VLAN priority to be set.
      */
-    public byte getVlanPcp() {
+    public short getVlanPcp() {
         return vlanPcp;
     }
 

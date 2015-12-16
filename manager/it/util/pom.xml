@@ -59,7 +59,7 @@
     <!-- VTN Manager bundles -->
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
-      <artifactId>manager</artifactId>
+      <artifactId>manager.implementation</artifactId>
     </dependency>
 
     <dependency>
@@ -78,12 +78,6 @@
     <dependency>
       <groupId>org.opendaylight.controller.model</groupId>
       <artifactId>model-inventory</artifactId>
-    </dependency>
-
-    <!-- OpenDaylight AD-SAL -->
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>sal</artifactId>
     </dependency>
 
     <!-- OpenDaylight openflowplugin -->

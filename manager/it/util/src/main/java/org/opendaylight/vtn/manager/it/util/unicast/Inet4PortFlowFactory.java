@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -19,12 +19,12 @@ public abstract class Inet4PortFlowFactory extends Inet4FlowFactory {
     /**
      * The source port.
      */
-    private short  sourcePort;
+    private int  sourcePort;
 
     /**
      * The destination port.
      */
-    private short  destinationPort;
+    private int  destinationPort;
 
     /**
      * Construct a new instance.
@@ -34,8 +34,8 @@ public abstract class Inet4PortFlowFactory extends Inet4FlowFactory {
      * @param src     The source port.
      * @param dst     The destination port.
      */
-    public Inet4PortFlowFactory(OfMockService ofmock, byte proto, short src,
-                                short dst) {
+    public Inet4PortFlowFactory(OfMockService ofmock, short proto, int src,
+                                int dst) {
         super(ofmock);
         setProtocol(proto);
         sourcePort = src;
@@ -47,7 +47,7 @@ public abstract class Inet4PortFlowFactory extends Inet4FlowFactory {
      *
      * @return  The source port number.
      */
-    public final short getSourcePort() {
+    public final int getSourcePort() {
         return sourcePort;
     }
 
@@ -56,7 +56,7 @@ public abstract class Inet4PortFlowFactory extends Inet4FlowFactory {
      *
      * @return  The destination port number.
      */
-    public final short getDestinationPort() {
+    public final int getDestinationPort() {
         return destinationPort;
     }
 
@@ -66,7 +66,7 @@ public abstract class Inet4PortFlowFactory extends Inet4FlowFactory {
      * @param port  The source port number to be used for test.
      * @return  This instance.
      */
-    public final Inet4PortFlowFactory setSourcePort(short port) {
+    public final Inet4PortFlowFactory setSourcePort(int port) {
         sourcePort = port;
         return this;
     }
@@ -77,7 +77,7 @@ public abstract class Inet4PortFlowFactory extends Inet4FlowFactory {
      * @param port  The destination port number to be used for test.
      * @return  This instance.
      */
-    public final Inet4PortFlowFactory setDestinationPort(short port) {
+    public final Inet4PortFlowFactory setDestinationPort(int port) {
         destinationPort = port;
         return this;
     }

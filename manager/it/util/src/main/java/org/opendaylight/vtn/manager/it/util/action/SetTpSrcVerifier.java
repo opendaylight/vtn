@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -36,14 +36,14 @@ public abstract class SetTpSrcVerifier<T extends PacketFactory>
      * @param it  Action list iterator.
      * @param v   Expected value to be set.
      */
-    public static final void verify(ListIterator<Action> it, short v) {
+    public static final void verify(ListIterator<Action> it, int v) {
         SetTpSrcActionCase act = verify(it, SetTpSrcActionCase.class);
         SetTpSrcAction stsa = act.getSetTpSrcAction();
         PortNumber port = stsa.getPort();
         assertNotNull(port);
         Integer num = port.getValue();
         assertNotNull(num);
-        assertEquals(v, num.shortValue());
+        assertEquals(v, num.intValue());
     }
 
     /**
@@ -52,7 +52,7 @@ public abstract class SetTpSrcVerifier<T extends PacketFactory>
      * @param cls  Packet factory class corresponding to the target packet.
      * @param v    The value to be set.
      */
-    SetTpSrcVerifier(Class<T> cls, short v) {
+    SetTpSrcVerifier(Class<T> cls, int v) {
         super(cls, v);
     }
 

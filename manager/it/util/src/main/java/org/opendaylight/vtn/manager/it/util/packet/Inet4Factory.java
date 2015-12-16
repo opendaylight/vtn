@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -50,7 +50,7 @@ public final class Inet4Factory extends PacketFactory {
     /**
      * IP protocl number.
      */
-    private byte  protocol;
+    private short  protocol;
 
     /**
      * Time-to-live value.
@@ -60,7 +60,7 @@ public final class Inet4Factory extends PacketFactory {
     /**
      * DSCP value.
      */
-    private byte  dscp;
+    private short  dscp;
 
     /**
      * Construct a new instance.
@@ -70,7 +70,7 @@ public final class Inet4Factory extends PacketFactory {
      */
     public static Inet4Factory newInstance(EthernetFactory efc) {
         Inet4Factory i4fc = new Inet4Factory();
-        efc.setEtherType(EtherTypes.IPV4.shortValue()).setNextFactory(i4fc);
+        efc.setEtherType(EtherTypes.IPV4.intValue()).setNextFactory(i4fc);
 
         return i4fc;
     }
@@ -86,7 +86,7 @@ public final class Inet4Factory extends PacketFactory {
     public static Inet4Factory newInstance(EthernetFactory efc,
                                            IpNetwork src, IpNetwork dst) {
         Inet4Factory i4fc = new Inet4Factory(src, dst);
-        efc.setEtherType(EtherTypes.IPV4.shortValue()).setNextFactory(i4fc);
+        efc.setEtherType(EtherTypes.IPV4.intValue()).setNextFactory(i4fc);
 
         return i4fc;
     }
@@ -130,7 +130,7 @@ public final class Inet4Factory extends PacketFactory {
      *
      * @return  IP protocol number.
      */
-    public byte getProtocol() {
+    public short getProtocol() {
         return protocol;
     }
 
@@ -148,7 +148,7 @@ public final class Inet4Factory extends PacketFactory {
      *
      * @return  DSCP value.
      */
-    public byte getDscp() {
+    public short getDscp() {
         return dscp;
     }
 
@@ -182,7 +182,7 @@ public final class Inet4Factory extends PacketFactory {
      * @param proto  IP protocol number.
      * @return  This instance.
      */
-    public Inet4Factory setProtocol(byte proto) {
+    public Inet4Factory setProtocol(short proto) {
         protocol = proto;
         return this;
     }
@@ -204,7 +204,7 @@ public final class Inet4Factory extends PacketFactory {
      * @param d  DSCP value.
      * @return   This instance.
      */
-    public Inet4Factory setDscp(byte d) {
+    public Inet4Factory setDscp(short d) {
         dscp = d;
         return this;
     }
@@ -214,10 +214,10 @@ public final class Inet4Factory extends PacketFactory {
      */
     @Override
     Packet createPacket() {
-        IPv4 ip = new IPv4().setTtl(timeToLive).setDiffServ(dscp).
+        IPv4 ip = new IPv4().setTtl(timeToLive).setDiffServ((byte)dscp).
             setSourceAddress(sourceAddress).
             setDestinationAddress(destinationAddress).
-            setProtocol(protocol);
+            setProtocol((byte)protocol);
 
         return ip;
     }
@@ -232,9 +232,9 @@ public final class Inet4Factory extends PacketFactory {
 
         assertEquals(sourceAddress, ip.getSourceAddress());
         assertEquals(destinationAddress, ip.getDestinationAddress());
-        assertEquals(protocol, ip.getProtocol());
+        assertEquals((byte)protocol, ip.getProtocol());
         assertEquals(timeToLive, ip.getTtl());
-        assertEquals(dscp, ip.getDiffServ());
+        assertEquals((byte)dscp, ip.getDiffServ());
     }
 
     /**
@@ -257,11 +257,11 @@ public final class Inet4Factory extends PacketFactory {
             v4Count++;
         }
         if (types.contains(FlowMatchType.IP_PROTO)) {
-            imb.setIpProtocol(toShort(protocol));
+            imb.setIpProtocol(protocol);
             ipCount++;
         }
         if (types.contains(FlowMatchType.IP_DSCP)) {
-            imb.setIpDscp(new Dscp(toShort(dscp)));
+            imb.setIpDscp(new Dscp(dscp));
             ipCount++;
         }
 

@@ -239,7 +239,7 @@ public final class VTNVlanMap
     /**
      * Submit runtime status changes to the MD-SAL datastore.
      *
-     * @param ctx  D-SAL datastore transaction context.
+     * @param ctx  MD-SAL datastore transaction context.
      */
     public void submit(TxContext ctx) {
         VlanMapStatus vmst = getInitialValue().getVlanMapStatus();

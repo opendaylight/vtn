@@ -64,8 +64,7 @@
       </activation>
       <modules>
         <!-- Run integration tests if integrationtests profile is active. -->
-        <!-- TODO: IT will be enabled again when it is migrated to MD-SAL -->
-        <!-- <module>it</module> -->
+        <module>it</module>
       </modules>
     </profile>
 

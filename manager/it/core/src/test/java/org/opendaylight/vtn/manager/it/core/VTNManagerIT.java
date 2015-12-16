@@ -10,9 +10,22 @@ package org.opendaylight.vtn.manager.it.core;
 
 import static org.ops4j.pax.exam.CoreOptions.options;
 
+import static org.opendaylight.vtn.manager.util.NumberUtils.getUnsigned;
+
+import static org.opendaylight.vtn.manager.it.ofmock.OfMockService.ID_OPENFLOW;
+import static org.opendaylight.vtn.manager.it.util.flow.cond.FlowCondSet.removeFlowCondition;
+import static org.opendaylight.vtn.manager.it.util.pathmap.PathMapSet.clearPathMap;
+import static org.opendaylight.vtn.manager.it.util.pathmap.PathMapSet.removePathMap;
+import static org.opendaylight.vtn.manager.it.util.pathpolicy.PathPolicySet.removePathPolicy;
+import static org.opendaylight.vtn.manager.it.util.vnode.VBridgeConfig.removeVbridge;
+import static org.opendaylight.vtn.manager.it.util.vnode.VInterfaceConfig.removeVinterface;
+import static org.opendaylight.vtn.manager.it.util.vnode.VTNPortMapConfig.removePortMap;
+import static org.opendaylight.vtn.manager.it.util.vnode.VTNVlanMapConfig.removeVlanMap;
+import static org.opendaylight.vtn.manager.it.util.vnode.VTenantConfig.removeVtn;
+import static org.opendaylight.vtn.manager.it.util.vnode.VTerminalConfig.removeVterminal;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -20,11 +33,14 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
+
+import com.google.common.base.Optional;
 
 import org.junit.After;
 import org.junit.Before;
@@ -45,47 +61,10 @@ import org.osgi.framework.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opendaylight.vtn.manager.BundleVersion;
-import org.opendaylight.vtn.manager.DataLinkHost;
-import org.opendaylight.vtn.manager.EthernetHost;
-import org.opendaylight.vtn.manager.IVTNGlobal;
-import org.opendaylight.vtn.manager.IVTNManager;
-import org.opendaylight.vtn.manager.MacAddressEntry;
-import org.opendaylight.vtn.manager.MacMap;
-import org.opendaylight.vtn.manager.PathCost;
-import org.opendaylight.vtn.manager.PathMap;
-import org.opendaylight.vtn.manager.PathPolicy;
-import org.opendaylight.vtn.manager.PortLocation;
-import org.opendaylight.vtn.manager.PortMap;
-import org.opendaylight.vtn.manager.PortMapConfig;
-import org.opendaylight.vtn.manager.SwitchPort;
-import org.opendaylight.vtn.manager.VBridge;
-import org.opendaylight.vtn.manager.VBridgeConfig;
-import org.opendaylight.vtn.manager.VBridgeIfPath;
-import org.opendaylight.vtn.manager.VBridgePath;
-import org.opendaylight.vtn.manager.VInterface;
-import org.opendaylight.vtn.manager.VInterfaceConfig;
-import org.opendaylight.vtn.manager.VInterfacePath;
-import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.VTenant;
-import org.opendaylight.vtn.manager.VTenantConfig;
-import org.opendaylight.vtn.manager.VTenantPath;
-import org.opendaylight.vtn.manager.VTerminalConfig;
-import org.opendaylight.vtn.manager.VTerminalIfPath;
-import org.opendaylight.vtn.manager.VTerminalPath;
-import org.opendaylight.vtn.manager.VlanMap;
-import org.opendaylight.vtn.manager.VlanMapConfig;
-import org.opendaylight.vtn.manager.flow.cond.EthernetMatch;
-import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
-import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
-import org.opendaylight.vtn.manager.flow.cond.Inet4Match;
-import org.opendaylight.vtn.manager.flow.cond.TcpMatch;
-import org.opendaylight.vtn.manager.flow.cond.UdpMatch;
 import org.opendaylight.vtn.manager.util.EtherAddress;
-import org.opendaylight.vtn.manager.util.EtherTypes;
-import org.opendaylight.vtn.manager.util.InetProtocols;
 import org.opendaylight.vtn.manager.util.IpNetwork;
 
+import org.opendaylight.vtn.manager.it.ofmock.DataStoreUtils;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockFlow;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockLink;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockService;
@@ -93,97 +72,294 @@ import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
 import org.opendaylight.vtn.manager.it.option.TestOption;
 import org.opendaylight.vtn.manager.it.util.BridgeNetwork;
 import org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase;
+import org.opendaylight.vtn.manager.it.util.RpcErrorTag;
 import org.opendaylight.vtn.manager.it.util.TestHost;
 import org.opendaylight.vtn.manager.it.util.TestPort;
+import org.opendaylight.vtn.manager.it.util.VTNServices;
+import org.opendaylight.vtn.manager.it.util.VirtualNetwork;
+import org.opendaylight.vtn.manager.it.util.flow.cond.FlowCondition;
+import org.opendaylight.vtn.manager.it.util.flow.cond.FlowMatch;
+import org.opendaylight.vtn.manager.it.util.flow.match.VTNInet4Match;
+import org.opendaylight.vtn.manager.it.util.flow.match.VTNTcpMatch;
+import org.opendaylight.vtn.manager.it.util.flow.match.VTNUdpMatch;
+import org.opendaylight.vtn.manager.it.util.inventory.MacVlan;
+import org.opendaylight.vtn.manager.it.util.inventory.PortVlan;
 import org.opendaylight.vtn.manager.it.util.match.FlowMatchType;
 import org.opendaylight.vtn.manager.it.util.packet.ArpFactory;
 import org.opendaylight.vtn.manager.it.util.packet.EthernetFactory;
 import org.opendaylight.vtn.manager.it.util.packet.Icmp4Factory;
 import org.opendaylight.vtn.manager.it.util.packet.Inet4Factory;
+import org.opendaylight.vtn.manager.it.util.pathmap.PathMap;
+import org.opendaylight.vtn.manager.it.util.pathpolicy.PathCost;
+import org.opendaylight.vtn.manager.it.util.pathpolicy.PathPolicy;
 import org.opendaylight.vtn.manager.it.util.unicast.ArpFlowFactory;
 import org.opendaylight.vtn.manager.it.util.unicast.Tcp4FlowFactory;
 import org.opendaylight.vtn.manager.it.util.unicast.Udp4FlowFactory;
 import org.opendaylight.vtn.manager.it.util.unicast.UnicastFlow;
 import org.opendaylight.vtn.manager.it.util.unicast.UnicastFlowFactory;
+import org.opendaylight.vtn.manager.it.util.vnode.BridgeIdentifier;
+import org.opendaylight.vtn.manager.it.util.vnode.VBridgeConfig;
+import org.opendaylight.vtn.manager.it.util.vnode.VBridgeIdentifier;
+import org.opendaylight.vtn.manager.it.util.vnode.VBridgeIfIdentifier;
+import org.opendaylight.vtn.manager.it.util.vnode.VInterfaceConfig;
+import org.opendaylight.vtn.manager.it.util.vnode.VInterfaceIdentifier;
+import org.opendaylight.vtn.manager.it.util.vnode.VTNMacMapConfig;
+import org.opendaylight.vtn.manager.it.util.vnode.VTNPortMapConfig;
+import org.opendaylight.vtn.manager.it.util.vnode.VTNVlanMapConfig;
+import org.opendaylight.vtn.manager.it.util.vnode.VTenantConfig;
+import org.opendaylight.vtn.manager.it.util.vnode.VTerminalConfig;
+import org.opendaylight.vtn.manager.it.util.vnode.VTerminalIdentifier;
+import org.opendaylight.vtn.manager.it.util.vnode.VTerminalIfIdentifier;
+import org.opendaylight.vtn.manager.it.util.vnode.mac.MacEntry;
 
-import org.opendaylight.controller.sal.utils.NodeCreator;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-import org.opendaylight.controller.sal.core.ConstructionException;
-import org.opendaylight.controller.sal.core.Node;
-import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
-import org.opendaylight.controller.sal.core.UpdateType;
-import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
-import org.opendaylight.controller.sal.packet.address.EthernetAddress;
+import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
+import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
+import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfig;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnFlowConditionService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnFlowConditions;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.VtnFlowFilterService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePath;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.NextFlowId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.VtnFlows;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnNodes;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.mapping.rev151001.VtnMappings;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.IgnoredLinks;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.VtnTopology;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.VtnMacMapService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.port.rev150907.RemovePortMapInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.port.rev150907.RemovePortMapInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.port.rev150907.SetPortMapInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.port.rev150907.SetPortMapInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.port.rev150907.VtnPortMapService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.AddVlanMapInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.AddVlanMapInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.AddVlanMapOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.GetVlanMapInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.GetVlanMapInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.GetVlanMapOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.RemoveVlanMapInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.RemoveVlanMapInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.VtnVlanMapService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.GlobalPathMaps;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.VtnPathMapService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.VtnPathPolicies;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.VtnPathPolicyService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.RemoveVtnInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.RemoveVtnInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.UpdateVtnInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.UpdateVtnInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.VtnService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.Vtns;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.Vtn;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeUpdateMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnAclType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateOperationType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.MacTables;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.RemoveMacEntryInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.RemoveMacEntryInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.RemoveMacEntryOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.VtnMacTableService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.remove.mac.entry.output.RemoveMacEntryResult;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.vtn.mac.table.entry.MacTableEntry;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.RemoveVbridgeInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.RemoveVbridgeInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.UpdateVbridgeInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.UpdateVbridgeInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.VtnVbridgeService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.GetManagerVersionOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.VtnVersionService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.get.manager.version.output.BundleVersion;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.RemoveVinterfaceInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.RemoveVinterfaceInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.UpdateVinterfaceInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.UpdateVinterfaceInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.VtnVinterfaceService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vterminal.rev150907.RemoveVterminalInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vterminal.rev150907.RemoveVterminalInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vterminal.rev150907.UpdateVterminalInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vterminal.rev150907.UpdateVterminalInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vterminal.rev150907.VtnVterminalService;
 
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 
+/**
+ * Integration test for the VTN Manager using openflowplugin mock-up.
+ */
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
-public final class VTNManagerIT extends ModelDrivenTestBase {
+public final class VTNManagerIT extends ModelDrivenTestBase
+    implements VTNServices {
     /**
      * Logger instance.
      */
     private static final Logger LOG = LoggerFactory.
         getLogger(VTNManagerIT.class);
 
-    // Inject the OSGI bundle context
+    /**
+     * The bit that indicates the port ID should be specified in the
+     * vtn-port-desc.
+     */
+    private static final int  PATH_COST_MODE_ID = 0x1;
+
+    /**
+     * The bit that indicates the port name should be specified in the
+     * vtn-port-desc.
+     */
+    private static final int  PATH_COST_MODE_NAME = 0x2;
+
+    /**
+     * Set true only if the first run.
+     */
+    private static boolean  firstRun = true;
+
+    /**
+     * OSGi bundle context.
+     */
     @Inject
     private BundleContext  bundleContext;
 
-    // Inject VTN Manager services.
-    @Inject
-    @Filter(timeout = OSGI_TIMEOUT)
-    private IVTNManager vtnManager;
-
-    @Inject
-    @Filter(timeout = OSGI_TIMEOUT)
-    private IVTNGlobal vtnGlobal;
-
+    /**
+     * openflowplugin mock-up service.
+     */
     @Inject
     @Filter(timeout = OSGI_TIMEOUT)
     private OfMockService  ofMockService;
 
+    /**
+     * OSGi bundle for the manager.implementation bundle.
+     */
     private Bundle  implBundle;
 
     /**
-     * Configure the OSGi container
+     * vtn RPC service.
+     */
+    private VtnService  vtnService;
+
+    /**
+     * vtn-vbridge RPC service.
+     */
+    private VtnVbridgeService  vbridgeService;
+
+    /**
+     * vtn-vterminal RPC service.
+     */
+    private VtnVterminalService  vterminalService;
+
+    /**
+     * vtn-vinterface RPC service.
+     */
+    private VtnVinterfaceService  vinterfaceService;
+
+    /**
+     * vtn-mac-table RPC service.
+     */
+    private VtnMacTableService  macTableService;
+
+    /**
+     * vtn-vlan-map RPC service.
+     */
+    private VtnVlanMapService  vlanMapService;
+
+    /**
+     * vtn-mac-map RPC service.
+     */
+    private VtnMacMapService  macMapService;
+
+    /**
+     * vtn-port-map RPC service.
+     */
+    private VtnPortMapService  portMapService;
+
+    /**
+     * vtn-flow-filter RPC service.
+     */
+    private VtnFlowFilterService  flowFilterService;
+
+    /**
+     * vtn-flow-condition RPC service.
+     */
+    private VtnFlowConditionService  flowCondService;
+
+    /**
+     * vtn-path-policy RPC service.
+     */
+    private VtnPathPolicyService  pathPolicyService;
+
+    /**
+     * vtn-path-map RPC service.
+     */
+    private VtnPathMapService  pathMapService;
+
+    /**
+     * vtn-version RPC service.
+     */
+    private VtnVersionService  versionService;
+
+    /**
+     * Configure the OSGi container.
+     *
+     * @return  An array of test options.
      */
     @Configuration
     public Option[] config() {
         return options(TestOption.vtnManagerCommonBundles());
     }
 
-    // Validator of VTN, VBridge name, and VBridgeIF name.
-    private boolean isValidName(String checkName) {
-        if (checkName == null) {
-            return false;
-        } else if (checkName.isEmpty() || checkName.length() > 31) {
-            return false;
-        }
-        return checkName.matches("[\\w&&[^_]][\\w]+");
-    }
-
+    /**
+     * Verify the test environment.
+     *
+     * @throws Exception  An error occurred.
+     */
     @Before
     public void areWeReady() throws Exception {
-        if (implBundle == null) {
-            assertNotNull(bundleContext);
-            assertNotNull(vtnManager);
-            assertNotNull(vtnGlobal);
-            assertNotNull(ofMockService);
+        assertNotNull(bundleContext);
+        assertNotNull(ofMockService);
 
-            // Determine manager.implementation bundle.
-            implBundle = getManagerBundle(bundleContext);
-            assertNotNull(implBundle);
-            assertEquals(Bundle.ACTIVE, implBundle.getState());
+        // Determine manager.implementation bundle.
+        implBundle = getManagerBundle(bundleContext);
+        assertNotNull(implBundle);
+        assertEquals(Bundle.ACTIVE, implBundle.getState());
 
-            // Initialize the openflowplugin mock-up.
-            ofMockService.initialize();
+        // Initialize the openflowplugin mock-up.
+        ofMockService.initialize();
+
+        // Get VTN RPC services.
+        vtnService = ofMockService.getRpcService(VtnService.class);
+        vbridgeService = ofMockService.getRpcService(VtnVbridgeService.class);
+        vterminalService =
+            ofMockService.getRpcService(VtnVterminalService.class);
+        vinterfaceService =
+            ofMockService.getRpcService(VtnVinterfaceService.class);
+        macTableService =
+            ofMockService.getRpcService(VtnMacTableService.class);
+        vlanMapService = ofMockService.getRpcService(VtnVlanMapService.class);
+        macMapService = ofMockService.getRpcService(VtnMacMapService.class);
+        portMapService = ofMockService.getRpcService(VtnPortMapService.class);
+        flowFilterService =
+            ofMockService.getRpcService(VtnFlowFilterService.class);
+        flowCondService =
+            ofMockService.getRpcService(VtnFlowConditionService.class);
+        pathPolicyService =
+            ofMockService.getRpcService(VtnPathPolicyService.class);
+        pathMapService = ofMockService.getRpcService(VtnPathMapService.class);
+        versionService = ofMockService.getRpcService(VtnVersionService.class);
+
+        if (firstRun) {
+            // Verify initial state.
+            try (ReadOnlyTransaction rtx = newReadOnlyTransaction()) {
+                checkContainers(rtx);
+            }
+            firstRun = false;
         }
     }
 
@@ -194,2422 +370,42 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
      */
     @After
     public void tearDown() throws Exception {
-        if (vtnManager == null) {
-            return;
-        }
+        if (versionService != null) {
+            // Remove all global path maps.
+            clearPathMap(pathMapService, null);
 
-        // Remove all global path maps.
-        Status st = vtnManager.clearPathMap();
-        if (st != null) {
-            assertEquals(StatusCode.SUCCESS, st.getCode());
-        }
+            // Remove all flow conditions.
+            getRpcOutput(flowCondService.clearFlowCondition());
 
-        // Remove all flow conditions.
-        st = vtnManager.clearFlowCondition();
-        if (st != null) {
-            assertEquals(StatusCode.SUCCESS, st.getCode());
-        }
+            // Remove all path policies.
+            getRpcOutput(pathPolicyService.clearPathPolicy());
 
-        // Remove all path policies.
-        st = vtnManager.clearPathPolicy();
-        if (st != null) {
-            assertEquals(StatusCode.SUCCESS, st.getCode());
-        }
+            // Remove all VTNs.
+            for (Vtn vtn: getVtns(this)) {
+                removeVtn(vtnService, vtn.getName().getValue());
+            }
 
-        // Remove all VTNs in the default container.
-        for (VTenant vtn: vtnManager.getTenants()) {
-            String name = vtn.getName();
-            LOG.debug("Clean up VTN: {}", name);
-            VTenantPath path = new VTenantPath(name);
-            st = vtnManager.removeTenant(path);
-            assertEquals(StatusCode.SUCCESS, st.getCode());
+            // Reset the inventory configuration.
+            ofMockService.reset();
         }
-
-        // Reset the inventory configuration.
-        ofMockService.reset();
     }
 
     /**
-     * Test method for {@link IVTNManager}
+     * Test case for {@link VtnVersionService}.
      *
      * @throws Exception  An error occurred.
      */
     @Test
-    public void testIVTNManager() throws Exception {
-        testAddGetRemoveTenant();
-        testModifyTenant();
-        testBridge();
-        testBridgeInterface();
-        testVlanMap();
-        testPortMap();
-        testIsActive();
-    }
-
-    /**
-     * Test method for
-     * {@link IVTNManager#addTenant(VTenantPath, VTenantConfig)},
-     * {@link IVTNManager#removeTenant(VTenantPath)},
-     * {@link IVTNManager#getTenants()},
-     * {@link IVTNManager#getTenant(VTenantPath)},
-     * {@link IVTNManager#isActive()}
-     */
-    private void testAddGetRemoveTenant() {
-        LOG.info("Running testAddGetRemoveTenant().");
-
-        IVTNManager mgr = this.vtnManager;
-        List<VTenantPath> tpathes = new ArrayList<VTenantPath>();
-        List<String> descs = new ArrayList<String>();
-        List<Integer> ivs = new ArrayList<Integer>();
-        List<Integer> hvs = new ArrayList<Integer>();
-
-        tpathes.add(new VTenantPath("tenant"));
-        tpathes.add(new VTenantPath("Tenant"));
-        tpathes.add(new VTenantPath("123456789012345678901234567890_"));
-        tpathes.add(new VTenantPath("123456789012345678901234567890XX"));
-        tpathes.add(new VTenantPath("_tenant"));
-        tpathes.add(new VTenantPath("Tenant!!"));
-        tpathes.add(new VTenantPath("tenant?"));
-        tpathes.add(new VTenantPath("%TENANT%"));
-        tpathes.add(new VTenantPath(""));
-        tpathes.add(new VTenantPath(null));
-        tpathes.add(null);
-
-        descs.add(null);
-        descs.add(new String("description."));
-
-        ivs.add(null);
-        ivs.add(new Integer(-1));
-        ivs.add(new Integer(0));
-        ivs.add(new Integer(1));
-        ivs.add(new Integer(299));
-        ivs.add(new Integer(300));
-        ivs.add(new Integer(301));
-        ivs.add(new Integer(65534));
-        ivs.add(new Integer(65535));
-        ivs.add(new Integer(65536));
-
-        hvs.add(null);
-        hvs.add(new Integer(-1));
-        hvs.add(new Integer(0));
-        hvs.add(new Integer(1));
-        hvs.add(new Integer(299));
-        hvs.add(new Integer(300));
-        hvs.add(new Integer(301));
-        hvs.add(new Integer(65534));
-        hvs.add(new Integer(65535));
-        hvs.add(new Integer(65536));
-
-        assertFalse(mgr.isActive());
-
-        // test for add
-        for (VTenantPath tpath : tpathes) {
-            String tname;
-            if (tpath != null) {
-                tname = tpath.getTenantName();
-                assertEquals(
-                    "(name)" + ((tname == null) ? "(null)" : (tname.isEmpty() ? "()" : tname)) + "tconf is null",
-                    StatusCode.BADREQUEST,
-                    mgr.addTenant(tpath, null).getCode()
-                );
-            } else {
-                tname = null;
-                assertEquals(
-                    "tpath is null, tconf is null",
-                    StatusCode.BADREQUEST,
-                    mgr.addTenant(tpath, null).getCode()
-                );
-            }
-
-            // Tests for getTenant() (NOTFOUND condition)
-            VTenant tenant = null;
-            try {
-                if (isValidName(tname)) {
-                    tenant = mgr.getTenant(tpath);
-                    // It is strange, if VTNException is NOT thrown.
-                    fail("Unexpected succeseed: " + tname);
-                }
-            } catch (VTNException vtne) {
-                assertEquals("(name)" + tname + " Not Found", StatusCode.NOTFOUND, vtne.getStatus().getCode());
-            } catch (Exception e) {
-                unexpected(e);
-            }
-
-            // Tests for removeTenant() (NOTFOUND condition)
-            if (tpath != null && isValidName(tname)) {
-                Status st = mgr.removeTenant(tpath);
-                assertEquals("(name)" + tname + " Not Found", StatusCode.NOTFOUND, st.getCode());
-            }
-
-            for (String desc : descs) {
-                for (Integer iv : ivs) {
-                    for (Integer hv : hvs) {
-                        VTenantConfig tconf = createVTenantConfig(desc, iv, hv);
-                        Status st = mgr.addTenant(tpath, tconf);
-                        String emsg;
-                        if (tpath != null) {
-                            emsg  = "(name)" + ((tname == null) ? "(null)" : (tname.isEmpty() ? "()" : tname));
-                        } else {
-                            emsg = "tpath is null ";
-                        }
-                        emsg = emsg + "(desc)" + desc + ",(iv)" +
-                            ((iv == null) ? "null" : iv.intValue()) + ",(hv)" +
-                            ((hv == null) ? "null" : hv.intValue());
-
-                        if (tname == null) {
-                            // "null" is invalid for tenant name.
-                            // (Include that tpath is null.)
-                            assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-                        } else if (!isValidName(tname)) {
-                            // Invalid for tenant name.
-                            assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-                            //In this case, we do NOT give following tests.
-                            continue;
-                        } else if (iv != null && hv != null && iv.intValue() > 0 && hv.intValue() > 0
-                                && iv.intValue() >= hv.intValue()) {
-                            assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-                            continue;
-                        } else if ((iv == null || iv.intValue() < 0) && hv != null && hv.intValue() > 0
-                                && 300 >= hv.intValue()) {
-                            assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-                            continue;
-                        } else if ((iv != null && iv.intValue() > 65535) ||
-                                   (hv != null && hv.intValue() > 65535)) {
-                            assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-                            continue;
-                        } else {
-                            assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
-                            assertTrue(emsg, mgr.isActive());
-                            //Re-execute addTenant for testing CONFLICT status.
-                            st = mgr.addTenant(tpath, tconf);
-                            assertEquals(emsg, StatusCode.CONFLICT, st.getCode());
-                            assertTrue(emsg, mgr.isActive());
-                        }
-
-                        // getTenant()
-                        try {
-                            tenant = mgr.getTenant(tpath);
-                        } catch (VTNException vtne) {
-                            if (tname == null) {
-                                assertEquals(emsg, StatusCode.BADREQUEST,
-                                             vtne.getStatus().getCode());
-                            } else {
-                                unexpected(vtne);
-                            }
-                        } catch (Exception e) {
-                            unexpected(e);
-                        }
-
-                        if (tname != null) {
-                            assertEquals(tname, tenant.getName());
-                            assertEquals(tconf.getDescription(), tenant.getDescription());
-                            if (iv == null || iv.intValue() < 0) {
-                                assertEquals(emsg, 300, tenant.getIdleTimeout());
-                            } else {
-                                assertEquals(emsg, iv.intValue(), tenant.getIdleTimeout());
-                            }
-                            if (hv == null || hv.intValue() < 0) {
-                                assertEquals(emsg, 0, tenant.getHardTimeout());
-                            } else {
-                                assertEquals(emsg, hv.intValue(), tenant.getHardTimeout());
-                            }
-                        }
-
-                        // removeTenant()
-                        st = mgr.removeTenant(tpath);
-                        if (tname != null) {
-                            assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
-                        } else {
-                            assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-                        }
-                    }
-                }
-            }
-        }
-
-        try {
-            List<VTenant> list = mgr.getTenants();
-            assertEquals(0, list.size());
-        } catch (Exception e) {
-            unexpected(e);
-        }
-
-        assertFalse(mgr.isActive());
-    }
-
-    /**
-     * Test method for
-     * {@link IVTNManager#modifyTenant(VTenantPath, VTenantConfig, boolean)}
-     */
-    private void testModifyTenant() {
-        LOG.info("Running testModifyTenant().");
-
-        IVTNManager mgr = this.vtnManager;
-        List<VTenantPath> tpathes = new ArrayList<VTenantPath>();
-        List<String> descs = new ArrayList<String>();
-        List<Integer> ivs = new ArrayList<Integer>();
-        List<Integer> hvs = new ArrayList<Integer>();
-
-        tpathes.add(new VTenantPath("vtn"));
-        tpathes.add(new VTenantPath("123456789012345678901234567890_"));
-        tpathes.add(new VTenantPath(null));
-        tpathes.add(null);
-        descs.add(null);
-        descs.add(new String("desc"));
-        ivs.add(new Integer(-1));
-        ivs.add(new Integer(0));
-        ivs.add(new Integer(1));
-        ivs.add(new Integer(299));
-        ivs.add(new Integer(300));
-        ivs.add(new Integer(301));
-        ivs.add(new Integer(65534));
-        ivs.add(new Integer(65535));
-        ivs.add(new Integer(65536));
-        ivs.add(null);
-        hvs.add(new Integer(-1));
-        hvs.add(new Integer(0));
-        hvs.add(new Integer(1));
-        hvs.add(new Integer(299));
-        hvs.add(new Integer(300));
-        hvs.add(new Integer(301));
-        hvs.add(new Integer(65534));
-        hvs.add(new Integer(65535));
-        hvs.add(new Integer(65536));
-        hvs.add(null);
-
-        int countValidTPath = 0;
-        boolean first = true;
-        for (VTenantPath tpath : tpathes) {
-            VTenantConfig tconf = createVTenantConfig(new String("orig"), 20, 30);
-
-            String tname = null;
-            Status st = mgr.modifyTenant(tpath, tconf, true);
-            if (tpath != null) {
-                tname = tpath.getTenantName();
-                if (isValidName(tname)) {
-                    ++countValidTPath;
-                    assertEquals("(name)" + tname + " Not Found", StatusCode.NOTFOUND, st.getCode());
-                } else if (tname == null) {
-                    assertEquals("(name)(null)", StatusCode.BADREQUEST, st.getCode());
-                    st = mgr.modifyTenant(tpath, null, true);
-                    assertEquals("(name)(null)", StatusCode.BADREQUEST, st.getCode());
-                }
-            } else {
-                assertEquals("tpath is null", StatusCode.BADREQUEST, st.getCode());
-                st = mgr.modifyTenant(tpath, null, true);
-                assertEquals("tpath is null", StatusCode.BADREQUEST, st.getCode());
-            }
-            st = mgr.modifyTenant(tpath, tconf, false);
-            if (tpath != null && tname != null && isValidName(tname)) {
-                assertEquals("(name)" + tname + " Not Found", StatusCode.NOTFOUND, st.getCode());
-            } else {
-                String emsg = (tpath == null) ? "tpath is null" : "(name)(null)";
-                assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-                st = mgr.modifyTenant(tpath, null, false);
-                assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-                continue;
-            }
-
-            st = mgr.addTenant(tpath, tconf);
-
-            // Test for condition that tconf is null.
-            for (Boolean allSwitch : createBooleans(false)) {
-                st = mgr.modifyTenant(tpath, null, allSwitch.booleanValue());
-                VTenant tenant = null;
-                try {
-                    tenant = mgr.getTenant(tpath);
-                } catch (Exception e) {
-                    unexpected(e);
-                }
-                assertEquals("(name)" + tname + " tconf is null", StatusCode.BADREQUEST, st.getCode());
-                assertEquals("(name)" + tname + " tconf is null", tenant.getDescription(), tconf.getDescription());
-                assertEquals("(name)" + tname + " tconf is null", tenant.getIdleTimeout(), tconf.getIdleTimeout());
-                assertEquals("(name)" + tname + " tconf is null", tenant.getHardTimeout(), tconf.getHardTimeout());
-            }
-
-            for (String desc : descs) {
-                for (Integer orgiv : ivs) {
-                    for (Integer orghv : hvs) {
-                        // check parameters
-                        if (orgiv != null && orghv != null && orgiv.intValue() > 0 && orghv.intValue() > 0
-                                && orgiv.intValue() >= orghv.intValue()) {
-                            continue;
-                        } else if ((orgiv == null || orgiv.intValue() < 0) && orghv != null && orghv.intValue() > 0
-                                && 300 >= orghv.intValue()) {
-                            continue;
-                        } else if ((orgiv != null &&
-                                    orgiv.intValue() > 65535) ||
-                                   (orghv != null &&
-                                    orghv.intValue() > 65535)) {
-                            continue;
-                        }
-
-                        String olddesc;
-                        for (Integer iv : ivs) {
-                            for (Integer hv : hvs) {
-                                VTenant tenant = null;
-
-                                if (first) {
-                                    for (String ndesc : descs) {
-                                        // test for all == true. executed at
-                                        // first time only.
-                                        String emsg = "(name)" + tname +
-                                            "(ndesc)" + ndesc + ",(iv)" +
-                                            ((iv == null) ? "null"
-                                             : iv.intValue()) + ",(hv)" +
-                                            ((hv == null) ? "null"
-                                             : hv.intValue());
-
-                                        try {
-                                            tenant = mgr.getTenant(tpath);
-                                        } catch (Exception e) {
-                                            unexpected(e);
-                                        }
-                                        olddesc = tenant.getDescription();
-
-                                        @SuppressWarnings("deprecation")
-                                        Integer oldiv =
-                                            tenant.getIdleTimeoutValue();
-                                        @SuppressWarnings("deprecation")
-                                        Integer oldhv =
-                                            tenant.getHardTimeoutValue();
-
-                                        tconf = createVTenantConfig(ndesc, iv, hv);
-                                        st = mgr.modifyTenant(tpath, tconf, true);
-
-                                        if (iv != null && hv != null
-                                                && iv.intValue() > 0 && hv.intValue() > 0
-                                                && iv.intValue() >= hv.intValue()) {
-                                            assertEquals(emsg,
-                                                    StatusCode.BADREQUEST, st.getCode());
-                                        } else if ((iv != null && iv.intValue() > 65535)
-                                                || (hv != null && hv.intValue() > 65535)) {
-                                            assertEquals(emsg,
-                                                    StatusCode.BADREQUEST, st.getCode());
-                                        } else if ((iv == null || iv < 0)
-                                                && hv != null && hv > 0 && 300 >= hv) {
-                                            assertEquals(emsg,
-                                                    StatusCode.BADREQUEST, st.getCode());
-                                        } else {
-                                            assertEquals(emsg,
-                                                    StatusCode.SUCCESS, st.getCode());
-                                        }
-
-                                        try {
-                                            tenant = mgr.getTenant(tpath);
-                                        } catch (Exception e) {
-                                            unexpected(e);
-                                        }
-
-                                        if (st.isSuccess()) {
-                                            assertEquals(emsg, tname, tenant.getName());
-                                            assertEquals(emsg,
-                                                    ndesc, tenant.getDescription());
-                                            if (iv == null || iv.intValue() < 0) {
-                                                assertEquals(emsg,
-                                                        300, tenant.getIdleTimeout());
-                                            } else {
-                                                assertEquals(emsg,
-                                                        iv.intValue(),
-                                                        tenant.getIdleTimeout());
-                                            }
-                                            if (hv == null || hv.intValue() < 0) {
-                                                assertEquals(emsg,
-                                                        0, tenant.getHardTimeout());
-                                            } else {
-                                                assertEquals(emsg,
-                                                        hv.intValue(),
-                                                        tenant.getHardTimeout());
-                                            }
-                                        } else {
-                                            assertEquals(emsg, tname, tenant.getName());
-                                            assertEquals(emsg, olddesc, tenant.getDescription());
-                                            assertEquals(emsg, oldiv.intValue(), tenant.getIdleTimeout());
-                                            assertEquals(emsg, oldhv.intValue(), tenant.getHardTimeout());
-                                        }
-                                    }
-                                }
-
-                                VTenantConfig tconfOrg = createVTenantConfig(desc,
-                                        orgiv, orghv);
-                                st = mgr.modifyTenant(tpath, tconfOrg, true);
-                                assertEquals("(name)" + tname + " Reset", StatusCode.SUCCESS, st.getCode());
-
-                                olddesc = (desc == null) ? null : new String(desc);
-                                Integer oldiv =
-                                    (orgiv == null || orgiv.intValue() < 0)
-                                    ? new Integer(300) : orgiv;
-                                Integer oldhv =
-                                    (orghv == null || orghv.intValue() < 0)
-                                    ? new Integer(0) : orghv;
-
-                                // all == false
-                                tconf = createVTenantConfig(desc, iv, hv);
-                                st = mgr.modifyTenant(tpath, tconf, false);
-
-                                String emsg = "(VTenangConfig(orig))" +
-                                    tconfOrg.toString() + "(name)" + tname +
-                                    "(ndesc)" + desc + ",(iv)" +
-                                    ((iv == null) ? "null" : iv.intValue()) +
-                                    ",(hv)" +
-                                    ((hv == null) ? "null" : hv.intValue());
-
-                                if ((iv == null || iv.intValue() < 0) &&
-                                    (hv == null || hv.intValue() < 0)) {
-                                    // both not set
-                                    // not changed.
-
-                                } else if (iv == null || iv.intValue() < 0) {
-                                    // idle_timeout is not set
-                                    if (hv.intValue() > 0 &&
-                                        (oldiv.intValue() != 0 &&
-                                         oldiv.intValue() >= hv.intValue())) {
-                                        assertEquals(emsg,
-                                                StatusCode.BADREQUEST, st.getCode());
-                                    } else if (hv.intValue() > 65535) {
-                                        assertEquals(emsg,
-                                                StatusCode.BADREQUEST, st.getCode());
-                                    } else {
-                                        assertEquals(emsg,
-                                                StatusCode.SUCCESS, st.getCode());
-                                    }
-                                } else if (hv == null || hv.intValue() < 0) {
-                                    // hard_timeout is not set
-                                    if (iv > 0 && oldhv > 0) {
-                                        if (iv >= oldhv) {
-                                            assertEquals(emsg,
-                                                    StatusCode.BADREQUEST, st.getCode());
-                                        } else {
-                                            assertEquals(emsg,
-                                                    StatusCode.SUCCESS, st.getCode());
-                                        }
-                                    } else if (iv.intValue() > 65535) {
-                                        assertEquals(emsg,
-                                                StatusCode.BADREQUEST, st.getCode());
-                                    } else {
-                                        assertEquals(emsg,
-                                                StatusCode.SUCCESS, st.getCode());
-                                    }
-                                } else {
-                                    // set both
-                                    if (hv.intValue() > 65535 || iv.intValue() > 65535) {
-                                        assertEquals(emsg,
-                                                StatusCode.BADREQUEST, st.getCode());
-                                    } else if (iv.intValue() > 0 && hv.intValue() > 0) {
-                                        if (iv.intValue() >= hv.intValue()) {
-                                            assertEquals(emsg,
-                                                    StatusCode.BADREQUEST, st.getCode());
-                                        } else {
-                                            assertEquals(emsg,
-                                                    StatusCode.SUCCESS, st.getCode());
-                                        }
-                                    } else {
-                                        assertEquals(emsg,
-                                                StatusCode.SUCCESS, st.getCode());
-                                    }
-                                }
-
-                                tenant = null;
-                                try {
-                                    tenant = mgr.getTenant(tpath);
-                                } catch (Exception e) {
-                                    unexpected(e);
-                                }
-
-                                if (st.isSuccess()) {
-                                    assertEquals(emsg, tname, tenant.getName());
-                                    assertEquals(emsg, olddesc, tenant.getDescription());
-                                    if (iv == null || iv.intValue() < 0) {
-                                        assertEquals(emsg,
-                                                oldiv.intValue(), tenant.getIdleTimeout());
-                                    } else {
-                                        assertEquals(emsg,
-                                                iv.intValue(), tenant.getIdleTimeout());
-                                    }
-                                    if (hv == null || hv.intValue() < 0) {
-                                        assertEquals(emsg,
-                                                oldhv.intValue(), tenant.getHardTimeout());
-                                    } else {
-                                        assertEquals(emsg,
-                                                hv.intValue(), tenant.getHardTimeout());
-                                    }
-                                } else {
-                                    assertEquals(emsg, tname, tenant.getName());
-                                    assertEquals(emsg, olddesc, tenant.getDescription());
-                                    assertEquals(emsg, oldiv.intValue(), tenant.getIdleTimeout());
-                                    assertEquals(emsg, oldhv.intValue(), tenant.getHardTimeout());
-                                }
-
-                                olddesc = tenant.getDescription();
-                                oldiv = tenant.getIdleTimeout();
-                                oldhv = tenant.getHardTimeout();
-                            }
-                        }
-                        first = false;
-                    }
-                }
-            }
-        }
-
-        try {
-            List<VTenant> list = mgr.getTenants();
-            assertEquals(countValidTPath, list.size());
-        } catch (Exception e) {
-            unexpected(e);
-        }
-
-        for (VTenantPath tpath : tpathes) {
-            if (tpath != null && tpath.getTenantName() != null) {
-                mgr.removeTenant(tpath);
-            }
-        }
-    }
-
-    /**
-     * Test method for
-     * {@link IVTNManager#addBridge(VBridgePath, VBridgeConfig)},
-     * {@link IVTNManager#removeBridge(VBridgePath)},
-     * {@link IVTNManager#modifyBridge(VBridgePath, VBridgeConfig, boolean)},
-     * {@link IVTNManager#getBridges(VTenantPath)},
-     * {@link IVTNManager#getBridge(VBridgePath)}.
-     */
-    private void testBridge() {
-        LOG.info("Running testBridge().");
-
-        IVTNManager mgr = this.vtnManager;
-        List<Integer> ages = new ArrayList<Integer>();
-        List<String> tlist = new ArrayList<String>();
-        List<String> blist = new ArrayList<String>();
-        List<String> descs = new ArrayList<String>();
-
-        tlist.add("vtn");
-        tlist.add("123456789012345678901234567890_");
-        tlist.add("12345678901234567890_1234567890");
-        tlist.add("123456789012345678901234567890XX");
-        tlist.add("_tenant");
-        tlist.add("Tenant!");
-        tlist.add("%TENANT%");
-        tlist.add("");
-        tlist.add(null);
-        blist.add("vbr");
-        blist.add("012345678901234567890123456789_");
-        blist.add("01234567890123456789_0123456789");
-        blist.add("012345678901234567890123456789YY");
-        blist.add("_bridge");
-        blist.add("Bridge!");
-        blist.add("%BRDG%");
-        blist.add("");
-        blist.add(null);
-        ages.add(null);
-        ages.add(-1);
-        ages.add(0);
-        ages.add(1);
-        ages.add(9);
-        ages.add(10);
-        ages.add(11);
-        ages.add(599);
-        ages.add(600);
-        ages.add(601);
-        ages.add(999999);
-        ages.add(1000000);
-        ages.add(1000001);
-        descs.add(null);
-        descs.add("description...");
-
-        boolean first = true;
-        for (String tname : tlist) {
-            boolean isValidBPath = false;
-            boolean isValidTName = false;
-            VTenantPath tpath = new VTenantPath(tname);
-
-            Status st = mgr.addTenant(tpath, new VTenantConfig(null));
-            if (!isValidName(tname)) {
-                isValidTName = false;
-                isValidBPath = false;
-            } else {
-                assertEquals(StatusCode.SUCCESS, st.getCode());
-                isValidTName = true;
-                isValidBPath = true;
-            }
-
-            if (first) {
-                // Test a null condition.
-                st = mgr.addBridge(null, null);
-                assertEquals(StatusCode.BADREQUEST, st.getCode());
-            }
-
-            for (String bname : blist) {
-                VBridgePath bpath = new VBridgePath(tname, bname);
-
-                // Test a null condition.
-                String emsg = "(VBridgePath)" + bpath.toString();
-                st = mgr.addBridge(bpath, null);
-                checkExceptionStatus(st, isValidTName, emsg);
-
-                // Test for NOTFOUND status.
-                try {
-                    VBridge brgIgn = mgr.getBridge(bpath);
-                    // It is strange, if VTNException is NOT thrown.
-                    fail("Unexpected succeseed: " + bname);
-                } catch (VTNException vtne) {
-                    if (!(isValidTName)) {
-                        // We tests only following condition.
-                        if (tname == null) {
-                            assertEquals(emsg, StatusCode.BADREQUEST, vtne.getStatus().getCode());
-                        }
-                    } else if (bname == null) {
-                        assertEquals(emsg, StatusCode.BADREQUEST, vtne.getStatus().getCode());
-                        isValidBPath = false;
-                    } else if (!isValidName(bname)) {
-                        // We DO NOT test this condition. Ignore.
-                        isValidBPath = false;
-                    } else {
-                        assertEquals(emsg, StatusCode.NOTFOUND, vtne.getStatus().getCode());
-                    }
-                } catch (Exception e) {
-                    unexpected(e);
-                }
-
-                if (isValidBPath) {
-                    st = mgr.removeBridge(bpath);
-                    assertEquals(emsg, StatusCode.NOTFOUND, st.getCode());
-                }
-
-                for (String desc : descs) {
-                    for (Integer age : ages) {
-                        boolean isValidBConf = false;
-                        VBridgeConfig bconf = createVBridgeConfig(desc, age);
-                        emsg = "(VBridgePath)" + bpath.toString()
-                                + "(VBridgeConfig)" + bconf.toString()
-                                + "(age)" + ((age == null) ? "null" : age.intValue());
-
-                        // Test a null condition.
-                        st = mgr.addBridge(null, bconf);
-                        assertEquals(StatusCode.BADREQUEST, st.getCode());
-
-                        st = mgr.addBridge(bpath, bconf);
-                        if (!(isValidTName)) {
-                            // We tests only following condition.
-                            if (tname == null) {
-                                assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-                            }
-                        } else if (!isValidBPath) {
-                            // This is an invalid condition.
-                            assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-                        } else if ((age != null) &&
-                                   ((0 <= age && age < 10) ||
-                                    (age > 1000000))) {
-                            // This is an invalid condition.
-                            assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-                            isValidBConf = false;
-                        } else {
-                            assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
-                            isValidBConf = true;
-
-                            //Re-add this Bridge for testing CONFLICT status.
-                            st = mgr.addBridge(bpath, bconf);
-                            assertEquals(emsg, StatusCode.CONFLICT, st.getCode());
-                        }
-
-                        VBridge brdg = null;
-                        try {
-                            brdg = mgr.getBridge(bpath);
-                        } catch (VTNException vtne) {
-                            // We DO NOT test when bpath is invalid.
-                            if (isValidBPath) {
-                                if (!(isValidBConf)) {
-                                    assertEquals(emsg, StatusCode.NOTFOUND, vtne.getStatus().getCode());
-                                } else {
-                                    unexpected(vtne);
-                                }
-                            }
-                        } catch (Exception e) {
-                            unexpected(e);
-                        }
-
-                        String olddesc = null;
-                        int oldage = 0;
-                        if (brdg != null) {
-                            assertEquals(emsg, bname, brdg.getName());
-                            assertEquals(emsg, desc, brdg.getDescription());
-                            if (age == null || age < 0) {
-                                assertEquals(emsg, 600, brdg.getAgeInterval());
-                            } else {
-                                assertEquals(emsg, age.intValue(), brdg.getAgeInterval());
-                            }
-                            assertEquals(emsg, VnodeState.UNKNOWN, brdg.getState());
-
-                            olddesc = brdg.getDescription();
-                            oldage = brdg.getAgeInterval();
-                        }
-
-                        if (!(isValidBConf)) {
-                            // If bconf is invalid, go next pattern
-                            continue;
-                        }
-
-                        for (String newdesc : descs) {
-                            for (Integer newage : ages) {
-                                boolean isValidBConfNew = false;
-                                bconf = createVBridgeConfig(newdesc, newage);
-
-                                if (newage == null || newage < 0) {
-                                    isValidBConfNew = true;
-                                } else if (10 <= newage && newage <= 1000000) {
-                                    isValidBConfNew = true;
-                                }
-
-                                st = mgr.modifyBridge(bpath, bconf, false);
-
-                                String emsgMod = emsg
-                                        + "(VBridgeConfig(new))" + bconf.toString()
-                                        + "(age(new))"
-                                        + ((newage == null) ? "null" : newage.intValue());
-
-                                if (!(isValidBPath)) {
-                                    if (tname == null || (isValidTName && bname == null)) {
-                                        assertEquals(emsgMod, StatusCode.BADREQUEST, st.getCode());
-                                    } else {
-                                        // In this case, Status code is either BADREQUEST or NOTFOUND
-                                        checkExceptionStatus(st, false, emsgMod);
-                                    }
-                                } else {
-                                    if (isValidBConfNew) {
-                                        assertEquals(emsgMod, StatusCode.SUCCESS, st.getCode());
-                                    } else {
-                                        assertEquals(emsgMod, StatusCode.BADREQUEST, st.getCode());
-                                    }
-                                }
-
-                                brdg = null;
-                                try {
-                                    brdg = mgr.getBridge(bpath);
-                                } catch (VTNException vtne) {
-                                    if (isValidBPath) {
-                                        unexpected(vtne);
-                                    }
-                                } catch (Exception e) {
-                                    unexpected(e);
-                                }
-
-                                if (brdg != null && st.isSuccess()) {
-                                    if (newdesc == null) {
-                                        assertEquals(emsgMod,
-                                                olddesc, brdg.getDescription());
-                                    } else {
-                                        assertEquals(emsgMod,
-                                                newdesc, brdg.getDescription());
-                                    }
-                                    if (newage == null || newage < 0) {
-                                        assertEquals(emsgMod,
-                                                oldage, brdg.getAgeInterval());
-                                    } else {
-                                        assertEquals(emsgMod,
-                                                newage.intValue(), brdg.getAgeInterval());
-                                    }
-                                    olddesc = brdg.getDescription();
-                                    oldage = brdg.getAgeInterval();
-                                } else if (brdg != null) {
-                                    // Not success. No changing is expected.
-                                    assertEquals(emsgMod,
-                                            olddesc, brdg.getDescription());
-                                    assertEquals(emsgMod,
-                                            oldage, brdg.getAgeInterval());
-                                }
-
-                                if (brdg != null) {
-                                    assertEquals(emsgMod, bname, brdg.getName());
-                                    assertEquals(emsgMod,
-                                            VnodeState.UNKNOWN, brdg.getState());
-                                }
-                            }
-                        }
-
-                        st = mgr.removeBridge(bpath);
-                        if (!(isValidBPath)) {
-                            if (tname == null || (isValidTName && bname == null)) {
-                                assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-                            } else {
-                                // In this case, Status code is either BADREQUEST or NOTFOUND
-                                checkExceptionStatus(st, false, emsg);
-                            }
-                        } else {
-                            assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
-                        }
-                    }
-
-                    if (!(isValidBPath)) {
-                        // If bpath is invalid, go next pattern.
-                        continue;
-                    }
-
-                    if (first) {
-                        String olddesc = "desc";
-                        int oldage = 10;
-                        VBridgeConfig bconf = new VBridgeConfig(olddesc, oldage);
-                        st = mgr.addBridge(bpath, bconf);
-                        for (String newdesc : descs) {
-                            for (Integer newage : ages) {
-                                boolean isValidBConfNew = false;
-                                bconf = createVBridgeConfig(newdesc, newage);
-
-                                if (newage == null || newage < 0) {
-                                    isValidBConfNew = true;
-                                } else if (10 <= newage && newage <= 1000000) {
-                                    isValidBConfNew = true;
-                                }
-
-                                st = mgr.modifyBridge(bpath, bconf, true);
-
-                                String emsgMod =
-                                        "(VBridgeConfig(new))" + bconf.toString()
-                                        + "(age(new))"
-                                        + ((newage == null) ? "null" : newage.intValue());
-
-                                if (isValidBConfNew) {
-                                    assertEquals(emsgMod, StatusCode.SUCCESS, st.getCode());
-                                } else {
-                                    assertEquals(emsgMod, StatusCode.BADREQUEST, st.getCode());
-                                }
-
-                                VBridge brdg = null;
-                                try {
-                                    brdg = mgr.getBridge(bpath);
-                                } catch (Exception e) {
-                                    unexpected(e);
-                                }
-                                assertEquals(emsgMod, bname, brdg.getName());
-                                if (st.isSuccess()) {
-                                    assertEquals(emsgMod, newdesc, brdg.getDescription());
-                                    if (newage == null || newage < 0) {
-                                        assertEquals(emsgMod, 600, brdg.getAgeInterval());
-                                    } else {
-                                        assertEquals(emsgMod,
-                                                newage.intValue(), brdg.getAgeInterval());
-                                    }
-                                    olddesc = brdg.getDescription();
-                                    oldage = brdg.getAgeInterval();
-                                } else {
-                                    // Not success. No changing is expected.
-                                    assertEquals(emsgMod,
-                                            olddesc, brdg.getDescription());
-                                    assertEquals(emsgMod,
-                                            oldage, brdg.getAgeInterval());
-                                }
-                                assertEquals(emsgMod,
-                                        VnodeState.UNKNOWN, brdg.getState());
-                            }
-                        }
-
-                        st = mgr.removeBridge(bpath);
-                        assertEquals("(VBridgePath)" + bpath.toString(),
-                                StatusCode.SUCCESS, st.getCode());
-
-                        first = false;
-                    }
-                }
-            }
-
-            if (isValidTName) {
-                try {
-                    List<VBridge> list = mgr.getBridges(tpath);
-                    assertEquals(0, list.size());
-                } catch (VTNException e) {
-                    unexpected(e);
-                }
-                st = mgr.removeTenant(tpath);
-                assertEquals(StatusCode.SUCCESS, st.getCode());
-            }
-        }
-
-        // add mulitple entry.
-        for (String tname : tlist) {
-            boolean isValidTName = false;
-            VTenantPath tpath = new VTenantPath(tname);
-            Status st;
-            if (tname == null) {
-                try {
-                    List<VBridge> list = mgr.getBridges(tpath);
-                    // It is strange, if VTNException is NOT thrown.
-                    fail("Unexpected succeseed: " + tpath.toString());
-                } catch (VTNException vtne) {
-                    st = vtne.getStatus();
-                    assertEquals("(VTenantPath)" + tpath.toString(),
-                            StatusCode.BADREQUEST, st.getCode());
-                } catch (Exception e) {
-                    unexpected(e);
-                }
-                isValidTName = false;
-            } else if (!isValidName(tname)) {
-                isValidTName = false;
-            } else {
-                // Test for NOTFOUND status.
-                try {
-                    List<VBridge> list = mgr.getBridges(tpath);
-                    // It is strange, if VTNException is NOT thrown.
-                    fail("Unexpected succeseed: " + tpath.toString());
-                } catch (VTNException vtne) {
-                    st = vtne.getStatus();
-                    assertEquals("(VTenantPath)" + tpath.toString(),
-                            StatusCode.NOTFOUND, st.getCode());
-                } catch (Exception e) {
-                    unexpected(e);
-                }
-                st = mgr.addTenant(tpath, new VTenantConfig(null));
-                assertEquals("(VTenantPath)" + tpath.toString(),
-                        StatusCode.SUCCESS, st.getCode());
-                isValidTName = true;
-            }
-
-            int countValidBPath = 0;
-            if (isValidTName) {
-                for (String bname : blist) {
-                    if (!isValidName(bname)) {
-                        // These are invalid conditions.
-                        continue;
-                    }
-                    VBridgePath bpath = new VBridgePath(tname, bname);
-                    VBridgeConfig bconf = createVBridgeConfig(null, null);
-
-                    st = mgr.addBridge(bpath, bconf);
-                    assertEquals("(VBridgePath)" + bpath.toString()
-                            + "(VBridgeConfig)" + bconf.toString(),
-                            StatusCode.SUCCESS, st.getCode());
-                    ++countValidBPath;
-                }
-            }
-            try {
-                List<VBridge> list = mgr.getBridges(tpath);
-                assertEquals("(VTenantPath)" + tpath.toString(),
-                        countValidBPath, list.size());
-            } catch (VTNException e) {
-                if (isValidTName) {
-                    unexpected(e);
-                } else {
-                    if (tname == null) {
-                        assertEquals("(VTenantPath)" + tpath.toString(),
-                                StatusCode.BADREQUEST, e.getStatus().getCode());
-                    }
-                }
-            }
-            if (isValidTName) {
-                st = mgr.removeTenant(tpath);
-                assertEquals("(VTenantPath)" + tpath.toString(),
-                        StatusCode.SUCCESS, st.getCode());
-            }
-        }
-    }
-
-    /**
-     * Test method for
-     * {@link IVTNManager#addInterface(VBridgeIfPath, VInterfaceConfig)},
-     * {@link IVTNManager#modifyInterface(VBridgeIfPath, VInterfaceConfig, boolean)},
-     * {@link IVTNManager#removeInterface(VBridgeIfPath)},
-     * {@link IVTNManager#getInterfaces(VBridgePath)},
-     * {@link IVTNManager#getInterface(VBridgeIfPath)}.
-     */
-    private void testBridgeInterface() {
-        LOG.info("Running testBridgeInterface().");
-        IVTNManager mgr = this.vtnManager;
-        List<String> tlist = new ArrayList<String>();
-        List<String> blist = new ArrayList<String>();
-        List<String> iflist = new ArrayList<String>();
-        List<String> descs = new ArrayList<String>();
-
-        VBridgeIfPath nullIfPath = null;
-
-        tlist.add("vtn");
-        tlist.add("123456789012345678901234567890_");
-        tlist.add("12345678901234567890_1234567890");
-        tlist.add("123456789012345678901234567890XX");
-        tlist.add("_tenant");
-        tlist.add("Tenant!");
-        tlist.add("%TENANT%");
-        tlist.add("");
-        tlist.add(null);
-        blist.add("vbr");
-        blist.add("012345678901234567890123456789_");
-        blist.add("01234567890123456789_0123456789");
-        blist.add("012345678901234567890123456789YY");
-        blist.add("_bridge");
-        blist.add("Bridge!");
-        blist.add("%BRDG%");
-        blist.add("");
-        blist.add(null);
-        iflist.add("vinterface");
-        iflist.add("abcdefghijklmnoopqrstuvwxyz1234");
-        iflist.add("abcdefghijklmnoopqrstuvwxyz12345");
-        iflist.add("_interface");
-        iflist.add("Interface!!");
-        iflist.add("%INTF%");
-        iflist.add("$MY_INTF");
-        iflist.add("");
-        iflist.add(null);
-        descs.add(null);
-        descs.add("description");
-
-        boolean first = true;
-
-        for (String tname : tlist) {
-            boolean isValidTName = isValidName(tname);
-            Status st = null;
-
-            // Test for some NOTFOUND conditions.
-            if (isValidTName) {
-                VBridgeIfPath ifp = new VBridgeIfPath(tname, "brdg", "interface");
-                VInterfaceConfig iconf = new VInterfaceConfig(null, Boolean.FALSE);
-                st = mgr.addInterface(ifp, iconf);
-                assertEquals("(VBridgeIfPath)" + tname + "(Not Found)",
-                        StatusCode.NOTFOUND, st.getCode());
-
-                try {
-                    List<VInterface> list = mgr.getInterfaces(ifp);
-                    // It is strange, if VTNException is NOT thrown.
-                    fail("Unexpected succeseed : " + tname);
-                } catch (VTNException vtne) {
-                    assertEquals("(VBridgeIfPath)" + tname + "(Not Found)",
-                            StatusCode.NOTFOUND, vtne.getStatus().getCode());
-                } catch (Exception e) {
-                    unexpected(e);
-                }
-
-                try {
-                    VInterface vif = mgr.getInterface(ifp);
-                    // It is strange, if VTNException is NOT thrown.
-                    fail("Unexpected succeseed : " + tname);
-                } catch (VTNException vtne) {
-                    assertEquals("(VBridgeIfPath)" + tname + "(Not Found)",
-                                 StatusCode.NOTFOUND,
-                                 vtne.getStatus().getCode());
-                } catch (Exception e) {
-                    unexpected(e);
-                }
-
-                for (Boolean allSwitch : createBooleans(false)) {
-                    st = mgr.modifyInterface(ifp, iconf, allSwitch.booleanValue());
-                    assertEquals("(VBridgeIfPath)" + tname + "(Not Found)",
-                            StatusCode.NOTFOUND, st.getCode());
-                }
-
-                st = mgr.removeInterface(ifp);
-                assertEquals("(VBridgeIfPath)" + tname + "(Not Found)",
-                        StatusCode.NOTFOUND, st.getCode());
-            }
-
-            VTenantPath tpath = new VTenantPath(tname);
-            st = mgr.addTenant(tpath, new VTenantConfig(null));
-            if (isValidTName) {
-                assertEquals("(VTenantPath)" + tpath.toString(),
-                        StatusCode.SUCCESS, st.getCode());
-            } else {
-                assertEquals("(VTenantPath)" + tpath.toString(),
-                        StatusCode.BADREQUEST, st.getCode());
-            }
-
-            for (String bname : blist) {
-                boolean isValidBName = isValidName(bname);
-                boolean isValidBPath = isValidTName && isValidBName;
-
-                // Test for some NOTFOUND conditions.
-                if (isValidBPath) {
-                    VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, "interface");
-                    VInterfaceConfig iconf = new VInterfaceConfig(null, Boolean.FALSE);
-                    st = mgr.addInterface(ifp, iconf);
-                    assertEquals("(VBridgeIfPath)" + tname + "(Not Found)",
-                            StatusCode.NOTFOUND, st.getCode());
-
-                    try {
-                        List<VInterface> list = mgr.getInterfaces(ifp);
-                        // It is strange, if VTNException is NOT thrown.
-                        fail("Unexpected succeseed : " + tname);
-                    } catch (VTNException vtne) {
-                        assertEquals("(VBridgeIfPath)" + tname + "(Not Found)",
-                                StatusCode.NOTFOUND, vtne.getStatus().getCode());
-                    } catch (Exception e) {
-                        unexpected(e);
-                    }
-
-                    try {
-                        VInterface vif = mgr.getInterface(ifp);
-                        // It is strange, if VTNException is NOT thrown.
-                        fail("Unexpected succeseed : " + tname);
-                    } catch (VTNException vtne) {
-                        assertEquals("(VBridgeIfPath)" + tname + "(Not Found)",
-                                StatusCode.NOTFOUND, vtne.getStatus().getCode());
-                    } catch (Exception e) {
-                        unexpected(e);
-                    }
-
-                    for (Boolean allSwitch : createBooleans(false)) {
-                        st = mgr.modifyInterface(ifp, iconf, allSwitch.booleanValue());
-                        assertEquals("(VBridgeIfPath)" + tname + "(Not Found)",
-                                StatusCode.NOTFOUND, st.getCode());
-                    }
-
-                    st = mgr.removeInterface(ifp);
-                    assertEquals("(VBridgeIfPath)" + tname + "(Not Found)",
-                            StatusCode.NOTFOUND, st.getCode());
-                }
-
-                VBridgePath bpath = new VBridgePath(tname, bname);
-                VBridgeConfig bconf = createVBridgeConfig(null, null);
-
-                List<VInterface> list = null;
-                // Test a null condition.
-                if (first) {
-                    try {
-                        list = mgr.getInterfaces(nullIfPath);
-                        // It is strange, if VTNException is NOT thrown.
-                        fail("Unexpected succeseed : (null)");
-                    } catch (VTNException vtne) {
-                        assertEquals("(VBridgePath)(null)",
-                                StatusCode.BADREQUEST, vtne.getStatus().getCode());
-                    } catch (Exception e) {
-                        unexpected(e);
-                    }
-                }
-
-                // Test for NOTFOUND status.
-                try {
-                    if (isValidBPath) {
-                        list = mgr.getInterfaces(bpath);
-                        // It is strange, if VTNException is NOT thrown.
-                        fail("Unexpected succeseed : " + bpath.toString());
-                    }
-                } catch (VTNException vtne) {
-                    assertEquals("(VBridgePath)" + bpath.toString(),
-                            StatusCode.NOTFOUND, vtne.getStatus().getCode());
-                } catch (Exception e) {
-                    unexpected(e);
-                }
-
-                st = mgr.addBridge(bpath, bconf);
-                if (isValidBPath) {
-                    assertEquals("(VBridgePath)" + bpath.toString(),
-                            StatusCode.SUCCESS, st.getCode());
-                }
-
-                list = null;
-                try {
-                    list = mgr.getInterfaces(bpath);
-                } catch (VTNException vtne) {
-                    if (isValidBPath) {
-                        unexpected(vtne);
-                    } else if (tname == null || (isValidTName && bname == null)) {
-                        assertEquals("(VBridgePath)" + bpath.toString(),
-                                StatusCode.BADREQUEST, vtne.getStatus().getCode());
-                    }
-                } catch (Exception e) {
-                    unexpected(e);
-                }
-                if (isValidBPath) {
-                    assertEquals("(VBridgePath)" + bpath.toString(),
-                            0, list.size());
-                }
-
-                int countValidBIfPath = 0;
-                for (String ifname : iflist) {
-                    boolean isValidBIfName = isValidName(ifname);
-                    boolean isValidBIfPath = isValidBPath && isValidBIfName;
-                    if (isValidBIfPath) {
-                        ++countValidBIfPath;
-                    }
-
-                    VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, ifname);
-                    for (String desc : descs) {
-                        for (Boolean enabled : createBooleans()) {
-                            // Test some null conditions.
-                            if (first) {
-                                st = mgr.addInterface(nullIfPath, null);
-                                assertEquals("(VBridgeIfPath)(null)(VInterfaceConfig)(null)",
-                                        StatusCode.BADREQUEST, st.getCode());
-
-                                try {
-                                    VInterface vif = mgr.getInterface(nullIfPath);
-                                    // It is strange, if VTNException is NOT thrown.
-                                    fail("Unexpected succeseed : (null)");
-                                } catch (VTNException vtne) {
-                                    assertEquals("(VBridgeIfPath)(null)",
-                                            StatusCode.BADREQUEST, vtne.getStatus().getCode());
-                                } catch (Exception e) {
-                                    unexpected(e);
-                                }
-                            }
-                            String emsg = "(VBridgeIfPath)" + ifp.toString()
-                                    + ",(VInterfaceConfig)(null)";
-                            st = mgr.addInterface(ifp, null);
-                            if (isValidBIfPath) {
-                                assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-                            } else {
-                                // In this case, Status code is either BADREQUEST or NOTFOUND
-                                checkExceptionStatus(st, false, emsg);
-                            }
-
-                            // Test for NOTFOUND status
-                            VInterface vif = null;
-                            if (isValidBIfPath) {
-                                try {
-                                    vif = mgr.getInterface(ifp);
-                                    // It is strange, if VTNException is NOT thrown.
-                                    fail("Unexpected succeseed : " + ifp.toString());
-                                } catch (VTNException vtne) {
-                                    assertEquals(emsg, StatusCode.NOTFOUND, vtne.getStatus().getCode());
-                                } catch (Exception e) {
-                                    unexpected(e);
-                                }
-
-                                st = mgr.removeInterface(ifp);
-                                assertEquals(emsg, StatusCode.NOTFOUND, st.getCode());
-                            }
-
-                            VInterfaceConfig ifconf = new VInterfaceConfig(desc, enabled);
-                            emsg = "(VBridgeIfPath)" + ifp.toString()
-                                    + ",(VInterfaceConfig)" + ifconf.toString();
-                            st = mgr.addInterface(ifp, ifconf);
-                            if (isValidBIfPath) {
-                                assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
-
-                                // Re-add for CONFLICT status
-                                st = mgr.addInterface(ifp, ifconf);
-                                assertEquals(emsg, StatusCode.CONFLICT, st.getCode());
-                            } else if (tname == null || (isValidTName && bname == null) ||
-                                    (isValidBPath && !isValidBIfName)) {
-                                assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-                            } else {
-                                // In this case, Status code is either BADREQUEST or NOTFOUND
-                                checkExceptionStatus(st, false, emsg);
-                            }
-
-                            vif = null;
-                            try {
-                                vif = mgr.getInterface(ifp);
-                            } catch (VTNException vtne) {
-                                if (!isValidBIfPath) {
-                                    if (tname == null || (isValidTName && bname == null) ||
-                                        (isValidBPath && ifname == null)) {
-                                        assertEquals(emsg, StatusCode.BADREQUEST, vtne.getStatus().getCode());
-                                    }
-                                } else {
-                                    unexpected(vtne);
-                                }
-                            } catch (Exception e) {
-                                unexpected(e);
-                            }
-
-                            if (vif != null) {
-                                assertEquals(emsg, ifname, vif.getName());
-                                assertEquals(emsg, desc, vif.getDescription());
-                                if (enabled == null) {
-                                    assertEquals(emsg, Boolean.TRUE, vif.getEnabled());
-                                } else {
-                                    assertEquals(emsg, enabled, vif.getEnabled());
-                                }
-                                if (enabled == Boolean.FALSE) {
-                                    assertEquals(emsg, VnodeState.DOWN, vif.getState());
-                                } else {
-                                    assertEquals(emsg, VnodeState.UNKNOWN, vif.getState());
-                                }
-                            }
-
-                            if (isValidBPath) {
-                                VBridge brdg = null;
-                                try {
-                                    brdg = mgr.getBridge(bpath);
-                                } catch (VTNException e) {
-                                    unexpected(e);
-                                }
-                                assertEquals(emsg, VnodeState.UNKNOWN, brdg.getState());
-                            }
-
-                            // Test a null condition.
-                            if (first) {
-                                st = mgr.removeInterface(nullIfPath);
-                                assertEquals("(VBridgeIfPath)(null)",
-                                        StatusCode.BADREQUEST, st.getCode());
-                            }
-                            st = mgr.removeInterface(ifp);
-                            if (isValidBIfPath) {
-                                assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
-                            } else if (tname == null || (isValidTName && bname == null) ||
-                                    (isValidBPath && ifname == null)) {
-                                assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-                            } else {
-                                // In this case, Status code is either BADREQUEST or NOTFOUND
-                                checkExceptionStatus(st, false, emsg);
-                            }
-                        }
-                    }
-
-                    // Test for some NOTFOUND conditions.
-                    if (isValidBIfPath) {
-                        for (String desc : descs) {
-                            for (Boolean enabled : createBooleans()) {
-                                VInterfaceConfig ifconf = new VInterfaceConfig(desc, enabled);
-                                String emsg = "(VBridgeIfPath)" + ifp.toString()
-                                        + "(VInterfaceConfig)" + ifconf.toString();
-                                for (Boolean allSwitch : createBooleans(false)) {
-                                    st = mgr.modifyInterface(ifp, ifconf, allSwitch.booleanValue());
-                                    assertEquals(emsg, StatusCode.NOTFOUND, st.getCode());
-                                }
-                            }
-                        }
-                    }
-
-                    // Test some null condition
-                    if (first) {
-                        for (Boolean allSwitch : createBooleans(false)) {
-                            st = mgr.modifyInterface(nullIfPath, null,
-                                                     allSwitch.booleanValue());
-                            assertEquals("(VBridgeIfPath)(null) (VInterfaceConfig)(null)",
-                                    StatusCode.BADREQUEST, st.getCode());
-                        }
-                    }
-
-                    if (isValidBIfPath) {
-                        // Add bridge Interface for modify(false) and modify(true)
-                        st = mgr.addInterface(ifp, new VInterfaceConfig("desc", Boolean.FALSE));
-                        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-                        // Test some null condition
-                        for (Boolean allSwitch : createBooleans(false)) {
-                            st = mgr.modifyInterface(ifp, null, allSwitch.booleanValue());
-                            assertEquals("(VBridgeIfPath)" + ifp.toString() + "(VInterfaceConfig)(null)",
-                                    StatusCode.BADREQUEST, st.getCode());
-                        }
-                    }
-
-                    // for modify(false)
-                    String olddesc = new String("desc");
-                    Boolean oldenabled = Boolean.FALSE;
-                    for (String desc : descs) {
-                        for (Boolean enabled : createBooleans()) {
-                            VInterfaceConfig ifconf = new VInterfaceConfig(desc, enabled);
-                            // Test some null condition
-                            if (first) {
-                                st = mgr.modifyInterface(nullIfPath, ifconf,
-                                                         false);
-                                assertEquals("(VBridgeIfPath)(null) (VInterfaceConfig)" + ifconf.toString(),
-                                        StatusCode.BADREQUEST, st.getCode());
-                            }
-                            String emsg = "(VBridgeIfPath)" + ifp.toString()
-                                    + "(VInterfaceConfig)" + ifconf.toString();
-
-                            st = mgr.modifyInterface(ifp, ifconf, false);
-                            if (isValidBIfPath) {
-                                assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
-                            } else if (tname == null || (isValidTName && bname == null) ||
-                                    (isValidBPath && ifname == null)) {
-                                assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-                            } else {
-                                // In this case, Status code is either BADREQUEST or NOTFOUND
-                                checkExceptionStatus(st, false, emsg);
-                            }
-
-                            if (!isValidBIfPath) {
-                                // If ifp is not valid, go next pattern.
-                                continue;
-                            }
-
-                            VInterface vif = null;
-                            try {
-                                vif = mgr.getInterface(ifp);
-                            } catch (Exception e) {
-                                unexpected(e);
-                            }
-
-                            assertEquals(emsg, ifname, vif.getName());
-
-                            if (desc == null) {
-                                assertEquals(emsg, olddesc, vif.getDescription());
-                            } else {
-                                assertEquals(emsg, desc, vif.getDescription());
-                            }
-
-                            Boolean currenabled = enabled;
-                            if (enabled == null) {
-                                assertEquals(emsg, oldenabled, vif.getEnabled());
-                                currenabled = oldenabled;
-                            } else {
-                                assertEquals(enabled, vif.getEnabled());
-                            }
-
-                            if (currenabled == Boolean.FALSE) {
-                                assertEquals(emsg, VnodeState.DOWN, vif.getState());
-                            } else {
-                                assertEquals(emsg, VnodeState.UNKNOWN, vif.getState());
-                            }
-                            VBridge brdg = null;
-                            try {
-                                brdg = mgr.getBridge(bpath);
-                            } catch (VTNException e) {
-                                unexpected(e);
-                            }
-                            assertEquals(emsg, VnodeState.UNKNOWN, brdg.getState());
-
-                            olddesc = vif.getDescription();
-                            oldenabled = vif.getEnabled();
-                        }
-                    }
-
-                    // for modify(true)
-                    if (isValidBIfPath) {
-                        st = mgr.modifyInterface(ifp, new VInterfaceConfig("desc", Boolean.FALSE), true);
-                        assertEquals(StatusCode.SUCCESS, st.getCode());
-                    }
-                    for (String desc : descs) {
-                        for (Boolean enabled : createBooleans()) {
-                            VInterfaceConfig ifconf = new VInterfaceConfig(desc, enabled);
-                            // Test some null condition
-                            if (first) {
-                                st = mgr.modifyInterface(nullIfPath, ifconf, true);
-                                assertEquals("(VBridgeIfPath)(null) (VInterfaceConfig)" + ifconf.toString(),
-                                        StatusCode.BADREQUEST, st.getCode());
-                            }
-                            String emsg = "(VBridgeIfPath)" + ifp.toString()
-                                    + "(VInterfaceConfig)" + ifconf.toString();
-
-                            st = mgr.modifyInterface(ifp, ifconf, true);
-                            if (isValidBIfPath) {
-                                assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
-                            } else if (tname == null || (isValidTName && bname == null) ||
-                                    (isValidBPath && ifname == null)) {
-                                assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-                            } else {
-                                // In this case, Status code is either BADREQUEST or NOTFOUND
-                                checkExceptionStatus(st, false, emsg);
-                            }
-
-                            if (!isValidBIfPath) {
-                                // If ifp is not valid, go next pattern.
-                                continue;
-                            }
-
-                            VInterface vif = null;
-                            try {
-                                vif = mgr.getInterface(ifp);
-                            } catch (Exception e) {
-                                unexpected(e);
-                            }
-
-                            assertEquals(emsg, ifname, vif.getName());
-                            assertEquals(emsg, desc, vif.getDescription());
-                            if (enabled == null) {
-                                assertEquals(emsg, Boolean.TRUE, vif.getEnabled());
-                            } else {
-                                assertEquals(emsg, enabled, vif.getEnabled());
-                            }
-
-                            if (enabled == Boolean.FALSE) {
-                                assertEquals(emsg, VnodeState.DOWN, vif.getState());
-                            } else {
-                                assertEquals(emsg, VnodeState.UNKNOWN, vif.getState());
-                            }
-
-                            VBridge brdg = null;
-                            try {
-                                brdg = mgr.getBridge(bpath);
-                            } catch (VTNException e) {
-                                unexpected(e);
-                            }
-                            assertEquals(emsg, VnodeState.UNKNOWN, brdg.getState());
-                        }
-                    }
-                }
-
-                list = null;
-                try {
-                    list = mgr.getInterfaces(bpath);
-                } catch (VTNException vtne) {
-                    if (!isValidBPath) {
-                        list = new ArrayList<VInterface>();
-                    } else {
-                        unexpected(vtne);
-                    }
-                } catch (Exception e) {
-                    unexpected(e);
-                }
-                assertEquals(countValidBIfPath, list.size());
-            }
-
-            if (isValidTName) {
-                st = mgr.removeTenant(tpath);
-                assertEquals(StatusCode.SUCCESS, st.getCode());
-            }
-
-            first = false;
-        }
-
-        // TODO: NOTACCEPTABLE
-    }
-
-    /**
-     * Test method for
-     * {@link IVTNManager#addVlanMap(VBridgePath, VlanMapConfig)},
-     * {@link IVTNManager#removeVlanMap(VBridgePath, java.lang.String)},
-     * {@link IVTNManager#getVlanMap(VBridgePath, java.lang.String)},
-     * {@link IVTNManager#getVlanMap(VBridgePath, VlanMapConfig)},
-     * {@link IVTNManager#getVlanMaps(VBridgePath)}.
-     */
-    private void testVlanMap() {
-        LOG.info("Running testVlanMap().");
-
-        IVTNManager mgr = this.vtnManager;
-        short[] vlans = new short[] {
-            -1, 0, 1, 10, 100, 1000, 4094, 4095, 4096
-        };
-
-        String tname = "vtn";
-        VTenantPath tpath = new VTenantPath(tname);
-        Status st = mgr.addTenant(tpath, new VTenantConfig(null));
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        String bname = "vbridge";
-        VBridgePath bpath = new VBridgePath(tname, bname);
-        VBridgeConfig bconf = createVBridgeConfig(null, null);
-        st = mgr.addBridge(bpath, bconf);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        String ifname = "vinterface";
-        VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, ifname);
-        VInterfaceConfig ifconf = new VInterfaceConfig(null, Boolean.TRUE);
-        st = mgr.addInterface(ifp, ifconf);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        // add a vlanmap to a vbridge
-        for (Node node : createNodes(3)) {
-            for (short vlan : vlans) {
-                boolean isValidVLANid = (0 <= vlan && vlan < 4096);
-                VlanMapConfig vlconf = new VlanMapConfig(node, vlan);
-                String emsg = "(VlanMapConfig)" + vlconf.toString();
-
-                VlanMap map = null;
-                try {
-                    map = mgr.addVlanMap(bpath, vlconf);
-                    if ((node != null && node.getType() != NodeConnector.NodeConnectorIDType.OPENFLOW)
-                            || !isValidVLANid) {
-                        fail("throwing Exception was expected.");
-                    }
-                } catch (VTNException e) {
-                    if (node == null || node.getType() == NodeConnector.NodeConnectorIDType.OPENFLOW) {
-                        if (isValidVLANid) {
-                            unexpected(e);
-                        } else {
-                            assertEquals(emsg, StatusCode.BADREQUEST, e.getStatus().getCode());
-                        }
-                    } else {
-                        assertEquals(emsg, StatusCode.BADREQUEST, e.getStatus().getCode());
-                    }
-                    continue;
-                }
-                assertNotNull(emsg, map);
-
-                VlanMap getmap = null;
-                try {
-                    getmap = mgr.getVlanMap(bpath, map.getId());
-                } catch (VTNException e) {
-                    unexpected(e);
-                }
-                assertEquals(emsg, getmap.getId(), map.getId());
-                assertEquals(emsg, getmap.getNode(), node);
-                assertEquals(emsg, getmap.getVlan(), vlan);
-
-                try {
-                    getmap = mgr.getVlanMap(bpath, vlconf);
-                } catch (VTNException e) {
-                    unexpected(e);
-                }
-                assertEquals(emsg, getmap.getId(), map.getId());
-                assertEquals(emsg, getmap.getNode(), node);
-                assertEquals(emsg, getmap.getVlan(), vlan);
-
-                VBridge brdg = null;
-                try {
-                    brdg = mgr.getBridge(bpath);
-                } catch (VTNException e) {
-                    unexpected(e);
-                }
-                assertEquals(emsg,
-                             (node == null) ? VnodeState.UP
-                             : VnodeState.DOWN, brdg.getState());
-
-                st = mgr.removeVlanMap(bpath, map.getId());
-                assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
-            }
-        }
-
-        // add multi vlanmap to a vbridge
-        for (Node node : createNodes(3)) {
-            int countValidVLAN = 0;
-            for (short vlan : vlans) {
-                boolean isValidVLANid = (0 <= vlan && vlan < 4096);
-                if (isValidVLANid) {
-                    ++countValidVLAN;
-                }
-                VlanMapConfig vlconf = new VlanMapConfig(node, vlan);
-                VlanMap map = null;
-                try {
-                    map = mgr.addVlanMap(bpath, vlconf);
-                    if ((node != null && node.getType() != NodeConnector.NodeConnectorIDType.OPENFLOW)
-                            || !isValidVLANid) {
-                        fail("throwing Exception was expected.");
-                    }
-                } catch (VTNException e) {
-                    if (node == null || node.getType() == NodeConnector.NodeConnectorIDType.OPENFLOW) {
-                        if (isValidVLANid) {
-                            unexpected(e);
-                        }
-                    }
-                    continue;
-                } catch (Exception e) {
-                    unexpected(e);
-                }
-                assertNotNull(map);
-            }
-
-            List<VlanMap> list = null;
-            try {
-                list = mgr.getVlanMaps(bpath);
-            } catch (Exception e) {
-                unexpected(e);
-            }
-            String emsg = "(Node)" + ((node == null) ? "null" : node.toString());
-            if (node == null ||
-                node.getType() == NodeConnector.NodeConnectorIDType.OPENFLOW) {
-                assertEquals(emsg, countValidVLAN, list.size());
-                VBridge brdg = null;
-                try {
-                    brdg = mgr.getBridge(bpath);
-                } catch (VTNException e) {
-                    unexpected(e);
-                }
-                assertEquals(emsg, (node == null) ? VnodeState.UP
-                             : VnodeState.DOWN, brdg.getState());
-            } else {
-                assertEquals(0, list.size());
-                VBridge brdg = null;
-                try {
-                    brdg = mgr.getBridge(bpath);
-                } catch (VTNException e) {
-                    unexpected(e);
-                }
-                assertEquals(emsg, VnodeState.UNKNOWN, brdg.getState());
-            }
-
-            for (VlanMap map : list) {
-                st = mgr.removeVlanMap(bpath, map.getId());
-                assertEquals(emsg + ",(VlanMap)" + map.toString(),
-                             StatusCode.SUCCESS, st.getCode());
-            }
-        }
-
-        // Create VLAN mappin with specifying existing node.
-        for (String nid: ofMockService.getNodes()) {
-            Node node = toAdNode(nid);
-            boolean noEdge = ofMockService.getPorts(nid, true).isEmpty();
-            for (short vlan: vlans) {
-                if (vlan < 0 || vlan >= 4096) {
-                    continue;
-                }
-
-                VlanMapConfig vlconf = new VlanMapConfig(node, vlan);
-                String emsg = "(VlanMapConfig)" + vlconf.toString();
-                VlanMap vmap = null;
-                try {
-                    vmap = mgr.addVlanMap(bpath, vlconf);
-                } catch (Exception e) {
-                    unexpected(e);
-                }
-
-                assertNotNull(emsg, vmap);
-
-                VBridge vbr = null;
-                try {
-                    vbr = mgr.getBridge(bpath);
-                } catch (Exception e) {
-                    unexpected(e);
-                }
-
-                VnodeState expected = (noEdge)
-                    ? VnodeState.DOWN
-                    : VnodeState.UP;
-                assertEquals(emsg, expected, vbr.getState());
-
-                st = mgr.removeVlanMap(bpath, vmap.getId());
-                assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
-            }
-        }
-
-        // test NOTFOUND
-        List<VBridgePath> listBpath = new ArrayList<VBridgePath>();
-        listBpath.add(bpath);
-        listBpath.add(new VBridgePath(tname, "dummy"));
-
-        for (VBridgePath vbpath : listBpath) {
-            Node node = NodeCreator.createOFNode(0L);
-            short vlan = 0;
-            VlanMapConfig vlconf = new VlanMapConfig(node, vlan);
-            String emsg = "(VlanMapConfig)" + vlconf.toString();
-            VlanMap map = null;
-
-            VlanMap getmap = null;
-            try {
-                getmap = mgr.getVlanMap(vbpath, "0");
-                fail("throwing Exception was expected.");
-            } catch (VTNException e) {
-                assertEquals(emsg, StatusCode.NOTFOUND, e.getStatus().getCode());
-            } catch (Exception e) {
-                unexpected(e);
-            }
-            assertNull(getmap);
-
-            try {
-                getmap = mgr.getVlanMap(vbpath, vlconf);
-                fail("throwing Exception was expected.");
-            } catch (VTNException e) {
-                assertEquals(emsg, StatusCode.NOTFOUND, e.getStatus().getCode());
-            } catch (Exception e) {
-                unexpected(e);
-            }
-            assertNull(getmap);
-
-            st = mgr.removeVlanMap(vbpath, "0");
-            assertEquals(emsg, StatusCode.NOTFOUND, st.getCode());
-
-            if (!vbpath.equals(bpath)) {
-                List<VlanMap> list = null;
-                try {
-                    list = mgr.getVlanMaps(vbpath);
-                    fail("throwing Exception was expected.");
-                } catch (VTNException e) {
-                    assertEquals(emsg, StatusCode.NOTFOUND, e.getStatus().getCode());
-                } catch (Exception e) {
-                    unexpected(e);
-                }
-                assertNull(list);
-
-                try {
-                    map = mgr.getVlanMap(bpath, vlconf);
-                } catch (Exception e) {
-                    unexpected(e);
-                }
-
-                st = mgr.removeVlanMap(bpath, map.getId());
-                assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
-            }
-
-            try {
-                map = mgr.addVlanMap(vbpath, vlconf);
-            } catch (VTNException e) {
-                assertEquals(emsg, StatusCode.NOTFOUND, e.getStatus().getCode());
-            } catch (Exception e) {
-                unexpected(e);
-            }
-        }
-
-        // test BADREQUEST or NOTFOUND
-        List<VBridgePath> listBpath2 = new ArrayList<VBridgePath>();
-        listBpath2.add(null);
-        listBpath2.add(bpath);
-        listBpath2.add(new VBridgePath((String)null, bname));
-        listBpath2.add(new VBridgePath(tname, null));
-        listBpath2.add(new VBridgePath("dummy", null));
-        listBpath2.add(new VBridgePath((String)null, "dummy"));
-        listBpath2.add(new VBridgePath("dummy", "dummy"));
-
-        Node node = NodeCreator.createOFNode(0L);
-        List<VlanMapConfig> listVLanMapConf = new ArrayList<VlanMapConfig>();
-        listVLanMapConf.add(null);
-        listVLanMapConf.add(new VlanMapConfig(node, (short)0));
-
-        VlanMap map = null;
-        try {
-            map = mgr.addVlanMap(bpath, listVLanMapConf.get(1));
-        } catch (Exception e) {
-            unexpected(e);
-        }
-
-        for (VBridgePath vbpath : listBpath2) {
-            String emsg = "(bpath)" + ((vbpath == null) ? "(null)" : vbpath.toString());
-
-            for (VlanMapConfig vlconf : listVLanMapConf) {
-
-                String emsgVL = emsg
-                        + "(VlanMapConfig)" + ((vlconf == null) ? "(null)" : vlconf.toString());
-
-                boolean exStatus = ((vbpath == null)
-                        || (tname.equals(vbpath.getTenantName()) && vbpath.getBridgeName() == null)
-                        || (bpath.equals(vbpath) && vlconf == null));
-
-                VlanMap getmap = null;
-                try {
-                    map = mgr.addVlanMap(vbpath, vlconf);
-                    fail("throwing Exception was expected.");
-                } catch (VTNException e) {
-                    if (bpath.equals(vbpath) && (vlconf != null)) {
-                        assertEquals(emsgVL, StatusCode.CONFLICT, e.getStatus().getCode());
-                    } else {
-                        checkExceptionStatus(e.getStatus(), exStatus, emsgVL);
-                    }
-                } catch (Exception e) {
-                    unexpected(e);
-                }
-
-                if (!bpath.equals(vbpath)) {
-                    try {
-                        getmap = mgr.getVlanMap(vbpath, map.getId());
-                        fail("throwing Exception was expected.");
-                    } catch (VTNException e) {
-                        checkExceptionStatus(e.getStatus(), exStatus, emsgVL);
-                    } catch (Exception e) {
-                        unexpected(e);
-                    }
-                    assertNull(emsgVL, getmap);
-                }
-
-                if (!bpath.equals(vbpath) || (vlconf == null)) {
-                    try {
-                        getmap = mgr.getVlanMap(vbpath, vlconf);
-                        fail("throwing Exception was expected.");
-                    } catch (VTNException e) {
-                        checkExceptionStatus(e.getStatus(), exStatus, emsgVL);
-                    } catch (Exception e) {
-                        unexpected(e);
-                    }
-                    assertNull(getmap);
-                }
-
-                if (bpath.equals(vbpath)) {
-                    continue;
-                }
-
-                st = mgr.removeVlanMap(vbpath, map.getId());
-                checkExceptionStatus(st, exStatus, emsgVL);
-
-                List<VlanMap> list = null;
-                try {
-                    list = mgr.getVlanMaps(vbpath);
-                    fail("throwing Exception was expected.");
-                } catch (VTNException e) {
-                    checkExceptionStatus(e.getStatus(), exStatus, emsgVL);
-                } catch (Exception e) {
-                    unexpected(e);
-                }
-                assertNull(emsgVL, list);
-            }
-        }
-
-        // test for null condition of mapId
-        try {
-            VlanMap getmap = mgr.getVlanMap(bpath, (String)null);
-            fail("throwing Exception was expected.");
-        } catch (VTNException e) {
-            assertEquals(StatusCode.BADREQUEST, e.getStatus().getCode());
-        }
-
-        st = mgr.removeVlanMap(bpath, null);
-        assertEquals(StatusCode.BADREQUEST, st.getCode());
-
-        // Clear up
-        st = mgr.removeVlanMap(bpath, map.getId());
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        st = mgr.removeTenant(tpath);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-    }
-
-    private void checkExceptionStatus(Status st, boolean reqbad, String emsg) {
-        if (reqbad) {
-            assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-        } else {
-            try {
-                assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-            } catch (AssertionError e) {
-                assertEquals(emsg, StatusCode.NOTFOUND, st.getCode());
-            }
-        }
-    }
-
-    /**
-     * Test method for {@link IVTNManager#getPortMap(VBridgeIfPath)} and
-     * {@link IVTNManager#setPortMap(VBridgeIfPath, PortMapConfig)}.
-     */
-    private void testPortMap() {
-        LOG.info("Running testPortMap().");
-
-        IVTNManager mgr = this.vtnManager;
-        short[] vlans = new short[] {
-            -1, 0, 1, 10, 100, 1000, 4094, 4095, 4096
-        };
-
-        String tname = "vtn";
-        VTenantPath tpath = new VTenantPath(tname);
-        Status st = mgr.addTenant(tpath, new VTenantConfig(null));
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        String bname = "vbridge";
-        VBridgePath bpath = new VBridgePath(tname, bname);
-        VBridgeConfig bconf = createVBridgeConfig(null, null);
-        st = mgr.addBridge(bpath, bconf);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        String ifname = "vinterface";
-        VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, ifname);
-        VInterfaceConfig ifconf = new VInterfaceConfig(null, Boolean.TRUE);
-        st = mgr.addInterface(ifp, ifconf);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        PortMap pmap = null;
-        try {
-            pmap = mgr.getPortMap(ifp);
-        } catch (Exception e) {
-            unexpected(e);
-        }
-        assertNull(pmap);
-
-        Node node = NodeCreator.createOFNode(0L);
-        SwitchPort[] ports = new SwitchPort[] {
-            new SwitchPort("port-10", NodeConnectorIDType.OPENFLOW, "10"),
-            new SwitchPort(null, NodeConnectorIDType.OPENFLOW, "11"),
-            new SwitchPort("port-10", null, null),
-            new SwitchPort("port-10"),
-            new SwitchPort(NodeConnectorIDType.OPENFLOW, "13"),
-        };
-
-        st = mgr.setPortMap(ifp, null);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        PortMap map = null;
-        try {
-            map = mgr.getPortMap(ifp);
-        } catch (Exception e) {
-            unexpected(e);
-        }
-        assertNull(map);
-
-        for (SwitchPort port: ports) {
-            for (short vlan : vlans) {
-                PortMapConfig pmconf = new PortMapConfig(node, port, vlan);
-                String emsg = "(PortMapConfig)" + pmconf.toString();
-                boolean isValidVLANid = (0 <= vlan && vlan < 4096);
-
-                st = mgr.setPortMap(ifp, pmconf);
-                if (isValidVLANid) {
-                    assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
-                } else {
-                    assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-                    continue;
-                }
-
-                try {
-                    map = mgr.getPortMap(ifp);
-                } catch (Exception e) {
-                    unexpected(e);
-                }
-                if (isValidVLANid) {
-                    assertEquals(emsg, pmconf, map.getConfig());
-                    assertNull(emsg, map.getNodeConnector());
-                }
-
-                VInterface bif = null;
-                try {
-                    bif = mgr.getInterface(ifp);
-                } catch (VTNException e) {
-                    unexpected(e);
-                }
-                assertEquals(emsg, VnodeState.DOWN, bif.getState());
-
-                VBridge brdg = null;
-                try {
-                    brdg = mgr.getBridge(bpath);
-                } catch (VTNException e) {
-                    unexpected(e);
-                }
-                assertEquals(emsg, VnodeState.DOWN, brdg.getState());
-            }
-        }
-
-        st = mgr.setPortMap(ifp, null);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        try {
-            map = mgr.getPortMap(ifp);
-        } catch (Exception e) {
-            unexpected(e);
-        }
-        assertNull(map);
-
-        st = mgr.removeTenant(tpath);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        // assign mutli portmaps to a vbridge
-        st = mgr.addTenant(tpath, new VTenantConfig(null));
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-        String bname1 = "vbridge1";
-        st = mgr.addBridge(new VBridgePath(tname, bname1), new VBridgeConfig(null));
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-        String bname2 = "vbridge2";
-        st = mgr.addBridge(new VBridgePath(tname, bname2), new VBridgeConfig(null));
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        String ifname1 = "vinterface1";
-        VBridgeIfPath ifp1 = new VBridgeIfPath(tname, bname1, ifname1);
-        st = mgr.addInterface(ifp1, new VInterfaceConfig(null, Boolean.TRUE));
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        String ifname2 = "vinterface2";
-        VBridgeIfPath ifp2 = new VBridgeIfPath(tname, bname1, ifname2);
-        st = mgr.addInterface(ifp2, new VInterfaceConfig(null, Boolean.TRUE));
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        Node node1 = NodeCreator.createOFNode(0L);
-        SwitchPort port1 = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, "10");
-        PortMapConfig pmconf1 = new PortMapConfig(node1, port1, (short)0);
-        st = mgr.setPortMap(ifp1, pmconf1);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        SwitchPort port2 = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, "11");
-        PortMapConfig pmconf2 = new PortMapConfig(node1, port2, (short)0);
-        st = mgr.setPortMap(ifp2, pmconf2);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        // if specified port is not exist, duplicate portmap success.
-        String ifname3 = "vinterface3";
-        VBridgeIfPath ifp3 = new VBridgeIfPath(tname, bname2, ifname3);
-        st = mgr.addInterface(ifp3, new VInterfaceConfig(null, Boolean.TRUE));
-        st = mgr.setPortMap(ifp3, pmconf1);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        st = mgr.removeTenant(tpath);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        // Exception test for VBridgeInterfacePath
-        st = mgr.addTenant(tpath, new VTenantConfig(null));
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-        st = mgr.addBridge(new VBridgePath(tname, bname), new VBridgeConfig(null));
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-        node = NodeCreator.createOFNode(0L);
-        SwitchPort port = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, "10");
-        PortMapConfig pmconf = new PortMapConfig(node, port, (short)0);
-
-        List<VBridgeIfPath> listBIfPath1 = new ArrayList<VBridgeIfPath>();
-        listBIfPath1.add(null);
-        listBIfPath1.add(new VBridgeIfPath(null, bname, ifname));
-        listBIfPath1.add(new VBridgeIfPath(tname, null, ifname));
-        listBIfPath1.add(new VBridgeIfPath(tname, bname, null));
-
-        for (VBridgeIfPath vifpath: listBIfPath1) {
-            String emsg = "(PortMapConfig)" + pmconf.toString() + "(vif)" +
-                ((vifpath == null) ? "(null)" : vifpath.toString());
-
-            map = null;
-            try {
-                map = mgr.getPortMap(vifpath);
-            } catch (VTNException e) {
-                assertEquals(emsg, StatusCode.BADREQUEST, e.getStatus().getCode());
-            } catch (Exception e) {
-                unexpected(e);
-            }
-            assertNull(map);
-
-            st = mgr.setPortMap(vifpath, pmconf);
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
-        }
-
-        List<VBridgeIfPath> listBIfPath2 = new ArrayList<VBridgeIfPath>();
-        listBIfPath2.add(new VBridgeIfPath("dummy", bname, ifname));
-        listBIfPath2.add(new VBridgeIfPath(tname, "dummy", ifname));
-
-        for (VBridgeIfPath vifpath: listBIfPath2) {
-            String emsg = "(PortMapConfig)" + pmconf.toString() + "(vif)" +
-                vifpath.toString();
-
-            map = null;
-            try {
-                map = mgr.getPortMap(vifpath);
-            } catch (VTNException e) {
-                assertEquals(emsg, StatusCode.NOTFOUND, e.getStatus().getCode());
-            } catch (Exception e) {
-                unexpected(e);
-            }
-            assertNull(map);
-
-            st = mgr.setPortMap(vifpath, pmconf);
-            assertEquals(emsg, StatusCode.NOTFOUND, st.getCode());
-        }
-
-        List<VBridgeIfPath> listBIfPath3 = new ArrayList<VBridgeIfPath>();
-        listBIfPath3.add(new VBridgeIfPath("_tenant", bname, null));
-        listBIfPath3.add(new VBridgeIfPath(null, "@bname", ifname));
-        listBIfPath3.add(new VBridgeIfPath(tname, null, "!ifname"));
-
-        for (VBridgeIfPath vifpath: listBIfPath3) {
-            String emsg = "(PortMapConfig)" + pmconf.toString() + "(vif)" +
-                vifpath.toString();
-
-            map = null;
-            try {
-                map = mgr.getPortMap(vifpath);
-                fail("throwing Exception was expected.");
-            } catch (VTNException e) {
-                checkExceptionStatus(e.getStatus(), false, emsg);
-            } catch (Exception e) {
-                unexpected(e);
-            }
-            assertNull(map);
-
-            st = mgr.setPortMap(vifpath, pmconf);
-            checkExceptionStatus(st, false, emsg);
-        }
-
-        // Exception test for portmap config
-        ifp = new VBridgeIfPath(tname, bname, ifname);
-        st = mgr.addInterface(ifp, new VInterfaceConfig(null, Boolean.TRUE));
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-        Node nodePR = null;
-        try {
-            nodePR = new Node(Node.NodeIDType.PRODUCTION, "nodeId");
-        } catch (ConstructionException e) {
-            unexpected(e);
-        }
-
-        List<PortMapConfig> listPMAP = new ArrayList<PortMapConfig>();
-        listPMAP.add(new PortMapConfig(null, port, (short)0));
-        listPMAP.add(new PortMapConfig(nodePR, port, (short)0));
-        listPMAP.add(new PortMapConfig(node, null, (short)0));
-        listPMAP.add(new PortMapConfig(node, new SwitchPort(null, null, "10"),
-                                       (short)0));
-        listPMAP.add(new PortMapConfig(node, new SwitchPort(null, NodeConnector.NodeConnectorIDType.OPENFLOW, null),
-                (short)0));
-        for (PortMapConfig pcon: listPMAP) {
-            String emsg = "(PortMapConfig)" + pcon.toString();
-            st = mgr.setPortMap(ifp, pcon);
-            assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-        }
-
-        // specified port map to null
-        st = mgr.setPortMap(ifp, null);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-        try {
-            map = mgr.getPortMap(ifp);
-        } catch (Exception e) {
-            unexpected(e);
-        }
-        assertNull(map);
-
-        // switchport name is not null, switch port id and type are null
-        pmconf = new PortMapConfig(node, new SwitchPort("port-0", null, null), (short)0);
-
-        st = mgr.setPortMap(ifp, pmconf);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-        map = null;
-        try {
-            map = mgr.getPortMap(ifp);
-        } catch (Exception e) {
-            unexpected(e);
-        }
-        assertEquals(pmconf, map.getConfig());
-
-        // switchport name is null, switch port id and type are not null
-        pmconf = new PortMapConfig(node, new SwitchPort(
-                null, NodeConnector.NodeConnectorIDType.OPENFLOW, "10"), (short)0);
-        st = mgr.setPortMap(ifp, pmconf);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-        map = null;
-        try {
-            map = mgr.getPortMap(ifp);
-        } catch (Exception e) {
-            unexpected(e);
-        }
-        assertEquals(pmconf, map.getConfig());
-
-        // CONFLICT TEST
-        st = mgr.addBridge(new VBridgePath(tname, bname1), new VBridgeConfig(null));
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-        ifp1 = new VBridgeIfPath(tname, bname1, ifname1);
-        st = mgr.addInterface(ifp1, new VInterfaceConfig(null, Boolean.TRUE));
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-        st = mgr.addInterface(ifp2, new VInterfaceConfig(null, Boolean.TRUE));
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-        try {
-            VInterface vif = mgr.getInterface(ifp1);
-            assertEquals(VnodeState.UNKNOWN, vif.getState());
-        } catch (VTNException e) {
-            unexpected(e);
-        }
-
-        // Determine an edge port to be mapped by port mapping.
-        List<String> allNodes = ofMockService.getNodes();
-        List<String> edgePorts = null;
-        for (String nid: allNodes) {
-            edgePorts = ofMockService.getPorts(nid, true);
-            if (!edgePorts.isEmpty()) {
-                break;
-            }
-        }
-
-        assertTrue(edgePorts != null && !edgePorts.isEmpty());
-        String edgePort = edgePorts.get(0);
-        NodeConnector edgeNc = toAdNodeConnector(edgePort);
-        Node node2 = edgeNc.getNode();
-        String portId = edgeNc.getNodeConnectorIDString();
-
-        String ncType = NodeConnector.NodeConnectorIDType.OPENFLOW;
-        SwitchPort swport = new SwitchPort(null, ncType, portId);
-        pmconf1 = new PortMapConfig(node2, swport, (short)10);
-        st = mgr.setPortMap(ifp1, pmconf1);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-        try {
-            VInterface vif = mgr.getInterface(ifp1);
-            assertEquals(VnodeState.UP, vif.getState());
-
-            VBridge vbr = mgr.getBridge(new VBridgePath(tname, bname1));
-            assertEquals(VnodeState.UP, vbr.getState());
-        } catch (Exception e) {
-            unexpected(e);
-        }
-
-        pmconf2 = new PortMapConfig(node2, swport, (short)10);
-        st = mgr.setPortMap(ifp2, pmconf2);
-        assertEquals(StatusCode.CONFLICT, st.getCode());
-
-        String portName = ofMockService.getPortName(edgePort);
-        swport = new SwitchPort(portName, null, null);
-        PortMapConfig pmconf3 = new PortMapConfig(node2, swport, (short)10);
-        st = mgr.setPortMap(ifp2, pmconf3);
-        assertEquals(StatusCode.CONFLICT, st.getCode());
-
-        // clear up
-        st = mgr.removeInterface(ifp1);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-        st = mgr.removeInterface(ifp2);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        st = mgr.removeBridge(new VBridgePath(tname, bname1));
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        st = mgr.removeTenant(tpath);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-    }
-
-    /**
-     * Collect all edge ports for test.
-     *
-     * @param portSet  A set to store all port identifiers, including
-     *                 ISL ports.
-     * @return  A list of {@link TestPort} instances.
-     */
-    private List<TestPort> getEdgePorts(Set<String> portSet) {
-        List<TestPort> edgePorts = new ArrayList<>();
-        for (String nid: ofMockService.getNodes()) {
-            for (String pid: ofMockService.getPorts(nid, true)) {
-                assertTrue(portSet.add(pid));
-                edgePorts.add(new TestPort(pid));
-            }
-            for (String pid: ofMockService.getPorts(nid, false)) {
-                assertTrue(portSet.add(pid));
-            }
-        }
-
-        assertFalse(edgePorts.isEmpty());
-        assertTrue(portSet.size() > edgePorts.size());
-
-        return edgePorts;
-    }
-
-    /**
-     * Set up port mappings for test.
-     *
-     * <p>
-     *   This method maps all the ports in the given list to individual
-     *   vBridges.
-     * </p>
-     *
-     * @param tpath     Path to the VTN.
-     * @param portList  A list of {@link TestPort} instances corresponding to
-     *                  edge ports.
-     * @return  A map that keeps vBridges associated with the given ports.
-     * @throws Exception  An error occurred.
-     */
-    private Map<TestPort, VBridgePath> setUpPortMapping(
-        VTenantPath tpath, List<TestPort> portList) throws Exception {
-        VBridgeConfig bconf = new VBridgeConfig(null);
-        VInterfaceConfig iconf = new VInterfaceConfig(null, Boolean.TRUE);
-
-        Map<TestPort, VBridgePath> bridgeMap = new HashMap<>();
-        short[] vlans = {0, 1, 100, 2048, 4095};
-        int idx = 1;
-        for (short vlan: vlans) {
-            for (TestPort tp: portList) {
-                VBridgePath bpath = new VBridgePath(tpath, "vbr" + idx);
-                VBridgeIfPath ipath = new VBridgeIfPath(bpath, "vif");
-                createVirtualNodes(null, Collections.singleton(bpath),
-                                   Collections.singleton(ipath));
-
-                NodeConnector nc = tp.getNodeConnector();
-                String ncId = nc.getNodeConnectorIDString();
-                SwitchPort swport = new SwitchPort(nc.getType(), ncId);
-                PortMapConfig pmconf =
-                    new PortMapConfig(nc.getNode(), swport, vlan);
-                Status st = vtnManager.setPortMap(ipath, pmconf);
-                assertEquals(StatusCode.SUCCESS, st.getCode());
-
-                VBridge vbr = vtnManager.getBridge(bpath);
-                assertEquals(VnodeState.UP, vbr.getState());
-
-                TestPort tport = tp.clone();
-                tport.setVlan(vlan);
-                assertEquals(null, bridgeMap.put(tport, bpath));
-                idx++;
-            }
-        }
-
-        return bridgeMap;
-    }
-
-    /**
-     * Create a new vBridge, and map all the given edge ports to that vBridge.
-     *
-     * @param bpath  A path to the vBridge.
-     * @param ports  A collection of {@link TestPort} instances corresponding
-     *               to VLAN on edge ports.
-     * @throws Exception  An error occurred.
-     */
-    private void mapAllPorts(VBridgePath bpath, Collection<TestPort> ports)
-        throws Exception {
-        Status st = vtnManager.addBridge(bpath, new VBridgeConfig(null));
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        VInterfaceConfig iconf = new VInterfaceConfig(null, Boolean.TRUE);
-        int idx = 1;
-        for (TestPort tp: ports) {
-            VBridgeIfPath ipath = new VBridgeIfPath(bpath, "if_" + idx);
-            st = vtnManager.addInterface(ipath, iconf);
-            assertEquals(StatusCode.SUCCESS, st.getCode());
-
-            NodeConnector nc = tp.getNodeConnector();
-            String ncId = nc.getNodeConnectorIDString();
-            SwitchPort swport = new SwitchPort(nc.getType(), ncId);
-            PortMapConfig pmconf =
-                new PortMapConfig(nc.getNode(), swport, tp.getVlan());
-            st = vtnManager.setPortMap(ipath, pmconf);
-            assertEquals(StatusCode.SUCCESS, st.getCode());
-            idx++;
-        }
-
-        VBridge vbr = vtnManager.getBridge(bpath);
-        assertEquals(VnodeState.UP, vbr.getState());
-    }
-
-    /**
-     * Test case for {@link IVTNGlobal}.
-     */
-    @Test
-    public void testIVTNGlobal() {
-        LOG.info("Running testIVTNGlobal().");
-
-        int api = vtnGlobal.getApiVersion();
-        assertTrue("API version = " + api, api > 0);
-
-        BundleVersion bv = vtnGlobal.getBundleVersion();
+    public void testVtnVersionService() throws Exception {
+        LOG.info("Running testVtnVersionService().");
+
+        GetManagerVersionOutput output =
+            getRpcOutput(versionService.getManagerVersion());
+        Long api = output.getApiVersion();
+        assertNotNull(api);
+        assertTrue("API version = " + api, api.longValue() > 0L);
+
+        BundleVersion bv = output.getBundleVersion();
         assertNotNull(bv);
 
         // Determine actual bundle version of manager.implementation.
@@ -2617,9 +413,9 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         Version ver = implBundle.getVersion();
         assertNotNull(ver);
 
-        assertEquals(ver.getMajor(), bv.getMajor());
-        assertEquals(ver.getMinor(), bv.getMinor());
-        assertEquals(ver.getMicro(), bv.getMicro());
+        assertEquals(ver.getMajor(), bv.getMajor().intValue());
+        assertEquals(ver.getMinor(), bv.getMinor().intValue());
+        assertEquals(ver.getMicro(), bv.getMicro().intValue());
 
         String qf = ver.getQualifier();
         if (qf == null || qf.isEmpty()) {
@@ -2630,84 +426,3006 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
     }
 
     /**
-     * Test method for MAC address table.
-     *
-     * <ul>
-     *   <li>
-     *     {@link IVTNManager#getMacEntries(VBridgePath)}
-     *   </li>
-     *   <li>
-     *     {@link IVTNManager#getMacEntry(VBridgePath, DataLinkAddress)}
-     *   </li>
-     *   <li>
-     *     {@link IVTNManager#removeMacEntry(VBridgePath, DataLinkAddress)}
-     *   </li>
-     *   <li>
-     *     {@link IVTNManager#flushMacEntries(VBridgePath)}
-     *   <li>
-     * </ul>
+     * Test case for {@link VtnService}.
      *
      * @throws Exception  An error occurred.
      */
     @Test
-    public void testMacEntry() throws Exception {
-        LOG.info("Running testMacEntry().");
+    public void testVtnService() throws Exception {
+        LOG.info("Running testVtnService().");
 
-        class DataLinkAddressStub extends DataLinkAddress {
-            private static final long serialVersionUID = -9043768232113080608L;
+        // No VTN should be present.
+        VirtualNetwork vnet = new VirtualNetwork(this);
+        vnet.verify();
 
-            @Override
-            public DataLinkAddress clone() {
-                return null;
+        // Create 3 VTNs.
+        String tname1 = "vtn_1";
+        VTenantConfig tconf1 = new VTenantConfig();
+        vnet.addTenant(tname1, tconf1);
+        assertEquals(VtnUpdateType.CREATED,
+                     tconf1.update(vtnService, tname1, null, null));
+        vnet.verify();
+
+        String tname2 = "vtn_2";
+        VTenantConfig tconf2 = new VTenantConfig("vtn-2", 0, null);
+        vnet.addTenant(tname2, tconf2);
+        assertEquals(VtnUpdateType.CREATED,
+                     tconf2.update(vtnService, tname2,
+                                   VnodeUpdateMode.CREATE, null));
+        vnet.verify();
+
+        String tname3 = "0123456789012345678901234567890";
+        VTenantConfig tconf3 =
+            new VTenantConfig("Virtual Tenant Network 3", 65534, 65535);
+        vnet.addTenant(tname3, tconf3);
+        assertEquals(VtnUpdateType.CREATED,
+                     tconf3.update(vtnService, tname3,
+                                   VnodeUpdateMode.UPDATE, null));
+        vnet.verify();
+
+        // Add random configuration.
+        Random rand = new Random(0x12345L);
+        for (VTenantConfig tconf: vnet.getTenants().values()) {
+            tconf.add(rand);
+        }
+
+        vnet.apply().verify();
+
+        // Try to update with the same parameter.
+        VnodeUpdateMode[] modifyModes = {
+            null,
+            VnodeUpdateMode.UPDATE,
+            VnodeUpdateMode.MODIFY,
+        };
+        VtnUpdateOperationType[] modifyOperations = {
+            null,
+            VtnUpdateOperationType.SET,
+            VtnUpdateOperationType.ADD,
+        };
+        for (Entry<String, VTenantConfig> entry:
+                 vnet.getTenants().entrySet()) {
+            String name = entry.getKey();
+            VTenantConfig tconf = entry.getValue();
+            for (VnodeUpdateMode mode: modifyModes) {
+                for (VtnUpdateOperationType op: modifyOperations) {
+                    assertEquals(null,
+                                 tconf.update(vtnService, name, mode, op));
+                }
             }
         }
 
+        // Change parameters using ADD operation.
+        tconf3.setIdleTimeout(12345);
+        UpdateVtnInput input = new UpdateVtnInputBuilder().
+            setTenantName(tname3).
+            setIdleTimeout(tconf3.getIdleTimeout()).
+            build();
+        assertEquals(VtnUpdateType.CHANGED,
+                     getRpcResult(vtnService.updateVtn(input)));
+        vnet.verify();
+
+        tconf2.setHardTimeout(60000);
+        input = new UpdateVtnInputBuilder().
+            setTenantName(tname2).
+            setHardTimeout(tconf2.getHardTimeout()).
+            setOperation(VtnUpdateOperationType.ADD).
+            setUpdateMode(VnodeUpdateMode.MODIFY).
+            build();
+        assertEquals(VtnUpdateType.CHANGED,
+                     getRpcResult(vtnService.updateVtn(input)));
+        vnet.verify();
+
+        tconf2.setDescription("test VTN 2");
+        input = new UpdateVtnInputBuilder().
+            setTenantName(tname2).
+            setDescription(tconf2.getDescription()).
+            setOperation(VtnUpdateOperationType.ADD).
+            setUpdateMode(VnodeUpdateMode.UPDATE).
+            build();
+        assertEquals(VtnUpdateType.CHANGED,
+                     getRpcResult(vtnService.updateVtn(input)));
+        vnet.verify();
+
+        // Change parameters using SET operation.
+        tconf1.setDescription("test VTN 1").
+            setIdleTimeout(1).
+            setHardTimeout(2);
+        assertEquals(VtnUpdateType.CHANGED,
+                     tconf1.update(vtnService, tname1, null,
+                                   VtnUpdateOperationType.SET));
+        vnet.verify();
+
+        tconf2.setDescription(null).
+            setHardTimeout(33333);
+        assertEquals(VtnUpdateType.CHANGED,
+                     tconf2.update(vtnService, tname2, VnodeUpdateMode.UPDATE,
+                                   VtnUpdateOperationType.SET));
+
+        tconf3.setIdleTimeout(null).
+            setHardTimeout(null);
+        assertEquals(VtnUpdateType.CHANGED,
+                     tconf3.update(vtnService, tname3, VnodeUpdateMode.MODIFY,
+                                   VtnUpdateOperationType.SET));
+
+        // Error tests.
+
+        // Null input.
+        checkRpcError(vtnService.updateVtn(null), RpcErrorTag.MISSING_ELEMENT,
+                      VtnErrorTag.BADREQUEST);
+        checkRpcError(vtnService.removeVtn(null), RpcErrorTag.MISSING_ELEMENT,
+                      VtnErrorTag.BADREQUEST);
+
+        // Null tenant-name.
+        for (VnodeUpdateMode mode: VnodeUpdateMode.values()) {
+            input = new UpdateVtnInputBuilder().
+                setUpdateMode(mode).
+                build();
+            checkRpcError(vtnService.updateVtn(input),
+                          RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+        }
+
+        RemoveVtnInput rinput = new RemoveVtnInputBuilder().build();
+        checkRpcError(vtnService.removeVtn(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // Invalid tenant-name.
+        for (String name: INVALID_VNODE_NAMES) {
+            for (VnodeUpdateMode mode: VnodeUpdateMode.values()) {
+                input = new UpdateVtnInputBuilder().
+                    setTenantName(name).
+                    setUpdateMode(mode).
+                    build();
+                RpcErrorTag etag;
+                VtnErrorTag vtag;
+                if (mode == VnodeUpdateMode.MODIFY) {
+                    etag = RpcErrorTag.DATA_MISSING;
+                    vtag = VtnErrorTag.NOTFOUND;
+                } else {
+                    etag = RpcErrorTag.BAD_ELEMENT;
+                    vtag = VtnErrorTag.BADREQUEST;
+                }
+                checkRpcError(vtnService.updateVtn(input), etag, vtag);
+            }
+
+            rinput = new RemoveVtnInputBuilder().
+                setTenantName(name).build();
+            checkRpcError(vtnService.removeVtn(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+        }
+
+        // Modifying VTN that is not present.
+        String unknownName = "unknown";
+        input = new UpdateVtnInputBuilder().
+            setTenantName(unknownName).
+            setUpdateMode(VnodeUpdateMode.MODIFY).
+            build();
+        checkRpcError(vtnService.updateVtn(input), RpcErrorTag.DATA_MISSING,
+                      VtnErrorTag.NOTFOUND);
+
+        // Removing VTN that is not present.
+        rinput = new RemoveVtnInputBuilder().
+            setTenantName(unknownName).
+            build();
+        checkRpcError(vtnService.removeVtn(rinput), RpcErrorTag.DATA_MISSING,
+                      VtnErrorTag.NOTFOUND);
+
+        // Invalid update operation.
+        input = new UpdateVtnInputBuilder().
+            setTenantName(tname1).
+            setOperation(VtnUpdateOperationType.REMOVE).
+            build();
+        checkRpcError(vtnService.updateVtn(input), RpcErrorTag.BAD_ELEMENT,
+                      VtnErrorTag.BADREQUEST);
+
+        // Removing VTN that is not present.
+        rinput = new RemoveVtnInputBuilder().
+            setTenantName(unknownName).build();
+        checkRpcError(vtnService.removeVtn(rinput), RpcErrorTag.DATA_MISSING,
+                      VtnErrorTag.NOTFOUND);
+
+        // Name confliction.
+        for (String name: vnet.getTenants().keySet()) {
+            input = new UpdateVtnInputBuilder().
+                setTenantName(name).
+                setUpdateMode(VnodeUpdateMode.CREATE).
+                build();
+            checkRpcError(vtnService.updateVtn(input), RpcErrorTag.DATA_EXISTS,
+                          VtnErrorTag.CONFLICT);
+        }
+
+        // Inconsistent flow timeouts.
+        input = new UpdateVtnInputBuilder().
+            setTenantName(unknownName).
+            setHardTimeout(VTenantConfig.DEFAULT_IDLE_TIMEOUT).
+            build();
+        checkRpcError(vtnService.updateVtn(input), RpcErrorTag.BAD_ELEMENT,
+                      VtnErrorTag.BADREQUEST);
+
+        input = new UpdateVtnInputBuilder().
+            setTenantName(unknownName).
+            setIdleTimeout(30000).
+            setHardTimeout(29999).
+            build();
+        checkRpcError(vtnService.updateVtn(input), RpcErrorTag.BAD_ELEMENT,
+                      VtnErrorTag.BADREQUEST);
+
+        for (Entry<String, VTenantConfig> entry:
+                 vnet.getTenants().entrySet()) {
+            String name = entry.getKey();
+            VTenantConfig tconf = entry.getValue().complete();
+            Integer idle = tconf.getIdleTimeout();
+            Integer hard = tconf.getHardTimeout();
+            for (VnodeUpdateMode mode: modifyModes) {
+                if (hard.intValue() != 0) {
+                    input = new UpdateVtnInputBuilder().
+                        setTenantName(name).
+                        setUpdateMode(mode).
+                        setIdleTimeout(65535).
+                        build();
+                    checkRpcError(vtnService.updateVtn(input),
+                                  RpcErrorTag.BAD_ELEMENT,
+                                  VtnErrorTag.BADREQUEST);
+                }
+                if (idle.intValue() > 1) {
+                    input = new UpdateVtnInputBuilder().
+                        setTenantName(name).
+                        setUpdateMode(mode).
+                        setOperation(VtnUpdateOperationType.ADD).
+                        setHardTimeout(2).
+                        build();
+                    checkRpcError(vtnService.updateVtn(input),
+                                  RpcErrorTag.BAD_ELEMENT,
+                                  VtnErrorTag.BADREQUEST);
+                }
+
+                input = new UpdateVtnInputBuilder().
+                    setTenantName(name).
+                    setUpdateMode(mode).
+                    setOperation(VtnUpdateOperationType.SET).
+                    setIdleTimeout(2).
+                    setHardTimeout(1).
+                    build();
+                checkRpcError(vtnService.updateVtn(input),
+                              RpcErrorTag.BAD_ELEMENT, VtnErrorTag.BADREQUEST);
+            }
+        }
+
+        // Errors should never affect existing VTNs.
+        vnet.verify();
+
+        // Remove VTNs.
+        String[] tenants = {tname2, tname1, tname3};
+        for (String tname: tenants) {
+            removeVtn(vtnService, tname);
+            vnet.removeTenant(tname).verify();
+        }
+    }
+
+    /**
+     * Test case for {@link VtnVbridgeService}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testVbridgeService() throws Exception {
+        LOG.info("Running testVbridgeService().");
+
+        // Create 2 VTNs.
+        VirtualNetwork vnet = new VirtualNetwork(this);
+        String tname1 = "vtn_1";
+        String tname2 = "vtn_2";
+        VTenantConfig tconf1 = new VTenantConfig();
+        vnet.addTenant(tname1, tconf1).
+            addTenant(tname2, new VTenantConfig()).
+            apply();
+
+        // Create 3 vBridges in vtn_1.
+        Map<VBridgeIdentifier, VBridgeConfig> bridges = new HashMap<>();
+        VBridgeIdentifier vbrId1 = new VBridgeIdentifier(tname1, "vbr_1");
+        VBridgeConfig bconf1 = new VBridgeConfig();
+        assertEquals(null, bridges.put(vbrId1, bconf1));
+        tconf1.addBridge(vbrId1.getBridgeNameString(), bconf1);
+        assertEquals(VtnUpdateType.CREATED,
+                     bconf1.update(vbridgeService, vbrId1, null, null));
+        vnet.verify();
+
+        VBridgeIdentifier vbrId2 = new VBridgeIdentifier(tname1, "vbr_2");
+        VBridgeConfig bconf2 = new VBridgeConfig("vBridge 2", 10);
+        assertEquals(null, bridges.put(vbrId2, bconf2));
+        tconf1.addBridge(vbrId2.getBridgeNameString(), bconf2);
+        assertEquals(VtnUpdateType.CREATED,
+                     bconf2.update(vbridgeService, vbrId2,
+                                   VnodeUpdateMode.CREATE, null));
+        vnet.verify();
+
+        VBridgeIdentifier vbrId3 =
+            new VBridgeIdentifier(tname1, "0123456789012345678901234567890");
+        VBridgeConfig bconf3 = new VBridgeConfig("Test vBridge 3", 1000000);
+        assertEquals(null, bridges.put(vbrId3, bconf3));
+        tconf1.addBridge(vbrId3.getBridgeNameString(), bconf3);
+        assertEquals(VtnUpdateType.CREATED,
+                     bconf3.update(vbridgeService, vbrId3,
+                                   VnodeUpdateMode.UPDATE, null));
+        vnet.verify();
+
+        // Add random configuration.
+        Random rand = new Random(77777777L);
+        bconf1.add(rand).
+            addVlanMap(new VTNVlanMapConfig());
+        bconf2.add(rand).
+            addVlanMap(new VTNVlanMapConfig(12));
+        VTNMacMapConfig macMap = new VTNMacMapConfig().
+            addAllowed(new MacVlan(MacVlan.UNDEFINED, 0),
+                       new MacVlan(0x1234567L, 32));
+        bconf3.add(rand).
+            addVlanMap(new VTNVlanMapConfig(ID_OPENFLOW + "123", 4095)).
+            setMacMap(macMap);
+
+        vnet.apply().verify();
+
+        // Try to update with the same parameter.
+        VnodeUpdateMode[] modifyModes = {
+            null,
+            VnodeUpdateMode.UPDATE,
+            VnodeUpdateMode.MODIFY,
+        };
+        VtnUpdateOperationType[] modifyOperations = {
+            null,
+            VtnUpdateOperationType.SET,
+            VtnUpdateOperationType.ADD,
+        };
+        for (Entry<VBridgeIdentifier, VBridgeConfig> entry:
+                 bridges.entrySet()) {
+            VBridgeIdentifier vbrId = entry.getKey();
+            VBridgeConfig bconf = entry.getValue();
+            for (VnodeUpdateMode mode: modifyModes) {
+                for (VtnUpdateOperationType op: modifyOperations) {
+                    assertEquals(null,
+                                 bconf.update(vbridgeService, vbrId, mode,
+                                              op));
+                }
+            }
+        }
+
+        // Change parameters using ADD operation.
+        bconf1.setAgeInterval(123456);
+        UpdateVbridgeInput input = new UpdateVbridgeInputBuilder().
+            setTenantName(vbrId1.getTenantNameString()).
+            setBridgeName(vbrId1.getBridgeNameString()).
+            setAgeInterval(bconf1.getAgeInterval()).
+            build();
+        assertEquals(VtnUpdateType.CHANGED,
+                     getRpcResult(vbridgeService.updateVbridge(input)));
+        vnet.verify();
+
+        bconf2.setDescription("Virtual bridge 2");
+        input = new UpdateVbridgeInputBuilder().
+            setTenantName(vbrId2.getTenantNameString()).
+            setBridgeName(vbrId2.getBridgeNameString()).
+            setDescription(bconf2.getDescription()).
+            setOperation(VtnUpdateOperationType.ADD).
+            setUpdateMode(VnodeUpdateMode.MODIFY).
+            build();
+        assertEquals(VtnUpdateType.CHANGED,
+                     getRpcResult(vbridgeService.updateVbridge(input)));
+        vnet.verify();
+
+        bconf3.setDescription("Virtual bridge 3").
+            setAgeInterval(9876);
+        input = new UpdateVbridgeInputBuilder().
+            setTenantName(vbrId3.getTenantNameString()).
+            setBridgeName(vbrId3.getBridgeNameString()).
+            setDescription(bconf3.getDescription()).
+            setAgeInterval(bconf3.getAgeInterval()).
+            setOperation(VtnUpdateOperationType.ADD).
+            setUpdateMode(VnodeUpdateMode.UPDATE).
+            build();
+        assertEquals(VtnUpdateType.CHANGED,
+                     getRpcResult(vbridgeService.updateVbridge(input)));
+        vnet.verify();
+
+        // Change parameters using SET operation.
+        bconf1.setDescription("Test vBridge 1 (SET)");
+        assertEquals(VtnUpdateType.CHANGED,
+                     bconf1.update(vbridgeService, vbrId1, null,
+                                   VtnUpdateOperationType.SET));
+        vnet.verify();
+
+        bconf2.setDescription(null).
+            setAgeInterval(314159);
+        assertEquals(VtnUpdateType.CHANGED,
+                     bconf2.update(vbridgeService, vbrId2,
+                                   VnodeUpdateMode.UPDATE,
+                                   VtnUpdateOperationType.SET));
+        vnet.verify();
+
+        bconf3.setDescription(null).
+            setAgeInterval(null);
+        assertEquals(VtnUpdateType.CHANGED,
+                     bconf3.update(vbridgeService, vbrId3,
+                                   VnodeUpdateMode.MODIFY,
+                                   VtnUpdateOperationType.SET));
+        vnet.verify();
+
+        // Error tests.
+
+        // Null input.
+        checkRpcError(vbridgeService.updateVbridge(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+        checkRpcError(vbridgeService.removeVbridge(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        for (VnodeUpdateMode mode: VnodeUpdateMode.values()) {
+            // Null tenant-name.
+            input = new UpdateVbridgeInputBuilder().
+                setUpdateMode(mode).
+                build();
+            checkRpcError(vbridgeService.updateVbridge(input),
+                          RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+            input = new UpdateVbridgeInputBuilder().
+                setBridgeName(vbrId1.getBridgeNameString()).
+                setUpdateMode(mode).
+                build();
+            checkRpcError(vbridgeService.updateVbridge(input),
+                          RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+            // Null bridge-name.
+            input = new UpdateVbridgeInputBuilder().
+                setTenantName(tname1).
+                setUpdateMode(mode).
+                build();
+            checkRpcError(vbridgeService.updateVbridge(input),
+                          RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+        }
+
+        // Null tenant-name.
+        RemoveVbridgeInput rinput = new RemoveVbridgeInputBuilder().build();
+        checkRpcError(vbridgeService.removeVbridge(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        rinput = new RemoveVbridgeInputBuilder().
+            setBridgeName(vbrId1.getBridgeNameString()).
+            build();
+        checkRpcError(vbridgeService.removeVbridge(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // Null bridge-name.
+        rinput = new RemoveVbridgeInputBuilder().
+            setTenantName(tname1).
+            build();
+        checkRpcError(vbridgeService.removeVbridge(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        for (String name: INVALID_VNODE_NAMES) {
+            for (VnodeUpdateMode mode: VnodeUpdateMode.values()) {
+                // Invalid tenant-name.
+                input = new UpdateVbridgeInputBuilder().
+                    setTenantName(name).
+                    setBridgeName(vbrId1.getBridgeNameString()).
+                    setUpdateMode(mode).
+                    build();
+                checkRpcError(vbridgeService.updateVbridge(input),
+                              RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+                // Invalid bridge-name.
+                RpcErrorTag etag;
+                VtnErrorTag vtag;
+                if (mode == VnodeUpdateMode.MODIFY) {
+                    etag = RpcErrorTag.DATA_MISSING;
+                    vtag = VtnErrorTag.NOTFOUND;
+                } else {
+                    etag = RpcErrorTag.BAD_ELEMENT;
+                    vtag = VtnErrorTag.BADREQUEST;
+                }
+                input = new UpdateVbridgeInputBuilder().
+                    setTenantName(tname1).
+                    setBridgeName(name).
+                    setUpdateMode(mode).
+                    build();
+                checkRpcError(vbridgeService.updateVbridge(input), etag, vtag);
+            }
+
+            // Invalid tenant-name.
+            rinput = new RemoveVbridgeInputBuilder().
+                setTenantName(name).
+                setBridgeName(vbrId1.getBridgeNameString()).
+                build();
+            checkRpcError(vbridgeService.removeVbridge(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            // Invalid bridge-name.
+            rinput = new RemoveVbridgeInputBuilder().
+                setTenantName(tname1).
+                setBridgeName(name).
+                build();
+            checkRpcError(vbridgeService.removeVbridge(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+        }
+
+        // Modifying vBridge that is not present.
+        String unknownName = "unknown";
+        input = new UpdateVbridgeInputBuilder().
+            setTenantName(unknownName).
+            setBridgeName(vbrId1.getBridgeNameString()).
+            setUpdateMode(VnodeUpdateMode.MODIFY).
+            build();
+        checkRpcError(vbridgeService.updateVbridge(input),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        input = new UpdateVbridgeInputBuilder().
+            setTenantName(tname1).
+            setBridgeName(unknownName).
+            setUpdateMode(VnodeUpdateMode.MODIFY).
+            build();
+        checkRpcError(vbridgeService.updateVbridge(input),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        // Removing vBridge that is not present.
+        rinput = new RemoveVbridgeInputBuilder().
+            setTenantName(unknownName).
+            setBridgeName(vbrId1.getBridgeNameString()).
+            build();
+        checkRpcError(vbridgeService.removeVbridge(rinput),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        rinput = new RemoveVbridgeInputBuilder().
+            setTenantName(tname1).
+            setBridgeName(unknownName).
+            build();
+        checkRpcError(vbridgeService.removeVbridge(rinput),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        // Invalid update operation.
+        input = new UpdateVbridgeInputBuilder().
+            setTenantName(vbrId1.getTenantNameString()).
+            setBridgeName(vbrId1.getBridgeNameString()).
+            setOperation(VtnUpdateOperationType.REMOVE).
+            build();
+        checkRpcError(vbridgeService.updateVbridge(input),
+                      RpcErrorTag.BAD_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // Removing vBridge that is not present.
+        String[] tnames = {unknownName, tname2};
+        String[] bnames = {
+            unknownName,
+            vbrId1.getBridgeNameString(),
+            vbrId2.getBridgeNameString(),
+            vbrId3.getBridgeNameString(),
+        };
+        for (String tname: tnames) {
+            for (String bname: bnames) {
+                rinput = new RemoveVbridgeInputBuilder().
+                    setTenantName(tname).
+                    setBridgeName(bname).
+                    build();
+                checkRpcError(vbridgeService.removeVbridge(rinput),
+                              RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+            }
+        }
+
+        // Name confliction.
+        for (VBridgeIdentifier vbrId: bridges.keySet()) {
+            input = new UpdateVbridgeInputBuilder().
+                setTenantName(vbrId.getTenantNameString()).
+                setBridgeName(vbrId.getBridgeNameString()).
+                setUpdateMode(VnodeUpdateMode.CREATE).
+                build();
+            checkRpcError(vbridgeService.updateVbridge(input),
+                          RpcErrorTag.DATA_EXISTS, VtnErrorTag.CONFLICT);
+        }
+
+        // Errors should never affect existing vBridges.
+        vnet.verify();
+
+        // Remove vbrId1 and vbrId3.
+        assertEquals(bconf2, bridges.remove(vbrId2));
+        for (VBridgeIdentifier vbrId: bridges.keySet()) {
+            removeVbridge(vbridgeService, vbrId);
+            tconf1.removeBridge(vbrId.getBridgeNameString());
+            vnet.verify();
+        }
+
+        // Remove VTNs.
+        Set<String> nameSet = new HashSet<>(vnet.getTenants().keySet());
+        for (String tname: nameSet) {
+            removeVtn(vtnService, tname);
+            vnet.removeTenant(tname).verify();
+        }
+    }
+
+    /**
+     * Test case for {@link VtnVterminalService}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testVterminalService() throws Exception {
+        LOG.info("Running testVbridgeService().");
+
+        // Create 2 VTNs.
+        VirtualNetwork vnet = new VirtualNetwork(this);
+        String tname1 = "vtn_1";
+        String tname2 = "vtn_2";
+        VTenantConfig tconf1 = new VTenantConfig();
+        vnet.addTenant(tname1, tconf1).
+            addTenant(tname2, new VTenantConfig());
+        vnet.apply();
+
+        // Create 3 vTerminals in vtn_1.
+        Map<VTerminalIdentifier, VTerminalConfig> terminals = new HashMap<>();
+        VTerminalIdentifier vtermId1 =
+            new VTerminalIdentifier(tname1, "vterm_1");
+        VTerminalConfig vtconf1 = new VTerminalConfig();
+        assertEquals(null, terminals.put(vtermId1, vtconf1));
+        tconf1.addTerminal(vtermId1.getBridgeNameString(), vtconf1);
+        assertEquals(VtnUpdateType.CREATED,
+                     vtconf1.update(vterminalService, vtermId1, null, null));
+        vnet.verify();
+
+        VTerminalIdentifier vtermId2 =
+            new VTerminalIdentifier(tname1, "vterm_2");
+        VTerminalConfig vtconf2 = new VTerminalConfig("vTerminal 2");
+        assertEquals(null, terminals.put(vtermId2, vtconf2));
+        tconf1.addTerminal(vtermId2.getBridgeNameString(), vtconf2);
+        assertEquals(VtnUpdateType.CREATED,
+                     vtconf2.update(vterminalService, vtermId2,
+                                    VnodeUpdateMode.CREATE, null));
+        vnet.verify();
+
+        VTerminalIdentifier vtermId3 =
+            new VTerminalIdentifier(tname1, "1234567890123456789012345678901");
+        VTerminalConfig vtconf3 = new VTerminalConfig("Test vTerminal 3");
+        assertEquals(null, terminals.put(vtermId3, vtconf3));
+        tconf1.addTerminal(vtermId3.getBridgeNameString(), vtconf3);
+        assertEquals(VtnUpdateType.CREATED,
+                     vtconf3.update(vterminalService, vtermId3,
+                                    VnodeUpdateMode.UPDATE, null));
+        vnet.verify();
+
+        // Add random configuration.
+        Random rand = new Random(0xabcdef123L);
+        for (VTerminalConfig vtconf: terminals.values()) {
+            vtconf.add(rand);
+        }
+
+        vnet.apply().verify();
+
+        // Try to update with the same parameter.
+        VnodeUpdateMode[] modifyModes = {
+            null,
+            VnodeUpdateMode.UPDATE,
+            VnodeUpdateMode.MODIFY,
+        };
+        VtnUpdateOperationType[] modifyOperations = {
+            null,
+            VtnUpdateOperationType.SET,
+            VtnUpdateOperationType.ADD,
+        };
+        for (Entry<VTerminalIdentifier, VTerminalConfig> entry:
+                 terminals.entrySet()) {
+            VTerminalIdentifier vtermId = entry.getKey();
+            VTerminalConfig vtconf = entry.getValue();
+            for (VnodeUpdateMode mode: modifyModes) {
+                for (VtnUpdateOperationType op: modifyOperations) {
+                    assertEquals(null,
+                                 vtconf.update(vterminalService, vtermId, mode,
+                                               op));
+                }
+            }
+        }
+
+        // Change parameters using ADD operation.
+        vtconf1.setDescription("Virtual terminal 1");
+        UpdateVterminalInput input = new UpdateVterminalInputBuilder().
+            setTenantName(vtermId1.getTenantNameString()).
+            setTerminalName(vtermId1.getBridgeNameString()).
+            setDescription(vtconf1.getDescription()).
+            build();
+        assertEquals(VtnUpdateType.CHANGED,
+                     getRpcResult(vterminalService.updateVterminal(input)));
+        vnet.verify();
+
+        vtconf2.setDescription("Virtual terminal 2");
+        input = new UpdateVterminalInputBuilder().
+            setTenantName(vtermId2.getTenantNameString()).
+            setTerminalName(vtermId2.getBridgeNameString()).
+            setDescription(vtconf2.getDescription()).
+            setOperation(VtnUpdateOperationType.ADD).
+            setUpdateMode(VnodeUpdateMode.UPDATE).
+            build();
+        assertEquals(VtnUpdateType.CHANGED,
+                     getRpcResult(vterminalService.updateVterminal(input)));
+        vnet.verify();
+
+        vtconf3.setDescription("vTerminal 3");
+        input = new UpdateVterminalInputBuilder().
+            setTenantName(vtermId3.getTenantNameString()).
+            setTerminalName(vtermId3.getBridgeNameString()).
+            setDescription(vtconf3.getDescription()).
+            setOperation(VtnUpdateOperationType.ADD).
+            setUpdateMode(VnodeUpdateMode.MODIFY).
+            build();
+        assertEquals(VtnUpdateType.CHANGED,
+                     getRpcResult(vterminalService.updateVterminal(input)));
+        vnet.verify();
+
+        // Change parameters using SET operation.
+        vtconf1.setDescription("vTerminal 1 (SET)");
+        assertEquals(VtnUpdateType.CHANGED,
+                     vtconf1.update(vterminalService, vtermId1, null,
+                                    VtnUpdateOperationType.SET));
+        vnet.verify();
+
+        vtconf2.setDescription("vTerminal 2 (SET)");
+        assertEquals(VtnUpdateType.CHANGED,
+                     vtconf2.update(vterminalService, vtermId2,
+                                    VnodeUpdateMode.UPDATE,
+                                    VtnUpdateOperationType.SET));
+        vnet.verify();
+
+        vtconf3.setDescription("vTerminal 3 (SET)");
+        assertEquals(VtnUpdateType.CHANGED,
+                     vtconf3.update(vterminalService, vtermId3,
+                                    VnodeUpdateMode.MODIFY,
+                                    VtnUpdateOperationType.SET));
+        vnet.verify();
+
+        // Error tests.
+
+        // Null input.
+        checkRpcError(vterminalService.updateVterminal(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+        checkRpcError(vterminalService.removeVterminal(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        for (VnodeUpdateMode mode: VnodeUpdateMode.values()) {
+            // Null tenant-name.
+            input = new UpdateVterminalInputBuilder().
+                setUpdateMode(mode).
+                build();
+            checkRpcError(vterminalService.updateVterminal(input),
+                          RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+            input = new UpdateVterminalInputBuilder().
+                setTerminalName(vtermId1.getBridgeNameString()).
+                setUpdateMode(mode).
+                build();
+            checkRpcError(vterminalService.updateVterminal(input),
+                          RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+            // Null terminal-name.
+            input = new UpdateVterminalInputBuilder().
+                setTenantName(tname1).
+                setUpdateMode(mode).
+                build();
+            checkRpcError(vterminalService.updateVterminal(input),
+                          RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+        }
+
+        // Null tenant-name.
+        RemoveVterminalInput rinput = new RemoveVterminalInputBuilder().
+            build();
+        checkRpcError(vterminalService.removeVterminal(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        rinput = new RemoveVterminalInputBuilder().
+            setTerminalName(vtermId1.getBridgeNameString()).
+            build();
+        checkRpcError(vterminalService.removeVterminal(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // Null terminal-name.
+        rinput = new RemoveVterminalInputBuilder().
+            setTenantName(tname1).
+            build();
+        checkRpcError(vterminalService.removeVterminal(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        for (String name: INVALID_VNODE_NAMES) {
+            for (VnodeUpdateMode mode: VnodeUpdateMode.values()) {
+                // Invalid tenant-name.
+                input = new UpdateVterminalInputBuilder().
+                    setTenantName(name).
+                    setTerminalName(vtermId1.getBridgeNameString()).
+                    setUpdateMode(mode).
+                    build();
+                checkRpcError(vterminalService.updateVterminal(input),
+                              RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+                // Invalid terminal-name.
+                RpcErrorTag etag;
+                VtnErrorTag vtag;
+                if (mode == VnodeUpdateMode.MODIFY) {
+                    etag = RpcErrorTag.DATA_MISSING;
+                    vtag = VtnErrorTag.NOTFOUND;
+                } else {
+                    etag = RpcErrorTag.BAD_ELEMENT;
+                    vtag = VtnErrorTag.BADREQUEST;
+                }
+                input = new UpdateVterminalInputBuilder().
+                    setTenantName(tname1).
+                    setTerminalName(name).
+                    setUpdateMode(mode).
+                    build();
+                checkRpcError(vterminalService.updateVterminal(input),
+                              etag, vtag);
+            }
+
+            // Invalid tenant-name.
+            rinput = new RemoveVterminalInputBuilder().
+                setTenantName(name).
+                setTerminalName(vtermId1.getBridgeNameString()).
+                build();
+            checkRpcError(vterminalService.removeVterminal(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            // Invalid terminal-name.
+            rinput = new RemoveVterminalInputBuilder().
+                setTenantName(tname1).
+                setTerminalName(name).
+                build();
+            checkRpcError(vterminalService.removeVterminal(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+        }
+
+        // Modifying vTerminal that is not present.
+        String unknownName = "unknown";
+        input = new UpdateVterminalInputBuilder().
+            setTenantName(unknownName).
+            setTerminalName(vtermId1.getBridgeNameString()).
+            setUpdateMode(VnodeUpdateMode.MODIFY).
+            build();
+        checkRpcError(vterminalService.updateVterminal(input),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        input = new UpdateVterminalInputBuilder().
+            setTenantName(tname1).
+            setTerminalName(unknownName).
+            setUpdateMode(VnodeUpdateMode.MODIFY).
+            build();
+        checkRpcError(vterminalService.updateVterminal(input),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        // Removing vTerminal that is not present.
+        rinput = new RemoveVterminalInputBuilder().
+            setTenantName(unknownName).
+            setTerminalName(vtermId1.getBridgeNameString()).
+            build();
+        checkRpcError(vterminalService.removeVterminal(rinput),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        rinput = new RemoveVterminalInputBuilder().
+            setTenantName(tname1).
+            setTerminalName(unknownName).
+            build();
+        checkRpcError(vterminalService.removeVterminal(rinput),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        // Invalid update operation.
+        input = new UpdateVterminalInputBuilder().
+            setTenantName(vtermId1.getTenantNameString()).
+            setTerminalName(vtermId1.getBridgeNameString()).
+            setOperation(VtnUpdateOperationType.REMOVE).
+            build();
+        checkRpcError(vterminalService.updateVterminal(input),
+                      RpcErrorTag.BAD_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // Removing vTerminal that is not present.
+        String[] tnames = {unknownName, tname2};
+        String[] bnames = {
+            unknownName,
+            vtermId1.getBridgeNameString(),
+            vtermId2.getBridgeNameString(),
+            vtermId3.getBridgeNameString(),
+        };
+        for (String tname: tnames) {
+            for (String bname: bnames) {
+                rinput = new RemoveVterminalInputBuilder().
+                    setTenantName(tname).
+                    setTerminalName(bname).
+                    build();
+                checkRpcError(vterminalService.removeVterminal(rinput),
+                              RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+            }
+        }
+
+        // Name confliction.
+        for (VTerminalIdentifier vtermId: terminals.keySet()) {
+            input = new UpdateVterminalInputBuilder().
+                setTenantName(vtermId.getTenantNameString()).
+                setTerminalName(vtermId.getBridgeNameString()).
+                setUpdateMode(VnodeUpdateMode.CREATE).
+                build();
+            checkRpcError(vterminalService.updateVterminal(input),
+                          RpcErrorTag.DATA_EXISTS, VtnErrorTag.CONFLICT);
+        }
+
+        // Errors should never affect existing vTerminals.
+        vnet.verify();
+
+        // Remove vtermId2 and vtermId3.
+        assertEquals(vtconf1, terminals.remove(vtermId1));
+        for (VTerminalIdentifier vtermId: terminals.keySet()) {
+            removeVterminal(vterminalService, vtermId);
+            tconf1.removeTerminal(vtermId.getBridgeNameString());
+            vnet.verify();
+        }
+
+        // Remove VTNs.
+        Set<String> nameSet = new HashSet<>(vnet.getTenants().keySet());
+        for (String tname: nameSet) {
+            removeVtn(vtnService, tname);
+            vnet.removeTenant(tname).verify();
+        }
+    }
+
+    /**
+     * Test case for {@link VtnVinterfaceService}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testVinterfaceService() throws Exception {
+        LOG.info("Running testVinterfaceService().");
+
+        // Create 2 VTNs, 2 vBridges, and 3 vTerminals.
+        VirtualNetwork vnet = new VirtualNetwork(this);
+        String tname1 = "vtn_1";
+        String tname2 = "vtn_2";
+        String bname1 = "bridge_1";
+        String bname2 = "bridge_2";
+        VBridgeIdentifier vbrId1 = new VBridgeIdentifier(tname1, bname1);
+        VBridgeIdentifier vbrId2 = new VBridgeIdentifier(tname2, bname1);
+        VTerminalIdentifier vtermId1 = new VTerminalIdentifier(tname1, bname1);
+        VTerminalIdentifier vtermId2 = new VTerminalIdentifier(tname2, bname1);
+        VTerminalIdentifier vtermId3 = new VTerminalIdentifier(tname2, bname2);
+        vnet.addBridge(vbrId1, vbrId2).
+            addTerminal(vtermId1, vtermId2, vtermId3).
+            apply();
+
+        // Create 3 virtual interfaces in vbrId1.
+        Map<VInterfaceIdentifier<?>, VInterfaceConfig> interfaces =
+            new HashMap<>();
+        Map<VBridgeIfIdentifier, VInterfaceConfig> bridgeIfs = new HashMap<>();
+        String iname1 = "if_1";
+        String iname2 = "1234567890123456789012345678901";
+        String iname3 = "if_3";
+        VBridgeConfig bconf1 = vnet.getBridge(vbrId1);
+        VBridgeIfIdentifier bifId1 = vbrId1.childInterface(iname1);
+        VInterfaceConfig biconf1 = new VInterfaceConfig();
+        assertEquals(null, interfaces.put(bifId1, biconf1));
+        assertEquals(null, bridgeIfs.put(bifId1, biconf1));
+        bconf1.addInterface(bifId1.getInterfaceNameString(), biconf1);
+        assertEquals(VtnUpdateType.CREATED,
+                     biconf1.update(vinterfaceService, bifId1, null, null));
+        vnet.verify();
+
+        VBridgeIfIdentifier bifId2 = vbrId1.childInterface(iname2);
+        VInterfaceConfig biconf2 = new VInterfaceConfig("vBridge-IF 2", false);
+        assertEquals(null, interfaces.put(bifId2, biconf2));
+        assertEquals(null, bridgeIfs.put(bifId2, biconf2));
+        bconf1.addInterface(bifId2.getInterfaceNameString(), biconf2);
+        assertEquals(VtnUpdateType.CREATED,
+                     biconf2.update(vinterfaceService, bifId2,
+                                    VnodeUpdateMode.CREATE, null));
+        vnet.verify();
+
+        VBridgeIfIdentifier bifId3 = vbrId1.childInterface(iname3);
+        VInterfaceConfig biconf3 = new VInterfaceConfig("vBridge-IF 3", true);
+        assertEquals(null, interfaces.put(bifId3, biconf3));
+        assertEquals(null, bridgeIfs.put(bifId3, biconf3));
+        bconf1.addInterface(bifId3.getInterfaceNameString(), biconf3);
+        assertEquals(VtnUpdateType.CREATED,
+                     biconf3.update(vinterfaceService, bifId3,
+                                    VnodeUpdateMode.UPDATE, null));
+        vnet.verify();
+
+        // Create 1 virtual interfaces per vTerminal.
+        Map<VTerminalIfIdentifier, VInterfaceConfig> termIfs = new HashMap<>();
+        VTerminalConfig vtconf1 = vnet.getTerminal(vtermId1);
+        VTerminalIfIdentifier tifId1 = vtermId1.childInterface(iname1);
+        VInterfaceConfig ticonf1 = new VInterfaceConfig();
+        assertEquals(null, interfaces.put(tifId1, ticonf1));
+        assertEquals(null, termIfs.put(tifId1, ticonf1));
+        vtconf1.addInterface(tifId1.getInterfaceNameString(), ticonf1);
+        assertEquals(VtnUpdateType.CREATED,
+                     ticonf1.update(vinterfaceService, tifId1, null, null));
+        vnet.verify();
+
+        VTerminalConfig vtconf2 = vnet.getTerminal(vtermId2);
+        VTerminalIfIdentifier tifId2 = vtermId2.childInterface(iname2);
+        VInterfaceConfig ticonf2 = new VInterfaceConfig(null, true);
+        assertEquals(null, interfaces.put(tifId2, ticonf2));
+        assertEquals(null, termIfs.put(tifId2, ticonf2));
+        vtconf2.addInterface(tifId2.getInterfaceNameString(), ticonf2);
+        assertEquals(VtnUpdateType.CREATED,
+                     ticonf2.update(vinterfaceService, tifId2,
+                                    VnodeUpdateMode.CREATE, null));
+        vnet.verify();
+
+        VTerminalConfig vtconf3 = vnet.getTerminal(vtermId3);
+        VTerminalIfIdentifier tifId3 = vtermId3.childInterface(iname3);
+        VInterfaceConfig ticonf3 =
+            new VInterfaceConfig("vTerminal-IF 3", false);
+        assertEquals(null, interfaces.put(tifId3, ticonf3));
+        assertEquals(null, termIfs.put(tifId3, ticonf3));
+        vtconf3.addInterface(tifId3.getInterfaceNameString(), ticonf3);
+        assertEquals(VtnUpdateType.CREATED,
+                     ticonf3.update(vinterfaceService, tifId3,
+                                    VnodeUpdateMode.UPDATE, null));
+        vnet.verify();
+
+        // Add random configuration.
+        Random rand = new Random(271828L);
+        bconf1.add(rand);
+        vnet.getBridge(vbrId2).add(rand);
+        for (VInterfaceConfig iconf: interfaces.values()) {
+            iconf.add(rand);
+        }
+
+        vnet.apply().verify();
+
+        // Try to update with the same parameter.
+        VnodeUpdateMode[] modifyModes = {
+            null,
+            VnodeUpdateMode.UPDATE,
+            VnodeUpdateMode.MODIFY,
+        };
+        VtnUpdateOperationType[] modifyOperations = {
+            null,
+            VtnUpdateOperationType.SET,
+            VtnUpdateOperationType.ADD,
+        };
+        for (Entry<VInterfaceIdentifier<?>, VInterfaceConfig> entry:
+                 interfaces.entrySet()) {
+            VInterfaceIdentifier<?> ifId = entry.getKey();
+            VInterfaceConfig iconf = entry.getValue();
+            for (VnodeUpdateMode mode: modifyModes) {
+                for (VtnUpdateOperationType op: modifyOperations) {
+                    assertEquals(null,
+                                 iconf.update(vinterfaceService, ifId, mode,
+                                              op));
+                }
+            }
+        }
+
+        // Change parameters using ADD operation.
+        // terminal-name should be ignored if bridge-name is specified.
+        String unknownName = "unknown";
+        biconf1.setDescription("vBridge interface 1");
+        UpdateVinterfaceInput input = new UpdateVinterfaceInputBuilder().
+            setTenantName(bifId1.getTenantNameString()).
+            setBridgeName(bifId1.getBridgeNameString()).
+            setTerminalName(unknownName).
+            setInterfaceName(bifId1.getInterfaceNameString()).
+            setDescription(biconf1.getDescription()).
+            setOperation(VtnUpdateOperationType.ADD).
+            setUpdateMode(VnodeUpdateMode.MODIFY).
+            build();
+        assertEquals(VtnUpdateType.CHANGED,
+                     getRpcResult(vinterfaceService.updateVinterface(input)));
+        vnet.verify();
+
+        biconf2.setEnabled(true);
+        input = new UpdateVinterfaceInputBuilder().
+            setTenantName(bifId2.getTenantNameString()).
+            setBridgeName(bifId2.getBridgeNameString()).
+            setTerminalName(unknownName).
+            setInterfaceName(bifId2.getInterfaceNameString()).
+            setEnabled(biconf2.isEnabled()).
+            setOperation(VtnUpdateOperationType.ADD).
+            setUpdateMode(VnodeUpdateMode.UPDATE).
+            build();
+        assertEquals(VtnUpdateType.CHANGED,
+                     getRpcResult(vinterfaceService.updateVinterface(input)));
+        vnet.verify();
+
+        biconf3.setDescription("vBridge interface 3").
+            setEnabled(false);
+        input = new UpdateVinterfaceInputBuilder().
+            setTenantName(bifId3.getTenantNameString()).
+            setBridgeName(bifId3.getBridgeNameString()).
+            setTerminalName(unknownName).
+            setInterfaceName(bifId3.getInterfaceNameString()).
+            setDescription(biconf3.getDescription()).
+            setEnabled(biconf3.isEnabled()).
+            build();
+        assertEquals(VtnUpdateType.CHANGED,
+                     getRpcResult(vinterfaceService.updateVinterface(input)));
+        vnet.verify();
+
+        ticonf1.setDescription("vTerminal interface 1");
+        input = new UpdateVinterfaceInputBuilder().
+            setTenantName(tifId1.getTenantNameString()).
+            setTerminalName(tifId1.getBridgeNameString()).
+            setInterfaceName(tifId1.getInterfaceNameString()).
+            setDescription(ticonf1.getDescription()).
+            build();
+        assertEquals(VtnUpdateType.CHANGED,
+                     getRpcResult(vinterfaceService.updateVinterface(input)));
+        vnet.verify();
+
+        ticonf2.setEnabled(false);
+        input = new UpdateVinterfaceInputBuilder().
+            setTenantName(tifId2.getTenantNameString()).
+            setTerminalName(tifId2.getBridgeNameString()).
+            setInterfaceName(tifId2.getInterfaceNameString()).
+            setEnabled(ticonf2.isEnabled()).
+            setOperation(VtnUpdateOperationType.ADD).
+            setUpdateMode(VnodeUpdateMode.UPDATE).
+            build();
+        assertEquals(VtnUpdateType.CHANGED,
+                     getRpcResult(vinterfaceService.updateVinterface(input)));
+        vnet.verify();
+
+        ticonf3.setDescription("vTerminal interface 3").
+            setEnabled(true);
+        input = new UpdateVinterfaceInputBuilder().
+            setTenantName(tifId3.getTenantNameString()).
+            setTerminalName(tifId3.getBridgeNameString()).
+            setInterfaceName(tifId3.getInterfaceNameString()).
+            setDescription(ticonf3.getDescription()).
+            setEnabled(ticonf3.isEnabled()).
+            setOperation(VtnUpdateOperationType.ADD).
+            setUpdateMode(VnodeUpdateMode.MODIFY).
+            build();
+        assertEquals(VtnUpdateType.CHANGED,
+                     getRpcResult(vinterfaceService.updateVinterface(input)));
+        vnet.verify();
+
+        // Change parameters using SET operation.
+        biconf1.setDescription("vBridge interface 1 (SET)").
+            setEnabled(false);
+        assertEquals(VtnUpdateType.CHANGED,
+                     biconf1.update(vinterfaceService, bifId1, null,
+                                    VtnUpdateOperationType.SET));
+        vnet.verify();
+
+        biconf2.setDescription("vBridge interface 2 (SET)").
+            setEnabled(null);
+        assertEquals(VtnUpdateType.CHANGED,
+                     biconf2.update(vinterfaceService, bifId2, null,
+                                    VtnUpdateOperationType.SET));
+        vnet.verify();
+
+        biconf3.setDescription(null).
+            setEnabled(null);
+        assertEquals(VtnUpdateType.CHANGED,
+                     biconf3.update(vinterfaceService, bifId3, null,
+                                    VtnUpdateOperationType.SET));
+        vnet.verify();
+
+        ticonf1.setEnabled(false);
+        assertEquals(VtnUpdateType.CHANGED,
+                     ticonf1.update(vinterfaceService, tifId1, null,
+                                    VtnUpdateOperationType.SET));
+        vnet.verify();
+
+        ticonf2.setDescription(null).
+            setEnabled(null);
+        assertEquals(VtnUpdateType.CHANGED,
+                     ticonf2.update(vinterfaceService, tifId2, null,
+                                    VtnUpdateOperationType.SET));
+        vnet.verify();
+
+        ticonf3.setDescription("vTerminal interface 3 (SET)").
+            setEnabled(false);
+        assertEquals(VtnUpdateType.CHANGED,
+                     ticonf3.update(vinterfaceService, tifId3, null,
+                                    VtnUpdateOperationType.SET));
+        vnet.verify();
+
+        // Error tests.
+
+        // Null input.
+        checkRpcError(vinterfaceService.updateVinterface(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+        checkRpcError(vinterfaceService.removeVinterface(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        for (VnodeUpdateMode mode: VnodeUpdateMode.values()) {
+            // Null tenant-name.
+            input = new UpdateVinterfaceInputBuilder().
+                setUpdateMode(mode).
+                build();
+            checkRpcError(vinterfaceService.updateVinterface(input),
+                          RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+            input = new UpdateVinterfaceInputBuilder().
+                setBridgeName(bname1).
+                setInterfaceName(iname1).
+                setUpdateMode(mode).
+                build();
+            checkRpcError(vinterfaceService.updateVinterface(input),
+                          RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+            input = new UpdateVinterfaceInputBuilder().
+                setTerminalName(bname1).
+                setInterfaceName(iname1).
+                setUpdateMode(mode).
+                build();
+            checkRpcError(vinterfaceService.updateVinterface(input),
+                          RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+            // No bridge name.
+            input = new UpdateVinterfaceInputBuilder().
+                setTenantName(tname1).
+                setInterfaceName(iname1).
+                setUpdateMode(mode).
+                build();
+            checkRpcError(vinterfaceService.updateVinterface(input),
+                          RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+            // Null interface-name.
+            input = new UpdateVinterfaceInputBuilder().
+                setTenantName(tname1).
+                setBridgeName(bname1).
+                setUpdateMode(mode).
+                build();
+            checkRpcError(vinterfaceService.updateVinterface(input),
+                          RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+            input = new UpdateVinterfaceInputBuilder().
+                setTenantName(tname1).
+                setTerminalName(bname1).
+                setUpdateMode(mode).
+                build();
+            checkRpcError(vinterfaceService.updateVinterface(input),
+                          RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+        }
+
+        // Null tenant-name.
+        RemoveVinterfaceInput rinput = new RemoveVinterfaceInputBuilder().
+            build();
+        checkRpcError(vinterfaceService.removeVinterface(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        rinput = new RemoveVinterfaceInputBuilder().
+            setBridgeName(bname1).
+            setInterfaceName(iname1).
+            build();
+        checkRpcError(vinterfaceService.removeVinterface(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        rinput = new RemoveVinterfaceInputBuilder().
+            setTerminalName(bname1).
+            setInterfaceName(iname1).
+            build();
+        checkRpcError(vinterfaceService.removeVinterface(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // No bridge name.
+        rinput = new RemoveVinterfaceInputBuilder().
+            setTenantName(tname1).
+            setInterfaceName(iname1).
+            build();
+        checkRpcError(vinterfaceService.removeVinterface(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // Null interface-name.
+        rinput = new RemoveVinterfaceInputBuilder().
+            setTenantName(tname1).
+            setBridgeName(bname1).
+            build();
+        checkRpcError(vinterfaceService.removeVinterface(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        rinput = new RemoveVinterfaceInputBuilder().
+            setTenantName(tname1).
+            setTerminalName(bname1).
+            build();
+        checkRpcError(vinterfaceService.removeVinterface(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        for (String name: INVALID_VNODE_NAMES) {
+            for (VnodeUpdateMode mode: VnodeUpdateMode.values()) {
+                // Invalid tenant-name.
+                input = new UpdateVinterfaceInputBuilder().
+                    setTenantName(name).
+                    setBridgeName(bname1).
+                    setInterfaceName(iname1).
+                    setUpdateMode(mode).
+                    build();
+                checkRpcError(vinterfaceService.updateVinterface(input),
+                              RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+                input = new UpdateVinterfaceInputBuilder().
+                    setTenantName(name).
+                    setTerminalName(bname1).
+                    setInterfaceName(iname1).
+                    setUpdateMode(mode).
+                    build();
+                checkRpcError(vinterfaceService.updateVinterface(input),
+                              RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+                // Invalid bridge-name.
+                input = new UpdateVinterfaceInputBuilder().
+                    setTenantName(tname1).
+                    setBridgeName(name).
+                    setInterfaceName(iname1).
+                    setUpdateMode(mode).
+                    build();
+                checkRpcError(vinterfaceService.updateVinterface(input),
+                              RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+                // Invalid terminal-name.
+                input = new UpdateVinterfaceInputBuilder().
+                    setTenantName(tname1).
+                    setTerminalName(name).
+                    setInterfaceName(iname1).
+                    setUpdateMode(mode).
+                    build();
+                checkRpcError(vinterfaceService.updateVinterface(input),
+                              RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+                // Invalid interface-name.
+                RpcErrorTag etag;
+                VtnErrorTag vtag;
+                if (mode == VnodeUpdateMode.MODIFY) {
+                    etag = RpcErrorTag.DATA_MISSING;
+                    vtag = VtnErrorTag.NOTFOUND;
+                } else {
+                    etag = RpcErrorTag.BAD_ELEMENT;
+                    vtag = VtnErrorTag.BADREQUEST;
+                }
+                input = new UpdateVinterfaceInputBuilder().
+                    setTenantName(tname1).
+                    setBridgeName(bname1).
+                    setInterfaceName(name).
+                    setUpdateMode(mode).
+                    build();
+                checkRpcError(vinterfaceService.updateVinterface(input),
+                              etag, vtag);
+
+                input = new UpdateVinterfaceInputBuilder().
+                    setTenantName(tname1).
+                    setTerminalName(bname1).
+                    setInterfaceName(name).
+                    setUpdateMode(mode).
+                    build();
+                checkRpcError(vinterfaceService.updateVinterface(input),
+                              etag, vtag);
+            }
+
+            // Invalid tenant-name.
+            rinput = new RemoveVinterfaceInputBuilder().
+                setTenantName(name).
+                setBridgeName(bname1).
+                setInterfaceName(iname1).
+                build();
+            checkRpcError(vinterfaceService.removeVinterface(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            rinput = new RemoveVinterfaceInputBuilder().
+                setTenantName(name).
+                setTerminalName(bname1).
+                setInterfaceName(iname1).
+                build();
+            checkRpcError(vinterfaceService.removeVinterface(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            // Invalid bridge-name.
+            rinput = new RemoveVinterfaceInputBuilder().
+                setTenantName(tname1).
+                setBridgeName(name).
+                setInterfaceName(iname1).
+                build();
+            checkRpcError(vinterfaceService.removeVinterface(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            // Invalid terminal-name.
+            rinput = new RemoveVinterfaceInputBuilder().
+                setTenantName(tname1).
+                setTerminalName(name).
+                setInterfaceName(iname1).
+                build();
+            checkRpcError(vinterfaceService.removeVinterface(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            // Invalid interface-name.
+            rinput = new RemoveVinterfaceInputBuilder().
+                setTenantName(tname1).
+                setBridgeName(bname1).
+                setInterfaceName(name).
+                build();
+            checkRpcError(vinterfaceService.removeVinterface(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            rinput = new RemoveVinterfaceInputBuilder().
+                setTenantName(tname1).
+                setTerminalName(bname1).
+                setInterfaceName(name).
+                build();
+            checkRpcError(vinterfaceService.removeVinterface(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+        }
+
+        for (VInterfaceIdentifier<?> ifId: interfaces.keySet()) {
+            String tname = ifId.getTenantNameString();
+            VirtualNodePath vpath = ifId.getVirtualNodePath();
+
+            // Modifying virtual interface that is not present.
+            UpdateVinterfaceInputBuilder builder =
+                new UpdateVinterfaceInputBuilder();
+            builder.fieldsFrom(vpath);
+            input = builder.setTenantName(unknownName).
+                setUpdateMode(VnodeUpdateMode.MODIFY).
+                build();
+            checkRpcError(vinterfaceService.updateVinterface(input),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            input = builder.setTenantName(tname).
+                setBridgeName(unknownName).
+                setTerminalName(null).
+                build();
+            checkRpcError(vinterfaceService.updateVinterface(input),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            input = builder.setBridgeName(null).
+                setTerminalName(unknownName).
+                build();
+            checkRpcError(vinterfaceService.updateVinterface(input),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            builder.fieldsFrom(vpath);
+            input = builder.setInterfaceName(unknownName).
+                build();
+            checkRpcError(vinterfaceService.updateVinterface(input),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            // Removing virtual interface that is not present.
+            RemoveVinterfaceInputBuilder rbuilder =
+                new RemoveVinterfaceInputBuilder();
+            rbuilder.fieldsFrom(vpath);
+            rinput = rbuilder.setTenantName(unknownName).
+                build();
+            checkRpcError(vinterfaceService.removeVinterface(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            rinput = rbuilder.setTenantName(tname).
+                setBridgeName(unknownName).
+                setTerminalName(null).
+                build();
+            checkRpcError(vinterfaceService.removeVinterface(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            rinput = rbuilder.setBridgeName(null).
+                setTerminalName(unknownName).
+                build();
+            checkRpcError(vinterfaceService.removeVinterface(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            rbuilder.fieldsFrom(vpath);
+            rinput = rbuilder.setInterfaceName(unknownName).
+                build();
+            checkRpcError(vinterfaceService.removeVinterface(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            // Name confliction.
+            builder.fieldsFrom(vpath);
+            input = builder.setUpdateMode(VnodeUpdateMode.CREATE).
+                build();
+            checkRpcError(vinterfaceService.updateVinterface(input),
+                          RpcErrorTag.DATA_EXISTS, VtnErrorTag.CONFLICT);
+        }
+
+        // Adding more than one interfaces to vTerminal.
+        for (VTerminalIfIdentifier ifId: termIfs.keySet()) {
+            for (VnodeUpdateMode mode: VnodeUpdateMode.values()) {
+                RpcErrorTag etag;
+                VtnErrorTag vtag;
+                if (mode == VnodeUpdateMode.MODIFY) {
+                    etag = RpcErrorTag.DATA_MISSING;
+                    vtag = VtnErrorTag.NOTFOUND;
+                } else {
+                    etag = RpcErrorTag.DATA_EXISTS;
+                    vtag = VtnErrorTag.CONFLICT;
+                }
+                input = new UpdateVinterfaceInputBuilder().
+                    setTenantName(ifId.getTenantNameString()).
+                    setTerminalName(ifId.getBridgeNameString()).
+                    setInterfaceName(unknownName).
+                    setUpdateMode(mode).
+                    build();
+                checkRpcError(vinterfaceService.updateVinterface(input),
+                              etag, vtag);
+            }
+        }
+
+        // Errors should never affect existing virtual interfaces.
+        vnet.verify();
+
+        // Remove bifId1, bifId3, and tifId2.
+        assertEquals(biconf2, interfaces.remove(bifId2));
+        assertEquals(ticonf1, interfaces.remove(tifId1));
+        assertEquals(ticonf3, interfaces.remove(tifId3));
+        for (VInterfaceIdentifier<?> ifId: interfaces.keySet()) {
+            removeVinterface(vinterfaceService, ifId);
+            vnet.removeInterface(ifId).verify();
+        }
+
+        // Remove vbrId1, vtermId1, and vtermId2.
+        removeVbridge(vbridgeService, vbrId1);
+        vnet.removeBridge(vbrId1).verify();
+        removeVterminal(vterminalService, vtermId1);
+        vnet.removeTerminal(vtermId1).verify();
+        removeVterminal(vterminalService, vtermId2);
+        vnet.removeTerminal(vtermId2).verify();
+
+        // Remove VTNs.
+        Set<String> nameSet = new HashSet<>(vnet.getTenants().keySet());
+        for (String tname: nameSet) {
+            removeVtn(vtnService, tname);
+            vnet.removeTenant(tname).verify();
+        }
+    }
+
+    /**
+     * Test case for {@link VtnVlanMapService}.
+     *
+     * <p>
+     *   This test is independent of inventory information.
+     * </p>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testVlanMapService() throws Exception {
+        LOG.info("Running testVlanMapService().");
+
+        // Create 3 vBridges.
+        VirtualNetwork vnet = new VirtualNetwork(this);
+        String tname1 = "vtn_1";
+        String bname1 = "bridge_1";
+        String bname2 = "bridge_2";
+        String bname3 = "bridge_3";
+
+        VBridgeIdentifier vbrId1 = new VBridgeIdentifier(tname1, bname1);
+        VBridgeIdentifier vbrId2 = new VBridgeIdentifier(tname1, bname2);
+        VBridgeIdentifier vbrId3 = new VBridgeIdentifier(tname1, bname3);
+        vnet.addBridge(vbrId1, vbrId2, vbrId3).apply();
+
+        // Map VLAN 0 to vbrId1.
+        List<VTNVlanMapConfig> vmaps1 = new ArrayList<>();
+        VBridgeConfig bconf1 = vnet.getBridge(vbrId1);
+        VTNVlanMapConfig vmap11 = new VTNVlanMapConfig();
+        vmaps1.add(vmap11);
+        bconf1.addVlanMap(vmap11);
+        AddVlanMapInput input = vmap11.newInputBuilder(vbrId1).build();
+        AddVlanMapOutput output =
+            getRpcOutput(vlanMapService.addVlanMap(input));
+        assertEquals(vmap11.getMapId(), output.getMapId());
+        assertEquals(Boolean.TRUE, output.isActive());
+        vnet.verify();
+
+        // Map VLAN 4095 to vbrId1.
+        VTNVlanMapConfig vmap12 = new VTNVlanMapConfig(4095);
+        vmaps1.add(vmap12);
+        bconf1.addVlanMap(vmap12);
+        input = vmap12.newInputBuilder(vbrId1).build();
+        output = getRpcOutput(vlanMapService.addVlanMap(input));
+        assertEquals(vmap12.getMapId(), output.getMapId());
+        assertEquals(Boolean.TRUE, output.isActive());
+        vnet.verify();
+
+        // Map VLAN 10 on node1 (should not be present) to vbrId1.
+        String node1 = ID_OPENFLOW + "1";
+        VTNVlanMapConfig vmap13 = new VTNVlanMapConfig(node1, 10).
+            setActive(false);
+        vmaps1.add(vmap13);
+        bconf1.addVlanMap(vmap13);
+        input = vmap13.newInputBuilder(vbrId1).build();
+        output = getRpcOutput(vlanMapService.addVlanMap(input));
+        assertEquals(vmap13.getMapId(), output.getMapId());
+        assertEquals(Boolean.FALSE, output.isActive());
+        vnet.verify();
+
+        // Map VLAN 0 on node1 to vbrId2.
+        List<VTNVlanMapConfig> vmaps2 = new ArrayList<>();
+        VBridgeConfig bconf2 = vnet.getBridge(vbrId2);
+        VTNVlanMapConfig vmap21 = new VTNVlanMapConfig(node1, null).
+            setActive(false);
+        vmaps2.add(vmap21);
+        bconf2.addVlanMap(vmap21);
+        input = vmap21.newInputBuilder(vbrId2).build();
+        output = getRpcOutput(vlanMapService.addVlanMap(input));
+        assertEquals(vmap21.getMapId(), output.getMapId());
+        assertEquals(Boolean.FALSE, output.isActive());
+        vnet.verify();
+
+        // Map VLAN 1 to vbrId2.
+        VTNVlanMapConfig vmap22 = new VTNVlanMapConfig(1);
+        vmaps2.add(vmap22);
+        bconf2.addVlanMap(vmap22);
+        input = vmap22.newInputBuilder(vbrId2).build();
+        output = getRpcOutput(vlanMapService.addVlanMap(input));
+        assertEquals(vmap22.getMapId(), output.getMapId());
+        assertEquals(Boolean.TRUE, output.isActive());
+        vnet.verify();
+
+        // Map VLAN 30 on node2 (should not be present) to vbrId2.
+        String node2 = ID_OPENFLOW + "18446744073709551615";
+        VTNVlanMapConfig vmap23 = new VTNVlanMapConfig(node2, 30).
+            setActive(false);
+        vmaps2.add(vmap23);
+        bconf2.addVlanMap(vmap23);
+        input = vmap23.newInputBuilder(vbrId2).build();
+        output = getRpcOutput(vlanMapService.addVlanMap(input));
+        assertEquals(vmap23.getMapId(), output.getMapId());
+        assertEquals(Boolean.FALSE, output.isActive());
+        vnet.verify();
+
+        // get-vlan-id test.
+        VBridgeIdentifier[] vbrIds = {vbrId2, vbrId3};
+        for (VTNVlanMapConfig vmap: vmaps1) {
+            GetVlanMapInput ginput = vmap.newGetInputBuilder(vbrId1).build();
+            GetVlanMapOutput goutput =
+                getRpcOutput(vlanMapService.getVlanMap(ginput));
+            assertEquals(vmap.getMapId(), goutput.getMapId());
+            Boolean active = Boolean.valueOf(vmap.getNode() == null);
+            assertEquals(active, goutput.isActive());
+
+            VTNVlanMapConfig copy = vmap.complete();
+            ginput = copy.newGetInputBuilder(vbrId1).build();
+            goutput = getRpcOutput(vlanMapService.getVlanMap(ginput));
+            assertEquals(vmap.getMapId(), goutput.getMapId());
+            assertEquals(active, goutput.isActive());
+
+            VTNVlanMapConfig[] vmaps = {vmap, copy};
+            for (VBridgeIdentifier vbrId: vbrIds) {
+                for (VTNVlanMapConfig vmc: vmaps) {
+                    ginput = vmc.newGetInputBuilder(vbrId).build();
+                    goutput = getRpcOutput(vlanMapService.getVlanMap(ginput));
+                    assertEquals(null, goutput.getMapId());
+                    assertEquals(null, goutput.isActive());
+                }
+            }
+        }
+
+        vbrIds = new VBridgeIdentifier[]{vbrId1, vbrId3};
+        for (VTNVlanMapConfig vmap: vmaps2) {
+            GetVlanMapInput ginput = vmap.newGetInputBuilder(vbrId2).build();
+            GetVlanMapOutput goutput =
+                getRpcOutput(vlanMapService.getVlanMap(ginput));
+            assertEquals(vmap.getMapId(), goutput.getMapId());
+            Boolean active = Boolean.valueOf(vmap.getNode() == null);
+            assertEquals(active, goutput.isActive());
+
+            VTNVlanMapConfig copy = vmap.complete();
+            ginput = copy.newGetInputBuilder(vbrId2).build();
+            goutput = getRpcOutput(vlanMapService.getVlanMap(ginput));
+            assertEquals(vmap.getMapId(), goutput.getMapId());
+            assertEquals(active, goutput.isActive());
+
+            VTNVlanMapConfig[] vmaps = {vmap, copy};
+            for (VBridgeIdentifier vbrId: vbrIds) {
+                for (VTNVlanMapConfig vmc: vmaps) {
+                    ginput = vmc.newGetInputBuilder(vbrId).build();
+                    goutput = getRpcOutput(vlanMapService.getVlanMap(ginput));
+                    assertEquals(null, goutput.getMapId());
+                    assertEquals(null, goutput.isActive());
+                }
+            }
+        }
+
+        // Error tests.
+
+        // Null input.
+        checkRpcError(vlanMapService.addVlanMap(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+        checkRpcError(vlanMapService.removeVlanMap(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+        checkRpcError(vlanMapService.getVlanMap(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // Null tenant-name.
+        input = new AddVlanMapInputBuilder().build();
+        checkRpcError(vlanMapService.addVlanMap(input),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        input = new AddVlanMapInputBuilder().
+            setBridgeName(bname1).
+            build();
+        checkRpcError(vlanMapService.addVlanMap(input),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        RemoveVlanMapInput rinput = new RemoveVlanMapInputBuilder().build();
+        checkRpcError(vlanMapService.removeVlanMap(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        rinput = new RemoveVlanMapInputBuilder().
+            setBridgeName(bname1).
+            build();
+        checkRpcError(vlanMapService.removeVlanMap(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        GetVlanMapInput ginput = new GetVlanMapInputBuilder().build();
+        checkRpcError(vlanMapService.getVlanMap(ginput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        ginput = new GetVlanMapInputBuilder().
+            setBridgeName(bname1).
+            build();
+        checkRpcError(vlanMapService.getVlanMap(ginput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // Null bridge-name.
+        input = new AddVlanMapInputBuilder().
+            setTenantName(tname1).
+            build();
+        checkRpcError(vlanMapService.addVlanMap(input),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        rinput = new RemoveVlanMapInputBuilder().
+            setTenantName(tname1).
+            build();
+        checkRpcError(vlanMapService.removeVlanMap(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        ginput = new GetVlanMapInputBuilder().
+            setTenantName(tname1).
+            build();
+        checkRpcError(vlanMapService.getVlanMap(ginput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        for (String name: INVALID_VNODE_NAMES) {
+            // Invalid tenant-name.
+            input = new AddVlanMapInputBuilder().
+                setTenantName(name).
+                setBridgeName(bname1).
+                build();
+            checkRpcError(vlanMapService.addVlanMap(input),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            rinput = new RemoveVlanMapInputBuilder().
+                setTenantName(name).
+                setBridgeName(bname1).
+                build();
+            checkRpcError(vlanMapService.removeVlanMap(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            ginput = new GetVlanMapInputBuilder().
+                setTenantName(name).
+                setBridgeName(bname1).
+                build();
+            checkRpcError(vlanMapService.getVlanMap(ginput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            // Invalid bridge-name.
+            input = new AddVlanMapInputBuilder().
+                setTenantName(tname1).
+                setBridgeName(name).
+                build();
+            checkRpcError(vlanMapService.addVlanMap(input),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            rinput = new RemoveVlanMapInputBuilder().
+                setTenantName(tname1).
+                setBridgeName(name).
+                build();
+            checkRpcError(vlanMapService.removeVlanMap(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            ginput = new GetVlanMapInputBuilder().
+                setTenantName(tname1).
+                setBridgeName(name).
+                build();
+            checkRpcError(vlanMapService.getVlanMap(ginput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+        }
+
+        // Specifying vBridge that is not present.
+        String unknownName = "unknown";
+        input = new AddVlanMapInputBuilder().
+            setTenantName(unknownName).
+            setBridgeName(bname1).
+            build();
+        checkRpcError(vlanMapService.addVlanMap(input),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        input = new AddVlanMapInputBuilder().
+            setTenantName(tname1).
+            setBridgeName(unknownName).
+            build();
+        checkRpcError(vlanMapService.addVlanMap(input),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        rinput = new RemoveVlanMapInputBuilder().
+            setTenantName(unknownName).
+            setBridgeName(bname1).
+            build();
+        checkRpcError(vlanMapService.removeVlanMap(rinput),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        rinput = new RemoveVlanMapInputBuilder().
+            setTenantName(tname1).
+            setBridgeName(unknownName).
+            build();
+        checkRpcError(vlanMapService.removeVlanMap(rinput),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        ginput = new GetVlanMapInputBuilder().
+            setTenantName(unknownName).
+            setBridgeName(bname1).
+            build();
+        checkRpcError(vlanMapService.getVlanMap(ginput),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        ginput = new GetVlanMapInputBuilder().
+            setTenantName(tname1).
+            setBridgeName(unknownName).
+            build();
+        checkRpcError(vlanMapService.getVlanMap(ginput),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        // Invalid node ID.
+        for (String node: INVALID_NODE_IDS) {
+            VTNVlanMapConfig vmap = new VTNVlanMapConfig(node, 0);
+            input = vmap.newInputBuilder(vbrId1).build();
+            checkRpcError(vlanMapService.addVlanMap(input),
+                          RpcErrorTag.BAD_ELEMENT, VtnErrorTag.BADREQUEST);
+
+            ginput = vmap.newGetInputBuilder(vbrId1).build();
+            GetVlanMapOutput goutput =
+                getRpcOutput(vlanMapService.getVlanMap(ginput));
+            assertEquals(null, goutput.getMapId());
+            assertEquals(null, goutput.isActive());
+        }
+
+        // Already mapped.
+        List<VTNVlanMapConfig> allMaps = new ArrayList<>(vmaps1);
+        allMaps.addAll(vmaps2);
+        vbrIds = new VBridgeIdentifier[]{vbrId1, vbrId2, vbrId3};
+        for (VBridgeIdentifier vbrId: vbrIds) {
+            for (VTNVlanMapConfig vmap: allMaps) {
+                input = vmap.newInputBuilder(vbrId).build();
+                checkRpcError(vlanMapService.addVlanMap(input),
+                              RpcErrorTag.DATA_EXISTS, VtnErrorTag.CONFLICT);
+            }
+        }
+
+        // Errors should never affect existing VLAN mappings.
+        vnet.verify();
+
+        // Remove all VLAN mappings.
+        for (VTNVlanMapConfig vmap: vmaps1) {
+            String mapId = vmap.getMapId();
+            Map<String, VtnUpdateType> expected = new HashMap<>();
+            expected.put(mapId, VtnUpdateType.REMOVED);
+            List<String> mapIds = Collections.singletonList(mapId);
+            Map<String, VtnUpdateType> result =
+                removeVlanMap(vlanMapService, vbrId1, mapIds);
+            assertEquals(expected, result);
+            bconf1.removeVlanMap(mapId);
+            vnet.verify();
+        }
+
+        Map<String, VtnUpdateType> expected = new HashMap<>();
+        List<String> mapIds = new ArrayList<>();
+        for (VTNVlanMapConfig vmap: vmaps1) {
+            String mapId = vmap.getMapId();
+            expected.put(mapId, null);
+            mapIds.add(mapId);
+        }
+
+        for (VTNVlanMapConfig vmap: vmaps2) {
+            String mapId = vmap.getMapId();
+            expected.put(mapId, VtnUpdateType.REMOVED);
+            mapIds.add(mapId);
+        }
+
+        Map<String, VtnUpdateType> result =
+            removeVlanMap(vlanMapService, vbrId2, mapIds);
+        assertEquals(expected, result);
+        bconf2.clearVlanMap();
+        vnet.verify();
+
+        // Restore all the VLAN mappigs into vbrId3.
+        VBridgeConfig bconf3 = vnet.getBridge(vbrId3);
+        for (VTNVlanMapConfig vmap: allMaps) {
+            bconf3.addVlanMap(vmap);
+            input = vmap.newInputBuilder(vbrId3).build();
+            output = getRpcOutput(vlanMapService.addVlanMap(input));
+            assertEquals(vmap.getMapId(), output.getMapId());
+            Boolean active = Boolean.valueOf(vmap.getNode() == null);
+            assertEquals(active, output.isActive());
+            vnet.verify();
+        }
+
+        // Remove vbrId3.
+        removeVbridge(vbridgeService, vbrId3);
+        vnet.removeBridge(vbrId3).verify();
+
+        // Restore all the VLAN mappings into another VTN.
+        String tname2 = "vtn_2";
+        VBridgeIdentifier vbrId4 = new VBridgeIdentifier(tname2, bname1);
+        vnet.addBridge(vbrId4).apply();
+        VBridgeConfig bconf4 = vnet.getBridge(vbrId4);
+        for (VTNVlanMapConfig vmap: allMaps) {
+            bconf4.addVlanMap(vmap);
+            input = vmap.newInputBuilder(vbrId4).build();
+            output = getRpcOutput(vlanMapService.addVlanMap(input));
+            assertEquals(vmap.getMapId(), output.getMapId());
+            Boolean active = Boolean.valueOf(vmap.getNode() == null);
+            assertEquals(active, output.isActive());
+            vnet.verify();
+        }
+
+        // Remove vtn_2.
+        removeVtn(vtnService, tname2);
+        vnet.removeTenant(tname2).verify();
+
+        // Restore all the VLAN mappings into vbrId1.
+        for (VTNVlanMapConfig vmap: allMaps) {
+            bconf1.addVlanMap(vmap);
+            input = vmap.newInputBuilder(vbrId1).build();
+            output = getRpcOutput(vlanMapService.addVlanMap(input));
+            assertEquals(vmap.getMapId(), output.getMapId());
+            Boolean active = Boolean.valueOf(vmap.getNode() == null);
+            assertEquals(active, output.isActive());
+            vnet.verify();
+        }
+
+        // Remove vtn_1.
+        removeVtn(vtnService, tname1);
+        vnet.removeTenant(tname1).verify();
+    }
+
+    /**
+     * Test case for {@link VtnVlanMapService} that depends on inventory
+     * information.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testVlanMapStatus() throws Exception {
+        LOG.info("Running testVlanMapStatus().");
+
+        // Determine nodes that has at least one edge port.
+        String edgeNode = null;
+        String internalNode = null;
+        List<String> edgePorts = null;
+        for (String nid: ofMockService.getNodes()) {
+            List<String> edges = ofMockService.getPorts(nid, true);
+            if (edges.isEmpty()) {
+                internalNode = nid;
+            } else {
+                edgeNode = nid;
+                edgePorts = edges;
+            }
+
+            if (edgeNode != null && internalNode != null) {
+                break;
+            }
+        }
+
+        assertNotNull(edgeNode);
+        assertNotNull(internalNode);
+
+        // Determine one port in internalNode that is not connected to
+        // edgeNode.
+        String internalPort = null;
+        for (String pid: ofMockService.getPorts(internalNode, false)) {
+            String peer = ofMockService.getPeerIdentifier(pid);
+            if (!internalNode.equals(OfMockUtils.getNodeIdentifier(peer))) {
+                internalPort = pid;
+            }
+        }
+        assertNotNull(internalPort);
+
+        // Create 2 vBridges.
+        VirtualNetwork vnet = new VirtualNetwork(this);
+        String tname1 = "vtn_1";
+        String bname1 = "bridge_1";
+        String bname2 = "bridge_2";
+
+        VBridgeIdentifier vbrId1 = new VBridgeIdentifier(tname1, bname1);
+        VBridgeIdentifier vbrId2 = new VBridgeIdentifier(tname1, bname2);
+        vnet.addBridge(vbrId1, vbrId2).apply();
+        VBridgeConfig bconf1 = vnet.getBridge(vbrId1);
+        VBridgeConfig bconf2 = vnet.getBridge(vbrId2);
+
+        // Map VLAN 1 on edgeNode to vbrId1.
+        VTNVlanMapConfig vmap1 = new VTNVlanMapConfig(edgeNode, 1).
+            setActive(Boolean.TRUE);
+        bconf1.addVlanMap(vmap1);
+        AddVlanMapInput input = vmap1.newInputBuilder(vbrId1).build();
+        AddVlanMapOutput output =
+            getRpcOutput(vlanMapService.addVlanMap(input));
+        assertEquals(vmap1.getMapId(), output.getMapId());
+        assertEquals(Boolean.TRUE, output.isActive());
+        vnet.verify();
+
+        // Map VLAN 1 on internalNode to vbrId2.
+        VTNVlanMapConfig vmap2 = new VTNVlanMapConfig(internalNode, 1).
+            setActive(Boolean.FALSE);
+        bconf2.addVlanMap(vmap2);
+        input = vmap2.newInputBuilder(vbrId2).build();
+        output = getRpcOutput(vlanMapService.addVlanMap(input));
+        assertEquals(vmap2.getMapId(), output.getMapId());
+        assertEquals(Boolean.FALSE, output.isActive());
+        vnet.verify();
+
+        // Down all the edge ports in edgeNode.
+        // Then the state of vbrId1 should be changed to DOWN.
+        for (String pid: edgePorts) {
+            assertEquals(true, ofMockService.setPortState(pid, false, false));
+        }
+
+        VNodeStateWaiter waiter = new VNodeStateWaiter(ofMockService).
+            set(vbrId1, VnodeState.DOWN).
+            await();
+        vmap1.setActive(Boolean.FALSE);
+        vnet.verify();
+
+        // Remove inter-switch link on internalPort.
+        // Then the state of vbrId2 should be changed to UP.
+        addStaticEdgePort(this, internalPort);
+        waiter.set(vbrId2, VnodeState.UP).await();
+        vmap2.setActive(Boolean.TRUE);
+        vnet.verify();
+
+        // Up all the edge ports in edgeNode.
+        // Then the state of vbrId1 should be changed to UP.
+        for (String pid: edgePorts) {
+            assertEquals(true, ofMockService.setPortState(pid, true, false));
+            waiter.set(vbrId1, VnodeState.UP).await();
+            vmap1.setActive(Boolean.TRUE);
+            vnet.verify();
+        }
+
+        // Remove static topology configuration.
+        // Then the state of vbrId2 should be changed to DOWN.
+        removeVtnStaticTopology(this);
+        waiter.set(vbrId2, VnodeState.DOWN).await();
+        vmap2.setActive(Boolean.FALSE);
+        vnet.verify();
+
+        // Remove VTN.
+        removeVtn(vtnService, tname1);
+        vnet.removeTenant(tname1).verify();
+    }
+
+    /**
+     * Test case for {@link VtnPortMapService}.
+     *
+     * <p>
+     *   This test is independent of inventory information.
+     * </p>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testPortMapService() throws Exception {
+        LOG.info("Running testPortMapService().");
+
+        // Create virtual interfaces.
+        VirtualNetwork vnet = new VirtualNetwork(this);
+        String tname1 = "vtn_1";
+        String bname1 = "bridge_1";
+        String bname2 = "bridge_2";
+        String bname3 = "bridge_3";
+        String bname4 = "bridge_4";
+        String iname1 = "if_1";
+        String iname2 = "if_2";
+        String iname3 = "if_3";
+        String[] bnames = {bname1, bname2, bname3, bname4};
+        String[] inames = {iname1, iname2, iname3};
+
+        List<VInterfaceIdentifier<?>> ifIds = new ArrayList<>();
+        for (String bname: bnames) {
+            for (String iname: inames) {
+                VBridgeIfIdentifier bifId =
+                    new VBridgeIfIdentifier(tname1, bname, iname);
+                ifIds.add(bifId);
+                vnet.addInterface(bifId);
+            }
+
+            VTerminalIfIdentifier tifId =
+                new VTerminalIfIdentifier(tname1, bname, iname1);
+            ifIds.add(tifId);
+            vnet.addInterface(tifId);
+        }
+
+        vnet.apply().verify();
+
+        // Set port mappings.
+        Random rand = new Random(3141592L);
+        String[] nodes = {
+            ID_OPENFLOW + "12345",
+            ID_OPENFLOW + "18446744073709551615",
+            ID_OPENFLOW + "1",
+            ID_OPENFLOW + "9999999",
+        };
+        String[] portIds = {
+            "1", "2", "45", "4294967040",
+        };
+        String[] portNames = {
+            "port-1", "ether-2", "if-4294967040",
+        };
+        Integer[] vlanIds = {
+            null, 0, 123, 4095,
+        };
+        for (VInterfaceIdentifier<?> ifId: ifIds) {
+            String node = nodes[rand.nextInt(nodes.length)];
+            String id = portIds[rand.nextInt(portIds.length)];
+            String name = portNames[rand.nextInt(portNames.length)];
+            Integer vid = vlanIds[rand.nextInt(vlanIds.length)];
+
+            int i = rand.nextInt(5);
+            if (i == 0) {
+                id = null;
+            } else if (i == 1) {
+                name = null;
+            }
+
+            VTNPortMapConfig pmap = new VTNPortMapConfig(node, id, name, vid);
+            assertEquals(VtnUpdateType.CREATED,
+                         pmap.update(portMapService, ifId));
+            vnet.getInterface(ifId).setPortMap(pmap);
+            vnet.verify();
+
+            // Try to set port mapping with the same parameter.
+            assertEquals(null, pmap.update(portMapService, ifId));
+            vnet.verify();
+        }
+
+        // Update port mappings.
+        String anotherNode = ID_OPENFLOW + "5";
+        String anotherPortId = "3";
+        String anotherPortName = "port-12345";
+        Integer anotherVid = 1;
+        for (VInterfaceIdentifier<?> ifId: ifIds) {
+            VInterfaceConfig iconf = vnet.getInterface(ifId);
+            VTNPortMapConfig pmap = iconf.getPortMap();
+            String node = pmap.getNode();
+            String id = pmap.getPortId();
+            String name = pmap.getPortName();
+            Integer vid = pmap.getVlanId();
+
+            pmap.setNode(anotherNode);
+            assertEquals(VtnUpdateType.CHANGED,
+                         pmap.update(portMapService, ifId));
+            vnet.verify();
+
+            pmap.setPortId(anotherPortId);
+            assertEquals(VtnUpdateType.CHANGED,
+                         pmap.update(portMapService, ifId));
+            vnet.verify();
+
+            pmap.setPortName(anotherPortName);
+            assertEquals(VtnUpdateType.CHANGED,
+                         pmap.update(portMapService, ifId));
+            vnet.verify();
+
+            pmap.setVlanId(anotherVid);
+            assertEquals(VtnUpdateType.CHANGED,
+                         pmap.update(portMapService, ifId));
+            vnet.verify();
+
+            pmap.setNode(node).
+                setPortId(id).
+                setPortName(name).
+                setVlanId(vid);
+            assertEquals(VtnUpdateType.CHANGED,
+                         pmap.update(portMapService, ifId));
+            vnet.verify();
+        }
+
+        // Error tests.
+
+        // Null input.
+        checkRpcError(portMapService.setPortMap(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+        checkRpcError(portMapService.removePortMap(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // Null tenant-name.
+        NodeId nodeId = new NodeId(nodes[0]);
+        SetPortMapInput input = new SetPortMapInputBuilder().build();
+        checkRpcError(portMapService.setPortMap(input),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        input = new SetPortMapInputBuilder().
+            setBridgeName(bname1).
+            setInterfaceName(iname1).
+            setNode(nodeId).
+            setPortId(portIds[0]).
+            build();
+        checkRpcError(portMapService.setPortMap(input),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        RemovePortMapInput rinput = new RemovePortMapInputBuilder().build();
+        checkRpcError(portMapService.removePortMap(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        rinput = new RemovePortMapInputBuilder().
+            setBridgeName(bname1).
+            setInterfaceName(iname1).
+            build();
+        checkRpcError(portMapService.removePortMap(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // No bridge name.
+        input = new SetPortMapInputBuilder().
+            setTenantName(tname1).
+            setInterfaceName(iname1).
+            setNode(nodeId).
+            setPortId(portIds[0]).
+            build();
+        checkRpcError(portMapService.setPortMap(input),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        rinput = new RemovePortMapInputBuilder().
+            setTenantName(tname1).
+            setInterfaceName(iname1).
+            build();
+        checkRpcError(portMapService.removePortMap(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // Null interface-name.
+        input = new SetPortMapInputBuilder().
+            setTenantName(tname1).
+            setBridgeName(bname1).
+            setNode(nodeId).
+            setPortId(portIds[0]).
+            build();
+        checkRpcError(portMapService.setPortMap(input),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        input = new SetPortMapInputBuilder().
+            setTenantName(tname1).
+            setTerminalName(bname1).
+            setNode(nodeId).
+            setPortId(portIds[0]).
+            build();
+        checkRpcError(portMapService.setPortMap(input),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        rinput = new RemovePortMapInputBuilder().
+            setTenantName(tname1).
+            setBridgeName(bname1).
+            build();
+        checkRpcError(portMapService.removePortMap(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        rinput = new RemovePortMapInputBuilder().
+            setTenantName(tname1).
+            setTerminalName(bname1).
+            build();
+        checkRpcError(portMapService.removePortMap(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        for (String name: INVALID_VNODE_NAMES) {
+            // Invalid tenant-name.
+            input = new SetPortMapInputBuilder().
+                setTenantName(name).
+                setBridgeName(bname1).
+                setInterfaceName(iname1).
+                setNode(nodeId).
+                setPortId(portIds[0]).
+                build();
+            checkRpcError(portMapService.setPortMap(input),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            input = new SetPortMapInputBuilder().
+                setTenantName(name).
+                setTerminalName(bname1).
+                setInterfaceName(iname1).
+                setNode(nodeId).
+                setPortId(portIds[0]).
+                build();
+            checkRpcError(portMapService.setPortMap(input),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            rinput = new RemovePortMapInputBuilder().
+                setTenantName(name).
+                setBridgeName(bname1).
+                setInterfaceName(iname1).
+                build();
+            checkRpcError(portMapService.removePortMap(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            rinput = new RemovePortMapInputBuilder().
+                setTenantName(name).
+                setTerminalName(bname1).
+                setInterfaceName(iname1).
+                build();
+            checkRpcError(portMapService.removePortMap(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            // Invalid bridge-name.
+            input = new SetPortMapInputBuilder().
+                setTenantName(tname1).
+                setBridgeName(name).
+                setInterfaceName(iname1).
+                setNode(nodeId).
+                setPortId(portIds[0]).
+                build();
+            checkRpcError(portMapService.setPortMap(input),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            rinput = new RemovePortMapInputBuilder().
+                setTenantName(tname1).
+                setBridgeName(name).
+                setInterfaceName(iname1).
+                build();
+            checkRpcError(portMapService.removePortMap(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            // Invalid terminal-name.
+            input = new SetPortMapInputBuilder().
+                setTenantName(tname1).
+                setTerminalName(name).
+                setInterfaceName(iname1).
+                setNode(nodeId).
+                setPortId(portIds[0]).
+                build();
+            checkRpcError(portMapService.setPortMap(input),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            rinput = new RemovePortMapInputBuilder().
+                setTenantName(tname1).
+                setTerminalName(name).
+                setInterfaceName(iname1).
+                build();
+            checkRpcError(portMapService.removePortMap(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            // Invalid interface-name.
+            input = new SetPortMapInputBuilder().
+                setTenantName(tname1).
+                setBridgeName(bname1).
+                setInterfaceName(name).
+                setNode(nodeId).
+                setPortId(portIds[0]).
+                build();
+            checkRpcError(portMapService.setPortMap(input),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            input = new SetPortMapInputBuilder().
+                setTenantName(tname1).
+                setTerminalName(bname1).
+                setInterfaceName(name).
+                setNode(nodeId).
+                setPortId(portIds[0]).
+                build();
+            checkRpcError(portMapService.setPortMap(input),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            rinput = new RemovePortMapInputBuilder().
+                setTenantName(tname1).
+                setTerminalName(bname1).
+                setInterfaceName(name).
+                build();
+            checkRpcError(portMapService.removePortMap(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            rinput = new RemovePortMapInputBuilder().
+                setTenantName(tname1).
+                setBridgeName(bname1).
+                setInterfaceName(name).
+                build();
+            checkRpcError(portMapService.removePortMap(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+        }
+
+        // Specifying virtual interface that is not present.
+        String unknownName = "unknown";
+        input = new SetPortMapInputBuilder().
+            setTenantName(unknownName).
+            setBridgeName(bname1).
+            setInterfaceName(iname1).
+            setNode(nodeId).
+            setPortId(portIds[0]).
+            build();
+        checkRpcError(portMapService.setPortMap(input),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        input = new SetPortMapInputBuilder().
+            setTenantName(unknownName).
+            setTerminalName(bname1).
+            setInterfaceName(iname1).
+            setNode(nodeId).
+            setPortId(portIds[0]).
+            build();
+        checkRpcError(portMapService.setPortMap(input),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        rinput = new RemovePortMapInputBuilder().
+            setTenantName(unknownName).
+            setBridgeName(bname1).
+            setInterfaceName(iname1).
+            build();
+        checkRpcError(portMapService.removePortMap(rinput),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        rinput = new RemovePortMapInputBuilder().
+            setTenantName(unknownName).
+            setTerminalName(bname1).
+            setInterfaceName(iname1).
+            build();
+        checkRpcError(portMapService.removePortMap(rinput),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        input = new SetPortMapInputBuilder().
+            setTenantName(tname1).
+            setBridgeName(unknownName).
+            setInterfaceName(iname1).
+            setNode(nodeId).
+            setPortId(portIds[0]).
+            build();
+        checkRpcError(portMapService.setPortMap(input),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        input = new SetPortMapInputBuilder().
+            setTenantName(tname1).
+            setTerminalName(unknownName).
+            setInterfaceName(iname1).
+            setNode(nodeId).
+            setPortId(portIds[0]).
+            build();
+        checkRpcError(portMapService.setPortMap(input),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        rinput = new RemovePortMapInputBuilder().
+            setTenantName(tname1).
+            setBridgeName(unknownName).
+            setInterfaceName(iname1).
+            build();
+        checkRpcError(portMapService.removePortMap(rinput),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        rinput = new RemovePortMapInputBuilder().
+            setTenantName(tname1).
+            setTerminalName(unknownName).
+            setInterfaceName(iname1).
+            build();
+        checkRpcError(portMapService.removePortMap(rinput),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        input = new SetPortMapInputBuilder().
+            setTenantName(tname1).
+            setBridgeName(bname1).
+            setInterfaceName(unknownName).
+            setNode(nodeId).
+            setPortId(portIds[0]).
+            build();
+        checkRpcError(portMapService.setPortMap(input),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        input = new SetPortMapInputBuilder().
+            setTenantName(tname1).
+            setTerminalName(bname1).
+            setInterfaceName(unknownName).
+            setNode(nodeId).
+            setPortId(portIds[0]).
+            build();
+        checkRpcError(portMapService.setPortMap(input),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        rinput = new RemovePortMapInputBuilder().
+            setTenantName(tname1).
+            setBridgeName(bname1).
+            setInterfaceName(unknownName).
+            build();
+        checkRpcError(portMapService.removePortMap(rinput),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        rinput = new RemovePortMapInputBuilder().
+            setTenantName(tname1).
+            setTerminalName(bname1).
+            setInterfaceName(unknownName).
+            build();
+        checkRpcError(portMapService.removePortMap(rinput),
+                      RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+        // No node.
+        input = new SetPortMapInputBuilder().
+            setTenantName(tname1).
+            setTerminalName(bname1).
+            setInterfaceName(iname1).
+            setPortId(portIds[0]).
+            build();
+        checkRpcError(portMapService.setPortMap(input),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // Both port-id and port-name are null.
+        input = new SetPortMapInputBuilder().
+            setTenantName(tname1).
+            setTerminalName(bname1).
+            setInterfaceName(iname1).
+            setNode(nodeId).
+            build();
+        checkRpcError(portMapService.setPortMap(input),
+                      RpcErrorTag.BAD_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // Invalid node ID.
+        for (String node: INVALID_NODE_IDS) {
+            input = new SetPortMapInputBuilder().
+                setTenantName(tname1).
+                setTerminalName(bname1).
+                setInterfaceName(iname1).
+                setNode(new NodeId(node)).
+                setPortName(portNames[0]).
+                build();
+            checkRpcError(portMapService.setPortMap(input),
+                          RpcErrorTag.BAD_ELEMENT, VtnErrorTag.BADREQUEST);
+        }
+
+        // Invalid port ID.
+        for (String port: INVALID_PORT_IDS) {
+            input = new SetPortMapInputBuilder().
+                setTenantName(tname1).
+                setTerminalName(bname1).
+                setInterfaceName(iname1).
+                setNode(nodeId).
+                setPortId(port).
+                build();
+            checkRpcError(portMapService.setPortMap(input),
+                          RpcErrorTag.BAD_ELEMENT, VtnErrorTag.BADREQUEST);
+        }
+
+        // Errors should never affect existing port mappings.
+        vnet.verify();
+
+        // Remove all port mappings.
+        for (VInterfaceIdentifier<?> ifId: ifIds) {
+            assertEquals(VtnUpdateType.REMOVED,
+                         removePortMap(portMapService, ifId));
+            VInterfaceConfig iconf = vnet.getInterface(ifId);
+            iconf.setPortMap(null);
+            vnet.verify();
+
+            // Try to remove port mapping that was already removed.
+            assertEquals(null, removePortMap(portMapService, ifId));
+        }
+
+        // Remove VTN.
+        removeVtn(vtnService, tname1);
+        vnet.removeTenant(tname1).verify();
+    }
+
+    /**
+     * Test case for {@link VtnPortMapService} that depends on inventory
+     * information.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testPortMapStatus() throws Exception {
+        LOG.info("Running testPortMapStatus().");
+
+        // Collect edge ports and internal ports.
+        List<String> edgePorts = new ArrayList<>();
+        Set<String> internalPorts = new HashSet<>();
+        Map<String, String> nodeMap = new HashMap<>();
+        Map<String, String> portIdMap = new HashMap<>();
+        Map<String, String> portNameMap = new HashMap<>();
+        for (String nid: ofMockService.getNodes()) {
+            for (String pid: ofMockService.getPorts(nid, true)) {
+                nodeMap.put(pid, nid);
+                portIdMap.put(pid, OfMockUtils.getPortId(pid));
+                portNameMap.put(pid, ofMockService.getPortName(pid));
+                edgePorts.add(pid);
+            }
+            for (String pid: ofMockService.getPorts(nid, false)) {
+                nodeMap.put(pid, nid);
+                portIdMap.put(pid, OfMockUtils.getPortId(pid));
+                portNameMap.put(pid, ofMockService.getPortName(pid));
+
+                String peer = ofMockService.getPeerIdentifier(pid);
+                if (!internalPorts.contains(peer)) {
+                    internalPorts.add(pid);
+                }
+            }
+        }
+        assertEquals(false, edgePorts.isEmpty());
+        assertEquals(false, internalPorts.isEmpty());
+
+        // Map edge ports by specifying port ID.
+        VirtualNetwork vnet = new VirtualNetwork(this);
+        Map<String, Set<VInterfaceIdentifier<?>>> portMaps = new HashMap<>();
+        Map<TestPort, VInterfaceIdentifier<?>> mappedPorts = new HashMap<>();
+        String tname1 = "vtn_1";
+        String iname = "if";
+        int vbrCount = 0;
+        int vid = 0;
+        for (String pid: edgePorts) {
+            String vbrName = "vbridge_" + vbrCount;
+            vbrCount++;
+
+            VBridgeIfIdentifier ifId =
+                new VBridgeIfIdentifier(tname1, vbrName, iname);
+            vnet.addInterface(ifId).apply();
+            VInterfaceConfig iconf = vnet.getInterface(ifId);
+
+            String nid = nodeMap.get(pid);
+            String id = portIdMap.get(pid);
+            VTNPortMapConfig pmap = new VTNPortMapConfig(nid, id, null, vid).
+                setMappedPort(pid);
+            iconf.setPortMap(pmap).
+                setState(VnodeState.UP).
+                setEntityState(VnodeState.UP);
+            assertEquals(VtnUpdateType.CREATED,
+                         pmap.update(portMapService, ifId));
+            vnet.verify();
+
+            Set<VInterfaceIdentifier<?>> ifSet = portMaps.get(pid);
+            if (ifSet == null) {
+                ifSet = new HashSet<>();
+                portMaps.put(pid, ifSet);
+            }
+            ifSet.add(ifId);
+
+            assertEquals(null, mappedPorts.put(new TestPort(pid, vid), ifId));
+            vid++;
+        }
+
+        // Map edge ports by specifying port name.
+        vid = 4095 - edgePorts.size() + 1;
+        int termCount = 0;
+        for (String pid: edgePorts) {
+            String termName = "vterm_" + termCount;
+            termCount++;
+
+            VTerminalIfIdentifier ifId =
+                new VTerminalIfIdentifier(tname1, termName, iname);
+            vnet.addInterface(ifId).apply();
+            VInterfaceConfig iconf = vnet.getInterface(ifId);
+
+            String nid = nodeMap.get(pid);
+            String name = portNameMap.get(pid);
+            VTNPortMapConfig pmap = new VTNPortMapConfig(nid, null, name, vid).
+                setMappedPort(pid);
+            iconf.setPortMap(pmap).
+                setState(VnodeState.UP).
+                setEntityState(VnodeState.UP);
+            assertEquals(VtnUpdateType.CREATED,
+                         pmap.update(portMapService, ifId));
+            vnet.verify();
+
+            Set<VInterfaceIdentifier<?>> ifSet = portMaps.get(pid);
+            if (ifSet == null) {
+                ifSet = new HashSet<>();
+                portMaps.put(pid, ifSet);
+            }
+            ifSet.add(ifId);
+
+            assertEquals(null, mappedPorts.put(new TestPort(pid, vid), ifId));
+            vid++;
+        }
+
+        // Map edge ports by specifying port ID and port name.
+        vid = 123;
+        for (String pid: edgePorts) {
+            String vbrName = "vbridge_" + vbrCount;
+            vbrCount++;
+
+            VBridgeIfIdentifier ifId =
+                new VBridgeIfIdentifier(tname1, vbrName, iname);
+            vnet.addInterface(ifId).apply();
+            VInterfaceConfig iconf = vnet.getInterface(ifId);
+
+            // At first, map the port with specifying only port ID.
+            String nid = nodeMap.get(pid);
+            String id = portIdMap.get(pid);
+            VTNPortMapConfig pmap = new VTNPortMapConfig(nid, id, null, vid).
+                setMappedPort(pid);
+            iconf.setPortMap(pmap).
+                setState(VnodeState.UP).
+                setEntityState(VnodeState.UP);
+            assertEquals(VtnUpdateType.CREATED,
+                         pmap.update(portMapService, ifId));
+            vnet.verify();
+
+            // Add port name to the port mapping configuration.
+            pmap.setPortName(portNameMap.get(pid));
+            assertEquals(VtnUpdateType.CHANGED,
+                         pmap.update(portMapService, ifId));
+            vnet.verify();
+
+            Set<VInterfaceIdentifier<?>> ifSet = portMaps.get(pid);
+            if (ifSet == null) {
+                ifSet = new HashSet<>();
+                portMaps.put(pid, ifSet);
+            }
+            ifSet.add(ifId);
+
+            assertEquals(null, mappedPorts.put(new TestPort(pid, vid), ifId));
+            vid++;
+        }
+
+        // Map internal ports by specifying port ID.
+        vid = 1024;
+        for (String pid: internalPorts) {
+            String vbrName = "vbridge_" + vbrCount;
+            vbrCount++;
+
+            VBridgeIfIdentifier ifId =
+                new VBridgeIfIdentifier(tname1, vbrName, iname);
+            vnet.addInterface(ifId).apply();
+            VInterfaceConfig iconf = vnet.getInterface(ifId);
+
+            String nid = nodeMap.get(pid);
+            String id = portIdMap.get(pid);
+            VTNPortMapConfig pmap = new VTNPortMapConfig(nid, id, null, vid).
+                setMappedPort(pid);
+            iconf.setPortMap(pmap).
+                setState(VnodeState.DOWN).
+                setEntityState(VnodeState.UP);
+            assertEquals(VtnUpdateType.CREATED,
+                         pmap.update(portMapService, ifId));
+            vnet.verify();
+
+            Set<VInterfaceIdentifier<?>> ifSet = portMaps.get(pid);
+            if (ifSet == null) {
+                ifSet = new HashSet<>();
+                portMaps.put(pid, ifSet);
+            }
+            ifSet.add(ifId);
+
+            assertEquals(null, mappedPorts.put(new TestPort(pid, vid), ifId));
+            vid++;
+        }
+
+        // Ensure that VLANs already mapped cannot be mapped to another
+        // virtual interface.
+        for (Entry<TestPort, VInterfaceIdentifier<?>> entry:
+                 mappedPorts.entrySet()) {
+            TestPort tp = entry.getKey();
+            VInterfaceIdentifier<?> mapIfId = entry.getValue();
+            for (VInterfaceIdentifier<?> ifId: mappedPorts.values()) {
+                if (mapIfId.equals(ifId)) {
+                    VInterfaceConfig iconf = vnet.getInterface(ifId);
+                    VTNPortMapConfig pmap = iconf.getPortMap();
+                    assertEquals(null, pmap.update(portMapService, ifId));
+                } else {
+                    String pid = tp.getPortIdentifier();
+                    String nid = nodeMap.get(pid);
+                    String id = portIdMap.get(pid);
+                    VTNPortMapConfig pmap =
+                        new VTNPortMapConfig(nid, id, null, tp.getVlanId());
+                    SetPortMapInput input = pmap.newInputBuilder(ifId).
+                        build();
+                    checkRpcError(portMapService.setPortMap(input),
+                                  RpcErrorTag.DATA_EXISTS,
+                                  VtnErrorTag.CONFLICT);
+                }
+            }
+        }
+
+        // Errors should never affect existing port mappings.
+        vnet.verify();
+
+        // Down all the edge ports.
+        VNodeStateWaiter waiter = new VNodeStateWaiter(ofMockService);
+        for (String pid: edgePorts) {
+            assertEquals(true, ofMockService.setPortState(pid, false, false));
+
+            Set<VInterfaceIdentifier<?>> ifSet = portMaps.get(pid);
+            for (VInterfaceIdentifier<?> ifId: ifSet) {
+                BridgeIdentifier<?> brId = ifId.getBridgeIdentifier();
+                waiter.set(brId, VnodeState.DOWN).
+                    set(ifId, VnodeState.DOWN, VnodeState.DOWN);
+                VInterfaceConfig iconf = vnet.getInterface(ifId);
+                iconf.setState(VnodeState.DOWN).
+                    setEntityState(VnodeState.DOWN);
+            }
+            waiter.await();
+            vnet.verify();
+        }
+
+        // Remove inter-switch links on internalPorts.
+        for (String pid: internalPorts) {
+            addStaticEdgePort(this, pid);
+
+            Set<VInterfaceIdentifier<?>> ifSet = portMaps.get(pid);
+            for (VInterfaceIdentifier<?> ifId: ifSet) {
+                BridgeIdentifier<?> brId = ifId.getBridgeIdentifier();
+                waiter.set(brId, VnodeState.UP).
+                    set(ifId, VnodeState.UP, VnodeState.UP);
+                VInterfaceConfig iconf = vnet.getInterface(ifId);
+                iconf.setState(VnodeState.UP).
+                    setEntityState(VnodeState.UP);
+            }
+            waiter.await();
+            vnet.verify();
+        }
+
+        // Up all the edge ports.
+        for (String pid: edgePorts) {
+            assertEquals(true, ofMockService.setPortState(pid, true, false));
+
+            Set<VInterfaceIdentifier<?>> ifSet = portMaps.get(pid);
+            for (VInterfaceIdentifier<?> ifId: ifSet) {
+                BridgeIdentifier<?> brId = ifId.getBridgeIdentifier();
+                waiter.set(brId, VnodeState.UP).
+                    set(ifId, VnodeState.UP, VnodeState.UP);
+                VInterfaceConfig iconf = vnet.getInterface(ifId);
+                iconf.setState(VnodeState.UP).
+                    setEntityState(VnodeState.UP);
+            }
+            waiter.await();
+            vnet.verify();
+        }
+
+        // Remove internalPorts from static-edge-ports.
+        for (String pid: internalPorts) {
+            removeStaticEdgePort(this, pid);
+
+            Set<VInterfaceIdentifier<?>> ifSet = portMaps.get(pid);
+            for (VInterfaceIdentifier<?> ifId: ifSet) {
+                BridgeIdentifier<?> brId = ifId.getBridgeIdentifier();
+                waiter.set(brId, VnodeState.DOWN).
+                    set(ifId, VnodeState.DOWN, VnodeState.UP);
+                VInterfaceConfig iconf = vnet.getInterface(ifId);
+                iconf.setState(VnodeState.DOWN).
+                    setEntityState(VnodeState.UP);
+            }
+            waiter.await();
+            vnet.verify();
+        }
+
+        // Remove all the port mappings.
+        List<VTNPortMapConfig> allMaps = new ArrayList<>();
+        boolean removeIf = false;
+        for (VInterfaceIdentifier<?> ifId: mappedPorts.values()) {
+            VInterfaceConfig iconf = vnet.getInterface(ifId);
+            allMaps.add(iconf.getPortMap());
+            if (removeIf) {
+                removeVinterface(vinterfaceService, ifId);
+                vnet.removeInterface(ifId);
+            } else {
+                assertEquals(VtnUpdateType.REMOVED,
+                             removePortMap(portMapService, ifId));
+                iconf.setPortMap(null).
+                    setState(VnodeState.UNKNOWN).
+                    setEntityState(VnodeState.UNKNOWN);
+            }
+
+            vnet.verify();
+            removeIf = !removeIf;
+        }
+
+        for (int i = 0; i < 3; i++) {
+            // Restore port mappings.
+            VBridgeIdentifier vbrId = new VBridgeIdentifier(tname1, "vbridge");
+            vnet.addBridge(vbrId);
+            VBridgeConfig bconf = vnet.getBridge(vbrId);
+
+            List<VTerminalIdentifier> vtermIds = new ArrayList<>();
+            int count = 0;
+            boolean mapBridge = true;
+            for (VTNPortMapConfig pmap: allMaps) {
+                VInterfaceConfig iconf;
+                VInterfaceIdentifier<?> ifId;
+                if (mapBridge) {
+                    String bifName = "if_" + count;
+                    iconf = new VInterfaceConfig();
+                    bconf.addInterface(bifName, iconf);
+                    ifId = vbrId.childInterface(bifName);
+                } else {
+                    String termName = "vterm_" + termCount;
+                    termCount++;
+                    VTerminalIdentifier vtermId =
+                        new VTerminalIdentifier(tname1, termName);
+                    ifId = vtermId.childInterface(iname);
+                    vtermIds.add(vtermId);
+                    vnet.addInterface(ifId);
+                    iconf = vnet.getInterface(ifId);
+                }
+                vnet.apply();
+
+                String pid = pmap.getMappedPort();
+                assertNotNull(pid);
+                VnodeState state = (internalPorts.contains(pid))
+                    ? VnodeState.DOWN : VnodeState.UP;
+                iconf.setPortMap(pmap).
+                    setState(state).
+                    setEntityState(VnodeState.UP);
+                assertEquals(VtnUpdateType.CREATED,
+                             pmap.update(portMapService, ifId));
+                vnet.verify();
+
+                mapBridge = !mapBridge;
+            }
+
+            if (i == 0) {
+                // Remove vBridge and all the vTerminals.
+                removeVbridge(vbridgeService, vbrId);
+                vnet.removeBridge(vbrId).verify();
+
+                for (VTerminalIdentifier vtermId: vtermIds) {
+                    removeVterminal(vterminalService, vtermId);
+                    vnet.removeTerminal(vtermId).verify();
+                }
+            } else {
+                // Remove VTN.
+                removeVtn(vtnService, tname1);
+                vnet.removeTenant(tname1).verify();
+            }
+        }
+    }
+
+    /**
+     * Test case for MAC address table management and
+     * {@link VtnMacTableService}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testMacTableService() throws Exception {
+        LOG.info("Running testMacTableService().");
+
         // Create one VTN and 2 vBridges.
-        VTenantPath tpath = new VTenantPath("vtn");
-        VBridgePath bpath1 = new VBridgePath(tpath, "vbr1");
-        VBridgePath bpath2 = new VBridgePath(tpath, "vbr2");
-        List<VBridgePath> bpathList = new ArrayList<>();
-        Collections.addAll(bpathList, bpath1, bpath2);
-        createVirtualNodes(tpath, bpathList);
+        String tname = "vtn";
+        String bname1 = "vbr1";
+        String bname2 = "vbr2";
+        VBridgeIdentifier vbrId1 = new VBridgeIdentifier(tname, bname1);
+        VBridgeIdentifier vbrId2 = new VBridgeIdentifier(tname, bname2);
+        MacEntryWaiter macWaiter1 = new MacEntryWaiter(ofMockService, vbrId1);
+        MacEntryWaiter macWaiter2 = new MacEntryWaiter(ofMockService, vbrId2);
+        macWaiter1.await();
+        macWaiter2.await();
+
+        VBridgeIdentifier[] vbrIds = {vbrId1, vbrId2};
+        VirtualNetwork vnet = new VirtualNetwork(this).
+            addBridge(vbrIds).
+            apply();
+
+        Set<MacEntry> empty = Collections.<MacEntry>emptySet();
+        macWaiter1.set(empty).await();
+        macWaiter2.set(empty).await();
+
+        // Try to clearn empty MAC address table.
+        List<MacAddress> emptyAddr = Collections.<MacAddress>emptyList();
+        assertEquals(null, clearMacEntry(vbrId1));
+        assertEquals(null, removeMacEntry(vbrId2, emptyAddr));
 
         // Map VLAN 0, 1 and 2, 3 to bpath1 and bpath2 respectively.
-        short vlan = 0;
-        for (VBridgePath bpath: bpathList) {
-            for (short s = 0; s < 2; s++) {
-                VlanMapConfig vlconf = new VlanMapConfig(null, vlan);
-                vtnManager.addVlanMap(bpath, vlconf);
-                vlan++;
+        int vid = 0;
+        for (VBridgeIdentifier vbrId: vbrIds) {
+            for (int i = 0; i < 2; i++) {
+                VBridgeConfig bconf = vnet.getBridge(vbrId);
+                VTNVlanMapConfig vmap = new VTNVlanMapConfig(vid);
+                bconf.addVlanMap(vmap);
+                vid++;
             }
+
+            vnet.apply().verify();
             VNodeStateWaiter waiter = new VNodeStateWaiter(ofMockService).
-                set(bpath, VnodeState.UP);
+                set(vbrId, VnodeState.UP);
             waiter.await();
         }
 
         // Collect edge ports, and create test hosts.
-        BridgeNetwork bridge1 = new BridgeNetwork(bpath1);
-        BridgeNetwork bridge2 = new BridgeNetwork(bpath2);
-        Set<MacAddressEntry> ments1 = new HashSet<>();
-        Set<MacAddressEntry> ments2 = new HashSet<>();
+        BridgeNetwork bridge1 = new BridgeNetwork(ofMockService, vbrId1);
+        BridgeNetwork bridge2 = new BridgeNetwork(ofMockService, vbrId2);
+        Set<MacEntry> ments1 = new HashSet<>();
+        Set<MacEntry> ments2 = new HashSet<>();
         Set<String> islPorts = new HashSet<>();
         int idx = 1;
         final int nhosts = 2;
         for (String nid: ofMockService.getNodes()) {
             for (String pid: ofMockService.getPorts(nid, true)) {
-                for (vlan = 0; vlan <= 1; vlan++) {
+                String pname = ofMockService.getPortName(pid);
+                for (vid = 0; vid <= 1; vid++) {
                     for (int i = 0; i < nhosts; i++) {
-                        TestHost th = new TestHost(idx, pid, vlan);
+                        TestHost th = new TestHost(idx, pid, pname, vid);
                         bridge1.addHost(nid, th);
-                        assertTrue(ments1.add(th.getMacAddressEntry()));
+                        assertTrue(ments1.add(th.getMacEntry()));
                         idx++;
                     }
                 }
 
                 Set<Short> vids = new HashSet<>();
-                for (vlan = 2; vlan <= 3; vlan++) {
+                for (vid = 2; vid <= 3; vid++) {
                     for (int i = 0; i < nhosts; i++) {
-                        TestHost th = new TestHost(idx, pid, vlan);
+                        TestHost th = new TestHost(idx, pid, pname, vid);
                         bridge2.addHost(nid, th);
-                        assertTrue(ments2.add(th.getMacAddressEntry()));
+                        assertTrue(ments2.add(th.getMacEntry()));
                         idx++;
                     }
                 }
@@ -2723,41 +3441,84 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         bridge2.verify();
         assertFalse(islPorts.isEmpty());
 
-        checkMacAddressTable(bpath1, null);
-        checkMacAddressTable(bpath2, null);
+        macWaiter1.await();
+        macWaiter2.await();
 
         // Let the vBridge at bpath1 learn MAC addresses.
         learnHosts(bridge1);
-        checkMacAddressTable(bpath1, ments1);
-        checkMacAddressTable(bpath2, null);
+        macWaiter1.set(ments1).await();
+        macWaiter2.await();
 
         // Let the vBridge at bpath2 learn MAC addresses.
         learnHosts(bridge2);
-        checkMacAddressTable(bpath1, ments1);
-        checkMacAddressTable(bpath2, ments2);
+        macWaiter1.await();
+        macWaiter2.set(ments2).await();
 
-        // Error tests.
-        byte[] unknownMac = {
-            (byte)0xa0, (byte)0xb0, (byte)0xc0,
-            (byte)0xd0, (byte)0xe0, (byte)0xf0,
-        };
-        EthernetAddress unknownEther = new EthernetAddress(unknownMac);
-        VBridgePath[] badPaths = {
-            null,
-            new VBridgePath((String)null, "vbr"),
-            new VBridgePath("vtn", null),
-        };
+        // Error tests for remove-mac-entry RPC.
 
-        for (VBridgePath bpath: badPaths) {
-            macEntryErrorTest(bpath, unknownEther, StatusCode.BADREQUEST);
+        // Null input.
+        checkRpcError(macTableService.removeMacEntry(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // Null tenant-name.
+        RemoveMacEntryInput input = new RemoveMacEntryInputBuilder().build();
+        checkRpcError(macTableService.removeMacEntry(input),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        input = new RemoveMacEntryInputBuilder().
+            setBridgeName(bname1).
+            build();
+        checkRpcError(macTableService.removeMacEntry(input),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // Null bridge-name.
+        input = new RemoveMacEntryInputBuilder().
+            setTenantName(tname).
+            build();
+        checkRpcError(macTableService.removeMacEntry(input),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        for (String name: INVALID_VNODE_NAMES) {
+            // Invalid tenant-name.
+            input = new RemoveMacEntryInputBuilder().
+                setTenantName(name).
+                setBridgeName(bname1).
+                build();
+            checkRpcError(macTableService.removeMacEntry(input),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            // Invalid bridge-name.
+            input = new RemoveMacEntryInputBuilder().
+                setTenantName(tname).
+                setBridgeName(name).
+                build();
+            checkRpcError(macTableService.removeMacEntry(input),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
         }
 
-        VBridgePath unknownBridge = new VBridgePath(tpath, "unknown");
-        macEntryErrorTest(unknownBridge, unknownEther, StatusCode.NOTFOUND);
+        // null in mac-addresses.
+        EtherAddress unknown1 = new EtherAddress(0xa0b0c0d0e0f0L);
+        EtherAddress unknown2 = new EtherAddress(0xfeff123456e8L);
+        input = newRemoveMacEntryInput(vbrId1, unknown1, null, unknown2);
+        checkRpcError(macTableService.removeMacEntry(input),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
 
-        for (VBridgePath bpath: bpathList) {
-            macEntryErrorTest(bpath, null, StatusCode.BADREQUEST);
+        // Specifying vBridge that is not present.
+        String unknownName = "unknown";
+        VBridgeIdentifier[] unknownVbrIds = {
+            new VBridgeIdentifier(unknownName, bname1),
+            new VBridgeIdentifier(unknownName, bname2),
+            new VBridgeIdentifier(tname, unknownName),
+        };
+        for (VBridgeIdentifier vbrId: unknownVbrIds) {
+            input = newRemoveMacEntryInput(vbrId, unknown1, unknown2);
+            checkRpcError(macTableService.removeMacEntry(input),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
         }
+
+        // Errors should never affect MAC address tables.
+        macWaiter1.await();
+        macWaiter2.await();
 
         // Install unicast flow entries.
         List<UnicastFlow> flows1 = unicastTest(bridge1, islPorts, true);
@@ -2767,11 +3528,11 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         Map<String, List<TestHost>> edgeMap1 = bridge1.getTestHosts();
         Map<String, List<TestHost>> edgeMap2 = bridge2.getTestHosts();
         Map<TestHost, TestHost> oldHosts0 = new HashMap<>();
-        for (Map.Entry<String, List<TestHost>> entry: edgeMap1.entrySet()) {
+        for (Entry<String, List<TestHost>> entry: edgeMap1.entrySet()) {
             List<TestHost> hosts = new ArrayList<>();
             for (TestHost th: entry.getValue()) {
-                if (th.getVlan() == 0) {
-                    TestHost host = new TestHost(th, (short)1);
+                if (th.getVlanId() == 0) {
+                    TestHost host = new TestHost(th, 1);
                     hosts.add(host);
                     assertEquals(null, oldHosts0.put(th, host));
                 } else {
@@ -2781,38 +3542,33 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             entry.setValue(hosts);
         }
 
-        checkMacAddressTable(bpath1, ments1);
-        checkMacAddressTable(bpath2, ments2);
+        macWaiter1.await();
+        macWaiter2.await();
 
-        // Query unknown MAC addresses.
-        DataLinkAddress[] dladdrs = {
-            new DataLinkAddressStub(),
-            new EthernetAddress(MAC_BROADCAST),
-            new EthernetAddress(MAC_ZERO),
-        };
-        for (VBridgePath bpath: bpathList) {
-            for (DataLinkAddress dladdr: dladdrs) {
-                assertEquals(null, vtnManager.getMacEntry(bpath, dladdr));
-                assertEquals(null, vtnManager.removeMacEntry(bpath, dladdr));
-            }
+        // Trying to remove MAC addresses that are not learned.
+        Map<MacAddress, VtnUpdateType> result = new HashMap<>();
+        result.put(unknown1.getMacAddress(), null);
+        result.put(unknown2.getMacAddress(), null);
+        for (VBridgeIdentifier vbrId: vbrIds) {
+            assertEquals(result, removeMacEntry(vbrId, unknown1, unknown2));
         }
+        macWaiter1.await();
+        macWaiter2.await();
 
         // Send ICMP packet from moved hosts.
         // This invalidates old MAC address table entries.
         IpNetwork dstIp = IpNetwork.create("192.168.100.255");
-        for (Map.Entry<TestHost, TestHost> entry: oldHosts0.entrySet()) {
+        for (Entry<TestHost, TestHost> entry: oldHosts0.entrySet()) {
             TestHost oldHost = entry.getKey();
             TestHost newHost = entry.getValue();
-            assertTrue(ments1.remove(oldHost.getMacAddressEntry()));
+            assertTrue(ments1.remove(oldHost.getMacEntry()));
             sendBroadcastIcmp(newHost, dstIp, bridge1.getMappedVlans());
 
             // IP address in ICMP packet should not be copied into MAC address
             // table entry.
-            MacAddressEntry ment = newHost.getMacAddressEntry(false);
+            MacEntry ment = newHost.getMacEntry(false);
             assertTrue(ments1.add(ment));
-            checkMacAddressTable(bpath1, ments1);
-            EthernetAddress eaddr = newHost.getEthernetAddress();
-            assertEquals(ment, vtnManager.getMacEntry(bpath1, eaddr));
+            macWaiter1.add(ment).await();
         }
 
         // All flow entries for an entry should be uninstalled.
@@ -2820,7 +3576,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         for (UnicastFlow unicast: flows1) {
             for (OfMockFlow flow: unicast.getFlowList()) {
                 Match match = flow.getMatch();
-                if (getVlanMatch(match) == (short)0) {
+                if (getVlanMatch(match) == 0) {
                     String nid = flow.getNodeIdentifier();
                     int pri = flow.getPriority();
                     OfMockFlow newFlow = ofMockService.
@@ -2831,167 +3587,73 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         }
 
         // bpath2 should not be affected.
-        checkMacAddressTable(bpath2, ments2);
+        macWaiter2.await();
         UnicastFlow.verifyFlows(flows2, true, false);
 
-        // Remove all MAC address table entries in bpath1.
-        for (Iterator<MacAddressEntry> it = ments1.iterator(); it.hasNext();) {
-            MacAddressEntry ment = it.next();
+        // Remove 2 MAC addresses from vbrId1.
+        int removed = 0;
+        for (Iterator<MacEntry> it = ments1.iterator(); it.hasNext();) {
+            EtherAddress eaddr = it.next().getMacAddress();
+            MacAddress mac = eaddr.getMacAddress();
             it.remove();
+            result.clear();
+            assertEquals(null, result.put(mac, VtnUpdateType.REMOVED));
 
-            DataLinkAddress dladdr = ment.getAddress();
-            assertEquals(ment, vtnManager.removeMacEntry(bpath1, dladdr));
-            assertEquals(null, vtnManager.getMacEntry(bpath1, dladdr));
-            assertEquals(null, vtnManager.removeMacEntry(bpath1, dladdr));
-            checkMacAddressTable(bpath1, ments1);
+            // Duplicate address should be ignored.
+            assertEquals(result, removeMacEntry(vbrId1, eaddr, eaddr));
+            macWaiter1.remove(eaddr).await();
+
+            removed++;
+            if (removed == 2) {
+                break;
+            }
         }
-        checkMacAddressTable(bpath1, null);
-        checkMacAddressTable(bpath2, ments2);
 
-        // Flush MAC address table in bpath2.
-        Status st = vtnManager.flushMacEntries(bpath2);
-        assertTrue(st.isSuccess());
-        for (MacAddressEntry ment: ments2) {
-            DataLinkAddress dladdr = ment.getAddress();
-            assertEquals(null, vtnManager.getMacEntry(bpath2, dladdr));
-            assertEquals(null, vtnManager.removeMacEntry(bpath2, dladdr));
+        // Remove all the MAC addresses learned by vbrId1.
+        result.clear();
+        List<MacAddress> addrs = new ArrayList<>(ments1.size());
+        for (MacEntry ment: ments1) {
+            EtherAddress eaddr = ment.getMacAddress();
+            MacAddress mac = eaddr.getMacAddress();
+            addrs.add(mac);
+            macWaiter1.remove(eaddr);
+            assertEquals(null, result.put(mac, VtnUpdateType.REMOVED));
         }
-        checkMacAddressTable(bpath2, null);
-        st = vtnManager.flushMacEntries(bpath2);
-        assertTrue(st.isSuccess());
+        assertEquals(result, removeMacEntry(vbrId1, addrs));
+        macWaiter1.await();
+        macWaiter2.await();
 
-        // Clean up.
-        st = vtnManager.removeTenant(tpath);
-        assertTrue(st.isSuccess());
+        // Purge MAC addresses learned by vbrId2.
+        result.clear();
+        for (MacEntry ment: ments2) {
+            EtherAddress eaddr = ment.getMacAddress();
+            MacAddress mac = eaddr.getMacAddress();
+            macWaiter2.remove(eaddr);
+            assertEquals(null, result.put(mac, VtnUpdateType.REMOVED));
+        }
+        assertEquals(result, clearMacEntry(vbrId2));
+        macWaiter1.await();
+        macWaiter2.await();
+
+        assertEquals(null, clearMacEntry(vbrId1));
+        assertEquals(null, clearMacEntry(vbrId2));
+
+        // Remove vbrId1.
+        removeVbridge(vbridgeService, vbrId1);
+        macWaiter1.set(null).await();
+        macWaiter2.await();
+        vnet.removeBridge(vbrId1).verify();
+
+        // Remove VTN.
+        removeVtn(vtnService, tname);
+        macWaiter1.await();
+        macWaiter2.set(null).await();
+        vnet.removeTenant(tname).verify();
     }
 
     /**
-     * Send an ICMPv4 broadcast packet.
-     *
-     * @param host      Source host.
-     * @param dstIp     Destination IP address.
-     * @param allPorts  A map that contains all switch ports as map keys.
-     *                  A set of VLAN IDs mapped to the given vBridge must be
-     *                  associated with the key.
-     */
-    private void sendBroadcastIcmp(TestHost host, IpNetwork dstIp,
-                                   Map<String, Set<Short>> allPorts)
-        throws Exception {
-        String pid = host.getPortIdentifier();
-        byte[] src = host.getMacAddress();
-        IpNetwork srcIp = host.getInetAddress();
-        short vlan = host.getVlan();
-        byte type = 8;
-        byte code = 0;
-
-        EthernetFactory efc = new EthernetFactory(src, MAC_BROADCAST).
-            setVlanId(vlan);
-        Inet4Factory i4fc = Inet4Factory.newInstance(efc, srcIp, dstIp);
-        Icmp4Factory ic4fc = Icmp4Factory.newInstance(i4fc, type, code);
-        byte[] raw = {
-            (byte)0x00, (byte)0x11, (byte)0x22, (byte)0x33,
-            (byte)0x44, (byte)0x55, (byte)0x66, (byte)0x77,
-            (byte)0x88, (byte)0x99, (byte)0xaa, (byte)0xbb,
-            (byte)0xcc, (byte)0xdd, (byte)0xee, (byte)0xff,
-            (byte)0x12,
-        };
-        ic4fc.setRawPayload(raw);
-        byte[] payload = efc.create();
-        ofMockService.sendPacketIn(pid, payload);
-
-        for (Map.Entry<String, Set<Short>> entry: allPorts.entrySet()) {
-            Set<Short> vids = entry.getValue();
-            if (vids == null) {
-                continue;
-            }
-
-            String portId = entry.getKey();
-            if (portId.equals(pid)) {
-                // VTN Manager will send an ARP request to probe IP address.
-                efc.setProbe(srcIp, vlan);
-            } else {
-                efc.setProbe(null, (short)-1);
-            }
-
-            int count = vids.size();
-            for (int i = 0; i < count; i++) {
-                byte[] transmitted =
-                    ofMockService.awaitTransmittedPacket(portId);
-                vids = efc.verify(ofMockService, transmitted, vids);
-            }
-            assertTrue(vids.isEmpty());
-        }
-
-        for (String p: allPorts.keySet()) {
-            assertNull(ofMockService.getTransmittedPacket(p));
-        }
-    }
-
-    /**
-     * Run error test for MAC address table APIs.
-     *
-     * @param bpath   Path to the vBridge.
-     * @param dladdr  A data link layer address.
-     * @param code    Expected status code.
-     */
-    private void macEntryErrorTest(VBridgePath bpath, DataLinkAddress dladdr,
-                                   StatusCode code) {
-        try {
-            vtnManager.getMacEntry(bpath, dladdr);
-            unexpected();
-        } catch (VTNException e) {
-            assertEquals(code, e.getStatus().getCode());
-        }
-
-        try {
-            vtnManager.removeMacEntry(bpath, dladdr);
-            unexpected();
-        } catch (VTNException e) {
-            assertEquals(code, e.getStatus().getCode());
-        }
-
-        // If dladdr is not null, bpath may be valid.
-        if (dladdr != null) {
-            try {
-                vtnManager.getMacEntries(bpath);
-                unexpected();
-            } catch (VTNException e) {
-                assertEquals(code, e.getStatus().getCode());
-            }
-
-            Status st = vtnManager.flushMacEntries(bpath);
-            assertEquals(code, st.getCode());
-        }
-    }
-
-    /**
-     * test method for {@link IVTNManager#isActive()}
-     */
-    private void testIsActive() {
-        LOG.info("Running testIsActive().");
-
-        // There is NO VTN.
-        IVTNManager mgr = this.vtnManager;
-        try {
-            List<VTenant> listVTN = mgr.getTenants();
-            assertTrue(listVTN.isEmpty());
-        } catch (VTNException e) {
-            unexpected(e);
-        }
-        assertFalse(mgr.isActive());
-
-        // Make VTN.
-        VTenantPath tpath = new VTenantPath("vtn");
-        mgr.addTenant(tpath, new VTenantConfig(null));
-        assertTrue(mgr.isActive());
-
-        // Clear up
-        mgr.removeTenant(tpath);
-    }
-
-    /**
-     * Ensure that the vBridge and interface state are changed according to
-     * inventory events.
+     * Ensure that the state of virtual bridge and virtual interface are
+     * changed according to inventory events.
      *
      * @throws Exception  An error occurred.
      */
@@ -2999,55 +3661,47 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
     public void testInventoryEvent() throws Exception {
         LOG.info("Running testInventoryEvent().");
 
-        String tname = "vtn";
-        VTenantPath tpath = new VTenantPath(tname);
-        List<VBridgePath> bpathList = new ArrayList<>();
-        List<VBridgeIfPath> bipathList = new ArrayList<>();
-        List<VTerminalPath> vtpathList = new ArrayList<>();
-        List<VTerminalIfPath> vtipathList = new ArrayList<>();
-
         // Create a vBridge that does not map any network.
-        VBridgePath bpathNomap = new VBridgePath(tpath, "nomap");
-        VBridgeIfPath bipathNomap = new VBridgeIfPath(bpathNomap, "if");
-        bpathList.add(bpathNomap);
-        bipathList.add(bipathNomap);
+        String tname = "vtn";
+        String iname = "if";
+        String nomap = "nomap";
+        VBridgeIdentifier bpathNomap = new VBridgeIdentifier(tname, nomap);
+        VBridgeIfIdentifier bipathNomap = bpathNomap.childInterface(iname);
 
         // Create a vBridge that maps all untagged network.
-        VBridgePath bpathVlan0 = new VBridgePath(tpath, "vlan0");
-        bpathList.add(bpathVlan0);
+        VBridgeIdentifier bpathVlan0 = new VBridgeIdentifier(tname, "vlan0");
 
         // Create a vBridge that maps VLAN 1 on node 1.
-        VBridgePath bpathNode1 = new VBridgePath(tpath, "node1");
-        bpathList.add(bpathNode1);
+        VBridgeIdentifier bpathNode1 = new VBridgeIdentifier(tname, "node1");
 
         // Create a vBridge that maps port 1 on node 2.
-        VBridgePath bpathNode2Port1 = new VBridgePath(tpath, "node2_port1");
-        VBridgeIfPath bipathNode2Port1 =
-            new VBridgeIfPath(bpathNode2Port1, "if");
-        bpathList.add(bpathNode2Port1);
-        bipathList.add(bipathNode2Port1);
+        VBridgeIdentifier bpathNode2Port1 =
+            new VBridgeIdentifier(tname, "node2_port1");
+        VBridgeIfIdentifier bipathNode2Port1 =
+            bpathNode2Port1.childInterface(iname);
 
         // Create a vBridge that maps a host at port 2 on node 2 using
         // MAC mapping.
-        VBridgePath bpathMac = new VBridgePath(tpath, "mac");
-        bpathList.add(bpathMac);
+        VBridgeIdentifier bpathMac = new VBridgeIdentifier(tname, "mac");
 
         // Create a vTerminal that does not map any network.
-        VTerminalPath vtpathNomap = new VTerminalPath(tpath, "nomap");
-        VTerminalIfPath vtipathNomap = new VTerminalIfPath(vtpathNomap, "if");
-        vtpathList.add(vtpathNomap);
-        vtipathList.add(vtipathNomap);
+        VTerminalIdentifier vtpathNomap =
+            new VTerminalIdentifier(tname, nomap);
+        VTerminalIfIdentifier vtipathNomap = vtpathNomap.childInterface(iname);
 
         // Create a vTerminal that maps port 3 on node 1.
-        VTerminalPath vtpathNode1Port3 =
-            new VTerminalPath(tpath, "node1_port3");
-        VTerminalIfPath vtipathNode1Port3 =
-            new VTerminalIfPath(vtpathNode1Port3, "if");
-        vtpathList.add(vtpathNode1Port3);
-        vtipathList.add(vtipathNode1Port3);
+        VTerminalIdentifier vtpathNode1Port3 =
+            new VTerminalIdentifier(tname, "node1_port3");
+        VTerminalIfIdentifier vtipathNode1Port3 =
+            vtpathNode1Port3.childInterface(iname);
 
-        createVirtualNodes(tpath, bpathList, bipathList, vtpathList,
-                           vtipathList);
+        VirtualNetwork vnet = new VirtualNetwork(this).
+            addBridge(bpathVlan0, bpathNode1, bpathMac).
+            addInterface(bipathNomap, bipathNode2Port1,
+                         vtipathNomap, vtipathNode1Port3).
+            apply().
+            verify();
+
         VNodeStateWaiter waiter = new VNodeStateWaiter(ofMockService).
             set(bpathNomap, VnodeState.UNKNOWN).
             set(bipathNomap, VnodeState.UNKNOWN, VnodeState.UNKNOWN).
@@ -3059,50 +3713,58 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             set(vtpathNomap, VnodeState.UNKNOWN).
             set(vtipathNomap, VnodeState.UNKNOWN, VnodeState.UNKNOWN).
             set(vtpathNode1Port3, VnodeState.UNKNOWN).
-            set(vtipathNode1Port3, VnodeState.UNKNOWN, VnodeState.UNKNOWN);
-        waiter.await();
+            set(vtipathNode1Port3, VnodeState.UNKNOWN, VnodeState.UNKNOWN).
+            await();
 
         // Map VLAN 0 to bpathVlan0.
-        VlanMapConfig vlconf = new VlanMapConfig(null, (short)0);
-        VlanMap vmap0 = vtnManager.addVlanMap(bpathVlan0, vlconf);
+        VTNVlanMapConfig vmap0 = new VTNVlanMapConfig(0);
+        VBridgeConfig bconfVlan0 = vnet.getBridge(bpathVlan0).
+            addVlanMap(vmap0);
+        vnet.apply().verify();
         waiter.set(bpathVlan0, VnodeState.UP).await();
 
         // Map VLAN 1 on node1 to bpathNode1.
         BigInteger dpid1 = BigInteger.ONE;
         String nid1 = ID_OPENFLOW + dpid1;
-        Node node1 = toAdNode(nid1);
-        vlconf = new VlanMapConfig(node1, (short)1);
-        VlanMap vmap1 = vtnManager.addVlanMap(bpathNode1, vlconf);
+        VTNVlanMapConfig vmap1 = new VTNVlanMapConfig(nid1, 1).
+            setActive(false);
+        VBridgeConfig bconfNode1 = vnet.getBridge(bpathNode1).
+            addVlanMap(vmap1);
+        vnet.apply().verify();
         waiter.set(bpathNode1, VnodeState.DOWN).await();
 
         // Map VLAN 2 on port1 on node 2 to bpathNode2Port1.
         BigInteger dpid2 = BigInteger.valueOf(2L);
         String nid2 = ID_OPENFLOW + dpid2;
-        Node node2 = toAdNode(nid2);
-        SwitchPort swport = new SwitchPort(NodeConnectorIDType.OPENFLOW, "1");
-        PortMapConfig pmconf = new PortMapConfig(node2, swport, (short)2);
-        Status st = vtnManager.setPortMap(bipathNode2Port1, pmconf);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
+        VTNPortMapConfig pmap = new VTNPortMapConfig(nid2, "1", null, 2);
+        VInterfaceConfig biconfNode2Port1 =
+            vnet.getInterface(bipathNode2Port1).
+            setPortMap(pmap).
+            setState(VnodeState.DOWN).
+            setEntityState(VnodeState.UNKNOWN);
+        vnet.apply().verify();
         waiter.set(bpathNode2Port1, VnodeState.DOWN).
             set(bipathNode2Port1, VnodeState.DOWN, VnodeState.UNKNOWN).
             await();
 
         // Map a host at port 2 on node 2 to bpathMac.
         String pid22 = OfMockUtils.getPortIdentifier(nid2, 2L);
-        TestHost host = new TestHost(1, pid22, (short)4095);
+        TestHost host = new TestHost(1, pid22, "eth2", 4095);
         int hostIdx = 2;
-        Set<EthernetHost> dlhosts =
-            Collections.singleton(host.getEthernetHost());
-        assertEquals(UpdateType.ADDED,
-                     vtnManager.setMacMap(bpathMac, VtnUpdateOperationType.ADD,
-                                          VtnAclType.ALLOW, dlhosts));
+        VTNMacMapConfig macMap = new VTNMacMapConfig().
+            addAllowed(new MacVlan(host.getEtherAddress(), host.getVlanId()));
+        VBridgeConfig bconfMac = vnet.getBridge(bpathMac).setMacMap(macMap);
+        vnet.apply().verify();
         waiter.set(bpathMac, VnodeState.DOWN).await();
 
         // Map VLAN 10 on port 3 on node 1 to vtpathNode1Port3.
-        swport = new SwitchPort(NodeConnectorIDType.OPENFLOW, "3");
-        pmconf = new PortMapConfig(node1, swport, (short)10);
-        st = vtnManager.setPortMap(vtipathNode1Port3, pmconf);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
+        pmap = new VTNPortMapConfig(nid1, "3", null, 10);
+        VInterfaceConfig ticonfNode1Port3 = vnet.
+            getInterface(vtipathNode1Port3).
+            setPortMap(pmap).
+            setState(VnodeState.DOWN).
+            setEntityState(VnodeState.UNKNOWN);
+        vnet.apply().verify();
         waiter.set(vtpathNode1Port3, VnodeState.DOWN).
             set(vtipathNode1Port3, VnodeState.DOWN, VnodeState.UNKNOWN).
             await();
@@ -3128,6 +3790,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             badPorts[(int)idx] = ofMockService.addPort(badNid, idx, false);
         }
         waiter.await();
+        vnet.verify();
 
         // Create node 3 that will not be mapped to virtual nodes except
         // bpathVlan0. This should never affect virtual node state because
@@ -3142,17 +3805,19 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             ofMockService.awaitPortCreated(pids[3][i]);
         }
         waiter.await();
+        vnet.verify();
 
         // Up port 2 on node 3.
-        // This will activate bpathVlan0.
         ofMockService.setPortState(pids[3][2], true, false);
-        waiter.set(bpathVlan0, VnodeState.UP).await();
+        waiter.await();
+        vnet.verify();
 
         // Create node 1.
         // This should never affect virtual node state because no edge port
         // is available yet.
         ofMockService.addNode(dpid1);
         waiter.await();
+        vnet.verify();
 
         // Add ports to node 1 except port 3.
         // This should never affect virtual node state because:
@@ -3170,17 +3835,25 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             }
         }
         waiter.await();
+        vnet.verify();
 
         // Enable port 4 on node 1.
         // This will activate bpathNode1.
         ofMockService.setPortState(pids[1][4], true, false);
+        vmap1.setActive(true);
         waiter.set(bpathNode1, VnodeState.UP).await();
+        vnet.verify();
 
         // Add port 3 on node 1.
         // This will establish port mapping on vtipathNode1Port3.
         pids[1][3] = ofMockService.addPort(nid1, 3L, false);
         waiter.set(vtipathNode1Port3, VnodeState.DOWN, VnodeState.DOWN).
             await();
+        ticonfNode1Port3.
+            setEntityState(VnodeState.DOWN).
+            getPortMap().
+            setMappedPort(pids[1][3]);
+        vnet.verify();
 
         // Enable port 3 on node 1.
         // This will activate vtpathNode1Port3.
@@ -3188,6 +3861,9 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         waiter.set(vtpathNode1Port3, VnodeState.UP).
             set(vtipathNode1Port3, VnodeState.UP, VnodeState.UP).
             await();
+        ticonfNode1Port3.setState(VnodeState.UP).
+            setEntityState(VnodeState.UP);
+        vnet.verify();
 
         // Create node 2.
         // This should never affect virtual node state because no edge port
@@ -3219,16 +3895,22 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         // This will establish port mapping on bipathNode2Port1.
         pids[2][1] = ofMockService.addPort(nid2, 1L);
         waiter.set(bipathNode2Port1, VnodeState.DOWN, VnodeState.DOWN).await();
+        biconfNode2Port1.setEntityState(VnodeState.DOWN).
+            getPortMap().
+            setMappedPort(pids[2][1]);
+        vnet.verify();
 
         // Enable port 1.
         ofMockService.setPortState(pids[2][1], true, false);
         waiter.set(bpathNode2Port1, VnodeState.UP).
             set(bipathNode2Port1, VnodeState.UP, VnodeState.UP).
             await();
+        biconfNode2Port1.setState(VnodeState.UP).
+            setEntityState(VnodeState.UP);
+        vnet.verify();
 
         // Enable all ports, and let the vBridge at bpathVlan0 learn some
         // MAC addresses.
-        Set<MacAddressEntry> bpathVlan0Hosts = new HashSet<>();
         for (int i = 1; i < pids.length; i++) {
             String[] ports = pids[i];
             for (int j = 1; j < ports.length; j++) {
@@ -3239,53 +3921,66 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         // Need to synchronize background tasks triggered by port state events.
         sleep(BGTASK_DELAY);
 
+        MacEntryWaiter bpathVlan0Hosts =
+            new MacEntryWaiter(ofMockService, bpathVlan0);
         for (int i = 1; i < pids.length; i++) {
             String[] ports = pids[i];
             for (int j = 1; j < ports.length; j++) {
                 String pid = ports[j];
+                String pname = ofMockService.getPortName(pid);
                 ofMockService.awaitLinkState(pid, true);
-                TestHost th = new TestHost(hostIdx, pid, (short)0);
+                TestHost th = new TestHost(hostIdx, pid, pname, 0);
                 hostIdx++;
                 sendBroadcast(ofMockService, th);
-                assertTrue(bpathVlan0Hosts.add(th.getMacAddressEntry()));
+                bpathVlan0Hosts.add(th.getMacEntry());
             }
         }
 
         // Let all vBridges learn MAC addresses.
-        Set<MacAddressEntry> bpathNode1Hosts = new HashSet<>();
+        MacEntryWaiter bpathNode1Hosts =
+            new MacEntryWaiter(ofMockService, bpathNode1);
         for (int i = 1; i < npids; i++) {
             String pid = pids[1][i];
-            TestHost th = new TestHost(hostIdx, pid, (short)1);
+            String pname = ofMockService.getPortName(pid);
+            TestHost th = new TestHost(hostIdx, pid, pname, 1);
             hostIdx++;
             sendBroadcast(ofMockService, th);
-            assertTrue(bpathNode1Hosts.add(th.getMacAddressEntry()));
+            bpathNode1Hosts.add(th.getMacEntry());
         }
 
-        Set<MacAddressEntry> bpathNode2Port1Hosts = new HashSet<>();
-        Set<MacAddressEntry> bpathMacHosts = new HashSet<>();
+        MacEntryWaiter bpathNode2Port1Hosts =
+            new MacEntryWaiter(ofMockService, bpathNode2Port1);
+        MacEntryWaiter bpathMacHosts =
+            new MacEntryWaiter(ofMockService, bpathMac);
         final int nhosts = 4;
         for (int i = 0; i < nhosts; i++) {
-            TestHost th = new TestHost(hostIdx, pids[2][1], (short)2);
+            String pid = pids[2][1];
+            String pname = ofMockService.getPortName(pid);
+            TestHost th = new TestHost(hostIdx, pid, pname, 2);
             hostIdx++;
             sendBroadcast(ofMockService, th);
-            assertTrue(bpathNode2Port1Hosts.add(th.getMacAddressEntry()));
+            bpathNode2Port1Hosts.add(th.getMacEntry());
 
-            th = new TestHost(hostIdx, pids[2][2], host.getVlan());
+            pid = pids[2][2];
+            pname = ofMockService.getPortName(pid);
+            th = new TestHost(hostIdx, pid, pname, host.getVlanId());
             hostIdx++;
             sendBroadcast(ofMockService, th);
         }
         waiter.await();
-        checkMacAddressTable(bpathMac, null);
+        bpathMacHosts.set(Collections.<MacEntry>emptySet()).await();
 
         // Send a broadcast packet from host.
         // This will activate bpathMac.
         sendBroadcast(ofMockService, host);
-        assertTrue(bpathMacHosts.add(host.getMacAddressEntry()));
+        bpathMacHosts.add(host.getMacEntry()).await();
         waiter.set(bpathMac, VnodeState.UP).await();
-        checkMacAddressTable(bpathVlan0, bpathVlan0Hosts);
-        checkMacAddressTable(bpathNode1, bpathNode1Hosts);
-        checkMacAddressTable(bpathNode2Port1, bpathNode2Port1Hosts);
-        checkMacAddressTable(bpathMac, bpathMacHosts);
+        macMap.addMapped(host.getMacMappedHost());
+        vnet.verify();
+        bpathVlan0Hosts.await();
+        bpathNode1Hosts.await();
+        bpathNode2Port1Hosts.await();
+        bpathMacHosts.await();
 
         // Disable all ports on a non-OpenFlow node.
         // This should never affect virtual node state.
@@ -3293,44 +3988,59 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             ofMockService.setPortState(badPorts[i], false, false);
         }
         waiter.await();
+        vnet.verify();
 
         // Remove a non-OpenFlow node.
         // This should never affect virtual node state.
         ofMockService.removeNode(badNid);
         waiter.await();
+        vnet.verify();
 
         // Disable port 1 on node 2.
         ofMockService.setPortState(pids[2][1], false, false);
         waiter.set(bpathNode2Port1, VnodeState.DOWN).
             set(bipathNode2Port1, VnodeState.DOWN, VnodeState.DOWN).
             await();
-        Set<MacAddressEntry> bpathVlan0HostsTmp =
-            filterOut(bpathVlan0Hosts, pids[2][1]);
-        checkMacAddressTable(bpathVlan0, bpathVlan0HostsTmp);
-        checkMacAddressTable(bpathNode1, bpathNode1Hosts);
-        checkMacAddressTable(bpathNode2Port1, null);
-        checkMacAddressTable(bpathMac, bpathMacHosts);
+        biconfNode2Port1.setState(VnodeState.DOWN).
+            setEntityState(VnodeState.DOWN);
+        vnet.verify();
+
+        Set<MacEntry> bpathVlan0Entries =
+            new HashSet<>(bpathVlan0Hosts.getMacEntries());
+        Set<MacEntry> bpathNode1Entries =
+            new HashSet<>(bpathNode1Hosts.getMacEntries());
+        Set<MacEntry> bpathNode2Port1Entries =
+            new HashSet<>(bpathNode2Port1Hosts.getMacEntries());
+        Set<MacEntry> bpathMacEntries =
+            new HashSet<>(bpathMacHosts.getMacEntries());
+        bpathVlan0Hosts.filterOut(pids[2][1]).await();
+        bpathNode1Hosts.await();
+        bpathNode2Port1Hosts.clear().await();
+        bpathMacHosts.await();
 
         // Disable port 2 on node 2.
         ofMockService.setPortState(pids[2][2], false, false);
         waiter.set(bpathMac, VnodeState.DOWN).await();
-        bpathVlan0HostsTmp = filterOut(bpathVlan0HostsTmp, pids[2][2]);
-        checkMacAddressTable(bpathVlan0, bpathVlan0HostsTmp);
-        checkMacAddressTable(bpathNode1, bpathNode1Hosts);
-        checkMacAddressTable(bpathNode2Port1, null);
-        checkMacAddressTable(bpathMac, null);
+        macMap.removeMapped(host.getEtherAddress());
+        vnet.verify();
+
+        bpathVlan0Hosts.filterOut(pids[2][2]).await();
+        bpathNode1Hosts.await();
+        bpathNode2Port1Hosts.await();
+        bpathMacHosts.clear().await();
 
         // Disable all ports on node 1 but port 4.
-        Set<MacAddressEntry> bpathNode1HostsTmp =
-            new HashSet<>(bpathNode1Hosts);
+        Set<String> pidSet = new HashSet<>();
         for (int i = 1; i < npids; i++) {
             if (i != 4) {
                 String pid = pids[1][i];
                 ofMockService.setPortState(pid, false, false);
-                bpathVlan0HostsTmp = filterOut(bpathVlan0HostsTmp, pid);
-                bpathNode1HostsTmp = filterOut(bpathNode1HostsTmp, pid);
+                pidSet.add(pid);
             }
         }
+        bpathVlan0Hosts.filterOut(pidSet);
+        bpathNode1Hosts.filterOut(pidSet);
+
         for (int i = 1; i < npids; i++) {
             if (i != 4) {
                 ofMockService.awaitLinkState(pids[1][i], false);
@@ -3342,51 +4052,61 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         waiter.set(vtpathNode1Port3, VnodeState.DOWN).
             set(vtipathNode1Port3, VnodeState.DOWN, VnodeState.DOWN).
             await();
-        checkMacAddressTable(bpathVlan0, bpathVlan0HostsTmp);
-        checkMacAddressTable(bpathNode1, bpathNode1HostsTmp);
-        checkMacAddressTable(bpathNode2Port1, null);
-        checkMacAddressTable(bpathMac, null);
+        ticonfNode1Port3.setState(VnodeState.DOWN).
+            setEntityState(VnodeState.DOWN);
+        vnet.verify();
+
+        bpathVlan0Hosts.await();
+        bpathNode1Hosts.await();
+        bpathNode2Port1Hosts.await();
+        bpathMacHosts.await();
 
         // Disable port 4 on node 1.
         ofMockService.setPortState(pids[1][4], false);
         waiter.set(bpathNode1, VnodeState.DOWN).await();
-        bpathVlan0HostsTmp = filterOut(bpathVlan0HostsTmp, pids[1][4]);
-        checkMacAddressTable(bpathVlan0, bpathVlan0HostsTmp);
-        checkMacAddressTable(bpathNode1, null);
-        checkMacAddressTable(bpathNode2Port1, null);
-        checkMacAddressTable(bpathMac, null);
+        vmap1.setActive(false);
+        vnet.verify();
+
+        bpathVlan0Hosts.filterOut(pids[1][4]).await();
+        bpathNode1Hosts.clear().await();
+        bpathNode2Port1Hosts.await();
+        bpathMacHosts.await();
 
         // Disable all ports on node 3.
+        pidSet.clear();
         for (int i = 1; i < npids; i++) {
             String pid = pids[3][i];
             ofMockService.setPortState(pid, false, false);
-            bpathVlan0HostsTmp = filterOut(bpathVlan0HostsTmp, pid);
+            pidSet.add(pid);
         }
+
         for (int i = 1; i < npids; i++) {
             ofMockService.awaitLinkState(pids[3][i], false);
         }
         waiter.await();
-        checkMacAddressTable(bpathVlan0, bpathVlan0HostsTmp);
-        checkMacAddressTable(bpathNode1, null);
-        checkMacAddressTable(bpathNode2Port1, null);
-        checkMacAddressTable(bpathMac, null);
+        vnet.verify();
+        bpathVlan0Hosts.filterOut(pidSet).await();
+        bpathNode1Hosts.await();
+        bpathNode2Port1Hosts.await();
+        bpathMacHosts.await();
 
         // Disable port 3 on node 2.
         ofMockService.setPortState(pids[2][3], false);
         waiter.await();
-        bpathVlan0HostsTmp = filterOut(bpathVlan0HostsTmp, pids[2][3]);
-        checkMacAddressTable(bpathVlan0, bpathVlan0HostsTmp);
-        checkMacAddressTable(bpathNode1, null);
-        checkMacAddressTable(bpathNode2Port1, null);
-        checkMacAddressTable(bpathMac, null);
+        vnet.verify();
+        bpathVlan0Hosts.filterOut(pids[2][3]).await();
+        bpathNode1Hosts.await();
+        bpathNode2Port1Hosts.await();
+        bpathMacHosts.await();
 
         // Disable port 4 on node 2.
         ofMockService.setPortState(pids[2][4], false);
         waiter.await();
-        checkMacAddressTable(bpathVlan0, null);
-        checkMacAddressTable(bpathNode1, null);
-        checkMacAddressTable(bpathNode2Port1, null);
-        checkMacAddressTable(bpathMac, null);
+        vnet.verify();
+        bpathVlan0Hosts.clear().await();
+        bpathNode1Hosts.await();
+        bpathNode2Port1Hosts.await();
+        bpathMacHosts.await();
 
         // Up all ports, and restore MAC address table entries.
         for (int i = 1; i < pids.length; i++) {
@@ -3405,16 +4125,16 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         // Need to synchronize background tasks triggered by port state events.
         sleep(BGTASK_DELAY);
 
-        for (MacAddressEntry ment: bpathVlan0Hosts) {
+        for (MacEntry ment: bpathVlan0Entries) {
             sendBroadcast(ofMockService, ment);
         }
-        for (MacAddressEntry ment: bpathNode1Hosts) {
+        for (MacEntry ment: bpathNode1Entries) {
             sendBroadcast(ofMockService, ment);
         }
-        for (MacAddressEntry ment: bpathNode2Port1Hosts) {
+        for (MacEntry ment: bpathNode2Port1Entries) {
             sendBroadcast(ofMockService, ment);
         }
-        for (MacAddressEntry ment: bpathMacHosts) {
+        for (MacEntry ment: bpathMacEntries) {
             sendBroadcast(ofMockService, ment);
         }
 
@@ -3423,11 +4143,19 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             set(vtipathNode1Port3, VnodeState.UP, VnodeState.UP).
             set(bpathNode2Port1, VnodeState.UP).
             set(bipathNode2Port1, VnodeState.UP, VnodeState.UP).
-            set(bpathMac, VnodeState.UP).await();
-        checkMacAddressTable(bpathVlan0, bpathVlan0Hosts);
-        checkMacAddressTable(bpathNode1, bpathNode1Hosts);
-        checkMacAddressTable(bpathNode2Port1, bpathNode2Port1Hosts);
-        checkMacAddressTable(bpathMac, bpathMacHosts);
+            set(bpathMac, VnodeState.UP).
+            await();
+        ticonfNode1Port3.setState(VnodeState.UP).
+            setEntityState(VnodeState.UP);
+        biconfNode2Port1.setState(VnodeState.UP).
+            setEntityState(VnodeState.UP);
+        vmap1.setActive(true);
+        macMap.addMapped(host.getMacMappedHost());
+        vnet.verify();
+        bpathVlan0Hosts.set(bpathVlan0Entries).await();
+        bpathNode1Hosts.set(bpathNode1Entries).await();
+        bpathNode2Port1Hosts.set(bpathNode2Port1Entries).await();
+        bpathMacHosts.set(bpathMacEntries).await();
 
         // Connect port2 on node2 to port1 on node2.
         String src = pids[2][2];
@@ -3435,52 +4163,75 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         ofMockService.setPeerIdentifier(src, dst);
         waiter.set(bpathNode2Port1, VnodeState.DOWN).
             set(bipathNode2Port1, VnodeState.DOWN, VnodeState.UP).
-            set(bpathMac, VnodeState.DOWN).await();
-        bpathVlan0HostsTmp = filterOut(bpathVlan0Hosts, src);
-        bpathVlan0HostsTmp = filterOut(bpathVlan0HostsTmp, dst);
-        checkMacAddressTable(bpathVlan0, bpathVlan0HostsTmp);
-        checkMacAddressTable(bpathNode1, bpathNode1Hosts);
-        checkMacAddressTable(bpathNode2Port1, null);
-        checkMacAddressTable(bpathMac, null);
+            set(bpathMac, VnodeState.DOWN).
+            await();
+        biconfNode2Port1.setState(VnodeState.DOWN);
+        macMap.removeMapped(host.getEtherAddress());
+        vnet.verify();
+
+        pidSet.clear();
+        Collections.addAll(pidSet, src, dst);
+        bpathVlan0Hosts.filterOut(pidSet).await();
+        bpathNode1Hosts.await();
+        bpathNode2Port1Hosts.clear().await();
+        bpathMacHosts.clear().await();
 
         ofMockService.setPeerIdentifier(src, null);
         waiter.set(bpathNode2Port1, VnodeState.UP).
-            set(bipathNode2Port1, VnodeState.UP, VnodeState.UP).await();
-        for (MacAddressEntry ment: bpathNode2Port1Hosts) {
+            set(bipathNode2Port1, VnodeState.UP, VnodeState.UP).
+            await();
+        biconfNode2Port1.setState(VnodeState.UP).
+            setEntityState(VnodeState.UP);
+        vnet.verify();
+
+        for (MacEntry ment: bpathNode2Port1Entries) {
             sendBroadcast(ofMockService, ment);
         }
-        for (MacAddressEntry ment: bpathMacHosts) {
+        for (MacEntry ment: bpathMacEntries) {
             sendBroadcast(ofMockService, ment);
         }
-        waiter.set(bpathMac, VnodeState.UP);
-        checkMacAddressTable(bpathVlan0, bpathVlan0HostsTmp);
-        checkMacAddressTable(bpathNode1, bpathNode1Hosts);
-        checkMacAddressTable(bpathNode2Port1, bpathNode2Port1Hosts);
-        checkMacAddressTable(bpathMac, bpathMacHosts);
+        waiter.set(bpathMac, VnodeState.UP).await();
+        macMap.addMapped(host.getMacMappedHost());
+        vnet.verify();
+
+        bpathVlan0Hosts.await();
+        bpathNode1Hosts.await();
+        bpathNode2Port1Hosts.set(bpathNode2Port1Entries).await();
+        bpathMacHosts.set(bpathMacEntries).await();
 
         // Remove node 3.
         ofMockService.removeNode(nid3);
         waiter.await();
+        vnet.verify();
+        pidSet.clear();
         for (int i = 1; i < npids; i++) {
-            bpathVlan0HostsTmp = filterOut(bpathVlan0HostsTmp, pids[3][i]);
+            pidSet.add(pids[3][i]);
         }
-        checkMacAddressTable(bpathVlan0, bpathVlan0HostsTmp);
-        checkMacAddressTable(bpathNode1, bpathNode1Hosts);
-        checkMacAddressTable(bpathNode2Port1, bpathNode2Port1Hosts);
-        checkMacAddressTable(bpathMac, bpathMacHosts);
+        bpathVlan0Hosts.filterOut(pidSet).await();
+        bpathNode1Hosts.await();
+        bpathNode2Port1Hosts.await();
+        bpathMacHosts.await();
 
         // Remove node 2.
         ofMockService.removeNode(nid2);
         waiter.set(bpathNode2Port1, VnodeState.DOWN).
             set(bipathNode2Port1, VnodeState.DOWN, VnodeState.UNKNOWN).
-            set(bpathMac, VnodeState.DOWN).await();
+            set(bpathMac, VnodeState.DOWN).
+            await();
+        biconfNode2Port1.setState(VnodeState.DOWN).
+            setEntityState(VnodeState.UNKNOWN).
+            getPortMap().
+            setMappedPort(null);
+        macMap.removeMapped(host.getEtherAddress());
+        vnet.verify();
+        pidSet.clear();
         for (int i = 1; i < npids; i++) {
-            bpathVlan0HostsTmp = filterOut(bpathVlan0HostsTmp, pids[2][i]);
+            pidSet.add(pids[2][i]);
         }
-        checkMacAddressTable(bpathVlan0, bpathVlan0HostsTmp);
-        checkMacAddressTable(bpathNode1, bpathNode1Hosts);
-        checkMacAddressTable(bpathNode2Port1, null);
-        checkMacAddressTable(bpathMac, null);
+        bpathVlan0Hosts.filterOut(pidSet).await();
+        bpathNode1Hosts.await();
+        bpathNode2Port1Hosts.clear().await();
+        bpathMacHosts.clear().await();
 
         // Remove node 1.
         ofMockService.removeNode(nid1);
@@ -3488,76 +4239,24 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             set(vtpathNode1Port3, VnodeState.DOWN).
             set(vtipathNode1Port3, VnodeState.DOWN, VnodeState.UNKNOWN).
             await();
-        checkMacAddressTable(bpathVlan0, null);
-        checkMacAddressTable(bpathNode1, null);
-        checkMacAddressTable(bpathNode2Port1, null);
-        checkMacAddressTable(bpathMac, null);
+        vmap1.setActive(false);
+        ticonfNode1Port3.setState(VnodeState.DOWN).
+            setEntityState(VnodeState.UNKNOWN).
+            getPortMap().
+            setMappedPort(null);
+        vnet.verify();
+        bpathVlan0Hosts.clear().await();
+        bpathNode1Hosts.clear().await();
+        bpathNode2Port1Hosts.await();
+        bpathMacHosts.await();
 
         // Clean up.
-        st = vtnManager.removeTenant(tpath);
-        assertTrue(st.isSuccess());
-    }
-
-    /**
-     * Check the MAC address table in the given vBridge.
-     *
-     * @param bpath   Path to the target vBridge.
-     * @param hosts   A set of {@link MacAddressEntry} expected to be present
-     *                in the MAC adddress table.
-     * @throws VTNException  An error occurred.
-     */
-    private void checkMacAddressTable(VBridgePath bpath,
-                                      Set<MacAddressEntry> hosts)
-        throws VTNException {
-        long timeout = TimeUnit.SECONDS.toMillis(TASK_TIMEOUT);
-        long limit = System.currentTimeMillis() + timeout;
-
-        do {
-            if (checkMacAddressTable(bpath, hosts, false)) {
-                return;
-            }
-
-            sleep(SHORT_DELAY);
-            timeout = limit - System.currentTimeMillis();
-        } while (timeout > 0);
-
-        checkMacAddressTable(bpath, hosts, true);
-    }
-
-    /**
-     * Check the MAC address table in the given vBridge.
-     *
-     * @param bpath     Path to the target vBridge.
-     * @param hosts     A set of {@link MacAddressEntry} expected to be present
-     *                  in the MAC adddress table.
-     * @param doAssert  If {@code true}, an error will be thrown on failure.
-     * @return  {@code true} only if the check passed.
-     * @throws VTNException  An error occurred.
-     */
-    private boolean checkMacAddressTable(VBridgePath bpath,
-                                         Set<MacAddressEntry> hosts,
-                                         boolean doAssert)
-        throws VTNException {
-        List<MacAddressEntry> list = vtnManager.getMacEntries(bpath);
-        if (hosts == null || hosts.isEmpty()) {
-            if (doAssert) {
-                assertTrue(list.isEmpty());
-                return true;
-            }
-            return list.isEmpty();
-        }
-
-        if (doAssert) {
-            assertEquals(hosts.size(), list.size());
-            assertTrue(hosts.containsAll(list));
-            return true;
-        }
-
-        if (hosts.size() != list.size()) {
-            return false;
-        }
-
-        return hosts.containsAll(list);
+        removeVtn(vtnService, tname);
+        bpathVlan0Hosts.set(null).await();
+        bpathNode1Hosts.set(null).await();
+        bpathNode2Port1Hosts.set(null).await();
+        bpathMacHosts.set(null).await();
+        vnet.removeTenant(tname).verify();
     }
 
     /**
@@ -3570,29 +4269,28 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         LOG.info("Running testUnicastFlow().");
 
         // Create one VTN, 2 vBridges, and 1 vTerminal.
-        VTenantPath tpath = new VTenantPath("vtn");
-        VBridgePath bpath1 = new VBridgePath(tpath, "vbr1");
-        VBridgePath bpath2 = new VBridgePath(tpath, "vbr2");
-        VBridgeIfPath bipath11 = new VBridgeIfPath(bpath1, "if1");
-        VBridgeIfPath bipath21 = new VBridgeIfPath(bpath2, "if1");
-        List<VBridgePath> bpathList = new ArrayList<>();
-        List<VBridgeIfPath> bipathList = new ArrayList<>();
-        VTerminalPath vtpath = new VTerminalPath(tpath, "vterm");
-        VTerminalIfPath vtipath = new VTerminalIfPath(vtpath, "if");
-        Collections.addAll(bpathList, bpath1, bpath2);
-        Collections.addAll(bipathList, bipath11, bipath21);
-        createVirtualNodes(tpath, bpathList, bipathList,
-                           Collections.singleton(vtpath),
-                           Collections.singleton(vtipath));
+        String tname = "vtn";
+        String iname1 = "if1";
+        VBridgeIdentifier bpath1 = new VBridgeIdentifier(tname, "vbr1");
+        VBridgeIdentifier bpath2 = new VBridgeIdentifier(tname, "vbr2");
+        VBridgeIfIdentifier bipath11 = bpath1.childInterface(iname1);
+        VBridgeIfIdentifier bipath21 = bpath2.childInterface(iname1);
+        VTerminalIfIdentifier vtipath =
+            new VTerminalIfIdentifier(tname, "vterm", iname1);
+        VirtualNetwork vnet = new VirtualNetwork(this).
+            addInterface(bipath11, bipath21, vtipath).
+            apply().
+            verify();
 
         // Collect edge ports per node, and all ISL ports.
         Map<String, List<String>> edgePorts = new HashMap<>();
         List<String> edgeNodes = new ArrayList<>();
         Set<String> islPorts = new HashSet<>();
         Set<String> allPorts = new HashSet<>();
-        BridgeNetwork bridge1 = new BridgeNetwork(bpath1);
-        BridgeNetwork bridge2 = new BridgeNetwork(bpath2);
-        Map<VBridgePath, BridgeNetwork> bridges = new HashMap<>();
+        BridgeNetwork bridge1 = new BridgeNetwork(ofMockService, bpath1);
+        BridgeNetwork bridge2 = new BridgeNetwork(ofMockService, bpath2);
+        Map<VBridgeIdentifier, BridgeNetwork> bridges = new HashMap<>();
+        Map<String, String> portNames = new HashMap<>();
         bridges.put(bpath1, bridge1);
         bridges.put(bpath2, bridge2);
         for (String nid: ofMockService.getNodes()) {
@@ -3602,8 +4300,14 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                 allPorts.addAll(ports);
                 assertEquals(null, edgePorts.put(nid, ports));
             }
+            for (String pid: ports) {
+                String pname = ofMockService.getPortName(pid);
+                assertEquals(null, portNames.put(pid, pname));
+            }
 
             for (String pid: ofMockService.getPorts(nid, false)) {
+                String pname = ofMockService.getPortName(pid);
+                assertEquals(null, portNames.put(pid, pname));
                 assertTrue(islPorts.add(pid));
                 allPorts.add(pid);
                 bridge1.setUnmappedPort(pid);
@@ -3616,54 +4320,65 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         assertFalse(allPorts.isEmpty());
 
         // Map untagged network to vbr1 using VLAN mapping.
-        VlanMapConfig vlconf = new VlanMapConfig(null, (short)0);
-        vtnManager.addVlanMap(bpath1, vlconf);
+        VTNVlanMapConfig vmap0 = new VTNVlanMapConfig(0);
+        VBridgeConfig bconf1 = vnet.getBridge(bpath1).
+            addVlanMap(vmap0);
 
-        // But untagged network on edgeNodes[0].ports[0] to vbr2 using
-        // port mapping.
+        // But untagged network on edgeNodes[0].ports[0] is mapped to vbr2
+        // using port mapping.
         Set<TestPort> portMapped = new HashSet<>();
-        String targetPort = edgePorts.get(edgeNodes.get(0)).get(0);
-        setPortMap(bipath21, targetPort, (short)0, StatusCode.SUCCESS);
-        assertTrue(portMapped.add(new TestPort(targetPort).setVlan((short)0)));
+        String nid0 = edgeNodes.get(0);
+        String targetPort = edgePorts.get(nid0).get(0);
+        VTNPortMapConfig pmap0 = new VTNPortMapConfig(targetPort, 0).
+            setMappedPort(targetPort);
+        VInterfaceConfig iconf21 = vnet.getInterface(bipath21).
+            setPortMap(pmap0);
+        assertTrue(portMapped.add(new TestPort(targetPort, 0)));
 
         for (List<String> ports: edgePorts.values()) {
             for (String pid: ports) {
                 BridgeNetwork bridge = (pid.equals(targetPort))
                     ? bridge2 : bridge1;
-                bridge.addMappedVlan(pid, (short)0);
+                bridge.addMappedVlan(pid, 0);
             }
         }
 
         // Map VLAN 1 on edgeNodes[0] to vbr1.
-        Node node = toAdNode(edgeNodes.get(0));
-        vlconf = new VlanMapConfig(node, (short)1);
-        vtnManager.addVlanMap(bpath1, vlconf);
+        VTNVlanMapConfig vmap1 = new VTNVlanMapConfig(nid0, 1);
+        bconf1.addVlanMap(vmap1);
 
-        // Map VLAN 2 on edgeNodes[1] to vbr2.
-        node = toAdNode(edgeNodes.get(1));
-        vlconf = new VlanMapConfig(node, (short)1);
-        vtnManager.addVlanMap(bpath2, vlconf);
+        // Map VLAN 1 on edgeNodes[1] to vbr2.
+        String nid1 = edgeNodes.get(1);
+        VTNVlanMapConfig vmap2 = new VTNVlanMapConfig(nid1, 1);
+        VBridgeConfig bconf2 = vnet.getBridge(bpath2).
+            addVlanMap(vmap2);
 
-        // But one port in edgeNodes[1] to vbr1 using port mapping.
-        targetPort = edgePorts.get(edgeNodes.get(1)).get(1);
-        setPortMap(bipath11, targetPort, (short)1, StatusCode.SUCCESS);
-        assertTrue(portMapped.add(new TestPort(targetPort).setVlan((short)1)));
+        // But one port in edgeNodes[1] is mapped to vbr1 using port mapping.
+        targetPort = edgePorts.get(nid1).get(1);
+        VTNPortMapConfig pmap1 = new VTNPortMapConfig(targetPort, 1).
+            setMappedPort(targetPort);
+        VInterfaceConfig iconf11 = vnet.getInterface(bipath11).
+            setPortMap(pmap1);
+        assertTrue(portMapped.add(new TestPort(targetPort, 1)));
+
+        // Apply configuration.
+        vnet.apply().verify();
 
         String mmapPort = null;
-        for (String pid: edgePorts.get(edgeNodes.get(0))) {
+        for (String pid: edgePorts.get(nid0)) {
             if (mmapPort == null) {
                 // Override this port using MAC mapping.
                 mmapPort = pid;
             }
-            bridge1.addMappedVlan(pid, (short)1);
+            bridge1.addMappedVlan(pid, 1);
         }
         assertNotNull(mmapPort);
         String mmapNode = OfMockUtils.getNodeIdentifier(mmapPort);
 
-        for (String pid: edgePorts.get(edgeNodes.get(1))) {
+        for (String pid: edgePorts.get(nid1)) {
             BridgeNetwork bridge = (pid.equals(targetPort))
                 ? bridge1 : bridge2;
-            bridge.addMappedVlan(pid, (short)1);
+            bridge.addMappedVlan(pid, 1);
         }
 
         // Create test hosts.
@@ -3672,65 +4387,64 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         hostIdx = bridge2.addTestHosts(hostIdx, nhosts);
 
         // Map hosts on mmapPort (VLAN 1) to vbr2 using MAC mapping.
-        Set<EthernetHost> hostSet = new HashSet<>();
-        Map<VBridgePath, Set<TestHost>> mmapAllowed = new HashMap<>();
+        Map<VBridgeIdentifier, Set<TestHost>> mmapAllowed = new HashMap<>();
         assertEquals(null, mmapAllowed.put(bpath2, new HashSet<TestHost>()));
+        VTNMacMapConfig macMap1 = new VTNMacMapConfig();
+        bconf2.setMacMap(macMap1);
         for (int i = 0; i < nhosts; i++) {
-            TestHost th = new TestHost(hostIdx, mmapPort, (short)1);
+            String pname = portNames.get(mmapPort);
+            TestHost th = new TestHost(hostIdx, mmapPort, pname, 1);
             hostIdx++;
+            MacVlan mv = new MacVlan(th.getEtherAddress(), th.getVlanId());
             assertTrue(mmapAllowed.get(bpath2).add(th));
-            assertTrue(hostSet.add(th.getEthernetHost()));
+            macMap1.addAllowed(mv);
         }
-        assertEquals(UpdateType.ADDED,
-                     vtnManager.setMacMap(bpath2, VtnUpdateOperationType.ADD,
-                                          VtnAclType.ALLOW, hostSet));
+        assertEquals(VtnUpdateType.CREATED,
+                     macMap1.update(macMapService, bpath2, VtnAclType.ALLOW,
+                                   VtnUpdateOperationType.SET));
+        vnet.verify();
 
         // Configure MAC mappings for VLAN 4095.
-        Deque<VBridgePath> bpathQueue = new LinkedList<>();
+        Deque<VBridgeIdentifier> bpathQueue = new LinkedList<>();
         Collections.addAll(bpathQueue, bpath1, bpath2);
-        for (Map.Entry<String, List<String>> entry: edgePorts.entrySet()) {
+        for (Entry<String, List<String>> entry: edgePorts.entrySet()) {
             String nid = entry.getKey();
             List<String> ports = entry.getValue();
             for (String pid: ports) {
-                VBridgePath bpath = bpathQueue.removeFirst();
+                VBridgeIdentifier bpath = bpathQueue.removeFirst();
                 bpathQueue.addLast(bpath);
 
                 Set<TestHost> allowed = mmapAllowed.get(bpath);
-                UpdateType expected;
+                VtnUpdateType expected;
                 if (allowed == null) {
-                    expected = UpdateType.ADDED;
+                    expected = VtnUpdateType.CREATED;
                     allowed = new HashSet<TestHost>();
                     assertEquals(null, mmapAllowed.put(bpath, allowed));
                 } else {
-                    expected = UpdateType.CHANGED;
+                    expected = VtnUpdateType.CHANGED;
                 }
 
-                hostSet = new HashSet<>();
+                VBridgeConfig bconf = vnet.getBridge(bpath);
+                VTNMacMapConfig macMap = bconf.getMacMap();
+                if (macMap == null) {
+                    macMap = new VTNMacMapConfig();
+                    bconf.setMacMap(macMap);
+                }
+
                 for (int i = 0; i < nhosts; i++) {
-                    TestHost th = new TestHost(hostIdx, pid, (short)4095);
+                    String pname = portNames.get(pid);
+                    TestHost th = new TestHost(hostIdx, pid, pname, 4095);
                     hostIdx++;
-                    EthernetHost ehost = th.getEthernetHost();
-                    assertTrue(hostSet.add(ehost));
                     assertTrue(allowed.add(th));
+                    macMap.addAllowed(th.getMacVlan());
                 }
 
-                assertEquals(expected,
-                             vtnManager.setMacMap(
-                                 bpath, VtnUpdateOperationType.ADD,
-                                 VtnAclType.ALLOW, hostSet));
+                VtnUpdateType result = macMap.update(
+                    macMapService, bpath, VtnAclType.ALLOW,
+                    VtnUpdateOperationType.ADD);
+                assertEquals(expected, result);
+                vnet.verify();
             }
-        }
-
-        for (VBridgePath bpath: bpathQueue) {
-            MacMap mmap = vtnManager.getMacMap(bpath);
-            Set<TestHost> allowedHosts = mmapAllowed.get(bpath);
-            Set<DataLinkHost> allowed = mmap.getAllowedHosts();
-            assertEquals(allowed.size(), allowedHosts.size());
-            for (TestHost th: allowedHosts) {
-                assertTrue(allowed.contains(th.getEthernetHost()));
-            }
-            assertTrue(mmap.getDeniedHosts().isEmpty());
-            assertTrue(mmap.getMappedHosts().isEmpty());
         }
 
         bridge1.verify();
@@ -3744,10 +4458,12 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             set(bipath11, VnodeState.UP, VnodeState.UP).
             set(bipath21, VnodeState.UP, VnodeState.UP);
         waiter.await();
+        vnet.verify();
 
         // Ensure any incoming packet from internal port is ignored.
         for (String pid: islPorts) {
-            TestHost th = new TestHost(hostIdx, pid, (short)0);
+            String pname = portNames.get(pid);
+            TestHost th = new TestHost(hostIdx, pid, pname, 0);
             hostIdx++;
             sendBroadcast(ofMockService, th);
         }
@@ -3764,8 +4480,13 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         // Let test vBridges learn MAC addresses except MAC mapped hosts.
         learnHosts(bridge1);
         learnHosts(bridge2);
-        checkMacAddressTable(bpath1, bridge1.getMacAddressEntries());
-        checkMacAddressTable(bpath2, bridge2.getMacAddressEntries());
+        MacEntryWaiter macWaiter1 = new MacEntryWaiter(ofMockService, bpath1).
+            set(bridge1.getMacEntries()).
+            await();
+        MacEntryWaiter macWaiter2 = new MacEntryWaiter(ofMockService, bpath2).
+            set(bridge2.getMacEntries()).
+            await();
+        vnet.verify();
 
         // Send unicast packets.
         List<UnicastFlow> flows1 =
@@ -3776,28 +4497,33 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             add(flows1).add(flows2).verify();
 
         // Activate MAC mappings.
-        Set<String> remappedVlans = new HashSet<>();
-        for (Map.Entry<VBridgePath, BridgeNetwork> entry: bridges.entrySet()) {
-            VBridgePath bpath = entry.getKey();
+        Set<PortVlan> remappedVlans = new HashSet<>();
+        for (Entry<VBridgeIdentifier, BridgeNetwork> entry:
+                 bridges.entrySet()) {
+            VBridgeIdentifier bpath = entry.getKey();
             BridgeNetwork bridge = entry.getValue();
             Set<TestHost> allowed = mmapAllowed.get(bpath);
             for (TestHost th: allowed) {
                 String pid = th.getPortIdentifier();
-                short vlan = th.getVlan();
-                String remapKey = pid + "," + vlan;
-                boolean remapped = remappedVlans.add(remapKey);
+                int vid = th.getVlanId();
+                PortVlan pv = new PortVlan(pid, vid);
+                boolean remapped = remappedVlans.add(pv);
                 if (remapped) {
-                    bridge1.removeMappedVlan(pid, vlan);
-                    bridge2.removeMappedVlan(pid, vlan);
+                    bridge1.removeMappedVlan(pid, vid);
+                    bridge2.removeMappedVlan(pid, vid);
                 }
                 bridge.addHost(th);
                 learnHost(bpath, bridge.getMappedVlans(), th);
+                vnet.getBridge(bpath).
+                    getMacMap().
+                    addAllowed(th.getMacVlan()).
+                    addMapped(th.getMacMappedHost());
 
                 if (remapped) {
                     // Ensure that flow entries for unmapped hosts have been
                     // uninstalled.
-                    verifyFlowUninstalled(pid, vlan, flows1);
-                    verifyFlowUninstalled(pid, vlan, flows2);
+                    verifyFlowUninstalled(pid, vid, flows1);
+                    verifyFlowUninstalled(pid, vid, flows2);
                 }
             }
         }
@@ -3806,28 +4532,12 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         counter.clear().add(flows1).add(flows2).verify();
 
         // Ensure MAC address entries for unmapped hosts have been removed.
-        checkMacAddressTable(bpath1, bridge1.getMacAddressEntries());
-        checkMacAddressTable(bpath2, bridge2.getMacAddressEntries());
+        macWaiter1.set(bridge1.getMacEntries()).await();
+        macWaiter2.set(bridge2.getMacEntries()).await();
 
         // Ensure that all virtual nodes are ready.
         waiter.set(bpath1, VnodeState.UP).set(bpath2, VnodeState.UP).await();
-
-        // Verify MAC mapping state.
-        for (Map.Entry<VBridgePath, Set<TestHost>> entry:
-                 mmapAllowed.entrySet()) {
-            VBridgePath bpath = entry.getKey();
-            Set<TestHost> allowedHosts = entry.getValue();
-            MacMap mmap = vtnManager.getMacMap(bpath);
-            Set<DataLinkHost> allowed = mmap.getAllowedHosts();
-            Set<MacAddressEntry> mapped = new HashSet<>(mmap.getMappedHosts());
-            assertEquals(allowed.size(), allowedHosts.size());
-            assertEquals(mapped.size(), allowedHosts.size());
-            for (TestHost th: allowedHosts) {
-                assertTrue(allowed.contains(th.getEthernetHost()));
-                assertTrue(mapped.contains(th.getMacAddressEntry()));
-            }
-            assertTrue(mmap.getDeniedHosts().isEmpty());
-        }
+        vnet.verify();
 
         // Send unicast packets again.
         flows1 = unicastTest(bridge1, islPorts, true);
@@ -3839,166 +4549,71 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         for (TestPort tp: portMapped) {
             String pid = tp.getPortIdentifier();
             skip.add(pid);
-            setPortMap(vtipath, pid, tp.getVlan(), StatusCode.CONFLICT);
+            VTNPortMapConfig pmap = new VTNPortMapConfig(pid, tp.getVlanId());
+            SetPortMapInput input = pmap.newInputBuilder(vtipath).build();
+            checkRpcError(portMapService.setPortMap(input),
+                          RpcErrorTag.DATA_EXISTS, VtnErrorTag.CONFLICT);
+            vnet.verify();
             counter.verify();
-            checkMacAddressTable(bpath1, bridge1.getMacAddressEntries());
-            checkMacAddressTable(bpath2, bridge2.getMacAddressEntries());
+            macWaiter1.await();
+            macWaiter2.await();
         }
 
         // Determine port for vTerminal test.
+        targetPort = null;
         for (String pid: allPorts) {
             if (!skip.contains(pid) && !islPorts.contains(pid)) {
                 targetPort = pid;
                 break;
             }
         }
+        assertNotNull(targetPort);
+
         // Try to map edge port to vTerminal.
         OfMockFlow dropFlow = null;
-        for (short vlan: new short[]{0, 1, 4095}) {
-            setPortMap(vtipath, targetPort, vlan, StatusCode.SUCCESS);
-            bridge1.removeMappedVlan(targetPort, vlan);
-            bridge2.removeMappedVlan(targetPort, vlan);
-            verifyFlowUninstalled(targetPort, vlan, flows1);
-            verifyFlowUninstalled(targetPort, vlan, flows2);
+        VInterfaceConfig ticonf = vnet.getInterface(vtipath);
+        String portName = portNames.get(targetPort);
+        for (int vid: new int[]{0, 1, 4095}) {
+            VTNPortMapConfig old = ticonf.getPortMap();
+            VtnUpdateType expected = (old == null)
+                ? VtnUpdateType.CREATED
+                : VtnUpdateType.CHANGED;
+            VTNPortMapConfig pmap = new VTNPortMapConfig(targetPort, vid).
+                setMappedPort(targetPort);
+            ticonf.setPortMap(pmap);
+            assertEquals(expected, pmap.update(portMapService, vtipath));
+
+            verifyFlowUninstalled(targetPort, vid, flows1);
+            verifyFlowUninstalled(targetPort, vid, flows2);
             counter.clear().add(flows1).add(flows2).verify();
-            checkMacAddressTable(bpath1, bridge1.getMacAddressEntries());
-            checkMacAddressTable(bpath2, bridge2.getMacAddressEntries());
+            macWaiter1.remove(bridge1.removeMappedVlan(targetPort, vid)).
+                await();
+            macWaiter2.remove(bridge2.removeMappedVlan(targetPort, vid)).
+                await();
 
             if (dropFlow != null) {
                 String nid = dropFlow.getNodeIdentifier();
                 int pri = dropFlow.getPriority();
                 Match match = dropFlow.getMatch();
-                OfMockFlow f = ofMockService.
-                    awaitFlow(nid, OfMockService.DEFAULT_TABLE, match, pri,
-                              false);
+                OfMockFlow f = ofMockService.awaitFlow(
+                    nid, OfMockService.DEFAULT_TABLE, match, pri, false);
                 assertEquals(null, f);
             }
 
             // Ensure that vTerminal drops incoming packet.
-            TestHost host = new TestHost(hostIdx, targetPort, vlan);
+            TestHost host = new TestHost(hostIdx, targetPort, portName, vid);
             hostIdx++;
             dropFlow = dropTest(host, allPorts);
             counter.add(dropFlow).verify();
-            checkMacAddressTable(bpath1, bridge1.getMacAddressEntries());
-            checkMacAddressTable(bpath2, bridge2.getMacAddressEntries());
+            macWaiter1.await();
+            macWaiter2.await();
         }
 
         // Clean up.
-        Status st = vtnManager.removeTenant(tpath);
-        assertTrue(st.isSuccess());
-    }
-
-    /**
-     * Create a {@link PortLocation} instance that specifies the given port.
-     *
-     * <p>
-     *   This method creates a {@link PortLocation} that specifies the port
-     *   by type and ID.
-     * </p>
-     *
-     * @param pid     The identifier of the switch port.
-     * @return  A {@link PortLocation} instance.
-     */
-    private PortLocation toPortLocation(String pid) {
-        NodeConnector nc = toAdNodeConnector(pid);
-        SwitchPort swport = new SwitchPort(nc.getType(),
-                                           nc.getNodeConnectorIDString());
-        return new PortLocation(nc.getNode(), swport);
-    }
-
-    /**
-     * Create a {@link PortLocation} instance that specifies the given port.
-     *
-     * @param pid     The identifier of the switch port.
-     * @param byType  If {@code true}, the given port is specified by type and
-     *                ID in addition to port name.
-     *                If {@code false}, the given port is specified by only
-     *                port name.
-     * @return  A {@link PortLocation} instance.
-     */
-    private PortLocation toPortLocation(String pid, boolean byType) {
-        NodeConnector nc = toAdNodeConnector(pid);
-        SwitchPort swport;
-        String name = ofMockService.getPortName(pid);
-        if (byType) {
-            swport = new SwitchPort(name, nc.getType(),
-                                    nc.getNodeConnectorIDString());
-        } else {
-            swport = new SwitchPort(name);
-        }
-
-        return new PortLocation(nc.getNode(), swport);
-    }
-
-    /**
-     * Configure port mapping into the given virtual interface.
-     *
-     * @param ifPath  Path to the virtual interface.
-     * @param pid     Identifier of the port to be mapped.
-     * @param vlan    VLAN ID to be mapped.
-     * @param code    Expected result of port mapping operation.
-     */
-    private void setPortMap(VInterfacePath ifPath, String pid, short vlan,
-                            StatusCode code) {
-        NodeConnector nc = toAdNodeConnector(pid);
-        SwitchPort swport =
-            new SwitchPort(nc.getType(), nc.getNodeConnectorIDString());
-        PortMapConfig pmconf =
-            new PortMapConfig(nc.getNode(), swport, vlan);
-        Status st;
-
-        if (ifPath instanceof VBridgeIfPath) {
-            st = vtnManager.setPortMap((VBridgeIfPath)ifPath, pmconf);
-        } else if (ifPath instanceof VTerminalIfPath) {
-            st = vtnManager.setPortMap((VTerminalIfPath)ifPath, pmconf);
-        } else {
-            fail("Unexpected interface path: " + ifPath);
-            return;
-        }
-
-        assertEquals(code, st.getCode());
-    }
-
-    /**
-     * Ensure that all flow entries related to the given network have been
-     * uninstalled.
-     *
-     * @param pid    The port identifier of the unmapped network.
-     * @param vlan   The VLAN ID of the unmapped network.
-     * @param flows  A list of {@link UnicastFlow} instances.
-     */
-    private void verifyFlowUninstalled(String pid, short vlan,
-                                       List<UnicastFlow> flows)
-        throws Exception {
-        // Determine flow entries to be uninstalled.
-        final int tableId = OfMockService.DEFAULT_TABLE;
-        List<UnicastFlow> uninstalled = new ArrayList<>();
-        for (Iterator<UnicastFlow> it = flows.iterator(); it.hasNext();) {
-            // Check ingress flow.
-            UnicastFlow unicast = it.next();
-            List<OfMockFlow> flowList = unicast.getFlowList();
-            OfMockFlow ingress = flowList.get(0);
-            Match match = ingress.getMatch();
-            short inVlan = getVlanMatch(match);
-            if (inVlan == vlan && pid.equals(getInPortMatch(match))) {
-                uninstalled.add(unicast);
-                it.remove();
-                continue;
-            }
-
-            // Check egress flow.
-            OfMockFlow egress = flowList.get(flowList.size() - 1);
-            if (hasOutput(egress.getInstructions(), pid, vlan, inVlan)) {
-                uninstalled.add(unicast);
-                it.remove();
-                continue;
-            }
-        }
-
-        UnicastFlow.verifyFlows(uninstalled, false, true);
-
-        // Rest of flow entries should be still installed.
-        UnicastFlow.verifyFlows(flows, true, false);
+        removeVtn(vtnService, tname);
+        vnet.removeTenant(tname).verify();
+        macWaiter1.set(null).await();
+        macWaiter2.set(null).await();
     }
 
     /**
@@ -4011,19 +4626,22 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         LOG.info("Running testRoutingTable().");
 
         // Create a VTN and a vBridge for test.
-        VTenantPath tpath = new VTenantPath("vtn");
-        VBridgePath bpath = new VBridgePath(tpath, "vbr");
-        createVirtualNodes(tpath, Collections.singleton(bpath));
+        String tname = "vtn";
+        VBridgeIdentifier bpath = new VBridgeIdentifier(tname, "vbr");
+        VirtualNetwork vnet = new VirtualNetwork(this).
+            addBridge(bpath).
+            apply().
+            verify();
 
         // Collect edge ports per node, and all ISL ports.
-        BridgeNetwork bridge = new BridgeNetwork(bpath);
+        BridgeNetwork bridge = new BridgeNetwork(ofMockService, bpath);
         Set<String> islPorts = new HashSet<>();
         int idx = 1;
-        short vlan = 0;
-        Short vid = Short.valueOf(vlan);
+        int vid = 0;
         for (String nid: ofMockService.getNodes()) {
             for (String pid: ofMockService.getPorts(nid, true)) {
-                bridge.addHost(nid, new TestHost(idx, pid, vlan));
+                String pname = ofMockService.getPortName(pid);
+                bridge.addHost(nid, new TestHost(idx, pid, pname, vid));
                 idx++;
             }
 
@@ -4036,11 +4654,12 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         assertFalse(islPorts.isEmpty());
 
         // Map untagged frame using VLAN mapping.
-        VlanMapConfig vlconf = new VlanMapConfig(null, (short)0);
-        VlanMap map = vtnManager.addVlanMap(bpath, vlconf);
+        VTNVlanMapConfig vmap0 = new VTNVlanMapConfig();
+        VBridgeConfig bconf = vnet.getBridge(bpath).
+            addVlanMap(vmap0);
+        vnet.apply().verify();
         VNodeStateWaiter waiter = new VNodeStateWaiter(ofMockService).
             set(bpath, VnodeState.UP);
-        waiter.await();
 
         // Let the test vBridge learn MAC addresses.
         learnHosts(bridge);
@@ -4056,7 +4675,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         // synchronize packet processing.
         Map<String, List<TestHost>> hostMap = bridge.getTestHosts();
         Set<String> edgeNodes = new HashSet<>();
-        for (Map.Entry<String, List<TestHost>> entry: hostMap.entrySet()) {
+        for (Entry<String, List<TestHost>> entry: hostMap.entrySet()) {
             List<TestHost> hosts = entry.getValue();
             if (hosts.size() >= 2) {
                 edgeNodes.add(entry.getKey());
@@ -4079,293 +4698,13 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         // Resolve path fault.
         unicastTest(bridge, islPorts, true);
 
-        Status st = vtnManager.removeTenant(tpath);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
+        vnet.verify();
+        removeVtn(vtnService, tname);
+        vnet.removeTenant(tname).verify();
     }
 
     /**
-     * Learn all hosts mapped to the given bridge network.
-     *
-     * @param bridge  A {@link BridgeNetwork} instance.
-     * @throws Exception  An error occurred.
-     */
-    private void learnHosts(BridgeNetwork bridge) throws Exception {
-        VBridgePath bpath = bridge.getPath();
-        Map<String, List<TestHost>> hostMap = bridge.getTestHosts();
-        Map<String, Set<Short>> allPorts = bridge.getMappedVlans();
-
-        for (List<TestHost> hosts: hostMap.values()) {
-            for (TestHost host: hosts) {
-                learnHost(bpath, allPorts, host);
-            }
-        }
-    }
-
-    /**
-     * Learn the given host mapped to the given bridge network.
-     *
-     * @param bpath     Path to the vBridge.
-     * @param allPorts  A map that contains all switch ports as map keys.
-     *                  A set of VLAN IDs mapped to the given vBridge must
-     *                  be associated with the key.
-     * @param host      A test host to learn.
-     * @throws Exception  An error occurred.
-     */
-    private void learnHost(VBridgePath bpath, Map<String, Set<Short>> allPorts,
-                           TestHost host) throws Exception {
-        learnHost(ofMockService, allPorts, host);
-
-        EthernetAddress ethAddr = host.getEthernetAddress();
-        assertEquals(host.getMacAddressEntry(),
-                     vtnManager.getMacEntry(bpath, ethAddr));
-    }
-
-    /**
-     * Do the ARP unicast packet forwarding test.
-     *
-     * @param bridge  A {@link BridgeNetwork} instance.
-     * @param islPorts  A set of ISL ports.
-     * @param up        {@code true} means that all ISL ports should be up.
-     *                  {@code false} means that all ISL ports should be down.
-     * @return  A list of {@link UnicastFlow} instances that represents
-     *          established unicast flows.
-     * @throws Exception  An error occurred.
-     */
-    private List<UnicastFlow> unicastTest(BridgeNetwork bridge,
-                                          Set<String> islPorts, boolean up)
-        throws Exception {
-        ArpFlowFactory factory = new ArpFlowFactory(ofMockService);
-        return unicastTest(factory, bridge, islPorts, up);
-    }
-
-    /**
-     * Do the ARP unicast packet forwarding test.
-     *
-     * @param bridge       A {@link BridgeNetwork} instance.
-     * @param islPorts     A set of ISL ports.
-     * @param up           {@code true} means that all ISL ports should be up.
-     *                     {@code false} means that all ISL ports should be
-     *                     down.
-     * @param bridgeState  Expected vBridge state when all ISL port is up.
-     * @return  A list of {@link UnicastFlow} instances that represents
-     *          established unicast flows.
-     * @throws Exception  An error occurred.
-     */
-    private List<UnicastFlow> unicastTest(BridgeNetwork bridge,
-                                          Set<String> islPorts, boolean up,
-                                          VnodeState bridgeState)
-        throws Exception {
-        ArpFlowFactory factory = new ArpFlowFactory(ofMockService);
-        return unicastTest(factory, bridge, islPorts, up, bridgeState);
-    }
-
-    /**
-     * Do the unicast packet forwarding test.
-     *
-     * @param factory      A {@link UnicastFlowFactory} instance used to
-     *                     create unicast flows.
-     * @param bridge  A {@link BridgeNetwork} instance.
-     * @param islPorts  A set of ISL ports.
-     * @param up        {@code true} means that all ISL ports should be up.
-     *                  {@code false} means that all ISL ports should be down.
-     * @return  A list of {@link UnicastFlow} instances that represents
-     *          established unicast flows.
-     * @throws Exception  An error occurred.
-     */
-    private List<UnicastFlow> unicastTest(UnicastFlowFactory factory,
-                                          BridgeNetwork bridge,
-                                          Set<String> islPorts, boolean up)
-        throws Exception {
-        return unicastTest(factory, bridge, islPorts, up, VnodeState.UP);
-    }
-
-    /**
-     * Do the unicast packet forwarding test.
-     *
-     * @param factory      A {@link UnicastFlowFactory} instance used to
-     *                     create unicast flows.
-     * @param bridge       A {@link BridgeNetwork} instance.
-     * @param islPorts     A set of ISL ports.
-     * @param up           {@code true} means that all ISL ports should be up.
-     *                     {@code false} means that all ISL ports should be
-     *                     down.
-     * @param bridgeState  Expected vBridge state when all ISL port is up.
-     * @return  A list of {@link UnicastFlow} instances that represents
-     *          established unicast flows.
-     * @throws Exception  An error occurred.
-     */
-    private List<UnicastFlow> unicastTest(UnicastFlowFactory factory,
-                                          BridgeNetwork bridge,
-                                          Set<String> islPorts, boolean up,
-                                          VnodeState bridgeState)
-        throws Exception {
-        VBridgePath bpath = bridge.getPath();
-        Map<String, List<TestHost>> hostMap = bridge.getTestHosts();
-        factory.addPortSet(bridge.getMappedVlans().keySet());
-
-        boolean changed = false;
-        for (String pid: islPorts) {
-            if (ofMockService.setPortState(pid, up)) {
-                changed = true;
-            }
-        }
-        for (String pid: islPorts) {
-            ofMockService.awaitLink(pid, null, up);
-        }
-
-        if (changed) {
-            // remove-flow operation is triggered when port state is changed.
-            // So we need to wait for its completion.
-            sleep(BGTASK_DELAY);
-        }
-
-        List<UnicastFlow> flows = new ArrayList<>();
-        Set<NodePath> fpaths = new HashSet<>();
-        for (Map.Entry<String, List<TestHost>> srcEnt: hostMap.entrySet()) {
-            String srcNid = srcEnt.getKey();
-            List<TestHost> srcHosts = srcEnt.getValue();
-            for (Map.Entry<String, List<TestHost>> dstEnt:
-                     hostMap.entrySet()) {
-                String dstNid = dstEnt.getKey();
-                if (srcNid.equals(dstNid)) {
-                    continue;
-                }
-
-                List<TestHost> dstHosts = dstEnt.getValue();
-                List<OfMockLink> route =
-                    ofMockService.getRoute(srcNid, dstNid);
-                if (up) {
-                    assertNotNull(route);
-                } else {
-                    fpaths.add(new NodePath(srcNid, dstNid));
-                    assertEquals(null, route);
-                }
-
-                flows.addAll(unicastTest(factory, bpath, bridgeState, srcHosts,
-                                         dstHosts, fpaths, route));
-            }
-        }
-
-        return flows;
-    }
-
-    /**
-     * Do the unicast packet forwarding test.
-     *
-     * @param factory      A {@link UnicastFlowFactory} instance used to
-     *                     create unicast flows.
-     * @param bpath        Path to the test vBridge.
-     * @param bridgeState  Expected vBridge state when all ISL port is up.
-     * @param srcList      A list of source hosts.
-     * @param dstList      A list of destination hosts.
-     * @param route        A list of {@link OfMockLink} which represents the
-     *                     packet route.
-     * @return  A list of {@link UnicastFlow} instances that represents
-     *          established unicast flows.
-     * @throws Exception  An error occurred.
-     */
-    private List<UnicastFlow> unicastTest(
-        UnicastFlowFactory factory, VBridgePath bpath, VnodeState bridgeState,
-        List<TestHost> srcList, List<TestHost> dstList, List<OfMockLink> route)
-        throws Exception {
-        return unicastTest(factory, bpath, bridgeState, srcList, dstList,
-                           Collections.<NodePath>emptySet(), route);
-    }
-
-    /**
-     * Do the unicast packet forwarding test.
-     *
-     * @param factory      A {@link UnicastFlowFactory} instance used to
-     *                     create unicast flows.
-     * @param bpath        Path to the test vBridge.
-     * @param bridgeState  Expected vBridge state when all ISL port is up.
-     * @param srcList      A list of source hosts.
-     * @param dstList      A list of destination hosts.
-     * @param fpaths       A set of expected faulted paths.
-     * @param route        A list of {@link OfMockLink} which represents the
-     *                     packet route.
-     * @return  A list of {@link UnicastFlow} instances that represents
-     *          established unicast flows.
-     * @throws Exception  An error occurred.
-     */
-    private List<UnicastFlow> unicastTest(
-        UnicastFlowFactory factory, VBridgePath bpath, VnodeState bridgeState,
-        List<TestHost> srcList, List<TestHost> dstList, Set<NodePath> fpaths,
-        List<OfMockLink> route) throws Exception {
-        List<UnicastFlow> flows = new ArrayList<>();
-        boolean reachable = fpaths.isEmpty();
-        VnodeState bstate;
-        if (reachable) {
-            bstate = bridgeState;
-            assertNotNull(route);
-        } else {
-            bstate = VnodeState.DOWN;
-            assertEquals(null, route);
-        }
-
-        for (TestHost src: srcList) {
-            for (TestHost dst: dstList) {
-                // Run tests.
-                VNodeStateWaiter waiter = new VNodeStateWaiter(ofMockService).
-                    set(bpath, bstate, fpaths);
-                UnicastFlow unicast = factory.create(src, dst, route);
-                unicast.runTest(waiter);
-
-                // Verify results.
-                int count = unicast.getFlowCount();
-                if (reachable && !factory.isAlreadyMapped()) {
-                    assertTrue(count > 0);
-                    flows.add(unicast);
-                } else {
-                    assertEquals(0, count);
-                }
-            }
-        }
-
-        return flows;
-    }
-
-    /**
-     * Ensure that an unicast packet sent by the given host is dropped.
-     *
-     * @param host      The source host.
-     * @param allPorts  A set of all port identifiers.
-     * @return  A flow entry that drops incoming packet from the given host.
-     */
-    private OfMockFlow dropTest(TestHost host, Set<String> allPorts)
-        throws Exception {
-        String ingress = host.getPortIdentifier();
-        byte[] sha = host.getMacAddress();
-        byte[] spa = host.getRawInetAddress();
-        short vlan = host.getVlan();
-        EthernetFactory efc = new EthernetFactory(sha, MAC_DUMMY).
-            setVlanId(vlan);
-        ArpFactory afc = ArpFactory.newInstance(efc).
-            setSenderHardwareAddress(sha).
-            setTargetHardwareAddress(MAC_DUMMY).
-            setSenderProtocolAddress(spa).
-            setTargetProtocolAddress(IPV4_DUMMY);
-        byte[] payload = efc.create();
-        ofMockService.sendPacketIn(ingress, payload);
-
-        // Ensure that a flow entry that drops the packet was installed.
-        String nid = OfMockUtils.getNodeIdentifier(ingress);
-        int pri = ofMockService.getL2FlowPriority();
-        Match match = createMatch(ingress, vlan).build();
-        OfMockFlow flow = ofMockService.
-            awaitFlow(nid, OfMockService.DEFAULT_TABLE, match, pri, true);
-        verifyDropFlow(flow.getInstructions());
-
-        // Ensure that no packet was forwarded.
-        for (String pid: allPorts) {
-            assertNull(ofMockService.getTransmittedPacket(pid));
-        }
-
-        return flow;
-    }
-
-    /**
-     * Test method for path map.
+     * Test case for path map.
      *
      * @throws Exception  An error occurred.
      */
@@ -4374,7 +4713,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         LOG.info("Running testPathMap().");
 
         // Collect existing switch ports.
-        Map<String, Set<Short>> allPorts = new HashMap<>();
+        Map<String, Set<Integer>> allPorts = new HashMap<>();
         for (String nid: ofMockService.getNodes()) {
             for (boolean b: new boolean[]{true, false}) {
                 for (String pid: ofMockService.getPorts(nid, b)) {
@@ -4387,7 +4726,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         final int numNodes = 4;
         String[] nodeIds = new String[numNodes];
         for (int i = 0; i < numNodes; i++) {
-            BigInteger dpid = BigInteger.valueOf((long)(i + 1));
+            BigInteger dpid = getUnsigned((long)(i + 1));
             String nid = ofMockService.addNode(dpid, false);
             nodeIds[i] = nid;
 
@@ -4416,9 +4755,6 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         }
         assertEquals(numNodes * (numNodes - 1), allLinks.size());
 
-        // Need to synchronize background tasks triggered by port state events.
-        sleep(BGTASK_DELAY);
-
         // Wait for network topology to be established.
         for (Map.Entry<String, String> entry: allLinks.entrySet()) {
             String src = entry.getKey();
@@ -4427,39 +4763,54 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         }
 
         // Create a VTN and a vBridge for test.
-        VTenantPath tpath = new VTenantPath("vtn");
-        VBridgePath bpath = new VBridgePath(tpath, "vbr");
-        VBridgeIfPath ipath0 = new VBridgeIfPath(bpath, "if0");
-        VBridgeIfPath ipath2 = new VBridgeIfPath(bpath, "if2");
-        List<VBridgeIfPath> ipaths = new ArrayList<>();
-        Collections.addAll(ipaths, ipath0, ipath2);
-        createVirtualNodes(tpath, Collections.singleton(bpath), ipaths);
+        String tname = "vtn";
+        VBridgeIdentifier bpath = new VBridgeIdentifier(tname, "vbr");
+        VBridgeIfIdentifier ipath0 = bpath.childInterface("if0");
+        VBridgeIfIdentifier ipath2 = bpath.childInterface("if2");
+        VirtualNetwork vnet = new VirtualNetwork(this).
+            addInterface(ipath0, ipath2);
 
         // Map an edge port on nodeIds[0] to ipath0.
-        short vlan0 = 0;
+        int vid0 = 0;
         String edge0 = ofMockService.getPorts(nodeIds[0], true).get(0);
-        setPortMap(ipath0, edge0, vlan0, StatusCode.SUCCESS);
-        allPorts.put(edge0, Collections.singleton(vlan0));
+        VInterfaceConfig iconf0 = vnet.getInterface(ipath0);
+        VTNPortMapConfig pmap0 = new VTNPortMapConfig(edge0, vid0).
+            setMappedPort(edge0);
+        iconf0.setPortMap(pmap0);
+        allPorts.put(edge0, Collections.singleton(vid0));
 
         // Map an edge port on nodeIds[2] to ipath2.
-        short vlan2 = 2;
+        int vid2 = 2;
         String edge2 = ofMockService.getPorts(nodeIds[2], true).get(0);
-        setPortMap(ipath2, edge2, vlan2, StatusCode.SUCCESS);
-        allPorts.put(edge2, Collections.singleton(vlan2));
+        VInterfaceConfig iconf2 = vnet.getInterface(ipath2);
+        VTNPortMapConfig pmap2 = new VTNPortMapConfig(edge2, vid2).
+            setMappedPort(edge2);
+        iconf2.setPortMap(pmap2);
+        allPorts.put(edge2, Collections.singleton(vid2));
+
+        // Apply configuration, and wait for the test vBridge to change its
+        // state to UP.
+        vnet.apply();
+        VNodeStateWaiter waiter = new VNodeStateWaiter(ofMockService).
+            set(bpath, VnodeState.UP).
+            await();
+        vnet.verify();
 
         // Create 2 hosts connected to edge0.
         int hostIdx = 1;
         final int numHosts = 2;
         List<TestHost> hosts0 = new ArrayList<>();
+        String pname0 = ofMockService.getPortName(edge0);
         for (int i = 0; i < numHosts; i++) {
-            hosts0.add(new TestHost(hostIdx, edge0, vlan0));
+            hosts0.add(new TestHost(hostIdx, edge0, pname0, vid0));
             hostIdx++;
         }
 
         // Create 2 hosts connected to edge2.
         List<TestHost> hosts2 = new ArrayList<>();
+        String pname2 = ofMockService.getPortName(edge2);
         for (int i = 0; i < numHosts; i++) {
-            hosts2.add(new TestHost(hostIdx, edge2, vlan2));
+            hosts2.add(new TestHost(hostIdx, edge2, pname2, vid2));
             hostIdx++;
         }
 
@@ -4479,21 +4830,18 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         assertNotNull(link);
         route1.add(link);
 
-        Set<PathCost> costs = new HashSet<>();
+        long defCost1 = 10000L;
+        PathPolicy policy1 = new PathPolicy(1, defCost1);
+        int pcMode = PATH_COST_MODE_NAME;
         for (OfMockLink l: route1) {
-            PortLocation ploc = toPortLocation(l.getSourcePort());
-            assertTrue(costs.add(new PathCost(ploc, 1L)));
+            policy1.add(newPathCost(l.getSourcePort(), null, pcMode));
         }
 
-        long defCost1 = 10000L;
-        PathPolicy pp1 =
-            new PathPolicy(defCost1, new ArrayList<PathCost>(costs));
-        assertEquals(UpdateType.ADDED, vtnManager.setPathPolicy(1, pp1));
-        assertEquals(null, vtnManager.setPathPolicy(1, pp1));
-        pp1 = vtnManager.getPathPolicy(1);
-        assertEquals(Integer.valueOf(1), pp1.getPolicyId());
-        assertEquals(defCost1, pp1.getDefaultCost());
-        assertEquals(costs, new HashSet<PathCost>(pp1.getPathCosts()));
+        assertEquals(VtnUpdateType.CREATED,
+                     policy1.update(pathPolicyService,
+                                    VtnUpdateOperationType.ADD, false));
+        vnet.getPathPolicies().add(policy1);
+        vnet.verify();
 
         // Configure path policy 2.
         //   Route from nodeIds[0] to nodeIds[2]:
@@ -4507,49 +4855,41 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         route2.add(link);
 
         long defCost2 = 20000L;
-        PathPolicy pp2 = new PathPolicy(defCost2, null);
-        assertEquals(UpdateType.ADDED, vtnManager.setPathPolicy(2, pp2));
-        assertEquals(null, vtnManager.setPathPolicy(2, pp2));
-        pp2 = vtnManager.getPathPolicy(2);
-        assertEquals(Integer.valueOf(2), pp2.getPolicyId());
-        assertEquals(defCost2, pp2.getDefaultCost());
-        assertEquals(Collections.<PathCost>emptySet(),
-                     new HashSet<PathCost>(pp2.getPathCosts()));
+        PathPolicy policy2 = new PathPolicy(2, defCost2);
+        assertEquals(VtnUpdateType.CREATED,
+                     policy2.update(pathPolicyService,
+                                    VtnUpdateOperationType.SET, null));
+        vnet.getPathPolicies().add(policy2);
+        vnet.verify();
 
-        costs.clear();
+        Map<VtnPortDesc, VtnUpdateType> pdResult = new HashMap<>();
+        List<PathCost> costs = new ArrayList<>();
         for (OfMockLink l: route2) {
-            PortLocation ploc = toPortLocation(l.getSourcePort(), false);
-            assertEquals(PathPolicy.COST_UNDEF,
-                         vtnManager.getPathPolicyCost(2, ploc));
-            long cost = 2L;
-            assertEquals(UpdateType.ADDED,
-                         vtnManager.setPathPolicyCost(2, ploc, cost));
-            assertEquals(null, vtnManager.setPathPolicyCost(2, ploc, cost));
-            assertEquals(cost, vtnManager.getPathPolicyCost(2, ploc));
-            assertTrue(costs.add(new PathCost(ploc, cost)));
-
-            pp2 = vtnManager.getPathPolicy(2);
-            assertEquals(Integer.valueOf(2), pp2.getPolicyId());
-            assertEquals(defCost2, pp2.getDefaultCost());
-            assertEquals(costs, new HashSet<PathCost>(pp2.getPathCosts()));
+            PathCost pc = newPathCost(l.getSourcePort(), 2L);
+            costs.add(pc);
+            VtnPortDesc pdesc = pc.getPortDesc();
+            assertEquals(null, pdResult.put(pdesc, VtnUpdateType.CREATED));
         }
+
+        assertEquals(pdResult, policy2.add(pathPolicyService, costs));
+        vnet.verify();
 
         // Increase cost for the links from nodeIds[0] to nodeIds[1]/nodeIds[2]
         // for later test.
+        pdResult.clear();
+        costs.clear();
+        pcMode = PATH_COST_MODE_NAME | PATH_COST_MODE_ID;
         for (String dst: new String[]{nodeIds[1], nodeIds[2]}) {
             link = getInterSwitchLink(nodeIds[0], dst);
             assertNotNull(link);
-            PortLocation ploc = toPortLocation(link.getSourcePort(), true);
             long cost = 100000000000L;
-            assertEquals(UpdateType.ADDED,
-                         vtnManager.setPathPolicyCost(2, ploc, cost));
-            assertEquals(null, vtnManager.setPathPolicyCost(2, ploc, cost));
-            assertTrue(costs.add(new PathCost(ploc, cost)));
-            pp2 = vtnManager.getPathPolicy(2);
-            assertEquals(Integer.valueOf(2), pp2.getPolicyId());
-            assertEquals(defCost2, pp2.getDefaultCost());
-            assertEquals(costs, new HashSet<PathCost>(pp2.getPathCosts()));
+            PathCost pc = newPathCost(link.getSourcePort(), cost, pcMode);
+            costs.add(pc);
+            VtnPortDesc pdesc = pc.getPortDesc();
+            assertEquals(null, pdResult.put(pdesc, VtnUpdateType.CREATED));
         }
+        assertEquals(pdResult, policy2.add(pathPolicyService, costs));
+        vnet.verify();
 
         // Configure path policy 3.
         //   Route from nodeIds[0] to nodeIds[2]:
@@ -4566,131 +4906,119 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         route3.add(link);
 
         long defCost3 = 30000L;
-        PathPolicy pp3 = new PathPolicy(defCost3, null);
-        assertEquals(UpdateType.ADDED, vtnManager.setPathPolicy(3, pp3));
-        assertEquals(null, vtnManager.setPathPolicy(3, pp3));
+        PathPolicy policy3 = new PathPolicy(3, defCost3);
+        assertEquals(VtnUpdateType.CREATED,
+                     policy3.update(pathPolicyService, null, false));
+        vnet.getPathPolicies().add(policy3);
+        vnet.verify();
 
-        costs.clear();
+        PathCost pc3 = null;
         long cost3 = 10L;
         for (OfMockLink l: route3) {
-            PortLocation ploc = toPortLocation(l.getSourcePort(), true);
-            assertTrue(costs.add(new PathCost(ploc, cost3)));
+            String pid = l.getSourcePort();
+            PathCost pc = newPathCost(pid, cost3);
+            if (OfMockUtils.getNodeIdentifier(pid).equals(nodeIds[3])) {
+                assertEquals(null, pc3);
+                pc3 = pc;
+            }
+            policy3.add(pc);
         }
-        pp3 = new PathPolicy(defCost3, new ArrayList<PathCost>(costs));
-        assertEquals(UpdateType.CHANGED, vtnManager.setPathPolicy(3, pp3));
-        assertEquals(null, vtnManager.setPathPolicy(3, pp3));
-        pp3 = vtnManager.getPathPolicy(3);
-        assertEquals(Integer.valueOf(3), pp3.getPolicyId());
-        assertEquals(defCost3, pp3.getDefaultCost());
-        assertEquals(costs, new HashSet<PathCost>(pp3.getPathCosts()));
+        assertNotNull(pc3);
+        assertEquals(VtnUpdateType.CHANGED,
+                     policy3.update(pathPolicyService,
+                                    VtnUpdateOperationType.SET, false));
 
         // Increase cost for the link from nodeIds[0] to nodeIds[2]/nodeIds[3]
         // for later test.
+        pdResult.clear();
+        costs.clear();
         for (String dst: new String[]{nodeIds[2], nodeIds[3]}) {
             link = getInterSwitchLink(nodeIds[0], dst);
             assertNotNull(link);
-            PortLocation ploc = toPortLocation(link.getSourcePort(), true);
-            long cost = defCost3  * 2;
-            assertEquals(UpdateType.ADDED,
-                         vtnManager.setPathPolicyCost(3, ploc, cost));
-            assertEquals(null, vtnManager.setPathPolicyCost(3, ploc, cost));
-            assertTrue(costs.add(new PathCost(ploc, cost)));
-            pp3 = vtnManager.getPathPolicy(3);
-            assertEquals(Integer.valueOf(3), pp3.getPolicyId());
-            assertEquals(defCost3, pp3.getDefaultCost());
-            assertEquals(costs, new HashSet<PathCost>(pp3.getPathCosts()));
+            long cost = defCost3 * 2L;
+            PathCost pc = newPathCost(link.getSourcePort(), cost);
+            costs.add(pc);
+            VtnPortDesc pdesc = pc.getPortDesc();
+            assertEquals(null, pdResult.put(pdesc, VtnUpdateType.CREATED));
         }
+        assertEquals(pdResult, policy3.add(pathPolicyService, costs));
+        vnet.verify();
 
         // Configure flow conditions.
 
         // udp_src_50000: Match UDP packet from port 50000.
-        final short udpSrcPort = (short)50000;
-        UdpMatch udm = new UdpMatch(Short.valueOf(udpSrcPort), null);
-        FlowMatch fm = new FlowMatch(1, null, null, udm);
         String cnameUdp = "udp_src_50000";
-        FlowCondition condUdp =
-            new FlowCondition(cnameUdp, Collections.singletonList(fm));
-        assertEquals(UpdateType.ADDED,
-                     vtnManager.setFlowCondition(cnameUdp, condUdp));
-        assertEquals(null, vtnManager.setFlowCondition(cnameUdp, condUdp));
+        FlowCondition condUdp = new FlowCondition(cnameUdp);
+        vnet.getFlowConditions().add(condUdp);
+        assertEquals(VtnUpdateType.CREATED,
+                     condUdp.update(flowCondService, null, null));
+        assertEquals(null, condUdp.update(flowCondService, null, null));
+        vnet.verify();
 
-        EtherAddress nullMac = null;
-        EthernetMatch em = new EthernetMatch(
-            nullMac, nullMac, EtherTypes.IPV4.intValue(), null, null);
-        Inet4Match im = new Inet4Match(null, null, null, null,
-                                       InetProtocols.UDP.shortValue(), null);
-        fm = new FlowMatch(1, em, im, udm);
-        condUdp = new FlowCondition(cnameUdp, Collections.singletonList(fm));
-        assertEquals(condUdp, vtnManager.getFlowCondition(cnameUdp));
+        final int udpSrcPort = 50000;
+        VTNUdpMatch udm = new VTNUdpMatch(udpSrcPort, null);
+        FlowMatch fm = new FlowMatch(1, null, null, udm);
+        assertEquals(VtnUpdateType.CREATED, condUdp.add(flowCondService, fm));
+        assertEquals(null, condUdp.add(flowCondService, fm));
+        vnet.verify();
 
         // tcp_dst_23: Match TCP packet destinated to port 23.
-        final short tcpDstPort = 23;
         String cnameTcp = "tcp_dst_23";
-        FlowCondition condTcp = new FlowCondition(null, null);
-        assertEquals(UpdateType.ADDED,
-                     vtnManager.setFlowCondition(cnameTcp, condTcp));
-        assertEquals(null, vtnManager.setFlowCondition(cnameTcp, condTcp));
+        FlowCondition condTcp = new FlowCondition(cnameTcp);
+        vnet.getFlowConditions().add(condTcp);
+        assertEquals(VtnUpdateType.CREATED,
+                     condTcp.update(flowCondService,
+                                    VtnUpdateOperationType.ADD, null));
+        vnet.verify();
 
-        TcpMatch tcm = new TcpMatch(null, Short.valueOf(tcpDstPort));
-        fm = new FlowMatch(null, null, tcm);
-        assertEquals(UpdateType.ADDED,
-                     vtnManager.setFlowConditionMatch(cnameTcp, 2, fm));
-        assertEquals(null,
-                     vtnManager.setFlowConditionMatch(cnameTcp, 2, fm));
-        im = new Inet4Match(null, null, null, null,
-                            InetProtocols.TCP.shortValue(), null);
-        fm = new FlowMatch(2, em, im, tcm);
-        condTcp = new FlowCondition(cnameTcp, Collections.singletonList(fm));
-        assertEquals(condTcp, vtnManager.getFlowCondition(cnameTcp));
+        final int tcpDstPort = 23;
+        VTNTcpMatch tcm = new VTNTcpMatch(null, tcpDstPort);
+        fm = new FlowMatch(2, null, null, tcm);
+        assertEquals(VtnUpdateType.CREATED, condTcp.add(flowCondService, fm));
+        assertEquals(null, condTcp.add(flowCondService, fm));
+        vnet.verify();
 
         // dscp_10: Match IPv4 packet assigned 10 as DSCP.
-        final byte dscpValue = 10;
+        final short dscpValue = 10;
         String cnameDscp = "dscp_10";
-        FlowCondition condDscp = new FlowCondition(null, null);
-        assertEquals(UpdateType.ADDED,
-                     vtnManager.setFlowCondition(cnameDscp, condDscp));
-        assertEquals(null, vtnManager.setFlowCondition(cnameDscp, condDscp));
-
-        im = new Inet4Match(null, null, null, null, null,
-                            Byte.valueOf(dscpValue));
-        fm = new FlowMatch(3, em, im, null);
-        condDscp = new FlowCondition(cnameDscp, Collections.singletonList(fm));
-        assertEquals(UpdateType.CHANGED,
-                     vtnManager.setFlowCondition(cnameDscp, condDscp));
-        assertEquals(null, vtnManager.setFlowCondition(cnameDscp, condDscp));
-        assertEquals(condDscp, vtnManager.getFlowCondition(cnameDscp));
+        VTNInet4Match im = new VTNInet4Match().setDscp(dscpValue);
+        FlowCondition condDscp = new FlowCondition(cnameDscp).
+            add(new FlowMatch(3, null, im, null));
+        vnet.getFlowConditions().add(condDscp);
+        assertEquals(VtnUpdateType.CREATED,
+                     condDscp.update(flowCondService,
+                                     VtnUpdateOperationType.SET, false));
+        vnet.verify();
 
         // Configure path maps.
 
         // Map udp_src_50000 packets to path policy 1 using VTN-local path map.
-        PathMap vpmap1 = new PathMap(cnameUdp, 1);
-        assertEquals(UpdateType.ADDED,
-                     vtnManager.setPathMap(tpath, 1, vpmap1));
-        assertEquals(null, vtnManager.setPathMap(tpath, 1, vpmap1));
-        vpmap1 = new PathMap(1, cnameUdp, 1);
-        assertEquals(vpmap1, vtnManager.getPathMap(tpath, 1));
+        PathMap vpmap1 = new PathMap(1, cnameUdp, 1);
+        assertEquals(VtnUpdateType.CREATED,
+                     vpmap1.update(pathMapService, tname));
+        assertEquals(null, vpmap1.update(pathMapService, tname));
+        VTenantConfig tconf = vnet.getTenant(tname);
+        tconf.getPathMaps().add(vpmap1);
+        vnet.verify();
 
         // Map dscp_10 packets to path policy 2 using VTN-local path map.
         int idle2 = 10000;
         int hard2 = 30000;
         PathMap vpmap2 = new PathMap(2, cnameDscp, 2, idle2, hard2);
-        assertEquals(UpdateType.ADDED,
-                     vtnManager.setPathMap(tpath, 2, vpmap2));
-        assertEquals(null, vtnManager.setPathMap(tpath, 2, vpmap2));
-        assertEquals(vpmap2, vtnManager.getPathMap(tpath, 2));
-        List<PathMap> pmapList = new ArrayList<>();
-        Collections.addAll(pmapList, vpmap1, vpmap2);
-        assertEquals(pmapList, vtnManager.getPathMaps(tpath));
+        assertEquals(VtnUpdateType.CREATED,
+                     vpmap2.update(pathMapService, tname));
+        assertEquals(null, vpmap2.update(pathMapService, tname));
+        tconf.getPathMaps().add(vpmap2);
+        vnet.verify();
 
         // Map tcp_dst_23 packets to path policy 3 using global path map.
         int idle3 = 11111;
         int hard3 = 32000;
         PathMap gpmap = new PathMap(1, cnameTcp, 3, idle3, hard3);
-        assertEquals(UpdateType.ADDED, vtnManager.setPathMap(1, gpmap));
-        assertEquals(null, vtnManager.setPathMap(1, gpmap));
-        assertEquals(gpmap, vtnManager.getPathMap(1));
-        assertEquals(Collections.singletonList(gpmap),
-                     vtnManager.getPathMaps());
+        assertEquals(VtnUpdateType.CREATED, gpmap.update(pathMapService));
+        assertEquals(null, gpmap.update(pathMapService));
+        vnet.getPathMaps().add(gpmap);
+        vnet.verify();
 
         // Ensure that network topology is established.
         for (Map.Entry<String, String> entry: allLinks.entrySet()) {
@@ -4698,11 +5026,6 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             String dst = entry.getValue();
             ofMockService.awaitLink(src, dst, true);
         }
-
-        // Ensure that the test vBridge is up.
-        VNodeStateWaiter waiter = new VNodeStateWaiter(ofMockService).
-            set(bpath, VnodeState.UP);
-        waiter.await();
 
         // Let the test vBridge learn MAC addresses.
         for (TestHost host: hosts0) {
@@ -4787,30 +5110,27 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
 
         // Remove path policy 3.
         // This should remove unicast flows routed by the path policy 3.
-        Status st = vtnManager.removePathPolicy(3);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
+        Integer ppId3 = policy3.getId();
+        removePathPolicy(pathPolicyService, ppId3);
+        vnet.getPathPolicies().remove(ppId3);
+        vnet.verify();
         UnicastFlow.verifyFlows(flows00, true, false);
         UnicastFlow.verifyFlows(flows01, true, false);
         UnicastFlow.verifyFlows(flows1, true, false);
         UnicastFlow.verifyFlows(flows2, true, false);
         UnicastFlow.verifyFlows(flows3, false, true);
-        st = vtnManager.removePathPolicy(3);
-        assertEquals(StatusCode.NOTFOUND, st.getCode());
 
         // Restore path policy 3.
         // This should remove all flow entries.
-        assertEquals(UpdateType.ADDED, vtnManager.setPathPolicy(3, pp3));
+        assertEquals(VtnUpdateType.CREATED,
+                     policy3.update(pathPolicyService, null, null));
+        vnet.getPathPolicies().add(policy3);
+        vnet.verify();
         UnicastFlow.verifyFlows(flows00, false, true);
         UnicastFlow.verifyFlows(flows01, false, true);
         UnicastFlow.verifyFlows(flows1, false, true);
         UnicastFlow.verifyFlows(flows2, false, true);
         UnicastFlow.verifyFlows(flows3, false, true);
-
-        PathPolicy pp = vtnManager.getPathPolicy(3);
-        assertEquals(Integer.valueOf(3), pp.getPolicyId());
-        assertEquals(defCost3, pp.getDefaultCost());
-        assertEquals(new HashSet<PathCost>(pp3.getPathCosts()),
-                     new HashSet<PathCost>(pp.getPathCosts()));
 
         // Ensure that no flow entry is installed.
         counter.clear().verify();
@@ -4829,22 +5149,18 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
 
         // Set 1 to the default cost for the path policy 1.
         // This should remove unicast flows routed by the path policy 1.
-        assertEquals(defCost1, vtnManager.getPathPolicyDefaultCost(1));
         defCost1 = 1L;
-        assertEquals(true, vtnManager.setPathPolicyDefaultCost(1, defCost1));
+        PathPolicy policy = new PathPolicy(1, defCost1);
+        assertEquals(VtnUpdateType.CHANGED,
+                     policy.update(pathPolicyService, null, true));
+        assertEquals(null, policy.update(pathPolicyService, null, true));
+        policy1.setDefaultCost(defCost1);
+        vnet.verify();
         UnicastFlow.verifyFlows(flows00, true, false);
         UnicastFlow.verifyFlows(flows01, true, false);
         UnicastFlow.verifyFlows(flows1, false, true);
         UnicastFlow.verifyFlows(flows2, true, false);
         UnicastFlow.verifyFlows(flows3, true, false);
-
-        assertEquals(false, vtnManager.setPathPolicyDefaultCost(1, defCost1));
-        assertEquals(defCost1, vtnManager.getPathPolicyDefaultCost(1));
-        pp = vtnManager.getPathPolicy(1);
-        assertEquals(Integer.valueOf(1), pp.getPolicyId());
-        assertEquals(defCost1, pp.getDefaultCost());
-        assertEquals(new HashSet<PathCost>(pp1.getPathCosts()),
-                     new HashSet<PathCost>(pp.getPathCosts()));
 
         // Now the path policy 1 will choose the shortest path for packets
         // from nodeIds[0] to nodeIds[2].
@@ -4856,26 +5172,18 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         // This should remove unicast flows routed by the path policy 2.
         link = getInterSwitchLink(nodeIds[3], nodeIds[2]);
         assertNotNull(link);
-        PortLocation ploc2 = toPortLocation(link.getSourcePort(), true);
-        assertEquals(PathPolicy.COST_UNDEF,
-                     vtnManager.getPathPolicyCost(2, ploc2));
         long cost2 = 200000000L;
-        assertEquals(UpdateType.ADDED,
-                     vtnManager.setPathPolicyCost(2, ploc2, cost2));
+        pcMode = PATH_COST_MODE_NAME | PATH_COST_MODE_ID;
+        PathCost pc2 = newPathCost(link.getSourcePort(), cost2, pcMode);
+        assertEquals(VtnUpdateType.CREATED,
+                     policy2.add(pathPolicyService, pc2));
+        assertEquals(null, policy2.add(pathPolicyService, pc2));
+        vnet.verify();
         UnicastFlow.verifyFlows(flows00, true, false);
         UnicastFlow.verifyFlows(flows01, true, false);
         UnicastFlow.verifyFlows(flows1, true, false);
         UnicastFlow.verifyFlows(flows2, false, true);
         UnicastFlow.verifyFlows(flows3, true, false);
-        assertEquals(null, vtnManager.setPathPolicyCost(2, ploc2, cost2));
-        assertEquals(cost2, vtnManager.getPathPolicyCost(2, ploc2));
-
-        costs = new HashSet<>(pp2.getPathCosts());
-        assertTrue(costs.add(new PathCost(ploc2, cost2)));
-        pp = vtnManager.getPathPolicy(2);
-        assertEquals(Integer.valueOf(2), pp.getPolicyId());
-        assertEquals(defCost2, pp.getDefaultCost());
-        assertEquals(costs, new HashSet<PathCost>(pp.getPathCosts()));
 
         // Now path policy 2 should route packet from nodeIds[0] to nodeIds[2]
         // as follows:
@@ -4901,22 +5209,15 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         // Remove the cost for transmitting packet from nodeIds[3] to
         // nodeIds[2] in the path policy 3.
         // This should remove unicast flows routed by the path policy 3.
-        assertEquals(cost3, vtnManager.getPathPolicyCost(3, ploc2));
-        st = vtnManager.removePathPolicyCost(3, ploc2);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
+        assertEquals(VtnUpdateType.REMOVED,
+                     policy3.removeCost(pathPolicyService, pc3));
+        assertEquals(null, policy3.removeCost(pathPolicyService, pc3));
+        vnet.verify();
         UnicastFlow.verifyFlows(flows00, true, false);
         UnicastFlow.verifyFlows(flows01, true, false);
         UnicastFlow.verifyFlows(flows1, true, false);
         UnicastFlow.verifyFlows(flows2, true, false);
         UnicastFlow.verifyFlows(flows3, false, true);
-        assertEquals(null, vtnManager.removePathPolicyCost(3, ploc2));
-
-        costs = new HashSet<>(pp3.getPathCosts());
-        assertTrue(costs.remove(new PathCost(ploc2, cost3)));
-        pp = vtnManager.getPathPolicy(3);
-        assertEquals(Integer.valueOf(3), pp.getPolicyId());
-        assertEquals(defCost3, pp.getDefaultCost());
-        assertEquals(costs, new HashSet<PathCost>(pp.getPathCosts()));
 
         // Now path policy 3 should route packet from nodeIds[0] to nodeIds[2]
         // as follows:
@@ -4941,15 +5242,15 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
 
         // Remove path policy 2.
         // This will remove unicast flows routed by the path policy 2.
-        st = vtnManager.removePathPolicy(2);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
+        Integer ppId2 = policy2.getId();
+        removePathPolicy(pathPolicyService, ppId2);
+        vnet.getPathPolicies().remove(ppId2);
+        vnet.verify();
         UnicastFlow.verifyFlows(flows00, true, false);
         UnicastFlow.verifyFlows(flows01, true, false);
         UnicastFlow.verifyFlows(flows1, true, false);
         UnicastFlow.verifyFlows(flows2, false, true);
         UnicastFlow.verifyFlows(flows3, true, false);
-        st = vtnManager.removePathPolicy(2);
-        assertEquals(StatusCode.NOTFOUND, st.getCode());
         counter.clear().add(flows00).add(flows01).add(flows1).add(flows3).
             verify();
 
@@ -4967,25 +5268,24 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
 
         // Remove flow condition tcp_dst_23 used by the global path map 1.
         // This will remove all flow entries.
-        st = vtnManager.removeFlowCondition(cnameTcp);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
+        removeFlowCondition(flowCondService, cnameTcp);
+        vnet.getFlowConditions().remove(cnameTcp);
+        vnet.verify();
         UnicastFlow.verifyFlows(flows00, false, true);
         UnicastFlow.verifyFlows(flows01, false, true);
         UnicastFlow.verifyFlows(flows1, false, true);
         UnicastFlow.verifyFlows(flows2, false, true);
         UnicastFlow.verifyFlows(flows3, false, true);
-        st = vtnManager.removeFlowCondition(cnameTcp);
-        assertEquals(StatusCode.NOTFOUND, st.getCode());
         counter.clear().verify();
 
         // Configure flow timeout for the VTN-local path map 1.
         int idle1 = 12345;
         int hard1 = 23456;
-        vpmap1 = new PathMap(1, cnameUdp, 1, idle1, hard1);
-        assertEquals(UpdateType.CHANGED,
-                     vtnManager.setPathMap(tpath, 1, vpmap1));
-        assertEquals(null, vtnManager.setPathMap(tpath, 1, vpmap1));
-        assertEquals(vpmap1, vtnManager.getPathMap(tpath, 1));
+        vpmap1.setIdleTimeout(idle1).setHardTimeout(hard1);
+        assertEquals(VtnUpdateType.CHANGED,
+                     vpmap1.update(pathMapService, tname));
+        assertEquals(null, vpmap1.update(pathMapService, tname));
+        vnet.verify();
         udpfc.setIdleTimeout(idle1).setHardTimeout(hard1);
 
         // The global path map 2 should be ignored because the flow condition
@@ -5016,67 +5316,38 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
 
         // Remove global path map.
         // This will remove all flow entries.
-        st = vtnManager.removePathMap(1);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
+        Integer gpmIdx = gpmap.getIndex();
+        assertEquals(VtnUpdateType.REMOVED,
+                     removePathMap(pathMapService, null, gpmIdx));
+        assertEquals(null, removePathMap(pathMapService, null, gpmIdx));
+        vnet.getPathMaps().remove(gpmIdx);
+        vnet.verify();
         UnicastFlow.verifyFlows(flows00, false, true);
         UnicastFlow.verifyFlows(flows01, false, true);
         UnicastFlow.verifyFlows(flows1, false, true);
         counter.clear().verify();
-        assertEquals(null, vtnManager.removePathMap(1));
 
         // Clean up.
-        st = vtnManager.clearFlowCondition();
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-        assertEquals(null, vtnManager.clearFlowCondition());
+        assertEquals(VtnUpdateType.REMOVED,
+                     getRpcResult(flowCondService.clearFlowCondition()));
+        assertEquals(null, getRpcResult(flowCondService.clearFlowCondition()));
+        vnet.getFlowConditions().clear();
+        vnet.verify();
 
-        for (String cond: new String[]{cnameUdp, cnameDscp}) {
-            st = vtnManager.removeFlowCondition(cond);
-            assertEquals(StatusCode.NOTFOUND, st.getCode());
-        }
+        assertEquals(VtnUpdateType.REMOVED,
+                     getRpcResult(pathPolicyService.clearPathPolicy()));
+        assertEquals(null, getRpcResult(pathPolicyService.clearPathPolicy()));
+        vnet.getPathPolicies().clear();
+        vnet.verify();
 
-        st = vtnManager.clearPathPolicy();
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-        assertEquals(null, vtnManager.clearPathPolicy());
-        for (int i = 1; i <= 3; i++) {
-            st = vtnManager.removePathPolicy(i);
-            assertEquals(StatusCode.NOTFOUND, st.getCode());
-        }
+        assertEquals(VtnUpdateType.REMOVED,
+                     clearPathMap(pathMapService, tname));
+        assertEquals(null, clearPathMap(pathMapService, tname));
+        tconf.getPathMaps().clear();
+        vnet.verify();
 
-        st = vtnManager.clearPathMap(tpath);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-        assertEquals(null, vtnManager.clearPathMap(tpath));
-        for (int i = 1; i <= 2; i++) {
-            assertEquals(null, vtnManager.removePathMap(tpath, i));
-        }
-
-        st = vtnManager.removeTenant(tpath);
-        assertEquals(StatusCode.SUCCESS, st.getCode());
-
-        for (int i = 1; i <= 2; i++) {
-            st = vtnManager.removePathMap(tpath, i);
-            assertEquals(StatusCode.NOTFOUND, st.getCode());
-        }
-    }
-
-    /**
-     * Determine the inter-switch link between the given nodes.
-     *
-     * @param src  The source node identifier.
-     * @param dst  The destination node identifier.
-     * @return  An {@link OfMockLink} instance.
-     *          {@code null} if not found.
-     */
-    private OfMockLink getInterSwitchLink(String src, String dst) {
-        String prefix = dst + OfMockService.ID_SEPARATOR;
-        for (String pid: ofMockService.getPorts(src, false)) {
-            String peer = ofMockService.getPeerIdentifier(pid);
-            assertNotNull(peer);
-            if (peer.startsWith(prefix)) {
-                return new OfMockLink(pid, peer);
-            }
-        }
-
-        return null;
+        removeVtn(vtnService, tname);
+        vnet.removeTenant(tname).verify();
     }
 
     /**
@@ -5368,80 +5639,756 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
     }
 
     /**
-     * Create virtual nodes.
+     * Ensure that mandatory containers are initialized collectly.
      *
-     * @param tpath     Path to the virtual tenant to be created.
-     * @param bpaths    A collection of vBridge paths to be created.
+     * @param rtx  A read-only MD-SAL datastore transaction.
      */
-    private void createVirtualNodes(VTenantPath tpath,
-                                    Collection<VBridgePath> bpaths) {
-        createVirtualNodes(tpath, bpaths, null, null, null);
+    private void checkContainers(ReadTransaction rtx) {
+        // Ensure that the VTN tree is initialized.
+        Vtns vtns = DataStoreUtils.read(
+            rtx, InstanceIdentifier.create(Vtns.class)).orNull();
+        assertNotNull(vtns);
+        assertEquals(null, vtns.getVtn());
+
+        // Ensure that the MAC address table tree is initialized.
+        MacTables mtables = DataStoreUtils.read(
+            rtx, InstanceIdentifier.create(MacTables.class)).orNull();
+        assertNotNull(mtables);
+        assertEquals(null, mtables.getTenantMacTable());
+
+        // Ensure that the VTN configuration is initialized.
+        VtnConfig config = DataStoreUtils.read(
+            rtx, InstanceIdentifier.create(VtnConfig.class)).orNull();
+        assertNotNull(config);
+
+        // Ensure that the flow condition tree is initialized.
+        VtnFlowConditions conds = DataStoreUtils.read(
+            rtx,  InstanceIdentifier.create(VtnFlowConditions.class)).orNull();
+        assertNotNull(conds);
+        assertEquals(null, conds.getVtnFlowCondition());
+
+        // Ensure that the global path map tree is initialized.
+        GlobalPathMaps pathMaps = DataStoreUtils.read(
+            rtx, InstanceIdentifier.create(GlobalPathMaps.class)).orNull();
+        assertNotNull(pathMaps);
+        assertEquals(null, pathMaps.getVtnPathMap());
+
+        // Ensure that the path policy tree is initialized.
+        VtnPathPolicies pathPolicies = DataStoreUtils.read(
+            rtx, InstanceIdentifier.create(VtnPathPolicies.class)).orNull();
+        assertNotNull(pathPolicies);
+        assertEquals(null, pathPolicies.getVtnPathPolicy());
+
+        // Ensure that the internal containers for flow management are
+        // initialized.
+        VtnFlows flows = DataStoreUtils.read(
+            rtx, InstanceIdentifier.create(VtnFlows.class)).orNull();
+        assertNotNull(flows);
+        assertEquals(null, flows.getVtnFlowTable());
+
+        NextFlowId nextId = DataStoreUtils.read(
+            rtx, InstanceIdentifier.create(NextFlowId.class)).orNull();
+        assertNotNull(nextId);
+        assertEquals(BigInteger.ONE, nextId.getNextId().getValue());
+
+        // Ensure that the internal container for virtual network mapping
+        // management is initialized.
+        VtnMappings mappings = DataStoreUtils.read(
+            rtx, InstanceIdentifier.create(VtnMappings.class)).orNull();
+        assertNotNull(mappings);
+        assertEquals(null, mappings.getVlanMapping());
+        assertEquals(null, mappings.getPortMapping());
+        assertEquals(null, mappings.getMacMapAllowed());
+        assertEquals(null, mappings.getMacMapDenied());
+
+        // Ensure that the internal containers for inventory management are
+        // initialized.
+        VtnNodes nodes = DataStoreUtils.read(
+            rtx, InstanceIdentifier.create(VtnNodes.class)).orNull();
+        assertNotNull(nodes);
+        assertNotNull(nodes.getVtnNode());
+
+        VtnTopology topo = DataStoreUtils.read(
+            rtx, InstanceIdentifier.create(VtnTopology.class)).orNull();
+        assertNotNull(topo);
+        assertNotNull(topo.getVtnLink());
+
+        IgnoredLinks ignored = DataStoreUtils.read(
+            rtx, InstanceIdentifier.create(IgnoredLinks.class)).orNull();
+        assertNotNull(ignored);
+        assertEquals(null, ignored.getIgnoredLink());
     }
 
     /**
-     * Create virtual nodes.
+     * Learn all hosts mapped to the given bridge network.
      *
-     * @param tpath     Path to the virtual tenant to be created.
-     * @param bpaths    A collection of vBridge paths to be created.
-     * @param bipaths   A collection of vBridge interface paths to be created.
+     * @param bridge  A {@link BridgeNetwork} instance.
+     * @throws Exception  An error occurred.
      */
-    private void createVirtualNodes(VTenantPath tpath,
-                                    Collection<VBridgePath> bpaths,
-                                    Collection<VBridgeIfPath> bipaths) {
-        createVirtualNodes(tpath, bpaths, bipaths, null, null);
+    private void learnHosts(BridgeNetwork bridge) throws Exception {
+        VBridgeIdentifier vbrId = bridge.getBridgeId();
+        Map<String, List<TestHost>> hostMap = bridge.getTestHosts();
+        Map<String, Set<Integer>> allPorts = bridge.getMappedVlans();
+
+        for (List<TestHost> hosts: hostMap.values()) {
+            for (TestHost host: hosts) {
+                learnHost(vbrId, allPorts, host);
+            }
+        }
     }
 
     /**
-     * Create virtual nodes.
+     * Learn the given host mapped to the given bridge network.
      *
-     * @param tpath     Path to the virtual tenant to be created.
-     * @param bpaths    A collection of vBridge paths to be created.
-     * @param bipaths   A collection of vBridge interface paths to be created.
-     * @param vtpaths   A collection of vTerminal paths to be created.
-     * @param vtipaths  A collection of vTerminal interface paths to be
-     *                  created.
+     * @param vbrId     The identifier for the target vBridge.
+     * @param allPorts  A map that contains all switch ports as map keys.
+     *                  A set of VLAN IDs mapped to the given vBridge must
+     *                  be associated with the key.
+     * @param host      A test host to learn.
+     * @throws Exception  An error occurred.
      */
-    private void createVirtualNodes(VTenantPath tpath,
-                                    Collection<VBridgePath> bpaths,
-                                    Collection<VBridgeIfPath> bipaths,
-                                    Collection<VTerminalPath> vtpaths,
-                                    Collection<VTerminalIfPath> vtipaths) {
-        Status st;
-        if (tpath != null) {
-            st = vtnManager.addTenant(tpath, new VTenantConfig(null));
-            assertEquals(StatusCode.SUCCESS, st.getCode());
-        }
-        assertTrue(vtnManager.isActive());
+    private void learnHost(VBridgeIdentifier vbrId,
+                           Map<String, Set<Integer>> allPorts,
+                           TestHost host) throws Exception {
+        learnHost(ofMockService, allPorts, host);
 
-        if (bpaths != null) {
-            VBridgeConfig bconf = new VBridgeConfig(null, 1000000);
-            for (VBridgePath bpath: bpaths) {
-                st = vtnManager.addBridge(bpath, bconf);
-                assertEquals(StatusCode.SUCCESS, st.getCode());
+        MacAddress mac = host.getEtherAddress().getMacAddress();
+        try (ReadOnlyTransaction rtx = newReadOnlyTransaction()) {
+            InstanceIdentifier<MacTableEntry> path =
+                VBridgeIdentifier.getMacEntryPath(vbrId, mac);
+            Optional<MacTableEntry> opt = DataStoreUtils.read(rtx, path);
+            assertEquals(true, opt.isPresent());
+            assertEquals(host.getMacEntry(), new MacEntry(opt.get()));
+        }
+    }
+
+    /**
+     * Create a new input builder for remove-mac-entry RPC.
+     *
+     * @param vbrId  The identifier for the target vBridge.
+     * @return  A {@link RemoveMacEntryInputBuilder} instance.
+     */
+    private RemoveMacEntryInputBuilder newRemoveMacEntryInputBuilder(
+        VBridgeIdentifier vbrId) {
+        return new RemoveMacEntryInputBuilder().
+            setTenantName(vbrId.getTenantNameString()).
+            setBridgeName(vbrId.getBridgeNameString());
+    }
+
+    /**
+     * Create a new input for remove-mac-entry RPC.
+     *
+     * @param vbrId   The identifier for the target vBridge.
+     * @param eaddrs  An array of {@link EtherAddress} instances.
+     * @return  A {@link RemoveMacEntryInput} instance.
+     */
+    private RemoveMacEntryInput newRemoveMacEntryInput(
+        VBridgeIdentifier vbrId, EtherAddress ... eaddrs) {
+        List<MacAddress> addrs;
+        if (eaddrs == null) {
+            addrs = null;
+        } else {
+            addrs = new ArrayList<>(eaddrs.length);
+            for (EtherAddress eaddr: eaddrs) {
+                MacAddress mac = (eaddr == null)
+                    ? null : eaddr.getMacAddress();
+                addrs.add(mac);
             }
         }
 
-        if (bipaths != null) {
-            for (VBridgeIfPath ifpath: bipaths) {
-                VInterfaceConfig ifconf = new VInterfaceConfig(null, null);
-                st = vtnManager.addInterface(ifpath, ifconf);
-                assertEquals(StatusCode.SUCCESS, st.getCode());
+        return newRemoveMacEntryInputBuilder(vbrId).
+            setMacAddresses(addrs).
+            build();
+    }
+
+    /**
+     * Remove the given MAC addresses from the MAC address table entry.
+     *
+     * @param vbrId   The identifier for the target vBridge.
+     * @param eaddrs  An array of {@link EtherAddress} instances.
+     * @return  A map that contains the output of the remove-mac-entry RPC.
+     */
+    private Map<MacAddress, VtnUpdateType> removeMacEntry(
+        VBridgeIdentifier vbrId, EtherAddress ... eaddrs) {
+        RemoveMacEntryInput input = newRemoveMacEntryInput(vbrId, eaddrs);
+        return removeMacEntry(input);
+    }
+
+    /**
+     * Remove the given MAC addresses from the MAC address table entry.
+     *
+     * @param vbrId  The identifier for the target vBridge.
+     * @param addrs  A list of {@link MacAddress} instances.
+     * @return  A map that contains the output of the remove-mac-entry RPC.
+     */
+    private Map<MacAddress, VtnUpdateType> removeMacEntry(
+        VBridgeIdentifier vbrId, List<MacAddress> addrs) {
+        RemoveMacEntryInput input = newRemoveMacEntryInputBuilder(vbrId).
+            setMacAddresses(addrs).
+            build();
+        return removeMacEntry(input);
+    }
+
+    /**
+     * Remove all the MAC addresses in the MAC address table.
+     *
+     * @param vbrId  The identifier for the target vBridge.
+     * @return  A map that contains the output of the remove-mac-entry RPC.
+     */
+    private Map<MacAddress, VtnUpdateType> clearMacEntry(
+        VBridgeIdentifier vbrId) {
+        RemoveMacEntryInput input = newRemoveMacEntryInputBuilder(vbrId).
+            build();
+        return removeMacEntry(input);
+    }
+
+    /**
+     * Remove the MAC addresses specified by the given RPC input.
+     *
+     * @param input  A {@link RemoveMacEntryInput} instance.
+     * @return  A map that contains the output of the remove-mac-entry RPC.
+     */
+    private Map<MacAddress, VtnUpdateType> removeMacEntry(
+        RemoveMacEntryInput input) {
+        RemoveMacEntryOutput output =
+            getRpcOutput(macTableService.removeMacEntry(input));
+
+        Map<MacAddress, VtnUpdateType> result;
+        List<RemoveMacEntryResult> res = output.getRemoveMacEntryResult();
+        if (res == null) {
+            result = null;
+        } else {
+            result = new HashMap<>();
+            for (RemoveMacEntryResult rmres: res) {
+                MacAddress mac = rmres.getMacAddress();
+                VtnUpdateType status = rmres.getStatus();
+                assertEquals(null, result.put(mac, status));
             }
         }
 
-        if (vtpaths != null) {
-            for (VTerminalPath vtpath: vtpaths) {
-                st = vtnManager.addTerminal(vtpath, new VTerminalConfig(null));
-                assertEquals(StatusCode.SUCCESS, st.getCode());
+        return result;
+    }
+
+    /**
+     * Do the ARP unicast packet forwarding test.
+     *
+     * @param bridge    A {@link BridgeNetwork} instance.
+     * @param islPorts  A set of ISL ports.
+     * @param up        {@code true} means that all ISL ports should be up.
+     *                  {@code false} means that all ISL ports should be down.
+     * @return  A list of {@link UnicastFlow} instances that represents
+     *          established unicast flows.
+     * @throws Exception  An error occurred.
+     */
+    private List<UnicastFlow> unicastTest(BridgeNetwork bridge,
+                                          Set<String> islPorts, boolean up)
+        throws Exception {
+        ArpFlowFactory factory = new ArpFlowFactory(ofMockService);
+        return unicastTest(factory, bridge, islPorts, up);
+    }
+
+    /**
+     * Do the ARP unicast packet forwarding test.
+     *
+     * @param bridge       A {@link BridgeNetwork} instance.
+     * @param islPorts     A set of ISL ports.
+     * @param up           {@code true} means that all ISL ports should be up.
+     *                     {@code false} means that all ISL ports should be
+     *                     down.
+     * @param bridgeState  Expected vBridge state when all ISL port is up.
+     * @return  A list of {@link UnicastFlow} instances that represents
+     *          established unicast flows.
+     * @throws Exception  An error occurred.
+     */
+    private List<UnicastFlow> unicastTest(BridgeNetwork bridge,
+                                          Set<String> islPorts, boolean up,
+                                          VnodeState bridgeState)
+        throws Exception {
+        ArpFlowFactory factory = new ArpFlowFactory(ofMockService);
+        return unicastTest(factory, bridge, islPorts, up, bridgeState);
+    }
+
+    /**
+     * Do the unicast packet forwarding test.
+     *
+     * @param factory   A {@link UnicastFlowFactory} instance used to
+     *                  create unicast flows.
+     * @param bridge    A {@link BridgeNetwork} instance.
+     * @param islPorts  A set of ISL ports.
+     * @param up        {@code true} means that all ISL ports should be up.
+     *                  {@code false} means that all ISL ports should be down.
+     * @return  A list of {@link UnicastFlow} instances that represents
+     *          established unicast flows.
+     * @throws Exception  An error occurred.
+     */
+    private List<UnicastFlow> unicastTest(UnicastFlowFactory factory,
+                                          BridgeNetwork bridge,
+                                          Set<String> islPorts, boolean up)
+        throws Exception {
+        return unicastTest(factory, bridge, islPorts, up, VnodeState.UP);
+    }
+
+    /**
+     * Do the unicast packet forwarding test.
+     *
+     * @param factory      A {@link UnicastFlowFactory} instance used to
+     *                     create unicast flows.
+     * @param bridge       A {@link BridgeNetwork} instance.
+     * @param islPorts     A set of ISL ports.
+     * @param up           {@code true} means that all ISL ports should be up.
+     *                     {@code false} means that all ISL ports should be
+     *                     down.
+     * @param bridgeState  Expected vBridge state when all ISL port is up.
+     * @return  A list of {@link UnicastFlow} instances that represents
+     *          established unicast flows.
+     * @throws Exception  An error occurred.
+     */
+    private List<UnicastFlow> unicastTest(UnicastFlowFactory factory,
+                                          BridgeNetwork bridge,
+                                          Set<String> islPorts, boolean up,
+                                          VnodeState bridgeState)
+        throws Exception {
+        VBridgeIdentifier vbrId = bridge.getBridgeId();
+        Map<String, List<TestHost>> hostMap = bridge.getTestHosts();
+        factory.addPortSet(bridge.getMappedVlans().keySet());
+
+        boolean changed = false;
+        for (String pid: islPorts) {
+            if (ofMockService.setPortState(pid, up)) {
+                changed = true;
+            }
+        }
+        for (String pid: islPorts) {
+            ofMockService.awaitLink(pid, null, up);
+        }
+
+        if (changed) {
+            // remove-flow operation is triggered when port state is changed.
+            // So we need to wait for its completion.
+            sleep(BGTASK_DELAY);
+        }
+
+        List<UnicastFlow> flows = new ArrayList<>();
+        Set<NodePath> fpaths = new HashSet<>();
+        for (Entry<String, List<TestHost>> srcEnt: hostMap.entrySet()) {
+            String srcNid = srcEnt.getKey();
+            List<TestHost> srcHosts = srcEnt.getValue();
+            for (Entry<String, List<TestHost>> dstEnt: hostMap.entrySet()) {
+                String dstNid = dstEnt.getKey();
+                if (srcNid.equals(dstNid)) {
+                    continue;
+                }
+
+                List<TestHost> dstHosts = dstEnt.getValue();
+                List<OfMockLink> route =
+                    ofMockService.getRoute(srcNid, dstNid);
+                if (up) {
+                    assertNotNull(route);
+                } else {
+                    fpaths.add(new NodePath(srcNid, dstNid));
+                    assertEquals(null, route);
+                }
+
+                flows.addAll(unicastTest(factory, vbrId, bridgeState, srcHosts,
+                                         dstHosts, fpaths, route));
             }
         }
 
-        if (vtipaths != null) {
-            for (VTerminalIfPath ifpath: vtipaths) {
-                VInterfaceConfig ifconf = new VInterfaceConfig(null, null);
-                st = vtnManager.addInterface(ifpath, ifconf);
-                assertEquals(StatusCode.SUCCESS, st.getCode());
+        return flows;
+    }
+
+    /**
+     * Do the unicast packet forwarding test.
+     *
+     * @param factory      A {@link UnicastFlowFactory} instance used to
+     *                     create unicast flows.
+     * @param vbrId        The identifier for the the test vBridge.
+     * @param bridgeState  Expected vBridge state when all ISL port is up.
+     * @param srcList      A list of source hosts.
+     * @param dstList      A list of destination hosts.
+     * @param route        A list of {@link OfMockLink} which represents the
+     *                     packet route.
+     * @return  A list of {@link UnicastFlow} instances that represents
+     *          established unicast flows.
+     * @throws Exception  An error occurred.
+     */
+    private List<UnicastFlow> unicastTest(
+        UnicastFlowFactory factory, VBridgeIdentifier vbrId,
+        VnodeState bridgeState, List<TestHost> srcList, List<TestHost> dstList,
+        List<OfMockLink> route)
+        throws Exception {
+        return unicastTest(factory, vbrId, bridgeState, srcList, dstList,
+                           Collections.<NodePath>emptySet(), route);
+    }
+
+    /**
+     * Do the unicast packet forwarding test.
+     *
+     * @param factory      A {@link UnicastFlowFactory} instance used to
+     *                     create unicast flows.
+     * @param vbrId        The identifier for the the test vBridge.
+     * @param bridgeState  Expected vBridge state when all ISL port is up.
+     * @param srcList      A list of source hosts.
+     * @param dstList      A list of destination hosts.
+     * @param fpaths       A set of expected faulted paths.
+     * @param route        A list of {@link OfMockLink} which represents the
+     *                     packet route.
+     * @return  A list of {@link UnicastFlow} instances that represents
+     *          established unicast flows.
+     * @throws Exception  An error occurred.
+     */
+    private List<UnicastFlow> unicastTest(
+        UnicastFlowFactory factory, VBridgeIdentifier vbrId,
+        VnodeState bridgeState, List<TestHost> srcList, List<TestHost> dstList,
+        Set<NodePath> fpaths, List<OfMockLink> route) throws Exception {
+        List<UnicastFlow> flows = new ArrayList<>();
+        boolean reachable = fpaths.isEmpty();
+        VnodeState bstate;
+        if (reachable) {
+            bstate = bridgeState;
+            assertNotNull(route);
+        } else {
+            bstate = VnodeState.DOWN;
+            assertEquals(null, route);
+        }
+
+        for (TestHost src: srcList) {
+            for (TestHost dst: dstList) {
+                // Run tests.
+                VNodeStateWaiter waiter = new VNodeStateWaiter(ofMockService).
+                    set(vbrId, bstate, fpaths);
+                UnicastFlow unicast = factory.create(src, dst, route);
+                unicast.runTest(waiter);
+
+                // Verify results.
+                int count = unicast.getFlowCount();
+                if (reachable && !factory.isAlreadyMapped()) {
+                    assertTrue(count > 0);
+                    flows.add(unicast);
+                } else {
+                    assertEquals(0, count);
+                }
             }
         }
+
+        return flows;
+    }
+
+    /**
+     * Ensure that an unicast packet sent by the given host is dropped.
+     *
+     * @param host      The source host.
+     * @param allPorts  A set of all port identifiers.
+     * @return  A flow entry that drops incoming packet from the given host.
+     */
+    private OfMockFlow dropTest(TestHost host, Set<String> allPorts)
+        throws Exception {
+        String ingress = host.getPortIdentifier();
+        EtherAddress eaddr = host.getEtherAddress();
+        byte[] sha = eaddr.getBytes();
+        byte[] spa = host.getRawInetAddress();
+        int vid = host.getVlanId();
+        EthernetFactory efc = new EthernetFactory(eaddr, MAC_DUMMY).
+            setVlanId(vid);
+        ArpFactory afc = ArpFactory.newInstance(efc).
+            setSenderHardwareAddress(sha).
+            setTargetHardwareAddress(MAC_DUMMY.getBytes()).
+            setSenderProtocolAddress(spa).
+            setTargetProtocolAddress(IPV4_DUMMY.getBytes());
+        byte[] payload = efc.create();
+        ofMockService.sendPacketIn(ingress, payload);
+
+        // Ensure that a flow entry that drops the packet was installed.
+        String nid = OfMockUtils.getNodeIdentifier(ingress);
+        int pri = ofMockService.getL2FlowPriority();
+        Match match = createMatch(ingress, vid).build();
+        OfMockFlow flow = ofMockService.
+            awaitFlow(nid, OfMockService.DEFAULT_TABLE, match, pri, true);
+        verifyDropFlow(flow.getInstructions());
+
+        // Ensure that no packet was forwarded.
+        for (String pid: allPorts) {
+            assertNull(ofMockService.getTransmittedPacket(pid));
+        }
+
+        return flow;
+    }
+
+    /**
+     * Send an ICMPv4 broadcast packet.
+     *
+     * @param host      Source host.
+     * @param dstIp     Destination IP address.
+     * @param allPorts  A map that contains all switch ports as map keys.
+     *                  A set of VLAN IDs mapped to the given vBridge must be
+     *                  associated with the key.
+     */
+    private void sendBroadcastIcmp(TestHost host, IpNetwork dstIp,
+                                   Map<String, Set<Integer>> allPorts)
+        throws Exception {
+        String pid = host.getPortIdentifier();
+        EtherAddress src = host.getEtherAddress();
+        IpNetwork srcIp = host.getInetAddress();
+        int vid = host.getVlanId();
+        byte type = 8;
+        byte code = 0;
+
+        EthernetFactory efc = new EthernetFactory(src, EtherAddress.BROADCAST).
+            setVlanId(vid);
+        Inet4Factory i4fc = Inet4Factory.newInstance(efc, srcIp, dstIp);
+        Icmp4Factory ic4fc = Icmp4Factory.newInstance(i4fc, type, code);
+        byte[] raw = {
+            (byte)0x00, (byte)0x11, (byte)0x22, (byte)0x33,
+            (byte)0x44, (byte)0x55, (byte)0x66, (byte)0x77,
+            (byte)0x88, (byte)0x99, (byte)0xaa, (byte)0xbb,
+            (byte)0xcc, (byte)0xdd, (byte)0xee, (byte)0xff,
+            (byte)0x12,
+        };
+        ic4fc.setRawPayload(raw);
+        byte[] payload = efc.create();
+        ofMockService.sendPacketIn(pid, payload);
+
+        for (Entry<String, Set<Integer>> entry: allPorts.entrySet()) {
+            Set<Integer> vids = entry.getValue();
+            if (vids != null) {
+                String portId = entry.getKey();
+                if (portId.equals(pid)) {
+                    // VTN Manager will send an ARP request to probe
+                    // IP address.
+                    efc.setProbe(srcIp, vid);
+                } else {
+                    efc.setProbe(null, -1);
+                }
+
+                int count = vids.size();
+                for (int i = 0; i < count; i++) {
+                    byte[] transmitted =
+                        ofMockService.awaitTransmittedPacket(portId);
+                    vids = efc.verify(ofMockService, transmitted, vids);
+                }
+                assertTrue(vids.isEmpty());
+            }
+        }
+
+        for (String p: allPorts.keySet()) {
+            assertNull(ofMockService.getTransmittedPacket(p));
+        }
+    }
+
+    /**
+     * Ensure that all flow entries related to the given network have been
+     * uninstalled.
+     *
+     * @param pid    The port identifier of the unmapped network.
+     * @param vid    The VLAN ID of the unmapped network.
+     * @param flows  A list of {@link UnicastFlow} instances.
+     */
+    private void verifyFlowUninstalled(String pid, int vid,
+                                       List<UnicastFlow> flows)
+        throws Exception {
+        // Determine flow entries to be uninstalled.
+        final int tableId = OfMockService.DEFAULT_TABLE;
+        List<UnicastFlow> uninstalled = new ArrayList<>();
+        for (Iterator<UnicastFlow> it = flows.iterator(); it.hasNext();) {
+            // Check ingress flow.
+            UnicastFlow unicast = it.next();
+            List<OfMockFlow> flowList = unicast.getFlowList();
+            OfMockFlow ingress = flowList.get(0);
+            Match match = ingress.getMatch();
+            int inVid = getVlanMatch(match);
+            if (inVid == vid && pid.equals(getInPortMatch(match))) {
+                uninstalled.add(unicast);
+                it.remove();
+                continue;
+            }
+
+            // Check egress flow.
+            OfMockFlow egress = flowList.get(flowList.size() - 1);
+            if (hasOutput(egress.getInstructions(), pid, vid, inVid)) {
+                uninstalled.add(unicast);
+                it.remove();
+                continue;
+            }
+        }
+
+        UnicastFlow.verifyFlows(uninstalled, false, true);
+
+        // Rest of flow entries should be still installed.
+        UnicastFlow.verifyFlows(flows, true, false);
+    }
+
+    /**
+     * Create a new path cost configuration.
+     *
+     * @param pid   The MD-SAL switch port identifier.
+     * @param cost  The cost of using the specified port.
+     * @return  A {@link PathCost} instance.
+     */
+    private PathCost newPathCost(String pid, Long cost) {
+        return newPathCost(pid, cost, PATH_COST_MODE_ID);
+    }
+
+    /**
+     * Create a new path cost configuration.
+     *
+     * @param pid   The MD-SAL switch port identifier.
+     * @param cost  The cost of using the specified port.
+     * @param mode  An integer that specifies how to specify the specified
+     *              switch port.
+     * @return  A {@link PathCost} instance.
+     */
+    private PathCost newPathCost(String pid, Long cost, int mode) {
+        String node = OfMockUtils.getNodeIdentifier(pid);
+        String id = ((mode & PATH_COST_MODE_ID) != 0)
+            ? OfMockUtils.getPortId(pid)
+            : null;
+        String name = ((mode & PATH_COST_MODE_NAME) != 0)
+            ? ofMockService.getPortName(pid)
+            : null;
+
+        return new PathCost(node, id, name, cost);
+    }
+
+    /**
+     * Determine the inter-switch link between the given nodes.
+     *
+     * @param src  The source node identifier.
+     * @param dst  The destination node identifier.
+     * @return  An {@link OfMockLink} instance.
+     *          {@code null} if not found.
+     */
+    private OfMockLink getInterSwitchLink(String src, String dst) {
+        String prefix = dst + OfMockService.ID_SEPARATOR;
+        for (String pid: ofMockService.getPorts(src, false)) {
+            String peer = ofMockService.getPeerIdentifier(pid);
+            assertNotNull(peer);
+            if (peer.startsWith(prefix)) {
+                return new OfMockLink(pid, peer);
+            }
+        }
+
+        return null;
+    }
+
+    // VTNServices
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VtnService getVtnService() {
+        return vtnService;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VtnVbridgeService getVbridgeService() {
+        return vbridgeService;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VtnVterminalService getVterminalService() {
+        return vterminalService;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VtnVinterfaceService getVinterfaceService() {
+        return vinterfaceService;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VtnMacTableService getMacTableService() {
+        return macTableService;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VtnVlanMapService getVlanMapService() {
+        return vlanMapService;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VtnMacMapService getMacMapService() {
+        return macMapService;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VtnPortMapService getPortMapService() {
+        return portMapService;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VtnFlowFilterService getFlowFilterService() {
+        return flowFilterService;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VtnFlowConditionService getFlowConditionService() {
+        return flowCondService;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VtnPathPolicyService getPathPolicyService() {
+        return pathPolicyService;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VtnPathMapService getPathMapService() {
+        return pathMapService;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VtnVersionService getVersionService() {
+        return versionService;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ReadOnlyTransaction newReadOnlyTransaction() {
+        return ofMockService.newReadOnlyTransaction();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ReadWriteTransaction newReadWriteTransaction() {
+        return ofMockService.newReadWriteTransaction();
     }
 }

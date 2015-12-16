@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -10,8 +10,6 @@ package org.opendaylight.vtn.manager.it.ofmock;
 
 import java.math.BigInteger;
 import java.util.List;
-
-import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
@@ -34,7 +32,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.N
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.NodeKey;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
 
 /**
  * {@code OfMockUtils} contains static utility methods.
@@ -67,13 +64,29 @@ public final class OfMockUtils {
      * @return  The node identifier string.
      */
     public static String getNodeIdentifier(String pid) {
-        int idx = pid.lastIndexOf(':');
+        int idx = pid.lastIndexOf(OfMockService.ID_SEPARATOR);
         if (idx < 0) {
             throw new IllegalArgumentException(
                 "Invalid port identifier: " + pid);
         }
 
         return pid.substring(0, idx);
+    }
+
+    /**
+     * Return the port ID in the given MD-SAL node connector identifier.
+     *
+     * @param pid  The port identifier.
+     * @return  The port ID
+     */
+    public static String getPortId(String pid) {
+        int idx = pid.lastIndexOf(OfMockService.ID_SEPARATOR);
+        if (idx < 0) {
+            throw new IllegalArgumentException(
+                "Invalid port identifier: " + pid);
+        }
+
+        return pid.substring(idx + 1);
     }
 
     /**
@@ -97,6 +110,19 @@ public final class OfMockUtils {
      * @return  A port identifier string.
      */
     public static String getPortIdentifier(String nid, BigInteger num) {
+        StringBuilder builder = new StringBuilder(nid).
+            append(OfMockService.ID_SEPARATOR).append(num);
+        return builder.toString();
+    }
+
+    /**
+     * Return the port identifier string for the specified port.
+     *
+     * @param nid  The node identifier.
+     * @param num  A string that indicates the port number.
+     * @return  A port identifier string.
+     */
+    public static String getPortIdentifier(String nid, String num) {
         StringBuilder builder = new StringBuilder(nid).
             append(OfMockService.ID_SEPARATOR).append(num);
         return builder.toString();
@@ -153,17 +179,6 @@ public final class OfMockUtils {
         return InstanceIdentifier.builder(Nodes.class).
             child(Node.class, new NodeKey(new NodeId(nid))).
             child(NodeConnector.class, new NodeConnectorKey(ncid)).build();
-    }
-
-    /**
-     * Convert the given MD-SAL MAC address into a byte array.
-     *
-     * @param maddr  A {@link MacAddress} instance.
-     * @return  A byte array which represents the given MAC address.
-     *          {@code null} is returned if {@code null} is specified.
-     */
-    public static byte[] getMacAddress(MacAddress maddr) {
-        return (maddr == null) ? null : new EtherAddress(maddr).getBytes();
     }
 
     /**

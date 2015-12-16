@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,18 +8,15 @@
 
 package org.opendaylight.vtn.manager.it.util;
 
-import java.net.InetAddress;
-import java.util.Collections;
 import java.util.Objects;
-import java.util.Set;
 
-import org.opendaylight.vtn.manager.EthernetHost;
-import org.opendaylight.vtn.manager.MacAddressEntry;
+import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.IpNetwork;
 
-import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.packet.address.EthernetAddress;
+import org.opendaylight.vtn.manager.it.util.inventory.MacVlan;
+import org.opendaylight.vtn.manager.it.util.vnode.VTNMacMappedHost;
+import org.opendaylight.vtn.manager.it.util.vnode.mac.MacEntry;
 
 /**
  * {@code TestHost} describes a host information used for integration test.
@@ -41,9 +38,9 @@ public final class TestHost {
     };
 
     /**
-     * A {@link EthernetAddress} which represents the MAC address.
+     * An {@link EtherAddress} which represents the MAC address.
      */
-    private final EthernetAddress  macAddress;
+    private final EtherAddress  macAddress;
 
     /**
      * IP address.
@@ -57,28 +54,34 @@ public final class TestHost {
     private final String  portIdentifier;
 
     /**
+     * The port name.
+     */
+    private final String  portName;
+
+    /**
      * VLAN ID.
      */
-    private final short  vlan;
+    private final int  vlanId;
 
     /**
      * Construct a new instance.
      *
      * @param index  A integer value used to create host addresses.
      * @param pid    Port identifier.
+     * @param pname  The name of the port.
      * @param vid    VLAN ID.
-     * @throws Exception  An error occurred.
      */
-    public TestHost(int index, String pid, short vid) throws Exception {
+    public TestHost(int index, String pid, String pname, int vid) {
         byte[] maddr = MAC_ADDRESS_BASE.clone();
         maddr[maddr.length - 1] = (byte)index;
-        macAddress = new EthernetAddress(maddr);
+        macAddress = new EtherAddress(maddr);
 
         byte[] addr = IPV4_ADDRESS_BASE.clone();
         addr[addr.length - 1] = (byte)index;
         inetAddress = new Ip4Network(addr);
         portIdentifier = pid;
-        vlan = vid;
+        portName = pname;
+        vlanId = vid;
     }
 
     /**
@@ -87,11 +90,12 @@ public final class TestHost {
      * @param host  A host to be copied.
      * @param vid  VLAN ID.
      */
-    public TestHost(TestHost host, short vid) {
+    public TestHost(TestHost host, int vid) {
         macAddress = host.macAddress;
         inetAddress = host.inetAddress;
         portIdentifier = host.portIdentifier;
-        vlan = vid;
+        portName = host.portName;
+        vlanId = vid;
     }
 
     /**
@@ -100,16 +104,16 @@ public final class TestHost {
      * @return  MAC address.
          */
     public byte[] getMacAddress() {
-        return macAddress.getValue();
+        return macAddress.getBytes();
     }
 
     /**
-     * Return an {@link EthernetAddress} instance which represents the
-     * MAC address of this host.
+     * Return an {@link EtherAddress} instance which represents the MAC address
+     * of this host.
      *
-     * @return  An {@link EthernetAddress} instance.
+     * @return  An {@link EtherAddress} instance.
      */
-    public EthernetAddress getEthernetAddress() {
+    public EtherAddress getEtherAddress() {
         return macAddress;
     }
 
@@ -141,47 +145,64 @@ public final class TestHost {
     }
 
     /**
+     * Return the port name.
+     *
+     * @return  The port name.
+     */
+    public String getPortName() {
+        return portName;
+    }
+
+    /**
      * Return VLAN ID of this host..
      *
      * @return  VLAN ID.
      */
-    public short getVlan() {
-        return vlan;
+    public int getVlanId() {
+        return vlanId;
     }
 
     /**
-     * Return an {@link EthernetHost} instance which represents this host.
+     * Return a {@link MacVlan} instance that represents this host.
      *
-     * @return  An {@link EthernetHost} instance.
+     * @return  A {@link MacVlan} instance.
      */
-    public EthernetHost getEthernetHost() {
-        return new EthernetHost(macAddress, vlan);
+    public MacVlan getMacVlan() {
+        return new MacVlan(macAddress, vlanId);
     }
 
     /**
-     * Return an {@link MacAddressEntry} instance which represents this host.
+     * Return a {@link VTNMacMappedHost} instance that represents this host.
      *
-     * @return  A {@link MacAddressEntry} instance.
+     * @return  A {@link VTNMacMappedHost} instance.
      */
-    public MacAddressEntry getMacAddressEntry() {
-        return getMacAddressEntry(true);
+    public VTNMacMappedHost getMacMappedHost() {
+        return new VTNMacMappedHost(macAddress, vlanId, portIdentifier);
     }
 
     /**
-     * Return an {@link MacAddressEntry} instance which represents this host.
+     * Return a {@link MacEntry} instance which represents this host.
+     *
+     * @return  A {@link MacEntry} instance.
+     */
+    public MacEntry getMacEntry() {
+        return getMacEntry(true);
+    }
+
+    /**
+     * Return a {@link MacEntry} instance which represents this host.
      *
      * @param useIp  If {@code true}, set IP address of this host into
-     *               an {@link MacAddressEntry} instance.
+     *               a {@link MacEntry} instance.
      *               If {@code false}, IP address of this host is ignored.
-     * @return  A {@link MacAddressEntry} instance.
+     * @return  A {@link MacEntry} instance.
      */
-    public MacAddressEntry getMacAddressEntry(boolean useIp) {
-        NodeConnector nc = TestBase.toAdNodeConnector(portIdentifier);
-        Set<InetAddress> ipaddrs = (useIp)
-            ? Collections.singleton(inetAddress.getInetAddress())
-            : null;
-        return new MacAddressEntry(macAddress, vlan, nc, ipaddrs);
+    public MacEntry getMacEntry(boolean useIp) {
+        IpNetwork ip = (useIp) ? inetAddress : null;
+        return new MacEntry(macAddress, vlanId, portIdentifier, portName, ip);
     }
+
+    // Object
 
     /**
      * Determine whether the given object is identical to this object.
@@ -191,18 +212,18 @@ public final class TestHost {
      */
     @Override
     public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (o == null || !getClass().equals(o.getClass())) {
-            return false;
+        boolean ret = (o == this);
+        if (!ret && o != null && getClass().equals(o.getClass())) {
+            TestHost th = (TestHost)o;
+            ret = (macAddress.equals(th.macAddress) && vlanId == th.vlanId);
+            if (ret) {
+                ret = (portIdentifier.equals(th.portIdentifier) &&
+                       portName.equals(th.portName) &&
+                       inetAddress.equals(th.inetAddress));
+            }
         }
 
-        TestHost th = (TestHost)o;
-
-        return (macAddress.equals(th.macAddress) &&
-                inetAddress.equals(th.inetAddress) &&
-                portIdentifier.equals(th.portIdentifier) && vlan == th.vlan);
+        return ret;
     }
 
     /**
@@ -212,7 +233,8 @@ public final class TestHost {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(macAddress, inetAddress, portIdentifier, vlan);
+        return Objects.hash(macAddress, inetAddress, portIdentifier,
+                            portName, vlanId);
     }
 
     /**
@@ -224,9 +246,10 @@ public final class TestHost {
     public String toString() {
         StringBuilder builder = new StringBuilder("TestHost[mac=").
             append(macAddress).
-            append(",inet=").append(inetAddress).
-            append(",port=").append(portIdentifier).
-            append(",vlan=").append(vlan).append(']');
+            append(", inet=").append(inetAddress).
+            append(", port-id=").append(portIdentifier).
+            append(", port-name=").append(portName).
+            append(", vlan=").append(vlanId).append(']');
         return builder.toString();
     }
 }

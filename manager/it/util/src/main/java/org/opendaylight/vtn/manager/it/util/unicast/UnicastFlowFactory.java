@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -14,6 +14,8 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.it.ofmock.OfMockLink;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockService;
@@ -279,9 +281,9 @@ public abstract class UnicastFlowFactory {
      */
     public final EthernetFactory createEthernetFactory(TestHost src,
                                                        TestHost dst) {
-        byte[] smac = src.getMacAddress();
-        byte[] dmac = dst.getMacAddress();
-        return new EthernetFactory(smac, dmac).setVlanId(src.getVlan());
+        EtherAddress smac = src.getEtherAddress();
+        EtherAddress dmac = dst.getEtherAddress();
+        return new EthernetFactory(smac, dmac).setVlanId(src.getVlanId());
     }
 
     /**

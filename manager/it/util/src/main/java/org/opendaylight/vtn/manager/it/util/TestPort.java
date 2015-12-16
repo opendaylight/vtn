@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -9,8 +9,6 @@
 package org.opendaylight.vtn.manager.it.util;
 
 import java.util.Objects;
-
-import org.opendaylight.controller.sal.core.NodeConnector;
 
 /**
  * {@code TestPort} describes a switch port and VLAN network used for
@@ -25,7 +23,7 @@ public final class TestPort implements Cloneable {
     /**
      * VLAN ID for test.
      */
-    private short  vlan;
+    private int  vlanId;
 
     /**
      * Construct a new instance.
@@ -34,6 +32,17 @@ public final class TestPort implements Cloneable {
      */
     public TestPort(String pid) {
         portIdentifier = pid;
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param pid  The identifier of the MD-SAL node connector.
+     * @param vid  The VLAN ID.
+     */
+    public TestPort(String pid, int vid) {
+        portIdentifier = pid;
+        vlanId = vid;
     }
 
     /**
@@ -46,21 +55,12 @@ public final class TestPort implements Cloneable {
     }
 
     /**
-     * Return the AD-SAL node connector corresponding to the switch port.
-     *
-     * @return  A {@link NodeConnector} instance.
-     */
-    public NodeConnector getNodeConnector() {
-        return TestBase.toAdNodeConnector(portIdentifier);
-    }
-
-    /**
      * Return VLAN ID for test.
      *
      * @return  VLAN ID.
      */
-    public short getVlan() {
-        return vlan;
+    public int getVlanId() {
+        return vlanId;
     }
 
     /**
@@ -69,8 +69,8 @@ public final class TestPort implements Cloneable {
      * @param vid  VLAN ID.
      * @return  This instance.
      */
-    public TestPort setVlan(short vid) {
-        vlan = vid;
+    public TestPort setVlanId(int vid) {
+        vlanId = vid;
         return this;
     }
 
@@ -92,7 +92,7 @@ public final class TestPort implements Cloneable {
         TestPort tp = (TestPort)o;
 
         return (Objects.equals(portIdentifier, tp.portIdentifier) &&
-                vlan == tp.vlan);
+                vlanId == tp.vlanId);
     }
 
     /**
@@ -102,7 +102,7 @@ public final class TestPort implements Cloneable {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(portIdentifier, vlan);
+        return Objects.hash(portIdentifier, vlanId);
     }
 
     /**
@@ -114,22 +114,19 @@ public final class TestPort implements Cloneable {
     public String toString() {
         StringBuilder builder = new StringBuilder("TestPort[id=").
             append(portIdentifier).
-            append(",vlan=").append(vlan).append(']');
+            append(",vlan=").append(vlanId).append(']');
         return builder.toString();
     }
 
     /**
-     * Clone this object.
+     * Make a clone of this object.
      *
      * @return  A shallow copy of this object.
      */
     @Override
     public TestPort clone() {
         try {
-            TestPort tp = (TestPort)super.clone();
-            tp.portIdentifier = portIdentifier;
-            tp.vlan = vlan;
-            return tp;
+            return (TestPort)super.clone();
         } catch (CloneNotSupportedException e) {
             // This should never happen.
             throw new IllegalStateException("clone() failed", e);

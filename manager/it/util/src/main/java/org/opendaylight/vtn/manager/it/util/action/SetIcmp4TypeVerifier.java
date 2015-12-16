@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -23,7 +23,7 @@ public abstract class SetIcmp4TypeVerifier
      * @param type  The ICMP type to be set.
      */
     public SetIcmp4TypeVerifier(short type) {
-        super(Icmp4Factory.class, type);
+        super(Icmp4Factory.class, (int)type);
     }
 
     // ActionVerifier
@@ -35,7 +35,7 @@ public abstract class SetIcmp4TypeVerifier
     public void apply(EthernetFactory fc) {
         Icmp4Factory ic4fc = getFactory(fc, Icmp4Factory.class);
         if (ic4fc != null) {
-            ic4fc.setType((byte)getValue());
+            ic4fc.setType((short)getValue());
         }
     }
 }

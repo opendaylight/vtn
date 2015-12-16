@@ -44,6 +44,22 @@ public final class DataStoreUtils {
     private DataStoreUtils() {}
 
     /**
+     * Read data from the MD-SAL operational datastore at the given path.
+     *
+     * @param rtx   A read transaction.
+     * @param path  An {@link InstanceIdentifier} instance which specifies
+     *              data to be read.
+     * @param <T>   Type of data to be read.
+     * @return  An {@link Optional} instance that contains the result.
+     * @throws IllegalStateException
+     *    Failed to read data.
+     */
+    public static <T extends DataObject> Optional<T> read(
+        ReadTransaction rtx, InstanceIdentifier<T> path) {
+        return read(rtx, LogicalDatastoreType.OPERATIONAL, path);
+    }
+
+    /**
      * Read data from the given MD-SAL data store at the given path.
      *
      * @param rtx    A read transaction.

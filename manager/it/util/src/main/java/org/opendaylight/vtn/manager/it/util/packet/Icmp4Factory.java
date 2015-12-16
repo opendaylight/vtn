@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -30,12 +30,12 @@ public final class Icmp4Factory extends PacketFactory {
     /**
      * The ICMP type.
      */
-    private byte  icmpType;
+    private short  icmpType;
 
     /**
      * The ICMP code.
      */
-    private byte  icmpCode;
+    private short  icmpCode;
 
     /**
      * Construct a new instance.
@@ -45,7 +45,8 @@ public final class Icmp4Factory extends PacketFactory {
      */
     public static Icmp4Factory newInstance(Inet4Factory i4fc) {
         Icmp4Factory ic4fc = new Icmp4Factory();
-        i4fc.setProtocol(InetProtocols.ICMP.byteValue()).setNextFactory(ic4fc);
+        i4fc.setProtocol(InetProtocols.ICMP.shortValue()).
+            setNextFactory(ic4fc);
 
         return ic4fc;
     }
@@ -58,10 +59,11 @@ public final class Icmp4Factory extends PacketFactory {
      * @param code  The ICMP code.
      * @return  An {@link Icmp4Factory} instance.
      */
-    public static Icmp4Factory newInstance(Inet4Factory i4fc, byte type,
-                                           byte code) {
+    public static Icmp4Factory newInstance(Inet4Factory i4fc, short type,
+                                           short code) {
         Icmp4Factory ic4fc = new Icmp4Factory(type, code);
-        i4fc.setProtocol(InetProtocols.ICMP.byteValue()).setNextFactory(ic4fc);
+        i4fc.setProtocol(InetProtocols.ICMP.shortValue()).
+            setNextFactory(ic4fc);
 
         return ic4fc;
     }
@@ -77,7 +79,7 @@ public final class Icmp4Factory extends PacketFactory {
      * @param type  The ICMP type.
      * @param code  The ICMP code.
      */
-    Icmp4Factory(byte type, byte code) {
+    Icmp4Factory(short type, short code) {
         icmpType = type;
         icmpCode = code;
     }
@@ -87,7 +89,7 @@ public final class Icmp4Factory extends PacketFactory {
      *
      * @return  An ICMP type value.
      */
-    public byte getType() {
+    public short getType() {
         return icmpType;
     }
 
@@ -96,7 +98,7 @@ public final class Icmp4Factory extends PacketFactory {
      *
      * @return  An ICMP code value.
      */
-    public byte getCode() {
+    public short getCode() {
         return icmpCode;
     }
 
@@ -106,7 +108,7 @@ public final class Icmp4Factory extends PacketFactory {
      * @param type  An ICMP type value.
      * @return  This instance.
      */
-    public Icmp4Factory setType(byte type) {
+    public Icmp4Factory setType(short type) {
         icmpType = type;
         return this;
     }
@@ -117,7 +119,7 @@ public final class Icmp4Factory extends PacketFactory {
      * @param code  An ICMP code value.
      * @return  This instance.
      */
-    public Icmp4Factory setCode(byte code) {
+    public Icmp4Factory setCode(short code) {
         icmpCode = code;
         return this;
     }
@@ -127,7 +129,7 @@ public final class Icmp4Factory extends PacketFactory {
      */
     @Override
     Packet createPacket() {
-        return new ICMP().setType(icmpType).setCode(icmpCode);
+        return new ICMP().setType((byte)icmpType).setCode((byte)icmpCode);
     }
 
     /**
@@ -138,8 +140,8 @@ public final class Icmp4Factory extends PacketFactory {
         assertTrue(packet instanceof ICMP);
         ICMP icmp = (ICMP)packet;
 
-        assertEquals(icmpType, icmp.getType());
-        assertEquals(icmpCode, icmp.getCode());
+        assertEquals((byte)icmpType, icmp.getType());
+        assertEquals((byte)icmpCode, icmp.getCode());
     }
 
     /**
@@ -151,11 +153,11 @@ public final class Icmp4Factory extends PacketFactory {
         int count = 0;
 
         if (types.contains(FlowMatchType.ICMP4_TYPE)) {
-            ic4mb.setIcmpv4Type(toShort(icmpType));
+            ic4mb.setIcmpv4Type(icmpType);
             count++;
         }
         if (types.contains(FlowMatchType.ICMP4_CODE)) {
-            ic4mb.setIcmpv4Code(toShort(icmpCode));
+            ic4mb.setIcmpv4Code(icmpCode);
             count++;
         }
 

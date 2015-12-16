@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -18,9 +18,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.opendaylight.vtn.manager.MacAddressEntry;
-import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.it.util.vnode.VBridgeIdentifier;
+import org.opendaylight.vtn.manager.it.util.vnode.mac.MacEntry;
 
+import org.opendaylight.vtn.manager.it.ofmock.OfMockService;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
 
 /**
@@ -28,9 +29,14 @@ import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
  */
 public final class BridgeNetwork {
     /**
-     * Path to the vBridge.
+     * openflowplugin mock-up service.
      */
-    private final VBridgePath  bridgePath;
+    private final OfMockService  ofMock;
+
+    /**
+     * The identifier for the target vBridge.
+     */
+    private final VBridgeIdentifier  bridgeId;
 
     /**
      * All mapped hosts per node.
@@ -40,24 +46,26 @@ public final class BridgeNetwork {
     /**
      * All mapped VLANs.
      */
-    private final Map<String, Set<Short>>  mappedVlans = new HashMap<>();
+    private final Map<String, Set<Integer>>  mappedVlans = new HashMap<>();
 
     /**
      * Construct a new instance.
      *
-     * @param path  Path to the vBridge.
+     * @param mock   openflowplugin mock-up service.
+     * @param vbrId  The identifier for the target vBridge.
      */
-    public BridgeNetwork(VBridgePath path) {
-        bridgePath = path;
+    public BridgeNetwork(OfMockService mock, VBridgeIdentifier vbrId) {
+        ofMock = mock;
+        bridgeId = vbrId;
     }
 
     /**
-     * Return the path to the test vBridge.
+     * Return the identifier for the target vBridge.
      *
-     * @return  Path to the vBridge.
+     * @return  The identifier for the vBridge.
      */
-    public VBridgePath getPath() {
-        return bridgePath;
+    public VBridgeIdentifier getBridgeId() {
+        return bridgeId;
     }
 
     /**
@@ -74,7 +82,7 @@ public final class BridgeNetwork {
      *
      * @return  A map that contains all mapped VLANs.
      */
-    public Map<String, Set<Short>> getMappedVlans() {
+    public Map<String, Set<Integer>> getMappedVlans() {
         return mappedVlans;
     }
 
@@ -98,7 +106,7 @@ public final class BridgeNetwork {
      */
     public void addHost(String nid, TestHost host) {
         addHostImpl(nid, host);
-        addMappedVlan(host.getPortIdentifier(), host.getVlan());
+        addMappedVlan(host.getPortIdentifier(), host.getVlanId());
     }
 
     /**
@@ -107,13 +115,13 @@ public final class BridgeNetwork {
      * @param pid  The port identifier.
      * @param vid  The VLAN ID.
      */
-    public void addMappedVlan(String pid, short vid) {
-        Set<Short> vids = mappedVlans.get(pid);
+    public void addMappedVlan(String pid, int vid) {
+        Set<Integer> vids = mappedVlans.get(pid);
         if (vids == null) {
-            vids = new HashSet<Short>();
+            vids = new HashSet<>();
             mappedVlans.put(pid, vids);
         }
-        vids.add(Short.valueOf(vid));
+        vids.add(vid);
     }
 
 
@@ -124,15 +132,14 @@ public final class BridgeNetwork {
      * @param vid  The VLAN ID.
      * @return  A list of unmapped test hosts.
      */
-    public List<TestHost> removeMappedVlan(String pid, short vid) {
+    public List<TestHost> removeMappedVlan(String pid, int vid) {
         List<TestHost> unmapped = new ArrayList<>();
-        Set<Short> vids = mappedVlans.get(pid);
+        Set<Integer> vids = mappedVlans.get(pid);
         if (vids == null) {
             return unmapped;
         }
 
-        Short vlanId = Short.valueOf(vid);
-        if (!vids.remove(vlanId)) {
+        if (!vids.remove(vid)) {
             return unmapped;
         }
         if (vids.isEmpty()) {
@@ -145,7 +152,7 @@ public final class BridgeNetwork {
             List<TestHost> hosts = new ArrayList<>();
             for (TestHost host: entry.getValue()) {
                 if (pid.equals(host.getPortIdentifier()) &&
-                    vid == host.getVlan()) {
+                    vid == host.getVlanId()) {
                     unmapped.add(host);
                 } else {
                     hosts.add(host);
@@ -186,18 +193,19 @@ public final class BridgeNetwork {
      */
     public int addTestHosts(int index, int nhosts) throws Exception {
         int idx = index;
-        for (Map.Entry<String, Set<Short>> entry: mappedVlans.entrySet()) {
-            Set<Short> vids = entry.getValue();
+        for (Map.Entry<String, Set<Integer>> entry: mappedVlans.entrySet()) {
+            Set<Integer> vids = entry.getValue();
             if (vids == null || vids.isEmpty()) {
                 continue;
             }
 
             String pid = entry.getKey();
+            String pname = ofMock.getPortName(pid);
             String nid = OfMockUtils.getNodeIdentifier(pid);
-            for (Short vid: entry.getValue()) {
-                short vlan = vid.shortValue();
+            for (Integer vlanId: entry.getValue()) {
+                int vid = vlanId.intValue();
                 for (int i = 0; i < nhosts; i++) {
-                    TestHost th = new TestHost(idx, pid, vlan);
+                    TestHost th = new TestHost(idx, pid, pname, vid);
                     idx++;
                     addHostImpl(nid, th);
                 }
@@ -212,11 +220,11 @@ public final class BridgeNetwork {
      *
      * @return  A set of MAC address table entries.
      */
-    public Set<MacAddressEntry> getMacAddressEntries() {
-        Set<MacAddressEntry> entries = new HashSet<>();
+    public Set<MacEntry> getMacEntries() {
+        Set<MacEntry> entries = new HashSet<>();
         for (List<TestHost> hosts: testHosts.values()) {
             for (TestHost host: hosts) {
-                entries.add(host.getMacAddressEntry());
+                entries.add(host.getMacEntry());
             }
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,7 +8,6 @@
 
 package org.opendaylight.vtn.manager.it.util.packet;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -20,6 +19,7 @@ import java.util.Set;
 import org.opendaylight.vtn.manager.packet.Ethernet;
 import org.opendaylight.vtn.manager.packet.IEEE8021Q;
 import org.opendaylight.vtn.manager.packet.Packet;
+import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.EtherTypes;
 import org.opendaylight.vtn.manager.util.IpNetwork;
 
@@ -40,27 +40,27 @@ public final class EthernetFactory extends PacketFactory {
     /**
      * The source MAC address.
      */
-    private byte[]  sourceAddress;
+    private EtherAddress  sourceAddress;
 
     /**
      * The destination MAC address.
      */
-    private byte[]  destinationAddress;
+    private EtherAddress  destinationAddress;
 
     /**
      * The ethernet type.
      */
-    private short  etherType;
+    private int  etherType;
 
     /**
      * The VLAN ID.
      */
-    private short  vlanId;
+    private int  vlanId;
 
     /**
      * The VLAN priority.
      */
-    private byte  vlanPcp;
+    private short  vlanPcp;
 
     /**
      * IP address to be probed.
@@ -70,7 +70,7 @@ public final class EthernetFactory extends PacketFactory {
     /**
      * VLAN ID used for IP address probe.
      */
-    private short  probeVlan = -1;
+    private int  probeVlan = -1;
 
     /**
      * Construct a new instance.
@@ -83,7 +83,7 @@ public final class EthernetFactory extends PacketFactory {
      * @param src  The source MAC address.
      * @param dst  The destination MAC address.
      */
-    public EthernetFactory(byte[] src, byte[] dst) {
+    public EthernetFactory(EtherAddress src, EtherAddress dst) {
         setSourceAddress(src);
         setDestinationAddress(dst);
     }
@@ -91,21 +91,21 @@ public final class EthernetFactory extends PacketFactory {
     /**
      * Return the source MAC address.
      *
-     * @return  A byte array that represents the source MAC address or
-     *          {@code null}.
+     * @return  An {@link EtherAddress} instance that represents the
+     *          source MAC address or {@code null}.
      */
-    public byte[] getSourceAddress() {
-        return getBytes(sourceAddress);
+    public EtherAddress getSourceAddress() {
+        return sourceAddress;
     }
 
     /**
      * Return the destination MAC address.
      *
-     * @return  A byte array that represents the destination MAC address or
-     *          {@code null}.
+     * @return  An {@link EtherAddress} instance that represents the
+     *          destination MAC address or {@code null}.
      */
-    public byte[] getDestinationAddress() {
-        return getBytes(destinationAddress);
+    public EtherAddress getDestinationAddress() {
+        return destinationAddress;
     }
 
     /**
@@ -113,7 +113,7 @@ public final class EthernetFactory extends PacketFactory {
      *
      * @return  Ethernet type.
      */
-    public short getEtherType() {
+    public int getEtherType() {
         return etherType;
     }
 
@@ -122,7 +122,7 @@ public final class EthernetFactory extends PacketFactory {
      *
      * @return  VLAN ID. Zero means an untagged frame.
      */
-    public short getVlanId() {
+    public int getVlanId() {
         return vlanId;
     }
 
@@ -131,7 +131,7 @@ public final class EthernetFactory extends PacketFactory {
      *
      * @return  VLAN priority.
      */
-    public byte getVlanPcp() {
+    public short getVlanPcp() {
         return vlanPcp;
     }
 
@@ -149,29 +149,31 @@ public final class EthernetFactory extends PacketFactory {
      *
      * @return  VLAN ID used for IP address probe.
      */
-    public short getProbeVlan() {
+    public int getProbeVlan() {
         return probeVlan;
     }
 
     /**
      * Set the source MAC address.
      *
-     * @param b  A byte array that represents the source MAC address.
+     * @param mac  An {@link EtherAddress} instance that represents the
+     *             source MAC address.
      * @return  This instance.
      */
-    public EthernetFactory setSourceAddress(byte[] b) {
-        sourceAddress = getBytes(b);
+    public EthernetFactory setSourceAddress(EtherAddress mac) {
+        sourceAddress = mac;
         return this;
     }
 
     /**
      * Set the destination MAC address.
      *
-     * @param b  A byte array that represents the destination MAC address.
+     * @param mac  An {@link EtherAddress} instance that represents the
+     *             destination MAC address.
      * @return  This instance.
      */
-    public EthernetFactory setDestinationAddress(byte[] b) {
-        destinationAddress = getBytes(b);
+    public EthernetFactory setDestinationAddress(EtherAddress mac) {
+        destinationAddress = mac;
         return this;
     }
 
@@ -181,7 +183,7 @@ public final class EthernetFactory extends PacketFactory {
      * @param type  Ethernet type.
      * @return  This instance.
      */
-    public EthernetFactory setEtherType(short type) {
+    public EthernetFactory setEtherType(int type) {
         etherType = type;
         return this;
     }
@@ -192,7 +194,7 @@ public final class EthernetFactory extends PacketFactory {
      * @param vid  VLAN ID. Zero means an untagged frame.
      * @return  This instance.
      */
-    public EthernetFactory setVlanId(short vid) {
+    public EthernetFactory setVlanId(int vid) {
         vlanId = vid;
         return this;
     }
@@ -203,7 +205,7 @@ public final class EthernetFactory extends PacketFactory {
      * @param pcp  VLAN priority.
      * @return  This instance.
      */
-    public EthernetFactory setVlanPcp(byte pcp) {
+    public EthernetFactory setVlanPcp(short pcp) {
         vlanPcp = pcp;
         return this;
     }
@@ -215,7 +217,7 @@ public final class EthernetFactory extends PacketFactory {
      * @param vid  VLAN ID used for IP address probe.
      * @return  This instance.
      */
-    public EthernetFactory setProbe(IpNetwork ip, short vid) {
+    public EthernetFactory setProbe(IpNetwork ip, int vid) {
         probeAddress = ip;
         probeVlan = vid;
         return this;
@@ -231,9 +233,9 @@ public final class EthernetFactory extends PacketFactory {
      */
     public EthernetFactory verify(OfMockService ofmock, byte[] bytes)
         throws Exception {
-        Set<Short> vlanIds = Collections.singleton(Short.valueOf(vlanId));
-        Set<Short> vids = verify(ofmock, bytes, vlanIds);
-        assertEquals(Collections.<Short>emptySet(), vids);
+        Set<Integer> vlanIds = Collections.singleton(vlanId);
+        Set<Integer> vids = verify(ofmock, bytes, vlanIds);
+        assertEquals(Collections.<Integer>emptySet(), vids);
         return this;
     }
 
@@ -248,48 +250,50 @@ public final class EthernetFactory extends PacketFactory {
      *          detected in {@code bytes}.
      * @throws Exception  An error occurred.
      */
-    public Set<Short> verify(OfMockService ofmock, byte[] bytes,
-                             Set<Short> vlanIds) throws Exception {
+    public Set<Integer> verify(OfMockService ofmock, byte[] bytes,
+                               Set<Integer> vlanIds) throws Exception {
         assertNotNull(bytes);
 
         Ethernet eth = new Ethernet();
         eth.deserialize(bytes, 0, bytes.length * Byte.SIZE);
 
-        short vlan;
-        short type = eth.getEtherType();
+        int vid;
+        int type = (int)eth.getEtherType();
         Packet payload = eth.getPayload();
         Packet parent;
         if (type == EtherTypes.VLAN.shortValue()) {
             assertTrue(payload instanceof IEEE8021Q);
             IEEE8021Q vtag = (IEEE8021Q)payload;
-            vlan = vtag.getVid();
+            vid = (int)vtag.getVid();
             assertEquals((byte)0, vtag.getCfi());
-            assertEquals(vlanPcp, vtag.getPcp());
-            type = vtag.getEtherType();
+            assertEquals((byte)vlanPcp, vtag.getPcp());
+            type = (int)vtag.getEtherType();
             payload = vtag.getPayload();
             parent = vtag;
         } else {
-            vlan = 0;
+            vid = 0;
             parent = eth;
         }
 
-        if (vlan == probeVlan) {
+        if (vid == probeVlan) {
             // The given packet should be an ARP request.
-            byte[] ctlrMac = ofmock.getControllerMacAddress();
+            EtherAddress ctlrMac = ofmock.getControllerMacAddress();
             EthernetFactory efc = new EthernetFactory(ctlrMac, sourceAddress).
-                setVlanId(vlan);
+                setVlanId(vid);
             ArpFactory afc = ArpFactory.newInstance(efc);
-            afc.setSenderHardwareAddress(ctlrMac).
-                setTargetHardwareAddress(sourceAddress).
-                setSenderProtocolAddress(TestBase.IPV4_ZERO).
+            afc.setSenderHardwareAddress(ctlrMac.getBytes()).
+                setTargetHardwareAddress(sourceAddress.getBytes()).
+                setSenderProtocolAddress(TestBase.IPV4_ZERO.getBytes()).
                 setTargetProtocolAddress(probeAddress.getBytes());
             return efc.verify(ofmock, bytes, vlanIds);
         }
 
-        Set<Short> vids = new HashSet<>(vlanIds);
-        assertTrue(vids.remove(Short.valueOf(vlan)));
-        assertArrayEquals(sourceAddress, eth.getSourceMACAddress());
-        assertArrayEquals(destinationAddress, eth.getDestinationMACAddress());
+        Set<Integer> vids = new HashSet<>(vlanIds);
+        assertTrue(vids.remove(vid));
+        assertEquals(sourceAddress,
+                     EtherAddress.create(eth.getSourceMACAddress()));
+        assertEquals(destinationAddress,
+                     EtherAddress.create(eth.getDestinationMACAddress()));
         assertEquals(etherType, type);
 
         PacketFactory f = this;
@@ -314,13 +318,15 @@ public final class EthernetFactory extends PacketFactory {
      */
     @Override
     Packet createPacket() {
-        Ethernet eth = new Ethernet().setSourceMACAddress(sourceAddress).
-            setDestinationMACAddress(destinationAddress);
+        Ethernet eth = new Ethernet().
+            setSourceMACAddress(sourceAddress.getBytes()).
+            setDestinationMACAddress(destinationAddress.getBytes());
         if (vlanId == 0) {
-            eth.setEtherType(etherType);
+            eth.setEtherType((short)etherType);
         } else {
-            IEEE8021Q vtag = new IEEE8021Q().setCfi((byte)0).setPcp(vlanPcp).
-                setVid(vlanId).setEtherType(etherType);
+            IEEE8021Q vtag = new IEEE8021Q().setCfi((byte)0).
+                setPcp((byte)vlanPcp).setVid((short)vlanId).
+                setEtherType((short)etherType);
             eth.setEtherType(EtherTypes.VLAN.shortValue()).
                 setPayload(vtag);
         }
@@ -348,7 +354,7 @@ public final class EthernetFactory extends PacketFactory {
         int etype;
         int count;
         if (types.contains(FlowMatchType.ETH_TYPE)) {
-            etype = (int)etherType;
+            etype = etherType;
             count = 1;
         } else {
             etype = 0;
@@ -361,7 +367,7 @@ public final class EthernetFactory extends PacketFactory {
         // VLAN ID is mandatory.
         Short pcp;
         if (types.contains(FlowMatchType.VLAN_PCP)) {
-            pcp = toShort(vlanPcp);
+            pcp = vlanPcp;
             count++;
         } else {
             pcp = null;
@@ -380,9 +386,6 @@ public final class EthernetFactory extends PacketFactory {
      */
     @Override
     public EthernetFactory clone() {
-        EthernetFactory c = (EthernetFactory)super.clone();
-        c.sourceAddress = getBytes(sourceAddress);
-        c.destinationAddress = getBytes(destinationAddress);
-        return c;
+        return (EthernetFactory)super.clone();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,35 +8,34 @@
 
 package org.opendaylight.vtn.manager.it.util;
 
+import static org.opendaylight.vtn.manager.util.NumberUtils.MASK_BYTE;
+import static org.opendaylight.vtn.manager.util.NumberUtils.MASK_SHORT;
+
 import java.math.BigInteger;
-import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
+
+import com.google.common.collect.ImmutableList;
 
 import org.junit.Assert;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
-import org.opendaylight.vtn.manager.MacAddressEntry;
-import org.opendaylight.vtn.manager.VBridgeConfig;
-import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.util.ByteUtils;
+import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.Ip4Network;
+import org.opendaylight.vtn.manager.util.IpNetwork;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.it.ofmock.OfMockService;
 import org.opendaylight.vtn.manager.it.util.packet.ArpFactory;
 import org.opendaylight.vtn.manager.it.util.packet.EthernetFactory;
-
-import org.opendaylight.controller.sal.core.Node;
-import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
-import org.opendaylight.controller.sal.packet.address.EthernetAddress;
+import org.opendaylight.vtn.manager.it.util.vnode.mac.MacEntry;
 
 /**
  * Abstract base class for integration tests using JUnit.
@@ -63,73 +62,93 @@ public abstract class TestBase extends Assert {
     public static final long  TASK_TIMEOUT = 10L;
 
     /**
-     * Separator in a MD-SAL node or node connector identifier.
-     */
-    public static final String  ID_SEPARATOR = OfMockService.ID_SEPARATOR;
-
-    /**
-     * Protocol prefix for OpenFlow switch.
-     */
-    public static final String  ID_OPENFLOW = OfMockService.ID_OPENFLOW;
-
-    /**
      * The symbolic name of the manager.implementation bundle.
      */
     public static final String  BUNDLE_VTN_MANAGER_IMPL =
         "org.opendaylight.vtn.manager.implementation";
 
     /**
-     * Broadcast MAC address.
-     */
-    public static final byte[]  MAC_BROADCAST = {
-        (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff,
-    };
-
-    /**
      * Zero MAC address.
      */
-    public static final byte[]  MAC_ZERO = {0, 0, 0, 0, 0, 0};
+    public static final EtherAddress MAC_ZERO = new EtherAddress(0L);
 
     /**
      * Dummy MAC address.
      */
-    public static final byte[]  MAC_DUMMY = {
-        (byte)0x00, (byte)0xde, (byte)0xad, (byte)0xbe, (byte)0xef, (byte)0x11,
-    };
+    public static final EtherAddress  MAC_DUMMY =
+        new EtherAddress(0x00deadbeef11L);
 
     /**
      * Zero IPv4 address.
      */
-    public static final byte[]  IPV4_ZERO = {0, 0, 0, 0};
+    public static final Ip4Network  IPV4_ZERO = new Ip4Network(0);
 
     /**
      * IPv4 address used to send ARP request.
      */
-    public static final byte[]  IPV4_DUMMY = {
-        (byte)10, (byte)20, (byte)30, (byte)40,
-    };
+    public static final Ip4Network  IPV4_DUMMY = new Ip4Network("10.20.30.40");
 
     /**
-     * Conversion cache for {@link #toAdNode(String)}.
+     * The minimum value of vtn-index.
      */
-    private static final Map<String, Node>  TO_AD_NODE_CACHE = new HashMap<>();
+    public static final int  VTN_INDEX_MIN = 1;
 
     /**
-     * Conversion cache for {@link #toAdNodeConnector(String)}.
+     * The maximum value of vtn-index.
      */
-    private static final Map<String, NodeConnector>  TO_AD_NC_CACHE =
-        new HashMap<>();
+    public static final int  VTN_INDEX_MAX = 65535;
 
     /**
-     * Conversion cache for {@link #toPortIdentifier(NodeConnector)}.
+     * The minimum value of path policy ID.
      */
-    private static final Map<NodeConnector, String>  TO_PORT_ID_CACHE =
-        new HashMap<>();
+    public static final int  PATH_POLICY_ID_MIN = 1;
+
+    /**
+     * The maximum value of path policy ID.
+     */
+    public static final int  PATH_POLICY_ID_MAX = 3;
+
+    /**
+     * A mask value which represents valid bits in a VLAN priority.
+     */
+    public static final int  MASK_VLAN_PRI = 0x7;
+
+    /**
+     * A mask value which represents valid bits in a DSCP value.
+     */
+    public static final int  MASK_IP_DSCP = 0x3f;
+
+    /**
+     * The maximum number of network elements to be added random add operation.
+     */
+    public static final int  RANDOM_ADD_MAX = 10;
+
+    /**
+     * A list of invalid virtual node names.
+     */
+    public static final List<String>  INVALID_VNODE_NAMES;
+
+    /**
+     * Initialize static field.
+     */
+    static {
+        INVALID_VNODE_NAMES = ImmutableList.<String>builder().
+            add("").
+            add("01234567890123456789012345678901").
+            add("abcABC_0123_XXXXXXXXXXXXXXXXXXXX").
+            add("_vnode_1").
+            add("VNODE 1").
+            add("vNode%1").
+            add("_").
+            add(" ").
+            add("\u3042").
+            build();
+    }
 
     /**
      * Throw an error which indicates the test code should never reach here.
      */
-    public static void unexpected() {
+    public static final void unexpected() {
         fail("Should never reach here.");
     }
 
@@ -138,7 +157,7 @@ public abstract class TestBase extends Assert {
      *
      * @param t  A throwable.
      */
-    public static void unexpected(Throwable t) {
+    public static final void unexpected(Throwable t) {
         throw new AssertionError("Unexpected throwable: " + t, t);
     }
 
@@ -147,10 +166,11 @@ public abstract class TestBase extends Assert {
      *
      * @param millis  The number of milliseconds to sleep.
      */
-    public static void sleep(long millis) {
+    public static final void sleep(long millis) {
         try {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
+            unexpected(e);
         }
     }
 
@@ -162,7 +182,7 @@ public abstract class TestBase extends Assert {
      * @return  {@link Bundle} instance if found.
      *          {@code null} if not found.
      */
-    public static Bundle getBundle(BundleContext bc, String name) {
+    public static final Bundle getBundle(BundleContext bc, String name) {
         for (Bundle b: bc.getBundles()) {
             if (name.equals(b.getSymbolicName())) {
                 return b;
@@ -180,7 +200,7 @@ public abstract class TestBase extends Assert {
      * @return  {@link Bundle} instance if found.
      *          {@code null} if not found.
      */
-    public static Bundle getManagerBundle(BundleContext bc) {
+    public static final Bundle getManagerBundle(BundleContext bc) {
         return getBundle(bc, BUNDLE_VTN_MANAGER_IMPL);
     }
 
@@ -189,7 +209,7 @@ public abstract class TestBase extends Assert {
      *
      * @return A list of boolean values.
      */
-    public static List<Boolean> createBooleans() {
+    public static final List<Boolean> createBooleans() {
         return createBooleans(true);
     }
 
@@ -199,7 +219,7 @@ public abstract class TestBase extends Assert {
      * @param setNull  Set {@code null} to returned list if {@code true}.
      * @return A list of boolean values.
      */
-    public static List<Boolean> createBooleans(boolean setNull) {
+    public static final List<Boolean> createBooleans(boolean setNull) {
         ArrayList<Boolean> list = new ArrayList<Boolean>();
         if (setNull) {
             list.add(null);
@@ -208,98 +228,6 @@ public abstract class TestBase extends Assert {
         list.add(Boolean.TRUE);
         list.add(Boolean.FALSE);
         return list;
-    }
-
-    /**
-     * Create a list of {@link Node} and a {@code null}.
-     *
-     * @param num  The number of objects to be created.
-     * @return A list of {@link Node}.
-     */
-    public static List<Node> createNodes(int num) {
-        return createNodes(num, true);
-    }
-
-    /**
-     * Create a list of {@link Node}.
-     *
-     * @param num      The number of objects to be created.
-     * @param setNull  Set {@code null} to returned list if {@code true}.
-     * @return A list of {@link Node}.
-     */
-    public static List<Node> createNodes(int num, boolean setNull) {
-        int n = num;
-        ArrayList<Node> list = new ArrayList<Node>();
-        if (setNull) {
-            list.add(null);
-            n--;
-        }
-
-        String[] types = {
-            Node.NodeIDType.OPENFLOW,
-            Node.NodeIDType.ONEPK,
-            Node.NodeIDType.PRODUCTION,
-        };
-
-        for (int i = 0; i < n; i++) {
-            int tidx = i % types.length;
-            String type = types[tidx];
-            Object id;
-            if (type.equals(Node.NodeIDType.OPENFLOW)) {
-                id = Long.valueOf((long)i);
-            } else {
-                id = "Node ID: " + i;
-            }
-
-            try {
-                Node node = new Node(type, id);
-                assertNotNull(node.getType());
-                assertNotNull(node.getNodeIDString());
-                list.add(node);
-            } catch (Exception e) {
-                unexpected(e);
-            }
-        }
-
-        return list;
-    }
-
-    /**
-     * Create a {@link VTenantConfig} object.
-     *
-     * @param desc  Description of the virtual tenant.
-     * @param idle  {@code idle_timeout} value for flow entries.
-     * @param hard  {@code hard_timeout} value for flow entries.
-     * @return  A {@link VBridgeConfig} object.
-     */
-    public static VTenantConfig createVTenantConfig(String desc, Integer idle,
-                                                    Integer hard) {
-        if (idle == null) {
-            if (hard == null) {
-                return new VTenantConfig(desc);
-            } else {
-                return new VTenantConfig(desc, -1, hard.intValue());
-            }
-        } else if (hard == null) {
-            return new VTenantConfig(desc, idle.intValue(), -1);
-        }
-
-        return new VTenantConfig(desc, idle.intValue(), hard.intValue());
-    }
-
-    /**
-     * Create a {@link VBridgeConfig} object.
-     *
-     * @param desc  Description of the virtual bridge.
-     * @param age  {@code age} value for aging interval for MAC address table.
-     * @return  A {@link VBridgeConfig} object.
-     */
-    public static VBridgeConfig createVBridgeConfig(String desc, Integer age) {
-        if (age == null) {
-            return new VBridgeConfig(desc);
-        } else {
-            return new VBridgeConfig(desc, age);
-        }
     }
 
     /**
@@ -312,33 +240,33 @@ public abstract class TestBase extends Assert {
      * @param host      A test host to learn.
      * @throws Exception  An error occurred.
      */
-    public static void learnHost(OfMockService ofmock,
-                                 Map<String, Set<Short>> allPorts,
-                                 TestHost host) throws Exception {
+    public static final void learnHost(OfMockService ofmock,
+                                       Map<String, Set<Integer>> allPorts,
+                                       TestHost host) throws Exception {
         String ingress = host.getPortIdentifier();
-        byte[] sha = host.getMacAddress();
+        EtherAddress sha = host.getEtherAddress();
         byte[] spa = host.getRawInetAddress();
-        short vlan = host.getVlan();
-        EthernetFactory efc = new EthernetFactory(sha, MAC_BROADCAST).
-            setVlanId(vlan);
+        int vid = host.getVlanId();
+        EthernetFactory efc = new EthernetFactory(sha, EtherAddress.BROADCAST).
+            setVlanId(vid);
         ArpFactory afc = ArpFactory.newInstance(efc);
-        afc.setSenderHardwareAddress(sha).
-            setTargetHardwareAddress(MAC_ZERO).
+        afc.setSenderHardwareAddress(sha.getBytes()).
+            setTargetHardwareAddress(MAC_ZERO.getBytes()).
             setSenderProtocolAddress(spa).
-            setTargetProtocolAddress(IPV4_DUMMY);
+            setTargetProtocolAddress(IPV4_DUMMY.getBytes());
         byte[] payload = efc.create();
         ofmock.sendPacketIn(ingress, payload);
 
-        for (Map.Entry<String, Set<Short>> entry: allPorts.entrySet()) {
-            Set<Short> vids = entry.getValue();
+        for (Map.Entry<String, Set<Integer>> entry: allPorts.entrySet()) {
+            Set<Integer> vids = entry.getValue();
             if (vids == null) {
                 continue;
             }
 
             String portId = entry.getKey();
             if (portId.equals(ingress)) {
-                vids = new HashSet<Short>(vids);
-                assertTrue(vids.remove(vlan));
+                vids = new HashSet<>(vids);
+                assertTrue(vids.remove(vid));
                 if (vids.isEmpty()) {
                     continue;
                 }
@@ -364,23 +292,23 @@ public abstract class TestBase extends Assert {
      * @param ofmock   openflowplugin mock-up service.
      * @param mac      The source MAC address.
      * @param ip       The source IPv4 address.
-     * @param vlan     VLAN ID for a ARP packet.
+     * @param vid      VLAN ID for a ARP packet.
      *                 Zero or a negative value indicates untagged.
      * @param ingress  The MD-SAL node connector identifier which specifies
      *                 the ingress port.
      * @return  A raw byte image of the ARP packet.
      * @throws Exception  An error occurred.
      */
-    public static byte[] sendBroadcast(OfMockService ofmock, byte[] mac,
-                                       byte[] ip, short vlan, String ingress)
-        throws Exception {
-        EthernetFactory efc = new EthernetFactory(mac, MAC_BROADCAST).
-            setVlanId(vlan);
+    public static final byte[] sendBroadcast(
+        OfMockService ofmock, EtherAddress mac, byte[] ip, int vid,
+        String ingress) throws Exception {
+        EthernetFactory efc = new EthernetFactory(mac, EtherAddress.BROADCAST).
+            setVlanId(vid);
         ArpFactory afc = ArpFactory.newInstance(efc);
-        afc.setSenderHardwareAddress(mac).
-            setTargetHardwareAddress(MAC_ZERO).
+        afc.setSenderHardwareAddress(mac.getBytes()).
+            setTargetHardwareAddress(MAC_ZERO.getBytes()).
             setSenderProtocolAddress(ip).
-            setTargetProtocolAddress(IPV4_DUMMY);
+            setTargetProtocolAddress(IPV4_DUMMY.getBytes());
         byte[] payload = efc.create();
         ofmock.sendPacketIn(ingress, payload);
         return payload;
@@ -394,10 +322,10 @@ public abstract class TestBase extends Assert {
      * @return  A raw byte image ot the ARP packet.
      * @throws Exception  An error occurred.
      */
-    public static byte[] sendBroadcast(OfMockService ofmock, TestHost host)
-        throws Exception {
-        return sendBroadcast(ofmock, host.getMacAddress(),
-                             host.getRawInetAddress(), host.getVlan(),
+    public static final byte[] sendBroadcast(OfMockService ofmock,
+                                             TestHost host) throws Exception {
+        return sendBroadcast(ofmock, host.getEtherAddress(),
+                             host.getRawInetAddress(), host.getVlanId(),
                              host.getPortIdentifier());
     }
 
@@ -409,139 +337,18 @@ public abstract class TestBase extends Assert {
      * @return  A raw byte image ot the ARP packet.
      * @throws Exception  An error occurred.
      */
-    public static byte[] sendBroadcast(OfMockService ofmock,
-                                       MacAddressEntry ment) throws Exception {
-        DataLinkAddress dladdr = ment.getAddress();
-        assertTrue(dladdr instanceof EthernetAddress);
-        EthernetAddress eaddr = (EthernetAddress)dladdr;
+    public static final byte[] sendBroadcast(OfMockService ofmock,
+                                             MacEntry ment) throws Exception {
+        EtherAddress mac = ment.getMacAddress();
+        Set<IpNetwork> ipaddrs = ment.getIpAddresses();
+        assertEquals(1, ipaddrs.size());
+        IpNetwork ipaddr = ipaddrs.iterator().next();
+        assertTrue(ipaddr instanceof Ip4Network);
 
-        Set<InetAddress> ipaddrs = ment.getInetAddresses();
-        assertFalse(ipaddrs.isEmpty());
-        InetAddress ipaddr = ipaddrs.iterator().next();
-        assertTrue(ipaddr instanceof Inet4Address);
+        String pid = ment.getPortIdentifier();
 
-        String pid = toPortIdentifier(ment.getNodeConnector());
-
-        return sendBroadcast(ofmock, eaddr.getValue(), ipaddr.getAddress(),
-                             ment.getVlan(), pid);
-    }
-
-    /**
-     * Convert a MD-SAL node or node connector identifier into a {@link Node}
-     * instance.
-     *
-     * @param id  A MD-SAL node or node connector identifier.
-     *            An OpenFlow node or node connector identifier must be
-     *            specified.
-     * @return    A {@link Node} instance.
-     */
-    public static Node toAdNode(String id) {
-        Node node = TO_AD_NODE_CACHE.get(id);
-        if (node != null) {
-            return node;
-        }
-
-        if (!id.startsWith(ID_OPENFLOW)) {
-            throw invalidMdNodeId(id, null);
-        }
-
-        try {
-            int from = ID_OPENFLOW.length();
-            int to = id.indexOf(ID_SEPARATOR.charAt(0), from);
-            String idstr = (to < 0)
-                ? id.substring(from)
-                : id.substring(from, to);
-            Long dpid = Long.valueOf(new BigInteger(idstr).longValue());
-
-            node = new Node(Node.NodeIDType.OPENFLOW, dpid);
-            TO_AD_NODE_CACHE.put(id, node);
-            return node;
-        } catch (Exception e) {
-            throw invalidMdNodeId(id, e);
-        }
-    }
-
-    /**
-     * Convert a MD-SAL node connector identifier into a {@link NodeConnector}
-     * instance.
-     *
-     * @param id  A MD-SAL node connector identifier.
-     *            An OpenFlow node connector identifier must be specified.
-     * @return    A {@link NodeConnector} instance.
-     */
-    public static NodeConnector toAdNodeConnector(String id) {
-        NodeConnector nc = TO_AD_NC_CACHE.get(id);
-        if (nc != null) {
-            return nc;
-        }
-
-        if (!id.startsWith(ID_OPENFLOW)) {
-            throw invalidMdNodeId(id, null);
-        }
-
-        try {
-            int from = ID_OPENFLOW.length();
-            int to = id.indexOf(ID_SEPARATOR.charAt(0), from);
-            String idstr = id.substring(from, to);
-            Long dpid = Long.valueOf(new BigInteger(idstr).longValue());
-
-            Node node = new Node(Node.NodeIDType.OPENFLOW, dpid);
-            Short portId = Short.valueOf(id.substring(to + 1));
-            String type = NodeConnector.NodeConnectorIDType.OPENFLOW;
-            nc = new NodeConnector(type, portId, node);
-            TO_AD_NC_CACHE.put(id, nc);
-            return nc;
-        } catch (Exception e) {
-            throw invalidMdNodeId(id, e);
-        }
-    }
-
-    /**
-     * Convert a AD-SAL node connector identifier into a MD-SAL node connector
-     * identifier.
-     *
-     * @param nc  A {@link NodeConnector} instance.
-     * @return    MD-SAL node connector identifier.
-     */
-    public static String toPortIdentifier(NodeConnector nc) {
-        String pid = TO_PORT_ID_CACHE.get(nc);
-        if (pid != null) {
-            return pid;
-        }
-
-        if (!NodeConnector.NodeConnectorIDType.OPENFLOW.equals(nc.getType())) {
-            throw new IllegalArgumentException(
-                "Invalid AD-SAL node connector: " + nc);
-        }
-
-        Node node = nc.getNode();
-        StringBuilder builder = new StringBuilder(ID_OPENFLOW).
-            append(node.getID()).append(ID_SEPARATOR).
-            append(nc.getNodeConnectorIDString());
-        pid = builder.toString();
-        TO_PORT_ID_CACHE.put(nc, pid);
-        return pid;
-    }
-
-    /**
-     * Eliminate MAC address table entries associated with the given port.
-     *
-     * @param hosts  A set of {@link MacAddressEntry}.
-     *               This method never modifies this set.
-     * @param pid    The MD-SAL port identifier.
-     * @return  A new set of {@link MacAddressEntry}.
-     */
-    public static Set<MacAddressEntry> filterOut(Set<MacAddressEntry> hosts,
-                                                 String pid) {
-        Set<MacAddressEntry> newSet = new HashSet<>();
-        for (MacAddressEntry ment: hosts) {
-            NodeConnector nc = ment.getNodeConnector();
-            if (!pid.equals(toPortIdentifier(nc))) {
-                assertTrue(newSet.add(ment));
-            }
-        }
-
-        return newSet;
+        return sendBroadcast(ofmock, mac, ipaddr.getBytes(), ment.getVlanId(),
+                             pid);
     }
 
     /**
@@ -550,7 +357,7 @@ public abstract class TestBase extends Assert {
      * @param value  A long number.
      * @return  A hex string.
      */
-    public static String toHexString(long value) {
+    public static final String toHexString(long value) {
         String sep = "";
         StringBuilder builder = new StringBuilder();
         for (int nshift = Long.SIZE - Byte.SIZE; nshift >= 0;
@@ -569,23 +376,131 @@ public abstract class TestBase extends Assert {
      * @param hex  A hex string.
      * @return  A long number.
      */
-    public static long toLong(String hex) {
+    public static final long toLong(String hex) {
         String str = hex.replaceAll(ByteUtils.HEX_SEPARATOR, "");
         BigInteger bi = new BigInteger(str, ByteUtils.HEX_RADIX);
         return bi.longValue();
     }
 
     /**
-     * Return an exception that indicates an invalid MD-SAL node or
-     * node connector is specified.
+     * Create a vtn-index value using the given random generator.
      *
-     * @param id     A MD-SAL node or node connector identifier.
-     * @param cause  The cause of error.
-     * @return  An {@link IllegalArgumentException} instance.
+     * @param rand  A pseudo random generator.
+     * @param set   A set of vtn-index values to store generated values.
+     * @return  An unique vtn-index value.
      */
-    private static IllegalArgumentException invalidMdNodeId(String id,
-                                                            Throwable cause) {
-        String msg = "Illegal MD-SAL node/node-connector identifier: " + id;
-        throw new IllegalArgumentException(msg, cause);
+    public static Integer createVtnIndex(Random rand, Set<Integer> set) {
+        Integer value;
+        int upper = VTN_INDEX_MAX - VTN_INDEX_MIN;
+        do {
+            value = rand.nextInt(upper) + VTN_INDEX_MIN;
+        } while (!set.add(value));
+
+        return value;
+    }
+
+    /**
+     * Create a unique integer using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @param set   A set of integer values to store generated values.
+     * @return  An unique integer.
+     */
+    public static Integer createInteger(Random rand, Set<Integer> set) {
+        Integer value;
+        do {
+            value = rand.nextInt();
+        } while (!set.add(value));
+
+        return value;
+    }
+
+    /**
+     * Create an unicast MAC address using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @return  An {@link EtherAddress} instance.
+     */
+    public static EtherAddress createEtherAddress(Random rand) {
+        long addr = rand.nextLong() & EtherAddress.BROADCAST.getAddress();
+        addr &= ~EtherAddress.MASK_MULTICAST;
+        return new EtherAddress(addr);
+    }
+
+    /**
+     * Create an IPv4 address using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @return  An {@link Ip4Network} instance.
+     */
+    public static Ip4Network createIp4Network(Random rand) {
+        int addr;
+        do {
+            addr = rand.nextInt();
+        } while (addr == 0);
+
+        return new Ip4Network(addr);
+    }
+
+    /**
+     * Create a VLAN PCP value using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @return  A VLAN PCP value.
+     */
+    public static short createVlanPcp(Random rand) {
+        return (short)(rand.nextInt() & MASK_VLAN_PRI);
+    }
+
+    /**
+     * Create an IP DSCP value using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @return  An IP DSCP value.
+     */
+    public static short createDscp(Random rand) {
+        return (short)(rand.nextInt() & MASK_IP_DSCP);
+    }
+
+    /**
+     * Create an unsigned short value using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @return  An unsigned short value.
+     */
+    public static int createUnsignedShort(Random rand) {
+        return rand.nextInt() & MASK_SHORT;
+    }
+
+    /**
+     * Create an unsigned byte value using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @return  An unsigned byte value.
+     */
+    public static short createUnsignedByte(Random rand) {
+        return (short)(rand.nextInt() & MASK_BYTE);
+    }
+
+    /**
+     * Create a random reference to the path policy using the given random
+     * generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @return  An path policy ID.
+     */
+    public static int createPathPolicyReference(Random rand) {
+        return rand.nextInt(PATH_POLICY_ID_MAX + 1);
+    }
+
+    /**
+     * Create a random virtual node name using the given random generator.
+     *
+     * @param prefix  The prefix of the virtual node name.
+     * @param rand    A pseudo random generator.
+     * @return  A virtual node name.
+     */
+    public static String createVnodeName(String prefix, Random rand) {
+        return prefix + Integer.toHexString(rand.nextInt());
     }
 }

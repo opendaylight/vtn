@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -9,6 +9,7 @@
 package org.opendaylight.vtn.manager.it.option;
 
 import static org.ops4j.pax.exam.CoreOptions.frameworkProperty;
+import static org.ops4j.pax.exam.CoreOptions.junitBundles;
 import static org.ops4j.pax.exam.CoreOptions.systemPackages;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 import static org.ops4j.pax.exam.CoreOptions.systemTimeout;
@@ -20,16 +21,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.ops4j.pax.exam.Constants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.options.DefaultCompositeOption;
 import org.ops4j.pax.exam.options.MavenArtifactProvisionOption;
 import org.ops4j.pax.exam.util.PathUtils;
-
-import org.opendaylight.controller.test.sal.binding.it.TestHelper;
-
-import org.opendaylight.controller.sal.utils.GlobalConstants;
 
 /**
  * Helper class which provides Pax Exam configurations.
@@ -41,6 +40,17 @@ import org.opendaylight.controller.sal.utils.GlobalConstants;
  * </p>
  */
 public final class TestOption {
+    /**
+     * Logger instance.
+     */
+    private static final Logger LOG = LoggerFactory.
+        getLogger(TestOption.class);
+
+    /**
+     * A relative path to the base configuration file directory.
+     */
+    public static final String CONFIG_DIR_BASE = "configuration";
+
     /**
      * The number of milliseconds to wait for the framework to start.
      */
@@ -63,67 +73,6 @@ public final class TestOption {
     private static final String  LOGBACK = "ch.qos.logback";
 
     /**
-     * Group ID for Apache Commons bundles.
-     */
-    private static final String  APACHE_COMMON = "org.apache.commons";
-
-    /**
-     * Group ID for Apache Felix bundles.
-     */
-    private static final String  APACHE_FELIX = "org.apache.felix";
-
-    /**
-     * Group ID for Equinox SDK bundles.
-     */
-    private static final String  EQUINOX_SDK = "equinoxSDK381";
-
-    /**
-     * Group ID for eclipselink bundles.
-     */
-    private static final String  ECLIPSELINK = "eclipselink";
-
-    /**
-     * Group ID for GeminiWeb bundles.
-     */
-    private static final String  GEMINIWEB = "geminiweb";
-
-    /**
-     * Group ID for Netty bundles.
-     */
-    private static final String  NETTY = "io.netty";
-
-    /**
-     * Group ID for Orbit bundles.
-     */
-    private static final String  ORBIT = "orbit";
-
-    /**
-     * Group ID for Jackson Core bundles.
-     */
-    private static final String  JACKSON_CORE = "com.fasterxml.jackson.core";
-
-    /**
-     * Group ID for Jackson JAX-RS bundles.
-     */
-    private static final String  JACKSON_JAXRS = "com.fasterxml.jackson.jaxrs";
-
-    /**
-     * Group ID for Jackson module bundles.
-     */
-    private static final String  JACKSON_MODULE =
-        "com.fasterxml.jackson.module";
-
-    /**
-     * Group ID for Jettison bundles.
-     */
-    private static final String  JETTISON = "org.codehaus.jettison";
-
-    /**
-     * Group ID for Jersey bundles.
-     */
-    private static final String  JERSEY = "com.sun.jersey";
-
-    /**
      * Group ID for Pax Exam bundles.
      */
     private static final String  PAX_EXAM = "org.ops4j.pax.exam";
@@ -134,15 +83,25 @@ public final class TestOption {
     private static final String  VTN = "org.opendaylight.vtn";
 
     /**
-     * Group ID for MD-SAL application bundles in the controller.
+     * Group ID for controller bundles.
      */
-    private static final String  CONTROLLER_MD = TestHelper.CONTROLLER + ".md";
+    private static final String  CONTROLLER = "org.opendaylight.controller";
+
+    /**
+     * Group ID for YANG modules provided by controller.
+     */
+    private static final String CONTROLLER_MODEL = CONTROLLER + ".model";
 
     /**
      * Group ID for third-party bundles in the controller.
      */
     private static final String  CONTROLLER_THIRD_PARTY =
-        TestHelper.CONTROLLER + ".thirdparty";
+        CONTROLLER + ".thirdparty";
+
+    /**
+     * GroupID for YANG tools.
+     */
+    private static final String  YANGTOOLS = "org.opendaylight.yangtools";
 
     /**
      * Group ID for MD-SAL bundles.
@@ -172,25 +131,18 @@ public final class TestOption {
         "org.opendaylight.openflowplugin.applications";
 
     /**
-     * Group ID for neutron bundles.
+     * The name of the system property that specifies whether the config
+     * persister is active or not.
      */
-    private static final String  NEUTRON = "org.opendaylight.neutron";
+    private static final String PROP_PERSISTER_ACTIVE =
+        "netconf.config.persister.active";
 
     /**
-     * Group ID for OVSDB bundles.
+     * The name of the system property that specifies the storage adapter
+     * class for the config persister.
      */
-    private static final String  OVSDB = "org.opendaylight.ovsdb";
-
-    /**
-     *  Group ID for Spring Framework bundles.
-     */
-    private static final String  SPRING_FRAMEWORK = "org.springframework";
-
-    /**
-     *  Group ID for Spring Framework security bundles.
-     */
-    private static final String  SPRING_FRAMEWORK_SECURITY =
-        SPRING_FRAMEWORK + ".security";
+    private static final String PROP_PERSISTER_ADAPTER =
+        "netconf.config.persister.1.storageAdapterClass";
 
     /**
      * The name of the system property that specifies the configuration file
@@ -198,6 +150,36 @@ public final class TestOption {
      */
     private static final String PROP_FILE_STORAGE =
         "netconf.config.persister.1.properties.fileStorage";
+
+    /**
+     * The name of the system property that specifies the number of config
+     * backups.
+     */
+    private static final String PROP_NUM_BACKUPS =
+        "netconf.config.persister.1.properties.numberOfBackups";
+
+    /**
+     * The name of the storage adapter class for the config persister.
+     */
+    private static final String  STORAGE_ADAPTER =
+        "org.opendaylight.controller.config.persist.storage.file.xml." +
+        "XmlFileStorageAdapter";
+
+    /**
+     * The name of the framework property that specifies the storage path.
+     */
+    private static final String  FPROP_STORAGE = "org.osgi.framework.storage";
+
+    /**
+     * The name of the system property that specifies the temporary directory
+     * for integration test.
+     */
+    private static final String VTN_PROP_TMPDIR = "vtn.it.tmpdir";
+
+    /**
+     * Path to the temporary directory.
+     */
+    private static File  tmpDirectory;
 
     /**
      * Private constructor that protects this class from instantiating.
@@ -213,86 +195,29 @@ public final class TestOption {
      */
     public static MavenArtifactProvisionOption mavenBundle(String group,
                                                            String name) {
-        return CoreOptions.mavenBundle(group, name).versionAsInProject();
+        try {
+            return CoreOptions.mavenBundle(group, name).versionAsInProject();
+        } catch (RuntimeException e) {
+            String msg = "Could not load bundle: group=" + group +
+                ", name=" + name;
+            LOG.error(msg, e);
+            throw new IllegalArgumentException(msg);
+        }
     }
 
     /**
-     * Return Pax Exam option to load OSGi bundles for AD-SAL core services.
+     * Return Pax Exam option to be shared with all the integration tests.
      *
-     * @return  A {@link Option} instance.
+     * @return  An {@link Option} instance.
      */
-    public static Option adSalCoreBundles() {
-        return new DefaultCompositeOption(
-            // AD-SAL core bundles.
-            mavenBundle(TestHelper.CONTROLLER, "configuration"),
-            mavenBundle(TestHelper.CONTROLLER, "configuration.implementation"),
-            mavenBundle(TestHelper.CONTROLLER, "containermanager"),
-            mavenBundle(TestHelper.CONTROLLER,
-                        "containermanager.it.implementation"),
-            mavenBundle(TestHelper.CONTROLLER, "clustering.services"),
-            mavenBundle(TestHelper.CONTROLLER,
-                        "clustering.services-implementation"),
-            mavenBundle(TestHelper.CONTROLLER, "sal"),
-            mavenBundle(TestHelper.CONTROLLER, "clustering.stub"),
-
-            // hosttracker.implementation is not mandatory.
-            mavenBundle(TestHelper.CONTROLLER, "hosttracker"),
-
-            mavenBundle(CONTROLLER_THIRD_PARTY, "net.sf.jung2"),
-
-            // Equinox SDK.
-            mavenBundle(EQUINOX_SDK, "org.eclipse.equinox.ds"),
-            mavenBundle(EQUINOX_SDK, "org.eclipse.equinox.util"),
-            mavenBundle(EQUINOX_SDK, "org.eclipse.osgi.services"),
-            mavenBundle(EQUINOX_SDK, "org.apache.felix.gogo.command"),
-            mavenBundle(EQUINOX_SDK, "org.apache.felix.gogo.runtime"),
-            mavenBundle(EQUINOX_SDK, "org.apache.felix.gogo.shell"),
-            mavenBundle(EQUINOX_SDK, "org.eclipse.equinox.cm"),
-            mavenBundle(EQUINOX_SDK, "org.eclipse.equinox.console"),
-            mavenBundle(EQUINOX_SDK, "org.eclipse.equinox.launcher"),
-            mavenBundle(EQUINOX_SDK, "javax.servlet"),
-
-            // Bundles provied by Apache.
-            mavenBundle(APACHE_COMMON, "commons-lang3"),
-            mavenBundle(APACHE_FELIX, "org.apache.felix.dependencymanager"),
-            mavenBundle(APACHE_FELIX,
-                        "org.apache.felix.dependencymanager.shell"),
-            mavenBundle(APACHE_FELIX, "org.apache.felix.fileinstall"),
-
-            // Jackson bundles.
-            mavenBundle(JACKSON_CORE, "jackson-annotations"),
-            mavenBundle(JACKSON_CORE, "jackson-core"),
-            mavenBundle(JACKSON_CORE, "jackson-databind"),
-
-            // Pax Exam bundles.
-            CoreOptions.mavenBundle(PAX_EXAM, "pax-exam-container-native"),
-            CoreOptions.mavenBundle(PAX_EXAM, "pax-exam-junit4"),
-            CoreOptions.mavenBundle(PAX_EXAM, "pax-exam-link-mvn"),
-            CoreOptions.mavenBundle("org.ops4j.pax.url", "pax-url-aether"),
-
-            // Miscellaneous.
-            mavenBundle("org.jboss.spec.javax.transaction",
-                        "jboss-transaction-api_1.1_spec"),
-            mavenBundle(ECLIPSELINK, "javax.resource"),
-            mavenBundle("commons-net", "commons-net"),
-            mavenBundle("com.google.code.gson", "gson"));
-    }
-
-    /**
-     * Return Pax Exam option to load OSGi bundles for common integration test.
-     *
-     * @return  A {@link Option} instance.
-     */
-    public static Option vtnManagerCommonBundles() {
+    public static Option commonOption() {
         // Create configuration directory.
-        File startupDir = new File(GlobalConstants.STARTUPHOME.toString());
-        if (startupDir.exists()) {
-            delete(startupDir);
+        File configBase = new File(CONFIG_DIR_BASE);
+        if (configBase.exists()) {
+            delete(configBase);
         }
 
-        File configDir = createPath(startupDir,
-                                    GlobalConstants.DEFAULT.toString(),
-                                    "vtn", "CONFIG");
+        File configDir = createPath(configBase, "startup", "vtn", "CONFIG");
         configDir.mkdirs();
 
         // Install common configuration files to the test environment.
@@ -300,13 +225,7 @@ public final class TestOption {
         File dst = new File(configDir, vtnConfigXml);
         copyFile(getResource(vtnConfigXml), dst);
 
-        String baseDir = PathUtils.getBaseDir();
-        String ctlrXml = "controller.xml";
-        File tmpDir = createPath(baseDir, "target", "it-tmp");
-        dst = new File(tmpDir, ctlrXml);
-        copyFile(getResource(ctlrXml), dst);
-        String ctlrXmlPath = dst.getAbsolutePath();
-
+        File tmpDir = getTmpDirectory();
         String tmpPath = tmpDir.getAbsolutePath();
         File storageDir = new File(tmpDir, "osgi-storage");
         if (storageDir.exists()) {
@@ -314,31 +233,45 @@ public final class TestOption {
         }
         String storagePath = storageDir.getAbsolutePath();
 
-        File resDir = createPath(baseDir, "src", "test", "resources");
-        String logbackXml = new File(resDir, "logback.xml").toURI().toString();
-        String serverXml = new File(resDir, "tomcat-server.xml").getPath();
-
         return new DefaultCompositeOption(
-            systemProperty("osgi.console").value("2401"),
-            systemProperty("logback.configurationFile").value(logbackXml),
-            systemProperty("osgi.bundles.defaultStartLevel").value("4"),
-            systemProperty("org.eclipse.gemini.web.tomcat.config.path").value(
-                serverXml),
-
-            // Set fail if unresolved bundle present.
-            systemProperty("pax.exam.osgi.unresolved.fail").value("true"),
-
             // Set system timeout.
             systemTimeout(SYSTEM_TIMEOUT),
 
             // Use own working directory in order to prevent from creating
             // temporary files in /tmp.
             workingDirectory(tmpPath),
-            frameworkProperty("org.osgi.framework.storage").value(storagePath),
+            frameworkProperty(FPROP_STORAGE).value(storagePath));
+    }
 
-            // Set the systemPackages (used by clustering and config subsystem)
-            systemPackages("sun.reflect", "sun.reflect.misc", "sun.misc",
-                           "sun.nio.ch"),
+    /**
+     * Return Pax Exam option to load OSGi bundles for common integration test.
+     *
+     * @return  An {@link Option} instance.
+     */
+    public static Option vtnManagerCommonBundles() {
+        // Initialize the test environment.
+        Option common = commonOption();
+
+        // Install the configuration for config subsystem.
+        File tmpDir = getTmpDirectory();
+        String ctlrXml = "controller.xml";
+        File dst = new File(tmpDir, ctlrXml);
+        copyFile(getResource(ctlrXml), dst);
+        String ctlrXmlPath = dst.getAbsolutePath();
+
+        // Determine configuration file paths.
+        File baseDir = new File(PathUtils.getBaseDir());
+        File resDir = createPath(baseDir, "src", "test", "resources");
+        String logbackXml = new File(resDir, "logback.xml").toURI().toString();
+
+        return new DefaultCompositeOption(
+            common,
+            systemProperty("osgi.console").value("2401"),
+            systemProperty("logback.configurationFile").value(logbackXml),
+            systemProperty("osgi.bundles.defaultStartLevel").value("4"),
+
+            // Set fail if unresolved bundle present.
+            systemProperty("pax.exam.osgi.unresolved.fail").value("true"),
 
             // SLF4J
             mavenBundle(SLF4J, "jcl-over-slf4j"),
@@ -350,22 +283,31 @@ public final class TestOption {
             mavenBundle(LOGBACK, "logback-classic"),
 
             // Load MD-SAL bundles.
-            TestHelper.mdSalCoreBundles(),
-            TestHelper.bindingAwareSalBundles(),
-            TestHelper.configMinumumBundles(),
+            mdSalBundles(),
 
-            // Override the location of the MD-SAL module configuration file.
+            // Load Pax Exam bundles.
+            CoreOptions.mavenBundle(PAX_EXAM, "pax-exam-container-native"),
+            CoreOptions.mavenBundle(PAX_EXAM, "pax-exam-junit4"),
+            CoreOptions.mavenBundle(PAX_EXAM, "pax-exam-link-mvn"),
+            CoreOptions.mavenBundle("org.ops4j.pax.url", "pax-url-aether"),
+
+            // Configure the config persister in the config subsystem.
+            systemProperty(PROP_PERSISTER_ACTIVE).value("1"),
+            systemProperty(PROP_PERSISTER_ADAPTER).value(STORAGE_ADAPTER),
+            systemProperty(PROP_NUM_BACKUPS).value("1"),
+
+            // Specify the location of the MD-SAL module configuration file.
             systemProperty(PROP_FILE_STORAGE).value(ctlrXmlPath),
 
-            // Load AD-SAL bundles.
-            adSalCoreBundles(),
-
             // Load YANG models.
-            TestHelper.baseModelBundles(),
-            mavenBundle(TestHelper.CONTROLLER_MODELS, "model-inventory"),
-            mavenBundle(TestHelper.CONTROLLER_MODELS, "model-topology"),
-            mavenBundle(MDSAL_MODEL, "ietf-topology"),
+            mavenBundle(MDSAL_MODEL, "yang-ext"),
+            mavenBundle(MDSAL_MODEL, "ietf-yang-types"),
             mavenBundle(MDSAL_MODEL, "ietf-yang-types-20130715"),
+            mavenBundle(MDSAL_MODEL, "ietf-inet-types"),
+            mavenBundle(MDSAL_MODEL, "ietf-topology"),
+            mavenBundle(MDSAL_MODEL, "opendaylight-l2-types"),
+            mavenBundle(CONTROLLER_MODEL, "model-inventory"),
+            mavenBundle(CONTROLLER_MODEL, "model-topology"),
             mavenBundle(OPENFLOW_MODEL, "model-flow-base"),
             mavenBundle(OPENFLOW_MODEL, "model-flow-service"),
             mavenBundle(OPENFLOW_MODEL, "model-flow-statistics"),
@@ -375,140 +317,21 @@ public final class TestOption {
             mavenBundle(OPENFLOW_APPS, "inventory-manager"),
             mavenBundle(OPENFLOW_APPS, "topology-manager"),
 
+            // Load OpenDaylight third-party bundles.
+            mavenBundle(CONTROLLER_THIRD_PARTY, "net.sf.jung2"),
+
             // VTN Manager bundels.
             mavenBundle(VTN, "manager"),
             mavenBundle(VTN, "manager.model"),
             mavenBundle(VTN, "manager.implementation"),
-            //mavenBundle(VTN, "manager.neutron"),
             mavenBundle(VTN, "manager.it.ofmock"),
             mavenBundle(VTN, "manager.it.ownermock"),
             mavenBundle(VTN, "manager.it.util"),
 
-            // Neutron bundles.
-            //mavenBundle(NEUTRON, "neutron-spi"),
-            //mavenBundle(NEUTRON, "transcriber"),
-            //mavenBundle(NEUTRON, "model"),
-
-            // Netty bundles.
-            mavenBundle(NETTY, "netty-buffer"),
-            mavenBundle(NETTY, "netty-codec"),
-            mavenBundle(NETTY, "netty-common"),
-            mavenBundle(NETTY, "netty-handler"),
-            mavenBundle(NETTY, "netty-transport"),
-
-            // OVSDB bundles.
-            mavenBundle(OVSDB, "library"),
-            mavenBundle(OVSDB, "schema.openvswitch"),
-            mavenBundle(OVSDB, "schema.hardwarevtep"),
-
             // Load JUnit and Mockito bundles.
-            TestHelper.junitAndMockitoBundles());
-    }
-
-    /**
-     * Return Pax Exam option to load OSGi bundles for northbound API tests.
-     *
-     * @return  A {@link Option} instance.
-     */
-    public static Option vtnManagerNorthboundBundles() {
-        int sysLevel = Constants.START_LEVEL_SYSTEM_BUNDLES;
-
-        return new DefaultCompositeOption(
-            vtnManagerCommonBundles(),
-
-            // Required by Tomcat.
-            systemProperty("osgi.compatibility.bootdelegation").value("true"),
-
-            // Jackson bundles.
-            mavenBundle(JACKSON_JAXRS, "jackson-jaxrs-json-provider"),
-            mavenBundle(JACKSON_JAXRS, "jackson-jaxrs-base"),
-            mavenBundle(JACKSON_MODULE, "jackson-module-jaxb-annotations"),
-
-            // Jettison bundles.
-            mavenBundle(JETTISON, "jettison"),
-
-            // Equinox SDK.
-            mavenBundle(EQUINOX_SDK, "javax.servlet.jsp"),
-
-            // GeminiWeb bundles.
-            mavenBundle(GEMINIWEB, "org.eclipse.gemini.web.core"),
-            mavenBundle(GEMINIWEB, "org.eclipse.gemini.web.extender"),
-            mavenBundle(GEMINIWEB, "org.eclipse.gemini.web.tomcat"),
-            mavenBundle(GEMINIWEB, "org.eclipse.virgo.util.common"),
-            mavenBundle(GEMINIWEB, "org.eclipse.virgo.util.io"),
-            mavenBundle(GEMINIWEB, "org.eclipse.virgo.util.math"),
-            mavenBundle(GEMINIWEB, "org.eclipse.virgo.util.osgi"),
-            mavenBundle(GEMINIWEB, "org.eclipse.virgo.util.osgi.manifest"),
-            mavenBundle(GEMINIWEB, "org.eclipse.virgo.util.parser.manifest"),
-
-            // Orbit bundles.
-            mavenBundle(ORBIT, "javax.activation"),
-            mavenBundle(ORBIT, "javax.annotation"),
-            mavenBundle(ORBIT, "javax.ejb"),
-            mavenBundle(ORBIT, "javax.el"),
-            mavenBundle(ORBIT, "javax.mail.glassfish"),
-            mavenBundle(ORBIT, "javax.xml.rpc"),
-            mavenBundle(ORBIT, "org.apache.catalina"),
-
-            // These are bundle fragments that can't be started on its own.
-            mavenBundle(ORBIT, "org.apache.catalina.ha").noStart(),
-            mavenBundle(ORBIT, "org.apache.catalina.tribes").noStart(),
-            mavenBundle(ORBIT, "org.apache.coyote").noStart(),
-            mavenBundle(ORBIT, "org.apache.jasper").noStart(),
-
-            mavenBundle(ORBIT, "org.apache.el"),
-            mavenBundle(ORBIT, "org.apache.juli.extras"),
-            mavenBundle(ORBIT, "org.apache.tomcat.api"),
-            mavenBundle(ORBIT, "org.apache.tomcat.util").noStart(),
-            mavenBundle(ORBIT, "javax.servlet.jsp.jstl"),
-            mavenBundle(ORBIT, "javax.servlet.jsp.jstl.impl"),
-
-            // Spring Framework bundles.
-            mavenBundle(SPRING_FRAMEWORK, "org.springframework.asm"),
-            mavenBundle(SPRING_FRAMEWORK, "org.springframework.aop"),
-            mavenBundle(SPRING_FRAMEWORK, "org.springframework.context"),
-            mavenBundle(SPRING_FRAMEWORK,
-                        "org.springframework.context.support"),
-            mavenBundle(SPRING_FRAMEWORK, "org.springframework.core"),
-            mavenBundle(SPRING_FRAMEWORK, "org.springframework.beans"),
-            mavenBundle(SPRING_FRAMEWORK, "org.springframework.expression"),
-            mavenBundle(SPRING_FRAMEWORK, "org.springframework.web"),
-            mavenBundle(SPRING_FRAMEWORK, "org.springframework.web.servlet"),
-            mavenBundle(SPRING_FRAMEWORK, "org.springframework.transaction"),
-            mavenBundle(SPRING_FRAMEWORK_SECURITY, "spring-security-config"),
-            mavenBundle(SPRING_FRAMEWORK_SECURITY, "spring-security-core"),
-            mavenBundle(SPRING_FRAMEWORK_SECURITY, "spring-security-web"),
-            mavenBundle(SPRING_FRAMEWORK_SECURITY, "spring-security-taglibs"),
-
-            // Miscellaneous.
-            mavenBundle("org.ow2.chameleon.management", "chameleon-mbeans"),
-            mavenBundle("org.aopalliance", "com.springsource.org.aopalliance"),
-            mavenBundle("commons-io", "commons-io"),
-            mavenBundle("commons-fileupload", "commons-fileupload"),
-            mavenBundle("commons-codec", "commons-codec"),
-            mavenBundle("virgomirror",
-                        "org.eclipse.jdt.core.compiler.batch"),
-            mavenBundle(ECLIPSELINK, "javax.persistence"),
-
-            // AD-SAL NorthBound API bundles.
-            mavenBundle(TestHelper.CONTROLLER, "switchmanager"),
-            mavenBundle(TestHelper.CONTROLLER, "usermanager"),
-            mavenBundle(TestHelper.CONTROLLER, "usermanager.implementation"),
-            mavenBundle(TestHelper.CONTROLLER, "security").noStart(),
-            mavenBundle(TestHelper.CONTROLLER, "bundlescanner"),
-            mavenBundle(TestHelper.CONTROLLER, "commons.northbound"),
-
-            mavenBundle(CONTROLLER_THIRD_PARTY,
-                        "com.sun.jersey.jersey-servlet"),
-
-            // VTN Manager bundels.
-            mavenBundle(VTN, "manager.northbound"),
-
-            // Jersey needs to be started before the northbound application
-            // bundles, using a lower start level.
-            mavenBundle(JERSEY, "jersey-client"),
-            mavenBundle(JERSEY, "jersey-server").startLevel(sysLevel),
-            mavenBundle(JERSEY, "jersey-core").startLevel(sysLevel));
+            junitBundles(),
+            mavenBundle("org.mockito", "mockito-all"),
+            frameworkProperty("felix.bootdelegation.implicit").value("false"));
     }
 
     /**
@@ -524,18 +347,6 @@ public final class TestOption {
             }
         }
         file.delete();
-    }
-
-    /**
-     * Create a {@link File} instance from the given path components.
-     *
-     * @param parent  Path to the parent directory.
-     * @param comps   Path components in a file path.
-     *                {@code null} must not be passed.
-     * @return  A {@link File} instance associated with the given path.
-     */
-    public static File createPath(String parent, String ... comps) {
-        return createPath(new File(parent), comps);
     }
 
     /**
@@ -627,5 +438,97 @@ public final class TestOption {
                 throw new IllegalStateException("close() failed: " + c, e);
             }
         }
+    }
+
+    /**
+     * Return Pax Exam option that loads the MD-SAL bundles.
+     *
+     * @return  An {@link Option} instance that loads the MD-SAL bundles.
+     */
+    private static Option mdSalBundles() {
+        return new DefaultCompositeOption(
+            // YANG tools
+            mavenBundle(YANGTOOLS, "concepts"),
+            mavenBundle(YANGTOOLS, "util"),
+            mavenBundle(YANGTOOLS, "yang-common"),
+            mavenBundle(YANGTOOLS, "object-cache-api"),
+            mavenBundle(YANGTOOLS, "object-cache-guava"),
+            mavenBundle(YANGTOOLS, "yang-data-api"),
+            mavenBundle(YANGTOOLS, "yang-data-util"),
+            mavenBundle(YANGTOOLS, "yang-data-impl"),
+            mavenBundle(YANGTOOLS, "yang-model-api"),
+            mavenBundle(YANGTOOLS, "yang-model-util"),
+            mavenBundle(YANGTOOLS, "yang-parser-api"),
+            mavenBundle(YANGTOOLS, "yang-parser-impl"),
+
+            // MD-SAL
+            mavenBundle(MDSAL, "yang-binding"),
+            mavenBundle(MDSAL, "mdsal-binding-generator-api"),
+            mavenBundle(MDSAL, "mdsal-binding-generator-util"),
+            mavenBundle(MDSAL, "mdsal-binding-generator-impl"),
+            mavenBundle(MDSAL, "mdsal-binding-dom-codec"),
+
+            // Controller
+            mavenBundle(CONTROLLER, "sal-common-api"),
+            mavenBundle(CONTROLLER, "sal-common-impl"),
+            mavenBundle(CONTROLLER, "sal-binding-util"),
+            mavenBundle(CONTROLLER, "sal-common-util"),
+            mavenBundle(CONTROLLER, "sal-core-api").update(),
+            mavenBundle(CONTROLLER, "sal-binding-api"),
+            mavenBundle(CONTROLLER, "sal-broker-impl"),
+            mavenBundle(CONTROLLER, "sal-dom-config"),
+            mavenBundle(CONTROLLER, "sal-inmemory-datastore"),
+            mavenBundle(CONTROLLER, "sal-dom-broker-config"),
+            mavenBundle(CONTROLLER, "sal-core-spi").update(),
+            mavenBundle(CONTROLLER, "sal-binding-broker-impl"),
+            mavenBundle(CONTROLLER, "sal-binding-config"),
+            mavenBundle(CONTROLLER, "config-api"),
+            mavenBundle(CONTROLLER, "config-manager"),
+            mavenBundle(CONTROLLER, "config-util"),
+            mavenBundle(CONTROLLER, "config-manager-facade-xml"),
+            mavenBundle(CONTROLLER, "yang-jmx-generator"),
+            mavenBundle(CONTROLLER, "logback-config"),
+            mavenBundle(CONTROLLER, "config-persister-api"),
+            mavenBundle(CONTROLLER, "config-persister-impl"),
+            mavenBundle(CONTROLLER,
+                        "config-persister-file-xml-adapter").noStart(),
+
+            // Requisites
+            systemPackages("sun.nio.ch", "sun.misc"),
+            mavenBundle("org.apache.commons", "commons-lang3"),
+            mavenBundle("com.google.guava", "guava"),
+            mavenBundle("com.github.romix", "java-concurrent-hash-trie-map"),
+            mavenBundle("org.javassist", "javassist"),
+            mavenBundle("org.antlr", "antlr4-runtime"),
+            mavenBundle("com.lmax", "disruptor"),
+            mavenBundle("commons-codec", "commons-codec"),
+            mavenBundle("commons-io", "commons-io"),
+            mavenBundle("org.eclipse.persistence",
+                        "org.eclipse.persistence.core"),
+            mavenBundle("org.eclipse.persistence",
+                        "org.eclipse.persistence.moxy"));
+    }
+
+    /**
+     * Return path to the temporary directory.
+     *
+     * @return  Path to the temporary directory.
+     */
+    private static File getTmpDirectory() {
+        File dir = tmpDirectory;
+        if (dir == null) {
+            // Determine the temporary directory.
+            String path = System.getProperty(VTN_PROP_TMPDIR);
+            if (path == null || path.isEmpty()) {
+                String msg = "Temporary directory is not specified.";
+                LOG.error(msg);
+                throw new IllegalStateException(msg);
+            }
+
+            dir = new File(path);
+            tmpDirectory = dir;
+        }
+
+        return dir;
     }
 }

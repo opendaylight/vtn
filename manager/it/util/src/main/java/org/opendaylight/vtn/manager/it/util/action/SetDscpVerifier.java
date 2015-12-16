@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -28,7 +28,7 @@ public final class SetDscpVerifier extends ActionVerifier {
     /**
      * The DSCP value to be set.
      */
-    private final byte  dscp;
+    private final short  dscp;
 
     /**
      * Ensure that the specified action is an expected SET_NW_TOS action.
@@ -36,12 +36,12 @@ public final class SetDscpVerifier extends ActionVerifier {
      * @param it  Action list iterator.
      * @param d   Expected DSCP value.
      */
-    public static void verify(ListIterator<Action> it, byte d) {
+    public static void verify(ListIterator<Action> it, short d) {
         SetNwTosActionCase act = verify(it, SetNwTosActionCase.class);
         SetNwTosAction snta = act.getSetNwTosAction();
         Integer value = snta.getTos();
         assertNotNull(value);
-        assertEquals(d, value.byteValue());
+        assertEquals(d, value.shortValue());
     }
 
     /**
@@ -49,7 +49,7 @@ public final class SetDscpVerifier extends ActionVerifier {
      *
      * @param d  The DSCP value to be set.
      */
-    public SetDscpVerifier(byte d) {
+    public SetDscpVerifier(short d) {
         dscp = d;
     }
 
@@ -58,7 +58,7 @@ public final class SetDscpVerifier extends ActionVerifier {
      *
      * @return  The DSCP value to be set.
      */
-    public byte setDscp() {
+    public short setDscp() {
         return dscp;
     }
 

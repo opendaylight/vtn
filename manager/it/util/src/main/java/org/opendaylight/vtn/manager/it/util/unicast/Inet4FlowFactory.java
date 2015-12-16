@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -21,7 +21,7 @@ public class Inet4FlowFactory extends UnicastFlowFactory {
     /**
      * Default IP protocl number.
      */
-    private static final byte  DEFAULT_PROTOCOL = (byte)200;
+    private static final short  DEFAULT_PROTOCOL = (short)200;
 
     /**
      * Raw payload for test packet.
@@ -34,12 +34,12 @@ public class Inet4FlowFactory extends UnicastFlowFactory {
     /**
      * Protocol number.
      */
-    private byte  protocol = DEFAULT_PROTOCOL;
+    private short  protocol = DEFAULT_PROTOCOL;
 
     /**
      * IPv4 DSCP value.
      */
-    private Byte  inet4Dscp;
+    private Short  inet4Dscp;
 
     /**
      * Construct a new instance.
@@ -55,16 +55,16 @@ public class Inet4FlowFactory extends UnicastFlowFactory {
      *
      * @return  The IP protocol number to be used for test.
      */
-    public byte getProtocol() {
+    public short getProtocol() {
         return protocol;
     }
 
     /**
      * Return the IPv4 DSCP value to be used for test.
      *
-     * @return  A {@link Byte} instance or {@code null}.
+     * @return  A {@link Short} instance or {@code null}.
      */
-    public Byte getDscp() {
+    public Short getDscp() {
         return inet4Dscp;
     }
 
@@ -74,7 +74,7 @@ public class Inet4FlowFactory extends UnicastFlowFactory {
      * @param proto  IP protocol number.
      * @return  This instance.
      */
-    public Inet4FlowFactory setProtocol(byte proto) {
+    public Inet4FlowFactory setProtocol(short proto) {
         protocol = proto;
         return this;
     }
@@ -85,8 +85,8 @@ public class Inet4FlowFactory extends UnicastFlowFactory {
      * @param dscp  DSCP value.
      * @return  This instance.
      */
-    public Inet4FlowFactory setDscp(byte dscp) {
-        inet4Dscp = Byte.valueOf(dscp);
+    public Inet4FlowFactory setDscp(short dscp) {
+        inet4Dscp = Short.valueOf(dscp);
         return this;
     }
 
@@ -114,7 +114,7 @@ public class Inet4FlowFactory extends UnicastFlowFactory {
         setRawPayload(i4fc);
 
         if (inet4Dscp != null) {
-            i4fc.setDscp(inet4Dscp.byteValue());
+            i4fc.setDscp(inet4Dscp.shortValue());
         }
 
         return efc;

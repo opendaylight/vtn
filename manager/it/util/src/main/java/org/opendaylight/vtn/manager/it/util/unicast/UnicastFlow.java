@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -166,8 +166,8 @@ public final class UnicastFlow {
             hook.run();
         }
 
-        short inVlan = sourceHost.getVlan();
-        short outVlan = destinationHost.getVlan();
+        int inVlan = sourceHost.getVlanId();
+        int outVlan = destinationHost.getVlanId();
         List<ActionVerifier> actions = factory.getActions();
         if (packetRoute != null) {
             // Ensure that the packet was sent to the egress port.

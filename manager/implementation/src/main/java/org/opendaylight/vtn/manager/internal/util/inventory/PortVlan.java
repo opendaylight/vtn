@@ -86,7 +86,7 @@ public final class PortVlan {
      *
      * @return  VLAN ID.
      */
-    public int  getVlanId() {
+    public int getVlanId() {
         return vlanId;
     }
 
