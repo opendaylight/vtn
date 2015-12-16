@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -36,7 +36,7 @@ import org.opendaylight.vtn.manager.internal.util.flow.FlowStatsUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.GetFlowStatsRpc;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 
-import org.opendaylight.controller.sal.binding.api.NotificationService;
+import org.opendaylight.controller.md.sal.binding.api.NotificationService;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.VtnFlowEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.flow.stats.history.FlowStatsRecord;

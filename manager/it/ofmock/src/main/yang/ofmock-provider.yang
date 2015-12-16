@@ -24,6 +24,10 @@ module ofmock-provider {
         prefix mdsal;
         revision-date 2013-10-28;
     }
+    import opendaylight-sal-binding-broker-impl {
+        prefix broker;
+        revision-date 2013-10-28;
+    }
 
     description
       "This module contains the base YANG definition for the mock-up of
@@ -60,7 +64,17 @@ module ofmock-provider {
                     refine type {
                         mandatory true;
                         config:required-identity
-                          mdsal:binding-notification-service;
+                          broker:binding-new-notification-service;
+                    }
+                }
+            }
+
+            container notification-publish-service {
+                uses config:service-ref {
+                    refine type {
+                        mandatory true;
+                        config:required-identity
+                          broker:binding-new-notification-publish-service;
                     }
                 }
             }

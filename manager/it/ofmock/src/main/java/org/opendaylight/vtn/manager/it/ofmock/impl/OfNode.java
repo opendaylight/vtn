@@ -29,7 +29,6 @@ import com.google.common.util.concurrent.Futures;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
 
 import org.opendaylight.controller.sal.binding.api.BindingAwareBroker.RoutedRpcRegistration;
-import org.opendaylight.controller.sal.binding.api.NotificationProviderService;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 
 import org.opendaylight.yangtools.concepts.Registration;
@@ -363,13 +362,11 @@ public final class OfNode
      *
      * @param provider  The ofmock provider service.
      * @param ver       OpenFlow protocol version.
-     * @param nsv       A {@link NotificationProviderService} service instance.
      * @param prefix    Protocol prefix of the node.
      * @param dpid      Datapath ID of the node.
      */
     public OfNode(OfMockProvider provider, VtnOpenflowVersion ver,
-                  NotificationProviderService nsv, String prefix,
-                  BigInteger dpid) {
+                  String prefix, BigInteger dpid) {
         ofMockProvider = provider;
         ofVersion = ver;
         datapathId = dpid;

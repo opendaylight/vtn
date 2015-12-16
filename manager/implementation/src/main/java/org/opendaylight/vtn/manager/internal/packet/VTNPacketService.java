@@ -37,7 +37,7 @@ import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorCallback;
 
-import org.opendaylight.controller.sal.binding.api.NotificationService;
+import org.opendaylight.controller.md.sal.binding.api.NotificationService;
 
 import org.opendaylight.yangtools.yang.common.RpcResult;
 
