@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1aa4ed85_10db891c",
+        "filename": "manager/neutron/src/main/config/default-config.xml",
+        "patchSetId": 3
+      },
+      "lineNbr": 31,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-12-17T09:53:25Z",
+      "side": 1,
+      "message": "Should\u0027nt the default poortname be eth1 as per the User guide wiki explanation so that the user need not modify if using the environemtn as suggested in wiki?",
+      "revId": "5115c7c18ae83849fde2670874bc04e9c8dfd45b",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
