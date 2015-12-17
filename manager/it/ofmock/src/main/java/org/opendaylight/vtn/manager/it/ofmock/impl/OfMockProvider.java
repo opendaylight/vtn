@@ -43,11 +43,12 @@ import org.opendaylight.vtn.manager.it.ofmock.OfMockService;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.binding.api.NotificationPublishService;
+import org.opendaylight.controller.md.sal.binding.api.NotificationService;
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
-import org.opendaylight.controller.sal.binding.api.NotificationProviderService;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 
 import org.opendaylight.yangtools.yang.binding.DataObject;
@@ -119,9 +120,9 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
     private final RpcProviderRegistry  rpcRegistry;
 
     /**
-     * Notification provider service.
+     * Notification publish service.
      */
-    private final NotificationProviderService  notificationService;
+    private final NotificationPublishService  publishService;
 
     /**
      * The giant lock.
@@ -181,13 +182,15 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
      *
      * @param broker  A {@link DataBroker} service instance.
      * @param rpcReg  A {@link RpcProviderRegistry} service instance.
-     * @param nsv     A {@link NotificationProviderService} service instance.
+     * @param nsv     A {@link NotificationService} service instance.
+     * @param npsv    A {@link NotificationPublishService} service instance.
      */
     public OfMockProvider(DataBroker broker, RpcProviderRegistry rpcReg,
-                          NotificationProviderService nsv) {
+                          NotificationService nsv,
+                          NotificationPublishService npsv) {
         dataBroker = broker;
         rpcRegistry = rpcReg;
-        notificationService = nsv;
+        publishService = npsv;
         nodeListener = new VtnNodeListener(broker);
         portListener = new VtnPortListener(broker);
         routingTable = new RoutingTable(nsv);
@@ -210,7 +213,11 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
      */
     public void publish(Notification n) {
         if (serviceAvailable) {
-            notificationService.publish(n, globalExecutor);
+            try {
+                publishService.putNotification(n);
+            } catch (InterruptedException e) {
+                LOG.error("Interrupted.", e);
+            }
         }
     }
 
@@ -298,7 +305,7 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
      */
     private OfNode createNode(VtnOpenflowVersion ver, String prefix,
                               BigInteger dpid) {
-        OfNode node = new OfNode(this, ver, notificationService, prefix, dpid);
+        OfNode node = new OfNode(this, ver, prefix, dpid);
         String nid = node.getNodeIdentifier();
         node.register(rpcRegistry);
         OfNode old = switches.put(nid, node);

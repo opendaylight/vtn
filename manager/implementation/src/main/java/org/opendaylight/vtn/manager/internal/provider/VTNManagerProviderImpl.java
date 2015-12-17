@@ -65,13 +65,14 @@ import org.opendaylight.vtn.manager.internal.util.tx.TxSyncFuture;
 import org.opendaylight.vtn.manager.internal.vnode.VTenantManager;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.binding.api.NotificationPublishService;
+import org.opendaylight.controller.md.sal.binding.api.NotificationService;
 import org.opendaylight.controller.md.sal.common.api.clustering.CandidateAlreadyRegisteredException;
 import org.opendaylight.controller.md.sal.common.api.clustering.Entity;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipCandidateRegistration;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListener;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListenerRegistration;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipService;
-import org.opendaylight.controller.sal.binding.api.NotificationProviderService;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 
 import org.opendaylight.yangtools.yang.binding.Notification;
@@ -129,6 +130,11 @@ public final class VTNManagerProviderImpl
     private static final long  TIMER_SHUTDOWN_TIMEOUT = 10000L;
 
     /**
+     * The number of seconds to wait for completion of sending notification.
+     */
+    private static final int  PUBLISH_TIMEOUT = 10;
+
+    /**
      * Internal state that indicates the VTN Manager is active.
      */
     private static final int  STATE_ACTIVE = 0;
@@ -159,9 +165,9 @@ public final class VTNManagerProviderImpl
     private final RpcProviderRegistry  rpcRegistry;
 
     /**
-     * Notification provider service.
+     * Notification publish service.
      */
-    private final NotificationProviderService  notificationService;
+    private final NotificationPublishService  publishService;
 
     /**
      * Entity ownership service.
@@ -222,17 +228,19 @@ public final class VTNManagerProviderImpl
      *                bundle that contains this class.
      * @param broker  A {@link DataBroker} service instance.
      * @param rpcReg  A {@link RpcProviderRegistry} service instance.
-     * @param nsv     A {@link NotificationProviderService} service instance.
+     * @param nsv     A {@link NotificationService} service instance.
+     * @param npsv    A {@link NotificationPublishService} service instance.
      * @param eos     A {@link EntityOwnershipService} serivce instance.
      */
     public VTNManagerProviderImpl(BundleContext bctx, DataBroker broker,
                                   RpcProviderRegistry rpcReg,
-                                  NotificationProviderService nsv,
+                                  NotificationService nsv,
+                                  NotificationPublishService npsv,
                                   EntityOwnershipService eos) {
         implBundle = bctx.getBundle();
         dataBroker = broker;
         rpcRegistry = rpcReg;
-        notificationService = nsv;
+        publishService = npsv;
         entityOwnerService = eos;
         globalExecutor =
             new VTNThreadPool("VTN Async Thread", THREAD_POOL_MAXSIZE,
@@ -613,8 +621,23 @@ public final class VTNManagerProviderImpl
      * {@inheritDoc}
      */
     @Override
-    public void publish(Notification n) {
-        notificationService.publish(n, globalExecutor);
+    public void publish(final Notification n) {
+        try {
+            ListenableFuture<? extends Object> f = publishService.
+                offerNotification(n, PUBLISH_TIMEOUT, TimeUnit.SECONDS);
+            Futures.addCallback(f, new FutureCallback<Object>() {
+                @Override
+                public void onSuccess(Object result) {
+                }
+
+                @Override
+                public void onFailure(Throwable cause) {
+                    LOG.error("Failed to publish notification: " + n, cause);
+                }
+            });
+        } catch (InterruptedException e) {
+            LOG.error("Interrupted while sending notification: " + n, e);
+        }
     }
 
     /**

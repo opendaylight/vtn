@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,18 +8,23 @@
 
 package org.opendaylight.vtn.manager.internal.util;
 
-import org.junit.Test;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import org.mockito.Mockito;
+import org.junit.Test;
 
 import org.slf4j.Logger;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.sal.binding.api.NotificationService;
+import org.opendaylight.controller.md.sal.binding.api.NotificationService;
 
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
-import org.opendaylight.yangtools.yang.binding.NotificationListener;
 
 /**
  * JUnit test for {@link SalNotificationListener}.
@@ -41,7 +46,7 @@ public class SalNotificationListenerTest extends TestBase {
         protected Logger getLogger() {
             Logger log = logger;
             if (log == null) {
-                log = Mockito.mock(Logger.class);
+                log = mock(Logger.class);
                 logger = log;
             }
             return log;
@@ -61,28 +66,25 @@ public class SalNotificationListenerTest extends TestBase {
         // Register a listener.
         TestListener listener = new TestListener();
         Logger logger = listener.getLogger();
-        NotificationService nsv = Mockito.mock(NotificationService.class);
+        NotificationService nsv = mock(NotificationService.class);
         @SuppressWarnings("unchecked")
-        ListenerRegistration<NotificationListener> reg =
-            Mockito.mock(ListenerRegistration.class);
-        Mockito.when(nsv.registerNotificationListener(listener)).
-            thenReturn(reg);
+        ListenerRegistration<TestListener> reg =
+            mock(ListenerRegistration.class);
+        when(nsv.registerNotificationListener(listener)).thenReturn(reg);
         listener.registerListener(nsv);
-        Mockito.verify(nsv).registerNotificationListener(listener);
-        Mockito.verify(reg, Mockito.never()).close();
-        Mockito.verify(logger, Mockito.never()).
-            error(Mockito.anyString(), Mockito.any(Throwable.class));
-        Mockito.verify(logger, Mockito.never()).error(Mockito.anyString());
+        verify(nsv).registerNotificationListener(listener);
+        verify(reg, never()).close();
+        verify(logger, never()).error(anyString(), any(Throwable.class));
+        verify(logger, never()).error(anyString());
 
         // Unregister a listener.
         // Registration should be closed only one time.
         for (int i = 0; i < 10; i++) {
             listener.close();
-            Mockito.verify(nsv).registerNotificationListener(listener);
-            Mockito.verify(reg).close();
-            Mockito.verify(logger, Mockito.never()).
-                error(Mockito.anyString(), Mockito.any(Throwable.class));
-            Mockito.verify(logger, Mockito.never()).error(Mockito.anyString());
+            verify(nsv).registerNotificationListener(listener);
+            verify(reg).close();
+            verify(logger, never()).error(anyString(), any(Throwable.class));
+            verify(logger, never()).error(anyString());
         }
     }
 
@@ -97,11 +99,10 @@ public class SalNotificationListenerTest extends TestBase {
     public void testRegistrationError() {
         TestListener listener = new TestListener();
         Logger logger = listener.getLogger();
-        NotificationService nsv = Mockito.mock(NotificationService.class);
+        NotificationService nsv = mock(NotificationService.class);
         IllegalArgumentException iae =
             new IllegalArgumentException("Bad argument");
-        Mockito.when(nsv.registerNotificationListener(listener)).
-            thenThrow(iae);
+        when(nsv.registerNotificationListener(listener)).thenThrow(iae);
 
         String msg = null;
         try {
@@ -114,16 +115,16 @@ public class SalNotificationListenerTest extends TestBase {
             assertEquals(msg, e.getMessage());
         }
 
-        Mockito.verify(nsv).registerNotificationListener(listener);
-        Mockito.verify(logger).error(msg, iae);
-        Mockito.verify(logger, Mockito.never()).error(Mockito.anyString());
+        verify(nsv).registerNotificationListener(listener);
+        verify(logger).error(msg, iae);
+        verify(logger, never()).error(anyString());
 
         // close() should do nothing.
         for (int i = 0; i < 10; i++) {
             listener.close();
-            Mockito.verify(nsv).registerNotificationListener(listener);
-            Mockito.verify(logger).error(msg, iae);
-            Mockito.verify(logger, Mockito.never()).error(Mockito.anyString());
+            verify(nsv).registerNotificationListener(listener);
+            verify(logger).error(msg, iae);
+            verify(logger, never()).error(anyString());
         }
     }
 
@@ -139,31 +140,30 @@ public class SalNotificationListenerTest extends TestBase {
         // Register a listener.
         TestListener listener = new TestListener();
         Logger logger = listener.getLogger();
-        NotificationService nsv = Mockito.mock(NotificationService.class);
+        NotificationService nsv = mock(NotificationService.class);
         @SuppressWarnings("unchecked")
-        ListenerRegistration<NotificationListener> reg =
-            Mockito.mock(ListenerRegistration.class);
-        Mockito.when(nsv.registerNotificationListener(listener)).
+        ListenerRegistration<TestListener> reg =
+            mock(ListenerRegistration.class);
+        when(nsv.registerNotificationListener(listener)).
             thenReturn(reg);
         listener.registerListener(nsv);
-        Mockito.verify(nsv).registerNotificationListener(listener);
-        Mockito.verify(reg, Mockito.never()).close();
-        Mockito.verify(logger, Mockito.never()).
-            error(Mockito.anyString(), Mockito.any(Throwable.class));
-        Mockito.verify(logger, Mockito.never()).error(Mockito.anyString());
+        verify(nsv).registerNotificationListener(listener);
+        verify(reg, never()).close();
+        verify(logger, never()).error(anyString(), any(Throwable.class));
+        verify(logger, never()).error(anyString());
 
         // Unregister a listener.
         String msg = "Failed to close instance: " + reg;
         IllegalArgumentException iae =
             new IllegalArgumentException("Bad argument");
-        Mockito.doThrow(iae).when(reg).close();
+        doThrow(iae).when(reg).close();
 
         for (int i = 0; i < 10; i++) {
             listener.close();
-            Mockito.verify(nsv).registerNotificationListener(listener);
-            Mockito.verify(reg).close();
-            Mockito.verify(logger).error(msg, iae);
-            Mockito.verify(logger, Mockito.never()).error(Mockito.anyString());
+            verify(nsv).registerNotificationListener(listener);
+            verify(reg).close();
+            verify(logger).error(msg, iae);
+            verify(logger, never()).error(anyString());
         }
     }
 }

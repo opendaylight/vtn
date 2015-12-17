@@ -1,10 +1,9 @@
 /*
- * Copyright (c) 2015 NEC Corporation
- * All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License v1.0 which accompanies this
- * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+ * terms of the Eclipse Public License v1.0 which accompanies this distribution,
+ * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
 package org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.it.ofmock.provider.rev150209;
@@ -128,9 +127,10 @@ public class OfMockProviderModule extends AbstractOfMockProviderModule {
      * @return  An {@link OfMockProvider} instance.
      */
     private OfMockProvider createProvider() {
-        return new OfMockProvider(getDataBrokerDependency(),
-                                  getRpcRegistryDependency(),
-                                  getNotificationServiceDependency());
+        return new OfMockProvider(
+            getDataBrokerDependency(), getRpcRegistryDependency(),
+            getNotificationServiceDependency(),
+            getNotificationPublishServiceDependency());
     }
 
     /**

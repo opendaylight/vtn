@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -27,10 +27,9 @@ import edu.uci.ics.jung.graph.util.Pair;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockLink;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
 
-import org.opendaylight.controller.sal.binding.api.NotificationService;
+import org.opendaylight.controller.md.sal.binding.api.NotificationService;
 
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
-import org.opendaylight.yangtools.yang.binding.NotificationListener;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.RoutingUpdated;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.VtnTopologyListener;
@@ -57,7 +56,7 @@ public final class RoutingTable extends SparseMultigraph<String, OfMockLink>
     /**
      * Registration of the notification listener.
      */
-    private final AtomicReference<ListenerRegistration<NotificationListener>> registration =
+    private final AtomicReference<ListenerRegistration<RoutingTable>> registration =
         new AtomicReference<>();
 
     /**
@@ -444,8 +443,7 @@ public final class RoutingTable extends SparseMultigraph<String, OfMockLink>
      */
     @Override
     public void close() {
-        ListenerRegistration<NotificationListener> reg =
-            registration.getAndSet(null);
+        ListenerRegistration<RoutingTable> reg = registration.getAndSet(null);
         if (reg != null) {
             try {
                 reg.close();
