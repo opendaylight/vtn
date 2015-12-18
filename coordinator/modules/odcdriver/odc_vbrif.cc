@@ -180,8 +180,7 @@ std::string OdcVbrIfCommand::get_vbrif_url(key_vbr_if_t& vbrif_key) {
   ODC_FUNC_TRACE;
   char* vtnname = NULL;
   std::string url = "";
-  url.append(BASE_URL);
-  url.append(CONTAINER_NAME);
+  url.append(RESTCONF_BASE);
   url.append(VTNS);
   url.append("/");
   vtnname = reinterpret_cast<char*>(vbrif_key.vbr_key.vtn_key.vtn_name);
@@ -196,7 +195,7 @@ std::string OdcVbrIfCommand::get_vbrif_url(key_vbr_if_t& vbrif_key) {
     pfc_log_error("vbr name is empty");
     return "";
   }
-  url.append("/vbridges/");
+  url.append("/vbridge/");
   url.append(vbrname);
 
   char* intfname = reinterpret_cast<char*>(vbrif_key.if_name);
@@ -204,7 +203,7 @@ std::string OdcVbrIfCommand::get_vbrif_url(key_vbr_if_t& vbrif_key) {
     pfc_log_error("interface name is empty");
     return "";
   }
-  url.append("/interfaces/");
+  url.append("/interface/");
   url.append(intfname);
   return url;
 }
@@ -511,12 +510,11 @@ UncRespCode OdcVbrIfCommand::get_vbrif_list(std::string vtn_name,
     return UNC_DRV_RC_ERR_GENERIC;
   }
   std::string url = "";
-  url.append(BASE_URL);
-  url.append(CONTAINER_NAME);
+  url.append(RESTCONF_BASE);
   url.append(VTNS);
   url.append("/");
   url.append(vtn_name);
-  url.append("/vbridges/");
+  url.append("/vbridge/");
   url.append(vbr_name);
   url.append("/interfaces");
 
@@ -554,8 +552,8 @@ UncRespCode OdcVbrIfCommand::parse_vbrif_response(std::string vtn_name,
   json_object* jobj = unc::restjson::JsonBuildParse::
       get_json_object(data);
   if (json_object_is_type(jobj, json_type_null)) {
-    pfc_log_error("json_object_is_null");
-    return UNC_DRV_RC_ERR_GENERIC;
+    pfc_log_error("vbr if is empty");
+    return UNC_RC_SUCCESS;
   }
   uint32_t array_length = 0;
   json_object *json_obj_vbrif = NULL;
@@ -563,9 +561,9 @@ UncRespCode OdcVbrIfCommand::parse_vbrif_response(std::string vtn_name,
   uint32_t ret_val = unc::restjson::JsonBuildParse::parse(jobj, "interface",
                                                           -1, json_obj_vbrif);
   if (json_object_is_type(json_obj_vbrif, json_type_null)) {
-    pfc_log_error("json vbrif is null");
+    pfc_log_error("json vbrif is not present");
     json_object_put(jobj);
-    return UNC_DRV_RC_ERR_GENERIC;
+    return UNC_RC_SUCCESS;
   }
 
   if (restjson::REST_OP_SUCCESS != ret_val) {
