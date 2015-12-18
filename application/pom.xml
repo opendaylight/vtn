@@ -88,8 +88,6 @@
   </build>
 
   <modules>
-    <module>listconfig</module>
     <module>vsemprovider</module>
   </modules>
-
 </project>
