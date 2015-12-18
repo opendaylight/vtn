@@ -18,6 +18,7 @@
 #include <vtn_conf_data_element_op.hh>
 #include <odc_controller.hh>
 #include <tclib_module.hh>
+#include <../../../dist/target/objs/modules/odcdriver/vlanmap.hh>
 #include <string>
 #include <vector>
 #include <sstream>
@@ -97,19 +98,6 @@ class OdcVbrVlanMapCommand: public unc::driver::vtn_driver_command
 
  private:
   /**
-   * @brief                      - get all the vbrvlanmaps inside particular vbr
-   * @param[in] parent_key       - parent key type pointer
-   * @param[in] ctr              - controller pointer
-   * @param[out] cfgnode_vector  - config node vector
-   * @return UncRespCode         - returns UNC_RC_SUCCESS on success
-   *                              /returns UNC_DRV_RC_ERR_GENERIC on failure
-   */
-  UncRespCode get_vbrvlanmap_list(
-      void* parent_key,
-      unc::driver::controller* ctr,
-      std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
-
-  /**
    * @brief                      - parse the VBR_VLANMAP data
    * @param[in] parent_key       - parent type key pointer
    * @param[in] ctr              - controller pointer
@@ -120,8 +108,8 @@ class OdcVbrVlanMapCommand: public unc::driver::vtn_driver_command
    */
   UncRespCode parse_vbrvlanmap_response(
       void *parent_key,
-      unc::driver::controller* ctr,
-      char *data,
+      unc::driver::controller* ctr_ptr,
+      std::list<vlan_conf> &vlan_detail,
       std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
   /**
@@ -137,9 +125,8 @@ class OdcVbrVlanMapCommand: public unc::driver::vtn_driver_command
    */
   UncRespCode fill_config_node_vector(
       void *parent_key,
-      unc::driver::controller* ctr,
-      json_object *jobj,
-      uint32_t arr_idx,
+      unc::driver::controller* ctr_ptr,
+      std::string mapid, uint16_t vlanid,
       std::vector< unc::vtndrvcache::ConfigNode *>&cfgnode_vector);
 
   /**
@@ -150,6 +137,18 @@ class OdcVbrVlanMapCommand: public unc::driver::vtn_driver_command
   std::string get_vbrvlanmap_url(key_vlan_map_t& vbrif_key);
 
   /**
+   * @brief                      - Delete Request Body
+   * @param[in] vlanmap_key      - key structure VBRVLANMAP
+   * @param[in] vlanmap_val      - val structureof VBRVLANMAP
+   * @param[in] logical port id  - validated logical port id
+   * @return json_object         - returns the request body formed in
+   *                               json_object pointer
+   */
+  void delete_request_body(key_vlan_map_t& vlanmap_key,
+                                   pfcdrv_val_vlan_map_t& vlanmap_val,
+                                   ip_vlan_config&  ip_vlan_config_st);
+
+  /**
    * @brief                      - Creates the Request Body
    * @param[in] vlanmap_key      - key structure VBRVLANMAP
    * @param[in] vlanmap_val      - val structureof VBRVLANMAP
@@ -157,8 +156,9 @@ class OdcVbrVlanMapCommand: public unc::driver::vtn_driver_command
    * @return json_object         - returns the request body formed in
    *                               json_object pointer
    */
-  json_object* create_request_body(key_vlan_map_t& vlanmap_key,
+  void create_request_body(key_vlan_map_t& vlanmap_key,
                                    pfcdrv_val_vlan_map_t& vlanmap_val,
+                                   ip_vlan_config&  ip_vlan_config_st,
                                    const std::string &logical_port_id);
 
   /*
@@ -203,6 +203,7 @@ class OdcVbrVlanMapCommand: public unc::driver::vtn_driver_command
    */
   UncRespCode del_existing_vlanmap(
       key_vlan_map_t& vlanmap_key,
+      pfcdrv_val_vlan_map_t& vlanmap_val,
       unc::driver::controller* ctr_ptr,
       const std::string &port_id);
 

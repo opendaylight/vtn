@@ -18,6 +18,8 @@
 #include <vtn_conf_data_element_op.hh>
 #include <odc_controller.hh>
 #include <tclib_module.hh>
+#include <../../../dist/target/objs/modules/odcdriver/vtermif.hh>
+#include <../../../dist/target/objs/modules/odcdriver/vtermif_portmap.hh>
 #include <string>
 #include <vector>
 #include <sstream>
@@ -50,7 +52,7 @@ class OdcVtermIfCommand: public unc::driver::vtn_driver_command
    */
   UncRespCode create_cmd(key_vterm_if_t& vterm_if_key,
                          val_vterm_if_t& vterm_if_val,
-                         unc::driver::controller *conn);
+                         unc::driver::controller *ctr_ptr);
 
   /**
    * @brief                      - Updates VBRIf
@@ -64,7 +66,7 @@ class OdcVtermIfCommand: public unc::driver::vtn_driver_command
   UncRespCode update_cmd(key_vterm_if_t& key,
                          val_vterm_if_t& val_old,
                          val_vterm_if_t& val_new,
-                         unc::driver::controller *conn);
+                         unc::driver::controller *ctr_ptr);
 
   /**
    * @brief                    - Deletes VBRIf
@@ -77,22 +79,7 @@ class OdcVtermIfCommand: public unc::driver::vtn_driver_command
    */
   UncRespCode delete_cmd(key_vterm_if_t& key,
                          val_vterm_if_t& val,
-                             unc::driver::controller *conn);
-
-  /**
-   * @brief                           - get all the vterminal child
-   * @param[in] vtn_name              - vtn name
-   * @param[in] vterminal_name              - vterminal name
-   * @param[in] ctr                   - controller pointer
-   * @param[out] cfgnode_vector       - config node vector
-   * @return UncRespCode              - returns UNC_RC_SUCCESS on successfully retieving a vterminal
-   *                                    child /returns UNC_DRV_RC_ERR_GENERIC on failure
-   */
-  UncRespCode get_vterm_if_list(
-      std::string vtn_name,
-      std::string vterminal_name,
-      unc::driver::controller* ctr,
-      std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
+                         unc::driver::controller *ctr_ptr);
 
   /**
    * @brief      - Method to fetch child configurations for the parent kt
@@ -102,7 +89,7 @@ class OdcVtermIfCommand: public unc::driver::vtn_driver_command
    * @retval     - UNC_RC_SUCCESS / UNC_DRV_RC_ERR_GENERIC
    */
   UncRespCode fetch_config(
-      unc::driver::controller* ctr,
+      unc::driver::controller* ctr_ptr,
       void* parent_key,
       std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
@@ -119,11 +106,10 @@ class OdcVtermIfCommand: public unc::driver::vtn_driver_command
    *                                    response of vterm_if/returns UNC_DRV_RC_ERR_GENERIC on failure
    */
   UncRespCode parse_vterm_if_response(
+      std::list<vterm_if_conf> &vtermif_detail,
       std::string vtn_name,
       std::string vterminal_name,
-      std::string url,
-      unc::driver::controller* ctr,
-      char *data,
+      unc::driver::controller* ctr_ptr,
       std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
   /**
@@ -139,12 +125,12 @@ class OdcVtermIfCommand: public unc::driver::vtn_driver_command
    *                                vector/ returns UNC_DRV_RC_ERR_GENERIC on failure
    */
   UncRespCode fill_config_node_vector(
+      unc::driver::controller* ctr,
+      std::string name,
       std::string vtn_name,
       std::string vterminal_name,
-      json_object *json_obj,
-      uint32_t arr_idx,
-      std::string url,
-      unc::driver::controller* ctr,
+      bool enabled,
+      std::string description,
       std::vector< unc::vtndrvcache::ConfigNode *>&cfgnode_vector);
 
 
@@ -155,9 +141,14 @@ class OdcVtermIfCommand: public unc::driver::vtn_driver_command
    * @param[out] - resp_code  - response code
    * return json_object       - json object
    */
-  json_object*  read_portmap(unc::driver::controller* ctr,
+  /*json_object*  read_portmap(unc::driver::controller* ctr,
                              std::string url,
-                             int &resp_code);
+                             int &resp_code);*/
+  UncRespCode read_portmap(
+      unc::driver::controller* ctr_ptr,
+      key_vterm_if_t& vterm_if_key,
+      std::list<vterm_if> &vtermif_port_detail,
+      std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
   /**
    * @brief                  - Constructs url for vterm_if
@@ -172,18 +163,27 @@ class OdcVtermIfCommand: public unc::driver::vtn_driver_command
    * @param[in]  logical port  - logical port id
    * @return  const char*      - returns the request body formed
    */
-  json_object* create_request_body_port_map(val_vterm_if_t& vterm_if_val,
-                                                const std::string &logical_port_id);
+  void create_request_body_port_map(val_vterm_if_t& vterm_if_val,
+                                    key_vterm_if_t& vterm_if_key,
+                                    const std::string &logical_port_id,
+                                    ip_vtermif_port&  ip_vtermif_port_st);
 
   /**
    * @brief                - Creates the Request Body
    * @param[in] val_vtn    - VTN value structure val_vtn_t
    * @return const char*   - returns the request body formed
    */
-  json_object* create_request_body(val_vterm_if_t& val_vtn);
+  void create_request_body(val_vterm_if_t& val_vtn,
+                             key_vterm_if_t& vterm_if_key,
+                             ip_vterminal_config&  ip_vterminal_config_st);
 
 
-
+  void update_request_body(val_vterm_if_t& val_vterm_if,
+                                              key_vterm_if_t& vterm_if_key,
+                                 ip_vterminal_config&  ip_vterminal_config_st);
+  void delete_request_body(val_vterm_if_t& val_vterm_if,
+                                              key_vterm_if_t& vterm_if_key,
+                                  ip_vterminal_config&  ip_vterminal_config_st);
   /*
    * @brief       - validated the format of logical port id
    * @param[in]   - logical_port_id which needs to be validated
