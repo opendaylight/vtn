@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -19,6 +19,7 @@
 #include <odc_driver_common_defs.hh>
 #include <odc_controller.hh>
 #include <odc_vtn.hh>
+#include <vbr.hh>
 #include <tclib_module.hh>
 #include <string>
 #include <vector>
@@ -82,38 +83,38 @@ class OdcVbrCommand: public unc::driver::vtn_driver_command
   UncRespCode delete_cmd(key_vbr_t& key_vbr,
                          val_vbr_t& val_vbr,
                          unc::driver::controller *ctr);
-
-  /**
-   * @brief                          - get vbr list - gets all the vbridge
-   *                                   under particular vtn
-   * @param[in]                      - vtn name
-   * @param[in] ctr                  - Controller pointer
-   * @param[out] cfg_node_vector     - cfg_node_vector out parameter contains
-   *                                   list of vbridge present for specified vtn
-   *                                   in controller
-   * @return UncRespCode             - returns UNC_RC_SUCCESS on
-   *                                   retrieving the vtn child successfully/
-   *                                   returns UNC_DRV_RC_ERR_GENERIC on fail
-   */
-  UncRespCode get_vbr_list(
-      std::string vtnname,
-      unc::driver::controller* ctr,
-      std::vector<unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
-
+  
   private:
-  /**
-   * @brief               - gets the vbr url
-   * @param[in] key_vbr   - vbr key structure
-   * @return std::string  - returns the url string of vbr
-   */
-  std::string get_vbr_url(key_vbr_t& key_vbr);
 
   /**
    * @brief               - Creates the Request Body
    * @param[in] val_vtn   - VTN value structure val_vtn_t
    * @return const char*  - returns the request body formed
    */
-  json_object* create_request_body(const val_vbr_t& val_vtn);
+  UncRespCode create_request_body(const val_vbr_t& val_vtn,
+                                  key_vbr_t& key_vbr,
+                                  ip_vbridge& ip_vbridge_st);
+
+  /**
+   * @brief               - update Request Body
+   * @param[in] val_vtn   - VTN value structure val_vtn_t
+   * @return const char*  - returns the request body formed
+   */
+  UncRespCode update_request_body(const val_vbr_t& val_vtn,
+                                  key_vbr_t& key_vbr,
+                                  ip_vbridge& ip_vbridge_st);
+
+
+  /**
+   * @brief               - delete Request Body
+   * @param[in] val_vtn   - VTN value structure val_vtn_t
+   * @return const char*  - returns the request body formed
+   */
+  UncRespCode delete_request_body(const val_vbr_t& val_vtn,
+                                  key_vbr_t& key_vbr,
+                                  ip_vbridge& ip_vbridge_st);
+
+
 
   /**
    * @brief                      - parse the vbr response data
@@ -125,9 +126,9 @@ class OdcVbrCommand: public unc::driver::vtn_driver_command
    *                               UNC_DRV_RC_ERR_GENERIC on failure
    */
   UncRespCode parse_vbr_response(
-      char *data,
+      std::list<vbridge_conf> &vbr_detail,
       std::string vtn_name,
-      unc::driver::controller* ctr,
+      unc::driver::controller* ctr_ptr,
       std::vector< unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
 
   /**
@@ -144,10 +145,9 @@ class OdcVbrCommand: public unc::driver::vtn_driver_command
    *                                   UNC_DRV_RC_ERR_GENERIC on failure
    */
   UncRespCode fill_config_node_vector(
-      unc::driver::controller* ctr,
-      json_object *json_obj_vbr,
+      unc::driver::controller* ctr, std::string vbrname,
+      std::string dsescription,
       std::string vtn_name,
-      uint32_t arr_idx,
       std::vector< unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
 
   /**
