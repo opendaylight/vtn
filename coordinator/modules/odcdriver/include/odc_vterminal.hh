@@ -20,6 +20,7 @@
 #include <vtn_conf_data_element_op.hh>
 #include <tclib_module.hh>
 #include <odc_vtn.hh>
+#include <vterminal.hh>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -84,20 +85,6 @@ class OdcVterminalCommand: public unc::driver::vtn_driver_command
   UncRespCode delete_cmd(key_vterm_t& key, val_vterm_t& val,
                          unc::driver::controller *ctr);
 
-   /**
-    * @brief                          - get all the vtns from the VTN Manager
-    * @param[in] ctr                  - Controller pointer
-    * @param[out] cfg_node_vector     - cfg_node_vector - out parameter contains
-    *                                   list of vtns present in controller
-    * @return UncRespCode             - returns UNC_RC_SUCCESS on
-    *                                   success of read all operation/returns
-    *                                   UNC_DRV_RC_ERR_GENERIC on failure
-    */
-   UncRespCode get_vterminal_list(
-       std::string vtnname,
-       unc::driver::controller* ctr,
-       std::vector<unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
-
  private:
 
   /**
@@ -115,9 +102,9 @@ class OdcVterminalCommand: public unc::driver::vtn_driver_command
     */
    UncRespCode fill_config_node_vector(
        unc::driver::controller* ctr,
-       json_object *json_obj_vterm,
+       std::string vterm_name,
        std::string vtn_name,
-       uint32_t arr_idx,
+       std::string description,
        std::vector<unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
 
    /**
@@ -128,7 +115,7 @@ class OdcVterminalCommand: public unc::driver::vtn_driver_command
     * @retval     - UNC_RC_SUCCESS / UNC_DRV_RC_ERR_GENERIC
     */
    UncRespCode fetch_config(
-       unc::driver::controller* ctr,
+       unc::driver::controller* ctr_ptr,
        void* parent_key,
        std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
@@ -138,7 +125,19 @@ class OdcVterminalCommand: public unc::driver::vtn_driver_command
     * @param[in] val         - VTN value structure val_vtn_t
     * @retval - json_object  - returns the request body in json_object
     */
-   json_object* create_request_body (const val_vterm_t& val_vterm);
+   void create_request_body (const val_vterm_t& val_vterm,
+                                   key_vterm_t& key_vterm,
+                                   ip_vterminal& ip_vterminal_st);
+
+   /**
+    * @brief                 - Delete Request Body
+    * @param[in] val         - VTN value structure val_vtn_t
+    * @retval - json_object  - returns the request body in json_object
+    */
+   void delete_request_body (const val_vterm_t& val_vterm,
+                                   key_vterm_t& key_vterm,
+                                   ip_vterminal& ip_vterminal_st);
+
 
    /**
     * @brief                      - parse the vtn response data
@@ -149,18 +148,10 @@ class OdcVterminalCommand: public unc::driver::vtn_driver_command
     *                              on failure
     */
    UncRespCode parse_vterminal_response(
-       char *data,
+       std::list<vterminal_conf> &vterm_detail,
        std::string vtn_name,
-       unc::driver::controller* ctr,
+       unc::driver::controller* ctr_ptr,
        std::vector< unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
-
-   /**
-    * @brief               - gets the vbr url
-    * @param[in] key_vbr   - vbr key structure
-    * @return std::string  - returns the url string of vbr
-    */
-   std::string get_vterminal_url(key_vterm_t& key_vterm);
-
 
  private:
    unc::restjson::ConfFileValues_t conf_file_values_;

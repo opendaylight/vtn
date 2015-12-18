@@ -47,7 +47,7 @@ class RestUtil {
     url_ = url;
     std::string NULL_RESPONSE = "172.16.0.0";
     std::string INVALID_RESPONSE = "172.0.0.0";
-    std::string CREATE_201      = "172.16.0.1";
+    std::string CREATE_200      = "172.16.0.1";
     std::string UPDATE_DELETE_200  = "172.16.0.2";
     std::string READ_VTN_NULL_DATA     = "172.16.0.3";
     std::string CREATE_VBRIF_PORTMAP = "172.16.0.4";
@@ -156,8 +156,8 @@ class RestUtil {
     port_map_null_resp.append
         ("vbr1/interfaces/if_invalid/portmap");
 
-    if (ip_address_.compare(CREATE_201) == 0) {
-      response_->code = 201;
+    if (ip_address_.compare(CREATE_200) == 0) {
+      response_->code = 200;
       return response_;
     } else if (ip_address_.compare(NULL_RESPONSE) ==  0) {
       clear_http_response();
@@ -190,7 +190,7 @@ class RestUtil {
       } else if (url_.compare(port_map_null_resp) == 0) {
         return NULL;
       }
-      response_->code = 201;
+      response_->code = 200;
       return response_;
     } else if (ip_address_.compare(UPDATE_DELETE_VBRIF_PORTMAP) == 0) {
       if (url_.compare(port_map_url_update_valid) == 0) {
@@ -210,7 +210,7 @@ class RestUtil {
         response_->write_data->memory = const_cast<char *>("{\"interface\": [ { \"name\": \"if_valid_update\",\"description\": \"1\" } ] }");
         return response_;
       }
-      response_->code = 204;
+      response_->code = 200;
       return response_;
     }  else if (ip_address_.compare(VBRIF_GET_RESP_EMPTY) == 0) {
       if (url_.compare(port_map_url_update_valid) != 0) {
