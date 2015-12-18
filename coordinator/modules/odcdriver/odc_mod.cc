@@ -303,7 +303,7 @@ pfc_bool_t ODCModule::ping_controller(unc::driver::controller* ctr) {
                           ctr->get_user_name(), ctr->get_pass_word());
   unc::restjson::HttpResponse_t* response =
       rest_util_obj.send_http_request(
-          url, restjson::HTTP_METHOD_GET, NULL, conf_file_values_);
+          url, restjson::HTTP_METHOD_POST, NULL, conf_file_values_);
 
   if (NULL == response) {
     pfc_log_error("Error in getting response from controller");
