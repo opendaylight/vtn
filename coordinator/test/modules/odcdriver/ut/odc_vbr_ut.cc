@@ -543,7 +543,8 @@ TEST(odcdriver,  test_delete_cmd_null_resp) {
   delete ctr;
   ctr = NULL;
 }
-
+#if 0
+//This method doesnot exsist in the Code-gen implementation 
 TEST(odcdriver,  test_get_vbr_list_empty_vtn_name) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
@@ -577,6 +578,7 @@ TEST(odcdriver,  test_get_vbr_list_empty_vtn_name) {
   delete ctr;
   ctr = NULL;
 }
+#endif
 
 TEST(odcdriver,  test_get_vbr_list_null_resp) {
   key_ctr_t key_ctr;
@@ -645,6 +647,10 @@ TEST(odcdriver,  test_get_vbr_list_invalid_resp) {
   delete ctr;
   ctr = NULL;
 }
+
+#if 0 
+// This method doesnot exsist in the Code-gen implementation
+
 TEST(odcdriver,  test_get_vbr_list_valid_resp) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
@@ -679,7 +685,6 @@ TEST(odcdriver,  test_get_vbr_list_valid_resp) {
   delete ctr;
   ctr = NULL;
 }
-
 TEST(odcdriver,  test_get_vbr_list_valid_resp_no_vbr) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
@@ -714,4 +719,4 @@ TEST(odcdriver,  test_get_vbr_list_valid_resp_no_vbr) {
   delete ctr;
   ctr = NULL;
 }
-
+#endif

@@ -298,15 +298,12 @@ UncRespCode OdcVbrVlanMapCommand::get_vbrvlanmap_list(void* parent_key,
   url.append(CONTAINER_NAME);
   url.append(VTNS);
   url.append("/");
-  url.append(vtn_name);
-  url.append("/vbridges/");
-  url.append(vbr_name);
-  url.append("/vlanmaps");
+  url.append("vtn-vlan-map:get-vlan-map");
 
   unc::restjson::RestUtil rest_util_obj(ctr->get_host_address(),
                           ctr->get_user_name(), ctr->get_pass_word());
   unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(
-                 url, restjson::HTTP_METHOD_GET, NULL, conf_file_values_);
+                 url, restjson::HTTP_METHOD_POST, NULL, conf_file_values_);
 
   if (NULL == response) {
     pfc_log_error("%s:Error Occured while getting http response", PFC_FUNCNAME);
@@ -324,7 +321,7 @@ UncRespCode OdcVbrVlanMapCommand::get_vbrvlanmap_list(void* parent_key,
       pfc_log_error("%s:VTN Manager service not operating inside controller %u",
                     PFC_FUNCNAME, resp_code);
     }
-    return UNC_DRV_RC_ERR_GENERIC;
+    return UNC_RC_SUCCESS;
   }
   if (NULL != response->write_data) {
     if (NULL != response->write_data->memory) {
@@ -359,9 +356,9 @@ UncRespCode OdcVbrVlanMapCommand::parse_vbrvlanmap_response(
   uint32_t ret_val = unc::restjson::JsonBuildParse::parse(jobj, "vlanmap",
                                                       -1, json_obj_vbrvlanmap);
   if (json_object_is_type(json_obj_vbrvlanmap, json_type_null)) {
-    pfc_log_error("%s: json vbrvlanmap is null", PFC_FUNCNAME);
+    pfc_log_debug("vlanmap is not present");
     json_object_put(jobj);
-    return UNC_DRV_RC_ERR_GENERIC;
+    return UNC_RC_SUCCESS;
   }
 
   if (restjson::REST_OP_SUCCESS != ret_val) {

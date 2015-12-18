@@ -17,13 +17,13 @@ audit_key_type audit_key[AUDIT_KT_SIZE] = {
                                {UNC_KT_FLOWLIST, UNC_KT_ROOT},
                                {UNC_KT_VBRIDGE, UNC_KT_VTN},
                                {UNC_KT_VTERMINAL, UNC_KT_VTN},
-                               {UNC_KT_VTN_FLOWFILTER, UNC_KT_VTN},
-                               {UNC_KT_VTERM_IF, UNC_KT_VTERMINAL},
-                               {UNC_KT_VBR_IF, UNC_KT_VBRIDGE},
-                               {UNC_KT_VBR_FLOWFILTER, UNC_KT_VBRIDGE},
-                               {UNC_KT_VBRIF_FLOWFILTER, UNC_KT_VBR_IF},
-                               {UNC_KT_VBR_VLANMAP, UNC_KT_VBRIDGE},
-                               {UNC_KT_VTERMIF_FLOWFILTER, UNC_KT_VTERM_IF},
+                               //{UNC_KT_VTN_FLOWFILTER, UNC_KT_VTN},
+                               //{UNC_KT_VTERM_IF, UNC_KT_VTERMINAL},
+                               //{UNC_KT_VBR_IF, UNC_KT_VBRIDGE},
+                               //{UNC_KT_VBR_FLOWFILTER, UNC_KT_VBRIDGE},
+                               //{UNC_KT_VBRIF_FLOWFILTER, UNC_KT_VBR_IF},
+                               //{UNC_KT_VBR_VLANMAP, UNC_KT_VBRIDGE},
+                               //{UNC_KT_VTERMIF_FLOWFILTER, UNC_KT_VTERM_IF},
                              };
 }  // namespace driver
 }  //  namespace unc
