@@ -18,6 +18,8 @@
 #include <vtn_conf_data_element_op.hh>
 #include <odc_controller.hh>
 #include <tclib_module.hh>
+#include <vbrif.hh>
+#include <vbrif_port.hh>
 #include <string>
 #include <vector>
 #include <sstream>
@@ -79,21 +81,6 @@ class OdcVbrIfCommand: public unc::driver::vtn_driver_command
                          unc::driver::controller *conn);
 
   /**
-   * @brief                           - get all the vbr child
-   * @param[in] vtn_name              - vtn name
-   * @param[in] vbr_name              - vbr name
-   * @param[in] ctr                   - controller pointer
-   * @param[out] cfgnode_vector       - config node vector
-   * @return UncRespCode              - returns UNC_RC_SUCCESS on successfully retieving a vbr
-   *                                    child /returns UNC_DRV_RC_ERR_GENERIC on failure
-   */
-  UncRespCode get_vbrif_list(
-      std::string vtn_name,
-      std::string vbr_name,
-      unc::driver::controller* ctr,
-      std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
-
-  /**
    * @brief      - Method to fetch child configurations for the parent kt
    * @param[in]  - controller pointer
    * @param[in]  - parent key type pointer
@@ -101,7 +88,7 @@ class OdcVbrIfCommand: public unc::driver::vtn_driver_command
    * @retval     - UNC_RC_SUCCESS / UNC_DRV_RC_ERR_GENERIC
    */
   UncRespCode fetch_config(
-      unc::driver::controller* ctr,
+      unc::driver::controller* ctr_ptr,
       void* parent_key,
       std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
@@ -120,9 +107,8 @@ class OdcVbrIfCommand: public unc::driver::vtn_driver_command
   UncRespCode parse_vbrif_response(
       std::string vtn_name,
       std::string vbr_name,
-      std::string url,
-      unc::driver::controller* ctr,
-      char *data,
+      unc::driver::controller* ctr_ptr,
+      std::list<vbr_if_conf> &vbrif_detail,
       std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
   /**
@@ -140,11 +126,17 @@ class OdcVbrIfCommand: public unc::driver::vtn_driver_command
   UncRespCode fill_config_node_vector(
       std::string vtn_name,
       std::string vbr_name,
-      json_object *json_obj,
-      uint32_t arr_idx,
-      std::string url,
+      std::string if_name,
+      std::string description,
+      bool admin_status,
       unc::driver::controller* ctr,
-      std::vector< unc::vtndrvcache::ConfigNode *>&cfgnode_vector);
+      std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
+
+  UncRespCode parse_vbrif_port_response(std::string vtn_name,
+                                     std::string vbr_name,
+                                  unc::driver::controller* ctr_ptr,
+                                std::list<portmap_config>  &vbrif_port_detail,
+                 std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
   /**
    * @brief                   - read portmap
@@ -153,16 +145,11 @@ class OdcVbrIfCommand: public unc::driver::vtn_driver_command
    * @param[out] - resp_code  - response code
    * return json_object       - json object
    */
-  json_object*  read_portmap(unc::driver::controller* ctr,
-                             std::string url,
-                             int &resp_code);
-
-    /**
-   * @brief                  - Constructs url for vbrif
-   * @param[in] vbrif_key    - key structure of vbrif key structure
-   * @return                 - returns the url of VBRIf
-   */
-  std::string get_vbrif_url(key_vbr_if_t& vbrif_key);
+  UncRespCode  read_portmap(unc::driver::controller* ctr,
+                            key_vbr_if_t& vbrif_key,
+                            std::list<portmap_config>  &vbrif_port_detail,
+                            std::vector<unc::vtndrvcache::ConfigNode *>
+                            &cfgnode_vector);
 
   /**
    * @brief                    - Creates the Request Body for portmap
@@ -170,15 +157,43 @@ class OdcVbrIfCommand: public unc::driver::vtn_driver_command
    * @param[in]  logical port  - logical port id
    * @return  const char*      - returns the request body formed
    */
-  json_object* create_request_body_port_map(pfcdrv_val_vbr_if_t& vbrif_val,
-                                            const std::string &logical_port_id);
+  /*json_object* create_request_body_port_map(pfcdrv_val_vbr_if_t& vbrif_val,
+                                            vbrport_if& vbrport_if_st,
+                                            const std::string &logical_port_id);*/
+
+  UncRespCode create_request_body_port_map(pfcdrv_val_vbr_if_t& vbrif_val,
+                                    key_vbr_if_t& key,
+                                    const std::string &logical_port_id,
+                                    ip_vbrif_port&  ip_vbrif_port_st);
+  /**
+   * @brief                - Creates the Request Body
+   * @param[in] val_vtn    - VTN value structure val_vtn_t
+   * @return const char*   - returns the request body formed
+   */
+  //json_object* create_request_body(pfcdrv_val_vbr_if_t& val_vtn);
+  UncRespCode create_request_body(pfcdrv_val_vbr_if_t& val_vtn,
+                           key_vbr_if_t& key,
+                           ip_vbridge_config&  ip_vbridge_config_st);
 
   /**
    * @brief                - Creates the Request Body
    * @param[in] val_vtn    - VTN value structure val_vtn_t
    * @return const char*   - returns the request body formed
    */
-  json_object* create_request_body(pfcdrv_val_vbr_if_t& val_vtn);
+  //json_object* create_request_body(pfcdrv_val_vbr_if_t& val_vtn);
+  UncRespCode update_request_body(pfcdrv_val_vbr_if_t& val_vtn,
+                           key_vbr_if_t& key,
+                           ip_vbridge_config&  ip_vbridge_config_st);
+
+  /**
+   * @brief                - Creates the Request Body
+   * @param[in] val_vtn    - VTN value structure val_vtn_t
+   * @return const char*   - returns the request body formed
+   */
+  //json_object* create_request_body(pfcdrv_val_vbr_if_t& val_vtn);
+  UncRespCode delete_request_body(pfcdrv_val_vbr_if_t& val_vtn,
+                           key_vbr_if_t& key,
+                           ip_vbridge_config&  ip_vbridge_config_st);
 
   /*
    * @brief       - validated the format of logical port id
