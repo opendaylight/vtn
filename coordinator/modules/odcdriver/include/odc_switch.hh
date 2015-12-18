@@ -17,7 +17,7 @@
 #include <unc/upll_ipc_enum.h>
 #include <vtndrvintf_defs.h>
 #include <vtn_drv_module.hh>
-#include <../../../dist/target/objs/modules/odcdriver/nodes.hh>
+#include <nodes.hh>
 #include <string>
 #include <list>
 #include <vector>
