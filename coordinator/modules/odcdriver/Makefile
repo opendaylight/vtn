@@ -23,6 +23,7 @@ CODE_GENERATE_SCRIPT	= $(CURDIR)/code_gen.py
 REST_SOURCES		= $(wildcard *.rest)
 REST_HEADERS		= $(REST_SOURCES:%.rest=$(OBJDIR)/%.hh)
 CLEANFILES		+= $(REST_HEADERS)
+CFLAGS  = -I'/../../dist/target/objs/modules/odcdriver/'
 
 include ../rules.mk
 

@@ -235,10 +235,9 @@ public:
     ODC_FUNC_TRACE;
     flowConditions read_all_;
     std::string url = "";
-    url.append(BASE_URL);
-    url.append(CONTAINER_NAME);
+    url.append(RESTCONF_BASE);
     url.append("/");
-    url.append("flowconditions");
+    url.append("vtn-flow-condition:vtn-flow-conditions");
     pfc_log_info("The Flow list URL: %s",url.c_str());
 
     odl_flowlist_http_request flow_cond_request(NULL,url,&read_all_,is_entry_);

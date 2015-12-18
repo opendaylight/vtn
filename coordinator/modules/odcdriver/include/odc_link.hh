@@ -17,7 +17,7 @@
 #include <unc/uppl_common.h>
 #include <vtndrvintf_defs.h>
 #include <vtn_drv_module.hh>
-#include <../../../dist/target/objs/modules/odcdriver/topo.hh>
+#include <topo.hh>
 #include <string>
 #include <list>
 #include <vector>

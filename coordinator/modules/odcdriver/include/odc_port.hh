@@ -18,7 +18,7 @@
 #include <unc/unc_events.h>
 #include <vtndrvintf_defs.h>
 #include <driver/driver_command.hh>
-#include <../../../dist/target/objs/modules/odcdriver/port.hh>
+#include <port.hh>
 #include <string>
 #include <list>
 #include <vector>
