@@ -21,13 +21,13 @@
 namespace unc {
 namespace odcdriver {
 
-const std::string BASE_URL              = "/controller/nb/v2/vtn";
+const std::string BASE_URL              = "/restconf/operations/";
 const std::string BASE_SW_URL           = "/controller/nb/v2/switchmanager";
 const std::string BASE_TOPO_URL         = "/controller/nb/v2/topology";
 const std::string BASE_PORT_URL         = "/controller/nb/v2/statistics";
-const std::string VERSION               = "/version";
+const std::string VERSION               = "vtn-version:get-manager-version";
 const std::string CONTAINER_NAME        = "/default";
-const std::string VTNS                  = "/vtns";
+const std::string VTNS                  = "/vtn:vtns/vtn";
 const std::string FLOWS                 = "/flows";
 const std::string DETAIL                = "/detail";
 const std::string NODES                 = "/nodes";
@@ -70,7 +70,7 @@ const std::string DEFAULT_IP            = "0.0.0.0";
 const std::string SWITCH_BASE           = "openflow:";
 const std::string SWITCH_HEX            = "0000000000000000";
 
-const uint32_t DEFAULT_ODC_PORT         = 8282;
+const uint32_t DEFAULT_ODC_PORT         = 8181;
 const uint32_t DEFAULT_CONNECT_TIME_OUT = 30;
 const uint32_t DEFAULT_REQ_TIME_OUT     = 30;
 const uint32_t PING_INTERVAL            = 10;

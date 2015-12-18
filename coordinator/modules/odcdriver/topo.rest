@@ -181,7 +181,7 @@ interface_members=controller_ip,controller_port
 [vtntopology_parser]
 type=READ
 request_type=object
-request_members=vtntopology
+parse_request_members=vtntopology
 response_members="vtn-topology"
 
 # Request class section
