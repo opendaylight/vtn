@@ -502,12 +502,11 @@ UncRespCode OdcVtermIfCommand::get_vterm_if_list(
     return UNC_DRV_RC_ERR_GENERIC;
   }
   std::string url = "";
-  url.append(BASE_URL);
-  url.append(CONTAINER_NAME);
+  url.append(RESTCONF_BASE);
   url.append(VTNS);
   url.append("/");
   url.append(vtn_name);
-  url.append("/vterminals/");
+  url.append("/vterminal/");
   url.append(vterminal_name);
   url.append("/interfaces");
 
@@ -571,8 +570,8 @@ UncRespCode OdcVtermIfCommand::parse_vterm_if_response(
   json_object* jobj = unc::restjson::JsonBuildParse::
       get_json_object(data);
   if (json_object_is_type(jobj, json_type_null)) {
-    pfc_log_error("json_object_is_null");
-    return UNC_DRV_RC_ERR_GENERIC;
+    pfc_log_debug("No vterm interface present");
+    return UNC_RC_SUCCESS;
   }
   uint32_t array_length = 0;
   json_object *json_obj_vterm_if = NULL;
@@ -580,9 +579,9 @@ UncRespCode OdcVtermIfCommand::parse_vterm_if_response(
   uint32_t ret_val = unc::restjson::JsonBuildParse::parse(jobj, "interface",
                                                       -1, json_obj_vterm_if);
   if (json_object_is_type(json_obj_vterm_if, json_type_null)) {
-    pfc_log_error("json vterm_if is null");
+    pfc_log_error("json vterm_if is not present");
     json_object_put(jobj);
-    return UNC_DRV_RC_ERR_GENERIC;
+    return UNC_RC_SUCCESS;
   }
 
   if (restjson::REST_OP_SUCCESS != ret_val) {
