@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -17,6 +17,7 @@
 #include <unc/upll_ipc_enum.h>
 #include <vtn_conf_data_element_op.hh>
 #include <tclib_module.hh>
+#include <vtn.hh>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -49,7 +50,7 @@ class OdcVtnCommand: public unc::driver::vtn_driver_command
    *                                   UNC_DRV_RC_ERR_GENERIC on failure
    */
   UncRespCode create_cmd(key_vtn_t& key, val_vtn_t& val,
-                         unc::driver::controller *ctr);
+                         unc::driver::controller *ctr_ptr);
 
   /**
    * @brief                          - Frames VTN update command and uses rest client
@@ -64,7 +65,7 @@ class OdcVtnCommand: public unc::driver::vtn_driver_command
    */
   UncRespCode update_cmd(key_vtn_t& key, val_vtn_t& val_old,
                          val_vtn_t& val_new,
-                         unc::driver::controller *ctr);
+                         unc::driver::controller *ctr_ptr);
 
   /**
    * @brief                          - Frames VTN delete command and uses rest
@@ -77,19 +78,7 @@ class OdcVtnCommand: public unc::driver::vtn_driver_command
    *                                   on failure
    */
   UncRespCode delete_cmd(key_vtn_t& key, val_vtn_t& val,
-                         unc::driver::controller *ctr);
-  /**
-   * @brief                          - get all the vtns from the VTN Manager
-   * @param[in] ctr                  - Controller pointer
-   * @param[out] cfg_node_vector      - cfg_node_vector - out parameter contains
-   *                                   list of vtns present in controller
-   * @return UncRespCode         - returns UNC_RC_SUCCESS on
-   *                                   success of read all operation/returns
-   *                                   UNC_DRV_RC_ERR_GENERIC on failure
-   */
-  UncRespCode get_vtn_list(
-      unc::driver::controller* ctr,
-      std::vector<unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
+                         unc::driver::controller *ctr_ptr);
 
   /**
    * @brief      - Method to fetch child configurations for the parent kt
@@ -118,8 +107,8 @@ class OdcVtnCommand: public unc::driver::vtn_driver_command
    *                                   UNC_DRV_RC_ERR_GENERIC on failure
    */
   UncRespCode fill_config_node_vector(
-      json_object *json_obj_vtn,
-      int arr_idx,
+      std::string name,
+      std::string descp,
       std::vector<unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
 
   /**
@@ -127,7 +116,27 @@ class OdcVtnCommand: public unc::driver::vtn_driver_command
    * @param[in] val         - VTN value structure val_vtn_t
    * @retval - json_object  - returns the request body in json_object
    */
-  json_object* create_request_body(const val_vtn_t& val_vtn);
+  UncRespCode create_request_body(const val_vtn_t& val_vtn,
+                           key_vtn_t& key_vtn,
+                           ip_vtn& ip_vtn_st);
+
+  /**
+   * @brief                 - Update Request Body
+   * @param[in] val         - VTN value structure val_vtn_t
+   * @retval - json_object  - returns the request body in json_object
+   */
+  UncRespCode update_request_body(const val_vtn_t& val_vtn,
+                           key_vtn_t& key_vtn,
+                           ip_vtn& ip_vtn_st);
+  /**
+   * @brief                 - delete Request Body
+   * @param[in] val         - VTN value structure val_vtn_t
+   * @retval - json_object  - returns the request body in json_object
+   */
+  UncRespCode delete_request_body(const val_vtn_t& val_vtn,
+                           key_vtn_t& key_vtn,
+                           ip_vtn& ip_vtn_st);
+
 
   /**
    * @brief                      - parse the vtn response data
@@ -138,12 +147,12 @@ class OdcVtnCommand: public unc::driver::vtn_driver_command
    *                              on failure
    */
   UncRespCode parse_vtn_response(
-      char *data,
+      std::list<vtn_conf> &vtn_detail,
       std::vector< unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
 
  private:
   unc::restjson::ConfFileValues_t conf_file_values_;
 };
 }  // namespace odcdriver
-}  // namespace unc
+} //namespace unc
 #endif
