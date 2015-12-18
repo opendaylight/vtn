@@ -14,7 +14,7 @@
 namespace unc {
 namespace driver {
 
-#define AUDIT_KT_SIZE 11
+#define AUDIT_KT_SIZE 4
 
 struct audit_key_type {
   unc_key_type_t key_type;

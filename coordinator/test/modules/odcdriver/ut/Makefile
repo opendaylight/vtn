@@ -81,12 +81,12 @@ VTNDRVINTF_STUB_SOURCES += vtn_drv_module.cc
 TCLIB_SOURCES = tclib_module.cc
 MISC_SOURCES  = ipc_client.cc ipc_server.cc module.cc
 
-UT_SOURCES  += odc_vbr_if_ut.cc
+#UT_SOURCES  += odc_vbr_if_ut.cc
 UT_SOURCES  += odc_vbr_ut.cc
 UT_SOURCES  += odc_vtn_ut.cc
-UT_SOURCES  += odc_mod_ut.cc
+#UT_SOURCES  += odc_mod_ut.cc
 UT_SOURCES  += odc_controller_ut.cc
-UT_SOURCES  += odc_vbr_vlanmap_ut.cc
+#UT_SOURCES  += odc_vbr_vlanmap_ut.cc
 UT_SOURCES  += odc_switch_ut.cc
 UT_SOURCES  += odc_port_ut.cc
 UT_SOURCES  += odc_link_ut.cc
