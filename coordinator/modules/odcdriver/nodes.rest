@@ -195,7 +195,7 @@ interface_members=controller_ip,controller_port
 type=READ
 url=VTN_GETSUPPORT_URL
 request_type=object
-request_members=vtn_nodes
+parse_request_members=vtn_nodes
 response_members="vtn-nodes"
 
 # Request class section

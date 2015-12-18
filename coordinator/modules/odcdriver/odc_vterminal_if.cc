@@ -75,137 +75,151 @@ odc_drv_resp_code_t OdcVtermIfCommand::check_logical_port_id_format(
 }
 
 // Creates Request Body for Port Map
-json_object* OdcVtermIfCommand::create_request_body_port_map(
-    val_vterm_if_t& vterm_if_val, const std::string &logical_port_id) {
+void OdcVtermIfCommand::create_request_body_port_map(
+                                              val_vterm_if_t& vterm_if_val,
+                                              key_vterm_if_t& vterm_if_key,
+                                          const std::string &logical_port_id,
+                                         ip_vtermif_port&  ip_vtermif_port_st){
+
   ODC_FUNC_TRACE;
+  ip_vtermif_port_st.input_vtermif_port_.valid = true;
+  ip_vtermif_port_st.input_vtermif_port_.tenant_name =
+        reinterpret_cast<const char*>(vterm_if_key.vterm_key.vtn_key.vtn_name);
+  ip_vtermif_port_st.input_vtermif_port_.terminal_name =
+          reinterpret_cast<const char*>(vterm_if_key.vterm_key.vterminal_name);
+  ip_vtermif_port_st.input_vtermif_port_.interface_name =
+                  reinterpret_cast<const char*>(vterm_if_key.if_name);
   std::string switch_id = "";
   std::string port_name = "";
   pfc_log_debug("VALUE RECEIVED for LOGICAL PORT %u" ,
                 vterm_if_val.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM]);
 
-  pfc_log_debug("logical_port_id is %s", logical_port_id.c_str());\
+  pfc_log_debug("logical_port_id is %s", logical_port_id.c_str());
       std::string switch_port = logical_port_id.substr(3);
   size_t hyphen_occurence = switch_port.find("-");
   std::string of_switch_id = switch_port.substr(0, hyphen_occurence);
   port_name = switch_port.substr(hyphen_occurence+1);
-  if ((of_switch_id.empty()) || (port_name.empty())) {
-    pfc_log_error("port name or switch id is empty");
-    return NULL;
-  }
   // convert switch id from unsigned decimal to hex string
   int switch_val = atoi(of_switch_id.substr(9).c_str());
   std::stringstream stream;
   stream << std::hex << switch_val;
   switch_id = stream.str();
+  switch_id = SWITCH_BASE + switch_id;
   pfc_log_debug("port name : %s", port_name.c_str());
-  pfc_log_debug("switch id : %s", switch_id.c_str());
-  json_object *jobj_parent = unc::restjson::JsonBuildParse::create_json_obj();
-  json_object *jobj_node = unc::restjson::JsonBuildParse::create_json_obj();
-  json_object *jobj_port = unc::restjson::JsonBuildParse::create_json_obj();
-  int vlanid(0);
+  pfc_log_debug("switch_id : %s", switch_id.c_str());
   if ((UNC_VF_VALID == vterm_if_val.portmap.valid[UPLL_IDX_VLAN_ID_PM])
       &&
       (UNC_VF_VALID == vterm_if_val.portmap.valid[UPLL_IDX_TAGGED_PM])) {
     if (vterm_if_val.portmap.tagged == UPLL_VLAN_TAGGED) {
-      vlanid = vterm_if_val.portmap.vlan_id;
+      ip_vtermif_port_st.input_vtermif_port_.vlan=vterm_if_val.portmap.vlan_id;
     }
-  }
-  if (vlanid >= 0) {
-    uint32_t ret_val = unc::restjson::JsonBuildParse::build<int>
-        ("vlan", vlanid, jobj_parent);
-    if (restjson::REST_OP_SUCCESS != ret_val) {
-      json_object_put(jobj_parent);
-      json_object_put(jobj_node);
-      json_object_put(jobj_port);
-      return NULL;
-    }
-  }
-  uint32_t ret_val = unc::restjson::JsonBuildParse::build<std::string>
-      ("type", "OF", jobj_node);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error("Error in framing req body of type");
-    json_object_put(jobj_parent);
-    json_object_put(jobj_node);
-    json_object_put(jobj_port);
-    return NULL;
   }
   if (!(switch_id.empty())) {
-    ret_val = unc::restjson::JsonBuildParse::build<std::string>
-        ("id", switch_id, jobj_node);
-    if (restjson::REST_OP_SUCCESS != ret_val) {
-      pfc_log_error("Failed in framing json request body for id");
-      json_object_put(jobj_parent);
-      json_object_put(jobj_node);
-      json_object_put(jobj_port);
-      return NULL;
+    ip_vtermif_port_st.input_vtermif_port_.node  = switch_id;
     }
-  }
-  ret_val = unc::restjson::JsonBuildParse::build<json_object*>
-      ("node", jobj_node, jobj_parent);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error("Failed in framing json request body for node");
-    json_object_put(jobj_parent);
-    json_object_put(jobj_node);
-    json_object_put(jobj_port);
-    return NULL;
-  }
-
   if (!(port_name.empty())) {
-    ret_val = unc::restjson::JsonBuildParse::build<std::string>
-        ("name", port_name, jobj_port);
-    if (restjson::REST_OP_SUCCESS != ret_val) {
-      pfc_log_error("Failed in framing json request body for name");
-      json_object_put(jobj_parent);
-      json_object_put(jobj_node);
-      json_object_put(jobj_port);
-      return NULL;
+    ip_vtermif_port_st.input_vtermif_port_.port_name = port_name;
     }
-  }
-  ret_val = unc::restjson::JsonBuildParse::build <json_object*>
-      ("port", jobj_port, jobj_parent);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_debug("Failed in framing json request body for port");
-    json_object_put(jobj_parent);
-    json_object_put(jobj_node);
-    json_object_put(jobj_port);
-    return NULL;
-  }
-
-  return jobj_parent;
 }
 
 
-json_object* OdcVtermIfCommand::create_request_body(val_vterm_if_t&
-                                                    val_vterm_if) {
+void OdcVtermIfCommand::create_request_body(val_vterm_if_t& val_vterm_if,
+                                            key_vterm_if_t& vterm_if_key,
+                                ip_vterminal_config&  ip_vterminal_config_st) {
   ODC_FUNC_TRACE;
-  json_object *jobj = unc::restjson::JsonBuildParse::create_json_obj();
-  int ret_val = 1;
-
+  ip_vterminal_config_st.input_vtermif_.valid = true;
+  ip_vterminal_config_st.input_vtermif_.update_mode =
+                                    reinterpret_cast<const char*>("CREATE");
+  ip_vterminal_config_st.input_vtermif_.operation =
+                                    reinterpret_cast<const char*>("SET");
+  ip_vterminal_config_st.input_vtermif_.tenant_name =
+        reinterpret_cast<const char*>(vterm_if_key.vterm_key.vtn_key.vtn_name);
+  ip_vterminal_config_st.input_vtermif_.terminal_name =
+          reinterpret_cast<const char*>(vterm_if_key.vterm_key.vterminal_name);
+  ip_vterminal_config_st.input_vtermif_.interface_name =
+                  reinterpret_cast<const char*>(vterm_if_key.if_name);
+  ip_vterminal_config_st.input_vtermif_.vtermif_description =
+                        reinterpret_cast<const char*>(val_vterm_if.description);
+  pfc_log_info("vterm des : %s",
+             ip_vterminal_config_st.input_vtermif_.vtermif_description.c_str());
   if (UNC_VF_VALID == val_vterm_if.valid[UPLL_IDX_DESC_VTERMI]) {
-    char* description =
-        reinterpret_cast<char*>(val_vterm_if.description);
-    pfc_log_debug("%s description", description);
-    if (0 != strlen(description)) {
-      ret_val = unc::restjson::JsonBuildParse::build("description",
-                                                     description,
-                                                     jobj);
-      if (restjson::REST_OP_SUCCESS != ret_val) {
-        pfc_log_error("Error in building vterm if req_body description");
-        return NULL;
-      }
-    }
-  }
-  if (UNC_VF_VALID == val_vterm_if.valid[UPLL_IDX_ADMIN_STATUS_VTERMI]) {
+    if (!ip_vterminal_config_st.input_vtermif_.vtermif_description.empty()) {
+       ip_vterminal_config_st.input_vtermif_.vtermif_description.assign(
+                   ip_vterminal_config_st.input_vtermif_.vtermif_description);
+   }
+ }
+ bool admin_status = 0;
+ if (UNC_VF_VALID == val_vterm_if.valid[UPLL_IDX_ADMIN_STATUS_VTERMI]) {
     if (UPLL_ADMIN_ENABLE == val_vterm_if.admin_status) {
-      ret_val = unc::restjson::JsonBuildParse::build("enabled", "true", jobj);
+      if(admin_status != 0){
+        bool enabled = true;
+        ip_vterminal_config_st.input_vtermif_.vtermif_enabled = enabled;
+        pfc_log_info("vterm  enabled : %d", enabled);
+      }
     } else if (UPLL_ADMIN_DISABLE == val_vterm_if.admin_status) {
-      ret_val = unc::restjson::JsonBuildParse::build("enabled", "false", jobj);
-    }
-    if (restjson::REST_OP_SUCCESS != ret_val) {
-      return NULL;
+      if(admin_status == 0){
+        bool enabled = false;
+        ip_vterminal_config_st.input_vtermif_.vtermif_enabled = enabled;
+        pfc_log_info("vterm enabled : %d", enabled);
     }
   }
-  return jobj;
+ }
+}
+
+void OdcVtermIfCommand::update_request_body(val_vterm_if_t& val_vterm_if,
+                                            key_vterm_if_t& vterm_if_key,
+                                ip_vterminal_config&  ip_vterminal_config_st) {
+  ODC_FUNC_TRACE;
+  ip_vterminal_config_st.input_vtermif_.valid = true;
+  ip_vterminal_config_st.input_vtermif_.update_mode =
+                                    reinterpret_cast<const char*>("UPDATE");
+  ip_vterminal_config_st.input_vtermif_.operation =
+                                    reinterpret_cast<const char*>("ADD");
+  ip_vterminal_config_st.input_vtermif_.tenant_name =
+        reinterpret_cast<const char*>(vterm_if_key.vterm_key.vtn_key.vtn_name);
+  ip_vterminal_config_st.input_vtermif_.terminal_name =
+          reinterpret_cast<const char*>(vterm_if_key.vterm_key.vterminal_name);
+  ip_vterminal_config_st.input_vtermif_.interface_name =
+                  reinterpret_cast<const char*>(vterm_if_key.if_name);
+  ip_vterminal_config_st.input_vtermif_.vtermif_description =
+                        reinterpret_cast<const char*>(val_vterm_if.description);
+  pfc_log_info("vterm des : %s",
+            ip_vterminal_config_st.input_vtermif_.vtermif_description.c_str());
+  if (UNC_VF_VALID == val_vterm_if.valid[UPLL_IDX_DESC_VTERMI]) {
+    if (!ip_vterminal_config_st.input_vtermif_.vtermif_description.empty()) {
+      ip_vterminal_config_st.input_vtermif_.vtermif_description.assign(
+                   ip_vterminal_config_st.input_vtermif_.vtermif_description);
+   }
+ }
+ bool admin_status = 0;
+ if (UNC_VF_VALID == val_vterm_if.valid[UPLL_IDX_ADMIN_STATUS_VTERMI]) {
+    if (UPLL_ADMIN_ENABLE == val_vterm_if.admin_status) {
+      if(admin_status != 0){
+        bool enabled = true;
+        ip_vterminal_config_st.input_vtermif_.vtermif_enabled = enabled;
+        pfc_log_info("vterm  enabled : %d", enabled);
+      }
+    } else if (UPLL_ADMIN_DISABLE == val_vterm_if.admin_status) {
+      if(admin_status == 0){
+        bool enabled = false;
+        ip_vterminal_config_st.input_vtermif_.vtermif_enabled = enabled;
+        pfc_log_info("vterm enabled : %d", enabled);
+    }
+  }
+ }
+}
+
+void OdcVtermIfCommand::delete_request_body(val_vterm_if_t& val_vterm_if,
+                                            key_vterm_if_t& vterm_if_key,
+                             ip_vterminal_config&  ip_vterminal_config_st) {
+  ODC_FUNC_TRACE;
+  ip_vterminal_config_st.input_vtermif_.valid = true;
+  ip_vterminal_config_st.input_vtermif_.tenant_name =
+       reinterpret_cast<const char*>(vterm_if_key.vterm_key.vtn_key.vtn_name);
+  ip_vterminal_config_st.input_vtermif_.terminal_name =
+         reinterpret_cast<const char*>(vterm_if_key.vterm_key.vterminal_name);
+  ip_vterminal_config_st.input_vtermif_.interface_name =
+                  reinterpret_cast<const char*>(vterm_if_key.if_name);
 }
 
 
@@ -216,125 +230,84 @@ UncRespCode OdcVtermIfCommand::create_cmd(key_vterm_if_t& vterm_if_key,
                                         ctr_ptr) {
   ODC_FUNC_TRACE;
   PFC_ASSERT(ctr_ptr != NULL);
-  std::string vterm_if_url = get_vterm_if_url(vterm_if_key);
-  if (vterm_if_url.empty()) {
-    pfc_log_error("vterm_if url is empty");
+
+  char *vtnname = NULL;
+  char *vterminalname = NULL;
+  char *intfname = NULL;
+  vtnname = reinterpret_cast<char*>(vterm_if_key.vterm_key.vtn_key.vtn_name);
+  if (0 == strlen(vtnname)) {
+    pfc_log_error("vtn name is empty");
     return UNC_DRV_RC_ERR_GENERIC;
   }
-  json_object* vterm_if_json_request_body = create_request_body(vterm_if_val);
-  json_object* port_map_json_req_body = NULL;
+  vterminalname = reinterpret_cast<char*>(vterm_if_key.vterm_key.vterminal_name);
+  if(0 == strlen(vterminalname)) {
+    pfc_log_error("vterm name is empty");
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+  intfname = reinterpret_cast<char*>(vterm_if_key.if_name);
+  if(0 == strlen(intfname)) {
+    pfc_log_error("vterm if is empty");
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+  std::string logical_port_id = "";
   if (vterm_if_val.valid[UPLL_IDX_PM_VTERMI] == UNC_VF_VALID) {
-    if (UNC_VF_VALID !=
+    if (UNC_VF_INVALID ==
         vterm_if_val.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM]) {
       pfc_log_error("portmap - logical port valid flag is not set");
-      json_object_put(vterm_if_json_request_body);
       return UNC_DRV_RC_ERR_GENERIC;
     }
-    std::string logical_port_id =
+    logical_port_id =
         reinterpret_cast<char*>(vterm_if_val.portmap.logical_port_id);
     odc_drv_resp_code_t logical_port_retval = check_logical_port_id_format(
         logical_port_id);
     if (logical_port_retval != ODC_DRV_SUCCESS) {
       pfc_log_error("logical port id is Invalid");
-      json_object_put(vterm_if_json_request_body);
-      return UNC_DRV_RC_ERR_GENERIC;
-    }
-    port_map_json_req_body = create_request_body_port_map(vterm_if_val,
-                                                          logical_port_id);
-    if (json_object_is_type(port_map_json_req_body, json_type_null)) {
-      pfc_log_error("request body is null");
-      json_object_put(vterm_if_json_request_body);
       return UNC_DRV_RC_ERR_GENERIC;
     }
   }
-
-  unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
-                                        ctr_ptr->get_user_name(),
-                                        ctr_ptr->get_pass_word());
-  unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(
-    vterm_if_url, restjson::HTTP_METHOD_POST,
-    unc::restjson::JsonBuildParse::get_json_string(vterm_if_json_request_body),
-    conf_file_values_);
-
-  json_object_put(vterm_if_json_request_body);
-  if (NULL == response) {
-    pfc_log_error("Error Occured while getting httpresponse");
-    json_object_put(port_map_json_req_body);
+  vtermif_class *req_obj = new vtermif_class(ctr_ptr,vtnname,vterminalname);
+  ip_vterminal_config  st_obj;
+  create_request_body(vterm_if_val, vterm_if_key, st_obj);
+  vtermif_odl *parser_obj = new vtermif_odl();
+  json_object *jobj = parser_obj->create_req(st_obj);
+  if(jobj == NULL){
+    pfc_log_error("Error in create request");
+    delete req_obj;
+    delete parser_obj;
     return UNC_DRV_RC_ERR_GENERIC;
-  }
-  int resp_code = response->code;
-  pfc_log_debug("Response code from Ctl for vterm_if create_cmd: %d",
-                resp_code);
-  if (HTTP_201_RESP_CREATED != resp_code) {
-    pfc_log_error("create vterm_if is not success , resp_code %d", resp_code);
-    json_object_put(port_map_json_req_body);
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  // VBR_IF successful...Check for PortMap
+}
+  if(req_obj->set_post(jobj) != UNC_RC_SUCCESS){
+     pfc_log_error("Vtermif Create Failed");
+     delete req_obj;
+     delete parser_obj;
+     return UNC_DRV_RC_ERR_GENERIC;
+    }
   if (vterm_if_val.valid[UPLL_IDX_PM_VTERMI] == UNC_VF_VALID) {
-    std::string port_map_url = "";
-    port_map_url.append(vterm_if_url);
-    port_map_url.append("/portmap");
-    unc::restjson::HttpResponse_t* port_map_response =
-        rest_util_obj.send_http_request(
-            port_map_url,
-            restjson::HTTP_METHOD_PUT,
-            unc::restjson::JsonBuildParse::get_json_string(
-                port_map_json_req_body),
-            conf_file_values_);
-    json_object_put(port_map_json_req_body);
-    if (NULL == port_map_response) {
-      pfc_log_error("Error Occured while getting httpresponse");
-      return UNC_DRV_RC_ERR_GENERIC;
+    vtermifport_class *req_ob = new vtermifport_class(
+                                   ctr_ptr,vtnname,vterminalname,intfname);
+    ip_vtermif_port  st_ob;
+    create_request_body_port_map(vterm_if_val,vterm_if_key,
+                                                   logical_port_id, st_ob);
+    vtermif_portmap  *parser_ob = new  vtermif_portmap();
+    json_object *job = parser_ob->create_req(st_ob);
+  if(jobj == NULL){
+    pfc_log_error("Error in create request");
+    delete req_obj;
+    delete parser_obj;
+    return UNC_DRV_RC_ERR_GENERIC;
     }
-    int resp_code = port_map_response->code;
-    if (HTTP_200_RESP_OK != resp_code) {
-      pfc_log_error("port map  update is not success,rep_code: %d", resp_code);
-      return UNC_DRV_RC_ERR_GENERIC;
-    }
-  } else {
-    pfc_log_debug("No Port map");
-  }
+  if(req_ob->set_put(job) != UNC_RC_SUCCESS) {
+    pfc_log_error("Vtermifport Create Failed");
+    delete req_ob;
+    delete parser_ob;
+    return UNC_DRV_RC_ERR_GENERIC;
+ }
+}
+
+  delete req_obj;
+  delete parser_obj;
   return UNC_RC_SUCCESS;
 }
-
-
-
-// Form URL for vterminal interface ,inject request to controller
-std::string OdcVtermIfCommand::get_vterm_if_url(key_vterm_if_t& vterm_if_key) {
-  ODC_FUNC_TRACE;
-  char* vtnname = NULL;
-  std::string url = "";
-  url.append(BASE_URL);
-  url.append(CONTAINER_NAME);
-  url.append(VTNS);
-  url.append("/");
-  vtnname = reinterpret_cast<char*>(vterm_if_key.vterm_key.vtn_key.vtn_name);
-  if (0 == strlen(vtnname)) {
-    pfc_log_error("vtn name is empty");
-    return "";
-  }
-  url.append(vtnname);
-
-  char* vterminalname = reinterpret_cast<char*>
-                                      (vterm_if_key.vterm_key.vterminal_name);
-  if (0 == strlen(vterminalname)) {
-    pfc_log_error("vterminal name is empty");
-    return "";
-  }
-  url.append("/vterminals/");
-  url.append(vterminalname);
-
-  char* intfname = reinterpret_cast<char*>(vterm_if_key.if_name);
-  if (0 == strlen(intfname)) {
-    pfc_log_error("interface name is empty");
-    return "";
-  }
-  url.append("/interfaces/");
-  url.append(intfname);
-  return url;
-}
-
 
 
 // Update Cmd for Vterm If
@@ -344,117 +317,92 @@ UncRespCode OdcVtermIfCommand::update_cmd(key_vterm_if_t& vterm_if_key,
                        unc::driver::controller *ctr_ptr) {
   ODC_FUNC_TRACE;
   PFC_ASSERT(ctr_ptr != NULL);
-  std::string vterm_if_url = get_vterm_if_url(vterm_if_key);
-  if (vterm_if_url.empty()) {
+  char *vtnname = NULL;
+  char *vterminalname = NULL;
+  char *intfname = NULL;
+  vtnname = reinterpret_cast<char*>(vterm_if_key.vterm_key.vtn_key.vtn_name);
+  if (0 == strlen(vtnname)) {
+    pfc_log_error("vtn name is empty");
     return UNC_DRV_RC_ERR_GENERIC;
   }
-  json_object* vterm_if_json_request_body = create_request_body(vterm_if_val_new);
-  json_object* port_map_json_req_body = NULL;
+  vterminalname = reinterpret_cast<char*>(
+                                   vterm_if_key.vterm_key.vterminal_name);
+  if(0 == strlen(vterminalname)) {
+    pfc_log_error("vterm name is empty");
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+  intfname = reinterpret_cast<char*>(vterm_if_key.if_name);
+  if(0 == strlen(intfname)) {
+    pfc_log_error("vterm if is empty");
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+ std::string logical_port_id = "";
   if (vterm_if_val_new.valid[UPLL_IDX_PM_VTERMI] == UNC_VF_VALID) {
     if (UNC_VF_INVALID ==
         vterm_if_val_new.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM]) {
       pfc_log_error("portmap - logical port valid flag is not set");
-      json_object_put(vterm_if_json_request_body);
       return UNC_DRV_RC_ERR_GENERIC;
     }
-    std::string logical_port_id =
+    logical_port_id =
         reinterpret_cast<char*>(vterm_if_val_new.portmap.logical_port_id);
     odc_drv_resp_code_t logical_port_retval = check_logical_port_id_format(
         logical_port_id);
     if (logical_port_retval != ODC_DRV_SUCCESS) {
-      json_object_put(vterm_if_json_request_body);
-      pfc_log_error("logical port id is invalid");
+      pfc_log_error("logical port id is Invalid");
       return UNC_DRV_RC_ERR_GENERIC;
     }
-    port_map_json_req_body = create_request_body_port_map(vterm_if_val_new,
-                                                          logical_port_id);
-    if (json_object_is_type(port_map_json_req_body, json_type_null)) {
-      pfc_log_error("port map req body is null");
-      json_object_put(vterm_if_json_request_body);
-      return UNC_DRV_RC_ERR_GENERIC;
-    }
+}
+  vtermif_class *req_obj = new vtermif_class(ctr_ptr,vtnname,vterminalname);
+  ip_vterminal_config  st_obj;
+  update_request_body(vterm_if_val_new, vterm_if_key, st_obj);
+  vtermif_odl *parser_obj = new vtermif_odl();
+  json_object *jobj = parser_obj->create_req(st_obj);
+  if(jobj == NULL){
+    pfc_log_error("Error in create request");
+    delete req_obj;
+    delete parser_obj;
+    return UNC_DRV_RC_ERR_GENERIC;
+}
+  if(req_obj->set_put(jobj) != UNC_RC_SUCCESS){
+     pfc_log_error("vtermif Update Failed");
+     delete req_obj;
+     delete parser_obj;
+     return UNC_DRV_RC_ERR_GENERIC;
   }
-
-  pfc_log_debug("Request body formed in update vterm_if_cmd : %s",
-                unc::restjson::JsonBuildParse::get_json_string
-                (vterm_if_json_request_body));
-
-  unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
-                                        ctr_ptr->get_user_name(),
-                                       ctr_ptr->get_pass_word());
-      unc::restjson::HttpResponse_t* response =
-          rest_util_obj.send_http_request(vterm_if_url,
-                                 restjson::HTTP_METHOD_PUT,
-                                 unc::restjson::JsonBuildParse::get_json_string
-                                 (vterm_if_json_request_body),
-                                 conf_file_values_);
-
-      json_object_put(vterm_if_json_request_body);
-      if (NULL == response) {
-        pfc_log_error("Error Occured while getting httpresponse");
-        json_object_put(port_map_json_req_body);
-        return UNC_DRV_RC_ERR_GENERIC;
-      }
-      int resp_code = response->code;
-      pfc_log_debug("Response code from Ctl for update vterm_if : %d ",
-                    resp_code);
-      if (HTTP_200_RESP_OK != resp_code) {
-        pfc_log_error("update vterm_if is not successful %d", resp_code);
-        json_object_put(port_map_json_req_body);
-        return UNC_DRV_RC_ERR_GENERIC;
-      }
-
-      uint32_t port_map_resp_code = ODC_DRV_FAILURE;
-      unc::restjson::HttpResponse_t* port_map_response = NULL;
-      // VTERM_IF successful...Check for PortMap
-      if (vterm_if_val_new.valid[UPLL_IDX_PM_VTERMI] == UNC_VF_VALID) {
-        std::string port_map_url = "";
-        port_map_url.append(vterm_if_url);
-        port_map_url.append("/portmap");
-        pfc_log_debug("Request body formed in update portmap: %s",
-           unc::restjson::JsonBuildParse::get_json_string
-                                              (port_map_json_req_body));
-        port_map_response = rest_util_obj.send_http_request(
-            port_map_url, restjson::HTTP_METHOD_PUT,
-            unc::restjson::JsonBuildParse::get_json_string
-                                                (port_map_json_req_body),
-                                                 conf_file_values_);
-
-        json_object_put(port_map_json_req_body);
-        if (NULL == port_map_response) {
-          pfc_log_error("Error Occured while getting httpresponse");
-          return UNC_DRV_RC_ERR_GENERIC;
-        }
-        port_map_resp_code = port_map_response->code;
-        if (HTTP_200_RESP_OK != port_map_resp_code) {
-          pfc_log_error("update portmap is not successful %d",
-                        port_map_resp_code);
-          return UNC_DRV_RC_ERR_GENERIC;
-        }
-      } else if ((vterm_if_val_new.valid[UPLL_IDX_PM_VBRI] == UNC_VF_VALID_NO_VALUE)
-              && (vterm_if_val_new.valid[PFCDRV_IDX_VAL_VBRIF] == UNC_VF_VALID)) {
-        std::string port_map_url = "";
-        port_map_url.append(vterm_if_url);
-        port_map_url.append("/portmap");
-        port_map_response = rest_util_obj.send_http_request(
-            port_map_url, restjson::HTTP_METHOD_DELETE, NULL,
-            conf_file_values_);
-
-        if (NULL == port_map_response) {
-          pfc_log_error("Error Occured while getting httpresponse");
-          return UNC_DRV_RC_ERR_GENERIC;
-        }
-        port_map_resp_code = port_map_response->code;
-        if (HTTP_200_RESP_OK != port_map_resp_code) {
-          pfc_log_error("delete portmap is not successful %d",
-                        port_map_resp_code);
-          return UNC_DRV_RC_ERR_GENERIC;
-        }
-      }
-      pfc_log_debug("Response code from Ctl for portmap:%d",
-                    port_map_resp_code);
-      return UNC_RC_SUCCESS;
+  if (vterm_if_val_new.valid[UPLL_IDX_PM_VTERMI] == UNC_VF_VALID) {
+    vtermifport_class *req_ob = new vtermifport_class(
+                                     ctr_ptr,vtnname,vterminalname,intfname);
+    ip_vtermif_port  st_ob;
+    create_request_body_port_map(vterm_if_val_new,vterm_if_key,
+                                                     logical_port_id, st_ob);
+    vtermif_portmap  *parser_ob = new  vtermif_portmap();
+    json_object *job = parser_ob->create_req(st_ob);
+  if(jobj == NULL){
+    pfc_log_error("Error in create request");
+    delete req_obj;
+    delete parser_obj;
+    return UNC_DRV_RC_ERR_GENERIC;
+}
+    if(req_ob->set_put(job) != UNC_RC_SUCCESS) {
+      pfc_log_error("Vtermifport Update Failed");
+      delete req_ob;
+      delete parser_ob;
+      return UNC_DRV_RC_ERR_GENERIC;
+   }
+  } else if ((vterm_if_val_new.valid[UPLL_IDX_PM_VBRI] == UNC_VF_VALID_NO_VALUE)
+          && (vterm_if_val_new.valid[PFCDRV_IDX_VAL_VBRIF] == UNC_VF_VALID)){
+    vtermifport_class *req_ob = new vtermifport_class(ctr_ptr,
+                                                vtnname,vterminalname,intfname);
+    if(req_ob->set_delete(jobj) != UNC_RC_SUCCESS) {
+      pfc_log_error("vtermifportmap delete Failed");
+      delete req_ob;
+      return UNC_DRV_RC_ERR_GENERIC;
     }
+   }
+     delete req_obj;
+     delete parser_obj;
+     return UNC_RC_SUCCESS;
+}
 
 UncRespCode OdcVtermIfCommand::delete_cmd(key_vterm_if_t& vterm_if_key,
                        val_vterm_if_t& vterm_if_val,
@@ -462,86 +410,49 @@ UncRespCode OdcVtermIfCommand::delete_cmd(key_vterm_if_t& vterm_if_key,
   ODC_FUNC_TRACE;
   pfc_log_debug("%s Enter delete_cmd", PFC_FUNCNAME);
   PFC_ASSERT(ctr_ptr != NULL);
-  std::string vterm_if_url = get_vterm_if_url(vterm_if_key);
-  pfc_log_debug("vterm_if_url:%s", vterm_if_url.c_str());
-  if (vterm_if_url.empty()) {
-    pfc_log_error("brif url is empty");
+  char *vtnname = NULL;
+  char *vterminalname = NULL;
+  char *intfname = NULL;
+  vtnname = reinterpret_cast<char*>(vterm_if_key.vterm_key.vtn_key.vtn_name);
+  if (0 == strlen(vtnname)) {
+    pfc_log_error("vtn name is empty");
     return UNC_DRV_RC_ERR_GENERIC;
+  }
+  vterminalname = reinterpret_cast<char*>(
+                                      vterm_if_key.vterm_key.vterminal_name);
+  if(0 == strlen(vterminalname)) {
+    pfc_log_error("vterm name is empty");
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+  intfname = reinterpret_cast<char*>(vterm_if_key.if_name);
+  if(0 == strlen(intfname)) {
+    pfc_log_error("vterm if is empty");
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+  vtermif_class *req_obj = new vtermif_class(ctr_ptr,vtnname,vterminalname);
+  ip_vterminal_config  st_obj;
+  delete_request_body(vterm_if_val, vterm_if_key, st_obj);
+  vtermif_odl *parser_obj = new vtermif_odl();
+  json_object *jobj = parser_obj->del_req(st_obj);
+  if(jobj == NULL){
+    pfc_log_error("Error in delete request");
+    delete req_obj;
+    delete parser_obj;
+    return UNC_DRV_RC_ERR_GENERIC;
+}
+
+  if(req_obj->set_delete(jobj) != UNC_RC_SUCCESS) {
+     pfc_log_error("vtermif delete Failed");
+     delete req_obj;
+     return UNC_DRV_RC_ERR_GENERIC;
   }
 
-  unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
-                                        ctr_ptr->get_user_name(),
-                                        ctr_ptr->get_pass_word());
-  unc::restjson::HttpResponse_t* response =
-      rest_util_obj.send_http_request(vterm_if_url,
-                                      restjson::HTTP_METHOD_DELETE, NULL,
-                                      conf_file_values_);
-  if (NULL == response) {
-    pfc_log_error("Error Occured while getting httpresponse");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  int resp_code = response->code;
-  pfc_log_debug("Response code from Ctl for delete vterm_if : %d ", resp_code);
-  if (HTTP_200_RESP_OK != resp_code) {
-    pfc_log_error("delete vterm_if is not successful %d", resp_code);
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
+  delete req_obj;
   return UNC_RC_SUCCESS;
 }
 
-UncRespCode OdcVtermIfCommand::get_vterm_if_list(
-    std::string vtn_name,
-    std::string vterminal_name,
-    unc::driver::controller* ctr,
-    std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
-  ODC_FUNC_TRACE;
-  PFC_ASSERT(ctr != NULL);
-  if ((0 == strlen(vtn_name.c_str())) || (0 ==
-                                          strlen(vterminal_name.c_str()))) {
-    pfc_log_error("Empty vtn / vterminal name");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  std::string url = "";
-  url.append(BASE_URL);
-  url.append(CONTAINER_NAME);
-  url.append(VTNS);
-  url.append("/");
-  url.append(vtn_name);
-  url.append("/vterminals/");
-  url.append(vterminal_name);
-  url.append("/interfaces");
-
-  unc::restjson::RestUtil rest_util_obj(ctr->get_host_address(),
-                                        ctr->get_user_name(),
-                                        ctr->get_pass_word());
-  unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(
-      url, restjson::HTTP_METHOD_GET, NULL, conf_file_values_);
-
-  if (NULL == response) {
-    pfc_log_error("Error Occured while getting httpresponse");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  int resp_code = response->code;
-  pfc_log_debug("Response code from Ctlfor get vterm_if : %d ", resp_code);
-  if (HTTP_200_RESP_OK != resp_code) {
-    pfc_log_error("rest_util_obj send_request fail");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  if (NULL != response->write_data) {
-    if (NULL != response->write_data->memory) {
-      char *data = response->write_data->memory;
-      UncRespCode parse_ret = UNC_DRV_RC_ERR_GENERIC;
-      parse_ret = parse_vterm_if_response(vtn_name, vterminal_name,
-                                          url, ctr, data,
-                                          cfgnode_vector);
-      return parse_ret;
-    }
-  }
-  return UNC_DRV_RC_ERR_GENERIC;
-}
-
 UncRespCode OdcVtermIfCommand::fetch_config(
-    unc::driver::controller* ctr,
+    unc::driver::controller* ctr_ptr,
     void* parent_key,
     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
   ODC_FUNC_TRACE;
@@ -556,68 +467,66 @@ UncRespCode OdcVtermIfCommand::fetch_config(
   pfc_log_debug("parent_vtn_name:%s, parent_vterminal_name:%s",
                 parent_vtn_name.c_str(), parent_vterminal_name.c_str());
 
-  return get_vterm_if_list(parent_vtn_name, parent_vterminal_name,
-                                            ctr, cfgnode_vector);
+  vtermif_class *req_obj = new vtermif_class(ctr_ptr,parent_vtn_name,
+                                                parent_vterminal_name);
+  vtermif_odl *parse_obj = new vtermif_odl();
+  UncRespCode ret_val = req_obj->get_response(parse_obj);
+  if (UNC_RC_SUCCESS != ret_val) {
+    pfc_log_error("get_response error");
+    delete req_obj;
+    delete parse_obj;
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+  ret_val = parse_obj->set_vterm_if_conf(parse_obj->jobj);
+  if (UNC_RC_SUCCESS != ret_val) {
+    pfc_log_error("Error occured while parsing set_vterm_if_conf");
+    delete req_obj;
+    delete parse_obj;
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+  ret_val = parse_vterm_if_response(parse_obj->vterm_if_conf_,parent_vtn_name,
+                           parent_vterminal_name,ctr_ptr,cfgnode_vector);
+  if (UNC_RC_SUCCESS != ret_val) {
+    pfc_log_error("Error occured while parsing");
+    delete req_obj;
+    delete parse_obj;
+    return ret_val;
+  }
+  return ret_val;
 }
 
 UncRespCode OdcVtermIfCommand::parse_vterm_if_response(
+    std::list<vterm_if_conf> &vtermif_detail,
     std::string vtn_name,
     std::string vterminal_name,
-    std::string url,
-    unc::driver::controller* ctr,
-    char *data,
+    unc::driver::controller* ctr_ptr,
     std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
   ODC_FUNC_TRACE;
-  json_object* jobj = unc::restjson::JsonBuildParse::
-      get_json_object(data);
-  if (json_object_is_type(jobj, json_type_null)) {
-    pfc_log_error("json_object_is_null");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  uint32_t array_length = 0;
-  json_object *json_obj_vterm_if = NULL;
-
-  uint32_t ret_val = unc::restjson::JsonBuildParse::parse(jobj, "interface",
-                                                      -1, json_obj_vterm_if);
-  if (json_object_is_type(json_obj_vterm_if, json_type_null)) {
-    pfc_log_error("json vterm_if is null");
-    json_object_put(jobj);
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    json_object_put(jobj);
-    pfc_log_error("JsonBuildParse::parse fail");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  if (json_object_is_type(json_obj_vterm_if, json_type_array)) {
-    array_length = restjson::JsonBuildParse::get_array_length(jobj,
-                                                              "interface");
-  }
-
-  pfc_log_debug("interface array_length:%d", array_length);
-  UncRespCode resp_code = UNC_DRV_RC_ERR_GENERIC;
-  for (uint32_t arr_idx = 0; arr_idx < array_length; arr_idx++) {
-    pfc_log_debug("inside array_length for loop");
-    resp_code = fill_config_node_vector(vtn_name, vterminal_name,
-                                        json_obj_vterm_if,
-                                       arr_idx, url, ctr, cfgnode_vector);
-    if (UNC_DRV_RC_ERR_GENERIC == resp_code) {
-      json_object_put(jobj);
-      return UNC_DRV_RC_ERR_GENERIC;
+  std::list<vterm_if_conf>::iterator it;
+  for(it=vtermif_detail.begin();it!=vtermif_detail.end();it++) {
+    std::string name = it->name;
+    bool enabled = it->vterm_vinterface_config_.enabled;
+    std::string description = it->vterm_vinterface_config_.description;
+    pfc_log_debug("Vtermif Name: %s",name.c_str());
+    pfc_log_debug("Vtermif enabled: %d",enabled);
+    pfc_log_debug("Vtermif description:%s",description.c_str());
+    UncRespCode ret_val = fill_config_node_vector(ctr_ptr,name,vtn_name,
+                          vterminal_name,enabled,description,cfgnode_vector);
+    if (UNC_RC_SUCCESS != ret_val) {
+      pfc_log_error("Error return from fill config failure");
+      return ret_val;
     }
   }
-  json_object_put(jobj);
   return UNC_RC_SUCCESS;
 }
 
 UncRespCode OdcVtermIfCommand::fill_config_node_vector(
+    unc::driver::controller* ctr,
+    std::string name,
     std::string vtn_name,
     std::string vterminal_name,
-    json_object *json_obj,
-    uint32_t arr_idx,
-    std::string url,
-    unc::driver::controller* ctr,
+    bool enabled,
+    std::string description,
     std::vector< unc::vtndrvcache::ConfigNode *>&cfgnode_vector) {
 
   ODC_FUNC_TRACE;
@@ -626,29 +535,6 @@ UncRespCode OdcVtermIfCommand::fill_config_node_vector(
   memset(&key_vterm_if, 0, sizeof(key_vterm_if_t));
   memset(&val_vterm_if, 0, sizeof(val_vterm_if_t));
 
-  std::string name = "";
-  std::string description = "";
-  std::string entity_state = "";
-  uint32_t ret_val = unc::restjson::JsonBuildParse::parse(json_obj,
-                                                          "name",
-                                                          arr_idx, name);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error("JsonBuildParse::parse fail.");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  pfc_log_debug("vterm_if name: %s", name.c_str());
-  if (strlen(name.c_str()) == 0) {
-    pfc_log_error("NO vterm_if name");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  ret_val = unc::restjson::JsonBuildParse::parse(json_obj,
-                                                 "description",
-                                                 arr_idx, description);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  pfc_log_debug("vterm_if description: %s", description.c_str());
   //  Fills the vtermif KEY structure
   strncpy(reinterpret_cast<char*> (key_vterm_if.vterm_key.vtn_key.vtn_name),
        vtn_name.c_str(), sizeof(key_vterm_if.vterm_key.vtn_key.vtn_name) - 1);
@@ -671,113 +557,48 @@ UncRespCode OdcVtermIfCommand::fill_config_node_vector(
     strncpy(reinterpret_cast<char*> (val_vterm_if.description),
             description.c_str(), sizeof(val_vterm_if.description) - 1);
   }
-  std::string admin_status = "";
-  ret_val = unc::restjson::JsonBuildParse::parse(json_obj,
-                                                 "enabled",
-                                                 arr_idx, admin_status);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
   val_vterm_if.valid[UPLL_IDX_ADMIN_STATUS_VTERMI] = UNC_VF_VALID;
-  if (admin_status.compare("true") == 0) {
-    val_vterm_if.admin_status = UPLL_ADMIN_ENABLE;
-  } else if (admin_status.compare("false") == 0) {
-    val_vterm_if.admin_status = UPLL_ADMIN_DISABLE;
+   if (enabled == true) {
+     val_vterm_if.admin_status = UPLL_ADMIN_ENABLE;
+  } else if (enabled == false) {
+      val_vterm_if.admin_status = UPLL_ADMIN_DISABLE;
   }
-
-  url.append("/");
-  url.append(name);
-  int resp_code = 0;
-  json_object *jobj = read_portmap(ctr, url, resp_code);
-  if (0 == resp_code) {
-    pfc_log_error("Error while reading portmap");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  pfc_log_debug("Response code from Ctl for portmap read : %d ", resp_code);
-  if (HTTP_204_NO_CONTENT == resp_code) {
-    pfc_log_debug("No Content for portmap received");
-    val_vterm_if.valid[UPLL_IDX_PM_VTERMI] = UNC_VF_INVALID;
-  } else if (HTTP_200_RESP_OK == resp_code) {
-    pfc_log_debug("json response for read_port_map");
-    if (json_object_is_type(jobj, json_type_null)) {
-      pfc_log_error("null jobj no portmap");
-      return UNC_DRV_RC_ERR_GENERIC;
-    } else {
+     std::list<vterm_if> vtermif_port_detail;
+     UncRespCode ret_val = read_portmap(ctr,key_vterm_if,
+                                vtermif_port_detail, cfgnode_vector);
+     if (ret_val != UNC_RC_SUCCESS){
+       return ret_val;
+     }
+     uint32_t vlan = 0;
+     std::string node = "";
+     std::string port_name = "";
+     std::list<vterm_if>::iterator it;
+     for (it = vtermif_port_detail.begin();it!= vtermif_port_detail.end();it++){
+       vlan = it->vlan_id;
+       node = it->node_id;
+       port_name = it->port;
+     }
+      pfc_log_debug("the parsed node id:%s", node.c_str());
       val_vterm_if.valid[UPLL_IDX_PM_VTERMI] = UNC_VF_VALID;
-      int vlanid(0);
-      ret_val = unc::restjson::JsonBuildParse::parse(jobj, "vlan", -1,
-                                                     vlanid);
-      if (restjson::REST_OP_SUCCESS != ret_val) {
-        json_object_put(jobj);
-        pfc_log_debug("vlan parse error");
-        return UNC_DRV_RC_ERR_GENERIC;
-      }
-      pfc_log_debug("vlan id in portmap read %d", vlanid);
-      if (0 == vlanid) {
+      pfc_log_debug("vlan id in portmap read %d", vlan);
+      if (0 == vlan) {
         val_vterm_if.portmap.valid[UPLL_IDX_VLAN_ID_PM] =
             UNC_VF_INVALID;
         pfc_log_debug("untagged");
         val_vterm_if.portmap.tagged = UPLL_VLAN_UNTAGGED;
         val_vterm_if.portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_VALID;
       } else {
-        pfc_log_debug("vlan id valid");
-        val_vterm_if.portmap.valid[UPLL_IDX_VLAN_ID_PM] = UNC_VF_VALID;
-        val_vterm_if.portmap.vlan_id = vlanid;
-        pfc_log_debug("%d  vlan id ", vlanid);
-        pfc_log_debug("vlan id tagged");
-        val_vterm_if.portmap.tagged = UPLL_VLAN_TAGGED;
-        val_vterm_if.portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_VALID;
+         pfc_log_debug("vlan id valid");
+         val_vterm_if.portmap.valid[UPLL_IDX_VLAN_ID_PM] = UNC_VF_VALID;
+         val_vterm_if.portmap.vlan_id = vlan;
+         pfc_log_debug("%d  vlan id ", vlan);
+         pfc_log_debug("vlan id tagged");
+         val_vterm_if.portmap.tagged = UPLL_VLAN_TAGGED;
+         val_vterm_if.portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_VALID;
       }
-      json_object *jobj_node = NULL;
-      json_object *jobj_port = NULL;
-      ret_val = unc::restjson::JsonBuildParse::parse(jobj, "node", -1,
-                                                     jobj_node);
-      if (restjson::REST_OP_SUCCESS != ret_val) {
-        pfc_log_debug("node is null");
-        json_object_put(jobj);
-        return UNC_DRV_RC_ERR_GENERIC;
-      }
-      ret_val = unc::restjson::JsonBuildParse::parse(jobj, "port",
-                                                     -1, jobj_port);
-      if (restjson::REST_OP_SUCCESS != ret_val) {
-        json_object_put(jobj);
-        pfc_log_debug("Parsing error in port");
-        return UNC_DRV_RC_ERR_GENERIC;
-      }
-      std::string node_id = "";
-      std::string port_name = "";
       std::string logical_port = "PP-OF:";
-
-      if ((json_object_is_type(jobj_node, json_type_null)) ||
-          (json_object_is_type(jobj_port, json_type_null))) {
-        pfc_log_error("node or port json object is null");
-        return UNC_DRV_RC_ERR_GENERIC;
-      }
-
-      ret_val = unc::restjson::JsonBuildParse::parse(jobj_node, "id",
-                                                     -1, node_id);
-      if (restjson::REST_OP_SUCCESS != ret_val) {
-        json_object_put(jobj);
-        pfc_log_debug("id parse error");
-        return UNC_DRV_RC_ERR_GENERIC;
-      }
-      ret_val = unc::restjson::JsonBuildParse::parse(jobj_port, "name",
-                                                     -1, port_name);
-      if (restjson::REST_OP_SUCCESS != ret_val) {
-        json_object_put(jobj);
-        pfc_log_debug("name parse error");
-        return UNC_DRV_RC_ERR_GENERIC;
-      }
-      unc::odcdriver::OdcController *odc_ctr =
-          reinterpret_cast<unc::odcdriver::OdcController *>(ctr);
-      PFC_ASSERT(odc_ctr != NULL);
-      std::string switch_val = odc_ctr->frame_openflow_switchid(node_id);
-      if (switch_val.empty()) {
-        pfc_log_error("%s:switch id empty", PFC_FUNCNAME);
-        return UNC_DRV_RC_ERR_GENERIC;
-      }
-      logical_port.append(switch_val);
+      pfc_log_debug("the obtained node id:%s", node.c_str());
+      logical_port.append(node);
       logical_port.append(HYPHEN);
       logical_port.append(port_name);
       pfc_log_debug("logical port id %s", logical_port.c_str());
@@ -791,14 +612,6 @@ UncRespCode OdcVtermIfCommand::fill_config_node_vector(
       val_vterm_if.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] =
           UNC_VF_VALID;
 
-
-      json_object_put(jobj);
-    }
-  } else {
-    pfc_log_error("Error in response code while reading port map:%d",
-                  resp_code);
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
   unc::vtndrvcache::ConfigNode *cfgptr =
           new unc::vtndrvcache::CacheElementUtil<key_vterm_if_t,
                                                  val_vterm_if_t,
@@ -811,39 +624,57 @@ UncRespCode OdcVtermIfCommand::fill_config_node_vector(
       return UNC_RC_SUCCESS;
 }
 
-json_object* OdcVtermIfCommand::read_portmap(unc::driver::controller* ctr,
-                           std::string url,
-                           int &resp_code) {
+UncRespCode OdcVtermIfCommand::read_portmap(unc::driver::controller* ctr_ptr,
+                                          key_vterm_if_t& vterm_if_key,
+                                  std::list<vterm_if> &vtermif_port_detail,
+                                  std::vector<unc::vtndrvcache::ConfigNode *>
+                                             &cfgnode_vector) {
   ODC_FUNC_TRACE;
-  PFC_ASSERT(ctr != NULL);
+  PFC_ASSERT(ctr_ptr != NULL);
 
-  url.append("/portmap");
-
-  unc::restjson::RestUtil rest_util_obj(ctr->get_host_address(),
-                                ctr->get_user_name(), ctr->get_pass_word());
-  unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(
-      url, restjson::HTTP_METHOD_GET, NULL, conf_file_values_);
-
-  if (NULL == response) {
-    pfc_log_error("Error Occured while getting httpresponse");
-    return NULL;
+  char *vtnname = NULL;
+  char *vterminalname = NULL;
+  char *intfname = NULL;
+  vtnname = reinterpret_cast<char*>(vterm_if_key.vterm_key.vtn_key.vtn_name);
+  if (0 == strlen(vtnname)) {
+    pfc_log_error("vtn name is empty");
+    return UNC_DRV_RC_ERR_GENERIC;
   }
-  resp_code = response->code;
-  pfc_log_debug("Response code from Ctlfor portmap read : %d ", resp_code);
-  if (HTTP_200_RESP_OK != resp_code) {
-    return NULL;
+  vterminalname = reinterpret_cast<char*>(vterm_if_key.vterm_key.vterminal_name);
+  if(0 == strlen(vterminalname)) {
+    pfc_log_error("vterm name is empty");
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+  intfname = reinterpret_cast<char*>(vterm_if_key.if_name);
+  if(0 == strlen(intfname)) {
+    pfc_log_error("vterm if is empty");
+    return UNC_DRV_RC_ERR_GENERIC;
   }
 
-  json_object *jobj = NULL;
-  if (NULL != response->write_data) {
-    if (NULL != response->write_data->memory) {
-      char *data = response->write_data->memory;
-      jobj =  unc::restjson::JsonBuildParse::get_json_object(data);
-      return jobj;
-    }
+  vtermifport_class *req_obj = new vtermifport_class(ctr_ptr,
+                                       vtnname,vterminalname,intfname);
+  std::string url = req_obj->get_url();
+  pfc_log_info("URL:%s",url.c_str());
+  vtermif_portmap *parse_obj = new vtermif_portmap();
+  UncRespCode ret_val = req_obj->get_response(parse_obj);
+  if (UNC_RC_SUCCESS != ret_val) {
+    pfc_log_error("Get response error");
+    delete req_obj;
+    delete parse_obj;
+    return UNC_DRV_RC_ERR_GENERIC;
   }
-  return NULL;
+
+  ret_val = parse_obj->set_vterm_if(parse_obj->jobj);
+  if (UNC_RC_SUCCESS != ret_val) {
+    pfc_log_error("set vinterface portmap_conf error");
+    delete req_obj;
+    delete parse_obj;
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+  vtermif_port_detail = parse_obj->vterm_if_;
+  return ret_val;
 }
+
 }  // namespace odcdriver
 }  // namespace unc
 
