@@ -43,19 +43,19 @@ module vtn-neutron {
             }
 
             leaf bridgeName {
-                description "name of the vBridge.";
+                description "Name of the bridge to create in OVS.";
                 type string;
             }
             leaf portName {
-                description "portName of the vBridge.";
+                description "Name of the interface to be added as port to the OVS bridge.";
                 type string;
             }
             leaf protocol {
-                description "protocol of the vBridge.";
+                description "OpenFlow Protocol 13 or 10.";
                 type string;
             }
             leaf failMode {
-                description "failMode of the vBridge.";
+                description "Failure Mode.";
                 type string;
             }
         }
