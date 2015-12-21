@@ -13,6 +13,7 @@ import java.util.Timer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
+import com.google.common.base.Optional;
 import com.google.common.util.concurrent.FutureCallback;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -31,6 +32,7 @@ import org.opendaylight.controller.md.sal.common.api.clustering.Entity;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipCandidateRegistration;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListener;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListenerRegistration;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipState;
 
 import org.opendaylight.yangtools.yang.binding.Notification;
 import org.opendaylight.yangtools.yang.binding.RpcService;
@@ -155,7 +157,7 @@ public interface VTNManagerProvider extends AutoCloseable, Executor, TxQueue {
     /**
      * Register a candidate for ownership of the given entity.
      *
-     * @param ent  The entity tobe registered as a candidate of ownership.
+     * @param ent  The entity to be registered as a candidate of ownership.
      * @return  An {@link EntityOwnershipCandidateRegistration} instance.
      * @throws CandidateAlreadyRegisteredException
      *    The given entity is already registered.
@@ -173,6 +175,27 @@ public interface VTNManagerProvider extends AutoCloseable, Executor, TxQueue {
      */
     EntityOwnershipListenerRegistration registerListener(
         VTNEntityType etype, EntityOwnershipListener listener);
+
+    /**
+     * Return the current ownership state information about the given entity.
+     *
+     * @param ent  The entity to query.
+     * @return An {@link Optional} instance that contains the entity ownership
+     *         state if present.
+     */
+    Optional<EntityOwnershipState> getOwnershipState(Entity ent);
+
+    /**
+     * Determine whether this process process is the owner of the given
+     * global entity.
+     *
+     * @param etype  The type of VTN global entity.
+     *               Specifying non-global entity type results in undefined
+     *               behavior.
+     * @return  {@code true} if this process is the owner of the given global
+     *          entity. {@code false} otherwise.
+     */
+    boolean isOwner(VTNEntityType etype);
 
     /**
      * Return an implementation of the specified RPC service.

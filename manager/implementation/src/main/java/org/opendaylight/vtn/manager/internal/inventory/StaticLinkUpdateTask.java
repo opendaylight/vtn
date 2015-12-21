@@ -14,6 +14,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.google.common.base.Optional;
+
 import org.slf4j.Logger;
 
 import org.opendaylight.vtn.manager.VTNException;
@@ -23,6 +25,7 @@ import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.inventory.xml.XmlStaticEdgePorts;
 import org.opendaylight.vtn.manager.internal.inventory.xml.XmlStaticSwitchLinks;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
+import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.LinkUpdateContext;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
@@ -43,7 +46,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeCon
  * information.
  *
  * <p>
- *   This task returns a {@link LinkUpdateContext} instance.
+ *   This task returns a {@link LinkUpdateContext} instance if this process
+ *   is vtn-inventory manager.
  * </p>
  */
 final class StaticLinkUpdateTask extends AbstractTxTask<LinkUpdateContext> {
@@ -58,9 +62,9 @@ final class StaticLinkUpdateTask extends AbstractTxTask<LinkUpdateContext> {
     private final Logger  logger;
 
     /**
-     * Static network topology configuration.
+     * Static network topology configuration loaded from the config DS.
      */
-    private VtnStaticTopology  staticTopology;
+    private Optional<VtnStaticTopology>  staticTopology;
 
     /**
      * Determine whether the static inter-switch link configuration should be
@@ -73,12 +77,6 @@ final class StaticLinkUpdateTask extends AbstractTxTask<LinkUpdateContext> {
      * or not.
      */
     private boolean  saveEdges;
-
-    /**
-     * Determine whether the static configuration is successfully loaded
-     * from the config DS or not.
-     */
-    private boolean  configLoaded;
 
     /**
      * Construct a new instance.
@@ -154,19 +152,23 @@ final class StaticLinkUpdateTask extends AbstractTxTask<LinkUpdateContext> {
      * Save the static network topology configuration to the file.
      */
     private void saveConfig() {
-        VtnStaticTopology vstopo = staticTopology;
-
-        if (vstopo == null) {
-            // Delete the static network topology configuration file.
-            StaticTopologyManager.saveConfig(null);
-        } else {
-            if (saveLinks) {
-                // Update the configuration file for static inter-switch links.
-                new XmlStaticSwitchLinks().save(vstopo.getStaticSwitchLinks());
-            }
-            if (saveEdges) {
-                // Update the configuration file for static edge ports.
-                new XmlStaticEdgePorts().save(vstopo.getStaticEdgePorts());
+        Optional<VtnStaticTopology> opt = staticTopology;
+        if (opt != null) {
+            if (opt.isPresent()) {
+                VtnStaticTopology vstopo = opt.get();
+                if (saveLinks) {
+                    // Update the configuration file for static inter-switch
+                    // links.
+                    new XmlStaticSwitchLinks().
+                        save(vstopo.getStaticSwitchLinks());
+                }
+                if (saveEdges) {
+                    // Update the configuration file for static edge ports.
+                    new XmlStaticEdgePorts().save(vstopo.getStaticEdgePorts());
+                }
+            } else {
+                // Delete the static network topology configuration file.
+                StaticTopologyManager.saveConfig(null);
             }
         }
     }
@@ -178,32 +180,37 @@ final class StaticLinkUpdateTask extends AbstractTxTask<LinkUpdateContext> {
      */
     @Override
     public LinkUpdateContext execute(TxContext ctx) throws VTNException {
-        configLoaded = false;
-        ReadWriteTransaction tx = ctx.getReadWriteTransaction();
-        InventoryReader reader = ctx.getReadSpecific(InventoryReader.class);
-        LinkUpdateContext luctx = new LinkUpdateContext(tx, reader);
+        // Reset static topology read by the previous transaction.
+        staticTopology = null;
 
         // Read whole static network topology configuration.
+        ReadWriteTransaction tx = ctx.getReadWriteTransaction();
         LogicalDatastoreType cstore = LogicalDatastoreType.CONFIGURATION;
-        staticTopology =
-            DataStoreUtils.read(tx, cstore, IDENT_TOPOLOGY).orNull();
-        configLoaded = true;
+        staticTopology = DataStoreUtils.read(tx, cstore, IDENT_TOPOLOGY);
 
-        // Prefetch configuration into the inventory reader.
-        reader.prefetch(staticTopology);
+        LinkUpdateContext luctx;
+        if (ctx.getProvider().isOwner(VTNEntityType.INVENTORY)) {
+            // Prefetch configuration into the inventory reader.
+            InventoryReader reader =
+                ctx.getReadSpecific(InventoryReader.class);
+            luctx = new LinkUpdateContext(tx, reader);
+            reader.prefetch(staticTopology.orNull());
 
-        for (SalPort sport: updatedPorts) {
-            // Read the notified switch port.
-            // If the port was removed, static links on that port will be
-            // removed by PortUpdateTask.
-            VtnPort vport = reader.get(sport);
-            if (vport != null) {
-                luctx.updateStaticTopology(sport, vport);
+            for (SalPort sport: updatedPorts) {
+                // Read the notified switch port.
+                // If the port was removed, static links on that port will be
+                // removed by PortUpdateTask.
+                VtnPort vport = reader.get(sport);
+                if (vport != null) {
+                    luctx.updateStaticTopology(sport, vport);
+                }
             }
-        }
 
-        // Resolve ignored inter-switch links.
-        luctx.resolveIgnoredLinks();
+            // Resolve ignored inter-switch links.
+            luctx.resolveIgnoredLinks();
+        } else {
+            luctx = null;
+        }
 
         return luctx;
     }
@@ -214,7 +221,9 @@ final class StaticLinkUpdateTask extends AbstractTxTask<LinkUpdateContext> {
     @Override
     public void onSuccess(VTNManagerProvider provider,
                           LinkUpdateContext luctx) {
-        luctx.recordLogs(logger);
+        if (luctx != null) {
+            luctx.recordLogs(logger);
+        }
         saveConfig();
     }
 
@@ -227,8 +236,6 @@ final class StaticLinkUpdateTask extends AbstractTxTask<LinkUpdateContext> {
 
         // Configuration should be saved as long as the configuration
         // is available in the config DS.
-        if (configLoaded) {
-            saveConfig();
-        }
+        saveConfig();
     }
 }

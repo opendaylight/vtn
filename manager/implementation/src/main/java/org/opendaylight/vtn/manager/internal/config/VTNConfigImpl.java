@@ -66,7 +66,7 @@ public final class VTNConfigImpl implements VTNConfig {
     /**
      * Default value for "init-timeout".
      */
-    private static final int  DEFAULT_INIT_TIMEOUT = 3000;
+    private static final int  DEFAULT_INIT_TIMEOUT = 10000;
 
     /**
      * Default value for "max-redirections".

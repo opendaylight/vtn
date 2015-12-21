@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -9,16 +9,17 @@
 package org.opendaylight.vtn.manager.internal.config;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.opendaylight.vtn.manager.VTNException;
+
 import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
-import org.opendaylight.vtn.manager.internal.util.concurrent.TimeoutCounter;
+import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
@@ -47,9 +48,10 @@ public final class OperationalListener
     private final AtomicReference<VTNConfigImpl>  current;
 
     /**
-     * The state of the cluster initialization.
+     * The future associated with the initialization of vtn-config in
+     * operational datastore.
      */
-    private Boolean  initState;
+    private SettableVTNFuture<Void>  initFuture = new SettableVTNFuture<>();
 
     /**
      * Consturct a new instance.
@@ -63,44 +65,27 @@ public final class OperationalListener
         super(VtnConfig.class);
         current = cfg;
         registerListener(broker, LogicalDatastoreType.OPERATIONAL,
-                         DataChangeScope.SUBTREE);
+                         DataChangeScope.SUBTREE, true);
     }
 
     /**
      * Wait for another contoller in the cluster to complete initialization.
      *
+     * @param state   The init-state value obtained from the operational DS.
      * @param millis  The number of milliseconds to wait.
-     * @throws InterruptedException
-     *    The current thread was interrupted.
-     * @throws TimeoutException
-     *    The initialization did not complete within the given timeout.
+     * @throws VTNException  An error occurred.
      */
-    public synchronized void awaitConfig(long millis)
-        throws InterruptedException, TimeoutException {
-        if (Boolean.TRUE.equals(initState)) {
-            return;
-        }
+    public void awaitConfig(boolean state, long millis) throws VTNException {
+        SettableVTNFuture<Void> f = initFuture;
 
-        LOG.debug("Wait for another controller to complete initialization.");
-        TimeoutCounter tc =
-            TimeoutCounter.newTimeout(millis, TimeUnit.MILLISECONDS);
-
-        do {
-            tc.await(this);
-        } while (!Boolean.TRUE.equals(initState));
-
-        LOG.debug("Another controller has completed initialization.");
-    }
-
-    /**
-     * Update init-state.
-     *
-     * @param state  The value of init-state.
-     */
-    private synchronized void setInitState(Boolean state) {
-        if (!Boolean.TRUE.equals(initState) && Boolean.TRUE.equals(state)) {
-            initState = state;
-            notifyAll();
+        try {
+            if (!state && f != null) {
+                LOG.debug("Synchronizing VTN configuration.");
+                f.checkedGet(millis, TimeUnit.MILLISECONDS);
+                LOG.debug("VTN configuration has been synchronized.");
+            }
+        } finally {
+            initFuture = null;
         }
     }
 
@@ -120,7 +105,14 @@ public final class OperationalListener
             LOG.info("Configuration has been changed: {}", diff);
         }
 
-        setInitState(vcfg.isInitState());
+        Boolean state = vcfg.isInitState();
+        if (Boolean.TRUE.equals(state)) {
+            // Complete the vtn-config initialization.
+            SettableVTNFuture<Void> f = initFuture;
+            if (f != null && f.set(null)) {
+                LOG.trace("Wake up awaitConfig().");
+            }
+        }
     }
 
     // DataStoreListener

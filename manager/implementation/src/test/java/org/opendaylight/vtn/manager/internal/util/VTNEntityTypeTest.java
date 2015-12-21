@@ -32,6 +32,11 @@ public class VTNEntityTypeTest extends TestBase {
         assertEquals(etype.getType(), ent.getType());
         assertSame(ent, VTNEntityType.getGlobalEntity(etype));
 
+        etype = VTNEntityType.INVENTORY;
+        ent = VTNEntityType.getGlobalEntity(etype);
+        assertEquals(etype.getType(), ent.getType());
+        assertSame(ent, VTNEntityType.getGlobalEntity(etype));
+
         etype = VTNEntityType.FLOW_STATS;
         ent = VTNEntityType.getGlobalEntity(etype);
         assertEquals(etype.getType(), ent.getType());
@@ -48,19 +53,22 @@ public class VTNEntityTypeTest extends TestBase {
      */
     @Test
     public void testGetGlobalEntities() {
+        VTNEntityType[] globals = {
+            VTNEntityType.CONFIG,
+            VTNEntityType.INVENTORY,
+            VTNEntityType.FLOW_STATS,
+        };
+
         Collection<Entity> entities = VTNEntityType.getGlobalEntities();
-        assertEquals(2, entities.size());
+        assertEquals(globals.length, entities.size());
 
         Set<Entity> set = new HashSet<>(entities);
-        assertEquals(2, set.size());
+        assertEquals(globals.length, set.size());
 
-        VTNEntityType etype = VTNEntityType.CONFIG;
-        Entity ent = VTNEntityType.getGlobalEntity(etype);
-        assertTrue(set.remove(ent));
-
-        etype = VTNEntityType.FLOW_STATS;
-        ent = VTNEntityType.getGlobalEntity(etype);
-        assertTrue(set.remove(ent));
+        for (VTNEntityType etype: globals) {
+            Entity ent = VTNEntityType.getGlobalEntity(etype);
+            assertTrue(set.remove(ent));
+        }
 
         assertTrue(set.isEmpty());
     }

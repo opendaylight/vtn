@@ -27,6 +27,11 @@ public enum VTNEntityType {
     CONFIG("vtn:config"),
 
     /**
+     * The global entity type that indicates the VTN inventory information.
+     */
+    INVENTORY("vtn:inventory"),
+
+    /**
      * The global entity type that indicates the timer for updating flow
      * statistics.
      */
@@ -51,13 +56,15 @@ public enum VTNEntityType {
      */
     static {
         Map<VTNEntityType, Entity> map = new EnumMap<>(VTNEntityType.class);
-        VTNEntityType etype = VTNEntityType.CONFIG;
-        String type = etype.getType();
-        map.put(etype, new Entity(type, type));
-
-        etype = VTNEntityType.FLOW_STATS;
-        type = etype.getType();
-        map.put(etype, new Entity(type, type));
+        VTNEntityType[] globals = {
+            VTNEntityType.CONFIG,
+            VTNEntityType.INVENTORY,
+            VTNEntityType.FLOW_STATS,
+        };
+        for (VTNEntityType etype: globals) {
+            String type = etype.getType();
+            map.put(etype, new Entity(type, type));
+        }
 
         GLOBAL_ENTITIES = ImmutableMap.copyOf(map);
     }
