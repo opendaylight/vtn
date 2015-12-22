@@ -38,11 +38,6 @@ public final class ByteUtils {
      */
     private static final class BitStream {
         /**
-         * The byte array to store result.
-         */
-        private final byte[]  result;
-
-        /**
          * The current byte.
          */
         private byte  current;
@@ -61,11 +56,9 @@ public final class ByteUtils {
          * Construct a new instance that sets LSB aligned bits into the
          * specified byte array.
          *
-         * @param array  A byte array to store result.
          * @param nbits  The total number of bits to be added.
          */
-        private BitStream(byte[] array, int nbits) {
-            result = array;
+        private BitStream(int nbits) {
             int mod = nbits % Byte.SIZE;
             bitOff = (mod == 0) ? 0 : Byte.SIZE - mod;
         }
@@ -80,11 +73,10 @@ public final class ByteUtils {
          *               byte array.
          */
         private BitStream(byte[] array, int start, int boff) {
-            result = array;
             bitOff = boff;
             resultOff = start;
             if (boff != 0) {
-                byte b = result[start];
+                byte b = array[start];
                 current = (byte)(b & (MASK_BYTE << (Byte.SIZE - boff)));
             }
         }
@@ -92,23 +84,25 @@ public final class ByteUtils {
         /**
          * Add all the bits in the given byte to the bit stream.
          *
+         * @param array  The byte array to update.
          * @param value  A byte value.
          */
-        private void add(byte value) {
+        private void add(byte[] array, byte value) {
             byte b = (byte)((value & MASK_BYTE) >>> bitOff);
             current |= b;
-            result[resultOff++] = current;
+            array[resultOff++] = current;
             current = (byte)(value << (Byte.SIZE - bitOff));
         }
 
         /**
          * Add LSB aligned bits in the given byte to the bit stream.
          *
+         * @param array  The byte array to update.
          * @param value  A byte value.
          * @param start  The start bit offset.
          * @param nbits  The number of bits to be added.
          */
-        private void add(byte value, int start, int nbits) {
+        private void add(byte[] array, byte value, int start, int nbits) {
             byte v = (byte)(value << start);
             byte b = (byte)((v & MASK_BYTE) >>> bitOff);
             int off = bitOff + nbits;
@@ -119,7 +113,7 @@ public final class ByteUtils {
                 bitOff = off;
             } else {
                 current |= b;
-                result[resultOff++] = current;
+                array[resultOff++] = current;
                 bitOff = off - Byte.SIZE;
                 if (bitOff > 0) {
                     int nright = Byte.SIZE - nbits;
@@ -134,19 +128,20 @@ public final class ByteUtils {
         /**
          * Write unwritten bits into the target array.
          *
+         * @param array  The byte array to update.
          * @return  {@code true} if at least one bit is written.
          *          {@code false} if all added bits are already written.
          */
-        private boolean flush() {
+        private boolean flush(byte[] array) {
             boolean ret = (bitOff != 0);
             if (ret) {
                 // Merge with a byte at the output byte.
-                byte cur = (byte)(result[resultOff] << bitOff);
+                byte cur = (byte)(array[resultOff] << bitOff);
                 cur = (byte)((cur & MASK_BYTE) >>> bitOff);
 
                 int nshift = Byte.SIZE - bitOff;
                 byte b = (byte)(((current & MASK_BYTE) >>> nshift) << nshift);
-                result[resultOff] = (byte)(cur | b);
+                array[resultOff] = (byte)(cur | b);
             }
 
             return ret;
@@ -260,12 +255,12 @@ public final class ByteUtils {
                 // No need to shift bits.
                 System.arraycopy(data, start, result, 0, nbytes);
             } else {
-                BitStream bst = new BitStream(result, nbits);
+                BitStream bst = new BitStream(nbits);
 
                 // Add bits in the first byte.
                 boolean moreBytes = ((firstBit + nbits) > Byte.SIZE);
                 int nb = (moreBytes) ? Byte.SIZE - firstBit : nbits;
-                bst.add(data[start], firstBit, nb);
+                bst.add(result, data[start], firstBit, nb);
 
                 if (moreBytes) {
                     // Determine the number of bytes to be read from the
@@ -278,16 +273,16 @@ public final class ByteUtils {
                     // Add bits except for the last byte.
                     int index;
                     for (index = start + 1; index < nread; index++) {
-                        bst.add(data[index]);
+                        bst.add(result, data[index]);
                     }
 
                     if (lastBit != 0) {
                         // Add bits in the last byte.
-                        bst.add(data[index], 0, lastBit);
+                        bst.add(result, data[index], 0, lastBit);
                     }
                 }
 
-                assert !bst.flush();
+                assert !bst.flush(result);
             }
         }
 
@@ -334,17 +329,18 @@ public final class ByteUtils {
                     index = 0;
                 } else {
                     // Copy bits in the first byte.
-                    bst.add(input[0], Byte.SIZE - inputBits, inputBits);
+                    bst.add(output, input[0], Byte.SIZE - inputBits,
+                            inputBits);
                     index = 1;
                 }
 
                 // Copy the rest of bits.
                 for (; index < nbytes; index++) {
-                    bst.add(input[index]);
+                    bst.add(output, input[index]);
                 }
 
                 // Flush unwritten bits.
-                bst.flush();
+                bst.flush(output);
             }
         }
     }
