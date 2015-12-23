@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -26,6 +26,7 @@ import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
+import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcFuture;
@@ -117,7 +118,7 @@ public final class VTNRoutingManager
         try {
             registerListener(provider.getDataBroker(),
                              LogicalDatastoreType.OPERATIONAL,
-                             DataChangeScope.SUBTREE);
+                             DataChangeScope.SUBTREE, true);
             pathPolicyListener = new PathPolicyListener(provider, topology);
             addCloseable(pathPolicyListener);
         } catch (RuntimeException e) {
@@ -215,7 +216,8 @@ public final class VTNRoutingManager
     protected void exitEvent(TopologyEventContext ectx) {
         List<VtnLink> created = ectx.getCreated();
         List<VtnLink> removed = ectx.getRemoved();
-        if (topology.update(created, removed)) {
+        if (topology.update(created, removed) &&
+            vtnProvider.isOwner(VTNEntityType.INVENTORY)) {
             for (VTNRoutingListener l: vtnListeners) {
                 RoutingEvent rev = new RoutingEvent(l);
                 vtnProvider.post(rev);

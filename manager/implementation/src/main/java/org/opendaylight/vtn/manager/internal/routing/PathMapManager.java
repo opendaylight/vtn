@@ -239,7 +239,7 @@ public final class PathMapManager
         vtnProvider = provider;
         registerListener(provider.getDataBroker(),
                          LogicalDatastoreType.OPERATIONAL,
-                         DataChangeScope.SUBTREE);
+                         DataChangeScope.SUBTREE, true);
     }
 
     /**

@@ -16,8 +16,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
@@ -25,15 +24,19 @@ import org.slf4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
+import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
+import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
+import org.opendaylight.controller.md.sal.binding.api.ClusteredDataChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
@@ -46,6 +49,7 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfigBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * JUnit test for {@link OperationalListener}.
@@ -83,7 +87,8 @@ public class OperationalListenerTest extends TestBase {
 
         when(dataBroker.registerDataChangeListener(
                  any(LogicalDatastoreType.class), any(InstanceIdentifier.class),
-                 isA(OperationalListener.class), any(DataChangeScope.class))).
+                 isA(ClusteredDataChangeListener.class),
+                 any(DataChangeScope.class))).
             thenReturn(listenerReg);
         operListener = new OperationalListener(dataBroker, currentConfig);
     }
@@ -91,16 +96,27 @@ public class OperationalListenerTest extends TestBase {
     /**
      * Test case for
      * {@link OperationalListener#OperationalListener(DataBroker,AtomicReference)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void testConstructor() {
+    public void testConstructor() throws Exception {
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
         DataChangeScope scope = DataChangeScope.SUBTREE;
 
         // Ensure that OperationalListener has been registered as data change
         // listener.
+        ArgumentCaptor<ClusteredDataChangeListener> captor =
+            ArgumentCaptor.forClass(ClusteredDataChangeListener.class);
         verify(dataBroker).registerDataChangeListener(
-            eq(oper), eq(getPath()), eq(operListener), eq(scope));
+            eq(oper), eq(getPath()), captor.capture(), eq(scope));
+        List<ClusteredDataChangeListener> wrappers = captor.getAllValues();
+        assertEquals(1, wrappers.size());
+        ClusteredDataChangeListener cdcl = wrappers.get(0);
+        assertEquals(operListener,
+                     getFieldValue(cdcl, DataChangeListener.class,
+                                   "theListener"));
+
         verifyZeroInteractions(listenerReg);
     }
 
@@ -121,57 +137,70 @@ public class OperationalListenerTest extends TestBase {
     }
 
     /**
-     * Test case for {@link OperationalListener#awaitConfig(long)}.
+     * Test case for {@link OperationalListener#awaitConfig(boolean, long)}.
+     *
+     * <p>
+     *   Do nothing if VTN configuration is already initialized.
+     * </p>
      *
      * @throws Exception  An error occurred.
      */
     @Test
-    public void testAwaitConfig() throws Exception {
-        // In case where the configuration is not initialized.
-        Boolean is = getFieldValue(operListener, Boolean.class, "initState");
-        assertEquals(null, is);
-        long start = 0;
-        long end = 0;
-        long timeout = 500;
+    public void testAwaitConfig1() throws Exception {
+        operListener.awaitConfig(true, 1L);
+        assertEquals(null, getFieldValue(operListener, SettableVTNFuture.class,
+                                         "initFuture"));
+
+        // Should do nothing if already called.
+        operListener.awaitConfig(false, 1L);
+    }
+
+    /**
+     * Test case for {@link OperationalListener#awaitConfig(boolean, long)}.
+     *
+     * <p>
+     *   VTN configuration is initialized successfully.
+     * </p>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testAwaitConfig2() throws Exception {
+        @SuppressWarnings("unchecked")
+        SettableVTNFuture<Void> future = (SettableVTNFuture<Void>)
+            getFieldValue(operListener, SettableVTNFuture.class, "initFuture");
+        assertNotNull(future);
+        future.set(null);
+        operListener.awaitConfig(false, 1L);
+        assertEquals(null, getFieldValue(operListener, SettableVTNFuture.class,
+                                         "initFuture"));
+
+        // Should do nothing if already called.
+        operListener.awaitConfig(false, 1L);
+    }
+
+    /**
+     * Test case for {@link OperationalListener#awaitConfig(boolean, long)}.
+     *
+     * <p>
+     *   Operation timed out.
+     * </p>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testAwaitConfig3() throws Exception {
         try {
-            start = System.nanoTime();
-            operListener.awaitConfig(timeout);
+            operListener.awaitConfig(false, 100L);
             unexpected();
-        } catch (TimeoutException e) {
-            end = System.nanoTime();
+        } catch (VTNException e) {
+            assertEquals(VtnErrorTag.TIMEOUT, e.getVtnErrorTag());
         }
-        assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) >= timeout);
+        assertEquals(null, getFieldValue(operListener, SettableVTNFuture.class,
+                                         "initFuture"));
 
-        // In case where the configuration is initialized.
-        timeout = 10000;
-        EtherAddress eaddr = new EtherAddress(0x1122334455L);
-        Boolean state = true;
-        VtnConfig vcfg = VTNConfigImpl.
-            fillDefault(new VtnConfigBuilder(), eaddr).
-            setInitState(state).
-            build();
-        InstanceIdentifier<VtnConfig> path = getPath();
-        final IdentifiedData<VtnConfig> data =
-            new IdentifiedData<>(path, vcfg);
-        Thread t = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    unexpected();
-                }
-                operListener.onCreated(null, data);
-            }
-        };
-        t.start();
-        operListener.awaitConfig(timeout);
-        is = getFieldValue(operListener, Boolean.class, "initState");
-        assertEquals(state, is);
-        assertEquals(new VTNConfigImpl(vcfg), currentConfig.get());
-
-        // In case where the configuration is already initialized.
-        operListener.awaitConfig(1L);
+        // Should do nothing if already called.
+        operListener.awaitConfig(false, 1L);
     }
 
     /**
@@ -193,8 +222,10 @@ public class OperationalListenerTest extends TestBase {
     public void testExitEvent() throws Exception {
         // This should do nothing.
         operListener.exitEvent(null);
-        Boolean is = getFieldValue(operListener, Boolean.class, "initState");
-        assertEquals(null, is);
+        @SuppressWarnings("unchecked")
+        SettableVTNFuture<Void> future = (SettableVTNFuture<Void>)
+            getFieldValue(operListener, SettableVTNFuture.class, "initFuture");
+        assertNotNull(future);
         assertEquals(new VTNConfigImpl(), currentConfig.get());
     }
 
@@ -205,8 +236,10 @@ public class OperationalListenerTest extends TestBase {
      */
     @Test
     public void testOnCreated() throws Exception {
-        Boolean is = getFieldValue(operListener, Boolean.class, "initState");
-        assertEquals(null, is);
+        @SuppressWarnings("unchecked")
+        SettableVTNFuture<Void> future = (SettableVTNFuture<Void>)
+            getFieldValue(operListener, SettableVTNFuture.class, "initFuture");
+        assertNotNull(future);
         assertEquals(new VTNConfigImpl(), currentConfig.get());
 
         EtherAddress eaddr = new EtherAddress(0x123456789abL);
@@ -220,8 +253,9 @@ public class OperationalListenerTest extends TestBase {
         IdentifiedData<VtnConfig> data = new IdentifiedData<>(path, vcfg);
         operListener.onCreated(null, data);
 
-        is = getFieldValue(operListener, Boolean.class, "initState");
-        assertEquals(state, is);
+        assertEquals(true, future.isDone());
+        assertEquals(null, future.get());
+        operListener.awaitConfig(false, 1L);
         assertEquals(new VTNConfigImpl(vcfg), currentConfig.get());
     }
 
@@ -232,8 +266,10 @@ public class OperationalListenerTest extends TestBase {
      */
     @Test
     public void testOnUpdated() throws Exception {
-        Boolean is = getFieldValue(operListener, Boolean.class, "initState");
-        assertEquals(null, is);
+        @SuppressWarnings("unchecked")
+        SettableVTNFuture<Void> future = (SettableVTNFuture<Void>)
+            getFieldValue(operListener, SettableVTNFuture.class, "initFuture");
+        assertNotNull(future);
         assertEquals(new VTNConfigImpl(), currentConfig.get());
 
         EtherAddress eaddr = new EtherAddress(0xaabbccddeeL);
@@ -249,9 +285,8 @@ public class OperationalListenerTest extends TestBase {
         ChangedData<VtnConfig> data = new ChangedData<>(path, vcfg, old);
         operListener.onUpdated(null, data);
 
-        // initState should not be changed to false.
-        is = getFieldValue(operListener, Boolean.class, "initState");
-        assertEquals(null, is);
+        // initFuture should be still active.
+        assertEquals(false, future.isDone());
         VTNConfigImpl cur = currentConfig.get();
         assertEquals(new VTNConfigImpl(vcfg), cur);
 
@@ -261,8 +296,8 @@ public class OperationalListenerTest extends TestBase {
         data = new ChangedData<>(path, vcfg, old);
         operListener.onUpdated(null, data);
 
-        is = getFieldValue(operListener, Boolean.class, "initState");
-        assertEquals(state, is);
+        assertEquals(null, future.get());
+        operListener.awaitConfig(false, 1L);
         assertSame(cur, currentConfig.get());
     }
 
@@ -275,8 +310,10 @@ public class OperationalListenerTest extends TestBase {
     public void testOnRemoved() throws Exception {
         // This should do nothing.
         operListener.onRemoved(null, null);
-        Boolean is = getFieldValue(operListener, Boolean.class, "initState");
-        assertEquals(null, is);
+        @SuppressWarnings("unchecked")
+        SettableVTNFuture<Void> future = (SettableVTNFuture<Void>)
+            getFieldValue(operListener, SettableVTNFuture.class, "initFuture");
+        assertNotNull(future);
         assertEquals(new VTNConfigImpl(), currentConfig.get());
     }
 

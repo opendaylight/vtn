@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -11,6 +11,8 @@ package org.opendaylight.vtn.manager.internal.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Optional;
+
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
@@ -20,11 +22,14 @@ import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
+import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
+import org.opendaylight.controller.md.sal.common.api.clustering.Entity;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipState;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -33,7 +38,6 @@ import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfig;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfigBuilder;
 
 /**
  * VTN configuration listener for configuration view.
@@ -86,13 +90,20 @@ public final class ConfigListener extends DataStoreListener<VtnConfig, Void> {
          */
         @Override
         public Void execute(TxContext ctx) {
-            // Apply new configuration to operational view.
-            LogicalDatastoreType ostore = LogicalDatastoreType.OPERATIONAL;
-            ReadWriteTransaction tx = ctx.getReadWriteTransaction();
-            VtnConfigBuilder builder =
-                VTNConfigImpl.builder(vtnConfig, macAddress);
-            tx.merge(ostore, VTNConfigManager.CONFIG_IDENT, builder.build(),
-                     true);
+            Entity ent = VTNEntityType.getGlobalEntity(VTNEntityType.CONFIG);
+            Optional<EntityOwnershipState> opt =
+                ctx.getProvider().getOwnershipState(ent);
+            if (opt.isPresent() && opt.get().isOwner()) {
+                // Apply new configuration to operational view.
+                LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+                ReadWriteTransaction tx = ctx.getReadWriteTransaction();
+                VtnConfig vcfg = VTNConfigImpl.builder(vtnConfig, macAddress).
+                    build();
+                LOG.trace("Updating vtn-config in operational DS: {}", vcfg);
+                tx.merge(oper, VTNConfigManager.CONFIG_IDENT, vcfg,
+                         true);
+            }
+
             return null;
         }
 
@@ -132,12 +143,19 @@ public final class ConfigListener extends DataStoreListener<VtnConfig, Void> {
          */
         @Override
         public Void execute(TxContext ctx) throws VTNException {
-            // Reset operational view to default.
-            VtnConfigBuilder builder = VTNConfigImpl.builder(macAddress);
-            ReadWriteTransaction tx = ctx.getReadWriteTransaction();
-            LogicalDatastoreType ostore = LogicalDatastoreType.OPERATIONAL;
-            tx.merge(ostore, VTNConfigManager.CONFIG_IDENT, builder.build(),
-                     true);
+            Entity ent = VTNEntityType.getGlobalEntity(VTNEntityType.CONFIG);
+            Optional<EntityOwnershipState> opt =
+                ctx.getProvider().getOwnershipState(ent);
+            if (opt.isPresent() && opt.get().isOwner()) {
+                // Reset operational view to default.
+                VtnConfig vcfg = VTNConfigImpl.builder(macAddress).build();
+                ReadWriteTransaction tx = ctx.getReadWriteTransaction();
+                LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+                LOG.trace("Resetting vtn-config in operational DS: {}", vcfg);
+                tx.merge(oper, VTNConfigManager.CONFIG_IDENT, vcfg,
+                         true);
+            }
+
             return null;
         }
 
@@ -165,7 +183,7 @@ public final class ConfigListener extends DataStoreListener<VtnConfig, Void> {
         txQueue = queue;
         localMacAddress = mac;
         registerListener(broker, LogicalDatastoreType.CONFIGURATION,
-                         DataChangeScope.SUBTREE);
+                         DataChangeScope.SUBTREE, true);
     }
 
     // DataStoreListener

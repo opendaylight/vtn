@@ -25,6 +25,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.base.Optional;
+
 import org.slf4j.Logger;
 
 import org.junit.Test;
@@ -32,8 +34,10 @@ import org.junit.Test;
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.TxContext;
+import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.inventory.xml.XmlStaticEdgePorts;
 import org.opendaylight.vtn.manager.internal.inventory.xml.XmlStaticSwitchLinks;
+import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.LinkUpdateContext;
@@ -84,14 +88,12 @@ public class StaticLinkUpdateTaskTest extends TestBase {
 
         assertEquals(Collections.<SalPort>emptySet(), task.getUpdatedPorts());
         assertEquals(logger, getFieldValue(task, Logger.class, "logger"));
-        assertEquals(null, getFieldValue(task, VtnStaticTopology.class,
-                                         "staticTopology"));
         assertEquals(Boolean.FALSE,
                      getFieldValue(task, Boolean.class, "saveLinks"));
         assertEquals(Boolean.FALSE,
                      getFieldValue(task, Boolean.class, "saveEdges"));
-        assertEquals(Boolean.FALSE,
-                     getFieldValue(task, Boolean.class, "configLoaded"));
+        assertEquals(null,
+                     getFieldValue(task, Optional.class, "staticTopology"));
 
         verifyZeroInteractions(logger);
     }
@@ -118,8 +120,8 @@ public class StaticLinkUpdateTaskTest extends TestBase {
                      getFieldValue(task, Boolean.class, "saveLinks"));
         assertEquals(Boolean.FALSE,
                      getFieldValue(task, Boolean.class, "saveEdges"));
-        assertEquals(Boolean.FALSE,
-                     getFieldValue(task, Boolean.class, "configLoaded"));
+        assertEquals(null,
+                     getFieldValue(task, Optional.class, "staticTopology"));
 
         // Broken configuration should be ignored.
         swlink = new StaticSwitchLinkBuilder().build();
@@ -129,8 +131,8 @@ public class StaticLinkUpdateTaskTest extends TestBase {
                      getFieldValue(task, Boolean.class, "saveLinks"));
         assertEquals(Boolean.FALSE,
                      getFieldValue(task, Boolean.class, "saveEdges"));
-        assertEquals(Boolean.FALSE,
-                     getFieldValue(task, Boolean.class, "configLoaded"));
+        assertEquals(null,
+                     getFieldValue(task, Optional.class, "staticTopology"));
 
         SalPort src = new SalPort(123L, 456L);
         srcId = src.getNodeConnectorId();
@@ -143,8 +145,8 @@ public class StaticLinkUpdateTaskTest extends TestBase {
                      getFieldValue(task, Boolean.class, "saveLinks"));
         assertEquals(Boolean.FALSE,
                      getFieldValue(task, Boolean.class, "saveEdges"));
-        assertEquals(Boolean.FALSE,
-                     getFieldValue(task, Boolean.class, "configLoaded"));
+        assertEquals(null,
+                     getFieldValue(task, Optional.class, "staticTopology"));
 
         // Same port will be ignored.
         dstId = new NodeConnectorId("openflow:10:20");
@@ -156,8 +158,8 @@ public class StaticLinkUpdateTaskTest extends TestBase {
                      getFieldValue(task, Boolean.class, "saveLinks"));
         assertEquals(Boolean.FALSE,
                      getFieldValue(task, Boolean.class, "saveEdges"));
-        assertEquals(Boolean.FALSE,
-                     getFieldValue(task, Boolean.class, "configLoaded"));
+        assertEquals(null,
+                     getFieldValue(task, Optional.class, "staticTopology"));
 
         src = new SalPort(12345L, 6789L);
         srcId = src.getNodeConnectorId();
@@ -170,8 +172,8 @@ public class StaticLinkUpdateTaskTest extends TestBase {
                      getFieldValue(task, Boolean.class, "saveLinks"));
         assertEquals(Boolean.FALSE,
                      getFieldValue(task, Boolean.class, "saveEdges"));
-        assertEquals(Boolean.FALSE,
-                     getFieldValue(task, Boolean.class, "configLoaded"));
+        assertEquals(null,
+                     getFieldValue(task, Optional.class, "staticTopology"));
 
         verifyZeroInteractions(logger);
     }
@@ -202,8 +204,8 @@ public class StaticLinkUpdateTaskTest extends TestBase {
                      getFieldValue(task, Boolean.class, "saveLinks"));
         assertEquals(Boolean.FALSE,
                      getFieldValue(task, Boolean.class, "saveEdges"));
-        assertEquals(Boolean.FALSE,
-                     getFieldValue(task, Boolean.class, "configLoaded"));
+        assertEquals(null,
+                     getFieldValue(task, Optional.class, "staticTopology"));
 
         // Broken configuration should be ignored.
         swlink = new StaticSwitchLinkBuilder().build();
@@ -213,8 +215,8 @@ public class StaticLinkUpdateTaskTest extends TestBase {
                      getFieldValue(task, Boolean.class, "saveLinks"));
         assertEquals(Boolean.FALSE,
                      getFieldValue(task, Boolean.class, "saveEdges"));
-        assertEquals(Boolean.FALSE,
-                     getFieldValue(task, Boolean.class, "configLoaded"));
+        assertEquals(null,
+                     getFieldValue(task, Optional.class, "staticTopology"));
 
         SalPort src = new SalPort(123L, 456L);
         SalPort oldDst = new SalPort(111L, 222L);
@@ -231,8 +233,8 @@ public class StaticLinkUpdateTaskTest extends TestBase {
                      getFieldValue(task, Boolean.class, "saveLinks"));
         assertEquals(Boolean.FALSE,
                      getFieldValue(task, Boolean.class, "saveEdges"));
-        assertEquals(Boolean.FALSE,
-                     getFieldValue(task, Boolean.class, "configLoaded"));
+        assertEquals(null,
+                     getFieldValue(task, Optional.class, "staticTopology"));
 
         // Same port will be ignored.
         newDstId = new NodeConnectorId("openflow:10:20");
@@ -244,8 +246,8 @@ public class StaticLinkUpdateTaskTest extends TestBase {
                      getFieldValue(task, Boolean.class, "saveLinks"));
         assertEquals(Boolean.FALSE,
                      getFieldValue(task, Boolean.class, "saveEdges"));
-        assertEquals(Boolean.FALSE,
-                     getFieldValue(task, Boolean.class, "configLoaded"));
+        assertEquals(null,
+                     getFieldValue(task, Optional.class, "staticTopology"));
 
         src = new SalPort(12345L, 6789L);
         oldDst = new SalPort(333L, 444L);
@@ -262,8 +264,8 @@ public class StaticLinkUpdateTaskTest extends TestBase {
                      getFieldValue(task, Boolean.class, "saveLinks"));
         assertEquals(Boolean.FALSE,
                      getFieldValue(task, Boolean.class, "saveEdges"));
-        assertEquals(Boolean.FALSE,
-                     getFieldValue(task, Boolean.class, "configLoaded"));
+        assertEquals(null,
+                     getFieldValue(task, Optional.class, "staticTopology"));
 
         verifyZeroInteractions(logger);
     }
@@ -288,8 +290,8 @@ public class StaticLinkUpdateTaskTest extends TestBase {
                      getFieldValue(task, Boolean.class, "saveLinks"));
         assertEquals(Boolean.TRUE,
                      getFieldValue(task, Boolean.class, "saveEdges"));
-        assertEquals(Boolean.FALSE,
-                     getFieldValue(task, Boolean.class, "configLoaded"));
+        assertEquals(null,
+                     getFieldValue(task, Optional.class, "staticTopology"));
 
         // Broken configuration should be ignored.
         ep = new StaticEdgePortBuilder().build();
@@ -299,8 +301,8 @@ public class StaticLinkUpdateTaskTest extends TestBase {
                      getFieldValue(task, Boolean.class, "saveLinks"));
         assertEquals(Boolean.TRUE,
                      getFieldValue(task, Boolean.class, "saveEdges"));
-        assertEquals(Boolean.FALSE,
-                     getFieldValue(task, Boolean.class, "configLoaded"));
+        assertEquals(null,
+                     getFieldValue(task, Optional.class, "staticTopology"));
 
         SalPort[] ports = {
             new SalPort(123L, 456L),
@@ -317,8 +319,8 @@ public class StaticLinkUpdateTaskTest extends TestBase {
                          getFieldValue(task, Boolean.class, "saveLinks"));
             assertEquals(Boolean.TRUE,
                          getFieldValue(task, Boolean.class, "saveEdges"));
-            assertEquals(Boolean.FALSE,
-                         getFieldValue(task, Boolean.class, "configLoaded"));
+            assertEquals(null,
+                         getFieldValue(task, Optional.class, "staticTopology"));
         }
 
         // Same port will be ignored.
@@ -331,8 +333,8 @@ public class StaticLinkUpdateTaskTest extends TestBase {
                          getFieldValue(task, Boolean.class, "saveLinks"));
             assertEquals(Boolean.TRUE,
                          getFieldValue(task, Boolean.class, "saveEdges"));
-            assertEquals(Boolean.FALSE,
-                         getFieldValue(task, Boolean.class, "configLoaded"));
+            assertEquals(null,
+                         getFieldValue(task, Optional.class, "staticTopology"));
         }
 
         verifyZeroInteractions(logger);
@@ -343,6 +345,9 @@ public class StaticLinkUpdateTaskTest extends TestBase {
      * {@link StaticLinkUpdateTask#onSuccess(VTNManagerProvider, LinkUpdateContext)}.
      *
      * <ul>
+     *   <li>
+     *     The process is the owner of the VTN inventory.
+     *   </li>
      *   <li>
      *     No configuration is present.
      *   </li>
@@ -355,6 +360,286 @@ public class StaticLinkUpdateTaskTest extends TestBase {
      */
     @Test
     public void testExecuteNoConfig() throws Exception {
+        testExecuteNoConfig(true);
+    }
+
+    /**
+     * Test case for {@link StaticLinkUpdateTask#execute(TxContext)} and
+     * {@link StaticLinkUpdateTask#onSuccess(VTNManagerProvider, LinkUpdateContext)}.
+     *
+     * <ul>
+     *   <li>
+     *     The process is not the owner of the VTN inventory.
+     *   </li>
+     *   <li>
+     *     No configuration is present.
+     *   </li>
+     *   <li>
+     *     No updated ports.
+     *   </li>
+     * <ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testExecuteNoConfigNotOwner() throws Exception {
+        testExecuteNoConfig(false);
+    }
+
+    /**
+     * Test case for {@link StaticLinkUpdateTask#execute(TxContext)} and
+     * {@link StaticLinkUpdateTask#onSuccess(VTNManagerProvider, LinkUpdateContext)}.
+     *
+     * <ul>
+     *   <li>
+     *     The process is the owner of the VTN inventory.
+     *   </li>
+     *   <li>
+     *     Only static link configuration is updated.
+     *   </li>
+     *   <li>
+     *     None of the updated ports are present.
+     *   </li>
+     * <ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testExecuteNoPort() throws Exception {
+        testExecuteNoPort(true);
+    }
+
+    /**
+     * Test case for {@link StaticLinkUpdateTask#execute(TxContext)} and
+     * {@link StaticLinkUpdateTask#onSuccess(VTNManagerProvider, LinkUpdateContext)}.
+     *
+     * <ul>
+     *   <li>
+     *     The process is not the owner of the VTN inventory.
+     *   </li>
+     *   <li>
+     *     Only static link configuration is updated.
+     *   </li>
+     *   <li>
+     *     None of the updated ports are present.
+     *   </li>
+     * <ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testExecuteNoPortNotOwner() throws Exception {
+        testExecuteNoPort(false);
+    }
+
+    /**
+     * Test case for {@link StaticLinkUpdateTask#execute(TxContext)} and
+     * {@link StaticLinkUpdateTask#onSuccess(VTNManagerProvider, LinkUpdateContext)}.
+     *
+     * <ul>
+     *   <li>
+     *     The process is the owner of the VTN inventory.
+     *   </li>
+     *   <li>
+     *     Static inter-switch link is updated, and new static link is
+     *     established.
+     *   </li>
+     *   <li>
+     *     Static edge port is updated, and that port is configured as an
+     *     edge port.
+     *   </li>
+     * <ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testExecuteUpdated() throws Exception {
+        testExecuteUpdated(true);
+    }
+
+    /**
+     * Test case for {@link StaticLinkUpdateTask#execute(TxContext)} and
+     * {@link StaticLinkUpdateTask#onSuccess(VTNManagerProvider, LinkUpdateContext)}.
+     *
+     * <ul>
+     *   <li>
+     *     The process is not the owner of the VTN inventory.
+     *   </li>
+     *   <li>
+     *     Static inter-switch link is updated, and new static link is
+     *     established.
+     *   </li>
+     *   <li>
+     *     Static edge port is updated, and that port is configured as an
+     *     edge port.
+     *   </li>
+     * <ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testExecuteUpdatedNotOwner() throws Exception {
+        testExecuteUpdated(false);
+    }
+
+    /**
+     * Test case for {@link StaticLinkUpdateTask#execute(TxContext)} and
+     * {@link StaticLinkUpdateTask#onFailure(VTNManagerProvider, Throwable)}.
+     *
+     * <ul>
+     *   <li>
+     *     Both static inter-switch link and static edge are updated.
+     *   </li>
+     *   <li>
+     *     Failed to read the static network topology from the config DS.
+     *   </li>
+     * <ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testExecuteConfigReadFailed() throws Exception {
+        XmlConfigFile.init();
+        File[] files = {
+            XmlStaticSwitchLinksTest.getConfigFile(),
+            XmlStaticEdgePortsTest.getConfigFile(),
+        };
+        for (File f: files) {
+            assertFalse(f.exists());
+        }
+
+        ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
+        InventoryReader reader = new InventoryReader(tx);
+        TxContext ctx = mock(TxContext.class);
+        when(ctx.getReadWriteTransaction()).thenReturn(tx);
+
+        // Throw an exception on configuration read operation.
+        IllegalStateException cause = new IllegalStateException();
+        LogicalDatastoreType config = LogicalDatastoreType.CONFIGURATION;
+        InstanceIdentifier<VtnStaticTopology> path =
+            InstanceIdentifier.create(VtnStaticTopology.class);
+        when(tx.read(config, path)).
+            thenReturn(getReadFailure(VtnStaticTopology.class, cause));
+
+        Logger logger = mock(Logger.class);
+        StaticLinkUpdateTask task = new StaticLinkUpdateTask(logger);
+
+        SalPort src = new SalPort(12L, 34L);
+        SalPort newDst = new SalPort(56L, 78L);
+        SalPort oldDst = new SalPort(90L, 12L);
+        StaticSwitchLink swlink = new StaticSwitchLinkBuilder().
+            setSource(src.getNodeConnectorId()).
+            setDestination(newDst.getNodeConnectorId()).
+            build();
+        StaticSwitchLink old = new StaticSwitchLinkBuilder().
+            setSource(src.getNodeConnectorId()).
+            setDestination(oldDst.getNodeConnectorId()).
+            build();
+
+        Set<SalPort> updatedPorts = new HashSet<>();
+        Collections.addAll(updatedPorts, src, oldDst);
+        task.addUpdated(old, swlink);
+
+        SalPort[] edges = {
+            new SalPort(1L, 2L),
+            new SalPort(3L, 4L),
+        };
+        for (SalPort edge: edges) {
+            StaticEdgePort ep = new StaticEdgePortBuilder().
+                setPort(edge.getNodeConnectorId()).build();
+            task.addUpdated(ep);
+            updatedPorts.add(edge);
+        }
+        assertEquals(updatedPorts, task.getUpdatedPorts());
+
+        Throwable caught = null;
+        try {
+            task.execute(ctx);
+            unexpected();
+        } catch (VTNException e) {
+            caught = e;
+            Throwable t = e.getCause();
+            assertTrue(t instanceof ReadFailedException);
+            assertEquals(cause, t.getCause());
+        }
+
+        assertEquals(Boolean.TRUE,
+                     getFieldValue(task, Boolean.class, "saveLinks"));
+        assertEquals(Boolean.TRUE,
+                     getFieldValue(task, Boolean.class, "saveEdges"));
+        assertEquals(null,
+                     getFieldValue(task, Optional.class, "staticTopology"));
+
+        verify(ctx).getReadWriteTransaction();
+        verify(tx).read(config, path);
+        verifyNoMoreInteractions(ctx, tx);
+
+        task.onFailure(null, caught);
+        verify(logger).
+            error("Failed to update VTN static network topology.", caught);
+        verifyNoMoreInteractions(logger);
+
+        // Configuration should not be saved.
+        for (File f: files) {
+            assertFalse(f.exists());
+        }
+    }
+
+    /**
+     * Test case for {@link StaticLinkUpdateTask#execute(TxContext)} and
+     * {@link StaticLinkUpdateTask#onFailure(VTNManagerProvider, Throwable)}.
+     *
+     * <ul>
+     *   <li>
+     *     The process is the owner of the VTN inventory.
+     *   </li>
+     *   <li>
+     *     Only static edge port configuration is updated.
+     *   </li>
+     *   <li>
+     *     Failed to read the updated VTN port from the operational DS.
+     *   </li>
+     * <ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testExecutePortReadFailed() throws Exception {
+        testExecutePortReadFailed(true);
+    }
+
+    /**
+     * Test case for {@link StaticLinkUpdateTask#execute(TxContext)} and
+     * {@link StaticLinkUpdateTask#onFailure(VTNManagerProvider, Throwable)}.
+     *
+     * <ul>
+     *   <li>
+     *     The process is not the owner of the VTN inventory.
+     *   </li>
+     *   <li>
+     *     Only static edge port configuration is updated.
+     *   </li>
+     *   <li>
+     *     Failed to read the updated VTN port from the operational DS.
+     *   </li>
+     * <ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testExecutePortReadFailedNotOwner() throws Exception {
+        testExecutePortReadFailed(false);
+    }
+
+    /**
+     * Common test for {@link #testExecuteNoConfig()} and
+     * {@link #testExecuteNoConfigNotOwner()}.
+     *
+     * @param owner  {@code true} indicates the process is the owner of the
+     *               VTN inventory.
+     * @throws Exception  An error occurred.
+     */
+    private void testExecuteNoConfig(boolean owner) throws Exception {
         XmlConfigFile.init();
         File[] files = {
             XmlStaticSwitchLinksTest.getConfigFile(),
@@ -369,6 +654,10 @@ public class StaticLinkUpdateTaskTest extends TestBase {
         TxContext ctx = mock(TxContext.class);
         when(ctx.getReadWriteTransaction()).thenReturn(tx);
         when(ctx.getReadSpecific(InventoryReader.class)).thenReturn(reader);
+
+        VTNManagerProvider provider = mock(VTNManagerProvider.class);
+        when(provider.isOwner(VTNEntityType.INVENTORY)).thenReturn(owner);
+        when(ctx.getProvider()).thenReturn(provider);
 
         // No configuration is present in the config DS.
         LogicalDatastoreType config = LogicalDatastoreType.CONFIGURATION;
@@ -387,21 +676,30 @@ public class StaticLinkUpdateTaskTest extends TestBase {
         Logger logger = mock(Logger.class);
         StaticLinkUpdateTask task = new StaticLinkUpdateTask(logger);
         when(logger.isDebugEnabled()).thenReturn(true);
+
         LinkUpdateContext luctx = task.execute(ctx);
-        assertNotNull(luctx);
+        if (owner) {
+            assertNotNull(luctx);
+        } else {
+            assertEquals(null, luctx);
+        }
 
         assertEquals(Boolean.FALSE,
                      getFieldValue(task, Boolean.class, "saveLinks"));
         assertEquals(Boolean.FALSE,
                      getFieldValue(task, Boolean.class, "saveEdges"));
-        assertEquals(Boolean.TRUE,
-                     getFieldValue(task, Boolean.class, "configLoaded"));
+        assertEquals(Optional.fromNullable(vstopo),
+                     getFieldValue(task, Optional.class, "staticTopology"));
 
         verify(ctx).getReadWriteTransaction();
-        verify(ctx).getReadSpecific(InventoryReader.class);
+        verify(ctx).getProvider();
+        verify(provider).isOwner(VTNEntityType.INVENTORY);
+        if (owner) {
+            verify(ctx).getReadSpecific(InventoryReader.class);
+            verify(tx).read(oper, igPath);
+        }
         verify(tx).read(config, path);
-        verify(tx).read(oper, igPath);
-        verifyNoMoreInteractions(ctx, tx);
+        verifyNoMoreInteractions(provider, ctx, tx);
 
         // Create dummy configuration files that should be deleted.
         for (File f: files) {
@@ -412,7 +710,9 @@ public class StaticLinkUpdateTaskTest extends TestBase {
         }
 
         task.onSuccess(null, luctx);
-        verify(logger).isDebugEnabled();
+        if (owner) {
+            verify(logger).isDebugEnabled();
+        }
         verifyNoMoreInteractions(logger);
 
         for (File f: files) {
@@ -421,22 +721,14 @@ public class StaticLinkUpdateTaskTest extends TestBase {
     }
 
     /**
-     * Test case for {@link StaticLinkUpdateTask#execute(TxContext)} and
-     * {@link StaticLinkUpdateTask#onSuccess(VTNManagerProvider, LinkUpdateContext)}.
+     * Common test for {@link #testExecuteNoPort()} and
+     * {@link #testExecuteNoPortNotOwner()}.
      *
-     * <ul>
-     *   <li>
-     *     Only static link configuration is updated.
-     *   </li>
-     *   <li>
-     *     None of the updated ports are present.
-     *   </li>
-     * <ul>
-     *
+     * @param owner  {@code true} indicates the process is the owner of the
+     *               VTN inventory.
      * @throws Exception  An error occurred.
      */
-    @Test
-    public void testExecuteNoPort() throws Exception {
+    private void testExecuteNoPort(boolean owner) throws Exception {
         XmlConfigFile.init();
         File linkFile = XmlStaticSwitchLinksTest.getConfigFile();
         File edgeFile = XmlStaticEdgePortsTest.getConfigFile();
@@ -453,6 +745,10 @@ public class StaticLinkUpdateTaskTest extends TestBase {
         TxContext ctx = mock(TxContext.class);
         when(ctx.getReadWriteTransaction()).thenReturn(tx);
         when(ctx.getReadSpecific(InventoryReader.class)).thenReturn(reader);
+
+        VTNManagerProvider provider = mock(VTNManagerProvider.class);
+        when(provider.isOwner(VTNEntityType.INVENTORY)).thenReturn(owner);
+        when(ctx.getProvider()).thenReturn(provider);
 
         // Create configurations to be saved.
         SalPort src = new SalPort(12L, 34L);
@@ -516,23 +812,33 @@ public class StaticLinkUpdateTaskTest extends TestBase {
         reader.prefetch(oldDst, (VtnPort)null);
 
         LinkUpdateContext luctx = task.execute(ctx);
-        assertNotNull(luctx);
+        if (owner) {
+            assertNotNull(luctx);
+        } else {
+            assertEquals(null, luctx);
+        }
 
         assertEquals(Boolean.TRUE,
                      getFieldValue(task, Boolean.class, "saveLinks"));
         assertEquals(Boolean.FALSE,
                      getFieldValue(task, Boolean.class, "saveEdges"));
-        assertEquals(Boolean.TRUE,
-                     getFieldValue(task, Boolean.class, "configLoaded"));
+        assertEquals(Optional.fromNullable(vstopo),
+                     getFieldValue(task, Optional.class, "staticTopology"));
 
         verify(ctx).getReadWriteTransaction();
-        verify(ctx).getReadSpecific(InventoryReader.class);
+        verify(ctx).getProvider();
+        verify(provider).isOwner(VTNEntityType.INVENTORY);
+        if (owner) {
+            verify(ctx).getReadSpecific(InventoryReader.class);
+            verify(tx).read(oper, igPath);
+        }
         verify(tx).read(config, path);
-        verify(tx).read(oper, igPath);
         verifyNoMoreInteractions(ctx, tx);
 
         task.onSuccess(null, luctx);
-        verify(logger).isDebugEnabled();
+        if (owner) {
+            verify(logger).isDebugEnabled();
+        }
         verifyNoMoreInteractions(logger);
 
         // Only static links should be saved.
@@ -547,24 +853,14 @@ public class StaticLinkUpdateTaskTest extends TestBase {
     }
 
     /**
-     * Test case for {@link StaticLinkUpdateTask#execute(TxContext)} and
-     * {@link StaticLinkUpdateTask#onSuccess(VTNManagerProvider, LinkUpdateContext)}.
+     * Common test for {@link #testExecuteUpdated()} and
+     * {@link #testExecuteUpdatedNotOwner()}.
      *
-     * <ul>
-     *   <li>
-     *     Static inter-switch link is updated, and new static link is
-     *     established.
-     *   </li>
-     *   <li>
-     *     Static edge port is updated, and that port is configured as an
-     *     edge port.
-     *   </li>
-     * <ul>
-     *
+     * @param owner  {@code true} indicates the process is the owner of the
+     *               VTN inventory.
      * @throws Exception  An error occurred.
      */
-    @Test
-    public void testExecuteUpdated() throws Exception {
+    private void testExecuteUpdated(boolean owner) throws Exception {
         XmlConfigFile.init();
         File[] files = {
             XmlStaticSwitchLinksTest.getConfigFile(),
@@ -579,6 +875,10 @@ public class StaticLinkUpdateTaskTest extends TestBase {
         TxContext ctx = mock(TxContext.class);
         when(ctx.getReadWriteTransaction()).thenReturn(tx);
         when(ctx.getReadSpecific(InventoryReader.class)).thenReturn(reader);
+
+        VTNManagerProvider provider = mock(VTNManagerProvider.class);
+        when(provider.isOwner(VTNEntityType.INVENTORY)).thenReturn(owner);
+        when(ctx.getProvider()).thenReturn(provider);
 
         // sport1 is configured as an static edge port.
         SalPort sport1 = new SalPort(11L, 22L);
@@ -696,91 +996,108 @@ public class StaticLinkUpdateTaskTest extends TestBase {
         reader.prefetch(peer2, vpeer2);
 
         LinkUpdateContext luctx = task.execute(ctx);
-        assertNotNull(luctx);
+        if (owner) {
+            assertNotNull(luctx);
+        } else {
+            assertEquals(null, luctx);
+        }
 
         assertEquals(Boolean.TRUE,
                      getFieldValue(task, Boolean.class, "saveLinks"));
         assertEquals(Boolean.TRUE,
                      getFieldValue(task, Boolean.class, "saveEdges"));
-        assertEquals(Boolean.TRUE,
-                     getFieldValue(task, Boolean.class, "configLoaded"));
+        assertEquals(Optional.fromNullable(vstopo),
+                     getFieldValue(task, Optional.class, "staticTopology"));
 
         verify(ctx).getReadWriteTransaction();
-        verify(ctx).getReadSpecific(InventoryReader.class);
+        verify(ctx).getProvider();
+        verify(provider).isOwner(VTNEntityType.INVENTORY);
         verify(tx).read(config, path);
 
-        // Links on sport1 will be removed.
-        verify(tx).read(oper, lpath11);
-        verify(tx).read(oper, lpath12);
-        verify(tx).read(oper, lpath13);
-        verify(tx).delete(oper, lpath11);
-        verify(tx).delete(oper, lpath12);
-        verify(tx).delete(oper, lpath13);
+        if (owner) {
+            verify(ctx).getReadSpecific(InventoryReader.class);
 
-        verify(tx).read(oper, spath12);
-        verify(tx).read(oper, spath13);
-        verify(tx).delete(oper, spath11);
-        verify(tx).delete(oper, spath12);
-        verify(tx).delete(oper, spath13);
+            // Links on sport1 will be removed.
+            verify(tx).read(oper, lpath11);
+            verify(tx).read(oper, lpath12);
+            verify(tx).read(oper, lpath13);
+            verify(tx).delete(oper, lpath11);
+            verify(tx).delete(oper, lpath12);
+            verify(tx).delete(oper, lpath13);
 
-        verify(tx).read(oper, dpath11);
-        verify(tx).delete(oper, dpath11);
-        verify(tx).delete(oper, dpath12);
-        verify(tx).delete(oper, dpath13);
+            verify(tx).read(oper, spath12);
+            verify(tx).read(oper, spath13);
+            verify(tx).delete(oper, spath11);
+            verify(tx).delete(oper, spath12);
+            verify(tx).delete(oper, spath13);
 
-        verify(tx).
-            put(oper, isl11.getIgnoredLinkPath(), isl11.getIgnoredLink(), true);
-        verify(tx).
-            put(oper, isl12.getIgnoredLinkPath(), isl12.getIgnoredLink(), true);
+            verify(tx).read(oper, dpath11);
+            verify(tx).delete(oper, dpath11);
+            verify(tx).delete(oper, dpath12);
+            verify(tx).delete(oper, dpath13);
 
-        // isl21 will be established.
-        InstanceIdentifier<PortLink> spath21 = isl21.getSourceLinkPath();
-        InstanceIdentifier<PortLink> dpath21 = isl21.getDestinationLinkPath();
+            verify(tx).
+                put(oper, isl11.getIgnoredLinkPath(), isl11.getIgnoredLink(),
+                    true);
+            verify(tx).
+                put(oper, isl12.getIgnoredLinkPath(), isl12.getIgnoredLink(),
+                    true);
 
-        verify(tx).read(oper, lpath21);
-        verify(tx).put(oper, lpath21, isl21.getVtnLink(), true);
-        verify(tx).put(oper, spath21, isl21.getSourceLink(), true);
-        verify(tx).put(oper, dpath21, isl21.getDestinationLink(), true);
+            // isl21 will be established.
+            InstanceIdentifier<PortLink> spath21 = isl21.getSourceLinkPath();
+            InstanceIdentifier<PortLink> dpath21 =
+                isl21.getDestinationLinkPath();
 
-        // LinkUpdateContext.resolveIgnoredLinks() will found isl11 and isl12,
-        // but they should not be resolved because sport1 is configured as a
-        // static edge port.
-        verify(tx).read(oper, igPath);
+            verify(tx).read(oper, lpath21);
+            verify(tx).put(oper, lpath21, isl21.getVtnLink(), true);
+            verify(tx).put(oper, spath21, isl21.getSourceLink(), true);
+            verify(tx).put(oper, dpath21, isl21.getDestinationLink(), true);
+
+            // LinkUpdateContext.resolveIgnoredLinks() will found isl11 and
+            // isl12, but they should not be resolved because sport1 is
+            // configured as a  static edge port.
+            verify(tx).read(oper, igPath);
+        }
+
         verifyNoMoreInteractions(ctx, tx);
 
         task.onSuccess(null, luctx);
-        verify(logger).isDebugEnabled();
 
-        String msg = "Inter-switch link has been superseded by static topology";
-        VtnLink vlink11 = isl11.getVtnLink();
-        VtnLink vlink12 = isl12.getVtnLink();
-        verify(logger).
-            info("{}: {}: {} -> {}", msg,
-                 vlink11.getLinkId().getValue(),
-                 vlink11.getSource().getValue(),
-                 vlink11.getDestination().getValue());
-        verify(logger).
-            info("{}: {}: {} -> {}", msg,
-                 vlink12.getLinkId().getValue(),
-                 vlink12.getSource().getValue(),
-                 vlink12.getDestination().getValue());
-        verify(logger).
-            info("{}: Port has been updated as a static edge port.", sport1);
+        if (owner) {
+            verify(logger).isDebugEnabled();
 
-        msg = "Skip ignored-link";
-        verify(logger).
-            debug("{}: {}: {} -> {}: cause={}", msg,
-                  vlink11.getLinkId().getValue(),
-                  vlink11.getSource().getValue(),
-                  vlink11.getDestination().getValue(),
-                  "Source port is configured as static edge port.");
-        verify(logger).
-            debug("{}: {}: {} -> {}: cause={}", msg,
-                  vlink12.getLinkId().getValue(),
-                  vlink12.getSource().getValue(),
-                  vlink12.getDestination().getValue(),
-                  "Destination port is configured as static edge port.");
+            String msg =
+                "Inter-switch link has been superseded by static topology";
+            VtnLink vlink11 = isl11.getVtnLink();
+            VtnLink vlink12 = isl12.getVtnLink();
+            verify(logger).
+                info("{}: {}: {} -> {}", msg,
+                     vlink11.getLinkId().getValue(),
+                     vlink11.getSource().getValue(),
+                     vlink11.getDestination().getValue());
+            verify(logger).
+                info("{}: {}: {} -> {}", msg,
+                     vlink12.getLinkId().getValue(),
+                     vlink12.getSource().getValue(),
+                     vlink12.getDestination().getValue());
+            verify(logger).
+                info("{}: Port has been updated as a static edge port.",
+                     sport1);
 
+            msg = "Skip ignored-link";
+            verify(logger).
+                debug("{}: {}: {} -> {}: cause={}", msg,
+                      vlink11.getLinkId().getValue(),
+                      vlink11.getSource().getValue(),
+                      vlink11.getDestination().getValue(),
+                      "Source port is configured as static edge port.");
+            verify(logger).
+                debug("{}: {}: {} -> {}: cause={}", msg,
+                      vlink12.getLinkId().getValue(),
+                      vlink12.getSource().getValue(),
+                      vlink12.getDestination().getValue(),
+                      "Destination port is configured as static edge port.");
+        }
         verifyNoMoreInteractions(logger);
 
         // Static network topology should be saved.
@@ -801,127 +1118,14 @@ public class StaticLinkUpdateTaskTest extends TestBase {
     }
 
     /**
-     * Test case for {@link StaticLinkUpdateTask#execute(TxContext)} and
-     * {@link StaticLinkUpdateTask#onFailure(VTNManagerProvider, Throwable)}.
+     * Common test for {@link #testExecutePortReadFailed()} and
+     * {@link #testExecutePortReadFailedNotOwner()}.
      *
-     * <ul>
-     *   <li>
-     *     Both static inter-switch link and static edge are updated.
-     *   </li>
-     *   <li>
-     *     Failed to read the static network topology from the config DS.
-     *   </li>
-     * <ul>
-     *
+     * @param owner  {@code true} indicates the process is the owner of the
+     *               VTN inventory.
      * @throws Exception  An error occurred.
      */
-    @Test
-    public void testExecuteConfigReadFailed() throws Exception {
-        XmlConfigFile.init();
-        File[] files = {
-            XmlStaticSwitchLinksTest.getConfigFile(),
-            XmlStaticEdgePortsTest.getConfigFile(),
-        };
-        for (File f: files) {
-            assertFalse(f.exists());
-        }
-
-        ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
-        InventoryReader reader = new InventoryReader(tx);
-        TxContext ctx = mock(TxContext.class);
-        when(ctx.getReadWriteTransaction()).thenReturn(tx);
-        when(ctx.getReadSpecific(InventoryReader.class)).thenReturn(reader);
-
-        // Throw an exception on configuration read operation.
-        IllegalStateException cause = new IllegalStateException();
-        LogicalDatastoreType config = LogicalDatastoreType.CONFIGURATION;
-        InstanceIdentifier<VtnStaticTopology> path =
-            InstanceIdentifier.create(VtnStaticTopology.class);
-        when(tx.read(config, path)).
-            thenReturn(getReadFailure(VtnStaticTopology.class, cause));
-
-        Logger logger = mock(Logger.class);
-        StaticLinkUpdateTask task = new StaticLinkUpdateTask(logger);
-
-        SalPort src = new SalPort(12L, 34L);
-        SalPort newDst = new SalPort(56L, 78L);
-        SalPort oldDst = new SalPort(90L, 12L);
-        StaticSwitchLink swlink = new StaticSwitchLinkBuilder().
-            setSource(src.getNodeConnectorId()).
-            setDestination(newDst.getNodeConnectorId()).
-            build();
-        StaticSwitchLink old = new StaticSwitchLinkBuilder().
-            setSource(src.getNodeConnectorId()).
-            setDestination(oldDst.getNodeConnectorId()).
-            build();
-
-        Set<SalPort> updatedPorts = new HashSet<>();
-        Collections.addAll(updatedPorts, src, oldDst);
-        task.addUpdated(old, swlink);
-
-        SalPort[] edges = {
-            new SalPort(1L, 2L),
-            new SalPort(3L, 4L),
-        };
-        for (SalPort edge: edges) {
-            StaticEdgePort ep = new StaticEdgePortBuilder().
-                setPort(edge.getNodeConnectorId()).build();
-            task.addUpdated(ep);
-            updatedPorts.add(edge);
-        }
-        assertEquals(updatedPorts, task.getUpdatedPorts());
-
-        Throwable caught = null;
-        try {
-            task.execute(ctx);
-            unexpected();
-        } catch (VTNException e) {
-            caught = e;
-            Throwable t = e.getCause();
-            assertTrue(t instanceof ReadFailedException);
-            assertEquals(cause, t.getCause());
-        }
-
-        assertEquals(Boolean.TRUE,
-                     getFieldValue(task, Boolean.class, "saveLinks"));
-        assertEquals(Boolean.TRUE,
-                     getFieldValue(task, Boolean.class, "saveEdges"));
-        assertEquals(Boolean.FALSE,
-                     getFieldValue(task, Boolean.class, "configLoaded"));
-
-        verify(ctx).getReadWriteTransaction();
-        verify(ctx).getReadSpecific(InventoryReader.class);
-        verify(tx).read(config, path);
-        verifyNoMoreInteractions(ctx, tx);
-
-        task.onFailure(null, caught);
-        verify(logger).
-            error("Failed to update VTN static network topology.", caught);
-        verifyNoMoreInteractions(logger);
-
-        // Configuration should not be saved.
-        for (File f: files) {
-            assertFalse(f.exists());
-        }
-    }
-
-    /**
-     * Test case for {@link StaticLinkUpdateTask#execute(TxContext)} and
-     * {@link StaticLinkUpdateTask#onFailure(VTNManagerProvider, Throwable)}.
-     *
-     * <ul>
-     *   <li>
-     *     Only static edge port configuration is updated.
-     *   </li>
-     *   <li>
-     *     Failed to read the updated VTN port from the operational DS.
-     *   </li>
-     * <ul>
-     *
-     * @throws Exception  An error occurred.
-     */
-    @Test
-    public void testExecutePortReadFailed() throws Exception {
+    private void testExecutePortReadFailed(boolean owner) throws Exception {
         XmlConfigFile.init();
         File linkFile = XmlStaticSwitchLinksTest.getConfigFile();
         File edgeFile = XmlStaticEdgePortsTest.getConfigFile();
@@ -938,6 +1142,10 @@ public class StaticLinkUpdateTaskTest extends TestBase {
         TxContext ctx = mock(TxContext.class);
         when(ctx.getReadWriteTransaction()).thenReturn(tx);
         when(ctx.getReadSpecific(InventoryReader.class)).thenReturn(reader);
+
+        VTNManagerProvider provider = mock(VTNManagerProvider.class);
+        when(provider.isOwner(VTNEntityType.INVENTORY)).thenReturn(owner);
+        when(ctx.getProvider()).thenReturn(provider);
 
         // Create configurations to be saved.
         StaticSwitchLink swlink1 = new StaticSwitchLinkBuilder().
@@ -988,25 +1196,36 @@ public class StaticLinkUpdateTaskTest extends TestBase {
         Throwable caught = null;
         try {
             task.execute(ctx);
-            unexpected();
+            if (owner) {
+                unexpected();
+            }
         } catch (VTNException e) {
-            caught = e;
-            Throwable t = e.getCause();
-            assertTrue(t instanceof ReadFailedException);
-            assertEquals(cause, t.getCause());
+            if (owner) {
+                caught = e;
+                Throwable t = e.getCause();
+                assertTrue(t instanceof ReadFailedException);
+                assertEquals(cause, t.getCause());
+            } else {
+                unexpected(e);
+            }
         }
 
         assertEquals(Boolean.FALSE,
                      getFieldValue(task, Boolean.class, "saveLinks"));
         assertEquals(Boolean.TRUE,
                      getFieldValue(task, Boolean.class, "saveEdges"));
-        assertEquals(Boolean.TRUE,
-                     getFieldValue(task, Boolean.class, "configLoaded"));
+        assertEquals(Optional.fromNullable(vstopo),
+                     getFieldValue(task, Optional.class, "staticTopology"));
 
         verify(ctx).getReadWriteTransaction();
-        verify(ctx).getReadSpecific(InventoryReader.class);
+        verify(ctx).getProvider();
+        verify(provider).isOwner(VTNEntityType.INVENTORY);
         verify(tx).read(config, path);
-        verify(tx).read(oper, portPath);
+
+        if (owner) {
+            verify(ctx).getReadSpecific(InventoryReader.class);
+            verify(tx).read(oper, portPath);
+        }
         verifyNoMoreInteractions(ctx, tx);
 
         task.onFailure(null, caught);

@@ -13,7 +13,6 @@ import java.net.SocketException;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -41,15 +40,18 @@ import org.opendaylight.vtn.manager.internal.util.tx.TxQueueImpl;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
+import org.opendaylight.controller.md.sal.common.api.clustering.Entity;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipChange;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListener;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListenerRegistration;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipState;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfigBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 /**
  * VTN global configuration manager.
@@ -147,13 +149,14 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
             }
 
             // Initialize the VTN configuration in operational view.
-            VtnConfigBuilder builder = VTNConfigImpl.builder(vcfg, macAddress);
-
             // Set false to init-state to notify that the configuration
             // is initializing.
-            builder.setInitState(Boolean.FALSE);
+            vcfg = VTNConfigImpl.builder(vcfg, macAddress).
+                setInitState(Boolean.FALSE).
+                build();
             LogicalDatastoreType ostore = LogicalDatastoreType.OPERATIONAL;
-            tx.put(ostore, CONFIG_IDENT, builder.build(), true);
+            LOG.trace("Loaded vtn-config: {}", vcfg);
+            tx.put(ostore, CONFIG_IDENT, vcfg, true);
 
             return null;
         }
@@ -266,7 +269,38 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
 
             // Register a listener in order to determine the ownership of the
             // VTN configuration.
-            listener = provider.registerListener(VTNEntityType.CONFIG, this);
+            VTNEntityType etype = VTNEntityType.CONFIG;
+            listener = provider.registerListener(etype, this);
+
+            // Check the current ownership state.
+            Entity ent = VTNEntityType.getGlobalEntity(etype);
+            Optional<EntityOwnershipState> opt =
+                provider.getOwnershipState(ent);
+            if (opt.isPresent()) {
+                EntityOwnershipState estate = opt.get();
+                LOG.debug("Current ownership state: {}", estate);
+                if (estate.hasOwner()) {
+                    startInitTask(estate.isOwner());
+                }
+            }
+        }
+
+        /**
+         * Start the MD-SAL datastore task that initializes the
+         * VTN configuration.
+         *
+         * @param owner  {@code true} indicates that this process owns the
+         *               VTN configuration.
+         */
+        private void startInitTask(boolean owner) {
+            if (!initialized.getAndSet(true)) {
+                TxTask<Boolean> task = (owner)
+                    ? new ConfigLoadTask(macAddress)
+                    : new ConfigSaveTask();
+                LOG.trace("Start vtn-config init task: owner={}, task={}",
+                          owner, task);
+                Futures.addCallback(txQueue.postFirst(task), this);
+            }
         }
 
         // EntityOwnershipListener
@@ -281,12 +315,8 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
         public void ownershipChanged(EntityOwnershipChange change) {
             LOG.debug("Received VTN config ownership change: {}", change);
 
-            if (change.hasOwner() && !initialized.getAndSet(true)) {
-                // Start DS task that initializes the VTN configuration.
-                TxTask<Boolean> task = (change.isOwner())
-                    ? new ConfigLoadTask(macAddress)
-                    : new ConfigSaveTask();
-                Futures.addCallback(txQueue.postFirst(task), this);
+            if (change.hasOwner()) {
+                startInitTask(change.isOwner());
             }
         }
 
@@ -551,15 +581,19 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
         // initialization.
         long millis = current.get().getInitTimeout();
         try {
-            opl.awaitConfig(millis);
-        } catch (InterruptedException e) {
-            String msg = "Initialization thread was interrupted.";
-            LOG.error(msg, e);
-            throw new IllegalStateException(msg, e);
-        } catch (TimeoutException e) {
-            LOG.warn("Initialization did not complete within {} milliseconds.",
-                     millis);
-            configProvider = true;
+            opl.awaitConfig(initState.booleanValue(), millis);
+        } catch (VTNException e) {
+            VtnErrorTag vtag = e.getVtnErrorTag();
+            String msg;
+            if (vtag == VtnErrorTag.TIMEOUT) {
+                msg = "Initialization did not complete within " + millis +
+                    " milliseconds.";
+                LOG.warn(msg, e);
+            } else {
+                msg = "Failed to synchronize the initialization.";
+                LOG.error(msg, e);
+                throw new IllegalStateException(msg, e);
+            }
         }
     }
 

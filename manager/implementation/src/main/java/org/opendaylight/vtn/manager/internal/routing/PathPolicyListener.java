@@ -243,7 +243,7 @@ final class PathPolicyListener
         topology = topo;
         registerListener(provider.getDataBroker(),
                          LogicalDatastoreType.OPERATIONAL,
-                         DataChangeScope.SUBTREE);
+                         DataChangeScope.SUBTREE, true);
     }
 
     /**

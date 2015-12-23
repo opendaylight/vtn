@@ -231,7 +231,7 @@ public final class FlowCondManager
         vtnProvider = provider;
         registerListener(provider.getDataBroker(),
                          LogicalDatastoreType.OPERATIONAL,
-                         DataChangeScope.SUBTREE);
+                         DataChangeScope.SUBTREE, true);
     }
 
     /**

@@ -12,6 +12,9 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nonnull;
+
+import org.opendaylight.controller.md.sal.binding.api.ClusteredDataChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
@@ -38,6 +41,41 @@ public abstract class AbstractDataChangeListener<T extends DataObject, C>
     private final Class<T>  targetType;
 
     /**
+     * A clustered data change listener that wraps the specified data change
+     * listener.
+     */
+    private static final class ClusteredListener
+        implements ClusteredDataChangeListener {
+        /**
+         * A data change listener that listens data change events.
+         */
+        private final DataChangeListener  theListener;
+
+        /**
+         * Construct a new instance.
+         *
+         * @param listener  A data change listener that listens data change
+         *                  events.
+         */
+        private ClusteredListener(@Nonnull DataChangeListener listener) {
+            theListener = listener;
+        }
+
+        // DataChangeListener
+
+        /**
+         * Invoked when at least an entry in the datastore has been changed.
+         *
+         * @param ev  An {@link AsyncDataChangeEvent} instance.
+         */
+        @Override
+        public void onDataChanged(
+            AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
+            theListener.onDataChanged(ev);
+        }
+    }
+
+    /**
      * Construct a new instance.
      *
      * @param cls  A {@link Class} instance that represents the target type.
@@ -58,19 +96,26 @@ public abstract class AbstractDataChangeListener<T extends DataObject, C>
     /**
      * Register this instance as a data change listener.
      *
-     * @param broker  A {@link DataBroker} service instance.
-     * @param store   A {@link LogicalDatastoreType} instance used to determine
-     *                the target datastore.
-     * @param scope   A {@link DataChangeScope} instance used to register
-     *                data change listener.
+     * @param broker     A {@link DataBroker} service instance.
+     * @param store      A {@link LogicalDatastoreType} instance used to
+     *                   determine the target datastore.
+     * @param scope      A {@link DataChangeScope} instance used to register
+     *                   data change listener.
+     * @param clustered  If {@code true}, data change events will be delivered
+     *                   to all the nodes in the cluster.
+     *                   If {@code false}, data change events will be delivered
+     *                   to only the data shard leader.
      */
     protected final void registerListener(DataBroker broker,
                                           LogicalDatastoreType store,
-                                          DataChangeScope scope) {
+                                          DataChangeScope scope,
+                                          boolean clustered) {
         InstanceIdentifier<?> path = getWildcardPath();
+        DataChangeListener listener = (clustered)
+            ? new ClusteredListener(this) : this;
         try {
-            ListenerRegistration<DataChangeListener> reg =
-                broker.registerDataChangeListener(store, path, this, scope);
+            ListenerRegistration<DataChangeListener> reg = broker.
+                registerDataChangeListener(store, path, listener, scope);
             addCloseable(reg);
         } catch (Exception e) {
             StringBuilder builder =

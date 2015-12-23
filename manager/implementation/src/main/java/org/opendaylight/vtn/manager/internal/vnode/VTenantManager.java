@@ -375,6 +375,8 @@ public final class VTenantManager
                         XmlVTenant xvtn = new XmlVTenant(vtn);
                         String name = xvtn.getName().getValue();
                         XmlConfigFile.save(ftype, name, xvtn);
+                        LOG.trace("{}: VTN configuration has been saved.",
+                                  name);
                         names.add(name);
                     } catch (RpcException | RuntimeException e) {
                         LOG.warn("Ignore broken VTN: " + vtn, e);
@@ -1305,11 +1307,10 @@ public final class VTenantManager
     public VTenantManager(VTNManagerProvider provider) {
         super(Vtn.class);
         vtnProvider = provider;
+        vBridgeManager = new VBridgeManager(provider);
         registerListener(provider.getDataBroker(),
                          LogicalDatastoreType.OPERATIONAL,
-                         DataChangeScope.SUBTREE);
-
-        vBridgeManager = new VBridgeManager(provider);
+                         DataChangeScope.SUBTREE, true);
     }
 
     /**

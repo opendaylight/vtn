@@ -9,6 +9,8 @@
 package org.opendaylight.vtn.manager.internal.inventory;
 
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
@@ -33,8 +35,8 @@ import org.slf4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.mockito.Mock;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxQueue;
@@ -55,6 +57,7 @@ import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.vtn.manager.internal.inventory.xml.XmlStaticEdgePortsTest;
 import org.opendaylight.vtn.manager.internal.inventory.xml.XmlStaticSwitchLinksTest;
 
+import org.opendaylight.controller.md.sal.binding.api.ClusteredDataChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
@@ -124,22 +127,33 @@ public class StaticTopologyManagerTest extends TestBase {
 
         when(vtnProvider.getDataBroker()).thenReturn(dataBroker);
         when(dataBroker.registerDataChangeListener(
-                 any(LogicalDatastoreType.class), any(InstanceIdentifier.class),
-                 any(StaticTopologyManager.class), any(DataChangeScope.class))).
+                 eq(LogicalDatastoreType.CONFIGURATION), eq(getPath()),
+                 isA(ClusteredDataChangeListener.class),
+                 any(DataChangeScope.class))).
             thenReturn(registration);
         testInstance = new StaticTopologyManager(vtnProvider, txQueue);
     }
 
     /**
      * Test case for {@link StaticTopologyManager#StaticTopologyManager(VTNManagerProvider, TxQueue)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void testConstructor() {
+    public void testConstructor() throws Exception {
         LogicalDatastoreType config = LogicalDatastoreType.CONFIGURATION;
         DataChangeScope scope = DataChangeScope.SUBTREE;
         InstanceIdentifier<VtnStaticTopology> path = getPath();
-        verify(dataBroker).
-            registerDataChangeListener(config, path, testInstance, scope);
+        ArgumentCaptor<ClusteredDataChangeListener> captor =
+            ArgumentCaptor.forClass(ClusteredDataChangeListener.class);
+        verify(dataBroker).registerDataChangeListener(
+            eq(config), eq(path), captor.capture(), eq(scope));
+        List<ClusteredDataChangeListener> wrappers = captor.getAllValues();
+        assertEquals(1, wrappers.size());
+        ClusteredDataChangeListener cdcl = wrappers.get(0);
+        assertEquals(testInstance,
+                     getFieldValue(cdcl, DataChangeListener.class,
+                                   "theListener"));
         verifyZeroInteractions(txQueue, registration);
         assertEquals(VtnStaticTopology.class, testInstance.getTargetType());
     }

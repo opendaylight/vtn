@@ -15,6 +15,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -49,6 +50,7 @@ import org.opendaylight.vtn.manager.internal.flow.remove.PathPolicyFlowRemover;
 import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
+import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
 import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
@@ -58,6 +60,7 @@ import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
+import org.opendaylight.controller.md.sal.binding.api.ClusteredDataChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
@@ -71,7 +74,6 @@ import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.opendaylight.yangtools.yang.binding.Notification;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.RoutingUpdated;
@@ -175,14 +177,24 @@ public class VTNRoutingManagerTest extends TestBase {
         when(roTransaction.read(oper, topoPath)).
             thenReturn(getReadResult(initialTopology));
 
+        InstanceIdentifier<VtnPathPolicy> policyPath = InstanceIdentifier.
+            builder(VtnPathPolicies.class).
+            child(VtnPathPolicy.class).
+            build();
         when(dataBroker.registerDataChangeListener(
-                 any(LogicalDatastoreType.class), any(InstanceIdentifier.class),
-                 isA(PathPolicyListener.class), any(DataChangeScope.class))).
+                 eq(LogicalDatastoreType.OPERATIONAL), eq(policyPath),
+                 isA(ClusteredDataChangeListener.class),
+                 any(DataChangeScope.class))).
             thenReturn(ppListenerReg);
 
+        InstanceIdentifier<VtnLink> linkPath = InstanceIdentifier.
+            builder(VtnTopology.class).
+            child(VtnLink.class).
+            build();
         when(dataBroker.registerDataChangeListener(
-                 any(LogicalDatastoreType.class), any(InstanceIdentifier.class),
-                 isA(VTNRoutingManager.class), any(DataChangeScope.class))).
+                 eq(LogicalDatastoreType.OPERATIONAL), eq(linkPath),
+                 isA(ClusteredDataChangeListener.class),
+                 any(DataChangeScope.class))).
             thenReturn(routingListenerReg);
 
         routingManager = new VTNRoutingManager(vtnProvider);
@@ -379,119 +391,29 @@ public class VTNRoutingManagerTest extends TestBase {
     /**
      * Test case for {@link VTNRoutingManager#exitEvent(TopologyEventContext)}.
      *
+     * <ul>
+     *   <li>The process is the owner of the VTN inventory.
+     * </ul>
+     *
      * @throws Exception  An error occurred.
      */
     @Test
     public void testExitEvent() throws Exception {
-        final int nlisteners = 3;
-        VTNRoutingListener[] listeners = new VTNRoutingListener[nlisteners];
-        for (int i = 0; i < nlisteners; i++) {
-            VTNRoutingListener l = mock(VTNRoutingListener.class);
-            listeners[i] = l;
-            routingManager.addListener(l);
-        }
+        testExitEvent(true);
+    }
 
-        // In case where topology was not changed.
-        reset(vtnProvider);
-        TopologyEventContext ectx = new TopologyEventContext();
-        routingManager.exitEvent(ectx);
-        verifyZeroInteractions(vtnProvider);
-        for (VTNRoutingListener l: listeners) {
-            verifyZeroInteractions(l);
-        }
-
-        // In case where 2 links were added.
-        TopologyGraph topo = getTopologyGraph(routingManager);
-        assertTrue(topo.getVertices().isEmpty());
-        SalNode snode1 = new SalNode(1L);
-        SalNode snode2 = new SalNode(2L);
-        Set<SalNode> nodes = new HashSet<>();
-        Collections.addAll(nodes, snode1, snode2);
-
-        List<VtnLink> vlinks = new ArrayList<>();
-        createVtnLink(vlinks, snode1, 1L, snode2, 1L);
-
-        List<AddedLink> addedLinks = new ArrayList<>();
-        for (VtnLink vlink: vlinks) {
-            ectx.addCreated(vlink);
-            addedLinks.add(new AddedLinkBuilder(vlink).build());
-        }
-        RoutingUpdated updated = new RoutingUpdatedBuilder().
-            setAddedLink(addedLinks).
-            setRemovedLink(Collections.<RemovedLink>emptyList()).
-            build();
-        routingManager.exitEvent(ectx);
-        verify(vtnProvider).publish(updated);
-        verify(vtnProvider, times(nlisteners)).post(any(TxTask.class));
-        ArgumentCaptor<RoutingEvent> captor =
-            ArgumentCaptor.forClass(RoutingEvent.class);
-        verify(vtnProvider, times(nlisteners)).post(captor.capture());
-        List<RoutingEvent> delivered = captor.getAllValues();
-        assertEquals(nlisteners, delivered.size());
-        for (int i = 0; i < nlisteners; i++) {
-            RoutingEvent ev = delivered.get(i);
-            assertEquals(listeners[i],
-                         getFieldValue(ev, VTNRoutingListener.class,
-                                       "listener"));
-            verifyZeroInteractions(listeners[i]);
-        }
-
-        Collection<SalNode> verts = topo.getVertices();
-        assertEquals(nodes.size(), verts.size());
-        for (SalNode snode: verts) {
-            assertEquals(true, nodes.contains(snode));
-        }
-
-        // openflow:1:1 -> openflow:2:1
-        SalPort sport11 = new SalPort(1L, 1L);
-        SalPort sport21 = new SalPort(2L, 1L);
-        checkRoute(snode1, snode2, sport11, sport21);
-
-        // openflow:2:1 -> openflow:1:1
-        checkRoute(snode2, snode1, sport21, sport11);
-
-        // In case where the link from openflow:1:1 to openflow:2:1 was
-        // removed.
-        reset(vtnProvider);
-        VtnLink vlink = new VtnLinkBuilder().
-            setLinkId(new LinkId(sport11.toString())).
-            setSource(sport11.getNodeConnectorId()).
-            setDestination(sport21.getNodeConnectorId()).
-            build();
-        List<RemovedLink> removedLinks =
-            Collections.singletonList(new RemovedLinkBuilder(vlink).build());
-        updated = new RoutingUpdatedBuilder().
-            setAddedLink(Collections.<AddedLink>emptyList()).
-            setRemovedLink(removedLinks).
-            build();
-        ectx = new TopologyEventContext();
-        ectx.addRemoved(vlink);
-        routingManager.exitEvent(ectx);
-        verify(vtnProvider).publish(updated);
-        verify(vtnProvider, times(nlisteners)).post(any(TxTask.class));
-        captor = ArgumentCaptor.forClass(RoutingEvent.class);
-        verify(vtnProvider, times(nlisteners)).post(captor.capture());
-        delivered = captor.getAllValues();
-        assertEquals(nlisteners, delivered.size());
-        for (int i = 0; i < nlisteners; i++) {
-            RoutingEvent ev = delivered.get(i);
-            assertEquals(listeners[i],
-                         getFieldValue(ev, VTNRoutingListener.class,
-                                       "listener"));
-            verifyZeroInteractions(listeners[i]);
-        }
-
-        verts = topo.getVertices();
-        assertEquals(nodes.size(), verts.size());
-        for (SalNode snode: verts) {
-            assertEquals(true, nodes.contains(snode));
-        }
-
-        // openflow:1:1 -> openflow:2:1
-        checkRoute(snode1, snode2);
-
-        // openflow:2:1 -> openflow:1:1
-        checkRoute(snode2, snode1, sport21, sport11);
+    /**
+     * Test case for {@link VTNRoutingManager#exitEvent(TopologyEventContext)}.
+     *
+     * <ul>
+     *   <li>The process is not the owner of the VTN inventory.
+     * </ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testExitEventNotOwner() throws Exception {
+        testExitEvent(false);
     }
 
     /**
@@ -598,6 +520,10 @@ public class VTNRoutingManagerTest extends TestBase {
     /**
      * Ensure that a data change event is processed correctly.
      *
+     * <p>
+     *   The process is the owner of the VTN inventory.
+     * </p>
+     *
      * <ul>
      *   <li>
      *     {@link VTNRoutingManager#onDataChanged(AsyncDataChangeEvent)}
@@ -615,195 +541,34 @@ public class VTNRoutingManagerTest extends TestBase {
      */
     @Test
     public void testEvent() throws Exception {
-        reset(vtnProvider);
-        final int nlisteners = 3;
-        VTNRoutingListener[] listeners = new VTNRoutingListener[nlisteners];
-        for (int i = 0; i < nlisteners; i++) {
-            VTNRoutingListener l = mock(VTNRoutingListener.class);
-            listeners[i] = l;
-            routingManager.addListener(l);
-        }
+        testEvent(true);
+    }
 
-        // Set up initial topology.
-        SalNode snode1 = new SalNode(1L);
-        SalNode snode2 = new SalNode(2L);
-        SalNode snode3 = new SalNode(3L);
-        SalNode snode4 = new SalNode(4L);
-        Set<SalNode> nodes = new HashSet<>();
-        Collections.addAll(nodes, snode1, snode2, snode3, snode4);
-
-        // openflow:1:1 <-> openflow:2:1
-        List<VtnLink> vlinks = new ArrayList<>();
-        createVtnLink(vlinks, snode1, 1L, snode2, 1L);
-
-        // openflow:1:2 <-> openflow:3:1
-        List<VtnLink> deleted = new ArrayList<>();
-        createVtnLink(deleted, snode1, 2L, snode3, 1L);
-        vlinks.addAll(deleted);
-
-        // openflow:3:2 <-> openflow:4:1
-        List<VtnLink> changed = new ArrayList<>();
-        createVtnLink(changed, snode3, 2L, snode4, 1L);
-        vlinks.addAll(changed);
-
-        TopologyGraph topo = getTopologyGraph(routingManager);
-        assertEquals(true,
-                     topo.update(vlinks, Collections.<VtnLink>emptyList()));
-        Collection<SalNode> verts = topo.getVertices();
-        assertEquals(nodes.size(), verts.size());
-        for (SalNode snode: verts) {
-            assertEquals(true, nodes.contains(snode));
-        }
-
-        // Verify initial topology.
-        SalPort sport11 = new SalPort(1L, 1L);
-        SalPort sport12 = new SalPort(1L, 2L);
-        SalPort sport21 = new SalPort(2L, 1L);
-        SalPort sport31 = new SalPort(3L, 1L);
-        SalPort sport32 = new SalPort(3L, 2L);
-        SalPort sport41 = new SalPort(4L, 1L);
-        checkRoute(snode1, snode2, sport11, sport21);
-        checkRoute(snode2, snode1, sport21, sport11);
-        checkRoute(snode1, snode3, sport12, sport31);
-        checkRoute(snode3, snode1, sport31, sport12);
-        checkRoute(snode2, snode3, sport21, sport11, sport12, sport31);
-        checkRoute(snode3, snode2, sport31, sport12, sport11, sport21);
-        checkRoute(snode1, snode4, sport12, sport31, sport32, sport41);
-        checkRoute(snode4, snode1, sport41, sport32, sport31, sport12);
-
-        // Create links between openflow:5 and openflow:2.
-        Map<InstanceIdentifier<?>, DataObject> created = new HashMap<>();
-        List<VtnLink> added = new ArrayList<>();
-        Set<AddedLink> addedSet = new HashSet<>();
-        SalNode snode5 = new SalNode(5L);
-        createVtnLink(added, snode2, 2L, snode5, 1L);
-        for (VtnLink vlink: added) {
-            InstanceIdentifier<VtnLink> path =
-                InventoryUtils.toVtnLinkIdentifier(vlink.getLinkId());
-            assertEquals(null, created.put(path, vlink));
-            AddedLink al = new AddedLinkBuilder(vlink).build();
-            assertEquals(true, addedSet.add(al));
-        }
-
-        // Remove links between openflow:1 and openflow:3.
-        Map<InstanceIdentifier<?>, DataObject> original = new HashMap<>();
-        Set<InstanceIdentifier<?>> removed = new HashSet<>();
-        Set<RemovedLink> removedSet = new HashSet<>();
-        for (VtnLink vlink: deleted) {
-            InstanceIdentifier<VtnLink> path =
-                InventoryUtils.toVtnLinkIdentifier(vlink.getLinkId());
-            assertEquals(true, removed.add(path));
-            assertEquals(null, original.put(path, vlink));
-            RemovedLink rl = new RemovedLinkBuilder(vlink).build();
-            assertEquals(true, removedSet.add(rl));
-        }
-
-        // Remove link from openflow:3:2 to openflow:4:1.
-        VtnLink vlink1 = changed.get(0);
-        assertEquals("openflow:3:2", vlink1.getLinkId().getValue());
-        InstanceIdentifier<VtnLink> path1 =
-            InventoryUtils.toVtnLinkIdentifier(vlink1.getLinkId());
-        assertEquals(true, removed.add(path1));
-        assertEquals(null, original.put(path1, vlink1));
-        assertTrue(removedSet.add(new RemovedLinkBuilder(vlink1).build()));
-
-        // Create a link from openflow:2:3 to openflow:4:1.
-        vlink1 = createVtnLink(snode2, 3L, snode4, 1L);
-        path1 = InventoryUtils.toVtnLinkIdentifier(vlink1.getLinkId());
-        assertEquals(null, created.put(path1, vlink1));
-        assertTrue(addedSet.add(new AddedLinkBuilder(vlink1).build()));
-
-        // Change link openflow:4:1 to openflow:3:2 as from openflow:4:1
-        // to openflow:2:3.
-        Map<InstanceIdentifier<?>, DataObject> updated = new HashMap<>();
-        vlink1 = changed.get(1);
-        assertEquals("openflow:4:1", vlink1.getLinkId().getValue());
-        VtnLink newLink = createVtnLink(snode4, 1L, snode2, 3L);
-        path1 = InventoryUtils.toVtnLinkIdentifier(vlink1.getLinkId());
-        assertEquals(null, original.put(path1, vlink1));
-        assertEquals(null, updated.put(path1, newLink));
-        assertTrue(removedSet.add(new RemovedLinkBuilder(vlink1).build()));
-        assertTrue(addedSet.add(new AddedLinkBuilder(newLink).build()));
-
-        // Construct an AsyncDataChangeEvent.
-        @SuppressWarnings("unchecked")
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> event =
-            (AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject>)mock(
-                AsyncDataChangeEvent.class);
-        when(event.getCreatedData()).
-            thenReturn(Collections.unmodifiableMap(created));
-        when(event.getUpdatedData()).
-            thenReturn(Collections.unmodifiableMap(updated));
-        when(event.getRemovedPaths()).
-            thenReturn(Collections.unmodifiableSet(removed));
-        when(event.getOriginalData()).
-            thenReturn(Collections.unmodifiableMap(original));
-
-        // Notify data change event.
-        routingManager.onDataChanged(event);
-
-        // Verify MD-SAL notification.
-        verify(vtnProvider).publish(any(Notification.class));
-        ArgumentCaptor<RoutingUpdated> ncaptor =
-            ArgumentCaptor.forClass(RoutingUpdated.class);
-        verify(vtnProvider).publish(ncaptor.capture());
-        List<RoutingUpdated> notifications = ncaptor.getAllValues();
-        assertEquals(1, notifications.size());
-        RoutingUpdated ru = notifications.get(0);
-        for (AddedLink al: ru.getAddedLink()) {
-            assertEquals(true, addedSet.remove(al));
-        }
-        for (RemovedLink rl: ru.getRemovedLink()) {
-            assertEquals(true, removedSet.remove(rl));
-        }
-        assertEquals(true, addedSet.isEmpty());
-        assertEquals(true, removedSet.isEmpty());
-
-        // Verify routing events are delivered to listeners.
-        verify(vtnProvider, times(nlisteners)).post(any(TxTask.class));
-        ArgumentCaptor<RoutingEvent> ecaptor =
-            ArgumentCaptor.forClass(RoutingEvent.class);
-        verify(vtnProvider, times(nlisteners)).post(ecaptor.capture());
-        List<RoutingEvent> delivered = ecaptor.getAllValues();
-        assertEquals(nlisteners, delivered.size());
-        for (int i = 0; i < nlisteners; i++) {
-            RoutingEvent ev = delivered.get(i);
-            assertEquals(listeners[i],
-                         getFieldValue(ev, VTNRoutingListener.class,
-                                       "listener"));
-            verifyZeroInteractions(listeners[i]);
-        }
-
-        // openflow:3 should be removed from the topology, and openflow:5
-        // should be added to the topology.
-        assertEquals(true, nodes.remove(snode3));
-        assertEquals(true, nodes.add(snode5));
-        verts = topo.getVertices();
-        assertEquals(nodes.size(), verts.size());
-        for (SalNode snode: verts) {
-            assertEquals(true, nodes.contains(snode));
-
-            // openflow:3 should be unreachable.
-            checkRoute(snode, snode3);
-            checkRoute(snode3, snode);
-        }
-
-        // Links between openflow:1 and openflow2 should be still active.
-        checkRoute(snode1, snode2, sport11, sport21);
-        checkRoute(snode2, snode1, sport21, sport11);
-
-        // openflow:5 should be reachable.
-        SalPort sport22 = new SalPort(2L, 2L);
-        SalPort sport51 = new SalPort(5L, 1L);
-        checkRoute(snode2, snode5, sport22, sport51);
-        checkRoute(snode5, snode2, sport51, sport22);
-        checkRoute(snode1, snode5, sport11, sport21, sport22, sport51);
-        checkRoute(snode5, snode1, sport51, sport22, sport21, sport11);
-
-        // openflow:4:1 is now connected to openflow:2:3.
-        SalPort sport23 = new SalPort(2L, 3L);
-        checkRoute(snode1, snode4, sport11, sport21, sport23, sport41);
-        checkRoute(snode4, snode1, sport41, sport23, sport21, sport11);
+    /**
+     * Ensure that a data change event is processed correctly.
+     *
+     * <p>
+     *   The process is not the owner of the VTN inventory.
+     * </p>
+     *
+     * <ul>
+     *   <li>
+     *     {@link VTNRoutingManager#onDataChanged(AsyncDataChangeEvent)}
+     *   </li>
+     *   <li>
+     *     {@link VTNRoutingManager#onCreated(TopologyEventContext,IdentifiedData)}
+     *   </li>
+     *   <li>
+     *     {@link VTNRoutingManager#onRemoved(TopologyEventContext,IdentifiedData)}
+     *   </li>
+     *   <li>{@link VTNRoutingManager#addListener(VTNRoutingListener)}</li>
+     * </ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testEventNotOwner() throws Exception {
+        testEvent(false);
     }
 
     /**
@@ -1269,23 +1034,41 @@ public class VTNRoutingManagerTest extends TestBase {
 
     /**
      * Ensure that the routing manager was initialized correctly.
+     *
+     * @throws Exception  An error occurred.
      */
-    private void verifyRoutingManager() {
+    private void verifyRoutingManager() throws Exception {
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
         DataChangeScope scope = DataChangeScope.SUBTREE;
 
-        // Ensure that PathPolicyListener is registered as data change
-        // listener.
+        // Ensure that PathPolicyListener is registered as clustered data
+        // change listener.
         InstanceIdentifier<VtnPathPolicy> ppath = InstanceIdentifier.
             builder(VtnPathPolicies.class).
             child(VtnPathPolicy.class).
             build();
+        ArgumentCaptor<ClusteredDataChangeListener> captor =
+            ArgumentCaptor.forClass(ClusteredDataChangeListener.class);
         verify(dataBroker).registerDataChangeListener(
-            eq(oper), eq(ppath), isA(PathPolicyListener.class), eq(scope));
+            eq(oper), eq(ppath), captor.capture(), eq(scope));
+        List<ClusteredDataChangeListener> wrappers = captor.getAllValues();
+        assertEquals(1, wrappers.size());
+        ClusteredDataChangeListener cdcl = wrappers.get(0);
+        DataChangeListener dcl =
+            getFieldValue(cdcl, DataChangeListener.class, "theListener");
+        assertEquals(PathPolicyListener.class, dcl.getClass());
 
-        // Ensure that VTNRoutingManager is registered as data change listener.
+        // Ensure that VTNRoutingManager is registered as clustered data
+        // change listener.
+        captor = ArgumentCaptor.forClass(ClusteredDataChangeListener.class);
         verify(dataBroker).registerDataChangeListener(
-            eq(oper), eq(getPath()), isA(VTNRoutingManager.class), eq(scope));
+            eq(oper), eq(getPath()), captor.capture(), eq(scope));
+        wrappers = captor.getAllValues();
+        assertEquals(1, wrappers.size());
+        cdcl = wrappers.get(0);
+        assertEquals(routingManager,
+                     getFieldValue(cdcl, DataChangeListener.class,
+                                   "theListener"));
 
         verifyZeroInteractions(ppListenerReg);
         verifyZeroInteractions(routingListenerReg);
@@ -1371,5 +1154,341 @@ public class VTNRoutingManagerTest extends TestBase {
             idx += 2;
         }
         assertEquals(ports.length, idx);
+    }
+
+    /**
+     * Common test for {@link #testExitEvent()} and
+     * {@link #testExitEventNotOwner()}.
+     *
+     * @param owner  {@code true} indicates the process is the owner of the
+     *               VTN inventory.
+     * @throws Exception  An error occurred.
+     */
+    private void testExitEvent(boolean owner) throws Exception {
+        final int nlisteners = 3;
+        VTNRoutingListener[] listeners = new VTNRoutingListener[nlisteners];
+        for (int i = 0; i < nlisteners; i++) {
+            VTNRoutingListener l = mock(VTNRoutingListener.class);
+            listeners[i] = l;
+            routingManager.addListener(l);
+        }
+
+        // In case where topology was not changed.
+        reset(vtnProvider);
+        TopologyEventContext ectx = new TopologyEventContext();
+        routingManager.exitEvent(ectx);
+        verifyZeroInteractions(vtnProvider);
+        for (VTNRoutingListener l: listeners) {
+            verifyZeroInteractions(l);
+        }
+
+        // In case where 2 links were added.
+        when(vtnProvider.isOwner(VTNEntityType.INVENTORY)).thenReturn(owner);
+        TopologyGraph topo = getTopologyGraph(routingManager);
+        assertTrue(topo.getVertices().isEmpty());
+        SalNode snode1 = new SalNode(1L);
+        SalNode snode2 = new SalNode(2L);
+        Set<SalNode> nodes = new HashSet<>();
+        Collections.addAll(nodes, snode1, snode2);
+
+        List<VtnLink> vlinks = new ArrayList<>();
+        createVtnLink(vlinks, snode1, 1L, snode2, 1L);
+
+        List<AddedLink> addedLinks = new ArrayList<>();
+        for (VtnLink vlink: vlinks) {
+            ectx.addCreated(vlink);
+            addedLinks.add(new AddedLinkBuilder(vlink).build());
+        }
+        routingManager.exitEvent(ectx);
+        verify(vtnProvider).isOwner(VTNEntityType.INVENTORY);
+
+        if (owner) {
+            RoutingUpdated updated = new RoutingUpdatedBuilder().
+                setAddedLink(addedLinks).
+                setRemovedLink(Collections.<RemovedLink>emptyList()).
+                build();
+            verify(vtnProvider).publish(updated);
+            verify(vtnProvider, times(nlisteners)).post(any(TxTask.class));
+            ArgumentCaptor<RoutingEvent> captor =
+                ArgumentCaptor.forClass(RoutingEvent.class);
+            verify(vtnProvider, times(nlisteners)).post(captor.capture());
+            List<RoutingEvent> delivered = captor.getAllValues();
+            assertEquals(nlisteners, delivered.size());
+            for (int i = 0; i < nlisteners; i++) {
+                RoutingEvent ev = delivered.get(i);
+                assertEquals(listeners[i],
+                             getFieldValue(ev, VTNRoutingListener.class,
+                                           "listener"));
+                verifyZeroInteractions(listeners[i]);
+            }
+        }
+        verifyNoMoreInteractions(vtnProvider);
+
+        Collection<SalNode> verts = topo.getVertices();
+        assertEquals(nodes.size(), verts.size());
+        for (SalNode snode: verts) {
+            assertEquals(true, nodes.contains(snode));
+        }
+
+        // openflow:1:1 -> openflow:2:1
+        SalPort sport11 = new SalPort(1L, 1L);
+        SalPort sport21 = new SalPort(2L, 1L);
+        checkRoute(snode1, snode2, sport11, sport21);
+
+        // openflow:2:1 -> openflow:1:1
+        checkRoute(snode2, snode1, sport21, sport11);
+
+        // In case where the link from openflow:1:1 to openflow:2:1 was
+        // removed.
+        reset(vtnProvider);
+        when(vtnProvider.isOwner(VTNEntityType.INVENTORY)).thenReturn(owner);
+        VtnLink vlink = new VtnLinkBuilder().
+            setLinkId(new LinkId(sport11.toString())).
+            setSource(sport11.getNodeConnectorId()).
+            setDestination(sport21.getNodeConnectorId()).
+            build();
+        List<RemovedLink> removedLinks =
+            Collections.singletonList(new RemovedLinkBuilder(vlink).build());
+        ectx = new TopologyEventContext();
+        ectx.addRemoved(vlink);
+        routingManager.exitEvent(ectx);
+        verify(vtnProvider).isOwner(VTNEntityType.INVENTORY);
+
+        if (owner) {
+            RoutingUpdated updated = new RoutingUpdatedBuilder().
+                setAddedLink(Collections.<AddedLink>emptyList()).
+                setRemovedLink(removedLinks).
+                build();
+            verify(vtnProvider).publish(updated);
+            verify(vtnProvider, times(nlisteners)).post(any(TxTask.class));
+            ArgumentCaptor<RoutingEvent> captor =
+                ArgumentCaptor.forClass(RoutingEvent.class);
+            verify(vtnProvider, times(nlisteners)).post(captor.capture());
+            List<RoutingEvent> delivered = captor.getAllValues();
+            assertEquals(nlisteners, delivered.size());
+            for (int i = 0; i < nlisteners; i++) {
+                RoutingEvent ev = delivered.get(i);
+                assertEquals(listeners[i],
+                             getFieldValue(ev, VTNRoutingListener.class,
+                                           "listener"));
+                verifyZeroInteractions(listeners[i]);
+            }
+        }
+        verifyNoMoreInteractions(vtnProvider);
+
+        verts = topo.getVertices();
+        assertEquals(nodes.size(), verts.size());
+        for (SalNode snode: verts) {
+            assertEquals(true, nodes.contains(snode));
+        }
+
+        // openflow:1:1 -> openflow:2:1
+        checkRoute(snode1, snode2);
+
+        // openflow:2:1 -> openflow:1:1
+        checkRoute(snode2, snode1, sport21, sport11);
+    }
+
+    /**
+     * Common test for {@link #testEvent()} and {@link #testEventNotOwner()}.
+     *
+     * @param owner  {@code true} indicates the process is the owner of the
+     *               VTN inventory.
+     * @throws Exception  An error occurred.
+     */
+    private void testEvent(boolean owner) throws Exception {
+        reset(vtnProvider);
+        final int nlisteners = 3;
+        VTNRoutingListener[] listeners = new VTNRoutingListener[nlisteners];
+        for (int i = 0; i < nlisteners; i++) {
+            VTNRoutingListener l = mock(VTNRoutingListener.class);
+            listeners[i] = l;
+            routingManager.addListener(l);
+        }
+
+        // Set up initial topology.
+        SalNode snode1 = new SalNode(1L);
+        SalNode snode2 = new SalNode(2L);
+        SalNode snode3 = new SalNode(3L);
+        SalNode snode4 = new SalNode(4L);
+        Set<SalNode> nodes = new HashSet<>();
+        Collections.addAll(nodes, snode1, snode2, snode3, snode4);
+
+        // openflow:1:1 <-> openflow:2:1
+        List<VtnLink> vlinks = new ArrayList<>();
+        createVtnLink(vlinks, snode1, 1L, snode2, 1L);
+
+        // openflow:1:2 <-> openflow:3:1
+        List<VtnLink> deleted = new ArrayList<>();
+        createVtnLink(deleted, snode1, 2L, snode3, 1L);
+        vlinks.addAll(deleted);
+
+        // openflow:3:2 <-> openflow:4:1
+        List<VtnLink> changed = new ArrayList<>();
+        createVtnLink(changed, snode3, 2L, snode4, 1L);
+        vlinks.addAll(changed);
+
+        TopologyGraph topo = getTopologyGraph(routingManager);
+        assertEquals(true,
+                     topo.update(vlinks, Collections.<VtnLink>emptyList()));
+        Collection<SalNode> verts = topo.getVertices();
+        assertEquals(nodes.size(), verts.size());
+        for (SalNode snode: verts) {
+            assertEquals(true, nodes.contains(snode));
+        }
+
+        // Verify initial topology.
+        SalPort sport11 = new SalPort(1L, 1L);
+        SalPort sport12 = new SalPort(1L, 2L);
+        SalPort sport21 = new SalPort(2L, 1L);
+        SalPort sport31 = new SalPort(3L, 1L);
+        SalPort sport32 = new SalPort(3L, 2L);
+        SalPort sport41 = new SalPort(4L, 1L);
+        checkRoute(snode1, snode2, sport11, sport21);
+        checkRoute(snode2, snode1, sport21, sport11);
+        checkRoute(snode1, snode3, sport12, sport31);
+        checkRoute(snode3, snode1, sport31, sport12);
+        checkRoute(snode2, snode3, sport21, sport11, sport12, sport31);
+        checkRoute(snode3, snode2, sport31, sport12, sport11, sport21);
+        checkRoute(snode1, snode4, sport12, sport31, sport32, sport41);
+        checkRoute(snode4, snode1, sport41, sport32, sport31, sport12);
+
+        // Create links between openflow:5 and openflow:2.
+        Map<InstanceIdentifier<?>, DataObject> created = new HashMap<>();
+        List<VtnLink> added = new ArrayList<>();
+        Set<AddedLink> addedSet = new HashSet<>();
+        SalNode snode5 = new SalNode(5L);
+        createVtnLink(added, snode2, 2L, snode5, 1L);
+        for (VtnLink vlink: added) {
+            InstanceIdentifier<VtnLink> path =
+                InventoryUtils.toVtnLinkIdentifier(vlink.getLinkId());
+            assertEquals(null, created.put(path, vlink));
+            AddedLink al = new AddedLinkBuilder(vlink).build();
+            assertEquals(true, addedSet.add(al));
+        }
+
+        // Remove links between openflow:1 and openflow:3.
+        Map<InstanceIdentifier<?>, DataObject> original = new HashMap<>();
+        Set<InstanceIdentifier<?>> removed = new HashSet<>();
+        Set<RemovedLink> removedSet = new HashSet<>();
+        for (VtnLink vlink: deleted) {
+            InstanceIdentifier<VtnLink> path =
+                InventoryUtils.toVtnLinkIdentifier(vlink.getLinkId());
+            assertEquals(true, removed.add(path));
+            assertEquals(null, original.put(path, vlink));
+            RemovedLink rl = new RemovedLinkBuilder(vlink).build();
+            assertEquals(true, removedSet.add(rl));
+        }
+
+        // Remove link from openflow:3:2 to openflow:4:1.
+        VtnLink vlink1 = changed.get(0);
+        assertEquals("openflow:3:2", vlink1.getLinkId().getValue());
+        InstanceIdentifier<VtnLink> path1 =
+            InventoryUtils.toVtnLinkIdentifier(vlink1.getLinkId());
+        assertEquals(true, removed.add(path1));
+        assertEquals(null, original.put(path1, vlink1));
+        assertTrue(removedSet.add(new RemovedLinkBuilder(vlink1).build()));
+
+        // Create a link from openflow:2:3 to openflow:4:1.
+        vlink1 = createVtnLink(snode2, 3L, snode4, 1L);
+        path1 = InventoryUtils.toVtnLinkIdentifier(vlink1.getLinkId());
+        assertEquals(null, created.put(path1, vlink1));
+        assertTrue(addedSet.add(new AddedLinkBuilder(vlink1).build()));
+
+        // Change link openflow:4:1 to openflow:3:2 as from openflow:4:1
+        // to openflow:2:3.
+        Map<InstanceIdentifier<?>, DataObject> updated = new HashMap<>();
+        vlink1 = changed.get(1);
+        assertEquals("openflow:4:1", vlink1.getLinkId().getValue());
+        VtnLink newLink = createVtnLink(snode4, 1L, snode2, 3L);
+        path1 = InventoryUtils.toVtnLinkIdentifier(vlink1.getLinkId());
+        assertEquals(null, original.put(path1, vlink1));
+        assertEquals(null, updated.put(path1, newLink));
+        assertTrue(removedSet.add(new RemovedLinkBuilder(vlink1).build()));
+        assertTrue(addedSet.add(new AddedLinkBuilder(newLink).build()));
+
+        // Construct an AsyncDataChangeEvent.
+        @SuppressWarnings("unchecked")
+        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> event =
+            (AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject>)mock(
+                AsyncDataChangeEvent.class);
+        when(event.getCreatedData()).
+            thenReturn(Collections.unmodifiableMap(created));
+        when(event.getUpdatedData()).
+            thenReturn(Collections.unmodifiableMap(updated));
+        when(event.getRemovedPaths()).
+            thenReturn(Collections.unmodifiableSet(removed));
+        when(event.getOriginalData()).
+            thenReturn(Collections.unmodifiableMap(original));
+
+        // Notify data change event.
+        when(vtnProvider.isOwner(VTNEntityType.INVENTORY)).thenReturn(owner);
+        routingManager.onDataChanged(event);
+
+        if (owner) {
+            // Verify MD-SAL notification.
+            ArgumentCaptor<RoutingUpdated> ncaptor =
+                ArgumentCaptor.forClass(RoutingUpdated.class);
+            verify(vtnProvider).publish(ncaptor.capture());
+            List<RoutingUpdated> notifications = ncaptor.getAllValues();
+            assertEquals(1, notifications.size());
+            RoutingUpdated ru = notifications.get(0);
+            for (AddedLink al: ru.getAddedLink()) {
+                assertEquals(true, addedSet.remove(al));
+            }
+            for (RemovedLink rl: ru.getRemovedLink()) {
+                assertEquals(true, removedSet.remove(rl));
+            }
+            assertEquals(true, addedSet.isEmpty());
+            assertEquals(true, removedSet.isEmpty());
+
+            // Ensure that routing events are delivered to listeners.
+            verify(vtnProvider, times(nlisteners)).post(any(TxTask.class));
+            ArgumentCaptor<RoutingEvent> ecaptor =
+                ArgumentCaptor.forClass(RoutingEvent.class);
+            verify(vtnProvider, times(nlisteners)).post(ecaptor.capture());
+            List<RoutingEvent> delivered = ecaptor.getAllValues();
+            assertEquals(nlisteners, delivered.size());
+            for (int i = 0; i < nlisteners; i++) {
+                RoutingEvent ev = delivered.get(i);
+                assertEquals(listeners[i],
+                             getFieldValue(ev, VTNRoutingListener.class,
+                                           "listener"));
+                verifyZeroInteractions(listeners[i]);
+            }
+        }
+        verify(vtnProvider).isOwner(VTNEntityType.INVENTORY);
+        verifyNoMoreInteractions(vtnProvider);
+
+        // openflow:3 should be removed from the topology, and openflow:5
+        // should be added to the topology.
+        assertEquals(true, nodes.remove(snode3));
+        assertEquals(true, nodes.add(snode5));
+        verts = topo.getVertices();
+        assertEquals(nodes.size(), verts.size());
+        for (SalNode snode: verts) {
+            assertEquals(true, nodes.contains(snode));
+
+            // openflow:3 should be unreachable.
+            checkRoute(snode, snode3);
+            checkRoute(snode3, snode);
+        }
+
+        // Links between openflow:1 and openflow2 should be still active.
+        checkRoute(snode1, snode2, sport11, sport21);
+        checkRoute(snode2, snode1, sport21, sport11);
+
+        // openflow:5 should be reachable.
+        SalPort sport22 = new SalPort(2L, 2L);
+        SalPort sport51 = new SalPort(5L, 1L);
+        checkRoute(snode2, snode5, sport22, sport51);
+        checkRoute(snode5, snode2, sport51, sport22);
+        checkRoute(snode1, snode5, sport11, sport21, sport22, sport51);
+        checkRoute(snode5, snode1, sport51, sport22, sport21, sport11);
+
+        // openflow:4:1 is now connected to openflow:2:3.
+        SalPort sport23 = new SalPort(2L, 3L);
+        checkRoute(snode1, snode4, sport11, sport21, sport23, sport41);
+        checkRoute(snode4, snode1, sport41, sport23, sport21, sport11);
     }
 }

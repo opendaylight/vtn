@@ -205,7 +205,7 @@ public final class StaticTopologyManager
         DataBroker broker = provider.getDataBroker();
         try {
             registerListener(broker, LogicalDatastoreType.CONFIGURATION,
-                             DataChangeScope.SUBTREE);
+                             DataChangeScope.SUBTREE, true);
         } catch (RuntimeException e) {
             String msg = "Failed to register static network topology listener.";
             LOG.error(msg, e);

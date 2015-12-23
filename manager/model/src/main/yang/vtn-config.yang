@@ -79,7 +79,7 @@ module vtn-config {
             type int32 {
                 range "100 .. 600000";
             }
-            default 3000;
+            default 10000;
         }
 
         leaf max-redirections {

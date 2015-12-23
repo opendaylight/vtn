@@ -8,8 +8,9 @@
 
 package org.opendaylight.vtn.manager.internal.inventory;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +21,7 @@ import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.IdentifierTargetComparator;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.MultiDataStoreListener;
+import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.tx.TxQueueImpl;
 
@@ -76,9 +78,17 @@ public final class VTNInventoryManager
     private final TxQueueImpl  inventoryQueue;
 
     /**
-     * Internal state.
+     * A set of node-id values for switches present in the vtn-inventory tree.
      */
-    private final AtomicBoolean  serviceState = new AtomicBoolean(true);
+    private final ConcurrentMap<String, Boolean>  nodeIds =
+        new ConcurrentHashMap<>();
+
+    /**
+     * A set of node-connector-id values for switch ports present in the
+     * vtn-inventory tree.
+     */
+    private final ConcurrentMap<String, Boolean>  portIds =
+        new ConcurrentHashMap<>();
 
     /**
      * Initialize static fields.
@@ -110,7 +120,7 @@ public final class VTNInventoryManager
 
             // Register VTN inventory listener.
             registerListener(broker, LogicalDatastoreType.OPERATIONAL,
-                             DataChangeScope.SUBTREE);
+                             DataChangeScope.SUBTREE, true);
         } catch (Exception e) {
             String msg = "Failed to initialize inventory service.";
             LOG.error(msg, e);
@@ -145,19 +155,9 @@ public final class VTNInventoryManager
     }
 
     /**
-     * Determine whether the VTN inventory service is alive or not.
-     *
-     * @return  {@code true} only if the VTN inventory service is alive.
-     */
-    public boolean isAlive() {
-        return serviceState.get();
-    }
-
-    /**
      * Shutdown listener service.
      */
     public void shutdown() {
-        serviceState.set(false);
         vtnListeners.clear();
     }
 
@@ -170,25 +170,16 @@ public final class VTNInventoryManager
      */
     private void onCreatedOrRemoved(IdentifiedData<?> data,
                                     VtnUpdateType type) {
+        boolean owner = vtnProvider.isOwner(VTNEntityType.INVENTORY);
         IdentifiedData<VtnNode> nodeData = data.checkType(VtnNode.class);
         if (nodeData != null) {
-            VtnNode vnode = nodeData.getValue();
-            LOG.info("Node has been {}: id={}, proto={}",
-                     MiscUtils.toLowerCase(type), vnode.getId().getValue(),
-                     vnode.getOpenflowVersion());
-            postVtnNodeEvent(vnode, type);
+            onCreatedOrRemoved(nodeData.getValue(), type, owner);
             return;
         }
 
         IdentifiedData<VtnPort> portData = data.checkType(VtnPort.class);
         if (portData != null) {
-            VtnPort vport = portData.getValue();
-            Boolean state = Boolean.valueOf(InventoryUtils.isEnabled(vport));
-            Boolean isl = Boolean.valueOf(InventoryUtils.hasPortLink(vport));
-            LOG.info("Port has been {}: {}",
-                     MiscUtils.toLowerCase(type),
-                     InventoryUtils.toString(vport));
-            postVtnPortEvent(vport, state, isl, type);
+            onCreatedOrRemoved(portData.getValue(), type, owner);
             return;
         }
 
@@ -198,10 +189,65 @@ public final class VTNInventoryManager
     }
 
     /**
+     * Handle node creation or removal event.
+     *
+     * @param vnode  A {@link VtnNode} instance.
+     * @param type   {@link VtnUpdateType#CREATED} on added,
+     *               {@link VtnUpdateType#REMOVED} on removed.
+     * @param owner  {@code true} indicates that this process is the owner of
+     *               inventory information.
+     */
+    private void onCreatedOrRemoved(VtnNode vnode, VtnUpdateType type,
+                                    boolean owner) {
+        String id = updateNode(vnode, type);
+        if (id != null) {
+            LOG.info("Node has been {}: id={}, proto={}",
+                     MiscUtils.toLowerCase(type), id,
+                     vnode.getOpenflowVersion());
+            if (owner) {
+                LOG.trace("Delivering node event: id={}, type={}", id, type);
+                postVtnNodeEvent(vnode, type);
+            } else {
+                LOG.trace("Don't deliver node event: id={}, type={}",
+                          id, type);
+            }
+        }
+    }
+
+    /**
+     * Handle port creation or removal event.
+     *
+     * @param vport  A {@link VtnPort} instance.
+     * @param type   {@link VtnUpdateType#CREATED} on added,
+     *               {@link VtnUpdateType#REMOVED} on removed.
+     * @param owner  {@code true} indicates that this process is the owner of
+     *               inventory information.
+     */
+    private void onCreatedOrRemoved(VtnPort vport, VtnUpdateType type,
+                                    boolean owner) {
+        String id = updatePort(vport, type);
+        if (id != null) {
+            Boolean state = InventoryUtils.isEnabled(vport);
+            Boolean isl = InventoryUtils.hasPortLink(vport);
+            LOG.info("Port has been {}: {}", MiscUtils.toLowerCase(type),
+                     InventoryUtils.toString(vport));
+            if (owner) {
+                LOG.trace("Delivering port event: id={}, type={}", id, type);
+                postVtnPortEvent(vport, state, isl, type);
+            } else {
+                LOG.trace("Don't deliver port event: id={}, type={}",
+                          id, type);
+            }
+        }
+    }
+
+    /**
      * Handle VTN node change event.
      *
      * @param oldNode  A {@link VtnNode} instance before updated.
      * @param newNode  An updated {@link VtnNode} instance.
+     * @param owner  {@code true} indicates that this process is the owner of
+     *               inventory information.
      */
     private void onChanged(VtnNode oldNode, VtnNode newNode) {
         VtnOpenflowVersion oldVer = oldNode.getOpenflowVersion();
@@ -270,6 +316,56 @@ public final class VTNInventoryManager
         }
     }
 
+    /**
+     * Update {@link #nodeIds} for the given node.
+     *
+     * @param vnode  A {@link VtnNode} instance.
+     * @param type   {@link VtnUpdateType#CREATED} indicates the given node
+     *               has been created.
+     *               {@link VtnUpdateType#REMOVED} indicates the given node
+     *               has been removed.
+     * @return  The node-id value if {@link #nodeIds} was updated.
+     *          {@code null} if not updated.
+     */
+    private String updateNode(VtnNode vnode, VtnUpdateType type) {
+        String id = vnode.getId().getValue();
+
+        if (type == VtnUpdateType.CREATED) {
+            if (nodeIds.putIfAbsent(id, Boolean.TRUE) != null) {
+                id = null;
+            }
+        } else if (nodeIds.remove(id) == null) {
+            id = null;
+        }
+
+        return id;
+    }
+
+    /**
+     * Update {@link #portIds} for the given port.
+     *
+     * @param vport  A {@link VtnPort} instance.
+     * @param type   {@link VtnUpdateType#CREATED} indicates the given port
+     *               has been created.
+     *               {@link VtnUpdateType#REMOVED} indicates the given port
+     *               has been removed.
+     * @return  The node-connector-id value if {@link #portIds} was updated.
+     *          {@code null} if not updated.
+     */
+    private String updatePort(VtnPort vport, VtnUpdateType type) {
+        String id = vport.getId().getValue();
+
+        if (type == VtnUpdateType.CREATED) {
+            if (portIds.putIfAbsent(id, Boolean.TRUE) != null) {
+                id = null;
+            }
+        } else if (portIds.remove(id) == null) {
+            id = null;
+        }
+
+        return id;
+    }
+
     // AutoCloseable
 
     /**
@@ -330,21 +426,24 @@ public final class VTNInventoryManager
      */
     @Override
     protected void onUpdated(Void ectx, ChangedData<?> data) {
-        ChangedData<VtnNode> nodeData = data.checkType(VtnNode.class);
-        if (nodeData != null) {
-            onChanged(nodeData.getOldValue(), nodeData.getValue());
-            return;
-        }
+        if (vtnProvider.isOwner(VTNEntityType.INVENTORY)) {
+            ChangedData<VtnNode> nodeData = data.checkType(VtnNode.class);
+            if (nodeData != null) {
+                onChanged(nodeData.getOldValue(), nodeData.getValue());
+                return;
+            }
 
-        ChangedData<VtnPort> portData = data.checkType(VtnPort.class);
-        if (portData != null) {
-            onChanged(portData.getOldValue(), portData.getValue());
-            return;
-        }
+            ChangedData<VtnPort> portData = data.checkType(VtnPort.class);
+            if (portData != null) {
+                onChanged(portData.getOldValue(), portData.getValue());
+                return;
+            }
 
-        // This should never happen.
-        LOG.warn("CHANGED: Unexpected event: path={}, old={}, new={}",
-                 data.getIdentifier(), data.getOldValue(), data.getValue());
+            // This should never happen.
+            LOG.warn("CHANGED: Unexpected event: path={}, old={}, new={}",
+                     data.getIdentifier(), data.getOldValue(),
+                     data.getValue());
+        }
     }
 
     /**

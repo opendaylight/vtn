@@ -54,7 +54,7 @@ public enum ConfigType {
      * A symbol which indicates the value returned by
      * {@link org.opendaylight.vtn.manager.internal.VTNConfig#getInitTimeout()}.
      */
-    INIT_TIMEOUT("getInitTimeout", "init-timeout", Integer.valueOf(3000),
+    INIT_TIMEOUT("getInitTimeout", "init-timeout", Integer.valueOf(10000),
                  Integer.valueOf(100), Integer.valueOf(600000)),
 
     /**

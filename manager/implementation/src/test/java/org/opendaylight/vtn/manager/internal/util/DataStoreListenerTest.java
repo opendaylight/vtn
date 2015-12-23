@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,16 @@
  */
 
 package org.opendaylight.vtn.manager.internal.util;
+
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.isA;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,7 +32,7 @@ import java.util.Set;
 import org.junit.Assert;
 import org.junit.Test;
 
-import org.mockito.Mockito;
+import org.mockito.ArgumentCaptor;
 
 import org.slf4j.Logger;
 
@@ -31,6 +41,7 @@ import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
+import org.opendaylight.controller.md.sal.binding.api.ClusteredDataChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
@@ -364,7 +375,7 @@ public class DataStoreListenerTest extends TestBase {
         protected Logger getLogger() {
             Logger log = logger;
             if (log == null) {
-                log = Mockito.mock(Logger.class);
+                log = mock(Logger.class);
                 logger = log;
             }
             return log;
@@ -382,8 +393,12 @@ public class DataStoreListenerTest extends TestBase {
     /**
      * Test case for registration and unregistration.
      *
+     * <p>
+     *   Register non-clustered listener.
+     * </p>
+     *
      * <ul>
-     *   <li>{@link AbstractDataChangeListener#registerListener(DataBroker, LogicalDatastoreType, AsyncDataBroker.DataChangeScope)}</li>
+     *   <li>{@link AbstractDataChangeListener#registerListener(DataBroker, LogicalDatastoreType, AsyncDataBroker.DataChangeScope, boolean)}</li>
      *   <li>{@link AbstractDataChangeListener#close()}</li>
      * </ul>
      */
@@ -394,31 +409,102 @@ public class DataStoreListenerTest extends TestBase {
         InstanceIdentifier<VtnPort> path = listener.getWildcardPath();
         LogicalDatastoreType store = LogicalDatastoreType.OPERATIONAL;
         DataChangeScope scope = DataChangeScope.SUBTREE;
-        DataBroker broker = Mockito.mock(DataBroker.class);
+        DataBroker broker = mock(DataBroker.class);
         @SuppressWarnings("unchecked")
         ListenerRegistration<DataChangeListener> reg =
-            Mockito.mock(ListenerRegistration.class);
-        Mockito.when(broker.registerDataChangeListener(store, path, listener,
-                                                       scope)).
+            mock(ListenerRegistration.class);
+        when(broker.registerDataChangeListener(store, path, listener, scope)).
             thenReturn(reg);
-        listener.registerListener(broker, store, scope);
-        Mockito.verify(broker).
+        listener.registerListener(broker, store, scope, false);
+        verify(broker).
             registerDataChangeListener(store, path, listener, scope);
-        Mockito.verify(reg, Mockito.never()).close();
-        Mockito.verify(logger, Mockito.never()).
-            error(Mockito.anyString(), Mockito.any(Throwable.class));
-        Mockito.verify(logger, Mockito.never()).error(Mockito.anyString());
+        verify(reg, never()).close();
+        verifyZeroInteractions(logger);
 
         // Unregister a listener.
         // Registration should be closed only one time.
         for (int i = 0; i < 10; i++) {
             listener.close();
-            Mockito.verify(broker).
-                registerDataChangeListener(store, path, listener, scope);
-            Mockito.verify(reg).close();
-            Mockito.verify(logger, Mockito.never()).
-                error(Mockito.anyString(), Mockito.any(Throwable.class));
-            Mockito.verify(logger, Mockito.never()).error(Mockito.anyString());
+            if (i == 0) {
+                verify(reg).close();
+            }
+            verifyNoMoreInteractions(broker, logger, reg);
+        }
+    }
+
+    /**
+     * Test case for registration and unregistration.
+     *
+     * <p>
+     *   Register clustered listener.
+     * </p>
+     *
+     * <ul>
+     *   <li>{@link AbstractDataChangeListener#registerListener(DataBroker, LogicalDatastoreType, AsyncDataBroker.DataChangeScope, boolean)}</li>
+     *   <li>{@link AbstractDataChangeListener#close()}</li>
+     * </ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testRegistrationCluster() throws Exception {
+        TestChangeListener listener =
+            new TestChangeListener(EnumSet.of(VtnUpdateType.CREATED));
+        Logger logger = listener.getLogger();
+        InstanceIdentifier<VtnPort> path = listener.getWildcardPath();
+        LogicalDatastoreType store = LogicalDatastoreType.OPERATIONAL;
+        DataChangeScope scope = DataChangeScope.SUBTREE;
+        DataBroker broker = mock(DataBroker.class);
+        @SuppressWarnings("unchecked")
+        ListenerRegistration<DataChangeListener> reg =
+            mock(ListenerRegistration.class);
+        when(broker.registerDataChangeListener(
+                 eq(store), eq(path), isA(ClusteredDataChangeListener.class),
+                 eq(scope))).
+            thenReturn(reg);
+        listener.registerListener(broker, store, scope, true);
+
+        ArgumentCaptor<ClusteredDataChangeListener> captor =
+            ArgumentCaptor.forClass(ClusteredDataChangeListener.class);
+        verify(broker).
+            registerDataChangeListener(eq(store), eq(path), captor.capture(),
+                                       eq(scope));
+        List<ClusteredDataChangeListener> wrappers = captor.getAllValues();
+        assertEquals(1, wrappers.size());
+        ClusteredDataChangeListener cdcl = wrappers.get(0);
+        assertEquals(listener,
+                     getFieldValue(cdcl, DataChangeListener.class,
+                                   "theListener"));
+
+        verify(reg, never()).close();
+        verifyZeroInteractions(logger);
+
+        // ClusteredListener should toss received events to the actual
+        // listener.
+        Object ctx = new Object();
+        List<NotifiedEvent> created =
+            Collections.singletonList(newCreationEvent(1L, 1L));
+        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev =
+            createEvent(created, null, null);
+        listener.setDataChangeEvent(ev, ctx);
+        assertSame(ev, listener.getEvent());
+        assertSame(ctx, listener.getContext());
+        assertEquals(Collections.<NotifiedEvent>emptyList(),
+                     listener.getCreationEvents());
+
+        cdcl.onDataChanged(ev);
+        assertSame(null, listener.getEvent());
+        assertSame(null, listener.getContext());
+        assertEquals(created, listener.getCreationEvents());
+
+        // Unregister a listener.
+        // Registration should be closed only one time.
+        for (int i = 0; i < 10; i++) {
+            listener.close();
+            if (i == 0) {
+                verify(reg).close();
+            }
+            verifyNoMoreInteractions(broker, logger, reg);
         }
     }
 
@@ -426,7 +512,7 @@ public class DataStoreListenerTest extends TestBase {
      * Test case for registration failure.
      *
      * <ul>
-     *   <li>{@link AbstractDataChangeListener#registerListener(DataBroker, LogicalDatastoreType, AsyncDataBroker.DataChangeScope)}</li>
+     *   <li>{@link AbstractDataChangeListener#registerListener(DataBroker, LogicalDatastoreType, AsyncDataBroker.DataChangeScope, boolean)}</li>
      * </ul>
      */
     @Test
@@ -436,16 +522,15 @@ public class DataStoreListenerTest extends TestBase {
         InstanceIdentifier<VtnPort> path = listener.getWildcardPath();
         LogicalDatastoreType store = LogicalDatastoreType.OPERATIONAL;
         DataChangeScope scope = DataChangeScope.SUBTREE;
-        DataBroker broker = Mockito.mock(DataBroker.class);
+        DataBroker broker = mock(DataBroker.class);
         IllegalArgumentException iae =
             new IllegalArgumentException("Bad argument");
-        Mockito.when(broker.registerDataChangeListener(store, path, listener,
-                                                       scope)).
+        when(broker.registerDataChangeListener(store, path, listener, scope)).
             thenThrow(iae);
 
         String msg = null;
         try {
-            listener.registerListener(broker, store, scope);
+            listener.registerListener(broker, store, scope, false);
             unexpected();
         } catch (IllegalStateException e) {
             msg = "Failed to register data change listener: " +
@@ -454,18 +539,17 @@ public class DataStoreListenerTest extends TestBase {
             assertEquals(msg, e.getMessage());
         }
 
-        Mockito.verify(broker).
+        verify(broker).
             registerDataChangeListener(store, path, listener, scope);
-        Mockito.verify(logger).error(msg, iae);
-        Mockito.verify(logger, Mockito.never()).error(Mockito.anyString());
+        verify(logger).error(msg, iae);
+        verifyNoMoreInteractions(logger);
 
         // close() should do nothing.
         for (int i = 0; i < 10; i++) {
             listener.close();
-            Mockito.verify(broker).
+            verify(broker).
                 registerDataChangeListener(store, path, listener, scope);
-            Mockito.verify(logger).error(msg, iae);
-            Mockito.verify(logger, Mockito.never()).error(Mockito.anyString());
+            verifyNoMoreInteractions(logger);
         }
     }
 
@@ -483,34 +567,31 @@ public class DataStoreListenerTest extends TestBase {
         InstanceIdentifier<VtnPort> path = listener.getWildcardPath();
         LogicalDatastoreType store = LogicalDatastoreType.OPERATIONAL;
         DataChangeScope scope = DataChangeScope.SUBTREE;
-        DataBroker broker = Mockito.mock(DataBroker.class);
+        DataBroker broker = mock(DataBroker.class);
         @SuppressWarnings("unchecked")
         ListenerRegistration<DataChangeListener> reg =
-            Mockito.mock(ListenerRegistration.class);
-        Mockito.when(broker.registerDataChangeListener(store, path, listener,
-                                                       scope)).
+            mock(ListenerRegistration.class);
+        when(broker.registerDataChangeListener(store, path, listener, scope)).
             thenReturn(reg);
-        listener.registerListener(broker, store, scope);
-        Mockito.verify(broker).
+        listener.registerListener(broker, store, scope, false);
+        verify(broker).
             registerDataChangeListener(store, path, listener, scope);
-        Mockito.verify(reg, Mockito.never()).close();
-        Mockito.verify(logger, Mockito.never()).
-            error(Mockito.anyString(), Mockito.any(Throwable.class));
-        Mockito.verify(logger, Mockito.never()).error(Mockito.anyString());
+        verify(reg, never()).close();
+        verifyZeroInteractions(logger);
 
         // Unregister a listener.
         String msg = "Failed to close instance: " + reg;
         IllegalArgumentException iae =
             new IllegalArgumentException("Bad argument");
-        Mockito.doThrow(iae).when(reg).close();
+        doThrow(iae).when(reg).close();
 
         for (int i = 0; i < 10; i++) {
             listener.close();
-            Mockito.verify(broker).
+            verify(broker).
                 registerDataChangeListener(store, path, listener, scope);
-            Mockito.verify(reg).close();
-            Mockito.verify(logger).error(msg, iae);
-            Mockito.verify(logger, Mockito.never()).error(Mockito.anyString());
+            verify(reg).close();
+            verify(logger).error(msg, iae);
+            verifyNoMoreInteractions(logger);
         }
     }
 
@@ -526,7 +607,7 @@ public class DataStoreListenerTest extends TestBase {
         TestChangeListener listener = new TestChangeListener();
         Logger logger = listener.getLogger();
         listener.onDataChanged(null);
-        Mockito.verify(logger).warn("Null data change event.");
+        verify(logger).warn("Null data change event.");
         assertTrue(listener.getCreationEvents().isEmpty());
         assertTrue(listener.getUpdateEvents().isEmpty());
         assertTrue(listener.getRemovalEvents().isEmpty());
@@ -547,8 +628,8 @@ public class DataStoreListenerTest extends TestBase {
             new IllegalStateException("Unexpected state");
         @SuppressWarnings("unchecked")
         AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev =
-            Mockito.mock(AsyncDataChangeEvent.class);
-        Mockito.when(ev.getCreatedData()).thenThrow(ise);
+            mock(AsyncDataChangeEvent.class);
+        when(ev.getCreatedData()).thenThrow(ise);
         Object ctx = new Object();
         listener.setDataChangeEvent(ev, ctx);
         assertSame(ev, listener.getEvent());
@@ -557,7 +638,7 @@ public class DataStoreListenerTest extends TestBase {
         listener.onDataChanged(ev);
         assertSame(null, listener.getEvent());
         assertSame(null, listener.getContext());
-        Mockito.verify(logger).
+        verify(logger).
             error("Unexpected exception in data change event listener.", ise);
         assertTrue(listener.getCreationEvents().isEmpty());
         assertTrue(listener.getUpdateEvents().isEmpty());
@@ -585,10 +666,7 @@ public class DataStoreListenerTest extends TestBase {
         listener.onDataChanged(ev);
         assertSame(null, listener.getEvent());
         assertSame(null, listener.getContext());
-        Mockito.verify(logger, Mockito.never()).
-            error(Mockito.anyString(), Mockito.any(Throwable.class));
-        Mockito.verify(logger, Mockito.never()).error(Mockito.anyString());
-        Mockito.verify(logger, Mockito.never()).warn(Mockito.anyString());
+        verifyZeroInteractions(logger);
         assertTrue(listener.getCreationEvents().isEmpty());
         assertTrue(listener.getUpdateEvents().isEmpty());
         assertTrue(listener.getRemovalEvents().isEmpty());
@@ -731,17 +809,12 @@ public class DataStoreListenerTest extends TestBase {
         assertSame(null, listener.getEvent());
         assertSame(null, listener.getContext());
 
-        Mockito.verify(ev).getCreatedData();
-        Mockito.verify(ev).getOriginalData();
-        Mockito.verify(ev).getUpdatedData();
-        Mockito.verify(ev).getRemovedPaths();
-        Mockito.verify(ev, Mockito.never()).getOriginalSubtree();
-        Mockito.verify(ev, Mockito.never()).getUpdatedSubtree();
-        Mockito.verify(logger, Mockito.never()).error(Mockito.anyString());
-        Mockito.verify(logger, Mockito.never()).
-            error(Mockito.anyString(), Mockito.anyVararg());
-        Mockito.verify(logger, Mockito.never()).
-            error(Mockito.anyString(), Mockito.any(Throwable.class));
+        verify(ev).getCreatedData();
+        verify(ev).getOriginalData();
+        verify(ev).getUpdatedData();
+        verify(ev).getRemovedPaths();
+        verify(ev, never()).getOriginalSubtree();
+        verify(ev, never()).getUpdatedSubtree();
 
         // Ensure that broken events were ignored.
         assertEquals(created, listener.getCreationEvents());
@@ -752,29 +825,30 @@ public class DataStoreListenerTest extends TestBase {
         // Wildcard paths and unwanted type of instance identifiers cannot be
         // detected because they are logged by verbose logger.
         String nullMsg = "{}: Null instance identifier.";
-        Mockito.verify(logger).warn(nullMsg, VtnUpdateType.CREATED);
-        Mockito.verify(logger).warn(nullMsg, VtnUpdateType.CHANGED);
-        Mockito.verify(logger).warn(nullMsg, VtnUpdateType.REMOVED);
+        verify(logger).warn(nullMsg, VtnUpdateType.CREATED);
+        verify(logger).warn(nullMsg, VtnUpdateType.CHANGED);
+        verify(logger).warn(nullMsg, VtnUpdateType.REMOVED);
 
         String dataTypeMsg =
             "{}: Unexpected data is associated: path={}, value={}";
-        Mockito.verify(logger).
+        verify(logger).
             warn(dataTypeMsg, VtnUpdateType.CREATED, badPath1, bad1);
-        Mockito.verify(logger).
+        verify(logger).
             warn(dataTypeMsg, VtnUpdateType.CHANGED, badPath2, bad2);
-        Mockito.verify(logger).
+        verify(logger).
             warn(dataTypeMsg, VtnUpdateType.CHANGED, badPath3, bad3);
-        Mockito.verify(logger).
+        verify(logger).
             warn(dataTypeMsg, VtnUpdateType.REMOVED, badPath4, bad4);
 
-        Mockito.verify(logger).
+        verify(logger).
             warn(dataTypeMsg, VtnUpdateType.CREATED, null1, null);
-        Mockito.verify(logger).
+        verify(logger).
             warn(dataTypeMsg, VtnUpdateType.CHANGED, null2, null);
-        Mockito.verify(logger).
+        verify(logger).
             warn(dataTypeMsg, VtnUpdateType.CHANGED, null3, null);
-        Mockito.verify(logger).
+        verify(logger).
             warn(dataTypeMsg, VtnUpdateType.REMOVED, null4, null);
+        verifyNoMoreInteractions(logger);
     }
 
     /**
@@ -825,17 +899,17 @@ public class DataStoreListenerTest extends TestBase {
             assertSame(null, listener.getEvent());
             assertSame(null, listener.getContext());
 
-            Mockito.verify(ev).getCreatedData();
-            Mockito.verify(ev).getOriginalData();
-            Mockito.verify(ev).getUpdatedData();
-            Mockito.verify(ev).getRemovedPaths();
-            Mockito.verify(ev, Mockito.never()).getOriginalSubtree();
-            Mockito.verify(ev, Mockito.never()).getUpdatedSubtree();
+            verify(ev).getCreatedData();
+            verify(ev).getOriginalData();
+            verify(ev).getUpdatedData();
+            verify(ev).getRemovedPaths();
+            verify(ev, never()).getOriginalSubtree();
+            verify(ev, never()).getUpdatedSubtree();
 
             assertEquals(created, listener.getCreationEvents());
             assertEquals(updated, listener.getUpdateEvents());
             assertEquals(removed, listener.getRemovalEvents());
-            checkNoLogged(logger);
+            verifyZeroInteractions(logger);
         }
     }
 
@@ -882,18 +956,18 @@ public class DataStoreListenerTest extends TestBase {
         assertSame(null, listener.getEvent());
         assertSame(null, listener.getContext());
 
-        Mockito.verify(ev).getCreatedData();
-        Mockito.verify(ev).getOriginalData();
-        Mockito.verify(ev, Mockito.never()).getUpdatedData();
-        Mockito.verify(ev, Mockito.never()).getRemovedPaths();
-        Mockito.verify(ev, Mockito.never()).getOriginalSubtree();
-        Mockito.verify(ev, Mockito.never()).getUpdatedSubtree();
+        verify(ev).getCreatedData();
+        verify(ev).getOriginalData();
+        verify(ev, never()).getUpdatedData();
+        verify(ev, never()).getRemovedPaths();
+        verify(ev, never()).getOriginalSubtree();
+        verify(ev, never()).getUpdatedSubtree();
 
         List<NotifiedEvent> empty = Collections.<NotifiedEvent>emptyList();
         assertEquals(created, listener.getCreationEvents());
         assertEquals(empty, listener.getUpdateEvents());
         assertEquals(empty, listener.getRemovalEvents());
-        checkNoLogged(logger);
+        verifyZeroInteractions(logger);
     }
 
     /**
@@ -939,18 +1013,18 @@ public class DataStoreListenerTest extends TestBase {
         assertSame(null, listener.getEvent());
         assertSame(null, listener.getContext());
 
-        Mockito.verify(ev, Mockito.never()).getCreatedData();
-        Mockito.verify(ev).getOriginalData();
-        Mockito.verify(ev).getUpdatedData();
-        Mockito.verify(ev, Mockito.never()).getRemovedPaths();
-        Mockito.verify(ev, Mockito.never()).getOriginalSubtree();
-        Mockito.verify(ev, Mockito.never()).getUpdatedSubtree();
+        verify(ev, never()).getCreatedData();
+        verify(ev).getOriginalData();
+        verify(ev).getUpdatedData();
+        verify(ev, never()).getRemovedPaths();
+        verify(ev, never()).getOriginalSubtree();
+        verify(ev, never()).getUpdatedSubtree();
 
         List<NotifiedEvent> empty = Collections.<NotifiedEvent>emptyList();
         assertEquals(empty, listener.getCreationEvents());
         assertEquals(updated, listener.getUpdateEvents());
         assertEquals(empty, listener.getRemovalEvents());
-        checkNoLogged(logger);
+        verifyZeroInteractions(logger);
     }
 
     /**
@@ -996,18 +1070,18 @@ public class DataStoreListenerTest extends TestBase {
         assertSame(null, listener.getEvent());
         assertSame(null, listener.getContext());
 
-        Mockito.verify(ev, Mockito.never()).getCreatedData();
-        Mockito.verify(ev).getOriginalData();
-        Mockito.verify(ev, Mockito.never()).getUpdatedData();
-        Mockito.verify(ev).getRemovedPaths();
-        Mockito.verify(ev, Mockito.never()).getOriginalSubtree();
-        Mockito.verify(ev, Mockito.never()).getUpdatedSubtree();
+        verify(ev, never()).getCreatedData();
+        verify(ev).getOriginalData();
+        verify(ev, never()).getUpdatedData();
+        verify(ev).getRemovedPaths();
+        verify(ev, never()).getOriginalSubtree();
+        verify(ev, never()).getUpdatedSubtree();
 
         List<NotifiedEvent> empty = Collections.<NotifiedEvent>emptyList();
         assertEquals(empty, listener.getCreationEvents());
         assertEquals(empty, listener.getUpdateEvents());
         assertEquals(removed, listener.getRemovalEvents());
-        checkNoLogged(logger);
+        verifyZeroInteractions(logger);
     }
 
     /**
@@ -1055,18 +1129,18 @@ public class DataStoreListenerTest extends TestBase {
         assertSame(null, listener.getEvent());
         assertSame(null, listener.getContext());
 
-        Mockito.verify(ev, Mockito.never()).getCreatedData();
-        Mockito.verify(ev).getOriginalData();
-        Mockito.verify(ev).getUpdatedData();
-        Mockito.verify(ev).getRemovedPaths();
-        Mockito.verify(ev, Mockito.never()).getOriginalSubtree();
-        Mockito.verify(ev, Mockito.never()).getUpdatedSubtree();
+        verify(ev, never()).getCreatedData();
+        verify(ev).getOriginalData();
+        verify(ev).getUpdatedData();
+        verify(ev).getRemovedPaths();
+        verify(ev, never()).getOriginalSubtree();
+        verify(ev, never()).getUpdatedSubtree();
 
         List<NotifiedEvent> empty = Collections.<NotifiedEvent>emptyList();
         assertEquals(empty, listener.getCreationEvents());
         assertEquals(updated, listener.getUpdateEvents());
         assertEquals(removed, listener.getRemovalEvents());
-        checkNoLogged(logger);
+        verifyZeroInteractions(logger);
     }
 
     /**
@@ -1114,18 +1188,18 @@ public class DataStoreListenerTest extends TestBase {
         assertSame(null, listener.getEvent());
         assertSame(null, listener.getContext());
 
-        Mockito.verify(ev).getCreatedData();
-        Mockito.verify(ev).getOriginalData();
-        Mockito.verify(ev, Mockito.never()).getUpdatedData();
-        Mockito.verify(ev).getRemovedPaths();
-        Mockito.verify(ev, Mockito.never()).getOriginalSubtree();
-        Mockito.verify(ev, Mockito.never()).getUpdatedSubtree();
+        verify(ev).getCreatedData();
+        verify(ev).getOriginalData();
+        verify(ev, never()).getUpdatedData();
+        verify(ev).getRemovedPaths();
+        verify(ev, never()).getOriginalSubtree();
+        verify(ev, never()).getUpdatedSubtree();
 
         List<NotifiedEvent> empty = Collections.<NotifiedEvent>emptyList();
         assertEquals(created, listener.getCreationEvents());
         assertEquals(empty, listener.getUpdateEvents());
         assertEquals(removed, listener.getRemovalEvents());
-        checkNoLogged(logger);
+        verifyZeroInteractions(logger);
     }
 
     /**
@@ -1173,18 +1247,18 @@ public class DataStoreListenerTest extends TestBase {
         assertSame(null, listener.getEvent());
         assertSame(null, listener.getContext());
 
-        Mockito.verify(ev).getCreatedData();
-        Mockito.verify(ev).getOriginalData();
-        Mockito.verify(ev).getUpdatedData();
-        Mockito.verify(ev, Mockito.never()).getRemovedPaths();
-        Mockito.verify(ev, Mockito.never()).getOriginalSubtree();
-        Mockito.verify(ev, Mockito.never()).getUpdatedSubtree();
+        verify(ev).getCreatedData();
+        verify(ev).getOriginalData();
+        verify(ev).getUpdatedData();
+        verify(ev, never()).getRemovedPaths();
+        verify(ev, never()).getOriginalSubtree();
+        verify(ev, never()).getUpdatedSubtree();
 
         List<NotifiedEvent> empty = Collections.<NotifiedEvent>emptyList();
         assertEquals(created, listener.getCreationEvents());
         assertEquals(updated, listener.getUpdateEvents());
         assertEquals(empty, listener.getRemovalEvents());
-        checkNoLogged(logger);
+        verifyZeroInteractions(logger);
     }
 
     /**
@@ -1242,11 +1316,11 @@ public class DataStoreListenerTest extends TestBase {
 
         @SuppressWarnings("unchecked")
         AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev =
-            Mockito.mock(AsyncDataChangeEvent.class);
-        Mockito.when(ev.getCreatedData()).thenReturn(createdMap);
-        Mockito.when(ev.getUpdatedData()).thenReturn(updatedMap);
-        Mockito.when(ev.getRemovedPaths()).thenReturn(removedSet);
-        Mockito.when(ev.getOriginalData()).thenReturn(original);
+            mock(AsyncDataChangeEvent.class);
+        when(ev.getCreatedData()).thenReturn(createdMap);
+        when(ev.getUpdatedData()).thenReturn(updatedMap);
+        when(ev.getRemovedPaths()).thenReturn(removedSet);
+        when(ev.getOriginalData()).thenReturn(original);
 
         return ev;
     }
@@ -1319,30 +1393,5 @@ public class DataStoreListenerTest extends TestBase {
         VtnPort vport = createVtnPortBuilder(sport).build();
         InstanceIdentifier<VtnPort> path = sport.getVtnPortIdentifier();
         return new NotifiedEvent(path, vport, null);
-    }
-
-    /**
-     * Ensure that no message is logged.
-     *
-     * @param logger  A mock-up of {@link Logger} instance.
-     */
-    private void checkNoLogged(Logger logger) {
-        Mockito.verify(logger, Mockito.never()).error(Mockito.anyString());
-        Mockito.verify(logger, Mockito.never()).
-            error(Mockito.anyString(), Mockito.anyVararg());
-        Mockito.verify(logger, Mockito.never()).
-            error(Mockito.anyString(), Mockito.any(Throwable.class));
-
-        Mockito.verify(logger, Mockito.never()).warn(Mockito.anyString());
-        Mockito.verify(logger, Mockito.never()).
-            warn(Mockito.anyString(), Mockito.anyVararg());
-        Mockito.verify(logger, Mockito.never()).
-            warn(Mockito.anyString(), Mockito.any(Throwable.class));
-
-        Mockito.verify(logger, Mockito.never()).trace(Mockito.anyString());
-        Mockito.verify(logger, Mockito.never()).
-            trace(Mockito.anyString(), Mockito.anyVararg());
-        Mockito.verify(logger, Mockito.never()).
-            trace(Mockito.anyString(), Mockito.any(Throwable.class));
     }
 }

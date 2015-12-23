@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Optional;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -73,6 +74,7 @@ import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipC
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListener;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListenerRegistration;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipService;
+import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipState;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 
 import org.opendaylight.yangtools.yang.binding.Notification;
@@ -585,6 +587,25 @@ public final class VTNManagerProviderImpl
     public EntityOwnershipListenerRegistration registerListener(
         VTNEntityType etype, EntityOwnershipListener listener) {
         return entityOwnerService.registerListener(etype.getType(), listener);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Optional<EntityOwnershipState> getOwnershipState(Entity ent) {
+        return entityOwnerService.getOwnershipState(ent);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isOwner(VTNEntityType etype) {
+        Entity ent = VTNEntityType.getGlobalEntity(etype);
+        Optional<EntityOwnershipState> opt =
+            entityOwnerService.getOwnershipState(ent);
+        return (opt != null && opt.get().isOwner());
     }
 
     /**
