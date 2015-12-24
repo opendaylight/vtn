@@ -300,14 +300,6 @@ public class VTNRoutingManagerTest extends TestBase {
                 getFieldValue(routingManager, List.class, "vtnListeners");
             assertEquals(expected, listeners);
         }
-
-        // Below calls should do nothing because listeners are already added.
-        for (VTNRoutingListener l: expected) {
-            routingManager.addListener(l);
-            List listeners =
-                getFieldValue(routingManager, List.class, "vtnListeners");
-            assertEquals(expected, listeners);
-        }
     }
 
     /**

@@ -245,14 +245,6 @@ public class VTNInventoryManagerTest extends TestBase {
                 getFieldValue(inventoryManager, List.class, "vtnListeners");
             assertEquals(expected, listeners);
         }
-
-        // Below calls should do nothing because listeners are already added.
-        for (VTNInventoryListener l: expected) {
-            inventoryManager.addListener(l);
-            List listeners =
-                getFieldValue(inventoryManager, List.class, "vtnListeners");
-            assertEquals(expected, listeners);
-        }
     }
 
     /**

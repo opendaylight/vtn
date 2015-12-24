@@ -8,6 +8,7 @@
 
 package org.opendaylight.vtn.manager.internal.inventory;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -69,8 +70,8 @@ public final class VTNInventoryManager
     /**
      * A list of VTN inventory listeners.
      */
-    private final CopyOnWriteArrayList<VTNInventoryListener>  vtnListeners =
-        new CopyOnWriteArrayList<VTNInventoryListener>();
+    private final List<VTNInventoryListener>  vtnListeners =
+        new CopyOnWriteArrayList<>();
 
     /**
      * MD-SAL datastore transaction queue for inventory information.
@@ -151,7 +152,7 @@ public final class VTNInventoryManager
      * @param l  A VTN inventory listener.
      */
     public void addListener(VTNInventoryListener l) {
-        vtnListeners.addIfAbsent(l);
+        vtnListeners.add(l);
     }
 
     /**
@@ -246,8 +247,6 @@ public final class VTNInventoryManager
      *
      * @param oldNode  A {@link VtnNode} instance before updated.
      * @param newNode  An updated {@link VtnNode} instance.
-     * @param owner  {@code true} indicates that this process is the owner of
-     *               inventory information.
      */
     private void onChanged(VtnNode oldNode, VtnNode newNode) {
         VtnOpenflowVersion oldVer = oldNode.getOpenflowVersion();

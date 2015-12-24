@@ -91,7 +91,7 @@ public final class VTNRoutingManager
     /**
      * A list of VTN routing listeners.
      */
-    private final CopyOnWriteArrayList<VTNRoutingListener>  vtnListeners =
+    private final List<VTNRoutingListener>  vtnListeners =
         new CopyOnWriteArrayList<>();
 
     /**
@@ -134,7 +134,7 @@ public final class VTNRoutingManager
      * @param l  A VTN routing listener.
      */
     public void addListener(VTNRoutingListener l) {
-        vtnListeners.addIfAbsent(l);
+        vtnListeners.add(l);
     }
 
     /**
