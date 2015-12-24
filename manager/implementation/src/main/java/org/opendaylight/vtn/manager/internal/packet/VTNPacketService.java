@@ -74,8 +74,8 @@ public final class VTNPacketService extends SalNotificationListener
     /**
      * A list of VTN packet listeners.
      */
-    private final CopyOnWriteArrayList<VTNPacketListener>  listeners =
-        new CopyOnWriteArrayList<VTNPacketListener>();
+    private final List<VTNPacketListener>  listeners =
+        new CopyOnWriteArrayList<>();
 
     /**
      * A set of physical switch ports waiting for completion of topology
@@ -121,7 +121,7 @@ public final class VTNPacketService extends SalNotificationListener
      * @param l  A VTN packet listener.
      */
     public void addListener(VTNPacketListener l) {
-        listeners.addIfAbsent(l);
+        listeners.add(l);
     }
 
     /**
