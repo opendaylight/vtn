@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -105,6 +106,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.ta
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowTableRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.Flow;
@@ -891,10 +893,10 @@ public class FlowUtilsTest extends TestBase {
     }
 
     /**
-     * Test case for {@link FlowUtils#createRemoveFlowInput(SalNode)}.
+     * Test case for {@link FlowUtils#createRemoveFlowInputBuilder(SalNode)}.
      */
     @Test
-    public void testCreateRemoveFlowInput1() {
+    public void testCreateRemoveFlowInputBuilder1() {
         SalNode[] nodes = {
             new SalNode(1L),
             new SalNode(12345L),
@@ -910,90 +912,33 @@ public class FlowUtilsTest extends TestBase {
         for (SalNode snode: nodes) {
             FlowTableRef tref =
                 new FlowTableRef(snode.getFlowTableIdentifier(table));
-            RemoveFlowInput input = FlowUtils.createRemoveFlowInput(snode);
-            assertEquals(snode.getNodeRef(), input.getNode());
-            assertEquals(table, input.getTableId());
-            assertEquals(tref, input.getFlowTable());
-            assertEquals(uri, input.getTransactionUri());
-            assertEquals(cookie, input.getCookie());
-            assertEquals(cookieMask, input.getCookieMask());
-            assertEquals(Boolean.FALSE, input.isStrict());
-            assertEquals(Boolean.TRUE, input.isBarrier());
-            assertEquals(null, input.getOutPort());
-            assertEquals(null, input.getOutGroup());
-            assertEquals(null, input.getBufferId());
-            assertEquals(null, input.getContainerName());
-            assertEquals(null, input.getFlowName());
-            assertEquals(null, input.isInstallHw());
+            RemoveFlowInputBuilder builder =
+                FlowUtils.createRemoveFlowInputBuilder(snode);
+            assertEquals(snode.getNodeRef(), builder.getNode());
+            assertEquals(table, builder.getTableId());
+            assertEquals(tref, builder.getFlowTable());
+            assertEquals(uri, builder.getTransactionUri());
+            assertEquals(cookie, builder.getCookie());
+            assertEquals(cookieMask, builder.getCookieMask());
+            assertEquals(Boolean.FALSE, builder.isStrict());
+            assertEquals(null, builder.isBarrier());
+            assertEquals(null, builder.getOutPort());
+            assertEquals(null, builder.getOutGroup());
+            assertEquals(null, builder.getBufferId());
+            assertEquals(null, builder.getContainerName());
+            assertEquals(null, builder.getFlowName());
+            assertEquals(null, builder.isInstallHw());
         }
     }
 
     /**
      * Test case for
-     * {@link FlowUtils#createRemoveFlowInput(VtnFlowEntry,InventoryReader)}.
+     * {@link FlowUtils#createRemoveFlowInputBuilder(SalNode,VtnFlowEntry,InventoryReader)}.
      *
      * @throws Exception  An error occurred.
      */
     @Test
-    public void testCreateRemoveFlowInput2() throws Exception {
-        long flowId = 99999999L;
-        int order = 0;
-        SalPort ingress = new SalPort(1L, 2L);
-        Short table = 0;
-        VtnFlowEntry vfent = createVtnFlowEntry(flowId, order, ingress);
-
-        // In case where the target node is not present.
-        ReadTransaction rtx = mock(ReadTransaction.class);
-        InventoryReader reader = new InventoryReader(rtx);
-        SalNode snode = ingress.getSalNode();
-        reader.prefetch(snode, null);
-        assertEquals(null, FlowUtils.createRemoveFlowInput(vfent, reader));
-
-        // In case where the target node is present.
-        long c = flowId | VTN_FLOW_COOKIE;
-        FlowCookie cookie = new FlowCookie(NumberUtils.getUnsigned(c));
-        FlowCookie cookieMask = new FlowCookie(NumberUtils.getUnsigned(-1L));
-        VtnNode vnode = new VtnNodeBuilder().setId(snode.getNodeId()).build();
-        reader.prefetch(snode, vnode);
-
-        RemoveFlowInput input = FlowUtils.createRemoveFlowInput(vfent, reader);
-        assertEquals(ingress.getNodeRef(), input.getNode());
-        assertEquals(vfent.getPriority(), input.getPriority());
-        assertEquals(table, input.getTableId());
-        assertEquals(vfent.getIdleTimeout(), input.getIdleTimeout());
-        assertEquals(vfent.getHardTimeout(), input.getHardTimeout());
-        assertEquals(cookie, input.getCookie());
-        assertEquals(cookieMask, input.getCookieMask());
-        assertEquals(vfent.getMatch(), input.getMatch());
-        assertEquals(vfent.getFlags(), input.getFlags());
-        assertEquals(vfent.getInstructions(), input.getInstructions());
-        assertEquals(Boolean.TRUE, input.isStrict());
-        assertEquals(Boolean.TRUE, input.isBarrier());
-        assertEquals(null, input.getOutPort());
-        assertEquals(null, input.getOutGroup());
-        assertEquals(null, input.getBufferId());
-        assertEquals(null, input.getContainerName());
-        assertEquals(null, input.getFlowName());
-        assertEquals(null, input.isInstallHw());
-
-        FlowTableRef tref =
-            new FlowTableRef(ingress.getFlowTableIdentifier(table));
-        assertEquals(tref, input.getFlowTable());
-
-        Uri uri = new Uri(String.format("remove-flow:%x-%s", c, order));
-        assertEquals(uri, input.getTransactionUri());
-
-        verifyZeroInteractions(rtx);
-    }
-
-    /**
-     * Test case for
-     * {@link FlowUtils#createRemoveFlowInput(SalNode,VtnFlowEntry,InventoryReader)}.
-     *
-     * @throws Exception  An error occurred.
-     */
-    @Test
-    public void testCreateRemoveFlowInput3() throws Exception {
+    public void testCreateRemoveFlowInputBuilder2() throws Exception {
         long flowId = 0xffffffffffffL;
         int order = 12345;
         SalPort ingress = new SalPort(-1L, 0xfffff000L);
@@ -1006,7 +951,8 @@ public class FlowUtilsTest extends TestBase {
         SalNode snode = ingress.getSalNode();
         reader.prefetch(snode, null);
         assertEquals(null,
-                     FlowUtils.createRemoveFlowInput(snode, vfent, reader));
+                     FlowUtils.createRemoveFlowInputBuilder(snode, vfent,
+                                                            reader));
 
         // In case where the target node is present.
         long c = flowId | VTN_FLOW_COOKIE;
@@ -1015,45 +961,45 @@ public class FlowUtilsTest extends TestBase {
         VtnNode vnode = new VtnNodeBuilder().setId(snode.getNodeId()).build();
         reader.prefetch(snode, vnode);
 
-        RemoveFlowInput input =
-            FlowUtils.createRemoveFlowInput(snode, vfent, reader);
-        assertEquals(ingress.getNodeRef(), input.getNode());
-        assertEquals(vfent.getPriority(), input.getPriority());
-        assertEquals(table, input.getTableId());
-        assertEquals(vfent.getIdleTimeout(), input.getIdleTimeout());
-        assertEquals(vfent.getHardTimeout(), input.getHardTimeout());
-        assertEquals(cookie, input.getCookie());
-        assertEquals(cookieMask, input.getCookieMask());
-        assertEquals(vfent.getMatch(), input.getMatch());
-        assertEquals(vfent.getFlags(), input.getFlags());
-        assertEquals(vfent.getInstructions(), input.getInstructions());
-        assertEquals(Boolean.TRUE, input.isStrict());
-        assertEquals(Boolean.TRUE, input.isBarrier());
-        assertEquals(null, input.getOutPort());
-        assertEquals(null, input.getOutGroup());
-        assertEquals(null, input.getBufferId());
-        assertEquals(null, input.getContainerName());
-        assertEquals(null, input.getFlowName());
-        assertEquals(null, input.isInstallHw());
+        RemoveFlowInputBuilder builder =
+            FlowUtils.createRemoveFlowInputBuilder(snode, vfent, reader);
+        assertEquals(ingress.getNodeRef(), builder.getNode());
+        assertEquals(vfent.getPriority(), builder.getPriority());
+        assertEquals(table, builder.getTableId());
+        assertEquals(vfent.getIdleTimeout(), builder.getIdleTimeout());
+        assertEquals(vfent.getHardTimeout(), builder.getHardTimeout());
+        assertEquals(cookie, builder.getCookie());
+        assertEquals(cookieMask, builder.getCookieMask());
+        assertEquals(vfent.getMatch(), builder.getMatch());
+        assertEquals(vfent.getFlags(), builder.getFlags());
+        assertEquals(vfent.getInstructions(), builder.getInstructions());
+        assertEquals(Boolean.TRUE, builder.isStrict());
+        assertEquals(null, builder.isBarrier());
+        assertEquals(null, builder.getOutPort());
+        assertEquals(null, builder.getOutGroup());
+        assertEquals(null, builder.getBufferId());
+        assertEquals(null, builder.getContainerName());
+        assertEquals(null, builder.getFlowName());
+        assertEquals(null, builder.isInstallHw());
 
         FlowTableRef tref =
             new FlowTableRef(ingress.getFlowTableIdentifier(table));
-        assertEquals(tref, input.getFlowTable());
+        assertEquals(tref, builder.getFlowTable());
 
         Uri uri = new Uri(String.format("remove-flow:%x-%s", c, order));
-        assertEquals(uri, input.getTransactionUri());
+        assertEquals(uri, builder.getTransactionUri());
 
         verifyZeroInteractions(rtx);
     }
 
     /**
      * Test case for
-     * {@link FlowUtils#createRemoveFlowInput(SalNode,VtnFlowEntry)}.
+     * {@link FlowUtils#createRemoveFlowInputBuilder(SalNode,VtnFlowEntry)}.
      *
      * @throws Exception  An error occurred.
      */
     @Test
-    public void testCreateRemoveFlowInput4() throws Exception {
+    public void testCreateRemoveFlowInputBuilder3() throws Exception {
         long flowId = 0x123456789aL;
         int order = 99;
         SalPort ingress = new SalPort(777L, 15L);
@@ -1064,118 +1010,119 @@ public class FlowUtilsTest extends TestBase {
         FlowCookie cookie = new FlowCookie(NumberUtils.getUnsigned(c));
         FlowCookie cookieMask = new FlowCookie(NumberUtils.getUnsigned(-1L));
 
-        RemoveFlowInput input =
-            FlowUtils.createRemoveFlowInput(snode, vfent);
-        assertEquals(ingress.getNodeRef(), input.getNode());
-        assertEquals(vfent.getPriority(), input.getPriority());
-        assertEquals(table, input.getTableId());
-        assertEquals(vfent.getIdleTimeout(), input.getIdleTimeout());
-        assertEquals(vfent.getHardTimeout(), input.getHardTimeout());
-        assertEquals(cookie, input.getCookie());
-        assertEquals(cookieMask, input.getCookieMask());
-        assertEquals(vfent.getMatch(), input.getMatch());
-        assertEquals(vfent.getFlags(), input.getFlags());
-        assertEquals(vfent.getInstructions(), input.getInstructions());
-        assertEquals(Boolean.TRUE, input.isStrict());
-        assertEquals(Boolean.TRUE, input.isBarrier());
-        assertEquals(null, input.getOutPort());
-        assertEquals(null, input.getOutGroup());
-        assertEquals(null, input.getBufferId());
-        assertEquals(null, input.getContainerName());
-        assertEquals(null, input.getFlowName());
-        assertEquals(null, input.isInstallHw());
+        RemoveFlowInputBuilder builder =
+            FlowUtils.createRemoveFlowInputBuilder(snode, vfent);
+        assertEquals(ingress.getNodeRef(), builder.getNode());
+        assertEquals(vfent.getPriority(), builder.getPriority());
+        assertEquals(table, builder.getTableId());
+        assertEquals(vfent.getIdleTimeout(), builder.getIdleTimeout());
+        assertEquals(vfent.getHardTimeout(), builder.getHardTimeout());
+        assertEquals(cookie, builder.getCookie());
+        assertEquals(cookieMask, builder.getCookieMask());
+        assertEquals(vfent.getMatch(), builder.getMatch());
+        assertEquals(vfent.getFlags(), builder.getFlags());
+        assertEquals(vfent.getInstructions(), builder.getInstructions());
+        assertEquals(Boolean.TRUE, builder.isStrict());
+        assertEquals(null, builder.isBarrier());
+        assertEquals(null, builder.getOutPort());
+        assertEquals(null, builder.getOutGroup());
+        assertEquals(null, builder.getBufferId());
+        assertEquals(null, builder.getContainerName());
+        assertEquals(null, builder.getFlowName());
+        assertEquals(null, builder.isInstallHw());
 
         FlowTableRef tref =
             new FlowTableRef(ingress.getFlowTableIdentifier(table));
-        assertEquals(tref, input.getFlowTable());
+        assertEquals(tref, builder.getFlowTable());
 
         Uri uri = new Uri(String.format("remove-flow:%x-%s", c, order));
-        assertEquals(uri, input.getTransactionUri());
-    }
-
-    /**
-     * Test case for {@link FlowUtils#createRemoveFlowInput(SalNode, SalPort)}.
-     */
-    @Test
-    public void testCreateRemoveFlowInput5() {
-        SalPort sport = new SalPort(0xaabbccddeeff1122L, 0xf0000000L);
-        SalNode snode = sport.getSalNode();
-        Short table = 0;
-
-        List<RemoveFlowInput> list =
-            FlowUtils.createRemoveFlowInput(snode, sport);
-        assertEquals(2, list.size());
-
-        // The first element should remove flows that match packets received
-        // from the specified port.
-        RemoveFlowInput input = list.get(0);
-        assertEquals(snode.getNodeRef(), input.getNode());
-        assertEquals(null, input.getPriority());
-        assertEquals(table, input.getTableId());
-        assertEquals(null, input.getIdleTimeout());
-        assertEquals(null, input.getHardTimeout());
-        assertEquals(null, input.getCookie());
-        assertEquals(null, input.getCookieMask());
-        assertEquals(null, input.getFlags());
-        assertEquals(null, input.getInstructions());
-        assertEquals(Boolean.FALSE, input.isStrict());
-        assertEquals(Boolean.TRUE, input.isBarrier());
-        assertEquals(null, input.getOutPort());
-        assertEquals(null, input.getOutGroup());
-        assertEquals(null, input.getBufferId());
-        assertEquals(null, input.getContainerName());
-        assertEquals(null, input.getFlowName());
-        assertEquals(null, input.isInstallHw());
-
-        FlowTableRef tref =
-            new FlowTableRef(snode.getFlowTableIdentifier(table));
-        assertEquals(tref, input.getFlowTable());
-
-        Uri uri = new Uri(String.format("remove-flow:IN_PORT=%s", sport));
-        assertEquals(uri, input.getTransactionUri());
-
-        Match match = new MatchBuilder().
-            setInPort(sport.getNodeConnectorId()).
-            build();
-        assertEquals(match, input.getMatch());
-
-        // The second element should remove flows that transmit packets to the
-        // specified port.
-        input = list.get(1);
-        assertEquals(snode.getNodeRef(), input.getNode());
-        assertEquals(null, input.getPriority());
-        assertEquals(table, input.getTableId());
-        assertEquals(null, input.getIdleTimeout());
-        assertEquals(null, input.getHardTimeout());
-        assertEquals(null, input.getCookie());
-        assertEquals(null, input.getCookieMask());
-        assertEquals(null, input.getMatch());
-        assertEquals(null, input.getFlags());
-        assertEquals(null, input.getInstructions());
-        assertEquals(Boolean.FALSE, input.isStrict());
-        assertEquals(Boolean.TRUE, input.isBarrier());
-        assertEquals(tref, input.getFlowTable());
-        assertEquals(null, input.getOutGroup());
-        assertEquals(null, input.getBufferId());
-        assertEquals(null, input.getContainerName());
-        assertEquals(null, input.getFlowName());
-        assertEquals(null, input.isInstallHw());
-
-        uri = new Uri(String.format("remove-flow:OUT_PORT=%s", sport));
-        assertEquals(uri, input.getTransactionUri());
-
-        BigInteger portNum = NumberUtils.getUnsigned(sport.getPortNumber());
-        assertEquals(portNum, input.getOutPort());
+        assertEquals(uri, builder.getTransactionUri());
     }
 
     /**
      * Test case for
-     * {@link FlowUtils#createRemoveFlowInput(SalNode,Flow,Uri)}.
+     * {@link FlowUtils#createRemoveFlowInputBuilder(SalNode, SalPort)}.
+     */
+    @Test
+    public void testCreateRemoveFlowInputBuilder4() {
+        SalPort sport = new SalPort(0xaabbccddeeff1122L, 0xf0000000L);
+        SalNode snode = sport.getSalNode();
+        Short table = 0;
+
+        List<RemoveFlowInputBuilder> list =
+            FlowUtils.createRemoveFlowInputBuilder(snode, sport);
+        assertEquals(2, list.size());
+
+        // The first element should remove flows that match packets received
+        // from the specified port.
+        RemoveFlowInputBuilder builder = list.get(0);
+        assertEquals(snode.getNodeRef(), builder.getNode());
+        assertEquals(null, builder.getPriority());
+        assertEquals(table, builder.getTableId());
+        assertEquals(null, builder.getIdleTimeout());
+        assertEquals(null, builder.getHardTimeout());
+        assertEquals(null, builder.getCookie());
+        assertEquals(null, builder.getCookieMask());
+        assertEquals(null, builder.getFlags());
+        assertEquals(null, builder.getInstructions());
+        assertEquals(Boolean.FALSE, builder.isStrict());
+        assertEquals(null, builder.isBarrier());
+        assertEquals(null, builder.getOutPort());
+        assertEquals(null, builder.getOutGroup());
+        assertEquals(null, builder.getBufferId());
+        assertEquals(null, builder.getContainerName());
+        assertEquals(null, builder.getFlowName());
+        assertEquals(null, builder.isInstallHw());
+
+        FlowTableRef tref =
+            new FlowTableRef(snode.getFlowTableIdentifier(table));
+        assertEquals(tref, builder.getFlowTable());
+
+        Uri uri = new Uri(String.format("remove-flow:IN_PORT=%s", sport));
+        assertEquals(uri, builder.getTransactionUri());
+
+        Match match = new MatchBuilder().
+            setInPort(sport.getNodeConnectorId()).
+            build();
+        assertEquals(match, builder.getMatch());
+
+        // The second element should remove flows that transmit packets to the
+        // specified port.
+        builder = list.get(1);
+        assertEquals(snode.getNodeRef(), builder.getNode());
+        assertEquals(null, builder.getPriority());
+        assertEquals(table, builder.getTableId());
+        assertEquals(null, builder.getIdleTimeout());
+        assertEquals(null, builder.getHardTimeout());
+        assertEquals(null, builder.getCookie());
+        assertEquals(null, builder.getCookieMask());
+        assertEquals(null, builder.getMatch());
+        assertEquals(null, builder.getFlags());
+        assertEquals(null, builder.getInstructions());
+        assertEquals(Boolean.FALSE, builder.isStrict());
+        assertEquals(null, builder.isBarrier());
+        assertEquals(tref, builder.getFlowTable());
+        assertEquals(null, builder.getOutGroup());
+        assertEquals(null, builder.getBufferId());
+        assertEquals(null, builder.getContainerName());
+        assertEquals(null, builder.getFlowName());
+        assertEquals(null, builder.isInstallHw());
+
+        uri = new Uri(String.format("remove-flow:OUT_PORT=%s", sport));
+        assertEquals(uri, builder.getTransactionUri());
+
+        BigInteger portNum = NumberUtils.getUnsigned(sport.getPortNumber());
+        assertEquals(portNum, builder.getOutPort());
+    }
+
+    /**
+     * Test case for
+     * {@link FlowUtils#createRemoveFlowInputBuilder(SalNode,Flow,Uri)}.
      *
      * @throws Exception  An error occurred.
      */
     @Test
-    public void testCreateRemoveFlowInput6() throws Exception {
+    public void testCreateRemoveFlowInputBuilder5() throws Exception {
         long flowId = 0x7777777777L;
         int order = 123;
         SalPort ingress = new SalPort(345L, 88L);
@@ -1188,31 +1135,31 @@ public class FlowUtilsTest extends TestBase {
         FlowCookie cookieMask = new FlowCookie(NumberUtils.getUnsigned(-1L));
         Uri uri = new Uri("remove-flow-input-5:" + flowId);
 
-        RemoveFlowInput input =
-            FlowUtils.createRemoveFlowInput(snode, flow, uri);
-        assertEquals(ingress.getNodeRef(), input.getNode());
-        assertEquals(vfent.getPriority(), input.getPriority());
-        assertEquals(table, input.getTableId());
-        assertEquals(vfent.getIdleTimeout(), input.getIdleTimeout());
-        assertEquals(vfent.getHardTimeout(), input.getHardTimeout());
-        assertEquals(cookie, input.getCookie());
-        assertEquals(cookieMask, input.getCookieMask());
-        assertEquals(vfent.getMatch(), input.getMatch());
-        assertEquals(vfent.getFlags(), input.getFlags());
-        assertEquals(vfent.getInstructions(), input.getInstructions());
-        assertEquals(Boolean.TRUE, input.isStrict());
-        assertEquals(Boolean.TRUE, input.isBarrier());
-        assertEquals(null, input.getOutPort());
-        assertEquals(null, input.getOutGroup());
-        assertEquals(null, input.getBufferId());
-        assertEquals(null, input.getContainerName());
-        assertEquals(null, input.getFlowName());
-        assertEquals(null, input.isInstallHw());
-        assertEquals(uri, input.getTransactionUri());
+        RemoveFlowInputBuilder builder =
+            FlowUtils.createRemoveFlowInputBuilder(snode, flow, uri);
+        assertEquals(ingress.getNodeRef(), builder.getNode());
+        assertEquals(vfent.getPriority(), builder.getPriority());
+        assertEquals(table, builder.getTableId());
+        assertEquals(vfent.getIdleTimeout(), builder.getIdleTimeout());
+        assertEquals(vfent.getHardTimeout(), builder.getHardTimeout());
+        assertEquals(cookie, builder.getCookie());
+        assertEquals(cookieMask, builder.getCookieMask());
+        assertEquals(vfent.getMatch(), builder.getMatch());
+        assertEquals(vfent.getFlags(), builder.getFlags());
+        assertEquals(vfent.getInstructions(), builder.getInstructions());
+        assertEquals(Boolean.TRUE, builder.isStrict());
+        assertEquals(null, builder.isBarrier());
+        assertEquals(null, builder.getOutPort());
+        assertEquals(null, builder.getOutGroup());
+        assertEquals(null, builder.getBufferId());
+        assertEquals(null, builder.getContainerName());
+        assertEquals(null, builder.getFlowName());
+        assertEquals(null, builder.isInstallHw());
+        assertEquals(uri, builder.getTransactionUri());
 
         FlowTableRef tref =
             new FlowTableRef(ingress.getFlowTableIdentifier(table));
-        assertEquals(tref, input.getFlowTable());
+        assertEquals(tref, builder.getFlowTable());
     }
 
     /**
@@ -1844,8 +1791,6 @@ public class FlowUtilsTest extends TestBase {
     /**
      * Test case for
      * {@link FlowUtils#removeFlowEntries(SalFlowService,List,InventoryReader)}.
-     *
-     * @throws Exception  An error occurred.
      */
     @Test
     public void testRemoveFlowEntries1() throws Exception {
@@ -1855,8 +1800,7 @@ public class FlowUtilsTest extends TestBase {
         InventoryReader reader = new InventoryReader(rtx);
         SalFlowService sfs = mock(SalFlowService.class);
         assertEquals(0, FlowUtils.removeFlowEntries(sfs, flows, reader).size());
-        verifyZeroInteractions(sfs);
-        verifyZeroInteractions(rtx);
+        verifyZeroInteractions(sfs, rtx);
 
         // Create node information.
         long removedNode = 12345L;
@@ -1877,6 +1821,8 @@ public class FlowUtilsTest extends TestBase {
         while (flows.size() < 4) {
             int order = 0;
             List<VtnFlowEntry> entries = new ArrayList<>();
+            Boolean barrier = (flows.size() == 3)
+                ? Boolean.TRUE : Boolean.FALSE;
             for (long nodeId: nodeIds) {
                 SalPort ingress = new SalPort(nodeId, portId);
                 VtnFlowEntry vfent =
@@ -1885,7 +1831,9 @@ public class FlowUtilsTest extends TestBase {
                 if (nodeId != removedNode) {
                     SalNode snode = new SalNode(nodeId);
                     RemoveFlowInput input =
-                        FlowUtils.createRemoveFlowInput(snode, vfent);
+                        FlowUtils.createRemoveFlowInputBuilder(snode, vfent).
+                        setBarrier(barrier).
+                        build();
                     Future<RpcResult<RemoveFlowOutput>> f =
                         new SettableVTNFuture<>();
                     when(sfs.removeFlow(input)).thenReturn(f);
@@ -1957,6 +1905,8 @@ public class FlowUtilsTest extends TestBase {
         while (flows.size() < 4) {
             int order = 0;
             List<VtnFlowEntry> entries = new ArrayList<>();
+            Boolean barrier = (flows.size() == 3)
+                ? Boolean.TRUE : Boolean.FALSE;
             for (long nodeId: nodeIds) {
                 SalPort ingress = new SalPort(nodeId, portId);
                 VtnFlowEntry vfent =
@@ -1965,9 +1915,14 @@ public class FlowUtilsTest extends TestBase {
                 if (nodeId == targetNode) {
                     if (!done) {
                         SalNode snode = new SalNode(nodeId);
-                        List<RemoveFlowInput> rfi =
-                            FlowUtils.createRemoveFlowInput(snode, target);
-                        for (RemoveFlowInput input: rfi) {
+                        List<RemoveFlowInputBuilder> rfi = FlowUtils.
+                            createRemoveFlowInputBuilder(snode, target);
+                        Iterator<RemoveFlowInputBuilder> it = rfi.iterator();
+                        while (it.hasNext()) {
+                            RemoveFlowInputBuilder builder = it.next();
+                            Boolean b = !it.hasNext();
+                            RemoveFlowInput input = builder.setBarrier(b).
+                                build();
                             Future<RpcResult<RemoveFlowOutput>> f =
                                 new SettableVTNFuture<>();
                             when(sfs.removeFlow(input)).thenReturn(f);
@@ -1978,8 +1933,10 @@ public class FlowUtilsTest extends TestBase {
                     }
                 } else if (nodeId != removedNode) {
                     SalNode snode = new SalNode(nodeId);
-                    RemoveFlowInput input =
-                        FlowUtils.createRemoveFlowInput(snode, vfent);
+                    RemoveFlowInput input = FlowUtils.
+                        createRemoveFlowInputBuilder(snode, vfent).
+                        setBarrier(barrier).
+                        build();
                     Future<RpcResult<RemoveFlowOutput>> f =
                         new SettableVTNFuture<>();
                     when(sfs.removeFlow(input)).thenReturn(f);
@@ -2020,20 +1977,33 @@ public class FlowUtilsTest extends TestBase {
             reader.prefetch(snode, vnode);
         }
 
+        Map<SalNode, RemoveFlowInput> lastInputs = new HashMap<>();
+        List<RemoveFlowInput> inputList = new ArrayList<>();
         for (FlowCache fc: flows) {
             for (VtnFlowEntry vfent: fc.getFlowEntries()) {
                 SalNode snode = SalNode.create(vfent.getNode());
                 long nodeNumber = snode.getNodeNumber();
                 if (nodeNumber != removedNode && nodeNumber != targetNode) {
                     RemoveFlowInput input =
-                        FlowUtils.createRemoveFlowInput(snode, vfent);
-                    Future<RpcResult<RemoveFlowOutput>> f =
-                        new SettableVTNFuture<>();
-                    when(sfs.removeFlow(input)).thenReturn(f);
-                    inputs.add(input);
-                    futures.add(f);
+                        FlowUtils.createRemoveFlowInputBuilder(snode, vfent).
+                        build();
+                    lastInputs.put(snode, input);
+                    inputList.add(input);
                 }
             }
+        }
+
+        Set<RemoveFlowInput> lastSet = new HashSet<>(lastInputs.values());
+        for (RemoveFlowInput input: inputList) {
+            Boolean barrier = lastSet.contains(input);
+            RemoveFlowInput in = new RemoveFlowInputBuilder(input).
+                setBarrier(barrier).
+                build();
+            Future<RpcResult<RemoveFlowOutput>> f =
+                new SettableVTNFuture<>();
+            when(sfs.removeFlow(in)).thenReturn(f);
+            inputs.add(in);
+            futures.add(f);
         }
 
         result = FlowUtils.removeFlowEntries(sfs, flows, target, reader);

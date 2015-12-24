@@ -22,6 +22,7 @@ import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpc;
+import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpcList;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 
@@ -29,7 +30,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnOpenflowVersion;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 
 /**
@@ -99,7 +100,7 @@ public final class RemovedAllFlows implements RemovedFlows {
         }
 
         InventoryReader reader = ctx.getReadSpecific(InventoryReader.class);
-        List<RemoveFlowRpc> rpcs = new ArrayList<>();
+        RemoveFlowRpcList rpcs = new RemoveFlowRpcList();
         Logger logger = FlowRemoveContext.LOG;
         for (Map.Entry<SalNode, List<VtnFlowEntry>> entry:
                  flowEntries.entrySet()) {
@@ -109,24 +110,24 @@ public final class RemovedAllFlows implements RemovedFlows {
                 continue;
             }
 
-            RemoveFlowInput input;
             if (vnode.getOpenflowVersion() == VtnOpenflowVersion.OF13) {
                 logger.trace("Remove all flow entries by cookie mask: {}",
                              snode);
-                input = FlowUtils.createRemoveFlowInput(snode);
-                rpcs.add(new RemoveFlowRpc(sfs, input));
+                rpcs.add(snode,
+                         FlowUtils.createRemoveFlowInputBuilder(snode));
             } else {
                 logger.trace("Remove all flow entries individually: {}",
                              snode);
                 List<VtnFlowEntry> list = entry.getValue();
                 for (VtnFlowEntry vfent: list) {
-                    input = FlowUtils.createRemoveFlowInput(snode, vfent);
-                    rpcs.add(new RemoveFlowRpc(sfs, input));
+                    RemoveFlowInputBuilder builder = FlowUtils.
+                        createRemoveFlowInputBuilder(snode, vfent);
+                    rpcs.add(snode, builder);
                 }
             }
         }
 
-        return rpcs;
+        return rpcs.invoke(sfs);
     }
 
     /**
