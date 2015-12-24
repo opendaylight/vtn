@@ -11,7 +11,6 @@ package org.opendaylight.vtn.manager.internal.flow.add;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -27,6 +26,8 @@ import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.flow.AddFlowRpc;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowEntryDesc;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
+import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpc;
+import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpcList;
 import org.opendaylight.vtn.manager.internal.util.flow.VTNFlowBuilder;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
@@ -34,13 +35,11 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorCallback;
 
 import org.opendaylight.controller.sal.utils.StatusCode;
 
-import org.opendaylight.yangtools.yang.common.RpcResult;
-
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnFlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.VtnFlowEntry;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 
@@ -234,26 +233,35 @@ public final class FlowAddTask implements Runnable {
      */
     private void rollback(TxContext ctx, SalFlowService service,
                           VTNFlowBuilder builder) {
+        RemoveFlowRpcList rpcList = new RemoveFlowRpcList();
+        List<VtnFlowEntry> vfents = new ArrayList<>();
         for (VtnFlowEntry vfent: builder.getDataFlow().getVtnFlowEntry()) {
-            RemoveFlowInput input;
+            SalNode snode = SalNode.create(vfent.getNode());
+            RemoveFlowInputBuilder rfib;
             InventoryReader reader = ctx.getInventoryReader();
             try {
-                input = FlowUtils.createRemoveFlowInput(vfent, reader);
+                rfib = FlowUtils.
+                    createRemoveFlowInputBuilder(snode, vfent, reader);
             } catch (VTNException e) {
                 FlowAddContext.LOG.
                     warn("Failed to create remove-flow input.", e);
                 continue;
             }
 
-            if (input != null) {
-                Future<RpcResult<RemoveFlowOutput>> f =
-                    service.removeFlow(input);
-                RpcErrorCallback<RemoveFlowOutput> cb = new RpcErrorCallback<>(
-                    FlowAddContext.LOG, "add-flow-rollback",
-                    "Failed to rollback flow entry: %s",
-                    new FlowEntryDesc(vfent));
-                vtnProvider.setCallback(f, cb);
+            if (rfib != null) {
+                rpcList.add(snode, rfib);
+                vfents.add(vfent);
             }
+        }
+
+        int idx = 0;
+        for (RemoveFlowRpc rpc: rpcList.invoke(service)) {
+            RpcErrorCallback<RemoveFlowOutput> cb = new RpcErrorCallback<>(
+                FlowAddContext.LOG, "add-flow-rollback",
+                "Failed to rollback flow entry: %s",
+                new FlowEntryDesc(vfents.get(idx)));
+            vtnProvider.setCallback(rpc.getFuture(), cb);
+            idx++;
         }
 
         RollbackTxTask task = new RollbackTxTask(context);

@@ -9,7 +9,6 @@
 
 package org.opendaylight.vtn.manager.internal.flow.remove;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -22,12 +21,13 @@ import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowEntryDesc;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpc;
+import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpcList;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.VtnFlowEntry;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 
 /**
@@ -74,7 +74,7 @@ public final class RemovedDataFlow implements RemovedFlows {
         }
 
         List<VtnFlowEntry> entries = removedFlow.getFlowEntries();
-        List<RemoveFlowRpc> rpcs = new ArrayList<>(entries.size() - 1);
+        RemoveFlowRpcList rpcs = new RemoveFlowRpcList();
         InventoryReader reader = ctx.getInventoryReader();
         String flowNode = flowRemover.getFlowNode().toString();
         for (VtnFlowEntry vfent: entries) {
@@ -85,15 +85,15 @@ public final class RemovedDataFlow implements RemovedFlows {
                           new FlowEntryDesc(vfent));
             } else {
                 SalNode snode = SalNode.create(nid);
-                RemoveFlowInput input =
-                    FlowUtils.createRemoveFlowInput(snode, vfent, reader);
-                if (input != null) {
-                    rpcs.add(new RemoveFlowRpc(sfs, input));
+                RemoveFlowInputBuilder builder = FlowUtils.
+                    createRemoveFlowInputBuilder(snode, vfent, reader);
+                if (builder != null) {
+                    rpcs.add(snode, builder);
                 }
             }
         }
 
-        return rpcs;
+        return rpcs.invoke(sfs);
     }
 
     /**
