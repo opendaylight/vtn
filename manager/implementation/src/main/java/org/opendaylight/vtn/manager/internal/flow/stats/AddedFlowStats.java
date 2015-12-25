@@ -28,8 +28,6 @@ import org.opendaylight.vtn.manager.internal.util.flow.FlowStatsUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
-import org.opendaylight.vtn.manager.internal.util.log.FixedLogger;
-import org.opendaylight.vtn.manager.internal.util.log.LogRecord;
 import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 
@@ -62,29 +60,19 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.model.statistics.types.rev1
  */
 public final class AddedFlowStats extends AbstractTxTask<Void> {
     /**
+     * A log message that indicates the flow statistics is ignored.
+     */
+    private static final String  IGNORE_STATS = "Ignore flow statistics";
+
+    /**
      * A list of flow information added by the MD-SAL statistics manager.
      */
     private final List<IdentifiedData<Flow>>  addedFlows = new ArrayList<>();
 
     /**
-     * A logger for warning logs.
+     * A logger instance.
      */
-    private final FixedLogger  warnLogger;
-
-    /**
-     * A logger for debug logs.
-     */
-    private final FixedLogger  debugLogger;
-
-    /**
-     * A logger for trace logs.
-     */
-    private final FixedLogger  traceLogger;
-
-    /**
-     * A list of log records.
-     */
-    private List<LogRecord>  logRecords;
+    private final Logger  logger;
 
     /**
      * The system time when the flow statistics are collected.
@@ -103,9 +91,7 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
      * @param log  A {@link Logger} instance.
      */
     public AddedFlowStats(Logger log) {
-        warnLogger = new FixedLogger(log, VTNLogLevel.WARN);
-        debugLogger = new FixedLogger(log, VTNLogLevel.DEBUG);
-        traceLogger = new FixedLogger(log, VTNLogLevel.TRACE);
+        logger = log;
         systemTime = System.currentTimeMillis();
     }
 
@@ -133,15 +119,17 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
     /**
      * Return the node ID associated with the specified MD-SAL flow.
      *
+     * @param ctx   MD-SAL datastore transaction context.
      * @param data  An {@link IdentifiedData} instance which contains
      *              flow statistics.
      * @return  A {@link NodeId} on success. {@code null} on failure.
      */
-    private NodeId getNodeId(IdentifiedData<Flow> data) {
+    private NodeId getNodeId(TxContext ctx, IdentifiedData<Flow> data) {
         InstanceIdentifier<Flow> path = data.getIdentifier();
         NodeId node = InventoryUtils.getNodeId(path);
         if (node == null) {
-            log(warnLogger, "Node ID is not present in flow path: {}", path);
+            ctx.log(logger, VTNLogLevel.WARN,
+                    "Node ID is not present in flow path: {}", path);
             return null;
         }
 
@@ -149,18 +137,19 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
         TableKey key = path.firstKeyOf(Table.class);
         Short tid = (key == null) ? null : key.getId();
         if (tid == null) {
-            log(warnLogger, "Table ID is not present in flow path: {}", path);
+            ctx.log(logger, VTNLogLevel.WARN,
+                    "Table ID is not present in flow path: {}", path);
             return null;
         }
 
         if (tid.intValue() != FlowUtils.TABLE_ID) {
-            log(warnLogger, "Unexpected table ID in flow path: {}", path);
+            ctx.log(logger, VTNLogLevel.WARN,
+                    "Unexpected table ID in flow path: {}", path);
             return null;
         }
 
         return node;
     }
-
 
     /**
      * Determine whether the given MD-SAL flow entry is the ingress flow entry
@@ -175,29 +164,31 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
      *   <li>Flow priority</li>
      * </ul>
      *
-     * @param vdf    The {@link VtnDataFlow} instance to be tested.
-     * @param flow   The MD-SAL flow entry to be tested.
-     * @param node   The node where the {@code flow} is installed.
+     * @param ctx   MD-SAL datastore transaction context.
+     * @param vdf   The {@link VtnDataFlow} instance to be tested.
+     * @param flow  The MD-SAL flow entry to be tested.
+     * @param node  The node where the {@code flow} is installed.
      * @return  {@code true} only if the MD-SAL flow specified by {@code flow}
      *          is the ingress flow entry of {@code vdf}.
      */
-    private boolean isIngressFlow(VtnDataFlow vdf, Flow flow, NodeId node) {
+    private boolean isIngressFlow(TxContext ctx, VtnDataFlow vdf, Flow flow,
+                                  NodeId node) {
         // Determine the ingress flow entry of the target data flow.
         FlowCache fc = new FlowCache(vdf);
         VtnFlowEntry vfent = fc.getIngressFlow();
         if (vfent == null) {
-            log(warnLogger,
-                "Ignore flow statistics: {}: Ingress flow not found.",
-                vdf.getFlowId().getValue());
+            ctx.log(logger, VTNLogLevel.WARN,
+                    "{}: {}: Ingress flow not found.",
+                    IGNORE_STATS, vdf.getFlowId().getValue());
             return false;
         }
 
         // Compare the target node.
         NodeId vnode = vfent.getNode();
         if (!node.equals(vnode)) {
-            log(traceLogger,
-                "Ignore flow statistics: {}: Node ID does not match: {}, {}",
-                vdf.getFlowId().getValue(), vnode, node);
+            ctx.log(logger, VTNLogLevel.TRACE,
+                    "{}: {}: Node ID does not match: {}, {}",
+                    IGNORE_STATS, vdf.getFlowId().getValue(), vnode, node);
             return false;
         }
 
@@ -208,9 +199,9 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
         NodeConnectorId port =
             FlowMatchUtils.getIngressPort(flow.getMatch());
         if (!MiscUtils.equalsUri(vport, port)) {
-            log(warnLogger,
-                "Ignore flow statistics: {}: IN_PORT does not match: {}, {}",
-                vdf.getFlowId().getValue(), vport, port);
+            ctx.log(logger, VTNLogLevel.WARN,
+                    "{}: {}: IN_PORT does not match: {}, {}",
+                    IGNORE_STATS, vdf.getFlowId().getValue(), vport, port);
             return false;
         }
 
@@ -218,9 +209,9 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
         Integer pri = flow.getPriority();
         boolean ret = Objects.equals(vpri, pri);
         if (!ret) {
-            log(warnLogger,
-                "Ignore flow statistics: {}: Priority does not match: {}, {}",
-                vdf.getFlowId().getValue(), vpri, pri);
+            ctx.log(logger, VTNLogLevel.WARN,
+                    "{}: {}: Priority does not match: {}, {}",
+                    IGNORE_STATS, vdf.getFlowId().getValue(), vpri, pri);
         }
 
         return ret;
@@ -229,10 +220,12 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
     /**
      * Set flow statistics into the given VTN data flow builder if available.
      *
+     * @param ctx      MD-SAL datastore transaction context.
      * @param builder  A {@link VtnDataFlowBuilder} instance.
      * @param flow     A {@link Flow} instance.
      */
-    private void setStatistics(VtnDataFlowBuilder builder, Flow flow) {
+    private void setStatistics(TxContext ctx, VtnDataFlowBuilder builder,
+                               Flow flow) {
         FlowStatisticsData data =
             flow.getAugmentation(FlowStatisticsData.class);
         GenericStatistics fstats = (data == null)
@@ -247,27 +240,28 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
                 setFlowStatsRecord(Collections.singletonList(fsr));
             builder.setFlowStatsHistory(sb.build());
         } else {
-            log(warnLogger, "{}: {}: No flow statistics: {}",
-                builder.getFlowId().getValue(),
-                builder.getSalFlowId().getValue(), err);
+            ctx.log(logger, VTNLogLevel.WARN,
+                    "{}: {}: No flow statistics: {}",
+                    builder.getFlowId().getValue(),
+                    builder.getSalFlowId().getValue(), err);
         }
     }
 
     /**
      * Try to associate the given MD-SAL flow with the VTN data flow.
      *
-     * @param tx     A {@link ReadWriteTransaction} instance.
+     * @param ctx    MD-SAL datastore transaction context.
      * @param node   A MD-SAL node identifier.
      * @param flow   A MD-SAL flow entry.
      * @param vtnId  Identifier of the VTN data flow.
      * @throws VTNException  An error occurred.
      */
-    private void resolve(ReadWriteTransaction tx, NodeId node, Flow flow,
+    private void resolve(TxContext ctx, NodeId node, Flow flow,
                          VtnFlowId vtnId) throws VTNException {
         IdentifiedData<VtnDataFlow> vdata = finder.find(vtnId);
         if (vdata == null) {
-            log(warnLogger, "Ignore flow statistics: {}: Data flow not found.",
-                vtnId.getValue());
+            ctx.log(logger, VTNLogLevel.WARN, "{}: {}: Data flow not found.",
+                    IGNORE_STATS, vtnId.getValue());
             return;
         }
 
@@ -275,45 +269,33 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
         FlowId id = vdf.getSalFlowId();
         FlowId mdId = flow.getId();
         if (mdId.equals(id)) {
-            log(traceLogger,
-                "Ignore flow statistics: {}: Already resolved: {}",
-                vtnId.getValue(), id.getValue());
+            ctx.log(logger, VTNLogLevel.TRACE,
+                    "{}: {}: Already resolved: {}",
+                    IGNORE_STATS, vtnId.getValue(), id.getValue());
             return;
         }
 
-        if (isIngressFlow(vdf, flow, node)) {
+        if (isIngressFlow(ctx, vdf, flow, node)) {
             // The given flow is the ingress flow of the target data flow.
             // Copy statistics if available.
             VtnDataFlowBuilder builder = new VtnDataFlowBuilder().
                 setFlowId(vtnId).setSalFlowId(mdId);
-            setStatistics(builder, flow);
+            setStatistics(ctx, builder, flow);
 
             // Associate the VTN data flow with this MD-SAL flow ID.
             InstanceIdentifier<VtnDataFlow> path = vdata.getIdentifier();
             LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+            ReadWriteTransaction tx = ctx.getReadWriteTransaction();
             tx.merge(oper, path, builder.build(), false);
             if (id == null) {
-                log(debugLogger, "{}: Associated with MD-SAL flow ID: {}",
-                    vtnId.getValue(), mdId.getValue());
+                ctx.log(logger, VTNLogLevel.DEBUG,
+                        "{}: Associated with MD-SAL flow ID: {}",
+                        vtnId.getValue(), mdId.getValue());
             } else {
-                log(debugLogger,
-                    "{}: MD-SAL flow ID has been changed: {} -> {}",
-                    vtnId.getValue(), id.getValue(), mdId.getValue());
+                ctx.log(logger, VTNLogLevel.DEBUG,
+                        "{}: MD-SAL flow ID has been changed: {} -> {}",
+                        vtnId.getValue(), id.getValue(), mdId.getValue());
             }
-        }
-    }
-
-    /**
-     * Record a log message.
-     *
-     * @param log     A {@link FixedLogger} instance which specifies the logger
-     *                and logging level.
-     * @param format  A format string used to construct log message.
-     * @param args    An object array used to construct log message.
-     */
-    private void log(FixedLogger log, String format, Object ... args) {
-        if (log.isEnabled()) {
-            logRecords.add(new LogRecord(log, format, args));
         }
     }
 
@@ -324,13 +306,12 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
      */
     @Override
     public Void execute(TxContext ctx) throws VTNException {
-        logRecords = new ArrayList<>();
         ReadWriteTransaction tx = ctx.getReadWriteTransaction();
         finder = new FlowFinder(tx);
 
         for (IdentifiedData<Flow> data: addedFlows) {
             // Verify the node and the table ID.
-            NodeId node = getNodeId(data);
+            NodeId node = getNodeId(ctx, data);
             if (node == null) {
                 continue;
             }
@@ -338,16 +319,17 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
             Flow flow = data.getValue();
             FlowCookie cookie = flow.getCookie();
             if (flow.getId() == null) {
-                log(warnLogger, "No MD-SAL flow ID is assigned: {}", cookie);
+                ctx.log(logger, VTNLogLevel.WARN,
+                        "No MD-SAL flow ID is assigned: {}", cookie);
                 continue;
             }
 
             VtnFlowId vtnId = FlowUtils.getVtnFlowId(cookie);
             if (vtnId == null) {
-                log(traceLogger,
-                    "Ignore flow statistics: Unexpected cookie: {}", cookie);
+                ctx.log(logger, VTNLogLevel.TRACE, "{}: Unexpected cookie: {}",
+                        IGNORE_STATS, cookie);
             } else {
-                resolve(tx, node, flow, vtnId);
+                resolve(ctx, node, flow, vtnId);
             }
         }
 
@@ -357,19 +339,6 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
     // TxTask
 
     /**
-     * Invoked when the task has completed successfully.
-     *
-     * @param provider  VTN Manager provider service.
-     * @param result    The result of this task.
-     */
-    @Override
-    public void onSuccess(VTNManagerProvider provider, Void result) {
-        for (LogRecord r: logRecords) {
-            r.log();
-        }
-    }
-
-    /**
      * Invoked when the task has failed.
      *
      * @param provider  VTN Manager provider service.
@@ -377,6 +346,6 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
      */
     @Override
     public void onFailure(VTNManagerProvider provider, Throwable t) {
-        warnLogger.getLogger().error("Failed to resolve MD-SAL flow ID.", t);
+        logger.error("Failed to resolve MD-SAL flow ID.", t);
     }
 }
