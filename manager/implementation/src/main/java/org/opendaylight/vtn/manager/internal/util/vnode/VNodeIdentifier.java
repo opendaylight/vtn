@@ -266,7 +266,7 @@ public abstract class VNodeIdentifier<T extends DataObject> {
             } else {
                 String vtname = vpath.getTerminalName();
                 if (vtname == null) {
-                    ident = VTenantIdentifier.create(tname, find);
+                    ident = createTenantIdentifier(tname, iname, find);
                 } else {
                     ident = (iname == null)
                         ? VTerminalIdentifier.create(tname, vtname, find)
@@ -303,6 +303,42 @@ public abstract class VNodeIdentifier<T extends DataObject> {
             ident.getType().getDescription() +
             " does not support flow filter.";
         return RpcException.getBadArgumentException(msg);
+    }
+
+    /**
+     * Create a new identifier for the VTN.
+     *
+     * <p>
+     *   This method is called by {@link #create(VnodePathFields, boolean)}
+     *   if the specified vnode-path-fields does not specify the name of the
+     *   virtual bridge.
+     * </p>
+     *
+     * @param tname  The name of the VTN specified by vnode-path-fields.
+     * @param iname  The name of the virtual interface specified by
+     *               vnode-path-fields.
+     * @param find   {@code true} indicates the given name is used for
+     *               finding existing virtual node.
+     * @return  A {@link VTenantIdentifier} instance that specifies the
+     *          location of the VTN.
+     * @throws RpcException  An error occurred.
+     */
+    private static VTenantIdentifier createTenantIdentifier(
+        String tname, String iname, boolean find) throws RpcException {
+        VTenantIdentifier ident;
+        if (iname == null) {
+            ident = VTenantIdentifier.create(tname, find);
+        } else {
+            // No virtual bridge name is specified though virtual interface
+            // name is specified. This should be treated as an invalid path.
+            if (tname == null) {
+                VNodeType.VTN.checkName(null, find);
+            }
+
+            throw RpcException.getNullArgumentException("Virtual bridge name");
+        }
+
+        return ident;
     }
 
     /**
