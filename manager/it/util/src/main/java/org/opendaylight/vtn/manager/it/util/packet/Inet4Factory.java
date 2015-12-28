@@ -19,7 +19,7 @@ import org.opendaylight.vtn.manager.util.EtherTypes;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.IpNetwork;
 
-import org.opendaylight.vtn.manager.it.util.match.FlowMatchType;
+import org.opendaylight.vtn.manager.it.util.flow.match.FlowMatchType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.IpMatchBuilder;

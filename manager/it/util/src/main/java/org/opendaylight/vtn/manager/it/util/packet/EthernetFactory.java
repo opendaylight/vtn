@@ -26,7 +26,7 @@ import org.opendaylight.vtn.manager.util.IpNetwork;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockService;
 import org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase;
 import org.opendaylight.vtn.manager.it.util.TestBase;
-import org.opendaylight.vtn.manager.it.util.match.FlowMatchType;
+import org.opendaylight.vtn.manager.it.util.flow.match.FlowMatchType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.EthernetMatchBuilder;

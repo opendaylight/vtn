@@ -18,7 +18,7 @@ import org.opendaylight.vtn.manager.util.ByteUtils;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
-import org.opendaylight.vtn.manager.it.util.match.FlowMatchType;
+import org.opendaylight.vtn.manager.it.util.flow.match.FlowMatchType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;

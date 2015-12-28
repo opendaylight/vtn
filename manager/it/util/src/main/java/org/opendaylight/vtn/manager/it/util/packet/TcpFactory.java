@@ -17,7 +17,7 @@ import org.opendaylight.vtn.manager.packet.Packet;
 import org.opendaylight.vtn.manager.packet.TCP;
 import org.opendaylight.vtn.manager.util.InetProtocols;
 
-import org.opendaylight.vtn.manager.it.util.match.FlowMatchType;
+import org.opendaylight.vtn.manager.it.util.flow.match.FlowMatchType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.layer._4.match.TcpMatchBuilder;

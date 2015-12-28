@@ -24,7 +24,7 @@ import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
 import org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase;
 import org.opendaylight.vtn.manager.it.util.TestHost;
 import org.opendaylight.vtn.manager.it.util.action.ActionVerifier;
-import org.opendaylight.vtn.manager.it.util.match.FlowMatchType;
+import org.opendaylight.vtn.manager.it.util.flow.match.FlowMatchType;
 import org.opendaylight.vtn.manager.it.util.packet.EthernetFactory;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.Action;

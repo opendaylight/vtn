@@ -18,7 +18,7 @@ import org.opendaylight.vtn.manager.packet.ARP;
 import org.opendaylight.vtn.manager.packet.Packet;
 import org.opendaylight.vtn.manager.util.EtherTypes;
 
-import org.opendaylight.vtn.manager.it.util.match.FlowMatchType;
+import org.opendaylight.vtn.manager.it.util.flow.match.FlowMatchType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 
