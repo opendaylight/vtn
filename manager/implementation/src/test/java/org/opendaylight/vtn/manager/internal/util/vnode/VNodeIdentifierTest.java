@@ -381,6 +381,28 @@ public class VNodeIdentifierTest extends TestBase {
             }
         }
 
+        // Virtual bridge name is not specified though VTN and interface name
+        // are specified.
+        tnames = new String[]{null, "vtn", "vtn1"};
+        for (String tname: tnames) {
+            VnodePathFields noBridge = mock(VnodePathFields.class);
+            when(noBridge.getTenantName()).thenReturn(tname);
+            when(noBridge.getInterfaceName()).thenReturn(inames[0]);
+            String msg = (tname == null)
+                ? "VTN name cannot be null"
+                : "Virtual bridge name cannot be null";
+            for (boolean find: bools) {
+                try {
+                    VNodeIdentifier.create(noBridge, find);
+                    unexpected();
+                } catch (RpcException e) {
+                    assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
+                    assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                    assertEquals(msg, e.getMessage());
+                }
+            }
+        }
+
         // Specifying invalid name (read).
         String badName = "bad name";
         Map<VnodePathFields, String> cases = new HashMap<>();
