@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -79,12 +79,6 @@ public final class ClearNodeFlowsTask
     private final SalNode  targetNode;
 
     /**
-     * The OpenFlow protocol version used to communicate with the target
-     * switch.
-     */
-    private final VtnOpenflowVersion  ofVersion;
-
-    /**
      * A future associated with this task.
      */
     private final SettableVTNFuture<Void>  taskFuture =
@@ -100,6 +94,11 @@ public final class ClearNodeFlowsTask
      * A list of RPC invocations which uninstalls VTN flows.
      */
     private final List<RemoveFlowRpc>  rpcList;
+
+    /**
+     * An input builder for remove-flow RPC.
+     */
+    private RemoveFlowInputBuilder  inputBuilder;
 
     /**
      * Construct a new instance.
@@ -118,11 +117,13 @@ public final class ClearNodeFlowsTask
         vtnProvider = provider;
         flowService = sfs;
         targetNode = snode;
-        ofVersion = ofver;
 
         if (ofver == VtnOpenflowVersion.OF13) {
             LOG.debug("Remove all VTN flows by cookie mask: {}", snode);
-            RemoveFlowInput input = FlowUtils.createRemoveFlowInput(snode);
+            RemoveFlowInput input = FlowUtils.
+                createRemoveFlowInputBuilder(snode).
+                setBarrier(true).
+                build();
             rpcList = Collections.singletonList(new RemoveFlowRpc(sfs, input));
             rpcFuture.set(null);
         } else {
@@ -200,6 +201,27 @@ public final class ClearNodeFlowsTask
         }
     }
 
+    /**
+     * Schedule a call of remove-flow RPC.
+     *
+     * @param builder  An input builder for remove-flow RPC.
+     *                 {@code null} indicates that all the RPC calls have been
+     *                 scheduled.
+     */
+    private void schedule(RemoveFlowInputBuilder builder) {
+        RemoveFlowInputBuilder prev = inputBuilder;
+        inputBuilder = builder;
+
+        if (prev != null) {
+            if (builder == null) {
+                // Set barrier flag to the last input.
+                prev.setBarrier(true);
+            }
+
+            rpcList.add(new RemoveFlowRpc(flowService, prev.build()));
+        }
+    }
+
     // Runnable
 
     /**
@@ -232,13 +254,10 @@ public final class ClearNodeFlowsTask
         if (fid != null) {
             LOG.trace("Remove VTN flow entry: node={}, flow={}",
                       node.getValue(), fstats);
-
-            StringBuilder builder = new StringBuilder("clear-node-flows:").
-                append(fid.getValue());
-            Uri uri = new Uri(builder.toString());
-            RemoveFlowInput input =
-                FlowUtils.createRemoveFlowInput(targetNode, fstats, uri);
-            rpcList.add(new RemoveFlowRpc(flowService, input));
+            Uri uri = new Uri("clear-node-flows:" + fid.getValue());
+            RemoveFlowInputBuilder builder = FlowUtils.
+                createRemoveFlowInputBuilder(targetNode, fstats, uri);
+            schedule(builder);
         }
     }
 
@@ -247,6 +266,7 @@ public final class ClearNodeFlowsTask
      */
     @Override
     public void transactionCompleted() {
+        schedule(null);
         LOG.debug("All the flow entries have been scanned: {}", targetNode);
         rpcFuture.set(null);
     }
