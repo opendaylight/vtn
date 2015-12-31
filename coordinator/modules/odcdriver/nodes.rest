@@ -142,6 +142,7 @@ type=object
 key="vtn-nodes"
 struct_name=vtn_node
 check_bool_set=yes
+is_child=yes
 members=vtn_node
 
 # URL section
