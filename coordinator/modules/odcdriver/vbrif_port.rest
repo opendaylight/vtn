@@ -216,7 +216,7 @@ parse_support=no
 [portmap_config]
 type=struct
 key="port-map-config"
-is_child=yes
+is_child=no
 check_bool_set=yes
 struct_name=portmap_config
 members=vlan,node_id,port
