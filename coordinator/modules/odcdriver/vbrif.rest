@@ -1,4 +1,4 @@
-# Copyright (c) 2015 NEC Corporation
+# Copyright (c) 2015-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -47,6 +47,7 @@ type=struct
 key="vinterface-config"
 struct_name=vbr_if_conf
 check_bool_set=no
+is_child=yes
 members=enabled,description,valid
 build_support=no
 parse_support=yes
@@ -55,6 +56,7 @@ parse_support=yes
 type=object
 key="vbridge-config"
 struct_name=vbr_if_conf
+is_child=yes
 check_bool_set=yes
 members=vbr_if
 build_support=no

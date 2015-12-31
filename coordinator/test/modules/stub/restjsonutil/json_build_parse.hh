@@ -34,9 +34,14 @@ class JsonBuildParse {
   }
 
   static void add_to_array (json_object *array,
-                                       json_object* value) {
+                            json_object* value) {
       json_object_array_add (array,value);
-    }
+  }
+
+  static json_object* create_json_int_obj(uint32_t val) {
+       ODC_FUNC_TRACE;
+       return json_object_new_int (val);
+  }
 
   /**
    * @brief                    - Template method which build the json request

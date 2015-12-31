@@ -134,6 +134,7 @@ key="vtn-topology"
 is_child=yes
 struct_name=vtn_link
 check_bool_set=yes
+is_child=yes
 members=vtn_link
 
 # URL section
