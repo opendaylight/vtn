@@ -38,6 +38,11 @@ class JsonBuildParse {
       json_object_array_add (array,value);
     }
 
+  static json_object* create_json_int_obj(uint32_t val) {
+       ODC_FUNC_TRACE;
+       return json_object_new_int (val);
+  } 
+
   /**
    * @brief                    - Template method which build the json request
    * @param[in] key            - string key to be added to the jsonobject
