@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -29,6 +29,11 @@ void JsonBuildParse::add_to_array (json_object *array,
   json_object_array_add (array,value);
 }
 
+json_object* JsonBuildParse::create_json_int_obj(uint32_t val) {
+  ODC_FUNC_TRACE;
+  return json_object_new_int (val);
+
+}
 const char* JsonBuildParse::get_json_string(json_object* jobj) {
   if (json_object_is_type(jobj, json_type_null)) {
     return NULL;
