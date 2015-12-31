@@ -97,6 +97,7 @@ key="vtn-node"
 struct_name=vtn_port
 members=vtn_port
 check_bool_set=yes
+is_child=yes
 get_support=yes
 get_abstract=yes
 
