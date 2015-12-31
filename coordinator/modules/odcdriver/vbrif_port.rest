@@ -1,3 +1,10 @@
+# Copyright (c) 2015 NEC Corporation
+# All rights reserved.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+
 [REST_URL]
 type=url_string
 value="/restconf/operations"
@@ -216,7 +223,7 @@ parse_support=no
 [portmap_config]
 type=struct
 key="port-map-config"
-is_child=yes
+is_child=no
 check_bool_set=yes
 struct_name=portmap_config
 members=vlan,node_id,port
