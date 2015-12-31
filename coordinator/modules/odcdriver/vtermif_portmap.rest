@@ -1,4 +1,4 @@
-# Copyright (c) 2015 NEC Corporation
+# Copyright (c) 2015-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -88,7 +88,7 @@ response_members="vterminal-config"
 [vterm_if]
 type=struct
 key="port-map-config"
-is_child=yes
+is_child=no
 check_bool_set=yes
 struct_name=vterm_if
 members=vlan_id,node_id,port
