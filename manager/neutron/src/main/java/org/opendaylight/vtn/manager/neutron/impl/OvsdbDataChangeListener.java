@@ -87,10 +87,12 @@ public final class OvsdbDataChangeListener
     public void onDataChanged(
          AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> changes) {
         LOG.trace("onDataChanged: {}", changes);
-        processOvsdbConnections(changes);
-        processOvsdbConnectionAttributeUpdates(changes);
-        processPortCreation(changes);
-        processPortDeletion(changes);
+        if (changes != null) {
+            processOvsdbConnections(changes);
+            processOvsdbConnectionAttributeUpdates(changes);
+            processPortCreation(changes);
+            processPortDeletion(changes);
+        }
     }
 
     /**
@@ -196,6 +198,5 @@ public final class OvsdbDataChangeListener
             }
         }
     }
-
 
 }
