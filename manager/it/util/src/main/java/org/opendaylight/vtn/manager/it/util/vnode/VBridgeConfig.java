@@ -49,7 +49,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.vtn.v
 /**
  * {@code VBridgeConfig} describes the configuration of a vBridge.
  */
-public final class VBridgeConfig extends BridgeConfig<VBridgeConfig, Vbridge> {
+public final class VBridgeConfig extends BridgeConfig<VBridgeConfig, Vbridge>
+    implements FlowFilterNode {
     /**
      * The default value of age-interval.
      */
@@ -208,24 +209,6 @@ public final class VBridgeConfig extends BridgeConfig<VBridgeConfig, Vbridge> {
     public VBridgeConfig setMacMap(VTNMacMapConfig mmconf) {
         macMap = mmconf;
         return this;
-    }
-
-    /**
-     * Return the input flow filters.
-     *
-     * @return  A {@link FlowFilterList} instance for incoming packets.
-     */
-    public FlowFilterList getInputFilter() {
-        return inputFilter;
-    }
-
-    /**
-     * Return the output flow filters.
-     *
-     * @return  A {@link FlowFilterList} instance for outgoing packets.
-     */
-    public FlowFilterList getOutputFilter() {
-        return outputFilter;
     }
 
     /**
@@ -424,5 +407,23 @@ public final class VBridgeConfig extends BridgeConfig<VBridgeConfig, Vbridge> {
         }
 
         return present;
+    }
+
+    // FlowFilterNode
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public FlowFilterList getInputFilter() {
+        return inputFilter;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public FlowFilterList getOutputFilter() {
+        return outputFilter;
     }
 }

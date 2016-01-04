@@ -10,6 +10,10 @@ package org.opendaylight.vtn.manager.it.util.pathpolicy;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.set.path.cost.input.PathCostList;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.set.path.cost.input.PathCostListBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policy.config.VtnPathCost;
@@ -55,6 +59,65 @@ public final class PathCost {
      * The physical switch port descriptor.
      */
     private VtnPortDesc  portDesc;
+
+    /**
+     * Convert the given path costs into a list of {@link PathCostList}
+     * instance.
+     *
+     * @param costs  A collection of {@link PathCost} instances.
+     * @return  A list of {@link PathCostList} instances or {@code null}.
+     */
+    public static List<PathCostList> toPathCostList(
+        Collection<PathCost> costs) {
+        List<PathCostList> pcl;
+        if (costs == null) {
+            pcl = null;
+        } else {
+            pcl = new ArrayList<>(costs.size());
+            for (PathCost pc: costs) {
+                pcl.add((pc == null) ? null : pc.toPathCostList());
+            }
+        }
+
+        return pcl;
+    }
+
+    /**
+     * Convert the given path costs into a list of {@link PathCostList}
+     * instance.
+     *
+     * @param costs  An array of {@link PathCost} instances.
+     * @return  A list of {@link PathCostList} instances or {@code null}.
+     */
+    public static List<PathCostList> toPathCostList(PathCost ... costs) {
+        List<PathCostList> pcl;
+        if (costs == null) {
+            pcl = null;
+        } else {
+            pcl = new ArrayList<>(costs.length);
+            for (PathCost pc: costs) {
+                pcl.add((pc == null) ? null : pc.toPathCostList());
+            }
+        }
+
+        return pcl;
+    }
+
+    /**
+     * Construct an empty instance.
+     */
+    public PathCost() {
+        this(null, null, null, null);
+    }
+
+    /**
+     * Construct a new instance without specifying port descriptor.
+     *
+     * @param cost  The cost of using physical switch port.
+     */
+    public PathCost(Long cost) {
+        this(null, null, null, cost);
+    }
 
     /**
      * Construct a new instance with the default path cost.
@@ -136,7 +199,7 @@ public final class PathCost {
      */
     public VtnPortDesc getPortDesc() {
         VtnPortDesc pdesc = portDesc;
-        if (pdesc == null) {
+        if (pdesc == null && nodeId != null) {
             StringBuilder builder = new StringBuilder(nodeId).
                 append(PORT_DESC_SEPARATOR);
             if (portId != null) {

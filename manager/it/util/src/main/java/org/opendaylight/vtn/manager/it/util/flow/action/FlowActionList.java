@@ -70,6 +70,23 @@ public final class FlowActionList {
     public FlowActionList add(Random rand) {
         Set<Integer> orders = new HashSet<>(flowActions.keySet());
         for (Class<? extends FlowAction> type: FILTER_ACTION_TYPES) {
+            if (rand.nextBoolean()) {
+                add(rand, orders, type);
+            }
+        }
+
+        return this;
+    }
+
+    /**
+     * Add all the supported flow actions using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @return  This instance.
+     */
+    public FlowActionList addAll(Random rand) {
+        Set<Integer> orders = new HashSet<>(flowActions.keySet());
+        for (Class<? extends FlowAction> type: FILTER_ACTION_TYPES) {
             add(rand, orders, type);
         }
 
@@ -184,14 +201,12 @@ public final class FlowActionList {
      */
     private <A extends FlowAction<?>> void add(
         Random rand, Set<Integer> orders, Class<A> type) {
-        if (rand.nextBoolean()) {
-            try {
-                A fact = type.newInstance();
-                fact.set(rand, orders);
-                add(fact);
-            } catch (Exception e) {
-                unexpected(e);
-            }
+        try {
+            A fact = type.newInstance();
+            fact.set(rand, orders);
+            add(fact);
+        } catch (Exception e) {
+            unexpected(e);
         }
     }
 }

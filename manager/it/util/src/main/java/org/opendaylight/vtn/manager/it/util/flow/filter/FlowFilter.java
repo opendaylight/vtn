@@ -10,20 +10,27 @@ package org.opendaylight.vtn.manager.it.util.flow.filter;
 
 import static org.junit.Assert.assertEquals;
 
+import static org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase.getRpcOutput;
 import static org.opendaylight.vtn.manager.it.util.TestBase.createVnodeName;
 import static org.opendaylight.vtn.manager.it.util.TestBase.createVtnIndex;
+import static org.opendaylight.vtn.manager.it.util.flow.filter.FlowFilterList.getResultMap;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
 import org.opendaylight.vtn.manager.it.util.flow.action.FlowActionList;
+import org.opendaylight.vtn.manager.it.util.vnode.VNodeIdentifier;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.SetFlowFilterInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.SetFlowFilterInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.VtnFlowFilterService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.list.VtnFlowFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.list.VtnFlowFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.type.fields.VtnFlowFilterType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
  * {@code FlowFilter} describes the abstracted configuration of flow filter.
@@ -110,12 +117,40 @@ public abstract class FlowFilter<F extends VtnFlowFilterType> {
     /**
      * Create a new input builder for set-flow-filter RPC.
      *
+     * @param ident   The identifier for the target virtual node.
+     * @param output  {@link Boolean#TRUE} indicates the flow filter list
+     *                for outgoing packets.
      * @return  A {@link SetFlowFilterInputBuilder} instance.
      */
-    public SetFlowFilterInputBuilder newInputBuilder() {
+    public SetFlowFilterInputBuilder newInputBuilder(VNodeIdentifier<?> ident,
+                                                     Boolean output) {
         VtnFlowFilter vff = toVtnFlowFilter();
-        return new SetFlowFilterInputBuilder().
-            setVtnFlowFilter(Collections.singletonList(vff));
+        SetFlowFilterInputBuilder builder = new SetFlowFilterInputBuilder().
+            setVtnFlowFilter(Collections.singletonList(vff)).
+            setOutput(output);
+        if (ident != null) {
+            builder.fieldsFrom(ident.getVirtualNodePath());
+        }
+        return builder;
+    }
+
+    /**
+     * Update the flow filter.
+     *
+     * @param service  The vtn-flow-filter RPC service.
+     * @param ident    The identifier for the target virtual node.
+     * @param output   {@link Boolean#TRUE} indicates the flow filter list
+     *                 for outgoing packets.
+     * @return  A {@link VtnUpdateType} instance.
+     */
+    public VtnUpdateType update(VtnFlowFilterService service,
+                                VNodeIdentifier<?> ident, Boolean output) {
+        SetFlowFilterInput in = newInputBuilder(ident, output).
+            build();
+        Map<Integer, VtnUpdateType> result =
+            getResultMap(getRpcOutput(service.setFlowFilter(in)));
+        assertEquals(Collections.<Integer>singleton(index), result.keySet());
+        return result.get(index);
     }
 
     /**

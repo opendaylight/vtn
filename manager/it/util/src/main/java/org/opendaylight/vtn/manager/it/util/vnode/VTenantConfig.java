@@ -54,7 +54,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vterminal.rev150907.vtn
 /**
  * {@code VTenantConfig} describes the configuration of a VTN.
  */
-public final class VTenantConfig extends VNodeConfig<VTenantConfig> {
+public final class VTenantConfig extends VNodeConfig<VTenantConfig>
+    implements FlowFilterNode {
     /**
      * The default value of idle-timeout.
      */
@@ -278,15 +279,6 @@ public final class VTenantConfig extends VNodeConfig<VTenantConfig> {
      */
     public Map<String, VTerminalConfig> getTerminals() {
         return Collections.unmodifiableMap(vTerminals);
-    }
-
-    /**
-     * Return the input flow filters.
-     *
-     * @return  A {@link FlowFilterList} instance for incoming packets.
-     */
-    public FlowFilterList getInputFilter() {
-        return inputFilter;
     }
 
     /**
@@ -546,5 +538,27 @@ public final class VTenantConfig extends VNodeConfig<VTenantConfig> {
         }
 
         return present;
+    }
+
+    // FlowFilterNode
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public FlowFilterList getInputFilter() {
+        return inputFilter;
+    }
+
+    /**
+     * This method returns the flow filter list for incoming packets because
+     * VTN does not have output filter.
+     *
+     * @return  A {@link FlowFilterList} instance that contains flow filters
+     *          for incoming packets.
+     */
+    @Override
+    public FlowFilterList getOutputFilter() {
+        return inputFilter;
     }
 }

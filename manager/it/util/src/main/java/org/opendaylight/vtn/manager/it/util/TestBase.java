@@ -389,7 +389,7 @@ public abstract class TestBase extends Assert {
      * @param set   A set of vtn-index values to store generated values.
      * @return  An unique vtn-index value.
      */
-    public static Integer createVtnIndex(Random rand, Set<Integer> set) {
+    public static final Integer createVtnIndex(Random rand, Set<Integer> set) {
         Integer value;
         int upper = VTN_INDEX_MAX - VTN_INDEX_MIN;
         do {
@@ -406,7 +406,7 @@ public abstract class TestBase extends Assert {
      * @param set   A set of integer values to store generated values.
      * @return  An unique integer.
      */
-    public static Integer createInteger(Random rand, Set<Integer> set) {
+    public static final Integer createInteger(Random rand, Set<Integer> set) {
         Integer value;
         do {
             value = rand.nextInt();
@@ -421,7 +421,7 @@ public abstract class TestBase extends Assert {
      * @param rand  A pseudo random generator.
      * @return  An {@link EtherAddress} instance.
      */
-    public static EtherAddress createEtherAddress(Random rand) {
+    public static final EtherAddress createEtherAddress(Random rand) {
         long addr = rand.nextLong() & EtherAddress.BROADCAST.getAddress();
         addr &= ~EtherAddress.MASK_MULTICAST;
         return new EtherAddress(addr);
@@ -433,7 +433,7 @@ public abstract class TestBase extends Assert {
      * @param rand  A pseudo random generator.
      * @return  An {@link Ip4Network} instance.
      */
-    public static Ip4Network createIp4Network(Random rand) {
+    public static final Ip4Network createIp4Network(Random rand) {
         int addr;
         do {
             addr = rand.nextInt();
@@ -448,7 +448,7 @@ public abstract class TestBase extends Assert {
      * @param rand  A pseudo random generator.
      * @return  A VLAN PCP value.
      */
-    public static short createVlanPcp(Random rand) {
+    public static final short createVlanPcp(Random rand) {
         return (short)(rand.nextInt() & MASK_VLAN_PRI);
     }
 
@@ -458,7 +458,7 @@ public abstract class TestBase extends Assert {
      * @param rand  A pseudo random generator.
      * @return  An IP DSCP value.
      */
-    public static short createDscp(Random rand) {
+    public static final short createDscp(Random rand) {
         return (short)(rand.nextInt() & MASK_IP_DSCP);
     }
 
@@ -468,7 +468,7 @@ public abstract class TestBase extends Assert {
      * @param rand  A pseudo random generator.
      * @return  An unsigned short value.
      */
-    public static int createUnsignedShort(Random rand) {
+    public static final int createUnsignedShort(Random rand) {
         return rand.nextInt() & MASK_SHORT;
     }
 
@@ -478,8 +478,32 @@ public abstract class TestBase extends Assert {
      * @param rand  A pseudo random generator.
      * @return  An unsigned byte value.
      */
-    public static short createUnsignedByte(Random rand) {
+    public static final short createUnsignedByte(Random rand) {
         return (short)(rand.nextInt() & MASK_BYTE);
+    }
+
+    /**
+     * Create a random positive long number using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @return  A positive long number, including zero.
+     */
+    public static final long createPositiveLong(Random rand) {
+        return (rand.nextLong() & Long.MAX_VALUE);
+    }
+
+    /**
+     * Create a random natural long number using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @return  A natural long number.
+     */
+    public static final long createNaturalLong(Random rand) {
+        long l;
+        do {
+            l = (rand.nextLong() & Long.MAX_VALUE);
+        } while (l == 0L);
+        return l;
     }
 
     /**
@@ -489,7 +513,7 @@ public abstract class TestBase extends Assert {
      * @param rand  A pseudo random generator.
      * @return  An path policy ID.
      */
-    public static int createPathPolicyReference(Random rand) {
+    public static final int createPathPolicyReference(Random rand) {
         return rand.nextInt(PATH_POLICY_ID_MAX + 1);
     }
 
@@ -500,7 +524,7 @@ public abstract class TestBase extends Assert {
      * @param rand    A pseudo random generator.
      * @return  A virtual node name.
      */
-    public static String createVnodeName(String prefix, Random rand) {
+    public static final String createVnodeName(String prefix, Random rand) {
         return prefix + Integer.toHexString(rand.nextInt());
     }
 }

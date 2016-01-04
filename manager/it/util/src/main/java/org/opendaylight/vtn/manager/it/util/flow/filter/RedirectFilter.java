@@ -15,17 +15,15 @@ import static org.opendaylight.vtn.manager.it.util.TestBase.createVnodeName;
 
 import java.util.Random;
 
-import org.opendaylight.vtn.manager.it.util.vnode.VBridgeIfIdentifier;
 import org.opendaylight.vtn.manager.it.util.vnode.VInterfaceIdentifier;
-import org.opendaylight.vtn.manager.it.util.vnode.VNodeType;
-import org.opendaylight.vtn.manager.it.util.vnode.VTerminalIfIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.type.fields.vtn.flow.filter.type.VtnRedirectFilterCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.type.fields.vtn.flow.filter.type.VtnRedirectFilterCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.type.fields.vtn.flow.filter.type.vtn.redirect.filter._case.VtnRedirectFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.type.fields.vtn.flow.filter.type.vtn.redirect.filter._case.VtnRedirectFilterBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.redirect.filter.config.RedirectDestination;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.redirect.filter.config.RedirectDestinationBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodePathFields;
 
 /**
  * {@code RedirectFilter} describes the configuration of REDIRECT flow filter
@@ -35,7 +33,7 @@ public final class RedirectFilter extends FlowFilter<VtnRedirectFilterCase> {
     /**
      * The location of the destination virtual interface.
      */
-    private VInterfaceIdentifier<?>  destination;
+    private RedirectDestination  destination;
 
     /**
      * A boolean value that determines the direction of the packet redirection.
@@ -63,11 +61,91 @@ public final class RedirectFilter extends FlowFilter<VtnRedirectFilterCase> {
      * @param out   {@code true} means that the packet is redirected as
      *              outgoing packet.
      */
-    public RedirectFilter(Integer idx, String cond,
-                          VInterfaceIdentifier<?> dst, Boolean out) {
+    public RedirectFilter(Integer idx, String cond, RedirectDestination dst,
+                          Boolean out) {
         super(idx, cond);
         destination = dst;
         output = out;
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param idx   The index of the flow filter.
+     * @param cond  The name of the flow condition.
+     * @param dst   The location of the destination virtual interface.
+     * @param out   {@code true} means that the packet is redirected as
+     *              outgoing packet.
+     */
+    public RedirectFilter(Integer idx, String cond, VnodePathFields dst,
+                          Boolean out) {
+        super(idx, cond);
+        setDestination(dst);
+        output = out;
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param idx   The index of the flow filter.
+     * @param cond  The name of the flow condition.
+     * @param dst   The location of the destination virtual interface.
+     * @param out   {@code true} means that the packet is redirected as
+     *              outgoing packet.
+     */
+    public RedirectFilter(Integer idx, String cond,
+                          VInterfaceIdentifier<?> dst, Boolean out) {
+        super(idx, cond);
+        setDestination(dst);
+        output = out;
+    }
+
+    /**
+     * Return the destination of the redirection.
+     *
+     * @return  A {@link RedirectDestination} instance that indicates the
+     *          destination virtual interface.
+     */
+    public RedirectDestination getDestination() {
+        return destination;
+    }
+
+    /**
+     * Set the destination of the redirection.
+     *
+     * @param dst  A {@link RedirectDestination} instance that indicates the
+     *             destination virtual interface.
+     * @return  This instance.
+     */
+    public RedirectFilter setDestination(RedirectDestination dst) {
+        destination = dst;
+        return this;
+    }
+
+    /**
+     * Set the destination of the redirection.
+     *
+     * @param dst  A {@link VnodePathFields} instance that indicates the
+     *             destination virtual interface.
+     * @return  This instance.
+     */
+    public RedirectFilter setDestination(VnodePathFields dst) {
+        destination = (dst == null)
+            ? null
+            : new RedirectDestinationBuilder(dst).build();
+        return this;
+    }
+
+    /**
+     * Set the destination of the redirection.
+     *
+     * @param dst  A {@link VInterfaceIdentifier} instance that indicates the
+     *             destination virtual interface.
+     * @return  This instance.
+     */
+    public RedirectFilter setDestination(VInterfaceIdentifier<?> dst) {
+        destination = (dst == null) ? null : dst.toRedirectDestination();
+        return this;
     }
 
     // FlowFilter
@@ -89,11 +167,8 @@ public final class RedirectFilter extends FlowFilter<VtnRedirectFilterCase> {
      */
     @Override
     public VtnRedirectFilterCase newVtnFlowFilterType() {
-        RedirectDestination rdst = (destination == null)
-            ? null
-            : destination.toRedirectDestination();
         VtnRedirectFilter vrf = new VtnRedirectFilterBuilder().
-            setRedirectDestination(rdst).
+            setRedirectDestination(destination).
             setOutput(output).
             build();
         return new VtnRedirectFilterCaseBuilder().
@@ -119,14 +194,15 @@ public final class RedirectFilter extends FlowFilter<VtnRedirectFilterCase> {
         assertEquals(null, rdst.getTenantName());
         assertEquals(null, rdst.getRouterName());
         assertEquals(rdst.getInterfaceName(),
-                     destination.getInterfaceNameString());
+                     destination.getInterfaceName());
 
-        String bname = destination.getBridgeNameString();
-        if (destination.getType().getBridgeType() == VNodeType.VBRIDGE) {
+        String bname = destination.getBridgeName();
+        if (bname != null) {
             assertEquals(bname, rdst.getBridgeName());
             assertEquals(null, rdst.getTerminalName());
         } else {
-            assertEquals(bname, rdst.getTerminalName());
+            assertEquals(destination.getTerminalName(),
+                         rdst.getTerminalName());
             assertEquals(null, rdst.getBridgeName());
         }
     }
@@ -136,16 +212,20 @@ public final class RedirectFilter extends FlowFilter<VtnRedirectFilterCase> {
      */
     @Override
     protected void setImpl(Random rand) {
-        VnodeName tname = (rand.nextBoolean())
-            ? null : new VnodeName(createVnodeName("vtn_", rand));
-        VnodeName bname = new VnodeName(createVnodeName("bridge_", rand));
-        VnodeName iname = new VnodeName(createVnodeName("if_", rand));
-        if (rand.nextBoolean()) {
-            destination = new VBridgeIfIdentifier(tname, bname, iname);
-        } else {
-            destination = new VTerminalIfIdentifier(tname, bname, iname);
-        }
+        String tname = (rand.nextBoolean())
+            ? null : createVnodeName("vtn_", rand);
+        String bname = createVnodeName("bridge_", rand);
+        String iname = createVnodeName("if_", rand);
 
+        RedirectDestinationBuilder builder = new RedirectDestinationBuilder().
+            setTenantName(tname).
+            setInterfaceName(iname);
+        if (rand.nextBoolean()) {
+            builder.setBridgeName(bname);
+        } else {
+            builder.setTerminalName(bname);
+        }
+        destination = builder.build();
         output = (rand.nextBoolean()) ? rand.nextBoolean() : null;
     }
 }
