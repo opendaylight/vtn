@@ -85,7 +85,7 @@ public final class OvsdbDataChangeListener
      */
     @Override
     public void onDataChanged(
-         AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> changes) {
+        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> changes) {
         LOG.trace("onDataChanged: {}", changes);
         processOvsdbConnections(changes);
         processOvsdbConnectionAttributeUpdates(changes);
@@ -196,6 +196,5 @@ public final class OvsdbDataChangeListener
             }
         }
     }
-
 
 }
