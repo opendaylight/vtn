@@ -42,7 +42,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeCon
 /**
  * {@code VInterfaceConfig} describes the configuration of a virtual interface.
  */
-public final class VInterfaceConfig extends VNodeConfig<VInterfaceConfig> {
+public final class VInterfaceConfig extends VNodeConfig<VInterfaceConfig>
+    implements FlowFilterNode {
     /**
      * The value of enabled.
      */
@@ -146,24 +147,6 @@ public final class VInterfaceConfig extends VNodeConfig<VInterfaceConfig> {
     public VInterfaceConfig setPortMap(VTNPortMapConfig pmconf) {
         portMap = pmconf;
         return this;
-    }
-
-    /**
-     * Return the input flow filters.
-     *
-     * @return  A {@link FlowFilterList} instance for incoming packets.
-     */
-    public FlowFilterList getInputFilter() {
-        return inputFilter;
-    }
-
-    /**
-     * Return the output flow filters.
-     *
-     * @return  A {@link FlowFilterList} instance for outgoing packets.
-     */
-    public FlowFilterList getOutputFilter() {
-        return outputFilter;
     }
 
     /**
@@ -360,5 +343,23 @@ public final class VInterfaceConfig extends VNodeConfig<VInterfaceConfig> {
                           vif.getVinterfaceInputFilter());
         outputFilter.apply(service, ident, true,
                            vif.getVinterfaceOutputFilter());
+    }
+
+    // FlowFilterNode
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public FlowFilterList getInputFilter() {
+        return inputFilter;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public FlowFilterList getOutputFilter() {
+        return outputFilter;
     }
 }

@@ -237,7 +237,7 @@ public final class PathMapTest extends TestMethodBase {
             assertEquals(null, pdResult.put(pdesc, VtnUpdateType.CREATED));
         }
 
-        assertEquals(pdResult, policy2.add(ppSrv, costs));
+        assertEquals(pdResult, policy2.addCosts(ppSrv, costs));
         vnet.verify();
 
         // Increase cost for the links from nodeIds[0] to nodeIds[1]/nodeIds[2]
@@ -254,7 +254,7 @@ public final class PathMapTest extends TestMethodBase {
             VtnPortDesc pdesc = pc.getPortDesc();
             assertEquals(null, pdResult.put(pdesc, VtnUpdateType.CREATED));
         }
-        assertEquals(pdResult, policy2.add(ppSrv, costs));
+        assertEquals(pdResult, policy2.addCosts(ppSrv, costs));
         vnet.verify();
 
         // Configure path policy 3.
@@ -306,7 +306,7 @@ public final class PathMapTest extends TestMethodBase {
             VtnPortDesc pdesc = pc.getPortDesc();
             assertEquals(null, pdResult.put(pdesc, VtnUpdateType.CREATED));
         }
-        assertEquals(pdResult, policy3.add(ppSrv, costs));
+        assertEquals(pdResult, policy3.addCosts(ppSrv, costs));
         vnet.verify();
 
         // Configure flow conditions.
@@ -533,8 +533,8 @@ public final class PathMapTest extends TestMethodBase {
         long cost2 = 200000000L;
         pcMode = PATH_COST_MODE_NAME | PATH_COST_MODE_ID;
         PathCost pc2 = newPathCost(link.getSourcePort(), cost2, pcMode);
-        assertEquals(VtnUpdateType.CREATED, policy2.add(ppSrv, pc2));
-        assertEquals(null, policy2.add(ppSrv, pc2));
+        assertEquals(VtnUpdateType.CREATED, policy2.addCost(ppSrv, pc2));
+        assertEquals(null, policy2.addCost(ppSrv, pc2));
         vnet.verify();
         UnicastFlow.verifyFlows(flows00, true, false);
         UnicastFlow.verifyFlows(flows01, true, false);

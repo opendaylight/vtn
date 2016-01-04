@@ -75,6 +75,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.VlanMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.VlanMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.vlan.match.fields.VlanIdBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePath;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePathBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.EtherType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanPcp;
@@ -639,7 +641,7 @@ public abstract class ModelDrivenTestBase extends TestBase {
      * @param service  A {@link VTNServices} instance.
      * @return  A list of VTNs.
      */
-    public static List<Vtn> getVtns(VTNServices service) {
+    public static final List<Vtn> getVtns(VTNServices service) {
         try (ReadOnlyTransaction rtx = service.newReadOnlyTransaction()) {
             return getVtns(rtx);
         }
@@ -651,7 +653,7 @@ public abstract class ModelDrivenTestBase extends TestBase {
      * @param rtx  A read-only MD-SAL datastore transaction.
      * @return  A list of VTNs.
      */
-    public static List<Vtn> getVtns(ReadTransaction rtx) {
+    public static final List<Vtn> getVtns(ReadTransaction rtx) {
         InstanceIdentifier<Vtns> path = InstanceIdentifier.create(Vtns.class);
         Optional<Vtns> opt = DataStoreUtils.read(rtx, path);
         List<Vtn> vtns = null;
@@ -672,7 +674,8 @@ public abstract class ModelDrivenTestBase extends TestBase {
      * @param service  A {@link VTNServices} instance.
      * @param pid      The MD-SAL port identifier.
      */
-    public static void addStaticEdgePort(VTNServices service, String pid) {
+    public static final void addStaticEdgePort(VTNServices service,
+                                               String pid) {
         NodeConnectorId ncId = new NodeConnectorId(pid);
         StaticEdgePortKey key = new StaticEdgePortKey(ncId);
         InstanceIdentifier<StaticEdgePort> epath = InstanceIdentifier.
@@ -696,7 +699,8 @@ public abstract class ModelDrivenTestBase extends TestBase {
      * @param service  A {@link VTNServices} instance.
      * @param pid      The MD-SAL port identifier.
      */
-    public static void removeStaticEdgePort(VTNServices service, String pid) {
+    public static final void removeStaticEdgePort(VTNServices service,
+                                                  String pid) {
         NodeConnectorId ncId = new NodeConnectorId(pid);
         StaticEdgePortKey key = new StaticEdgePortKey(ncId);
         InstanceIdentifier<StaticEdgePort> epath = InstanceIdentifier.
@@ -715,12 +719,48 @@ public abstract class ModelDrivenTestBase extends TestBase {
      *
      * @param service  A {@link VTNServices} instance.
      */
-    public static void removeVtnStaticTopology(VTNServices service) {
+    public static final void removeVtnStaticTopology(VTNServices service) {
         InstanceIdentifier<VtnStaticTopology> vsPath = InstanceIdentifier.
             create(VtnStaticTopology.class);
         LogicalDatastoreType config = LogicalDatastoreType.CONFIGURATION;
         ReadWriteTransaction tx = service.newReadWriteTransaction();
         tx.delete(config, vsPath);
         DataStoreUtils.submit(tx);
+    }
+
+    /**
+     * Create a virtual node path that specifies the vBridge or vBridge
+     * interface.
+     *
+     * @param tname  The name of the VTN.
+     * @param bname  The name of the vBridge.
+     * @param iname  The name of the virtual interface.
+     * @return  A {@link VirtualNodePath} instance.
+     */
+    public static final VirtualNodePath newBridgePath(
+        String tname, String bname, String iname) {
+        return new VirtualNodePathBuilder().
+            setTenantName(tname).
+            setBridgeName(bname).
+            setInterfaceName(iname).
+            build();
+    }
+
+    /**
+     * Create a virtual node path that specifies the vTerminal or vTerminal
+     * interface.
+     *
+     * @param tname  The name of the VTN.
+     * @param bname  The name of the vTerminal.
+     * @param iname  The name of the virtual interface.
+     * @return  A {@link VirtualNodePath} instance.
+     */
+    public static final VirtualNodePath newTerminalPath(
+        String tname, String bname, String iname) {
+        return new VirtualNodePathBuilder().
+            setTenantName(tname).
+            setTerminalName(bname).
+            setInterfaceName(iname).
+            build();
     }
 }

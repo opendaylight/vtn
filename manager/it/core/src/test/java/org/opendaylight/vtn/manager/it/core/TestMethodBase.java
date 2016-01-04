@@ -35,6 +35,7 @@ import org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase;
 import org.opendaylight.vtn.manager.it.util.TestHost;
 import org.opendaylight.vtn.manager.it.util.VirtualNetwork;
 import org.opendaylight.vtn.manager.it.util.flow.cond.FlowCondSet;
+import org.opendaylight.vtn.manager.it.util.flow.filter.FlowFilterList;
 import org.opendaylight.vtn.manager.it.util.packet.ArpFactory;
 import org.opendaylight.vtn.manager.it.util.packet.EthernetFactory;
 import org.opendaylight.vtn.manager.it.util.packet.Icmp4Factory;
@@ -49,6 +50,7 @@ import org.opendaylight.vtn.manager.it.util.vnode.VBridgeConfig;
 import org.opendaylight.vtn.manager.it.util.vnode.VBridgeIdentifier;
 import org.opendaylight.vtn.manager.it.util.vnode.VInterfaceConfig;
 import org.opendaylight.vtn.manager.it.util.vnode.VInterfaceIdentifier;
+import org.opendaylight.vtn.manager.it.util.vnode.VNodeIdentifier;
 import org.opendaylight.vtn.manager.it.util.vnode.VTNPortMapConfig;
 import org.opendaylight.vtn.manager.it.util.vnode.VTNVlanMapConfig;
 import org.opendaylight.vtn.manager.it.util.vnode.VTenantConfig;
@@ -256,6 +258,47 @@ public abstract class TestMethodBase extends ModelDrivenTestBase {
     protected final void removeFlowCondition(String name) {
         FlowCondSet.removeFlowCondition(
             theTest.getFlowConditionService(), name);
+    }
+
+    /**
+     * Remove all the flow filters in the specified flow filter list.
+     *
+     * @param ident  The identifier for the virtual node.
+     * @param out    A boolean value that determines the packet direction.
+     * @return  A map that specifies the removed flow filters.
+     */
+    protected final Map<Integer, VtnUpdateType> removeFlowFilter(
+        VNodeIdentifier<?> ident, boolean out) {
+        return FlowFilterList.removeFlowFilter(
+            theTest.getFlowFilterService(), ident, out, (List<Integer>)null);
+    }
+
+    /**
+     * Remove the specified flow filters in the specified flow filter list.
+     *
+     * @param ident    The identifier for the virtual node.
+     * @param out      A boolean value that determines the packet direction.
+     * @param indices  A list of flow filter indices to be removed.
+     * @return  A map that specifies the removed flow filters.
+     */
+    protected final Map<Integer, VtnUpdateType> removeFlowFilter(
+        VNodeIdentifier<?> ident, boolean out, List<Integer> indices) {
+        return FlowFilterList.removeFlowFilter(
+            theTest.getFlowFilterService(), ident, out, indices);
+    }
+
+    /**
+     * Remove the specified flow filter in the specified flow filter list.
+     *
+     * @param ident  The identifier for the virtual node.
+     * @param out    A boolean value that determines the packet direction.
+     * @param index  A flow filter index to be removed.
+     * @return  A {@link VtnUpdateType} instance.
+     */
+    protected final VtnUpdateType removeFlowFilter(
+        VNodeIdentifier<?> ident, boolean out, Integer index) {
+        return FlowFilterList.removeFlowFilter(
+            theTest.getFlowFilterService(), ident, out, index);
     }
 
     /**

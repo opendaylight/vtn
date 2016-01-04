@@ -35,6 +35,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.R
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.SetFlowFilterInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.SetFlowFilterInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.VtnFlowFilterList;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.VtnFlowFilterResult;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.VtnFlowFilterService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.list.VtnFlowFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.result.FlowFilterResult;
@@ -44,7 +45,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpda
  * {@code FlowFilterList} describes an ordered list of flow filter
  * configurations.
  */
-public final class FlowFilterList {
+public final class FlowFilterList implements Cloneable {
     /**
      * A set of supported filter types.
      */
@@ -53,7 +54,7 @@ public final class FlowFilterList {
     /**
      * Flow filters indexed by index value.
      */
-    private final Map<Integer, FlowFilter<?>>  flowFilters = new HashMap<>();
+    private Map<Integer, FlowFilter<?>>  flowFilters = new HashMap<>();
 
     /**
      * Initialize static field.
@@ -76,7 +77,7 @@ public final class FlowFilterList {
      */
     public static Map<Integer, VtnUpdateType> removeFlowFilter(
         VtnFlowFilterService service, VNodeIdentifier<?> ident, boolean out) {
-        return removeFlowFilter(service, ident, out, null);
+        return removeFlowFilter(service, ident, out, (List<Integer>)null);
     }
 
     /**
@@ -100,10 +101,43 @@ public final class FlowFilterList {
         RemoveFlowFilterInput input = builder.build();
         RemoveFlowFilterOutput output =
             getRpcOutput(service.removeFlowFilter(input));
-        List<FlowFilterResult> removed = output.getFlowFilterResult();
-        Map<Integer, VtnUpdateType> result = new HashMap<>();
-        if (removed != null) {
-            for (FlowFilterResult fres: removed) {
+        return getResultMap(output);
+    }
+
+    /**
+     * Remove the specified flow filter in the specified flow filter list.
+     *
+     * @param service  The vtn-flow-filter RPC service.
+     * @param ident    The identifier for the virtual node.
+     * @param out      A boolean value that determines the packet direction.
+     * @param index    A flow filter index to be removed.
+     * @return  A {@link VtnUpdateType} instance.
+     */
+    public static VtnUpdateType removeFlowFilter(
+        VtnFlowFilterService service, VNodeIdentifier<?> ident, boolean out,
+        Integer index) {
+        Map<Integer, VtnUpdateType> result = removeFlowFilter(
+            service, ident, out, Collections.singletonList(index));
+        assertEquals(Collections.singleton(index), result.keySet());
+        return result.get(index);
+    }
+
+    /**
+     * Create a map that indicates the given result of flow filter RPC.
+     *
+     * @param vffr  A {@link VtnFlowFilterResult} instance.
+     * @return  A map that indicates the given result of flow filter RPC.
+     *          Note that {@code null} is returned if {@code vffr} does not
+     *          contain a list of flow-filter-result.
+     */
+    static Map<Integer, VtnUpdateType> getResultMap(VtnFlowFilterResult vffr) {
+        Map<Integer, VtnUpdateType> result;
+        List<FlowFilterResult> list = vffr.getFlowFilterResult();
+        if (list == null) {
+            result = null;
+        } else {
+            result = new HashMap<>();
+            for (FlowFilterResult fres: list) {
                 Integer index = fres.getIndex();
                 VtnUpdateType status = fres.getStatus();
                 assertEquals(null, result.put(index, status));
@@ -131,11 +165,11 @@ public final class FlowFilterList {
     /**
      * Add the given flow filter to this list.
      *
-     * @param fact  A {@link FlowFilter} instance.
+     * @param ff  A {@link FlowFilter} instance.
      * @return  This instance.
      */
-    public FlowFilterList add(FlowFilter<?> fact) {
-        flowFilters.put(fact.getIndex(), fact);
+    public FlowFilterList add(FlowFilter<?> ff) {
+        flowFilters.put(ff.getIndex(), ff);
         return this;
     }
 
@@ -147,6 +181,19 @@ public final class FlowFilterList {
      */
     public FlowFilterList remove(Integer index) {
         flowFilters.remove(index);
+        return this;
+    }
+
+    /**
+     * Remove all the specified flow filters.
+     *
+     * @param indices  A colletion of flow filter indices to be removed.
+     * @return  This instance.
+     */
+    public FlowFilterList remove(Collection<Integer> indices) {
+        for (Integer idx: indices) {
+            flowFilters.remove(idx);
+        }
         return this;
     }
 
@@ -209,8 +256,41 @@ public final class FlowFilterList {
      * @return  A {@link SetFlowFilterInputBuilder} instance.
      */
     public SetFlowFilterInputBuilder newInputBuilder() {
+        return newInputBuilder(false);
+    }
+
+    /**
+     * Create a new input builder for set-flow-filter RPC.
+     *
+     * @param empty  If {@code true}, this method returns an empty list
+     *               if the filter list is empty.
+     *               If {@code false}, this method returns {@code null}
+     *               if the filter list is empty.
+     * @return  A {@link SetFlowFilterInputBuilder} instance.
+     */
+    public SetFlowFilterInputBuilder newInputBuilder(boolean empty) {
         return new SetFlowFilterInputBuilder().
-            setVtnFlowFilter(toVtnFlowFilterList());
+            setVtnFlowFilter(toVtnFlowFilterList(empty));
+    }
+
+    /**
+     * Update the flow filter list.
+     *
+     * @param service  The vtn-flow-filter RPC service.
+     * @param ident    The identifier for the target virtual node.
+     * @param output   {@link Boolean#TRUE} indicates the flow filter list
+     *                 for outgoing packets.
+     * @return  A map that specifies the updated flow filters.
+     */
+    public Map<Integer, VtnUpdateType> update(VtnFlowFilterService service,
+                                              VNodeIdentifier<?> ident,
+                                              Boolean output) {
+        SetFlowFilterInputBuilder builder = newInputBuilder().
+            setOutput(output);
+        builder.fieldsFrom(ident.getVirtualNodePath());
+
+        SetFlowFilterInput in = builder.build();
+        return getResultMap(getRpcOutput(service.setFlowFilter(in)));
     }
 
     /**
@@ -321,6 +401,25 @@ public final class FlowFilterList {
             } catch (Exception e) {
                 unexpected(e);
             }
+        }
+    }
+
+    // Object
+
+    /**
+     * Create a shallow copy of this instance.
+     *
+     * @return  A shallow copy of this instance.
+     */
+    @Override
+    public FlowFilterList clone() {
+        try {
+            FlowFilterList flist = (FlowFilterList)super.clone();
+            flist.flowFilters = new HashMap<>(flowFilters);
+            return flist;
+        } catch (CloneNotSupportedException e) {
+            // This should never happen.
+            throw new IllegalStateException("clone() failed", e);
         }
     }
 }

@@ -15,6 +15,7 @@ import static org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase.getRpcOut
 import static org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase.getRpcResult;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -63,6 +64,69 @@ public final class PathPolicy {
      * A map that keeps path costs.
      */
     private final Map<VtnPortDesc, PathCost>  pathCosts = new HashMap<>();
+
+    /**
+     * Create a new input for set-path-cost RPC.
+     *
+     * @param policy  The path policy ID.
+     * @param costs   An array of path costs to be added.
+     * @return  A {@link SetPathCostInput} instance.
+     */
+    public static SetPathCostInput newSetCostInput(
+        Integer policy, PathCost ... costs) {
+        List<PathCostList> pclist = (costs == null)
+            ? null : PathCost.toPathCostList(costs);
+        return new SetPathCostInputBuilder().
+            setId(policy).
+            setPathCostList(pclist).
+            build();
+    }
+
+    /**
+     * Create a new input for set-path-cost RPC.
+     *
+     * @param policy  The path policy ID.
+     * @param costs   A collection of path costs to be added.
+     * @return  A {@link SetPathCostInput} instance.
+     */
+    public static SetPathCostInput newSetCostInput(
+        Integer policy, Collection<PathCost> costs) {
+        List<PathCostList> pclist = (costs == null)
+            ? null : PathCost.toPathCostList(costs);
+        return new SetPathCostInputBuilder().
+            setId(policy).
+            setPathCostList(pclist).
+            build();
+    }
+
+    /**
+     * Create a new input for remove-path-cost RPC.
+     *
+     * @param policy  The path policy ID.
+     * @param pdescs  An array of vtn-port-desc instances to be removed.
+     * @return  A {@link RemovePathCostInput} instance.
+     */
+    public static RemovePathCostInput newRemoveCostInput(
+        Integer policy, VtnPortDesc ... pdescs) {
+        List<VtnPortDesc> pdlist = (pdescs == null)
+            ? null : Arrays.asList(pdescs);
+        return newRemoveCostInput(policy, pdlist);
+    }
+
+    /**
+     * Create a new input for remove-path-cost RPC.
+     *
+     * @param policy  The path policy ID.
+     * @param pdescs  A list of vtn-port-desc instances to be removed.
+     * @return  A {@link RemovePathCostInput} instance.
+     */
+    public static RemovePathCostInput newRemoveCostInput(
+        Integer policy, List<VtnPortDesc> pdescs) {
+        return new RemovePathCostInputBuilder().
+            setId(policy).
+            setPortDesc(pdescs).
+            build();
+    }
 
     /**
      * Create a map that indicates the given result of path cost RPC.
@@ -147,7 +211,7 @@ public final class PathPolicy {
      */
     public PathPolicy add(PathCost ... costs) {
         for (PathCost pc: costs) {
-            VtnPortDesc pdesc = pc.getPortDesc();
+            VtnPortDesc pdesc = (pc == null) ? null : pc.getPortDesc();
             pathCosts.put(pdesc, pc);
         }
 
@@ -160,9 +224,9 @@ public final class PathPolicy {
      * @param costs  An array of path costs to be removed.
      * @return  This instance.
      */
-    public PathPolicy removeCost(PathCost ... costs) {
+    public PathPolicy remove(PathCost ... costs) {
         for (PathCost pc: costs) {
-            VtnPortDesc pdesc = pc.getPortDesc();
+            VtnPortDesc pdesc = (pc == null) ? null : pc.getPortDesc();
             pathCosts.remove(pdesc);
         }
 
@@ -175,11 +239,21 @@ public final class PathPolicy {
      * @param pdescs  An array of port descriptors.
      * @return  This instance.
      */
-    public PathPolicy removeCost(VtnPortDesc ... pdescs) {
+    public PathPolicy remove(VtnPortDesc ... pdescs) {
         for (VtnPortDesc pdesc: pdescs) {
             pathCosts.remove(pdesc);
         }
 
+        return this;
+    }
+
+    /**
+     * Clear the set of path costs.
+     *
+     * @return  This instance.
+     */
+    public PathPolicy clear() {
+        pathCosts.clear();
         return this;
     }
 
@@ -210,7 +284,8 @@ public final class PathPolicy {
         } else {
             costs = new ArrayList<>(pathCosts.size());
             for (PathCost pc: pathCosts.values()) {
-                costs.add(pc.toVtnPathCost());
+                VtnPathCost vpc = (pc == null) ? null : pc.toVtnPathCost();
+                costs.add(vpc);
             }
         }
 
@@ -246,9 +321,8 @@ public final class PathPolicy {
      * @param pc       A {@link PathCost} instance to be added.
      * @return  A {@link VtnUpdateType} instance returned by the RPC.
      */
-    public VtnUpdateType add(VtnPathPolicyService service, PathCost pc) {
-        Map<VtnPortDesc, VtnUpdateType> result =
-            add(service, Collections.singletonList(pc));
+    public VtnUpdateType addCost(VtnPathPolicyService service, PathCost pc) {
+        Map<VtnPortDesc, VtnUpdateType> result = addCosts(service, pc);
         VtnPortDesc pdesc = pc.getPortDesc();
         assertEquals(Collections.singleton(pdesc), result.keySet());
         return result.get(pdesc);
@@ -259,25 +333,26 @@ public final class PathPolicy {
      * and then add them to this instance.
      *
      * @param service  The vtn-path-policy service.
+     * @param costs    An array of path costs to be added.
+     * @return  A map that contains the RPC result.
+     */
+    public Map<VtnPortDesc, VtnUpdateType> addCosts(
+        VtnPathPolicyService service, PathCost ... costs) {
+        List<PathCost> pclist = (costs == null) ? null : Arrays.asList(costs);
+        return addCosts(service, pclist);
+    }
+
+    /**
+     * Add the given path costs to the path policy using set-path-cost RPC,
+     * and then add them to this instance.
+     *
+     * @param service  The vtn-path-policy service.
      * @param costs    A collection of path costs to be added.
      * @return  A map that contains the RPC result.
      */
-    public Map<VtnPortDesc, VtnUpdateType> add(
+    public Map<VtnPortDesc, VtnUpdateType> addCosts(
         VtnPathPolicyService service, Collection<PathCost> costs) {
-        List<PathCostList> pcl;
-        if (costs == null) {
-            pcl = null;
-        } else {
-            pcl = new ArrayList<>(costs.size());
-            for (PathCost pc: costs) {
-                pcl.add(pc.toPathCostList());
-            }
-        }
-
-        SetPathCostInput input = new SetPathCostInputBuilder().
-            setId(policyId).
-            setPathCostList(pcl).
-            build();
+        SetPathCostInput input = newSetCostInput(policyId, costs);
         SetPathCostOutput output = getRpcOutput(service.setPathCost(input));
         Map<VtnPortDesc, VtnUpdateType> result =
             getResultMap(output.getSetPathCostResult());
@@ -300,8 +375,7 @@ public final class PathPolicy {
      * @param pc       A {@link PathCost} instance to be removed.
      * @return  A {@link VtnUpdateType} instance returned by the RPC.
      */
-    public VtnUpdateType removeCost(VtnPathPolicyService service,
-                                    PathCost pc) {
+    public VtnUpdateType removeCost(VtnPathPolicyService service, PathCost pc) {
         return removeCost(service, pc.getPortDesc());
     }
 
@@ -315,8 +389,7 @@ public final class PathPolicy {
      */
     public VtnUpdateType removeCost(VtnPathPolicyService service,
                                     VtnPortDesc pdesc) {
-        Map<VtnPortDesc, VtnUpdateType> result =
-            removeCost(service, Collections.singletonList(pdesc));
+        Map<VtnPortDesc, VtnUpdateType> result = removeCosts(service, pdesc);
         assertEquals(Collections.singleton(pdesc), result.keySet());
         return result.get(pdesc);
     }
@@ -326,15 +399,27 @@ public final class PathPolicy {
      * RPC, and then remove them from this instance.
      *
      * @param service  The vtn-path-policy service.
-     * @param pdescs    A list of vtn-port-desc instances to be removed.
+     * @param pdescs   An array of vtn-port-desc instances to be removed.
      * @return  A map that contains the RPC result.
      */
-    public Map<VtnPortDesc, VtnUpdateType> removeCost(
+    public Map<VtnPortDesc, VtnUpdateType> removeCosts(
+        VtnPathPolicyService service, VtnPortDesc ... pdescs) {
+        List<VtnPortDesc> pdlist = (pdescs == null)
+            ? null : Arrays.asList(pdescs);
+        return removeCosts(service, pdlist);
+    }
+
+    /**
+     * Remove the given path costs form the path policy using remove-path-cost
+     * RPC, and then remove them from this instance.
+     *
+     * @param service  The vtn-path-policy service.
+     * @param pdescs   A list of vtn-port-desc instances to be removed.
+     * @return  A map that contains the RPC result.
+     */
+    public Map<VtnPortDesc, VtnUpdateType> removeCosts(
         VtnPathPolicyService service, List<VtnPortDesc> pdescs) {
-        RemovePathCostInput input = new RemovePathCostInputBuilder().
-            setId(policyId).
-            setPortDesc(pdescs).
-            build();
+        RemovePathCostInput input = newRemoveCostInput(policyId, pdescs);
         RemovePathCostOutput output =
             getRpcOutput(service.removePathCost(input));
         Map<VtnPortDesc, VtnUpdateType> result =

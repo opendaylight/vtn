@@ -23,13 +23,16 @@ import com.google.common.base.Optional;
 
 import org.opendaylight.vtn.manager.it.ofmock.DataStoreUtils;
 import org.opendaylight.vtn.manager.it.util.flow.cond.FlowCondSet;
+import org.opendaylight.vtn.manager.it.util.flow.filter.FlowFilterList;
 import org.opendaylight.vtn.manager.it.util.pathmap.PathMapSet;
 import org.opendaylight.vtn.manager.it.util.pathpolicy.PathPolicySet;
 import org.opendaylight.vtn.manager.it.util.vnode.BridgeConfig;
+import org.opendaylight.vtn.manager.it.util.vnode.FlowFilterNode;
 import org.opendaylight.vtn.manager.it.util.vnode.VBridgeConfig;
 import org.opendaylight.vtn.manager.it.util.vnode.VBridgeIdentifier;
 import org.opendaylight.vtn.manager.it.util.vnode.VInterfaceConfig;
 import org.opendaylight.vtn.manager.it.util.vnode.VInterfaceIdentifier;
+import org.opendaylight.vtn.manager.it.util.vnode.VNodeIdentifier;
 import org.opendaylight.vtn.manager.it.util.vnode.VNodeType;
 import org.opendaylight.vtn.manager.it.util.vnode.VTenantConfig;
 import org.opendaylight.vtn.manager.it.util.vnode.VTerminalConfig;
@@ -335,6 +338,57 @@ public final class VirtualNetwork {
      */
     public FlowCondSet getFlowConditions() {
         return flowConditions;
+    }
+
+    /**
+     * Return the virtual node configuration that contains flow filters.
+     *
+     * @param ident   The identifier for the target virtual node.
+     * @return  A {@link FlowFilterNode} instance if found.
+     *          {@code null} if not found.
+     */
+    public FlowFilterNode getFlowFilterNode(VNodeIdentifier<?> ident) {
+        VNodeType type = ident.getType();
+        FlowFilterNode fnode;
+        if (type == VNodeType.VTN) {
+            fnode = getTenant(ident.getTenantNameString());
+        } else if (type == VNodeType.VBRIDGE) {
+            @SuppressWarnings("unchecked")
+            VBridgeIdentifier vbrId = (VBridgeIdentifier)ident;
+            fnode = getBridge(vbrId);
+        } else if (type.isInterface()) {
+            @SuppressWarnings("unchecked")
+            VInterfaceIdentifier<?> ifId = (VInterfaceIdentifier<?>)ident;
+            fnode = getInterface(ifId);
+        } else {
+            fnode = null;
+        }
+
+        return fnode;
+    }
+
+    /**
+     * Return the specified flow filter list.
+     *
+     * @param ident   The identifier for the target virtual node.
+     * @param output  {@code true} indicates the flow filter for outgoing
+     *                packets.
+     * @return  A {@link FlowFilterList} instance if found.
+     *          {@code null} if not found.
+     */
+    public FlowFilterList getFlowFilterList(VNodeIdentifier<?> ident,
+                                            boolean output) {
+        FlowFilterNode fnode = getFlowFilterNode(ident);
+        FlowFilterList flist;
+        if (fnode == null) {
+            flist = null;
+        } else if (output) {
+            flist = fnode.getOutputFilter();
+        } else {
+            flist = fnode.getInputFilter();
+        }
+
+        return flist;
     }
 
     /**

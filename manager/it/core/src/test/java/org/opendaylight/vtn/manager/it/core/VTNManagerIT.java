@@ -87,8 +87,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase
     /**
      * Logger instance.
      */
-    private static final Logger LOG = LoggerFactory.
-        getLogger(VTNManagerIT.class);
+    static final Logger  LOG = LoggerFactory.getLogger(VTNManagerIT.class);
 
     /**
      * Set true only if the first run.
@@ -406,6 +405,36 @@ public final class VTNManagerIT extends ModelDrivenTestBase
     public void testMacTableService() throws Exception {
         LOG.info("Running testMacTableService().");
         new MacTableServiceTest(this).runTest();
+    }
+
+    /**
+     * Test case for {@link VtnFlowFilterService}.
+     *
+     * <p>
+     *   This test is independent of inventory information.
+     * </p>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testFlowFilterService() throws Exception {
+        LOG.info("Running testFlowFilterService().");
+        new FlowFilterServiceTest(this).runTest();
+    }
+
+    /**
+     * Test case for {@link VtnPathPolicyService}.
+     *
+     * <p>
+     *   This test is independent of inventory information.
+     * </p>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testPathPolicyService() throws Exception {
+        LOG.info("Running testPathPolicyService().");
+        new PathPolicyServiceTest(this).runTest();
     }
 
     /**
