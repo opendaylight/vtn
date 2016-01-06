@@ -67,6 +67,16 @@ public final class PathMap {
     private Integer  hardTimeout;
 
     /**
+     * Construct a new instance without specifying policy ID and flow timeout.
+     *
+     * @param idx   The index of the path map.
+     * @param cond  The name of the flow condition.
+     */
+    public PathMap(Integer idx, String cond) {
+        this(idx, cond, null, null, null);
+    }
+
+    /**
      * Construct a new instance without specifying flow timeout.
      *
      * @param idx   The index of the path map.

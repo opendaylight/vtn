@@ -438,6 +438,21 @@ public final class VTNManagerIT extends ModelDrivenTestBase
     }
 
     /**
+     * Test case for {@link VtnPathMapService}.
+     *
+     * <p>
+     *   This test is independent of inventory information.
+     * </p>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testPathMapSevice() throws Exception {
+        LOG.info("Running testPathMapSevice().");
+        new PathMapServiceTest(this).runTest();
+    }
+
+    /**
      * Ensure that the state of virtual bridge and virtual interface are
      * changed according to inventory events.
      *
