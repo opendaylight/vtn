@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -811,13 +811,19 @@ TEST(socket, open)
         Socket	sock(AF_UNIX, SOCK_DGRAM, 12345678, 0);
 
         ASSERT_EQ(-1, sock.getSocket());
-        ASSERT_EQ(EPROTONOSUPPORT, sock.getError());
+        int err(sock.getError());
+        if (err != EINVAL) {
+            ASSERT_EQ(EPROTONOSUPPORT, err);
+        }
     }
     {
         Socket	sock(AF_INET, SOCK_DGRAM, 0x100000, 0);
 
         ASSERT_EQ(-1, sock.getSocket());
-        ASSERT_EQ(EPROTONOSUPPORT, sock.getError());
+        int err(sock.getError());
+        if (err != EINVAL) {
+            ASSERT_EQ(EPROTONOSUPPORT, err);
+        }
     }
 
     // Invalid flag.
@@ -894,14 +900,20 @@ TEST(socket, openpair)
 
         ASSERT_EQ(-1, sock.getSocket0());
         ASSERT_EQ(-1, sock.getSocket1());
-        ASSERT_EQ(EPROTONOSUPPORT, sock.getError());
+        int err(sock.getError());
+        if (err != EINVAL) {
+            ASSERT_EQ(EPROTONOSUPPORT, err);
+        }
     }
     {
         SocketPair	sock(AF_UNIX, SOCK_DGRAM, 0x100000, 0);
 
         ASSERT_EQ(-1, sock.getSocket0());
         ASSERT_EQ(-1, sock.getSocket1());
-        ASSERT_EQ(EPROTONOSUPPORT, sock.getError());
+        int err(sock.getError());
+        if (err != EINVAL) {
+            ASSERT_EQ(EPROTONOSUPPORT, err);
+        }
     }
 
     // Invalid flag.
