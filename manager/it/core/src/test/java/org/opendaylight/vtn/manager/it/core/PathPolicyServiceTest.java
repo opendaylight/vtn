@@ -236,12 +236,7 @@ public final class PathPolicyServiceTest extends TestMethodBase {
         vnet.verify();
 
         // Retry with the same input.
-        VtnUpdateOperationType[] modifyOperations = {
-            null,
-            VtnUpdateOperationType.SET,
-            VtnUpdateOperationType.ADD,
-        };
-        for (VtnUpdateOperationType op: modifyOperations) {
+        for (VtnUpdateOperationType op: MODIFY_OPERATIONS) {
             assertEquals(null, pp.update(ppSrv, op, true));
         }
         vnet.verify();
@@ -278,7 +273,7 @@ public final class PathPolicyServiceTest extends TestMethodBase {
                      pp.update(ppSrv, VtnUpdateOperationType.SET, present));
         vnet.verify();
 
-        for (VtnUpdateOperationType op: modifyOperations) {
+        for (VtnUpdateOperationType op: MODIFY_OPERATIONS) {
             assertEquals(null, pp.update(ppSrv, op, true));
         }
         vnet.verify();
@@ -407,15 +402,10 @@ public final class PathPolicyServiceTest extends TestMethodBase {
         throws Exception {
         String node = ID_OPENFLOW + "1";
         PathCost pc = new PathCost(node, "2", null, 123L);
-        VtnUpdateOperationType[] modifyOperations = {
-            null,
-            VtnUpdateOperationType.SET,
-            VtnUpdateOperationType.ADD,
-        };
 
         // Null path cost.
         PathPolicy pp = new PathPolicy(policy, 1L).add(pc, null);
-        for (VtnUpdateOperationType op: modifyOperations) {
+        for (VtnUpdateOperationType op: MODIFY_OPERATIONS) {
             SetPathPolicyInput input = pp.newInput(op, false);
             checkRpcError(ppSrv.setPathPolicy(input),
                           RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
@@ -444,7 +434,7 @@ public final class PathPolicyServiceTest extends TestMethodBase {
 
         // No port descriptor is specified
         pp.clear().add(pc, new PathCost(1L));
-        for (VtnUpdateOperationType op: modifyOperations) {
+        for (VtnUpdateOperationType op: MODIFY_OPERATIONS) {
             input = pp.newInput(op, false);
             checkRpcError(ppSrv.setPathPolicy(input),
                           RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
@@ -479,7 +469,7 @@ public final class PathPolicyServiceTest extends TestMethodBase {
         };
         for (PathCost pcost: badCosts) {
             pp.clear().add(pc, pcost);
-            for (VtnUpdateOperationType op: modifyOperations) {
+            for (VtnUpdateOperationType op: MODIFY_OPERATIONS) {
                 input = pp.newInput(op, false);
                 checkRpcError(ppSrv.setPathPolicy(input),
                               RpcErrorTag.BAD_ELEMENT, VtnErrorTag.BADREQUEST);
@@ -498,7 +488,7 @@ public final class PathPolicyServiceTest extends TestMethodBase {
         Collections.addAll(
             vcosts, pc.toVtnPathCost(), pc1.toVtnPathCost(),
             pc2.toVtnPathCost());
-        for (VtnUpdateOperationType op: modifyOperations) {
+        for (VtnUpdateOperationType op: MODIFY_OPERATIONS) {
             input = new SetPathPolicyInputBuilder().
                 setId(policy).
                 setDefaultCost(1L).

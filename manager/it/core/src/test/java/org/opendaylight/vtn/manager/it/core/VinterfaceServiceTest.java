@@ -160,22 +160,12 @@ public final class VinterfaceServiceTest extends TestMethodBase {
         vnet.apply().verify();
 
         // Try to update with the same parameter.
-        VnodeUpdateMode[] modifyModes = {
-            null,
-            VnodeUpdateMode.UPDATE,
-            VnodeUpdateMode.MODIFY,
-        };
-        VtnUpdateOperationType[] modifyOperations = {
-            null,
-            VtnUpdateOperationType.SET,
-            VtnUpdateOperationType.ADD,
-        };
         for (Entry<VInterfaceIdentifier<?>, VInterfaceConfig> entry:
                  interfaces.entrySet()) {
             VInterfaceIdentifier<?> ifId = entry.getKey();
             VInterfaceConfig iconf = entry.getValue();
-            for (VnodeUpdateMode mode: modifyModes) {
-                for (VtnUpdateOperationType op: modifyOperations) {
+            for (VnodeUpdateMode mode: VNODE_UPDATE_MODES) {
+                for (VtnUpdateOperationType op: MODIFY_OPERATIONS) {
                     assertEquals(null, iconf.update(vifSrv, ifId, mode, op));
                 }
             }

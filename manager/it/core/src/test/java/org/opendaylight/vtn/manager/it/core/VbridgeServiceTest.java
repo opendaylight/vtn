@@ -115,22 +115,12 @@ public final class VbridgeServiceTest extends TestMethodBase {
         vnet.apply().verify();
 
         // Try to update with the same parameter.
-        VnodeUpdateMode[] modifyModes = {
-            null,
-            VnodeUpdateMode.UPDATE,
-            VnodeUpdateMode.MODIFY,
-        };
-        VtnUpdateOperationType[] modifyOperations = {
-            null,
-            VtnUpdateOperationType.SET,
-            VtnUpdateOperationType.ADD,
-        };
         for (Entry<VBridgeIdentifier, VBridgeConfig> entry:
                  bridges.entrySet()) {
             VBridgeIdentifier vbrId = entry.getKey();
             VBridgeConfig bconf = entry.getValue();
-            for (VnodeUpdateMode mode: modifyModes) {
-                for (VtnUpdateOperationType op: modifyOperations) {
+            for (VnodeUpdateMode mode: VNODE_UPDATE_MODES) {
+                for (VtnUpdateOperationType op: MODIFY_OPERATIONS) {
                     assertEquals(null, bconf.update(vbrSrv, vbrId, mode, op));
                 }
             }

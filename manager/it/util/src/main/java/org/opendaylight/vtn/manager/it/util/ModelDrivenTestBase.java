@@ -11,6 +11,7 @@ package org.opendaylight.vtn.manager.it.util;
 import static org.opendaylight.vtn.manager.it.ofmock.OfMockService.ID_OPENFLOW;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -35,6 +36,8 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcError;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePath;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePathBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.Vtns;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.Vtn;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.VtnStaticTopology;
@@ -42,8 +45,10 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePortBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePortKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeUpdateMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnRpcResult;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateOperationType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.DropActionCase;
@@ -75,8 +80,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.VlanMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.VlanMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.vlan.match.fields.VlanIdBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePath;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePathBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.EtherType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanPcp;
@@ -105,6 +108,18 @@ public abstract class ModelDrivenTestBase extends TestBase {
     public static final List<String>  INVALID_PORT_IDS;
 
     /**
+     * A list of update operations that indicate request for modifying the
+     * target data.
+     */
+    public static final List<VtnUpdateOperationType>  MODIFY_OPERATIONS;
+
+    /**
+     * A list of vnode update modes that indicate request for modifying the
+     * target data.
+     */
+    public static final List<VnodeUpdateMode>  VNODE_UPDATE_MODES;
+
+    /**
      * Initialize static field.
      */
     static {
@@ -123,6 +138,15 @@ public abstract class ModelDrivenTestBase extends TestBase {
             add("4294967041").
             add("-1").
             build();
+
+        // ImmutableList cannot contain null.
+        List<VtnUpdateOperationType> opTypes = Arrays.asList(
+            VtnUpdateOperationType.ADD, VtnUpdateOperationType.SET, null);
+        MODIFY_OPERATIONS = Collections.unmodifiableList(opTypes);
+
+        List<VnodeUpdateMode> modes = Arrays.asList(
+            VnodeUpdateMode.UPDATE, VnodeUpdateMode.MODIFY, null);
+        VNODE_UPDATE_MODES = Collections.unmodifiableList(modes);
     }
 
     /**

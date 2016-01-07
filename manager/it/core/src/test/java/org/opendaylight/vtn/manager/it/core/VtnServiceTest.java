@@ -88,22 +88,12 @@ public final class VtnServiceTest extends TestMethodBase {
         vnet.apply().verify();
 
         // Try to update with the same parameter.
-        VnodeUpdateMode[] modifyModes = {
-            null,
-            VnodeUpdateMode.UPDATE,
-            VnodeUpdateMode.MODIFY,
-        };
-        VtnUpdateOperationType[] modifyOperations = {
-            null,
-            VtnUpdateOperationType.SET,
-            VtnUpdateOperationType.ADD,
-        };
         for (Entry<String, VTenantConfig> entry:
                  vnet.getTenants().entrySet()) {
             String name = entry.getKey();
             VTenantConfig tconf = entry.getValue();
-            for (VnodeUpdateMode mode: modifyModes) {
-                for (VtnUpdateOperationType op: modifyOperations) {
+            for (VnodeUpdateMode mode: VNODE_UPDATE_MODES) {
+                for (VtnUpdateOperationType op: MODIFY_OPERATIONS) {
                     assertEquals(null, tconf.update(vtnSrv, name, mode, op));
                 }
             }
@@ -270,7 +260,7 @@ public final class VtnServiceTest extends TestMethodBase {
             VTenantConfig tconf = entry.getValue().complete();
             Integer idle = tconf.getIdleTimeout();
             Integer hard = tconf.getHardTimeout();
-            for (VnodeUpdateMode mode: modifyModes) {
+            for (VnodeUpdateMode mode: VNODE_UPDATE_MODES) {
                 if (hard.intValue() != 0) {
                     input = new UpdateVtnInputBuilder().
                         setTenantName(name).

@@ -105,22 +105,12 @@ public final class VterminalServiceTest extends TestMethodBase {
         vnet.apply().verify();
 
         // Try to update with the same parameter.
-        VnodeUpdateMode[] modifyModes = {
-            null,
-            VnodeUpdateMode.UPDATE,
-            VnodeUpdateMode.MODIFY,
-        };
-        VtnUpdateOperationType[] modifyOperations = {
-            null,
-            VtnUpdateOperationType.SET,
-            VtnUpdateOperationType.ADD,
-        };
         for (Entry<VTerminalIdentifier, VTerminalConfig> entry:
                  terminals.entrySet()) {
             VTerminalIdentifier vtermId = entry.getKey();
             VTerminalConfig vtconf = entry.getValue();
-            for (VnodeUpdateMode mode: modifyModes) {
-                for (VtnUpdateOperationType op: modifyOperations) {
+            for (VnodeUpdateMode mode: VNODE_UPDATE_MODES) {
+                for (VtnUpdateOperationType op: MODIFY_OPERATIONS) {
                     assertEquals(null,
                                  vtconf.update(vtermSrv, vtermId, mode, op));
                 }

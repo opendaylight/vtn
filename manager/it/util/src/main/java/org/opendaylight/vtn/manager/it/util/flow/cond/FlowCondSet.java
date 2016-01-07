@@ -13,6 +13,7 @@ import static org.junit.Assert.assertNotNull;
 
 import static org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase.getRpcOutput;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,11 +40,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpda
 /**
  * {@code FlowCondSet} describes a set of flow conditions.
  */
-public final class FlowCondSet {
+public final class FlowCondSet implements Cloneable {
     /**
      * A map that keeps flow conditions.
      */
-    private final Map<String, FlowCondition>  flowConditions = new HashMap<>();
+    private Map<String, FlowCondition>  flowConditions = new HashMap<>();
 
     /**
      * Remove the specified flow condition.
@@ -110,6 +111,15 @@ public final class FlowCondSet {
     }
 
     /**
+     * Return an unmodifiable collection of flow condition configurations.
+     *
+     * @return  An unmodifiable collection of {@link FlowCondition} instances.
+     */
+    public Collection<FlowCondition> getFlowConditions() {
+        return Collections.unmodifiableCollection(flowConditions.values());
+    }
+
+    /**
      * Verify the vtn-flow-conditions container.
      *
      * @param rtx  A read-only MD-SAL datastore transaction.
@@ -118,12 +128,12 @@ public final class FlowCondSet {
         List<VtnFlowCondition> vfcs = readFlowConditions(rtx).
             getVtnFlowCondition();
         if (!flowConditions.isEmpty()) {
-            assertNotNull(vfcs);
+            assertNotNull("vtn-flow-conditions is empty", vfcs);
             Set<String> checked = new HashSet<>();
             for (VtnFlowCondition vfc: vfcs) {
                 String name = vfc.getName().getValue();
                 FlowCondition fc = flowConditions.get(name);
-                assertNotNull(fc);
+                assertNotNull("Flow condition not found: " + name, fc);
                 fc.verify(vfc);
                 assertEquals(true, checked.add(name));
             }
@@ -181,6 +191,25 @@ public final class FlowCondSet {
                     removeFlowCondition(service, name);
                 }
             }
+        }
+    }
+
+    // Object
+
+    /**
+     * Create a shallow copy of this instance.
+     *
+     * @return  A shallow copy of this instance.
+     */
+    @Override
+    public FlowCondSet clone() {
+        try {
+            FlowCondSet fcSet = (FlowCondSet)super.clone();
+            fcSet.flowConditions = new HashMap<>(flowConditions);
+            return fcSet;
+        } catch (CloneNotSupportedException e) {
+            // This should never happen.
+            throw new IllegalStateException("clone() failed", e);
         }
     }
 }

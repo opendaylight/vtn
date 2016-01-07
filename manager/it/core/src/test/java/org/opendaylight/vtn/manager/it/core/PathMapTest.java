@@ -322,8 +322,8 @@ public final class PathMapTest extends TestMethodBase {
         final int udpSrcPort = 50000;
         VTNUdpMatch udm = new VTNUdpMatch(udpSrcPort, null);
         FlowMatch fm = new FlowMatch(1, null, null, udm);
-        assertEquals(VtnUpdateType.CREATED, condUdp.add(fcSrv, fm));
-        assertEquals(null, condUdp.add(fcSrv, fm));
+        assertEquals(VtnUpdateType.CREATED, condUdp.addMatch(fcSrv, fm));
+        assertEquals(null, condUdp.addMatch(fcSrv, fm));
         vnet.verify();
 
         // tcp_dst_23: Match TCP packet destinated to port 23.
@@ -337,8 +337,8 @@ public final class PathMapTest extends TestMethodBase {
         final int tcpDstPort = 23;
         VTNTcpMatch tcm = new VTNTcpMatch(null, tcpDstPort);
         fm = new FlowMatch(2, null, null, tcm);
-        assertEquals(VtnUpdateType.CREATED, condTcp.add(fcSrv, fm));
-        assertEquals(null, condTcp.add(fcSrv, fm));
+        assertEquals(VtnUpdateType.CREATED, condTcp.addMatch(fcSrv, fm));
+        assertEquals(null, condTcp.addMatch(fcSrv, fm));
         vnet.verify();
 
         // dscp_10: Match IPv4 packet assigned 10 as DSCP.

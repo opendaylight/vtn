@@ -15,6 +15,7 @@ import static org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase.getRpcOut
 import static org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase.getRpcResult;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,6 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.RemoveFlowConditionMatchInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.RemoveFlowConditionMatchInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.RemoveFlowConditionMatchOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.SetFlowConditionInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.SetFlowConditionInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.SetFlowConditionMatchInput;
@@ -50,6 +54,45 @@ public final class FlowCondition {
      * A map that keeps flow matches.
      */
     private final Map<Integer, FlowMatch>  flowMatches = new HashMap<>();
+
+    /**
+     * Create a set-flow-condition-match input.
+     *
+     * @param name     The name of the target flow condition.
+     * @param matches  An array of flow matches.
+     * @return  A {@link SetFlowConditionMatchInput} instance.
+     */
+    public static SetFlowConditionMatchInput newSetMatchInput(
+        String name, FlowMatch ... matches) {
+        List<FlowMatch> list = (matches == null)
+            ? null : Arrays.asList(matches);
+        return newSetMatchInput(name, list);
+    }
+
+    /**
+     * Create a set-flow-condition-match input.
+     *
+     * @param name     The name of the target flow condition.
+     * @param matches  A collection of flow matches.
+     * @return  A {@link SetFlowConditionMatchInput} instance.
+     */
+    public static SetFlowConditionMatchInput newSetMatchInput(
+        String name, Collection<FlowMatch> matches) {
+        List<FlowMatchList> fml;
+        if (matches == null) {
+            fml = null;
+        } else {
+            fml = new ArrayList<>(matches.size());
+            for (FlowMatch fm: matches) {
+                fml.add(fm.toFlowMatchList());
+            }
+        }
+
+        return new SetFlowConditionMatchInputBuilder().
+            setName(name).
+            setFlowMatchList(fml).
+            build();
+    }
 
     /**
      * Create a map that indicates the given result of flow match RPC.
@@ -106,7 +149,19 @@ public final class FlowCondition {
             Integer idx = fm.getIndex();
             flowMatches.put(idx, fm);
         }
+        return this;
+    }
 
+    /**
+     * Remove the given flow matches from this instance.
+     *
+     * @param fms  An array of {@link FlowMatch} instances.
+     * @return  This instance.
+     */
+    public FlowCondition remove(FlowMatch ... fms) {
+        for (FlowMatch fm: fms) {
+            flowMatches.remove(fm.getIndex());
+        }
         return this;
     }
 
@@ -120,7 +175,16 @@ public final class FlowCondition {
         for (Integer idx: indices) {
             flowMatches.remove(idx);
         }
+        return this;
+    }
 
+    /**
+     * Remove all the flow matches from this instance.
+     *
+     * @return  This instance.
+     */
+    public FlowCondition clear() {
+        flowMatches.clear();
         return this;
     }
 
@@ -133,6 +197,27 @@ public final class FlowCondition {
      */
     public FlowMatch get(Integer index) {
         return flowMatches.get(index);
+    }
+
+    /**
+     * Create a set-flow-condition-match input.
+     *
+     * @param matches  An array of flow matches.
+     * @return  A {@link SetFlowConditionMatchInput} instance.
+     */
+    public SetFlowConditionMatchInput newSetMatchInput(FlowMatch ... matches) {
+        return newSetMatchInput(name, matches);
+    }
+
+    /**
+     * Create a set-flow-condition-match input.
+     *
+     * @param matches  A collection of flow matches.
+     * @return  A {@link SetFlowConditionMatchInput} instance.
+     */
+    public SetFlowConditionMatchInput newSetMatchInput(
+        Collection<FlowMatch> matches) {
+        return newSetMatchInput(name, matches);
     }
 
     /**
@@ -188,9 +273,10 @@ public final class FlowCondition {
      * @return  A {@link VtnUpdateType} instance that indicates the result
      *          of RPC.
      */
-    public VtnUpdateType add(VtnFlowConditionService service, FlowMatch fm) {
+    public VtnUpdateType addMatch(VtnFlowConditionService service,
+                                  FlowMatch fm) {
         Map<Integer, VtnUpdateType> result =
-            add(service, Collections.singletonList(fm));
+            addMatches(service, Collections.singletonList(fm));
         Integer index = fm.getIndex();
         assertEquals(Collections.singleton(index), result.keySet());
         return result.get(index);
@@ -201,26 +287,27 @@ public final class FlowCondition {
      * set-flow-condition-match RPC, and then add them to this instance.
      *
      * @param service  The vtn-flow-condition service.
+     * @param matches  An array of flow matches to be added.
+     * @return  A map that contains the RPC result.
+     */
+    public Map<Integer, VtnUpdateType> addMatches(
+        VtnFlowConditionService service, FlowMatch ... matches) {
+        List<FlowMatch> list = (matches == null)
+            ? null : Arrays.asList(matches);
+        return addMatches(service, list);
+    }
+
+    /**
+     * Add the given flow matches to the flow condition using
+     * set-flow-condition-match RPC, and then add them to this instance.
+     *
+     * @param service  The vtn-flow-condition service.
      * @param matches  A collection of flow matches to be added.
      * @return  A map that contains the RPC result.
      */
-    public Map<Integer, VtnUpdateType> add(
+    public Map<Integer, VtnUpdateType> addMatches(
         VtnFlowConditionService service, Collection<FlowMatch> matches) {
-        List<FlowMatchList> fml;
-        if (matches == null) {
-            fml = null;
-        } else {
-            fml = new ArrayList<>(matches.size());
-            for (FlowMatch fm: matches) {
-                fml.add(fm.toFlowMatchList());
-            }
-        }
-
-        SetFlowConditionMatchInput input =
-            new SetFlowConditionMatchInputBuilder().
-            setName(name).
-            setFlowMatchList(fml).
-            build();
+        SetFlowConditionMatchInput input = newSetMatchInput(name, matches);
         SetFlowConditionMatchOutput output =
             getRpcOutput(service.setFlowConditionMatch(input));
         Map<Integer, VtnUpdateType> result =
@@ -237,6 +324,166 @@ public final class FlowCondition {
     }
 
     /**
+     * Remove the given flow match from the flow condition using
+     * remove-flow-condition-match RPC, and then remove it from this instance.
+     *
+     * @param service  The vtn-flow-condition service.
+     * @param fm       A {@link FlowMatch} instance to be removed.
+     * @return  A {@link VtnUpdateType} instance that indicates the result
+     *          of RPC.
+     */
+    public VtnUpdateType removeMatch(VtnFlowConditionService service,
+                                     FlowMatch fm) {
+        return removeMatch(service, fm.getIndex());
+    }
+
+    /**
+     * Remove the given flow match from the flow condition using
+     * remove-flow-condition-match RPC, and then remove it from this instance.
+     *
+     * @param service  The vtn-flow-condition service.
+     * @param index    The flow match index to be removed.
+     * @return  A {@link VtnUpdateType} instance that indicates the result
+     *          of RPC.
+     */
+    public VtnUpdateType removeMatch(VtnFlowConditionService service,
+                                     Integer index) {
+        Map<Integer, VtnUpdateType> result =
+            removeMatches(service, Collections.singletonList(index));
+        assertEquals(Collections.singleton(index), result.keySet());
+        return result.get(index);
+    }
+
+    /**
+     * Remove the given flow matches from the flow condition using
+     * remove-flow-condition-match RPC, and then remove them from this
+     * instance.
+     *
+     * @param service  The vtn-flow-condition service.
+     * @param matches  An array of flow matches to be removed.
+     * @return  A map that contains the RPC result.
+     */
+    public Map<Integer, VtnUpdateType> removeMatches(
+        VtnFlowConditionService service, FlowMatch ... matches) {
+        List<Integer> list;
+        if (matches == null) {
+            list = null;
+        } else {
+            list = new ArrayList<>(matches.length);
+            for (FlowMatch fm: matches) {
+                list.add(fm.getIndex());
+            }
+        }
+
+        return removeMatches(service, list);
+    }
+
+    /**
+     * Remove the given flow matches from the flow condition using
+     * remove-flow-condition-match RPC, and then remove them from this
+     * instance.
+     *
+     * @param service  The vtn-flow-condition service.
+     * @param matches  A collection of flow matches to be removed.
+     * @return  A map that contains the RPC result.
+     */
+    public Map<Integer, VtnUpdateType> removeMatches(
+        VtnFlowConditionService service, Collection<FlowMatch> matches) {
+        List<Integer> list;
+        if (matches == null) {
+            list = null;
+        } else {
+            list = new ArrayList<>(matches.size());
+            for (FlowMatch fm: matches) {
+                list.add(fm.getIndex());
+            }
+        }
+
+        return removeMatches(service, list);
+    }
+
+    /**
+     * Remove the given flow matches from the flow condition using
+     * remove-flow-condition-match RPC, and then remove them from this
+     * instance.
+     *
+     * @param service  The vtn-flow-condition service.
+     * @param indices  An array of flow match indices to be removed.
+     * @return  A map that contains the RPC result.
+     */
+    public Map<Integer, VtnUpdateType> removeMatches(
+        VtnFlowConditionService service, Integer ... indices) {
+        List<Integer> list = (indices == null) ? null : Arrays.asList(indices);
+        return removeMatches(service, list);
+    }
+
+    /**
+     * Remove the given flow matches from the flow condition using
+     * remove-flow-condition-match RPC, and then remove them from this
+     * instance.
+     *
+     * @param service  The vtn-flow-condition service.
+     * @param indices  A list of flow match indices to be removed.
+     * @return  A map that contains the RPC result.
+     */
+    public Map<Integer, VtnUpdateType> removeMatches(
+        VtnFlowConditionService service, List<Integer> indices) {
+        RemoveFlowConditionMatchInput input =
+            new RemoveFlowConditionMatchInputBuilder().
+            setName(name).
+            setMatchIndex(indices).
+            build();
+        RemoveFlowConditionMatchOutput output =
+            getRpcOutput(service.removeFlowConditionMatch(input));
+        Map<Integer, VtnUpdateType> result =
+            getResultMap(output.getRemoveMatchResult());
+
+        if (indices != null) {
+            for (Integer index: indices) {
+                flowMatches.remove(index);
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Restore all the flow matches in this instance using
+     * set-flow-condition-match RPC.
+     *
+     * <p>
+     *   This method expects that all the following conditions are met.
+     * </p>
+     * <ul>
+     *   <li>
+     *     This instance contains at least one flow match.
+     *   </li>
+     *   <li>
+     *     The flow condition associated with this instance is present.
+     *   </li>
+     *   <li>
+     *     All the flow matches in this instance are not configured yet.
+     *   </li>
+     * </ul>
+     *
+     * @param service  The vtn-path-map service.
+     */
+    public void restore(VtnFlowConditionService service) {
+        assertEquals(false, flowMatches.isEmpty());
+
+        Map<Integer, VtnUpdateType> expected = new HashMap<>();
+        for (Integer idx: flowMatches.keySet()) {
+            assertEquals(null, expected.put(idx, VtnUpdateType.CREATED));
+        }
+
+        SetFlowConditionMatchInput input =
+            newSetMatchInput(flowMatches.values());
+        SetFlowConditionMatchOutput output =
+            getRpcOutput(service.setFlowConditionMatch(input));
+        assertEquals(expected, getResultMap(output.getSetMatchResult()));
+    }
+
+    /**
      *  Verify the given flow condition.
      *
      * @param vfc  A {@link VtnFlowCondition} instance.
@@ -246,12 +493,13 @@ public final class FlowCondition {
 
         List<VtnFlowMatch> vfms = vfc.getVtnFlowMatch();
         if (!flowMatches.isEmpty()) {
-            assertNotNull(vfms);
+            assertNotNull("Flow match is empty: name=" + name, vfms);
             Set<Integer> checked = new HashSet<>();
             for (VtnFlowMatch vfm: vfms) {
                 Integer idx = vfm.getIndex();
                 FlowMatch fmatch = flowMatches.get(idx);
-                assertNotNull(fmatch);
+                assertNotNull("No flow match: name=" + name + ", index=" + idx,
+                              fmatch);
                 fmatch.verify(vfm);
                 assertEquals(true, checked.add(idx));
             }
