@@ -363,12 +363,11 @@ public final class VTNMacMapConfig {
                 MacVlan mvlan = new MacVlan(host);
                 if (allowedHosts.contains(mvlan)) {
                     retained.add(mvlan);
-                } else {
+                } else if (added.add(mvlan)) {
                     long mac = mvlan.getAddress();
                     if (!addMacAddress(macSet, mac)) {
                         throw getDuplicateMacAddressException(mac);
                     }
-                    added.add(mvlan);
                 }
             }
 
@@ -394,7 +393,7 @@ public final class VTNMacMapConfig {
             Set<Long> macSet = new HashSet<>();
             for (VlanHostDesc host: hosts) {
                 MacVlan mvlan = new MacVlan(host);
-                if (!allowedHosts.contains(mvlan)) {
+                if (!allowedHosts.contains(mvlan) && added.add(mvlan)) {
                     long mac = mvlan.getAddress();
                     if (mac != MacVlan.UNDEFINED) {
                         if (!macSet.add(mac)) {
@@ -404,7 +403,6 @@ public final class VTNMacMapConfig {
                             throw getAlreadyMappedException(mac);
                         }
                     }
-                    added.add(mvlan);
                 }
             }
 

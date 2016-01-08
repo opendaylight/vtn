@@ -505,8 +505,11 @@ public class VTNMacMapConfigTest extends TestBase {
         Set<MacVlan> denyRemoved = new HashSet<>();
         allowedSet.addAll(allowAdded);
         deniedSet.addAll(denyAdded);
+
+        // Duplicate should be ignored.
         op = VtnUpdateOperationType.ADD;
-        MacMapChange change = mmc.update(op, allowed, denied);
+        MacMapChange change =
+            mmc.update(op, duplicate(allowed), duplicate(denied));
         assertEquals(allowedSet, mmc.getAllowedHosts());
         assertEquals(deniedSet, mmc.getDeniedHosts());
         assertEquals(false, mmc.isEmpty());
@@ -582,8 +585,9 @@ public class VTNMacMapConfigTest extends TestBase {
             new MacVlan(0xf0f1f2f3f4f5L, 3));
         deniedSet = toHostSet(denied);
 
+        // Duplicate should be ignored.
         op = VtnUpdateOperationType.SET;
-        change = mmc.update(op, allowed, denied);
+        change = mmc.update(op, duplicate(allowed), duplicate(denied));
         assertEquals(allowedSet, mmc.getAllowedHosts());
         assertEquals(deniedSet, mmc.getDeniedHosts());
         assertEquals(false, mmc.isEmpty());
@@ -903,9 +907,11 @@ public class VTNMacMapConfigTest extends TestBase {
         Set<MacVlan> allowRemoved = new HashSet<>();
         Set<MacVlan> denyRemoved = new HashSet<>();
         deniedSet.addAll(denyAdded);
+
+        // Duplicate should be ignored.
         op = VtnUpdateOperationType.ADD;
         acl = VtnAclType.DENY;
-        MacMapChange change = mmc.update(op, acl, denied);
+        MacMapChange change = mmc.update(op, acl, duplicate(denied));
         assertEquals(allowedSet, mmc.getAllowedHosts());
         assertEquals(deniedSet, mmc.getDeniedHosts());
         assertEquals(false, mmc.isEmpty());
@@ -920,7 +926,7 @@ public class VTNMacMapConfigTest extends TestBase {
         allowedSet.addAll(allowAdded);
         denyAdded.clear();
         acl = VtnAclType.ALLOW;
-        change = mmc.update(op, acl, allowed);
+        change = mmc.update(op, acl, duplicate(allowed));
         assertEquals(allowedSet, mmc.getAllowedHosts());
         assertEquals(deniedSet, mmc.getDeniedHosts());
         assertEquals(false, mmc.isEmpty());
@@ -1572,5 +1578,22 @@ public class VTNMacMapConfigTest extends TestBase {
         }
 
         return set;
+    }
+
+    /**
+     * Duplicate hosts in the specified list.
+     *
+     * @param hosts  A list of {@link VlanHostDesc} instances.
+     * @return  A new list of {@link VlanHostDesc} instances.
+     */
+    private List<VlanHostDesc> duplicate(List<VlanHostDesc> hosts) {
+        List<VlanHostDesc> list = new ArrayList<>(hosts.size() << 1);
+        for (VlanHostDesc vhd: hosts) {
+            list.add(vhd);
+        }
+        for (VlanHostDesc vhd: hosts) {
+            list.add(vhd);
+        }
+        return list;
     }
 }
