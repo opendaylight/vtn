@@ -74,6 +74,7 @@ type=struct
 key="vterminal-config"
 struct_name = vterminal_conf
 members=vterm_description,valid
+is_child=yes
 build_support=no
 parse_support=yes
 

@@ -224,6 +224,7 @@ type=struct
 key="vinterface-config"
 struct_name=vterm_if_conf
 check_bool_set=no
+is_child=yes
 members=enabled,description,valid
 build_support=no
 parse_support=yes

@@ -17,14 +17,12 @@ OdcFlowListCommand::copy(ip_flowlist&  ip_flowlist_st,
                          val_flowlist& val) {
   ODC_FUNC_TRACE;
 
-  pfc_log_error("Entering FLowlsit copy command");
   ip_flowlist_st.input_flowlist_.valid = true;
   ip_flowlist_st.input_flowlist_.ip_name =
                reinterpret_cast <char *>(key.flowlist_name);
   ip_flowlist_st.input_flowlist_.operation =
                        reinterpret_cast<const char*>("SET");
   ip_flowlist_st.input_flowlist_.present = false;
-  pfc_log_error("Leaving FLowlsit copy command");
 
 }
 
@@ -84,18 +82,6 @@ OdcFlowListCommand::delete_cmd(key_flowlist &key_in, val_flowlist &val_in,
 }
 
 void
-OdcFlowListCommand::create_request_body(key_flowlist &key_in,
-                                        val_flowlist &val_in,
-                                         flowlist& flowlist_st) {
-ODC_FUNC_TRACE;
-char *flowlist_name = reinterpret_cast <char *>(key_in.flowlist_name);
-if (0 == strlen(flowlist_name)) {
-  pfc_log_error("Empty flowlist_name in %s", PFC_FUNCNAME);
-}
-flowlist_st.name.assign(flowlist_name);
-}
-
-void
 OdcFlowListCommand::delete_request_body(key_flowlist &key_in,
                                         val_flowlist &val_in,
                                          ip_flowlist&  ip_flowlist_st) {
@@ -104,15 +90,12 @@ OdcFlowListCommand::delete_request_body(key_flowlist &key_in,
   ip_flowlist_st.input_flowlist_.valid = true;
   ip_flowlist_st.input_flowlist_.ip_name =
                         reinterpret_cast <char *>(key_in.flowlist_name);
-
-
 }
 
 UncRespCode OdcFlowListCommand::fetch_config(
     unc::driver::controller* ctr_ptr,
     void* parent_key,
     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
-
     flowlist_class *req_obj = new flowlist_class(ctr_ptr);
     std::string url = req_obj->get_url();
     pfc_log_info("URL:%s",url.c_str());
@@ -142,18 +125,15 @@ UncRespCode OdcFlowListCommand::fetch_config(
   return ret_val;
 
 }
-
 UncRespCode
 OdcFlowListCommand::r_copy(std::list<flowlist> &flowlist_detail,
-                           std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
+                std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
   ODC_FUNC_TRACE;
 
   unc::odcdriver::OdcUtil util;
-
   std::list<flowlist>::iterator list_iter = flowlist_detail.begin();
 
   while ( list_iter != flowlist_detail.end() ) {
-    PFC_ASSERT(*list_iter != NULL);
     key_flowlist key_fl;
     val_flowlist val_fl;
 
@@ -161,7 +141,8 @@ OdcFlowListCommand::r_copy(std::list<flowlist> &flowlist_detail,
     memset(&val_fl,0,sizeof(val_flowlist));
 
     // Copy Condition NAme to key!!
-    strcpy(reinterpret_cast<char*>(key_fl.flowlist_name),(list_iter)->name.c_str());
+    strcpy(reinterpret_cast<char*>(key_fl.flowlist_name),
+                                          (list_iter)->name.c_str());
 
     // Create Val Structure
     val_fl.ip_type=UPLL_FLOWLIST_TYPE_IP;
@@ -169,8 +150,9 @@ OdcFlowListCommand::r_copy(std::list<flowlist> &flowlist_detail,
 
     //Addto Cache
     unc::vtndrvcache::ConfigNode *cfgptr(
-      new unc::vtndrvcache::CacheElementUtil<key_flowlist, val_flowlist, val_flowlist, uint32_t>
-      (&key_fl,&val_fl, &val_fl, uint32_t(UNC_OP_READ)));
+      new unc::vtndrvcache::CacheElementUtil<key_flowlist,
+                          val_flowlist, val_flowlist, uint32_t>
+                   (&key_fl,&val_fl, &val_fl, uint32_t(UNC_OP_READ)));
 
     PFC_ASSERT(cfgptr != NULL );
     cfgnode_vector.push_back(cfgptr);
@@ -180,7 +162,6 @@ OdcFlowListCommand::r_copy(std::list<flowlist> &flowlist_detail,
                                  (list_iter)->vtn_flow_match_.begin();
 
     while ( match_iter != (list_iter)->vtn_flow_match_.end () ) {
-      PFC_ASSERT(*match_iter != NULL);
 
       // Create flowlist entry key
       key_flowlist_entry key_fl_entry;
@@ -191,14 +172,15 @@ OdcFlowListCommand::r_copy(std::list<flowlist> &flowlist_detail,
 
       memcpy(&key_fl_entry.flowlist_key, &key_fl,sizeof(key_flowlist));
       key_fl_entry.sequence_num=(match_iter)->flow_index;
+      if ( match_iter->vtn_ether_match_.valid == true) {
         if ( match_iter->vtn_ether_match_.source_address != "" ) {
-          util.convert_macstring_to_uint8(match_iter->vtn_ether_match_.source_address,
-                                          &val_fl_entry.mac_src[0]);
+          util.convert_macstring_to_uint8(match_iter->
+                 vtn_ether_match_.source_address,&val_fl_entry.mac_src[0]);
           val_fl_entry.valid[UPLL_IDX_MAC_SRC_FLE] = UNC_VF_VALID;
         }
         if ( match_iter->vtn_ether_match_.destination_address != "" ) {
-          util.convert_macstring_to_uint8(match_iter->vtn_ether_match_.destination_address,
-                                          &val_fl_entry.mac_dst[0]);
+          util.convert_macstring_to_uint8(match_iter->
+              vtn_ether_match_.destination_address, &val_fl_entry.mac_dst[0]);
           val_fl_entry.valid[UPLL_IDX_MAC_DST_FLE] = UNC_VF_VALID;
         }
         if ( match_iter->vtn_ether_match_.ether_type != -1 ) {
@@ -209,15 +191,17 @@ OdcFlowListCommand::r_copy(std::list<flowlist> &flowlist_detail,
           val_fl_entry.vlan_priority=match_iter->vtn_ether_match_.vlanpri;
           val_fl_entry.valid[UPLL_IDX_VLAN_PRIORITY_FLE] = UNC_VF_VALID;
         }
+      }
 
+       if ( match_iter->vtn_inet_match_.valid == true) {
           if ( match_iter->vtn_inet_match_.source_network != "" ) {
             util.convert_ip_to_inaddr(match_iter->vtn_inet_match_.source_network,
                                       &val_fl_entry.src_ip);
             val_fl_entry.valid[UPLL_IDX_SRC_IP_FLE] = UNC_VF_VALID;
           }
           if ( match_iter->vtn_inet_match_.destination_network != "" ) {
-            util.convert_ip_to_inaddr(match_iter->vtn_inet_match_.destination_network,
-                                      &val_fl_entry.dst_ip);
+            util.convert_ip_to_inaddr(match_iter->
+                vtn_inet_match_.destination_network, &val_fl_entry.dst_ip);
             val_fl_entry.valid[UPLL_IDX_DST_IP_FLE] = UNC_VF_VALID;
           }
           if ( match_iter->vtn_inet_match_.protocol != -1 ) {
@@ -229,6 +213,7 @@ OdcFlowListCommand::r_copy(std::list<flowlist> &flowlist_detail,
             val_fl_entry.valid[UPLL_IDX_IP_DSCP_FLE]=UNC_VF_VALID;
           }
 
+        }
           if ( match_iter->icmp_type != -1 ) {
             val_fl_entry.icmp_type = match_iter->icmp_type;
             val_fl_entry.valid[UPLL_IDX_ICMP_TYPE_FLE]=UNC_VF_VALID;
@@ -237,6 +222,7 @@ OdcFlowListCommand::r_copy(std::list<flowlist> &flowlist_detail,
             val_fl_entry.icmp_type = match_iter->icmp_code;
             val_fl_entry.valid[UPLL_IDX_ICMP_CODE_FLE]=UNC_VF_VALID;
           }
+          if ( match_iter->tcp_source_range_.valid == true ) {
             if ( match_iter->tcp_source_range_.src_port_from != -1 ) {
               val_fl_entry.l4_src_port= match_iter->tcp_source_range_.src_port_from;
               val_fl_entry.valid[UPLL_IDX_L4_SRC_PORT_FLE]=UNC_VF_VALID;
@@ -245,6 +231,8 @@ OdcFlowListCommand::r_copy(std::list<flowlist> &flowlist_detail,
               val_fl_entry.l4_src_port_endpt= match_iter->tcp_source_range_.src_port_from;
               val_fl_entry.valid[UPLL_IDX_L4_SRC_PORT_ENDPT_FLE]=UNC_VF_VALID;
             }
+          }
+          if ( match_iter->tcp_destination_range_.valid == true) {
             if ( match_iter->tcp_destination_range_.dst_port_from != -1 ) {
               val_fl_entry.l4_dst_port= match_iter->tcp_destination_range_.dst_port_from;
               val_fl_entry.valid[UPLL_IDX_L4_DST_PORT_FLE]=UNC_VF_VALID;
@@ -253,10 +241,13 @@ OdcFlowListCommand::r_copy(std::list<flowlist> &flowlist_detail,
               val_fl_entry.l4_dst_port_endpt= match_iter->tcp_destination_range_.dst_port_to;
               val_fl_entry.valid[UPLL_IDX_L4_DST_PORT_ENDPT_FLE]=UNC_VF_VALID;
             }
+          }
+
 
       // Add to Cache
       unc::vtndrvcache::ConfigNode *entry_cfgptr(
-        new unc::vtndrvcache::CacheElementUtil<key_flowlist_entry, val_flowlist_entry, val_flowlist_entry, uint32_t>
+                  new unc::vtndrvcache::CacheElementUtil<key_flowlist_entry,
+                         val_flowlist_entry, val_flowlist_entry, uint32_t>
         (&key_fl_entry,&val_fl_entry, &val_fl_entry, uint32_t(UNC_OP_READ)));
 
       PFC_ASSERT(entry_cfgptr != NULL );
@@ -366,6 +357,9 @@ OdcFlowListEntryCommand::delete_request_body(key_flowlist_entry &key_in,
    ip_flowlistentry_st.in_flowcond_.valid = true;
    ip_flowlistentry_st.in_flowcond_.name = reinterpret_cast <char *>(
                                       key_in.flowlist_key.flowlist_name);
+   match match_;
+   match_.index = key_in.sequence_num;
+   ip_flowlistentry_st.in_flowcond_.match_.push_back(match_);
 }
 
 
@@ -392,16 +386,13 @@ OdcFlowListEntryCommand::copy(ip_flowlistentry&  ip_flowlistentry_st,
     match_.ether_match_.valid = true;
 
     if ( val.valid[UPLL_IDX_MAC_DST_FLE] == UNC_VF_VALID )
-      match_.ether_match_.dest_addr =
-                                           util.macaddress_to_string(&val.mac_dst[0]);
+      match_.ether_match_.dest_addr = util.macaddress_to_string(&val.mac_dst[0]);
 
     if ( val.valid[UPLL_IDX_MAC_SRC_FLE] == UNC_VF_VALID )
-      match_.ether_match_.src_addr =
-                                         util.macaddress_to_string(&val.mac_src[0]);
+      match_.ether_match_.src_addr = util.macaddress_to_string(&val.mac_src[0]);
 
     if ( val.valid[UPLL_IDX_MAC_ETH_TYPE_FLE] == UNC_VF_VALID )
-      match_.ether_match_.ether_type =
-                                                                val.mac_eth_type;
+      match_.ether_match_.ether_type = val.mac_eth_type;
 
     if ( val.valid[UPLL_IDX_VLAN_PRIORITY_FLE] == UNC_VF_VALID )
       match_.ether_match_.vlanpri = val.vlan_priority;
@@ -418,7 +409,8 @@ OdcFlowListEntryCommand::copy(ip_flowlistentry&  ip_flowlistentry_st,
     pfc_log_info("Filling Inet Match Details");
     match_.inet_match_.valid = true;
 
-    if( val.valid[UPLL_IDX_DST_IP_FLE] == UNC_VF_VALID && (val.valid[UPLL_IDX_DST_IP_PREFIX_FLE] == UNC_VF_VALID)){
+    if( val.valid[UPLL_IDX_DST_IP_FLE] == UNC_VF_VALID &&
+            (val.valid[UPLL_IDX_DST_IP_PREFIX_FLE] == UNC_VF_VALID)){
       std::stringstream dst_ip;
       dst_ip << inet_ntoa(val.dst_ip);
       dst_ip << "/";
@@ -427,14 +419,17 @@ OdcFlowListEntryCommand::copy(ip_flowlistentry&  ip_flowlistentry_st,
       match_.inet_match_.dest_network = dst_ip.str();
 
     }
-    if( (val.valid[UPLL_IDX_SRC_IP_FLE] == UNC_VF_VALID)  && (val.valid[UPLL_IDX_SRC_IP_PREFIX_FLE] == UNC_VF_VALID)) {
+    if( (val.valid[UPLL_IDX_SRC_IP_FLE] == UNC_VF_VALID)  &&
+           (val.valid[UPLL_IDX_SRC_IP_PREFIX_FLE] == UNC_VF_VALID)) {
       std::stringstream src_ip;
       src_ip << inet_ntoa(val.src_ip);
       src_ip << "/";
       int ip = val.src_ip_prefixlen;
       src_ip << ip;
       match_.inet_match_.src_network = src_ip.str();
+
     }
+
     if (val.valid[UPLL_IDX_IP_PROTOCOL_FLE] == UNC_VF_VALID)
       match_.inet_match_.protocol = val.ip_proto;
 
@@ -556,8 +551,7 @@ OdcFlowListEntryCommand::copy(ip_flowlistentry&  ip_flowlistentry_st,
       pfc_log_info("dst ip:%s",match_.inet_match_.dest_network.c_str());
     } else if ( val_new.valid[UPLL_IDX_DST_IP_FLE] == UNC_VF_INVALID &&
        val_old.valid[UPLL_IDX_DST_IP_FLE] == UNC_VF_VALID) {
-      match_.inet_match_.dest_network.assign(
-                                                       inet_ntoa(val_old.dst_ip));
+      match_.inet_match_.dest_network.assign(inet_ntoa(val_old.dst_ip));
       pfc_log_info("dst ip:%s",match_.inet_match_.dest_network.c_str());
     }
 

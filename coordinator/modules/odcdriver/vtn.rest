@@ -78,6 +78,7 @@ type=struct
 key="vtenant-config"
 struct_name=vtn_conf
 members = description,valid
+is_child=yes
 build_support=no
 parse_support=yes
 

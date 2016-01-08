@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -21,6 +21,7 @@ namespace restjson {
 
 class JsonBuildParse {
  public:
+ 
   /**
    * @brief                   -Creates json object
    * @param[out] json_object* - json_object pointer
@@ -28,6 +29,7 @@ class JsonBuildParse {
   static json_object* create_json_obj();
   static json_object* create_json_array_obj();
   static void add_to_array ( json_object*, json_object *);
+  static json_object* create_json_int_obj (uint32_t value);
 
   /**
    * @brief                    - Template method which build the json request

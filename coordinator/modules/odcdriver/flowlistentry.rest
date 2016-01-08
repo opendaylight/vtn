@@ -68,7 +68,7 @@ value="set-flow-condition-match"
 
 [DEL_FLOWCONDITION]
 type=url_string
-value="remove-flow-condition-match"
+value="remove-flow-condition"
 
 [cond_name]
 type=url_string
@@ -173,7 +173,7 @@ parse_support=no
 type=string
 key="port-to"
 is_child=yes
-struct_name=tcp-source-range
+struct_name=tcp_src_range
 mandatory=no
 build_support=yes
 parse_support=no
@@ -313,6 +313,7 @@ parse_support=no
 [index]
 type=int
 key="index"
+del_key="match-index"
 struct_name=match
 mandatory=yes
 build_support=yes
@@ -320,7 +321,7 @@ parse_support=no
 
 [match]
 type=array
-key="vtn-flow-match"
+key="flow-match-list"
 is_child=yes
 check_bool_set=no
 struct_name=match
@@ -334,27 +335,7 @@ type=string
 key="name"
 is_child=yes
 check_bool_set=no
-struct_name=flowlistentry
-build_support=yes
-mandatory=yes
-parse_support=no
-
-[operation]
-type=string
-key="operation"
-is_child=yes
-check_bool_set=no
-struct_name=flowlistentry
-build_support=yes
-mandatory=yes
-parse_support=no
-
-[present]
-type=bool
-key="present"
-is_child=yes
-check_bool_set=no
-struct_name=flowlistentry
+struct_name=in_flowcond
 build_support=yes
 mandatory=yes
 parse_support=no
@@ -403,7 +384,7 @@ key="flowlistentrys"
 is_child=no
 check_bool_set=no
 struct_name = ip_flowlistentry
-members = ip_flowlistentry
+members = flowlistentrys
 build_support=no
 parse_support=no
 
