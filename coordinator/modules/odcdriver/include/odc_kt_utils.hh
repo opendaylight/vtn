@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -15,6 +15,8 @@
 #include <driver/driver_command.hh>
 #include <odc_driver_common_defs.hh>
 #include <odc_controller.hh>
+#include <vbr.hh>
+#include <vterminal.hh>
 #include <string>
 #include <set>
 
@@ -33,6 +35,14 @@ class odlutils {
       unc::restjson::ConfFileValues_t conf_values,
       std::string vtn_name,
       std::set <std::string> *vbridges);
+
+   static UncRespCode get_bridge_names(unc::driver::controller *ctr,
+                                       std::string vtn_name,
+                               std::set <std::string> *vbridges);
+
+  static UncRespCode get_terminal_names(unc::driver::controller *ctr,
+                                       std::string vtn_name,
+                               std::set <std::string> *vterminals);
 
   static UncRespCode get_vterm_names(
       unc::driver::controller *ctr_ptr,
