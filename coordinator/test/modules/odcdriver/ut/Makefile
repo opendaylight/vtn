@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2015 NEC Corporation
+# Copyright (c) 2013-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -67,7 +67,10 @@ ODCDRIVER_SOURCES += odc_dataflow.cc
 ODCDRIVER_SOURCES += odc_vterminal.cc
 ODCDRIVER_SOURCES += odc_vterminal_if.cc
 ODCDRIVER_SOURCES += odc_flowlist.cc
-ODCDRIVER_SOURCES += odc_flow_filter.cc
+ODCDRIVER_SOURCES += odc_vbr_flow_filter.cc
+ODCDRIVER_SOURCES += odc_vbrif_flow_filter.cc
+ODCDRIVER_SOURCES += odc_vtermif_flow_filter.cc
+ODCDRIVER_SOURCES += odc_vtn_flow_filter.cc
 ODCDRIVER_SOURCES += odc_ctr_dataflow.cc
 ODCDRIVER_SOURCES += odc_vtn_dataflow.cc
 
