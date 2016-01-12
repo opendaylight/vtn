@@ -7,6 +7,8 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
+
+
 #include <odc_kt_utils.hh>
 #include <string>
 #include <set>
@@ -53,6 +55,7 @@ class vtn_read_resp_parser
     return unc::restjson::REST_OP_SUCCESS;
   }
 };
+
 
 class port_info_resp_parser
 : public unc::restjson::json_array_object_parse_util {
@@ -162,6 +165,7 @@ class port_info_resp_parser
   }
 };
 
+
 class port_name_read_request : public odl_http_rest_intf {
  public:
   std::string switch_id_;
@@ -191,6 +195,8 @@ class port_name_read_request : public odl_http_rest_intf {
     ODC_FUNC_TRACE;
     return UNC_RC_SUCCESS;
   }
+
+
 
   UncRespCode construct_url(unc::odcdriver::OdcDriverOps Op,
                             std::string &request_indicator,
@@ -321,6 +327,7 @@ class vtn_read_request : public odl_http_rest_intf {
     return UNC_RC_SUCCESS;
   }
 
+
   UncRespCode construct_request_body(unc::odcdriver::OdcDriverOps Op,
                                      std::string &request_indicator,
                                      json_object *object) {
@@ -423,6 +430,7 @@ class vbr_read_request : public odl_http_rest_intf {
     return UNC_RC_SUCCESS;
   }
 
+
   UncRespCode construct_request_body(unc::odcdriver::OdcDriverOps Op,
                                      std::string &request_indicator,
                                      json_object *object) {
@@ -475,6 +483,13 @@ class vbr_read_request : public odl_http_rest_intf {
     if (vtn_ret != unc::restjson::REST_OP_SUCCESS )
       return UNC_DRV_RC_ERR_GENERIC;
 
+    /*uint32_t arr_length(unc::restjson::json_object_parse_util::
+      get_array_length(vtn_array_json));
+
+      if ( arr_length == 0 ) {
+      pfc_log_info("No Data in array");
+      return UNC_DRV_RC_ERR_GENERIC;
+      } */
     unc::restjson::json_obj_destroy_util delete_vtn_array_obj(vtn_array_json);
     vtn_read_resp_parser vtn_collect(vtn_array_json, vbrnames_);
     int vtn_collect_ret(vtn_collect.extract_values());
@@ -485,6 +500,7 @@ class vbr_read_request : public odl_http_rest_intf {
     return UNC_RC_SUCCESS;
   }
 };
+
 
 class vterm_read_request : public odl_http_rest_intf {
  public:
@@ -498,11 +514,13 @@ class vterm_read_request : public odl_http_rest_intf {
     return PFC_FALSE;
   }
 
+
   UncRespCode get_multi_request_indicator(unc::odcdriver::OdcDriverOps Op,
                                            std::set<std::string> *arg_list) {
     ODC_FUNC_TRACE;
     return UNC_RC_SUCCESS;
   }
+
 
   UncRespCode construct_url(unc::odcdriver::OdcDriverOps Op,
                             std::string &request_indicator,
@@ -519,6 +537,7 @@ class vterm_read_request : public odl_http_rest_intf {
     url.append("/vterminals");
     return UNC_RC_SUCCESS;
   }
+
 
   UncRespCode construct_request_body(unc::odcdriver::OdcDriverOps Op,
                                      std::string &request_indicator,
@@ -572,6 +591,13 @@ class vterm_read_request : public odl_http_rest_intf {
     if (vtn_ret != unc::restjson::REST_OP_SUCCESS )
       return UNC_DRV_RC_ERR_GENERIC;
 
+    /*uint32_t arr_length(unc::restjson::json_object_parse_util::
+      get_array_length(vtn_array_json));
+
+      if ( arr_length == 0 ) {
+      pfc_log_info("No Data in array");
+      return UNC_DRV_RC_ERR_GENERIC;
+      } */
     unc::restjson::json_obj_destroy_util delete_vterm_array_obj(vtn_array_json);
     vtn_read_resp_parser vtn_collect(vtn_array_json, vbrnames_);
     int vtn_collect_ret(vtn_collect.extract_values());
@@ -582,6 +608,7 @@ class vterm_read_request : public odl_http_rest_intf {
     return UNC_RC_SUCCESS;
   }
 };
+
 
 UncRespCode port_info_parser::get_vlan_id(json_object* instance,
                                            int &vlanid ) {
@@ -622,6 +649,7 @@ UncRespCode port_info_parser::get_switch_details(json_object* instance,
   return UNC_RC_SUCCESS;
 }
 
+
 // port!!
 UncRespCode port_info_parser::get_port_details(json_object* instance,
                                                 std::string &portname) {
@@ -645,6 +673,8 @@ UncRespCode port_info_parser::get_port_details(json_object* instance,
   return UNC_RC_SUCCESS;
 }
 
+
+
 UncRespCode odlutils::get_vtn_names(
     unc::driver::controller *ctr_ptr,
     unc::restjson::ConfFileValues_t conf_values,
@@ -657,6 +687,36 @@ UncRespCode odlutils::get_vtn_names(
                                 CONFIG_READ,
                                 &vtn_read,
                                 conf_values);
+}
+
+UncRespCode odlutils::get_tenant_names(unc::driver::controller *ctr,
+                                   std::set <std::string> *vtns){
+
+
+  vtn_class *req_obj = new vtn_class(ctr);
+  std::string url = req_obj->get_url();
+  vtn_parser *parser_obj = new vtn_parser();
+  UncRespCode ret_val = req_obj->get_response(parser_obj);
+  if (UNC_RC_SUCCESS != ret_val) {
+    pfc_log_error("Get response error");
+    delete req_obj;
+    delete parser_obj;
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+
+  ret_val = parser_obj->set_vtn_conf(parser_obj->jobj);
+  if (UNC_RC_SUCCESS != ret_val) {
+    pfc_log_error("set_vtn_conf error");
+    delete req_obj;
+    delete parser_obj;
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+  std::list<vtn_conf>::iterator it = parser_obj->vtn_conf_.begin();
+  while (it != parser_obj->vtn_conf_.end()) {
+    vtns->insert(it->vtn_name);
+    it++;
+  }
+  return UNC_RC_SUCCESS;
 }
 
 UncRespCode odlutils::get_vbridge_names(
@@ -677,62 +737,64 @@ UncRespCode odlutils::get_bridge_names(unc::driver::controller *ctr,
                                        std::string vtn_name,
                                std::set <std::string> *vbridges){
 
-   vbr_class *req_obj = new vbr_class(ctr,vtn_name);
-   std::string url = req_obj->get_url();
-   vbr_parser *parser_obj = new vbr_parser();
-   UncRespCode ret_val = req_obj->get_response(parser_obj);
-   if (UNC_RC_SUCCESS != ret_val) {
-     pfc_log_error("Get response error");
-     delete req_obj;
-     delete parser_obj;
-     return UNC_DRV_RC_ERR_GENERIC;
-   }
 
-   ret_val = parser_obj->set_vbridge_conf(parser_obj->jobj);
-   if (UNC_RC_SUCCESS != ret_val) {
-     pfc_log_error("set_vbridge_conf error");
-     delete req_obj;
-     delete parser_obj;
-     return UNC_DRV_RC_ERR_GENERIC;
-   }
-   std::list<vbridge_conf>::iterator it = parser_obj->vbridge_conf_.begin();
-   while (it != parser_obj->vbridge_conf_.end()) {
-     vbridges->insert(it->name);
-     it++;
-   }
+  vbr_class *req_obj = new vbr_class(ctr,vtn_name);
+  std::string url = req_obj->get_url();
+  vbr_parser *parser_obj = new vbr_parser();
+  UncRespCode ret_val = req_obj->get_response(parser_obj);
+  if (UNC_RC_SUCCESS != ret_val) {
+    pfc_log_error("Get response error");
+    delete req_obj;
+    delete parser_obj;
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+
+  ret_val = parser_obj->set_vbridge_conf(parser_obj->jobj);
+  if (UNC_RC_SUCCESS != ret_val) {
+    pfc_log_error("set_vbridge_conf error");
+    delete req_obj;
+    delete parser_obj;
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+  std::list<vbridge_conf>::iterator it = parser_obj->vbridge_conf_.begin();
+  while (it != parser_obj->vbridge_conf_.end()) {
+    vbridges->insert(it->name);
+    it++;
+  }
  return UNC_RC_SUCCESS;
 }
 
 UncRespCode odlutils::get_terminal_names(unc::driver::controller *ctr,
-                                       std::string vtn_name,
+                                         std::string vtn_name,
                                std::set <std::string> *vterminals){
 
 
-   vterm_class *req_obj = new vterm_class(ctr,vtn_name);
-   std::string url = req_obj->get_url();
-   vterm_parser *parser_obj = new vterm_parser();
-   UncRespCode ret_val = req_obj->get_response(parser_obj);
-   if (UNC_RC_SUCCESS != ret_val) {
-     pfc_log_error("Get response error");
-     delete req_obj;
-     delete parser_obj;
-     return UNC_DRV_RC_ERR_GENERIC;
-   }
+  vterm_class *req_obj = new vterm_class(ctr,vtn_name);
+  std::string url = req_obj->get_url();
+  vterm_parser *parser_obj = new vterm_parser();
+  UncRespCode ret_val = req_obj->get_response(parser_obj);
+  if (UNC_RC_SUCCESS != ret_val) {
+    pfc_log_error("Get response error");
+    delete req_obj;
+    delete parser_obj;
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
 
-   ret_val = parser_obj->set_vterminal_conf(parser_obj->jobj);
-   if (UNC_RC_SUCCESS != ret_val) {
-     pfc_log_error("set_vterminal_conf error");
-     delete req_obj;
-     delete parser_obj;
-     return UNC_DRV_RC_ERR_GENERIC;
-   }
-   std::list<vterminal_conf>::iterator it = parser_obj->vterminal_conf_.begin();
-   while (it != parser_obj->vterminal_conf_.end()) {
-     vterminals->insert(it->name);
-     it++;
-   }
+  ret_val = parser_obj->set_vterminal_conf(parser_obj->jobj);
+  if (UNC_RC_SUCCESS != ret_val) {
+    pfc_log_error("set_vterminal_conf error");
+    delete req_obj;
+    delete parser_obj;
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+  std::list<vterminal_conf>::iterator it = parser_obj->vterminal_conf_.begin();
+  while (it != parser_obj->vterminal_conf_.end()) {
+    vterminals->insert(it->name);
+    it++;
+  }
  return UNC_RC_SUCCESS;
 }
+
 
 UncRespCode odlutils::get_vterm_names (
     unc::driver::controller *ctr_ptr,
@@ -743,21 +805,22 @@ UncRespCode odlutils::get_vterm_names (
   vterm_read_request vbr_read(vbridges, vtn_name);
   odl_http_request vbr_req;
   return vbr_req.handle_request(ctr_ptr,
-                                CONFIG_READ,
-                                &vbr_read,
-                                conf_values);
+      CONFIG_READ,
+      &vbr_read,
+      conf_values);
 }
 
 
 UncRespCode odlutils::get_portname(unc::driver::controller *ctr_ptr,
-                                   unc::restjson::ConfFileValues_t conf_values,
-                                   std::string switch_id,
-                                   std::string port_id,
-                                   std::string &port_name) {
+                        unc::restjson::ConfFileValues_t conf_values,
+                                              std::string switch_id,
+                                                std::string port_id,
+                                           std::string &port_name) {
   ODC_FUNC_TRACE;
   port_name_read_request port_req;
   return port_req(ctr_ptr, conf_values, switch_id, port_id, port_name);
 }
+
 
 }  // namespace odcdriver
 }  // namespace  unc
