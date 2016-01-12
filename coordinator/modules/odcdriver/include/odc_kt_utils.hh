@@ -15,6 +15,7 @@
 #include <driver/driver_command.hh>
 #include <odc_driver_common_defs.hh>
 #include <odc_controller.hh>
+#include <vtn.hh>
 #include <vbr.hh>
 #include <vterminal.hh>
 #include <string>
@@ -35,6 +36,9 @@ class odlutils {
       unc::restjson::ConfFileValues_t conf_values,
       std::string vtn_name,
       std::set <std::string> *vbridges);
+
+   static UncRespCode get_tenant_names(unc::driver::controller *ctr,
+               std::set <std::string> *vtns);
 
    static UncRespCode get_bridge_names(unc::driver::controller *ctr,
                                        std::string vtn_name,
