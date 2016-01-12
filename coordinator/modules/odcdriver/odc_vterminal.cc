@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015 NEC Corporation
+ * Copyright (c) 2014-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -70,7 +70,7 @@ UncRespCode OdcVterminalCommand::create_cmd(key_vterm_t& key_vterm,
       pfc_log_error("set_vterm_conf error");
       delete req_obj;
       delete parser_obj;
-      return UNC_DRV_RC_ERR_GENERIC;
+      return ret_code;
     }
 
     if (ret_code == UNC_RC_SUCCESS) {

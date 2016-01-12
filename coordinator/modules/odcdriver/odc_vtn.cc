@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015 NEC Corporation
+ * Copyright (c) 2013-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -188,7 +188,7 @@ UncRespCode OdcVtnCommand::fetch_config(unc::driver::controller* ctr_ptr,
     pfc_log_error("set vtn-conf error");
     delete req_obj;
     delete parser_obj;
-    return UNC_DRV_RC_ERR_GENERIC;
+    return ret_val;
   }
 
   ret_val = parse_vtn_response(parser_obj->vtn_conf_ , cfgnode_vector);
