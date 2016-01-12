@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,7 +11,6 @@
 #include <json_read_util.hh>
 #include <set>
 #include <string>
-
 
 namespace unc {
 namespace odcdriver {
@@ -55,7 +54,6 @@ class odl_vtn_station_filter {
     vlan_id_filter_(PFC_FALSE) ,
     count_oper_(PFC_FALSE),
     valid_count_(0) {}
-
 
   void update_filter(val_vtnstation_controller_st* in_val) {
     if ( in_val->valid[UPLL_IDX_MAC_ADDR_VSCS] == UNC_VF_VALID ) {
@@ -124,7 +122,6 @@ class odl_vtn_station_filter {
     return UNC_DRV_RC_ERR_GENERIC;
   }
 
-
   UncRespCode check_switch_match(val_vtnstation_controller_st* in_val) {
     if ( switch_id_filter_ == PFC_FALSE )
       return UNC_RC_SUCCESS;
@@ -157,7 +154,6 @@ class odl_vtn_station_filter {
     return UNC_RC_SUCCESS;
   }
 
-
   UncRespCode check_vlan_id_match(val_vtnstation_controller_st* in_val) {
     if ( vlan_id_filter_ == PFC_FALSE )
       return UNC_RC_SUCCESS;
@@ -170,7 +166,6 @@ class odl_vtn_station_filter {
 
     return UNC_RC_SUCCESS;
   }
-
 
   UncRespCode check_valid_update(val_vtnstation_controller_st* in_val) {
     UncRespCode swid_ret(check_switch_match(in_val));
@@ -206,36 +201,35 @@ class odl_vtn_station_urls {
   unc::driver::controller *ctr_;
   unc::restjson::ConfFileValues_t conf_values_;
 
-
   odl_vtn_station_urls(odl_vtn_station_filter *filter,
                        unc::driver::controller *ctr,
                        unc::restjson::ConfFileValues_t conf_values) :
       filter_(filter), ctr_(ctr), conf_values_(conf_values) {}
 
   UncRespCode get_vtns(std::set <std::string> *vtns) {
-    return unc::odcdriver::odlutils::get_vtn_names(ctr_, conf_values_, vtns);
+    return unc::odcdriver::odlutils::get_tenant_names(ctr_,  vtns);
   }
 
   UncRespCode get_vbrs(std::string vtn_name, std::set <std::string> *vtns) {
     pfc_log_info("Collect VBRS for vtn %s", vtn_name.c_str());
-    return unc::odcdriver::odlutils::get_vbridge_names(ctr_,
-                                                       conf_values_,
-                                                       vtn_name,
-                                                       vtns);
+    return unc::odcdriver::odlutils::get_bridge_names(ctr_,
+                                                vtn_name,
+                                                vtns);
   }
 
   std::string create_vtnstation_url(std::string vtn_name,
                                     std::string vbr_name) {
     ODC_FUNC_TRACE;
     std::string url = "";
-    url.append(BASE_URL);
-    url.append(CONTAINER_NAME);
-    url.append(VTNS);
+    url.append(RESTCONF_BASE);
+    url.append("/");
+    url.append("vtn-mac-table");
+    url.append(":");
+    url.append("mac-tables");
+    url.append("/");
+    url.append("tenant-mac-table");
     url.append("/");
     url.append(vtn_name);
-    url.append("/vbridges/");
-    url.append(vbr_name);
-    url.append("/mac");
 
     pfc_log_info("url constructed is %s", url.c_str());
     return url;
@@ -280,7 +274,6 @@ class odl_vtn_station_urls {
     return UNC_RC_SUCCESS;
   }
 
-
   UncRespCode get_port_name(std::string switch_id,
                              std::string port_id,
                              std::string &port_name) {
@@ -311,7 +304,7 @@ class ip_address_parser : public unc::restjson::json_array_object_parse_util {
 
   int read_array_iteration(uint32_t index,
                            json_object* json_instance) {
-    std::string search_ip("address");
+    std::string search_ip("");
     std::string ip_address;
     int parse_ret(unc::restjson::json_object_parse_util::
                   read_string(json_instance,
@@ -320,8 +313,8 @@ class ip_address_parser : public unc::restjson::json_array_object_parse_util {
     if ( parse_ret != unc::restjson::REST_OP_SUCCESS)
       return parse_ret;
 
-    pfc_log_info("IP Address %s", ip_address.c_str());
-    ip_address_list_.insert(ip_address);
+    std::string ip_station = json_object_get_string(json_instance);
+    ip_address_list_.insert(ip_station);
     return unc::restjson::REST_OP_SUCCESS;
   }
 
@@ -346,7 +339,7 @@ class ip_address_parser : public unc::restjson::json_array_object_parse_util {
       in_addr ip_address;
       ip_util.convert_ip_to_inaddr(*iter, &ip_address);
 
-      //         pfc_log_info("converted ip %"PFC_PFMT_u64 , ip_address.s_addr);
+      //  pfc_log_info("converted ip %"PFC_PFMT_u64 , ip_address.s_addr);
       unc::vtnreadutil::driver_read_util_io<in_addr>::
           add_read_value(&ip_address, read_);
     }
@@ -354,13 +347,11 @@ class ip_address_parser : public unc::restjson::json_array_object_parse_util {
   }
 };
 
-
-
 class odl_vtn_station_entry_parser {
  private:
   UncRespCode get_mac_address(json_object* instance,
                                std::string &mac_address ) {
-    std::string search_mac("address");
+    std::string search_mac("mac-address");
     int parse_ret(unc::restjson::json_object_parse_util::
                   read_string(instance,
                                search_mac,
@@ -415,13 +406,11 @@ class odl_vtn_station_entry_parser {
     util.convert_uint8_to_number(val_station.mac_addr, &val_station.station_id);
     val_station.valid[UPLL_IDX_STATION_ID_VSCS] = UNC_VF_VALID;
 
-
     pfc_log_info("STATION ID written is %" PFC_PFMT_u64,
                  val_station.station_id);
 
     val_station.ipv4_count = ip_parse->get_ip_count();
     val_station.valid[UPLL_IDX_IPV4_COUNT_VSCS]=UNC_VF_VALID;
-
 
     strcpy((char *)val_station.vtn_name, vtn_name.c_str());
     val_station.valid[UPLL_IDX_VTN_NAME_VSCS]=UNC_VF_VALID;
@@ -435,7 +424,6 @@ class odl_vtn_station_entry_parser {
 
     val_station.vnode_type = UPLL_VNODE_VBRIDGE;
     val_station.valid[UPLL_IDX_VNODE_TYPE_VSCS] = UNC_VF_VALID;
-
 
     if (url_->filter_->check_valid_update(&val_station) != UNC_RC_SUCCESS) {
       pfc_log_info("Skip Invalid REsult");
@@ -464,21 +452,18 @@ class odl_vtn_station_entry_parser {
     return UNC_RC_SUCCESS;
   }
 
-
-
  public:
   UncRespCode operator() (json_object* response,
                           unc::vtnreadutil::driver_read_util* read_,
                           odl_vtn_station_urls *url_,
                           std::string vtn_name,
                           std::string vbr_name) {
+    pfc_log_info("instance to operator:%s", json_object_get_string(response));
     int vlan_id(0);
-    UncRespCode vlan_ret(unc::odcdriver::port_info_parser::get_vlan_id(
-            response,
-            vlan_id));
-    if ( vlan_ret != UNC_RC_SUCCESS )
-      return vlan_ret;
-
+    uint32_t ret_val = unc::restjson::JsonBuildParse::parse(response,
+                                                            "vlan-id",
+                                                            -1,
+                                                            vlan_id);
     pfc_log_info("vlan id %d", vlan_id);
 
     std::string mac_address("");
@@ -489,61 +474,47 @@ class odl_vtn_station_entry_parser {
     pfc_log_info("MAC Address %s", mac_address.c_str());
 
     std::string switch_id("");
-    UncRespCode swid_ret(unc::odcdriver::port_info_parser::get_switch_details(
-            response,
-            switch_id));
-    if ( swid_ret != UNC_RC_SUCCESS )
-      return swid_ret;
+    ret_val = unc::restjson::JsonBuildParse::parse(response,
+                                                   "node",
+                                                   -1,
+                                                   switch_id);
     pfc_log_info("SWITCH ID %s", switch_id.c_str());
 
-
     std::string port_id("");
-    UncRespCode port_ret(unc::odcdriver::port_info_parser::get_port_details(
-            response,
-            port_id));
-    if ( port_ret != UNC_RC_SUCCESS )
-      return port_ret;
 
+    ret_val = unc::restjson::JsonBuildParse::parse(response,
+                                                   "port-id",
+                                                   -1,
+                                                   port_id);
     pfc_log_info("PORT ID %s", port_id.c_str());
 
     std::string port_name("");
+    ret_val = unc::restjson::JsonBuildParse::parse(response,
+                                                   "port-name",
+                                                   -1,
+                                                   port_name);
+    pfc_log_debug("PORT NAME %s", port_name.c_str());
 
-    UncRespCode portname_ret(url_->get_port_name(switch_id,
-                                                 port_id,
-                                                 port_name));
-
-    if ( portname_ret != UNC_RC_SUCCESS )
-      return portname_ret;
-
-    json_object *ip_block(NULL);
-    std::string ipblock_str("inetAddresses");
-    int get_ip_block(unc::restjson::json_object_parse_util::
-                     extract_json_object(response, ipblock_str,
-                                         &ip_block));
-
-    if ( get_ip_block != unc::restjson::REST_OP_SUCCESS ) {
-      pfc_log_info("get json object inetAddressess Failure");
+    json_object *ipblockv4_str(NULL);
+    ret_val = unc::restjson::JsonBuildParse::parse(response,
+                                                   "ip-addresses",
+                                                   -1,
+                                                   ipblockv4_str);
+    if ((json_object_is_type(ipblockv4_str, json_type_null))  ||
+        (restjson::REST_OP_SUCCESS != ret_val)) {
+      pfc_log_error("%s: json ip address is null", PFC_FUNCNAME);
+      json_object_put(response);
       return UNC_DRV_RC_ERR_GENERIC;
     }
+    pfc_log_debug("IP Address:%s",json_object_get_string(ipblockv4_str));
 
-
-    json_object *ip_v4block(NULL);
-    std::string ipblockv4_str("inetAddress");
-    int get_ip_v4block(unc::restjson::json_object_parse_util::
-                       extract_json_object(ip_block, ipblockv4_str,
-                                           &ip_v4block));
-
-    if ( get_ip_v4block != unc::restjson::REST_OP_SUCCESS ) {
-      pfc_log_info("get json object inetAddress Failure");
-      return UNC_DRV_RC_ERR_GENERIC;
-    }
-
-    ip_address_parser parse(ip_v4block);
+    ip_address_parser parse(ipblockv4_str);
     int ip_parse_ret(parse.extract_values());
 
     if ( ip_parse_ret != unc::restjson::REST_OP_SUCCESS ) {
       pfc_log_info("Extract IP Address Failed");
     }
+
     int option1= read_->get_option1();
     int option2= read_->get_option2();
 
@@ -578,13 +549,11 @@ class vtn_station_array_parser
   std::string vtn_name_;
   std::string vbr_name_;
 
-
   vtn_station_array_parser(json_object* json_instance,
                            unc::vtnreadutil::driver_read_util* readutil,
                            odl_vtn_station_urls *url) :
       unc::restjson::json_array_object_parse_util(json_instance),
       read_util_(readutil), url_(url) {}
-
   void set_vtn_name(std::string vtn_name) {
     vtn_name_= vtn_name;
   }
@@ -611,6 +580,7 @@ class vtn_station_array_parser
     } else {
       pfc_log_info("PARSE FAILED...");
     }
+  pfc_log_debug("Leaving into vtn_station_array_parser");
     return unc::restjson::REST_OP_SUCCESS;
   }
 
@@ -620,10 +590,6 @@ class vtn_station_array_parser
     return unc::restjson::REST_OP_SUCCESS;
   }
 };
-
-
-
-
 
 class odl_vtn_station_command : public unc::odcdriver::odl_http_rest_intf {
  public:
@@ -635,7 +601,6 @@ class odl_vtn_station_command : public unc::odcdriver::odl_http_rest_intf {
                           unc::vtnreadutil::driver_read_util* read_util):
       url_(url), read_util_(read_util),
       station_count_(0) {}
-
 
   UncRespCode split_request_indicator(std::string request,
                                        std::string &vtn_name,
@@ -650,7 +615,6 @@ class odl_vtn_station_command : public unc::odcdriver::odl_http_rest_intf {
     return UNC_RC_SUCCESS;
   }
 
-
   pfc_bool_t is_multiple_requests(unc::odcdriver::OdcDriverOps Op) {
     ODC_FUNC_TRACE;
     //  For count multiple queries are to be sent
@@ -662,7 +626,6 @@ class odl_vtn_station_command : public unc::odcdriver::odl_http_rest_intf {
     ODC_FUNC_TRACE;
     return url_->get_urls(arg_list);
   }
-
 
   UncRespCode construct_url(unc::odcdriver::OdcDriverOps Op,
                             std::string &request_indicator,
@@ -692,7 +655,6 @@ class odl_vtn_station_command : public unc::odcdriver::odl_http_rest_intf {
     return  unc::restjson::HTTP_METHOD_GET;
   }
 
-
   UncRespCode validate_response_code(unc::odcdriver::OdcDriverOps Op,
                                      std::string &request_indicator,
                                      int resp_code) {
@@ -702,7 +664,6 @@ class odl_vtn_station_command : public unc::odcdriver::odl_http_rest_intf {
     }
     return UNC_RC_SUCCESS;
   }
-
 
   UncRespCode handle_response(unc::odcdriver::OdcDriverOps Op,
                               std::string &request_indicator,
@@ -716,21 +677,95 @@ class odl_vtn_station_command : public unc::odcdriver::odl_http_rest_intf {
 
     unc::restjson::json_obj_destroy_util mac_delete_obj(mac_entries_complete);
 
-    std::string mac_string("macentry");
+    std::string mac_string("tenant-mac-table");
     json_object *mac_entries_array(NULL);
     int get_array_resp(unc::restjson::json_object_parse_util::
                        extract_json_object(mac_entries_complete, mac_string,
                                            &mac_entries_array));
     if ( get_array_resp != unc::restjson::REST_OP_SUCCESS)
       return UNC_DRV_RC_ERR_GENERIC;
-    unc::restjson::json_obj_destroy_util mac_entrydelete_obj(mac_entries_array);
-    std::string vtn("");
-    std::string vbr("");
-    split_request_indicator(request_indicator, vtn, vbr);
-    pfc_log_info("REsponse Parse vtn %s", vtn.c_str());
-    pfc_log_info("REsponse Parse vbr %s", vbr.c_str());
+    json_object *jobj_fill = NULL;
+    uint32_t ret_val = unc::restjson::JsonBuildParse::parse(mac_entries_array,
+                                                            "name",
+                                                             0,
+                                                             jobj_fill);
+    std::string vtn = json_object_get_string(jobj_fill);
+    if ((json_object_is_type(jobj_fill, json_type_null)) ||
+                (restjson::REST_OP_SUCCESS != ret_val)) {
+              pfc_log_error("%s: json data is null", PFC_FUNCNAME);
+              json_object_put(mac_entries_array);
+              return UNC_DRV_RC_ERR_GENERIC;
+            }
 
-    vtn_station_array_parser resp_parse(mac_entries_array, read_util_, url_);
+    json_object *jobj_data = NULL;
+    unc::restjson::json_obj_destroy_util mac_entrydelete_obj(mac_entries_array);
+    pfc_log_debug("TMAC Table Entry:%s",json_object_get_string(mac_entries_array));
+    ret_val = unc::restjson::JsonBuildParse::parse(mac_entries_array,
+                                                  "mac-address-table",
+                                                   0,
+                                                   jobj_data);
+    if ((json_object_is_type(jobj_data, json_type_null)) ||
+        (restjson::REST_OP_SUCCESS != ret_val)) {
+      pfc_log_error("%s: json data is null", PFC_FUNCNAME);
+      json_object_put(mac_entries_array);
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    pfc_log_debug("JOBJ DATA:%s",json_object_get_string(jobj_data));
+    std::string vbr("");
+    uint32_t array_length = 0;
+    if (json_object_is_type(jobj_data, json_type_array)) {
+       array_length = restjson::JsonBuildParse::get_array_length(jobj_data);
+       pfc_log_debug("mac-address table array length:%d",array_length);
+    }
+    if (0 == array_length) {
+       pfc_log_debug("No mac-address-table present");
+       json_object_put(mac_entries_array);
+       return UNC_RC_SUCCESS;
+    }
+    for(uint32_t arr_ide = 0;arr_ide<array_length;arr_ide++) {
+    json_object *jobj_parse = NULL;
+    ret_val = unc::restjson::JsonBuildParse::parse(jobj_data,
+                                                   "name",
+                                                   arr_ide,
+                                                   jobj_parse);
+    vbr = json_object_get_string(jobj_parse);
+    if ((json_object_is_type(jobj_parse, json_type_null)) ||
+            (restjson::REST_OP_SUCCESS != ret_val)) {
+          pfc_log_error("%s: json data is null", PFC_FUNCNAME);
+          json_object_put(jobj_data);
+          return UNC_DRV_RC_ERR_GENERIC;
+        }
+    pfc_log_debug("VBR DATA:%s",vbr.c_str());
+    }
+    array_length = 0;
+    if (json_object_is_type(jobj_data, json_type_array)) {
+      array_length = restjson::JsonBuildParse::get_array_length(jobj_data);
+      pfc_log_debug("mac-array_length:%d",array_length);
+    }
+    if (0 == array_length) {
+      pfc_log_debug("No mac-table-entry present");
+      json_object_put(mac_entries_complete);
+      return UNC_RC_SUCCESS;
+    }
+    for(uint32_t arr_idx = 0;arr_idx<array_length;arr_idx++) {
+    json_object *jobj_table = NULL;
+    ret_val = unc::restjson::JsonBuildParse::parse(jobj_data,
+                                                   "mac-table-entry",
+                                                   arr_idx,
+                                                   jobj_table);
+    if ((json_object_is_type(jobj_data, json_type_null)) ||
+        (restjson::REST_OP_SUCCESS != ret_val)) {
+      pfc_log_error("%s: json table is null", PFC_FUNCNAME);
+      json_object_put(jobj_data);
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    pfc_log_debug("mac-table-entry idx:%d",arr_idx);
+    pfc_log_debug("Entering into vtn_station_array_parser");
+    if(json_object_is_type(mac_entries_complete, json_type_null)) {
+      pfc_log_error("NULL");
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    vtn_station_array_parser resp_parse(jobj_table, read_util_, url_);
     resp_parse.set_vtn_name(vtn);
     resp_parse.set_vbr_name(vbr);
     int vtn_station_ret(resp_parse.extract_values());
@@ -739,9 +774,9 @@ class odl_vtn_station_command : public unc::odcdriver::odl_http_rest_intf {
       pfc_log_info("Array Parse SUCCESS");
 
     station_count_+=resp_parse.get_array_length();
-
-    return UNC_RC_SUCCESS;
   }
+  return UNC_RC_SUCCESS;
+}
 };
 
 //  Constructor
@@ -801,7 +836,6 @@ UncRespCode OdcVtnStationCommand::read_cmd(
   odl_vtn_station_urls url_parser(&filter_,
                                   ctr,
                                   conf_file_values_);
-
   odl_vtn_station_command cmd(&url_parser,
                               read_util);
 
@@ -811,12 +845,8 @@ UncRespCode OdcVtnStationCommand::read_cmd(
           unc::odcdriver::CONFIG_READ,
           &cmd,
           conf_file_values_));
-
   if ( cmd_ret != UNC_RC_SUCCESS )
     return cmd_ret;
-
-
-
 
   uint32_t valid_count = filter_.get_count();
 
@@ -835,13 +865,11 @@ UncRespCode OdcVtnStationCommand::read_cmd(
   return UNC_RC_SUCCESS;
 }
 
-
 //  Constructing URL for vbridge, inject request to controller
 std::string OdcVtnStationCommand::get_vtnstation_url(
     key_vtnstation_controller_t& key_) {
   ODC_FUNC_TRACE;
   std::string url = "";
-
   return url;
 }
 }  //  namespace odcdriver
