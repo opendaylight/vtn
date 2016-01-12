@@ -127,6 +127,7 @@ type=array
 key="vtn"
 is_child=yes
 check_bool_set=no
+is_audit=yes
 struct_name = vtn_conf
 members=vtn_name,vtenant_config,valid
 build_support=no

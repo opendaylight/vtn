@@ -136,6 +136,7 @@ def fill_config(item, req_mem, file_desc, output_file_name, d):
     child = parser.ReadValues(item, req_mem)['members']
     req_key = parser.ReadValues(item, req_mem)['key']
     check_mem = parser.ReadValues(item,req_mem)['is_child']
+    response = parser.ReadValues(item,req_mem).has_key('is_audit')
     fill_method = 'UncRespCode set_%s('%(struct_name) +'json_object* json_parser) {' + '\n'
     fill_method = fill_method + 'int ret_val = restjson::REST_OP_FAILURE;' + '\n'
     fill_method = fill_method +'json_object* obj_%s'%(req_mem) + '= NULL;' + '\n'
@@ -149,11 +150,18 @@ def fill_config(item, req_mem, file_desc, output_file_name, d):
            fill_method = fill_method + '\t' + 'pfc_log_error(" Error while parsing %s");'%(req_mem) + '\n'
            fill_method = fill_method + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' +'\n'
            fill_method = fill_method +'}' + '\n'
-           fill_method = fill_method + 'if (json_object_is_type(obj_%s, json_type_null)) {'%(req_mem)  + '\n'
-           fill_method = fill_method + '\t' + 'json_object_put(json_parser);' + '\n'
-           fill_method = fill_method + '\t' + 'pfc_log_error("No %s present");'%(req_mem) + '\n'
-           fill_method = fill_method + '\t' + 'return UNC_RC_SUCCESS;' +'\n'
-           fill_method = fill_method +'}' + '\n'
+           if str(response) == 'True':
+               fill_method = fill_method + 'if (json_object_is_type(obj_%s, json_type_null)) {'%(req_mem)  + '\n'
+               fill_method = fill_method + '\t' + 'json_object_put(json_parser);' + '\n'
+               fill_method = fill_method + '\t' + 'pfc_log_error("No %s present");'%(req_mem) + '\n'
+               fill_method = fill_method + '\t' + 'return UNC_RC_NO_SUCH_INSTANCE;' +'\n'
+               fill_method = fill_method +'}' + '\n'
+           elif str(response) == 'False':
+               fill_method = fill_method + 'if (json_object_is_type(obj_%s, json_type_null)) {'%(req_mem)  + '\n'
+               fill_method = fill_method + '\t' + 'json_object_put(json_parser);' + '\n'
+               fill_method = fill_method + '\t' + 'pfc_log_error("No %s present");'%(req_mem) + '\n'
+               fill_method = fill_method + '\t' + 'return UNC_RC_SUCCESS;' +'\n'
+               fill_method = fill_method +'}' + '\n'
     else:
         fill_method = fill_method + 'if ((restjson::REST_OP_SUCCESS != ret_val) || (json_object_is_type(obj_%s, json_type_null))) {'%(req_mem)  + '\n'
         fill_method = fill_method + '\t' + 'json_object_put(json_parser);' + '\n'
@@ -733,6 +741,7 @@ def parse_array_object(item, member, obj_in, output_file_name, d):
     req_key = parser.ReadValues(item, member)['key']
     st_name = parser.ReadValues(item, member)['struct_name']
     check_bool = parser.ReadValues(item, member)['check_bool_set']
+    response1 = parser.ReadValues(item, member).has_key('is_audit')
     key_s = req_key.replace('"', '')
     object = 'uint32_t array_length = 0;' + '\n'
     object = object +'json_object *obj_%s = NULL;'%(member) +'\n'
@@ -753,11 +762,18 @@ def parse_array_object(item, member, obj_in, output_file_name, d):
        object = object + '\t' + 'pfc_log_error(" Error while parsing %s");'%(key_s) + '\n'
        object = object + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' + '\n'
        object = object + '}' + '\n'
-       object = object + 'if (json_object_is_type(obj_%s, json_type_null)) {'%(member) + '\n'
-       object = object + '\t' + 'json_object_put(json_parser);' + '\n'
-       object = object + '\t' + 'pfc_log_error(" No %s present");'%(key_s) + '\n'
-       object = object + '\t' + 'return UNC_RC_SUCCESS;' + '\n'
-       object = object + '}' + '\n'
+       if str(response1) == 'True':
+           object = object + 'if (json_object_is_type(obj_%s, json_type_null)) {'%(member) + '\n'
+           object = object + '\t' + 'json_object_put(json_parser);' + '\n'
+           object = object + '\t' + 'pfc_log_error(" No %s present");'%(key_s) + '\n'
+           object = object + '\t' + 'return UNC_RC_NO_SUCH_INSTANCE;' + '\n'
+           object = object + '}' + '\n'
+       elif str(response1) == 'False':
+           object = object + 'if (json_object_is_type(obj_%s, json_type_null)) {'%(member) + '\n'
+           object = object + '\t' + 'json_object_put(json_parser);' + '\n'
+           object = object + '\t' + 'pfc_log_error(" No %s present");'%(key_s) + '\n'
+           object = object + '\t' + 'return UNC_RC_SUCCESS;' + '\n'
+           object = object + '}' + '\n'
     object = object + 'if (json_object_is_type(obj_%s, json_type_array)) {'%(member) + '\n'
     check_key = parser.ReadValues(item, member).has_key('s_array')
     if str(check_key) == 'True':
