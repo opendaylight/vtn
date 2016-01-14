@@ -1,4 +1,4 @@
-# Copyright (c) 2015 NEC Corporation
+# Copyright (c) 2015-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -52,6 +52,7 @@ type=string
 key="name"
 struct_name=vtn_port
 category=mandatory
+mandatory = yes
 build_support=no
 parse_support=yes
 
@@ -60,6 +61,7 @@ parse_support=yes
 type=int
 key="enabled"
 struct_name=vtn_port
+mandatory = yes
 build_support=no
 parse_support=yes
 
@@ -68,6 +70,7 @@ parse_support=yes
 type=string
 key="cost"
 struct_name=vtn_port
+mandatory = yes
 build_support=no
 parse_support=yes
 
@@ -76,6 +79,7 @@ parse_support=yes
 type=string
 key="id"
 struct_name=vtn_port
+mandatory = yes
 build_support=no
 parse_support=yes
 
@@ -87,6 +91,7 @@ s_array = yes
 struct_name=vtn_port
 check_bool_set=yes
 members=cost,id,name,enabled
+build_support=no
 get_support=yes
 get_abstract=yes
 
@@ -98,6 +103,7 @@ struct_name=vtn_port
 members=vtn_port
 check_bool_set=yes
 is_child=yes
+build_support=no
 get_support=yes
 get_abstract=yes
 
@@ -163,6 +169,7 @@ type=READ
 url=VTN_GETSUPPORT_URL
 request_type=object
 parse_request_members=vtnnode
+build_request_members=vtnnode
 response_members="vtn-node"
 
 # Request class section
