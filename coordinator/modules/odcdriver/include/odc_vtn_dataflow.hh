@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation
+ * Copyright (c) 2015-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -19,6 +19,7 @@
 #include <odc_driver_common_defs.hh>
 #include <odc_controller.hh>
 #include <odc_vtn.hh>
+#include <dataflow.hh>
 #include <odc_util.hh>
 #include <tclib_module.hh>
 #include <string>
@@ -46,14 +47,13 @@ class OdcVtnDataFlowCommand: public unc::driver::vtn_driver_read_command {
   UncRespCode read_cmd(unc::driver::controller *ctr,
                        unc::vtnreadutil::driver_read_util*);
 
-  UncRespCode parse_flow_response(key_vtn_dataflow_t& key_vtn_dataflow,
-                                  unc::vtnreadutil::driver_read_util* df_util,
-                                  char *data);
+ // UncRespCode parse_flow_response(key_vtn_dataflow_t& key_vtn_dataflow,
+ //                                 unc::vtnreadutil::driver_read_util* df_util,
+   //                               char *data);
 
   UncRespCode parse_flow_response_values(key_vtn_dataflow_t& key_vtn_dataflow,
                                   unc::vtnreadutil::driver_read_util* df_util,
-                                  json_object *jobj_data,
-                                  uint32_t arr_idx);
+                                  std::list<data_flow> &df_info);
 
   private:
   /**

@@ -62,6 +62,7 @@ type=string
 key ="name"
 struct_name=vterm_if_conf
 build_support=no
+mandatory=yes
 parse_support=yes
 
 [description]
@@ -69,6 +70,7 @@ type=string
 key="description"
 struct_name=vterm_vinterface_config
 build_support=yes
+mandatory=no
 parse_support=yes
 
 [enabled]
@@ -76,6 +78,7 @@ type=bool
 key="enabled"
 struct_name=vterm_vinterface_config
 build_support=yes
+mandatory=no
 parse_support=yes
 
 [VTERM_GETSUPPORT_URL]
@@ -98,6 +101,7 @@ check_bool_set=yes
 struct_name=vtermif_input
 members=update_mode,operation,vtermif_description,vtermif_enabled,tenant_name,terminal_name,interface_name,valid
 build_support=yes
+mandatory=yes
 parse_support=no
 
 [update_mode]
@@ -204,6 +208,7 @@ check_bool_set=yes
 struct_name=vterm_if_conf
 members=vterm_if_conf
 build_support=no
+mandatory=no
 parse_support=yes
 
 [vterm_if_conf]
@@ -214,6 +219,7 @@ check_bool_set=yes
 struct_name=vterm_if_conf
 members=name,vterm_vinterface_config,valid
 build_support=no
+mandatory=no
 parse_support=yes
 
 [vterminal_config]
@@ -224,6 +230,7 @@ check_bool_set=yes
 struct_name = vterm_if_conf
 members=vterminal_if
 build_support=no
+mandatory=no
 parse_support=no
 
 [vterm_vinterface_config]
@@ -234,6 +241,7 @@ check_bool_set=no
 is_child=yes
 members=enabled,description,valid
 build_support=no
+mandatory=no
 parse_support=yes
 
 [ip_vterminal_config]
@@ -244,6 +252,7 @@ check_bool_set=yes
 struct_name=ip_vterminal_config
 members=input_vtermif,valid
 build_support=yes
+mandatory=no
 parse_support=no
 
 [ip_vterminal_configs]
@@ -254,6 +263,7 @@ check_bool_set=yes
 struct_name=ip_vterminal_config
 members=ip_vterminal_config
 build_support=yes
+mandatory=no
 parse_support=no
 
 [ROOT]
