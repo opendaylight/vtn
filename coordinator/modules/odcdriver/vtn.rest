@@ -78,6 +78,7 @@ type=string
 key="description"
 struct_name=vtenant_config
 build_support=no
+mandatory=yes
 parse_support=yes
 
 [vtenant_config]
@@ -87,6 +88,7 @@ struct_name=vtn_conf
 members = description,valid
 is_child=yes
 build_support=no
+mandatory=yes
 parse_support=yes
 
 
@@ -131,6 +133,7 @@ is_audit=yes
 struct_name = vtn_conf
 members=vtn_name,vtenant_config,valid
 build_support=no
+mandatory=yes
 parse_support=yes
 
 [input]
@@ -166,6 +169,7 @@ key="vtns"
 is_child=yes
 check_bool_set=yes
 struct_name = vtn_conf
+mandatory=yes
 members=vtn_conf
 
 [ip_vtn]
@@ -175,6 +179,7 @@ is_child=yes
 check_bool_set=yes
 struct_name = ip_vtn
 members= input,valid
+mandatory=yes
 build_support=yes
 parse_support=no
 
@@ -185,6 +190,7 @@ is_child=yes
 check_bool_set=yes
 struct_name = ip_vtn
 members= ip_vtn
+mandatory=yes
 build_support=yes
 parse_support=no
 
@@ -194,6 +200,7 @@ type=string
 key="name"
 struct_name=vtn_conf
 build_support=no
+mandatory=yes
 parse_support=yes
 
 [ROOT]
