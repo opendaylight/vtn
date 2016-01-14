@@ -83,6 +83,7 @@ struct_name = vterminal_conf
 members=vterm_description,valid
 is_child=yes
 build_support=no
+mandatory=yes
 parse_support=yes
 
 [vterm_description]
@@ -90,6 +91,7 @@ type=string
 key="description"
 struct_name=vterminal_config
 build_support=no
+mandatory=no
 parse_support=yes
 
 [valid]
@@ -107,6 +109,7 @@ is_child=yes
 check_bool_set=yes
 struct_name = vterminal_conf
 members=name,vterminal_config,valid
+mandatory=yes
 build_support=yes
 parse_support=yes
 
@@ -117,6 +120,7 @@ is_child=yes
 check_bool_set=yes
 struct_name = vterminal_conf
 members=vterminal_conf
+mandatory=yes
 build_support=no
 parse_support=yes
 
@@ -127,6 +131,7 @@ is_child=yes
 check_bool_set=yes
 struct_name = vterminal_conf
 members=vterminal_conf
+mandatory=no
 build_support=no
 parse_support=no
 
@@ -135,6 +140,7 @@ type=string
 key="name"
 struct_name=vterminal_conf
 build_support=no
+mandatory=yes
 parse_support=yes
 
 [input_vterm]
@@ -205,6 +211,7 @@ check_bool_set=yes
 struct_name=ip_vterminal
 members=input_vterm,valid
 build_support=yes
+mandatory=no
 parse_support=no
 
 [ip_vterminals]
@@ -214,6 +221,7 @@ is_child=yes
 check_bool_set=yes
 struct_name=ip_vterminal
 members=ip_vterminal
+mandatory=no
 build_support=yes
 parse_support=no
 

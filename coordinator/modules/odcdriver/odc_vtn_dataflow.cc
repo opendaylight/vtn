@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation
+ * Copyright (c) 2015-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -39,56 +39,83 @@ UncRespCode OdcVtnDataFlowCommand::read_cmd(
   if ( key_read_resp != UNC_RC_SUCCESS )
     pfc_log_info("Error reading KEy");
 
-  //UncRespCode resp_code_ = UNC_DRV_RC_ERR_GENERIC;
-  //std::vector<string> vtn_names;
-  /*resp_code_ = fetch_config_vtn(ctr, NULL, vtn_names);
-  if (resp_code_ != UNC_RC_SUCCESS) {
-    pfc_log_error("%s:failed to get VTN-List .rt, %u",
-                  PFC_FUNCNAME, resp_code_);
-    return resp_code_;
-  }
-  int check_count = 0;
-  std::vector<string> ::iterator it_vtn_name = vtn_names.begin();
-  for (; it_vtn_name != vtn_names.end(); ++it_vtn_name) */
     pfc_log_trace("Vtn Name in dataflow  %s",
                   key_vtn_dataflow.vtn_key.vtn_name);
     std::string vtn_name = reinterpret_cast<char*> (key_vtn_dataflow.vtn_key.vtn_name);
-    std::string url = get_dataflow_url(vtn_name,
-                                       key_vtn_dataflow);
+
+    dataflow_class *req_obj = new dataflow_class(ctr,vtn_name);
+    std::string url = req_obj->get_url();
     if (url == "") {
       pfc_log_error("%s:Invalid Key", PFC_FUNCNAME);
       return UNC_DRV_RC_ERR_GENERIC;
     }
-    unc::restjson::RestUtil rest_util_obj(ctr->get_host_address(),
-                                          ctr->get_user_name(),
-                                          ctr->get_pass_word());
-    unc::restjson::HttpResponse_t* response =
-        rest_util_obj.send_http_request(
-            url, restjson::HTTP_METHOD_GET, NULL, conf_file_values_);
-    if (NULL == response) {
-      pfc_log_error("Error Occured while getting httpresponse");
+    dataflow_parser *parser_obj = new dataflow_parser();
+    ip_dataflow in_obj;
+    in_obj.valid = true;
+    in_obj.input_data_flow_.valid = true;
+    in_obj.input_data_flow_.data_flow_source_.valid = true;
+    unsigned int vlan_id = 0;
+    if (key_vtn_dataflow.vlanid) {
+       if (key_vtn_dataflow.vlanid != 0xffff) {
+       in_obj.input_data_flow_.data_flow_source_.ip_vlan = key_vtn_dataflow.vlanid;
+      pfc_log_info("vlan-id : %u", vlan_id);
+     } else {
+       in_obj.input_data_flow_.data_flow_source_.ip_vlan = 0;
+      pfc_log_info("vlan-id : not set.");
+    }
+    }
+    in_obj.input_data_flow_.ip_tenant_name =
+                    reinterpret_cast<char*> (key_vtn_dataflow.vtn_key.vtn_name);
+   uint8_t mac_arr[VAL_MAC_ADDR_SIZE];
+    memset(&mac_arr, 0, VAL_MAC_ADDR_SIZE);
+    string srcMac = "";
+    if (memcmp(key_vtn_dataflow.src_mac_address, mac_arr, VAL_MAC_ADDR_SIZE) >
+                                                                       0) {
+      pfc_log_debug("valid src_mac ");
+      pfc_log_debug("key mac_address %02x:%02x:%02x:%02x:%02x:%02x ",
+                  key_vtn_dataflow.src_mac_address[0],
+                  key_vtn_dataflow.src_mac_address[1],
+                  key_vtn_dataflow.src_mac_address[2],
+                   key_vtn_dataflow.src_mac_address[3],
+                  key_vtn_dataflow.src_mac_address[4],
+                   key_vtn_dataflow.src_mac_address[5]);
+
+    // convert key.src_mac_address to string
+    char mac[32] = { 0 };
+    sprintf(mac, "%02x:%02x:%02x:%02x:%02x:%02x",
+            key_vtn_dataflow.src_mac_address[0],
+            key_vtn_dataflow.src_mac_address[1],
+            key_vtn_dataflow.src_mac_address[2],
+            key_vtn_dataflow.src_mac_address[3],
+            key_vtn_dataflow.src_mac_address[4],
+            key_vtn_dataflow.src_mac_address[5]);
+    srcMac = mac;
+    }
+    in_obj.input_data_flow_.data_flow_source_.ip_mac_addr = srcMac;
+
+    in_obj.input_data_flow_.mode = "DETAIL";
+
+    parser_obj->get_req(in_obj);
+    UncRespCode ret_val = req_obj->get_response(parser_obj);
+    if (UNC_RC_SUCCESS != ret_val) {
+      pfc_log_error("Get response error");
+      delete req_obj;
+      delete parser_obj;
       return UNC_DRV_RC_ERR_GENERIC;
     }
-    int resp_code = response->code;
-    if (HTTP_200_RESP_OK != resp_code) {
-      pfc_log_error("Response code is not OK , resp : %d", resp_code);
+    ret_val = parser_obj->set_data_flow(parser_obj->jobj);
+    if (UNC_RC_SUCCESS != ret_val) {
+      pfc_log_error("set_dataflow_error");
+      delete req_obj;
+      delete parser_obj;
       return UNC_DRV_RC_ERR_GENERIC;
     }
-    if (NULL != response->write_data) {
-      if (NULL != response->write_data->memory) {
-        char *data = response->write_data->memory;
-        pfc_log_trace("All Flows : %s", data);
-        UncRespCode ret_val =  parse_flow_response(key_vtn_dataflow,
-                                                   df_util,
-                                                   data);
+    ret_val = parse_flow_response_values(key_vtn_dataflow, df_util,
+                                         parser_obj->data_flow_);
         if (ret_val != UNC_RC_SUCCESS) {
           pfc_log_error("Error occured while parsing");
-          //vtn_names.clear();
           return ret_val;
         }
-      }
-    }
-
   return UNC_RC_SUCCESS;
 }
 
@@ -117,8 +144,6 @@ UncRespCode OdcVtnDataFlowCommand::fetch_config_vtn(
     unc::vtndrvcache::CacheElementUtil<key_vtn_t, val_vtn_t,val_vtn_t, uint32_t>
         *cfgnode_ctr = static_cast<unc::vtndrvcache::CacheElementUtil
         <key_vtn_t, val_vtn_t, val_vtn_t, uint32_t>*> (cfg_node);
-    // std::string vtn_name =reinterpret_cast<char*>
-    // (cfgnode_ctr->get_key_structure()->vtn_name);
     vtn_name.push_back(reinterpret_cast<char*>
                        (cfgnode_ctr->get_key_structure()->vtn_name));
   }
@@ -127,167 +152,11 @@ UncRespCode OdcVtnDataFlowCommand::fetch_config_vtn(
   return UNC_RC_SUCCESS;
 }
 
-
-// Constructing URL for vbridge, inject request to controller
-std::string OdcVtnDataFlowCommand::get_dataflow_url(std::string vtn_name,
-                                                 key_vtn_dataflow_t key) {
-  ODC_FUNC_TRACE;
-  std::string url = "";
-  url.append(BASE_URL);
-  url.append(CONTAINER_NAME);
-  url.append(VTNS);
-  url.append(SLASH);
-  url.append(vtn_name);
-  url.append(FLOWS);
-  url.append(DETAIL);
-  pfc_log_debug("%s: URL before filter:%s", PFC_FUNCNAME, url.c_str());
-
-  // src_mac check
-  uint8_t mac_arr[VAL_MAC_ADDR_SIZE];
-  memset(&mac_arr, 0, VAL_MAC_ADDR_SIZE);
-  string srcMac = "";
-  if (memcmp(key.src_mac_address, mac_arr, VAL_MAC_ADDR_SIZE) > 0) {
-    pfc_log_debug("valid src_mac ");
-    pfc_log_debug("key mac_address %02x:%02x:%02x:%02x:%02x:%02x ",
-                  key.src_mac_address[0], key.src_mac_address[1],
-                  key.src_mac_address[2], key.src_mac_address[3],
-                  key.src_mac_address[4], key.src_mac_address[5]);
-
-    // convert key.src_mac_address to string
-    char mac[32] = { 0 };
-    sprintf(mac, "%02x:%02x:%02x:%02x:%02x:%02x",
-            key.src_mac_address[0],
-            key.src_mac_address[1],
-            key.src_mac_address[2],
-            key.src_mac_address[3],
-            key.src_mac_address[4],
-            key.src_mac_address[5]);
-    srcMac = mac;
-    pfc_log_debug("src_mac:%s", srcMac.c_str());
-  } else {
-    pfc_log_error("%s: src_mac is missing in key_struct", PFC_FUNCNAME);
-    return "";
-  }
-
-  // switch_id check
- /* char* switch_id = reinterpret_cast<char*> (key.switch_id);
-  pfc_log_debug("URL-switch_id:%s", switch_id);
-  if (strlen(switch_id) == 0) {
-    pfc_log_error("%s: switch_id is missing in key_struct", PFC_FUNCNAME);
-    return "";
-  }
-  // convert switch to odc type id
-  std::string node = switch_to_odc_type(switch_id);
-  pfc_log_debug("URL-node:%s", node.c_str());
- 
-
-  // port_id check
-  char* port_name = reinterpret_cast<char*> (key.port_id);
-  pfc_log_debug("URL-port_id:%s", port_name);
-  if (strlen(port_name) == 0) {
-    pfc_log_error("%s: port_id is missing in key_struct", PFC_FUNCNAME);
-    return "";
-  }
-   */
-  // vlan-id check
-  unsigned int vlan_id = 0;
-  if (key.vlanid) {
-    if (key.vlanid != 0xffff) {
-      vlan_id = key.vlanid;
-      pfc_log_info("vlan-id : %u", vlan_id);
-    } else {
-      pfc_log_info("vlan-id : not set.");
-    }
-  } else {
-    pfc_log_error("%s: vlan_id is missing in key_struct", PFC_FUNCNAME);
-    return "";
-  }
-  std::stringstream ss_vlan;
-  ss_vlan << vlan_id;
-  std::string vlan_str = ss_vlan.str();
-
-  // append Node+portName+srcMac+srcVlan
-  //url.append("?node=");
-  //url.append(node);
-  //url.append("&portName=");
-  //url.append(port_name);
-  url.append("?srcMac=");
-  url.append(srcMac);
-  url.append("&srcVlan=");
-  url.append(vlan_str);
-
-  pfc_log_debug("%s: final URL:%s", PFC_FUNCNAME, url.c_str());
-  return url;
-}
-
-std::string OdcVtnDataFlowCommand::switch_to_odc_type(char* switch_id) {
-  std::string sw_id= switch_id;
-  std::replace(sw_id.begin(), sw_id.end(), '-', ':');
-  sw_id.insert(2, ":");
-  sw_id.insert(8, ":");
-  sw_id.insert(14, ":");
-  sw_id.insert(20, ":");
-
-  return sw_id;
-}
-
-UncRespCode OdcVtnDataFlowCommand::parse_flow_response(
-    key_vtn_dataflow_t& key_vtn_dataflow,
-    unc::vtnreadutil::driver_read_util* df_util,
-    char *data) {
-  ODC_FUNC_TRACE;
-  UncRespCode resp_code = UNC_DRV_RC_ERR_GENERIC;
-  json_object* jobj = unc::restjson::JsonBuildParse::get_json_object(data);
-  if (json_object_is_type(jobj, json_type_null)) {
-    pfc_log_error("%s: json_object_is_null", PFC_FUNCNAME);
-    return resp_code;
-  }
-  uint32_t array_length = 0;
-  json_object* jobj_data = NULL;
-  uint32_t ret_val = unc::restjson::JsonBuildParse::parse(jobj,
-                                                          "dataflow",
-                                                          -1,
-                                                          jobj_data);
-  if ((json_object_is_type(jobj_data, json_type_null))  ||
-      (restjson::REST_OP_SUCCESS != ret_val)) {
-    pfc_log_error("%s: json datai is null", PFC_FUNCNAME);
-    json_object_put(jobj);
-    return resp_code;
-  }
-  if (json_object_is_type(jobj_data, json_type_array)) {
-    array_length = restjson::JsonBuildParse::get_array_length(jobj,
-                                                              "dataflow");
-  }
-  if (array_length == 0) {
-    pfc_log_info("%s: No Entries received from Controller", PFC_FUNCNAME);
-    return UNC_RC_NO_SUCH_INSTANCE;
-  }
-  for (uint32_t arr_idx = 0; arr_idx < array_length; arr_idx++) {
-    resp_code = parse_flow_response_values(key_vtn_dataflow,
-                                           df_util,
-                                           jobj_data,
-                                           arr_idx);
-    if (UNC_DRV_RC_ERR_GENERIC == resp_code) {
-      json_object_put(jobj);
-      return resp_code;
-    }
-  }
-  json_object_put(jobj);
-  return UNC_RC_SUCCESS;
-}
-
 UncRespCode OdcVtnDataFlowCommand::parse_flow_response_values(
     key_vtn_dataflow_t& key_vtn_dataflow,
     unc::vtnreadutil::driver_read_util* df_util,
-    json_object *jobj_data,
-    uint32_t arr_idx) {
+    std::list<data_flow> &df_info) {
   ODC_FUNC_TRACE;
-  uint32_t flowid = 0;
-  uint32_t creationTime = 0;
-  uint32_t hardTimeout = 0;
-  uint32_t idleTimeout = 0;
-  uint32_t status = 0;
-  uint32_t vlink_flag = 0;
 
   // Populate values to dataflow
   unc::dataflow::DataflowDetail *df_segm =
@@ -303,55 +172,31 @@ UncRespCode OdcVtnDataFlowCommand::parse_flow_response_values(
      }
      */
 
-  uint32_t ret_val = restjson::JsonBuildParse::parse(jobj_data, "id",
-                                                     arr_idx, flowid);
-  pfc_log_info("flowid 1 -- %d", flowid);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error("Error occured while parsing flowid");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
+  std::list<data_flow>::iterator it;
+  for (it = df_info.begin(); it != df_info.end(); it++) {
+    uint32_t flowid = 0;
+    uint32_t creationTime = 0;
+    uint32_t hardTimeout = 0;
+    uint32_t idleTimeout = 0;
+    uint32_t status = 0;
+    uint32_t vlink_flag = 0;
 
-  ret_val = restjson::JsonBuildParse::parse(jobj_data, "creationTime",
-                                            arr_idx, creationTime);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error(" Error occured while parsing cretiontime");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  pfc_log_info("Creation Time -- %d", creationTime);
-
-  ret_val = restjson::JsonBuildParse::parse(jobj_data, "idleTimeout",
-                                            arr_idx, idleTimeout);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error(" Error occured while parsing idle timeout");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  pfc_log_info("IdleTimeout Time -- %d", idleTimeout);
-
-  ret_val = restjson::JsonBuildParse::parse(jobj_data, "hardTimeout",
-                                            arr_idx, hardTimeout);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error(" Error occured while parsing hardtimeout");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  pfc_log_info("hardTimeout Time -- %d", hardTimeout);
+  //flow_id
+    flowid = it->flow_id;
+    creationTime = it->creation_time;
+    hardTimeout = it->hard_timeout;
+    idleTimeout = it->idle_timeout;
 
   //ingress_vbridge
-  json_object  *jobj_ingressnode = NULL;
-  ret_val = restjson::JsonBuildParse::parse(jobj_data, "ingressNode",
-                                                     arr_idx, jobj_ingressnode);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error("Error occured while parsing jobj_ingressnode");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  std::string in_vbridge = "";
-  ret_val = restjson::JsonBuildParse::parse(jobj_ingressnode, "bridge",
-                                                     -1, in_vbridge);
 
-  if (restjson::REST_OP_SUCCESS != ret_val ||
-      in_vbridge.empty()) {
-    pfc_log_error("Error occured while parsing ingress_vbridge");
-    //return UNC_DRV_RC_ERR_GENERIC;
+  std::string in_vbridge = "";
+  if (it->data_ingress_node_.valid == true){
+    if (!it->data_ingress_node_.ig_bridge.empty()){
+       in_vbridge = it->data_ingress_node_.ig_bridge;
   } else {
+       pfc_log_error("vbridge is empty");
+       //return UNC_DRV_RC_ERR_GENERIC;
+  }
     pfc_log_trace("ingress_vbridge %s", in_vbridge.c_str());
     if(df_cmn->df_segment->vtn_df_common == NULL) {
        pfc_log_trace("df_cmn->df_segment->vtn_df_common is NULL");
@@ -364,14 +209,13 @@ UncRespCode OdcVtnDataFlowCommand::parse_flow_response_values(
   }
 
   std::string in_vterm = "";
-  ret_val = restjson::JsonBuildParse::parse(jobj_ingressnode, "terminal",
-                                                     -1, in_vterm);
-
-  if (restjson::REST_OP_SUCCESS != ret_val ||
-      in_vterm.empty()) {
-    pfc_log_error("Error occured while parsing ingress_terminal");
-    //return UNC_DRV_RC_ERR_GENERIC;
-  } else {
+  if (it->data_ingress_node_.valid == true){
+    if (!it->data_ingress_node_.ig_term_name.empty()){
+       in_vterm = it->data_ingress_node_.ig_term_name;
+   } else {
+       pfc_log_error("vterminal is empty");
+       //return UNC_DRV_RC_ERR_GENERIC;
+     }
     pfc_log_trace("ingress_terminal %s", in_vterm.c_str());
     if(df_cmn->df_segment->vtn_df_common == NULL) {
        pfc_log_trace("df_cmn->df_segment->vtn_df_common is NULL");
@@ -383,14 +227,14 @@ UncRespCode OdcVtnDataFlowCommand::parse_flow_response_values(
     pfc_log_trace("ingress_terminal %s", df_cmn->df_segment->vtn_df_common->ingress_vnode);
   }
  //ingress_vinterface
- std::string in_vinterface = "";
- ret_val = restjson::JsonBuildParse::parse(jobj_ingressnode, "interface",
-                                                        -1, in_vinterface);
- if (restjson::REST_OP_SUCCESS != ret_val) {
-   pfc_log_error("Error occured while parsing in_vinterface");
-   return UNC_DRV_RC_ERR_GENERIC;
- }
- if (!in_vinterface.empty()) {
+  std::string in_vinterface = "";
+  if (!it->data_ingress_node_.ig_if_name.empty()){
+    in_vinterface = it->data_ingress_node_.ig_if_name;
+  } else {
+      pfc_log_error("vinterface is empty");
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+  if (!in_vinterface.empty()) {
   strncpy(reinterpret_cast<char*>(df_cmn->df_segment->vtn_df_common->ingress_vinterface),
           in_vinterface.c_str(),
           strlen(in_vinterface.c_str()));
@@ -402,26 +246,19 @@ UncRespCode OdcVtnDataFlowCommand::parse_flow_response_values(
 
 
  //egress_vbridge
- json_object *jobj_egressnode = NULL;
 
- std::string out_vbridge = "";
- std::string out_vinterface = "";
- std::string out_vterm = "";
- ret_val = restjson::JsonBuildParse::parse(jobj_data, "egressNode",
-                                                    arr_idx, jobj_egressnode);
- if (restjson::REST_OP_SUCCESS != ret_val ||
-      (json_object_is_type(jobj_egressnode, json_type_null))) {
-   pfc_log_info("Error occured while parsing egress_node is NULL");
-   //return UNC_DRV_RC_ERR_GENERIC;
- } else {
- ret_val = restjson::JsonBuildParse::parse(jobj_egressnode, "bridge",
-                                                  -1, out_vbridge);
- if(restjson::REST_OP_SUCCESS != ret_val) {
-   pfc_log_error("Error occured while parsing egress_vbridge");
-   return UNC_DRV_RC_ERR_GENERIC;
+  std::string out_vbridge = "";
+  std::string out_vinterface = "";
+  std::string out_vterm = "";
+  if (it->data_egress_node_.valid == true){
+    if (!it->data_egress_node_.eg_bridge.empty()){
+       out_vbridge = it->data_egress_node_.eg_bridge;
+   } else {
+       pfc_log_error("vbridge is empty");
+     }
  }
  if(!out_vbridge.empty()) {
-   strncpy(reinterpret_cast<char*>(df_cmn->df_segment->vtn_df_common->egress_vnode), 
+   strncpy(reinterpret_cast<char*>(df_cmn->df_segment->vtn_df_common->egress_vnode),
            out_vbridge.c_str(),
           strlen(out_vbridge.c_str()));
      df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_EGRESS_VNODE_VVDC] = UNC_VF_VALID;
@@ -430,13 +267,17 @@ UncRespCode OdcVtnDataFlowCommand::parse_flow_response_values(
    }
   pfc_log_trace("egress_vnode %s", df_cmn->df_segment->vtn_df_common->egress_vnode);
 
-  ret_val = restjson::JsonBuildParse::parse(jobj_egressnode, "terminal",
-                                                     -1, out_vterm);
 
-  if (restjson::REST_OP_SUCCESS != ret_val ||
-      out_vterm.empty()) {
+  if (it->data_egress_node_.valid == true){
+    if (!it->data_egress_node_.eg_terminal.empty()){
+      out_vterm = it->data_egress_node_.eg_terminal;
+    } else {
+       pfc_log_error("vterminal is empty");
+  }
+  }
+
+  if (out_vterm.empty()) {
     pfc_log_error("Error occured while parsing egress_terminal");
-    //return UNC_DRV_RC_ERR_GENERIC;
   } else {
     pfc_log_trace("ingress_terminal %s", out_vterm.c_str());
     if(df_cmn->df_segment->vtn_df_common == NULL) {
@@ -450,14 +291,15 @@ UncRespCode OdcVtnDataFlowCommand::parse_flow_response_values(
   }
 
  //egress_vinterface
- ret_val = restjson::JsonBuildParse::parse(jobj_egressnode, "interface",
-                                                      -1, out_vinterface);
- if(restjson::REST_OP_SUCCESS != ret_val) {
-   pfc_log_error("Error occured while parsing out_vinterface");
-   return UNC_DRV_RC_ERR_GENERIC;
- }
- if(!out_vinterface.empty()) {
-   strncpy(reinterpret_cast<char*>(df_cmn->df_segment->vtn_df_common->egress_vinterface),
+  if (it->data_egress_node_.valid == true){
+    if (!it->data_egress_node_.eg_if.empty()){
+      out_vinterface = it->data_egress_node_.eg_if;
+  } else {
+       pfc_log_error("vinterface is empty");
+       return UNC_DRV_RC_ERR_GENERIC;
+    }
+  if(!out_vinterface.empty()) {
+     strncpy(reinterpret_cast<char*>(df_cmn->df_segment->vtn_df_common->egress_vinterface),
                                    out_vinterface.c_str(),
                                    strlen(out_vinterface.c_str()));
      df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_EGRESS_VINTERFACE_VVDC] = UNC_VF_VALID;
@@ -466,265 +308,109 @@ UncRespCode OdcVtnDataFlowCommand::parse_flow_response_values(
    }
    pfc_log_trace("egress_vinterface %s", df_cmn->df_segment->vtn_df_common->egress_vinterface);
  }
- json_object *jobj_ingressport = NULL;
- json_object *jobj_node = NULL;
- ret_val = restjson::JsonBuildParse::parse(jobj_data, "ingressPort",
-                                            arr_idx, jobj_ingressport);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error(" Error occured while parsing ");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  std::string switch_id = "";
-  ret_val = restjson::JsonBuildParse::parse(jobj_ingressport, "node",
-                                            -1, jobj_node);
-  if (json_object_is_type(jobj_node, json_type_null)) {
-    json_object_put(jobj_data);
-    pfc_log_error("%s jobj_vbr NULL", PFC_FUNCNAME);
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  ret_val = restjson::JsonBuildParse::parse(jobj_node, "id",
-                                            -1, switch_id);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error(" Error occured while parsing ");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  pfc_log_info("ingress_switch_id -- %s", switch_id.c_str());
 
-  json_object *jobj_port = NULL;
-  ret_val = restjson::JsonBuildParse::parse(jobj_ingressport, "port",
-                                            -1, jobj_port);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error(" Error occured while parsing ");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  std::string station_id = "";
-  ret_val = restjson::JsonBuildParse::parse(jobj_port, "id",
-                                            -1, station_id);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error(" Error occured while parsing ");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  pfc_log_info("station_id_id -- %s", station_id.c_str());
-  std::string in_portname = "";
-  ret_val = restjson::JsonBuildParse::parse(jobj_port, "name",
-                                            -1, in_portname);
-  pfc_log_info("in_portname_name -- %s", in_portname.c_str());
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error(" Error occured while parsing ");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
+ //ingressport
+
+   std::string switch_id = "";
+   std::string station_id = "";
+   std::string in_portname = "";
+   if (it->data_ingress_port_.valid == true) {
+   if(!it->data_ingress_port_.ig_node.empty()) {
+     switch_id = it->data_ingress_port_.ig_node;
+   } else {
+      pfc_log_error("switch-id is null");
+      return UNC_DRV_RC_ERR_GENERIC;
+   }
+   if(!it->data_ingress_port_.ig_port_name.empty())
+     in_portname = it->data_ingress_port_.ig_port_name;
+   else {
+      pfc_log_error("port-name is empty");
+      return UNC_DRV_RC_ERR_GENERIC;
+   }
+   if(!it->data_ingress_port_.ig_port_id.empty())
+     station_id = it->data_ingress_port_.ig_port_id;
+   else {
+      pfc_log_error("port-id is empty");
+      return UNC_DRV_RC_ERR_GENERIC;
+   }
+   }
 
   // egressPort
-  ret_val = restjson::JsonBuildParse::parse(jobj_data, "egressPort",
-                                            arr_idx, jobj_ingressport);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error(" Error occured while parsing egressPort");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  std::string egress_switch_id = "";
-  ret_val = restjson::JsonBuildParse::parse(jobj_ingressport, "node",
-                                            -1, jobj_node);
-  if (json_object_is_type(jobj_node, json_type_null)) {
-    json_object_put(jobj_data);
-    pfc_log_error("%s jobj_vbr NULL", PFC_FUNCNAME);
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  ret_val = restjson::JsonBuildParse::parse(jobj_node, "id",
-                                            -1, egress_switch_id);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error(" Error occured while parsing ");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  pfc_log_info("egress_switch_id -- %s", egress_switch_id.c_str());
-
-  jobj_port = NULL;
-  ret_val = restjson::JsonBuildParse::parse(jobj_ingressport, "port",
-                                            -1, jobj_port);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error(" Error occured while parsing ");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  std::string out_station_id = "";
-  ret_val = restjson::JsonBuildParse::parse(jobj_port, "id",
-                                            -1, out_station_id);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error(" Error occured while parsing ");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  pfc_log_info("out_station_id_id -- %s", out_station_id.c_str());
-  std::string out_portname = "";
-  ret_val = restjson::JsonBuildParse::parse(jobj_port, "name",
-                                            -1, out_portname);
-  pfc_log_info("out_portname_name -- %s", out_portname.c_str());
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error(" Error occured while parsing ");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
+   std::string egress_switch_id = "";
+   std::string out_station_id = "";
+   std::string out_portname = "";
+   if (it->data_egress_port_.valid == true) {
+   if(!it->data_egress_port_.eg_node.empty())
+      egress_switch_id = it->data_egress_port_.eg_node;
+   else {
+      pfc_log_error("node-id is empty");
+      return UNC_DRV_RC_ERR_GENERIC;
+   }
+   if(!it->data_egress_port_.eg_port_id.empty())
+     out_station_id = it->data_egress_port_.eg_port_id;
+   else {
+      pfc_log_error("port-id is empty");
+      return UNC_DRV_RC_ERR_GENERIC;
+   }
+   if(!it->data_egress_port_.eg_port_name.empty())
+     out_portname = it->data_egress_port_.eg_port_name;
+   else {
+      pfc_log_error("port-id is empty");
+      return UNC_DRV_RC_ERR_GENERIC;
+   }
+   }
 
   // action
-  json_object* jobj_actions = NULL;
-  ret_val = restjson::JsonBuildParse::parse(jobj_data, "actions",
-                                            arr_idx, jobj_actions);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error(" Error occured while parsing ");
-    return UNC_DRV_RC_ERR_GENERIC;
+    df_cmn->df_segment->vtn_df_common->valid[kidxDfDataFlowActionCount] = UNC_VF_INVALID;
+ //vnoderoute
+   std::list<virtual_route>::iterator iter;
+   uint32_t node_array_len = it->virtual_route_.size();
+
+   pfc_log_info("--------------path-info arraylength --- %d", node_array_len);
+   //struct path_info pathinfo_record[node_array_len];
+   uint32_t order = 0;
+   for (iter = it->virtual_route_.begin(),order = 0; iter !=
+               it->virtual_route_.end(),order < node_array_len;iter++,order++) {
+     std::string in_reason = "";
+     if (!iter->reason.empty()){
+       in_reason = iter->reason;
+     } else {
+        pfc_log_error("reason is empty");
+        return UNC_DRV_RC_ERR_GENERIC;
+     }
+     std::string in_reason_info1 = "FORWARDED";
+     std::string in_reason_info2 = "REDIRECTED";
+     std::string in_reason_info3 = "PORTMAPPED";
+     if(strcmp(in_reason.c_str(),in_reason_info1.c_str()) == 0) {
+       pfc_log_debug("Pass Success");
+       status = 0;
+       vlink_flag = 1;
+     } else if(strcmp(in_reason.c_str(),in_reason_info2.c_str()) == 0) {
+       pfc_log_debug("Redirect Success");
+       status = 0;
+       vlink_flag = 0;
+     } else if(strcmp(in_reason.c_str(),in_reason_info3.c_str()) == 0) {
+       pfc_log_debug("portmapped");
+     } else {
+       pfc_log_debug("drop Success");
+       status = 1;
+       vlink_flag = 0;
+     }
   }
-  uint32_t action_array_len = 0;
-  if (json_object_is_type(jobj_actions, json_type_array)) {
-    // check for action-popvlan
-    action_array_len = restjson::JsonBuildParse::get_array_length(
-        jobj_actions);
-    pfc_log_info("--------------action_count arraylength --- %d",
-                 action_array_len);
-    if (action_array_len > 0) {
-      df_cmn->df_segment->vtn_df_common->action_count = action_array_len;
-      df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_ACTION_COUNT_VVDC] =
-          UNC_VF_VALID;
-      pfc_log_info("action_count %u",
-                   df_cmn->df_segment->vtn_df_common->action_count);
-      json_object *jobj_popvlan = NULL;
-      uint32_t pop_array_len =
-          restjson::JsonBuildParse::get_array_length(jobj_popvlan);
-      pfc_log_info("pop_array_len = %d and array_index=%d ",
-                   pop_array_len, arr_idx);
-      ret_val = restjson::JsonBuildParse::parse(jobj_actions, "popvlan",
-                                                pop_array_len, jobj_popvlan);
-      if (restjson::REST_OP_SUCCESS == ret_val && jobj_popvlan != NULL) {
-        pfc_log_debug("popvlan success");
-        unc::dataflow::val_actions_vect_st *ptr =
-            new unc::dataflow::val_actions_vect_st;
-        memset(ptr, 0, sizeof(unc::dataflow::val_actions_vect_st));
-        ptr->action_type = UNC_ACTION_STRIP_VLAN;
-        pfc_log_trace("vln_action_type : %d vln_action_type_enum : %d",
-                      ptr->action_type, (uint32_t)UNC_ACTION_STRIP_VLAN);
-        df_cmn->df_segment->actions.push_back(ptr);
-      } else {
-        pfc_log_error(" Error occured while parsing popvlan.continue");
-      }
-
-      // check for action-vlanid
-      json_object *jobj_vlanid = NULL;
-      uint32_t vlanid_array_len =
-          restjson::JsonBuildParse::get_array_length(jobj_vlanid);
-      ret_val = restjson::JsonBuildParse::parse(jobj_actions, "vlanid",
-                                                vlanid_array_len, jobj_vlanid);
-      if (restjson::REST_OP_SUCCESS == ret_val && jobj_vlanid != NULL) {
-        pfc_log_debug("parsing vlanid success");
-        uint32_t action_vlanid = 0;
-        ret_val = restjson::JsonBuildParse::parse(jobj_vlanid, "vlan",
-                                                  -1, action_vlanid);
-        if (restjson::REST_OP_SUCCESS == ret_val) {
-          pfc_log_debug("parsing vlanid success inner loop");
-          unc::dataflow::val_actions_vect_st *ptr =
-              new unc::dataflow::val_actions_vect_st;
-          memset(ptr, 0, sizeof(unc::dataflow::val_actions_vect_st));
-          ptr->action_type = UNC_ACTION_SET_VLAN_ID;
-          pfc_log_trace("vln_action_type : %d vln_action_type_enum : %d",
-                        ptr->action_type, (uint32_t)UNC_ACTION_SET_VLAN_ID);
-          val_df_flow_action_set_vlan_id *set_vlan_id =
-              new val_df_flow_action_set_vlan_id;
-          memset(set_vlan_id, 0, sizeof(val_df_flow_action_set_vlan_id_t));
-          set_vlan_id->vlan_id = action_vlanid;
-          ptr->action_st_ptr = (void *) set_vlan_id;
-          df_cmn->df_segment->actions.push_back(ptr);
-        } else {
-          pfc_log_error(" Error occured while parsing vlanid.continue");
-        }
-      } else {
-        pfc_log_error(" Error occured while parsing vlanid.continue");
-      }
-
-    /*  json_object *jobj_drop = NULL;
-      uint32_t drop_array_len =
-          restjson::JsonBuildParse::get_array_length(jobj_drop);
-      pfc_log_info("pop_array_len = %d and array_index=%d ",
-                   drop_array_len, arr_idx);
-      ret_val = restjson::JsonBuildParse::parse(jobj_actions, "drop",
-                                                drop_array_len, jobj_drop);
-      if (restjson::REST_OP_SUCCESS == ret_val && jobj_drop != NULL) {
-        pfc_log_debug("drop success");
-        status = 1;
-      } else {
-        pfc_log_debug("drop failure");
-        status = 0;
-    }*/
-    } else {
-      df_cmn->df_segment->vtn_df_common->valid[kidxDfDataFlowActionCount] = UNC_VF_INVALID;
-}
-}
-  json_object *jobj_vnoderoute = NULL;
-  ret_val = restjson::JsonBuildParse::parse(jobj_data, "vnoderoute",
-                                            arr_idx, jobj_vnoderoute);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error(" Error occured while parsing ");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-uint32_t node_array_len = 0;
-if (json_object_is_type(jobj_vnoderoute, json_type_array)) {
-  node_array_len =
-      restjson::JsonBuildParse::get_array_length(jobj_vnoderoute);
-  pfc_log_info("--------------path-info arraylength --- %d", node_array_len);
-  //struct path_info pathinfo_record[node_array_len];
-  for (uint32_t node_arr_idx = 0; node_arr_idx < node_array_len;
-       node_arr_idx++) {
-    std::string in_reason = "";
-    ret_val = restjson::JsonBuildParse::parse(jobj_vnoderoute, "reason",
-                                              node_arr_idx, in_reason);
-    if (restjson::REST_OP_SUCCESS != ret_val) {
-      pfc_log_error(" Error occured while parsing ");
-      return UNC_DRV_RC_ERR_GENERIC;
-    }
-    std::string in_reason_info1 = "FORWARDED";
-    std::string in_reason_info2 = "REDIRECTED";
-    std::string in_reason_info3 = "PORTMAPPED";
-    if(strcmp(in_reason.c_str(),in_reason_info1.c_str()) == 0) {
-      pfc_log_debug("Pass Success");
-      status = 0;
-      vlink_flag = 1;
-    } else if(strcmp(in_reason.c_str(),in_reason_info2.c_str()) == 0) {
-      pfc_log_debug("Redirect Success");
-      status = 0;
-      vlink_flag = 0;
-    } else if(strcmp(in_reason.c_str(),in_reason_info3.c_str()) == 0) {
-      pfc_log_debug("portmapped");
-    } else {
-      pfc_log_debug("drop Success");
-      status = 1;
-      vlink_flag = 0;
-    }
-
- }
-}
 
   // match - START
-  json_object *jobj_match = NULL;
-  json_object *jobj_ethernet = NULL;
-  json_object *jobj_inetMatch = NULL;
-  json_object *jobj_inet4 = NULL;
   pfc_bool_t match_status = PFC_FALSE;
-  ret_val = restjson::JsonBuildParse::parse(jobj_data, "match",
-                                            arr_idx, jobj_match);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error(" Error occured while parsing match");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
+  if(it->data_flow_match_.valid == true){
 
   // check match-ethernet
-  ret_val = restjson::JsonBuildParse::parse(jobj_match, "ethernet",
-                                            -1, jobj_ethernet);
-  if (restjson::REST_OP_SUCCESS == ret_val) {
-    pfc_log_debug(" match-ethernet success. fill val st ");
     df_cmn->df_segment->vtn_df_common->match_count = 1;
     pfc_log_debug("match count = %u",
                   df_cmn->df_segment->vtn_df_common->match_count);
 
     // match-ethernet-vlan
     uint32_t vlan = 0;
-    ret_val = restjson::JsonBuildParse::parse(jobj_ethernet, "vlan",
-                                              -1, vlan);
-    pfc_log_info("vlan -- %d", vlan);
-    if (restjson::REST_OP_SUCCESS == ret_val) {
+    if (it->data_flow_match_.da_vtn_ether_match_.vlan != -1) {
+      vlan = it->data_flow_match_.da_vtn_ether_match_.vlan;
       if (vlan !=0) {
         pfc_log_info("valid vlan. set and send");
         val_df_flow_match_vlan_id_t* val_vlan_id_obj =
@@ -743,10 +429,9 @@ if (json_object_is_type(jobj_vnoderoute, json_type_array)) {
 
     // match-ethernet-src
     std::string src = "";
-    ret_val = restjson::JsonBuildParse::parse(jobj_ethernet, "src",
-                                              -1, src);
-    pfc_log_info("src df -- %s", src.c_str());
-    if (restjson::REST_OP_SUCCESS == ret_val) {
+    if(!it->data_flow_match_.da_vtn_ether_match_.src_arr.empty()) {
+      src = it->data_flow_match_.da_vtn_ether_match_.src_arr;
+      pfc_log_info("src df -- %s", src.c_str());
       pfc_log_info("ethernet-src. success");
       val_df_flow_match_dl_addr_t* val_dl_addr_obj =
           new val_df_flow_match_dl_addr_t;
@@ -771,10 +456,8 @@ if (json_object_is_type(jobj_vnoderoute, json_type_array)) {
 
     // match-ethernet-dst
     std::string dst = "";
-    ret_val = restjson::JsonBuildParse::parse(jobj_ethernet, "dst",
-                                              -1, dst);
-    pfc_log_info("dst -- %s", dst.c_str());
-    if (restjson::REST_OP_SUCCESS == ret_val) {
+    if(!it->data_flow_match_.da_vtn_ether_match_.dst_arr.empty()) {
+      dst = it->data_flow_match_.da_vtn_ether_match_.dst_arr;
       pfc_log_info("ethernet-dst. success");
       val_df_flow_match_dl_addr_t* val_dl_addr_obj =
           new val_df_flow_match_dl_addr_t;
@@ -803,104 +486,6 @@ if (json_object_is_type(jobj_vnoderoute, json_type_array)) {
                   "continue for inetMatch.");
   }
 
-  // check match-inetMatch
-  ret_val = restjson::JsonBuildParse::parse(jobj_match, "inetMatch",
-                                            -1, jobj_inetMatch);
-  if (restjson::REST_OP_SUCCESS == ret_val) {
-    pfc_log_debug(" match-inetMatch success. Check for inet4 ");
-    ret_val = restjson::JsonBuildParse::parse(jobj_match, "inet4",
-                                              -1, jobj_inet4);
-
-    if (restjson::REST_OP_SUCCESS == ret_val) {
-      pfc_log_debug(" match-inetMatch-inet4 success. fill val st ");
-
-      // match-inetMatch-inet4-src
-      std::string src = "";
-      ret_val = restjson::JsonBuildParse::parse(jobj_inet4, "src",
-                                                -1, src);
-      pfc_log_info("src df -- %s", src.c_str());
-      if (restjson::REST_OP_SUCCESS == ret_val) {
-        pfc_log_info("inetMatch-inet4-src. success");
-        val_df_flow_match_ipv4_addr_t* val_ipv4_addr_obj =
-            new val_df_flow_match_ipv4_addr_t;
-        memset(val_ipv4_addr_obj, 0, sizeof(val_df_flow_match_ipv4_addr_t));
-        memcpy(&val_ipv4_addr_obj->ipv4_addr, src.c_str(),
-               sizeof(val_df_flow_match_ipv4_addr_t));
-        val_ipv4_addr_obj->v_mask = UNC_MATCH_MASK_INVALID;
-        df_cmn->df_segment->matches.insert(
-            std::pair<UncDataflowFlowMatchType, void *>(UNC_MATCH_IPV4_SRC,
-                                                        val_ipv4_addr_obj));
-      } else {
-        pfc_log_error(" Error occured while parsing"
-                      "inetMatch-inet4-src.continue");
-      }
-
-      // match-inetMatch-inet4-dst
-      std::string dst = "";
-      ret_val = restjson::JsonBuildParse::parse(jobj_inet4, "dst",
-                                                -1, dst);
-      pfc_log_info("dst -- %s", dst.c_str());
-      if (restjson::REST_OP_SUCCESS == ret_val) {
-        pfc_log_info("match-inetMatch-inet4-dst. success");
-        val_df_flow_match_ipv4_addr_t* val_ipv4_addr_obj =
-            new val_df_flow_match_ipv4_addr_t;
-        memset(val_ipv4_addr_obj, 0, sizeof(val_df_flow_match_ipv4_addr_t));
-        memcpy(&val_ipv4_addr_obj->ipv4_addr, dst.c_str(),
-               sizeof(val_df_flow_match_ipv4_addr_t));
-        val_ipv4_addr_obj->v_mask = UNC_MATCH_MASK_INVALID;
-        df_cmn->df_segment->matches.insert(
-            std::pair<UncDataflowFlowMatchType, void *>(UNC_MATCH_IPV4_DST,
-                                                        val_ipv4_addr_obj));
-      } else {
-        pfc_log_error(" Error occured while parsing"
-                      "match-inetMatch-inet4-dst.continue");
-      }
-
-      // match-inetMatch-inet4-protocol
-      uint32_t proto = 0;
-      ret_val = restjson::JsonBuildParse::parse(jobj_inet4, "protocol",
-                                                -1, proto);
-      pfc_log_info("protocol -- %d", proto);
-      if (restjson::REST_OP_SUCCESS == ret_val) {
-        pfc_log_info("match-inetMatch-inet4-protocol. success");
-        val_df_flow_match_ip_proto_t* val_ip_proto_obj =
-            new val_df_flow_match_ip_proto_t;
-        memset(val_ip_proto_obj, 0, sizeof(val_df_flow_match_ip_proto_t));
-        val_ip_proto_obj->ip_proto = proto;
-        df_cmn->df_segment->matches.insert(
-            std::pair<UncDataflowFlowMatchType, void *>(UNC_MATCH_IP_PROTO,
-                                                        val_ip_proto_obj));
-      } else {
-        pfc_log_error(" Error occured while parsing"
-                      "match-inetMatch-inet4-protocol.continue");
-      }
-      match_status = PFC_TRUE;
-      pfc_log_debug("match_status:%d", match_status);
-    } else {
-      pfc_log_error(" Error occured while parsing inetMatch-inet4. continue");
-    }
-  } else {
-    pfc_log_error(" Error occured while parsing inetMatch. continue");
-  }
-
-  //match - vlanpri
-  uint32_t vlan_pcp = 0;
-  ret_val = restjson::JsonBuildParse::parse(jobj_ethernet, "vlanpri",
-                                           -1, vlan_pcp);
-  pfc_log_info("match-ethernetMatch-vlan_pcp -- %d", vlan_pcp);
-  if(restjson::REST_OP_SUCCESS == ret_val) {
-    pfc_log_info("match-ethernetMatch-vlan_pcp. success");
-    val_df_flow_match_vlan_pcp_t* val_vlan_pcp_obj =
-        new val_df_flow_match_vlan_pcp_t;
-    memset(val_vlan_pcp_obj, 0, sizeof(val_df_flow_match_vlan_pcp_t));
-    val_vlan_pcp_obj->vlan_pcp = vlan_pcp;
-    df_cmn->df_segment->matches.insert(
-        std::pair<UncDataflowFlowMatchType, void *>(UNC_MATCH_VLAN_PCP,
-                                                    val_vlan_pcp_obj));
-  } else {
-     pfc_log_error(" Error occured while parsing match-ethernetMatch-vlan_pcp. continue");
-  }
-
   if (match_status == PFC_TRUE) {
     pfc_log_error("match_status is true. match found");
     df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_MATCH_COUNT_VVDC] =
@@ -912,7 +497,6 @@ if (json_object_is_type(jobj_vnoderoute, json_type_array)) {
   }
 
   // match - END
-
 
   /*struct path_info {
     std::string switchid;
@@ -1081,7 +665,7 @@ if (json_object_is_type(jobj_vnoderoute, json_type_array)) {
     df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_HARD_TIMEOUT_VVDC] = UNC_VF_VALID;
     pfc_log_trace(" hard time out : %u", df_cmn->df_segment->vtn_df_common->hard_timeout);
 
-    
+
     /* copy Status to dataflow common struct */
     //df_cmn->df_segment->vtn_df_common->valid[kidxDfDataFlowStatus] =
     //    UNC_VF_INVALID;
@@ -1095,7 +679,7 @@ if (json_object_is_type(jobj_vnoderoute, json_type_array)) {
     //df_cmn->df_segment->vtn_df_common->valid[kidxDfDataFlowVtnId] =
     //    UNC_VF_INVALID;
     /* copy Ingress SwitchId to dataflow common struct */
-    
+
     strncpy(reinterpret_cast<char*> (
             df_cmn->df_segment->vtn_df_common->ingress_switch_id),
             switch_id.c_str(),
@@ -1120,7 +704,7 @@ if (json_object_is_type(jobj_vnoderoute, json_type_array)) {
     pfc_log_trace("station_id : %" PFC_PFMT_u64,
                   df_cmn->df_segment->vtn_df_common->in_station_id);
                   */
-    
+
   //ingress_logical_port_id
   //Converts the logical port id from 11:11:22:22:33:33:44:44-name to
   //PP-1111-2222-3333-4444-name format
@@ -1185,7 +769,7 @@ if (json_object_is_type(jobj_vnoderoute, json_type_array)) {
     pfc_log_trace("Out-station_id : %" PFC_PFMT_u64,
                   df_cmn->df_segment->vtn_df_common->out_station_id);
                   */
-    
+
     //egress_logical_port_id
   memset(df_cmn->df_segment->vtn_df_common->egress_logical_port_id,'\0',
                             sizeof(df_cmn->df_segment->vtn_df_common->egress_logical_port_id));
@@ -1267,7 +851,7 @@ if (json_object_is_type(jobj_vnoderoute, json_type_array)) {
   }*/
   unc::vtnreadutil::driver_dataflow_read_util::add_read_value
       (df_cmn, df_util);
-
+  }
   // df_util.appendFlow(df_cmn);
   return UNC_RC_SUCCESS;
 }

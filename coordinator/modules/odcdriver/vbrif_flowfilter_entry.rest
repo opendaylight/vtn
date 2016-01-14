@@ -285,6 +285,7 @@ is_child=yes
 struct_name=vbrin_flow_action
 members=dlsrc_address,valid
 build_support=yes
+mandatory=no
 parse_support=no
 
 [dlsrc_address]
@@ -326,7 +327,6 @@ parse_support=no
 type=struct
 key="vtn-set-dl-dst-action"
 is_child=yes
-mandatory=no
 struct_name=vbrin_flow_action
 members=dldst_address,valid
 mandatory=no
@@ -434,6 +434,7 @@ key="port"
 is_child=yes
 struct_name=vbrin_tpdst
 build_support=no
+mandatory=no
 parse_support=no
 
 [vbrin_icmptype]
@@ -482,6 +483,7 @@ check_bool_set=yes
 struct_name=ip_vbr_if_flowfilter
 members=input_vbrif_flow_filter,valid
 build_support=yes
+mandatory=no
 parse_support=no
 
 [ip_vbr_if_flowfilters]
@@ -492,6 +494,7 @@ check_bool_set=yes
 struct_name=ip_vbr_if_flowfilter
 members=ip_vbr_if_flowfilter
 build_support=yes
+mandatory=no
 parse_support=no
 
 [vbrint_flowfilters]
@@ -502,6 +505,7 @@ check_bool_set=yes
 struct_name=ip_vbr_if_flowfilter
 members=vbrint_flowfilters
 build_support=no
+mandatory=no
 parse_support=no
 
 [vbrif_flowfilter_entry_parser]
