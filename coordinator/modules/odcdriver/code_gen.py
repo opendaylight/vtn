@@ -41,6 +41,8 @@ def read_nested_object(item, file_desc, members, output_file_name, d):
     print 'objects'
     print 'members', members
     url_name = parser.ReadValues(item, 'ROOT')['url_class']
+    parse_name = parser.ReadValues(item, 'ROOT')['parse_class']
+    get_check = parser.ReadValues(item, parse_name).has_key('get_req')
     class_parsename = parser.ReadValues(item, 'ROOT').has_key('parse_class')
     method = parser.ReadValues(item, 'ROOT')['methods']
     check_key = parser.ReadValues(item, url_name).has_key('interface')
@@ -66,7 +68,10 @@ def read_nested_object(item, file_desc, members, output_file_name, d):
     objects = objects + ' std::string url(get_url());' + '\n'
     objects = objects + 'unc::restjson::RestUtil rest_util_obj(ctr->get_host_address(),ctr->get_user_name(),ctr->get_pass_word());' + '\n'
     objects = objects + 'unc::odcdriver::OdcController *odc_ctr = reinterpret_cast<unc::odcdriver::OdcController *>(ctr);' + '\n'
-    objects = objects + 'unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(url,restjson::HTTP_METHOD_GET,NULL,odc_ctr->get_conf_value());' + '\n'
+    if str(get_check) == 'True':
+       objects = objects + 'unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(url,restjson::HTTP_METHOD_POST,unc::restjson::JsonBuildParse::get_json_string(parser->get_obj),odc_ctr->get_conf_value());' + '\n'
+    else:
+       objects = objects + 'unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(url,restjson::HTTP_METHOD_GET,NULL,odc_ctr->get_conf_value());' + '\n'
     objects = objects + 'if (NULL == response) {' +'\n'
     objects = objects + '\t' +'pfc_log_error("Error Occured while getting httpresponse");' +'\n'
     objects = objects + '\t' +'return UNC_DRV_RC_ERR_GENERIC;' +'\n'
@@ -96,11 +101,14 @@ def read_nested_object(item, file_desc, members, output_file_name, d):
 # This method will generate parser class and it will parse the structure members into it
 def create_parser_class(item, file_desc, output_file_name, d):
     class_name = parser.ReadValues(item, 'ROOT')['parse_class']
+    get_check = parser.ReadValues(item,class_name).has_key('get_req')
     req_mem = parser.ReadValues(item, class_name)['parse_request_members']
     struct_name = parser.ReadValues(item, req_mem)['struct_name']
     name = 'class %s {'%(class_name) + '\n\t' + 'public:' + '\n'  + '\t\t' + class_name + '() { };' + '\n\t\t' + '~' + class_name + '() { };'  + '\n'
     name = name + 'std::list<%s>'%(struct_name) + '%s' %(struct_name)+ '_;' +'\n'
     name = name + 'json_object *jobj;' + '\n'
+    if str(get_check) == 'True':
+      name = name + 'json_object *get_obj;' + '\n'
     d['class'] = name
     print 'class_name', d['class']
     file = open(output_file_name, "a")
@@ -114,6 +122,8 @@ def create_parser_class(item, file_desc, output_file_name, d):
             build_config(item, req_mem, file_desc, output_file_name, d)
         elif operation == 'DEL' :
             del_build_config(item, req_mem, file_desc, output_file_name, d)
+        elif operation == 'READ' and str(get_check) == 'True':
+            get_build_config(item, req_mem, file_desc, output_file_name, d)
 
 # It will create list object and it will push the structure objects into it
 def get_config(item, req_mem, file_desc, output_file_name, d):
@@ -253,6 +263,49 @@ def build_config(item, req_mem, file_desc, output_file_name, d):
     else:
         print "parent struct doesn't support build"
 
+# This method will generate build methods for structure members during the GET OPERATION
+def get_build_config(item, req_mem, file_desc, output_file_name, d):
+    class_name = parser.ReadValues(item, 'ROOT')['parse_class']
+    type = parser.ReadValues(item, class_name)['type']
+    req_mem = parser.ReadValues(item, class_name)['build_request_members']
+    member = parser.ReadValues(item, req_mem)['members']
+    childs = parser.ReadValues(item, member)['members']
+    struct_name = parser.ReadValues(item, req_mem)['struct_name']
+    struct_build = parser.ReadValues(item, struct_name)['build_support']
+    if struct_build != 'no':
+        build_begin = 'json_object *get_req (%s&  %s_st){'%(struct_name, struct_name) + '\n'
+        build_begin = build_begin + 'json_object *jobj = unc::restjson::JsonBuildParse::create_json_obj();' + '\n'
+        build_begin = build_begin + 'uint32_t ret_val = restjson::REST_OP_FAILURE;' + '\n'
+        d['build_begin'] = build_begin
+        file = open(output_file_name, "a")
+        file.write(d['build_begin'])
+        file.close()
+        for child in childs.split(','):
+            print "child in build_config", child
+            build_type = parser.ReadValues(item, child)['build_support']
+            if build_type != 'no':
+                child_type = parser.ReadValues(item, child)['type']
+                key_name = parser.ReadValues(item, child)['key']
+                key_s = key_name.replace('"', '')
+                print key_s
+                if child_type != 'struct':
+                     write_build(item, key_name, struct_name, child, key_s, child_type, output_file_name, d)
+                elif child_type == 'struct' :
+                     print " struct---", key_name
+                     st_name = struct_name +'_st.'+ child +'_'
+                     parent_obj = 'jobj'
+                     print "st_name from build struct--->", st_name
+                     build_struct(item, st_name, child, parent_obj, output_file_name, d)
+                     st_name =''
+        build_end = 'get_obj = jobj;' + '\n'
+        build_end = build_end + 'return jobj;' + '\n'
+        build_end = build_end + '}'  + '\n'
+        d['build_end'] = build_end
+        file = open(output_file_name, "a")
+        file.write(d['build_end'])
+        file.close()
+    else:
+        print "parent struct doesn't support build"
 # This method will generate delete methods for structure members
 def del_build_config(item, req_mem, file_desc, output_file_name, d):
     class_name = parser.ReadValues(item, 'ROOT')['parse_class']
@@ -611,7 +664,6 @@ def build_struct(item, st_name, member, parent_obj, output_file_name, d):
     first_bool = 0
     build_st_end = ''
     for child in st_child_mem.split(','):
-        print "SWE readind child",child
         mandatory_parm = parser.ReadValues(item, child)['mandatory']
         print "MANDAROTY PARAM", mandatory_parm, child
         type_mem = parser.ReadValues(item, child)['type']
@@ -671,7 +723,8 @@ def parse_member(item, struct_name, obj_in, member, array_index,output_file_name
     type_name = parser.ReadValues(item, member)['type']
     struc_name = parser.ReadValues(item,member)['struct_name']
     parent_strct_type = parser.ReadValues(item, struc_name)['type']
-    print "Checking the struct types",class_struct, parent_strct_type
+    check_mand = parser.ReadValues(item,member)['mandatory']
+    print "Checking the struct types",class_struct, parent_strct_type 
     key_s = req_key.replace('"', '')
     print "type_key", type_name
     parse = parser.ReadValues(item, member)['parse_support']
@@ -684,15 +737,15 @@ def parse_member(item, struct_name, obj_in, member, array_index,output_file_name
                 object = '\n' + 'ret_val = restjson::JsonBuildParse::parse(%s,%s'%(obj_in, req_key) +',%s,st_%s.%s);'%(array_index,struct_name, member) + '\n'
             elif parent_strct_type != 'array':
                 object = '\n' + 'ret_val = restjson::JsonBuildParse::parse(%s,%s'%(obj_in, req_key) +',-1,st_%s.%s);'%(struct_name, member) + '\n'
-                #object = object + 'st_%s.valid = true;' %(struct_name)+ '\n'
-            if type_name == 'string':
+            if type_name == 'string' or type_name == 'int' or type_name == 'bool':
                 object =  object + 'if (restjson::REST_OP_SUCCESS != ret_val) {' + '\n'
             elif type_name == 'int':
                 object = object + 'if (restjson::REST_OP_SUCCESS != ret_val) {'+ '\n'
             elif type_name == 'bool':
                 object = object + 'if (restjson::REST_OP_SUCCESS != ret_val) {'+ '\n'
             object = object + '\t' + 'pfc_log_error(" Error while parsing %s");'%(key_s) + '\n'
-            object = object + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' + '\n'
+            if check_mand == 'yes':
+                object = object + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' + '\n'
             object = object + '}' + '\n'
             d['object'] = object
             file = open(output_file_name, "a")
@@ -824,8 +877,10 @@ def parse_nested_array_object(item, member, obj_in, output_file_name, d, prefix)
     st_name = parser.ReadValues(item, member)['struct_name']
     parent_st_type = parser.ReadValues(item,st_name)['type']
     check_bool = parser.ReadValues(item, member)['check_bool_set']
-    array_index = "arr_idx1"
-    object = 'uint32_t array_length1 = 0;' + '\n'
+    array_index = "arr_idx_" + st_name
+    print "array_index" , array_index
+    array_len = "array_len_" + st_name
+    object = 'uint32_t %s  = 0;' %(array_len)+ '\n'
     object = object + 'json_object *obj_%s = NULL;'%(member) +'\n'
     if check_bool == 'yes':
         if parent_st_type == 'array':
@@ -840,14 +895,14 @@ def parse_nested_array_object(item, member, obj_in, output_file_name, d, prefix)
     object = object + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' + '\n'
     object = object  + '}' + '\n'
     object = object + 'if (json_object_is_type(obj_%s, json_type_array)) {'%(member) + '\n'
-    object = object + '\t' + 'array_length1 = restjson::JsonBuildParse::get_array_length(%s,%s);'%(obj_in, req_key) + '\n'
+    object = object + '\t' + '%s = restjson::JsonBuildParse::get_array_length(obj_%s);'%(array_len,member) + '\n'
     object = object +  '}' + '\n'
-    object = object + 'if (0 == array_length1) {' + '\n'
+    object = object + 'if (0 == %s) {' %(array_len) + '\n'
     object = object + '\t' +'pfc_log_debug("No %s present");'%(member) +'\n'
     object = object + '\t' +'json_object_put(jobj);' + '\n'
     object = object + '\t' + 'return UNC_RC_SUCCESS;' + '\n'
     object = object +  '}' + '\n'
-    object = object + 'for (uint32_t %s = 0; %s< array_length1; %s++) {' %(array_index,array_index, array_index)+'\n'
+    object = object + 'for (uint32_t %s = 0; %s< %s; %s++) {' %(array_index,array_index, array_len, array_index)+'\n'
     object = object + st_name + ' st_%s;'%(st_name) +'\n'
     d['object'] = object
     file = open(output_file_name, "a")
@@ -965,6 +1020,14 @@ def write_integer(item, file_desc, member, output_file_name, d):
     print 'integer'
     integer = '\t' + 'int %s;'%(member) + '\n'
     d['data_type'] = integer
+    with open(output_file_name, "a") as f:
+        f.write(d['data_type'])
+
+# This method will generate long integer data types for structure members
+def write_long(item, file_desc, member, output_file_name, d):
+    print 'long int'
+    long = '\t' + 'long  long %s;'%(member) + '\n'
+    d['data_type'] = long 
     with open(output_file_name, "a") as f:
         f.write(d['data_type'])
 

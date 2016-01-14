@@ -220,6 +220,7 @@ check_bool_set=yes
 struct_name=ip_vtn_flowfilter
 members=output,tenant_name,vt_flow_filter,valid
 build_support=yes
+mandatory=no
 parse_support=no
 
 [ip_vtn_flowfilter]
@@ -230,6 +231,7 @@ check_bool_set=yes
 struct_name=ip_vtn_flowfilter
 members=input_vtn_flowfilter,valid
 build_support=yes
+mandatory=no
 parse_support=no
 
 [ip_vtn_flowfilters]
@@ -239,6 +241,7 @@ is_child=yes
 check_bool_set=yes
 struct_name=ip_vtn_flowfilter
 members=ip_vtn_flowfilter
+mandatory=no
 build_support=yes
 parse_support=no
 
@@ -250,6 +253,7 @@ check_bool_set=yes
 struct_name=ip_vtn_flowfilter
 members=vtn_flowfilters
 build_support=no
+mandatory=no
 parse_support=no
 
 [vtnflowfilter_entry_class]

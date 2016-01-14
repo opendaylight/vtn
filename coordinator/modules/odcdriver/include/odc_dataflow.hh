@@ -19,8 +19,10 @@
 #include <odc_driver_common_defs.hh>
 #include <odc_controller.hh>
 #include <odc_vtn.hh>
+#include <dataflow.hh>
 #include <odc_util.hh>
 #include <tclib_module.hh>
+#include <odc_kt_utils.hh>
 #include <string>
 #include <vector>
 #include <sstream>
@@ -46,14 +48,13 @@ class OdcDataFlowCommand: public unc::driver::vtn_driver_read_command {
   UncRespCode read_cmd(unc::driver::controller *ctr,
                        unc::vtnreadutil::driver_read_util*);
 
-  UncRespCode parse_flow_response(key_dataflow_t& key_dataflow,
-                                  unc::vtnreadutil::driver_read_util* df_util,
-                                  char *data);
+  //UncRespCode parse_flow_response(key_dataflow_t& key_dataflow,
+    //                              unc::vtnreadutil::driver_read_util* df_util,
+      //                            char *data);
 
   UncRespCode parse_flow_response_values(key_dataflow_t& key_dataflow,
                                   unc::vtnreadutil::driver_read_util* df_util,
-                                  json_object *jobj_data,
-                                  uint32_t arr_idx);
+                                  std::list<data_flow> &df_info);
 
   private:
   /**
@@ -62,7 +63,7 @@ class OdcDataFlowCommand: public unc::driver::vtn_driver_read_command {
    * @param[in] vtn_name      - vtn_name
    * @return std::string      - returns the url string of dataflow
    */
-  std::string get_dataflow_url(std::string vtn_name, key_dataflow key);
+  //std::string get_dataflow_url(std::string vtn_name, key_dataflow key);
 
   /**
    * @brief      - Method to fetch child configurations for the parent kt

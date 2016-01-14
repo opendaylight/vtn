@@ -107,6 +107,7 @@ type=string
 key="map-id"
 struct_name=vlan_conf
 build_support=no
+mandatory=yes
 parse_support=yes
 
 [vlanid]
@@ -114,6 +115,7 @@ type=int
 key="vlan-id"
 struct_name=vlanmap_config
 build_support=no
+mandatory=yes
 parse_support=yes
 
 [vlanmap_config]
@@ -124,6 +126,7 @@ check_bool_set=yes
 struct_name = vlan_conf
 members=vlanid,valid
 build_support = no
+mandatory=yes
 parse_support = yes
 
 [vlan_conf]
@@ -134,6 +137,7 @@ check_bool_set=yes
 struct_name=vlan_conf
 members=map_id,vlanmap_config,valid
 build_support=no
+mandatory=yes
 parse_support=yes
 
 [vbr_vlan_conf]
@@ -144,6 +148,7 @@ check_bool_set=yes
 struct_name=vlan_conf
 members=vlan_conf
 build_support=no
+mandatory=yes
 parse_support=yes
 
 [vlan_config]
@@ -154,6 +159,7 @@ check_bool_set=yes
 struct_name=vlan_conf
 members=vlan_conf
 build_support=no
+mandatory=yes
 parse_support=no
 
 [tenant_name]
@@ -204,6 +210,7 @@ check_bool_set=no
 struct_name=ip_vlan_config
 members=tenant_name,bridge_name,node,vlan_id,valid
 build_support=yes
+mandatory=yes
 parse_support=no
 
 [ip_vlan_config]
@@ -213,6 +220,7 @@ is_child=yes
 check_bool_set=yes
 struct_name=ip_vlan_config
 members=input_vlan,valid
+mandatory=yes
 build_support=yes
 parse_support=no
 
@@ -223,6 +231,7 @@ is_child=yes
 check_bool_set=yes
 struct_name=ip_vlan_config
 members=ip_vlan_config
+mandatory=yes
 build_support=yes
 parse_support=no
 

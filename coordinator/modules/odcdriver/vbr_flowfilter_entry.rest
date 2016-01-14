@@ -260,6 +260,7 @@ key="vtn-set-dl-src-action"
 is_child=yes
 struct_name=vtn_flow_action
 members=dlsrc_address,valid
+mandatory=no
 build_support=yes
 parse_support=no
 
@@ -409,6 +410,7 @@ key="port"
 is_child=yes
 struct_name=vtn_flow_action
 build_support=no
+mandatory=no
 parse_support=no
 
 [ip_icmptype]
@@ -457,6 +459,7 @@ check_bool_set=yes
 struct_name=ip_vbr_flowfilter
 members=output,tenant_name,bridge_name,vtn_flow_filter,valid
 build_support=yes
+mandatory=no
 parse_support=no
 
 [ip_vbr_flowfilter]
@@ -467,6 +470,7 @@ check_bool_set=yes
 struct_name=ip_vbr_flowfilter
 members=input_flow_filter,valid
 build_support=yes
+mandatory=no
 parse_support=no
 
 [ip_vbr_flowfilters]
@@ -477,6 +481,7 @@ check_bool_set=yes
 struct_name=ip_vbr_flowfilter
 members=ip_vbr_flowfilter
 build_support=yes
+mandatory=no
 parse_support=no
 
 [vbr_flowfilters]
@@ -486,6 +491,7 @@ is_child=yes
 check_bool_set=yes
 struct_name=ip_vbr_flowfilter
 members=vbr_flowfilters
+mandatory=no
 build_support=no
 parse_support=no
 

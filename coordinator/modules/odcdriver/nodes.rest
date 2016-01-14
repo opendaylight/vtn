@@ -1,4 +1,4 @@
-# Copyright (c) 2015 NEC Corporation
+# Copyright (c) 2015-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -125,6 +125,7 @@
 type=string
 key="id"
 struct_name=vtn_node
+mandatory = no
 build_support =no
 parse_support=yes
 
@@ -133,6 +134,7 @@ parse_support=yes
 type=array
 key="vtn-node"
 struct_name=vtn_node
+mandatory = no
 check_bool_set=no
 members=id
 
@@ -142,6 +144,7 @@ type=object
 key="vtn-nodes"
 struct_name=vtn_node
 check_bool_set=yes
+mandatory = no
 is_child=yes
 members=vtn_node
 
