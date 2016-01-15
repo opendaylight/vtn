@@ -194,7 +194,7 @@ module vtn-flow-action {
                 container vtn-set-vlan-pcp-action {
                     description
                       "Describes the flow action that sets the specified
-                       VLAN priority into the IEEE 802.1Q VAN tag.";
+                       VLAN priority into the IEEE 802.1Q VLAN tag.";
 
                     leaf vlan-pcp {
                         description
