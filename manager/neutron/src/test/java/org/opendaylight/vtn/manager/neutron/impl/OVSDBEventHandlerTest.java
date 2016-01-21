@@ -179,13 +179,19 @@ public final class OVSDBEventHandlerTest {
     @Test
     public void testAddPortToBridge() throws Exception {
         Node mockNode = PowerMockito.mock(Node.class);
+        InstanceIdentifier<Node> mockInstanceIdentifier  =
+                                   PowerMockito.mock(InstanceIdentifier.class);
         Mockito.when(mockNode.getNodeId()).
                 thenReturn(Mockito.mock(NodeId.class));
+        PowerMockito.doReturn(mockNode).
+                       when(handler , "getBridgeConfigNode" ,
+                            mockNode , "bridge1");
         PowerMockito.
                   doReturn(Mockito.
                            mock(OvsdbTerminationPointAugmentation.class)).
                           when(handler, "extractTerminationPointAugmentation",
                                mockNode, "port1");
+
         boolean output = Whitebox.invokeMethod(handler,
                                                "addPortToBridge", mockNode,
                                                "bridge1", "port1");

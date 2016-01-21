@@ -475,10 +475,12 @@ public final class OVSDBEventHandler {
      * @param portName    The name of the port.
      * @return true on success
      */
-    private boolean addPortToBridge(Node node, String bridgeName, String portName) throws Exception {
+    private boolean addPortToBridge(Node parentNode, String bridgeName, String portName) throws Exception {
         boolean rv = true;
+        Node node = getBridgeConfigNode(parentNode , bridgeName);
 
-        if (extractTerminationPointAugmentation(node, portName) == null) {
+        if (extractTerminationPointAugmentation(parentNode, portName) == null) {
+        if (extractTerminationPointAugmentation(parentNode, portName) == null) {
             rv = addTerminationPoint(node, bridgeName, portName);
 
             if (rv) {
@@ -488,12 +490,28 @@ public final class OVSDBEventHandler {
                 LOG.error("addPortToBridge: node: {}, bridge: {}, portname: {} status: FAILED",
                         node.getNodeId().getValue(), bridgeName, portName);
             }
-        } else {
+        }
+          }else {
             LOG.trace("addPortToBridge: node: {}, bridge: {}, portname: {} status: not_needed",
                     node.getNodeId().getValue(), bridgeName, portName);
         }
 
         return rv;
+    }
+
+    /**
+     * Get the bridge node
+     * @param node  A {@link Node} instance.
+     * @param bridgeName   The name of the bridge.
+     * @return The {@link Node} for the manager node.
+     */
+    private Node getBridgeConfigNode(Node node, String bridgeName) {
+        InstanceIdentifier<Node> bridgeIid =
+                 this.createInstanceIdentifier(node.getKey(), bridgeName);
+        Node bridgeNode = mdsalUtils.
+                 read(LogicalDatastoreType.CONFIGURATION ,
+                      bridgeIid).orNull();
+        return bridgeNode;
     }
 
     /**
