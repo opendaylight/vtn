@@ -468,6 +468,14 @@ public final class OVSDBEventHandler {
         return tpAugmentations;
     }
 
+    public Node getBridgeConfigNode(Node node, String name) {
+        InstanceIdentifier<Node> bridgeIid =
+                 this.createInstanceIdentifier(node.getKey(), name);
+        Node bridgeNode = mdsalUtils.read(LogicalDatastoreType.CONFIGURATION, bridgeIid).orNull();
+        return bridgeNode;
+    }
+
+
     /**
      * Add a Port to the existing bridge.
      * @param node        A {@link Node} instance.
@@ -475,9 +483,10 @@ public final class OVSDBEventHandler {
      * @param portName    The name of the port.
      * @return true on success
      */
-    private boolean addPortToBridge(Node node, String bridgeName, String portName) throws Exception {
+    private boolean addPortToBridge(Node ovsnode, String bridgeName, String portName) throws Exception {
         boolean rv = true;
 
+        Node node=getBridgeConfigNode(ovsnode,bridgeName);
         if (extractTerminationPointAugmentation(node, portName) == null) {
             rv = addTerminationPoint(node, bridgeName, portName);
 
