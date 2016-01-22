@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2016 NEC Corporation
+# Copyright (c) 2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -143,7 +143,7 @@ def fill_config(item, req_mem, file_desc, output_file_name, d):
     req_mem_type = parser.ReadValues(item, req_mem)['type']
     struct_name = parser.ReadValues(item, req_mem)['struct_name']
     check_bool = parser.ReadValues(item, req_mem)['check_bool_set']
-    child = parser.ReadValues(item, req_mem)['members']
+    child_reqmem = parser.ReadValues(item, req_mem)['members']
     req_key = parser.ReadValues(item, req_mem)['key']
     check_mem = parser.ReadValues(item,req_mem)['is_child']
     response = parser.ReadValues(item,req_mem).has_key('is_audit')
@@ -154,7 +154,7 @@ def fill_config(item, req_mem, file_desc, output_file_name, d):
         fill_method = fill_method +'ret_val = restjson::JsonBuildParse::parse(json_parser,%s,0,'%(req_key) +'obj_%s);'%(req_mem) + '\n'
     elif check_bool == 'yes':
         fill_method = fill_method +'ret_val = restjson::JsonBuildParse::parse(json_parser,%s,-1,'%(req_key) +'obj_%s);'%(req_mem) + '\n'
-    if (req_mem_type  == 'struct') and (check_mem == "yes"):
+    if (req_mem_type  == 'struct') :
            fill_method = fill_method + 'if (restjson::REST_OP_SUCCESS != ret_val) { ' + '\n'
            fill_method = fill_method + '\t' + 'json_object_put(json_parser);' + '\n'
            fill_method = fill_method + '\t' + 'pfc_log_error(" Error while parsing %s");'%(req_mem) + '\n'
@@ -182,35 +182,59 @@ def fill_config(item, req_mem, file_desc, output_file_name, d):
     file = open(output_file_name, "a")
     file.write(d['fill'])
     file.close()
-    if (req_mem_type  == 'struct') and (check_mem == "no"):
-          fill_struct = ''
-          fill_struct = fill_struct + '%s st_%s ;' %(req_mem, req_mem)+ '\n'
-          for child_st in child.split(','):
-             print 'Printing child-name---', child_st
-             child_key = parser.ReadValues(item,child_st)['key']
-             fill_struct = fill_struct + 'ret_val = unc::restjson::JsonBuildParse::parse(obj_%s,%s,-1,st_%s.%s);'%(req_mem,child_key,req_mem,child_st) + '\n'
-             fill_struct = fill_struct + 'if (restjson::REST_OP_SUCCESS != ret_val) {' + '\n'
-             fill_struct = fill_struct +  '\t' + 'json_object_put(json_parser);' + '\n'
-             fill_struct = fill_struct + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' +'\n'
-             fill_struct = fill_struct + '}' + '\n'
-          fill_struct = fill_struct + '%s_.push_back(st_%s);' %(req_mem,req_mem) + '\n'
-          d['fill'] = fill_struct
-          file = open(output_file_name, "a")
-          file.write(d['fill'])
-          file.close()
-    for child in child.split(','):
+    for child in child_reqmem.split(','):
         print 'child-name---', child
         child_type = parser.ReadValues(item, child)['type']
         print 'child_type=====', child_type
-        obj_in = 'obj_' + req_mem
+        obj_in = 'obj_' + req_mem 
     if child_type == 'array':
         print "obj_in-------->1", obj_in
         ar_obj = parse_array_object(item, child, obj_in, output_file_name, d)
         print "json object to parse member:", ar_obj
-    elif child_type != 'array' and (check_mem == 'yes'):
+    elif child_type != 'array' and (check_mem == 'no'):
         child_struct = parser.ReadValues(item,child)['struct_name']
         array_index = "arr_idx"
         parse_member(item, child_struct, obj_in, child, array_index, output_file_name, d)
+    elif child_type != 'array' and (check_mem == 'yes'):
+        print 'SWE ENTERING FIRST IF FOR check_mem'
+        child_key = parser.ReadValues(item, child)['key']
+        parse_supp = parser.ReadValues(item,child)['parse_support']
+        if parse_supp == 'yes':
+          fill_struct = 'uint32_t array_length = 0;' + '\n'
+          fill_struct = fill_struct + 'if (json_object_is_type(obj_%s, json_type_array)) {' %(req_mem)+ '\n'
+          fill_struct = fill_struct + 'array_length = restjson::JsonBuildParse::get_array_length(obj_%s);' %(req_mem)+ '\n'
+          fill_struct = fill_struct + '}' + '\n'
+          fill_struct = fill_struct + 'if (0 == array_length) {' + '\n'
+          fill_struct = fill_struct + '\t' + 'pfc_log_debug("No %s present");' %(req_mem)+ '\n'
+          fill_struct = fill_struct + '\t' + 'json_object_put(json_parser);' + '\n'
+          fill_struct = fill_struct + '\t' + 'return UNC_RC_SUCCESS;' +'\n'
+          fill_struct = fill_struct + '}' + '\n'
+          fill_struct = fill_struct + 'for (uint32_t arr_idx = 0; arr_idx < array_length; arr_idx++) {' + '\n'
+          fill_struct = fill_struct + '%s st_%s ;' %(req_mem, req_mem)+ '\n'
+          fill_struct = fill_struct + 'json_object* obj_%s = NULL;' %(child)+ '\n'
+          fill_struct = fill_struct + 'ret_val = unc::restjson::JsonBuildParse::parse(obj_%s,%s,arr_idx,obj_%s);' %(req_mem, child_key,child)+ '\n'
+          fill_struct = fill_struct + 'if (restjson::REST_OP_SUCCESS != ret_val) {' + '\n'
+          fill_struct = fill_struct + '\t' + 'pfc_log_debug("%s is null");' %(req_mem) + '\n'
+          fill_struct = fill_struct + '\t' + 'json_object_put(obj_%s);' %(req_mem) + '\n'
+          fill_struct = fill_struct + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' +'\n'
+          fill_struct = fill_struct + '}' + '\n'
+          child_mem = parser.ReadValues(item,child)['members']
+          for child_st in child_mem.split(','):
+             print 'Printing child-name---', child_st
+             parse_suppo = parser.ReadValues(item,child_st)['parse_support']
+             child_key = parser.ReadValues(item,child_st)['key']
+             if parse_suppo == 'yes':
+               fill_struct = fill_struct + 'ret_val = unc::restjson::JsonBuildParse::parse(obj_%s,%s,-1,st_%s.%s_.%s);'%(req_mem,child_key,req_mem,child,child_st)+ '\n'
+               fill_struct = fill_struct + 'if (restjson::REST_OP_SUCCESS != ret_val) {' + '\n'
+               fill_struct = fill_struct +  '\t' + 'json_object_put(json_parser);' + '\n'
+               fill_struct = fill_struct + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' +'\n'
+               fill_struct = fill_struct + '}' + '\n'
+          fill_struct = fill_struct + '%s_.push_back(st_%s);' %(req_mem,req_mem) + '\n'
+          fill_struct = fill_struct + '}' + '\n'
+          d['fill'] = fill_struct
+          file = open(output_file_name, "a")
+          file.write(d['fill'])
+          file.close()
     func_end = 'if (restjson::REST_OP_SUCCESS != ret_val)' + '\n'
     func_end = func_end + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' + '\n'
     func_end = func_end + 'return UNC_RC_SUCCESS;' + '\n'
@@ -355,7 +379,6 @@ def del_build_config(item, req_mem, file_desc, output_file_name, d):
                            file.close()
                            i = i+1
                         if child_type != 'struct':
-                              print " DEL struct", child_input,child_type
                               if child_type == 'array':
                                 child_arr = parser.ReadValues(item,child_input)['members']
                                 for child_arr_mem in child_arr.split(','):
@@ -368,7 +391,7 @@ def del_build_config(item, req_mem, file_desc, output_file_name, d):
                                     del_write_build(item, key_name, write_st_name, child_input, key_delete, child_type, child, output_file_name, d)
                               else :
                                 del_write_build(item, key_name, write_st_name, child_input, key_s, child_type, child, output_file_name, d)
-                              if j == 0 :
+                              if j == 0 : 
                                  if child_type == 'string':
                                     build_st_end = build_st_end + 'if((!%s.%s.empty())'%(st_name, child_input)
                                  elif child_type == 'bool':
@@ -430,8 +453,6 @@ def write_build(item, key_name, struct_name, child, key_s, child_type, output_fi
             build_member = build_member + 'if(!%s_st.%s.empty()){'%(struct_name, child) + '\n'
         elif child_type == 'int':
             build_member = build_member + 'if (%s_st.%s != -1){'%(struct_name, child) + '\n'
-        #elif child_type == 'bool':
-            #build_member = build_member + 'if (%s_st.%s != false){'%(struct_name, child) + '\n'
         build_member = build_member + '\t' + 'ret_val = unc::restjson::JsonBuildParse::build(%s,%s_st.%s,jobj);'%(key_name, struct_name, child) + '\n'
         build_member = build_member + 'if (restjson::REST_OP_SUCCESS != ret_val) {' + '\n'
         build_member = build_member + '\t' + 'pfc_log_error("Error in building request body %s");'%(key_s) + '\n'
@@ -530,13 +551,13 @@ def build_array_object(item, arr_mem, mem_obj, iter,output_file_name, d):
     key_name = parser.ReadValues(item, arr_mem)['key']
     key_s = key_name.replace('"', '')
     if mem_type == 'struct':
-        st_name = iter + '->' + arr_mem + '_'
+        st_name = iter + '->' + arr_mem + '_' 
         build_struct(item, st_name, arr_mem, mem_obj, output_file_name, d)
     if mem_type == 'array':
-        st_name = iter + '->'
-        write_st_build(item,key_name, st_name ,arr_mem, key_s, mem_type, mem_obj, output_file_name, d)
+        st_name = iter + '->' 
+        write_st_build(item,key_name, st_name ,arr_mem, key_s, mem_type, mem_obj, output_file_name, d) 
     elif mem_type == 'string' or mem_type == 'int' or mem_type == 'bool':
-        mem_name = iter + '->'
+        mem_name = iter + '->' 
         write_array_st_build(key_name, mem_name, arr_mem, key_s, mem_type,mem_obj, output_file_name, d)
 
 def write_array_st_build(key_name, st_name, child, key_s, child_type, parent, output_file_name, d):
@@ -548,8 +569,6 @@ def write_array_st_build(key_name, st_name, child, key_s, child_type, parent, ou
             build_st_member = build_st_member + 'if(!%s%s.empty()){'%(st_name, child) + '\n'
         elif child_type == 'int':
             build_st_member = build_st_member + 'if (%s%s != -1){'%(st_name, child) + '\n'
-        #elif child_type == 'bool':
-            #build_method = build_st_member + 'if (%s->%s != false){'%(st_name, child) + '\n'
         build_st_member = build_st_member +'\t' + 'ret_val = unc::restjson::JsonBuildParse::build(%s,%s%s,%s);'%(key_name, st_name, child, parent) + '\n'
         build_st_member = build_st_member + 'if (restjson::REST_OP_SUCCESS != ret_val) {' + '\n'
         build_st_member = build_st_member + '\t' + 'pfc_log_error("Error in building request body %s");'%(key_s) + '\n'
@@ -577,8 +596,6 @@ def write_st_build(item,key_name, st_name, child, key_s, child_type, parent, out
             build_st_member = build_st_member + 'if(!%s.%s.empty()){'%(st_name, child) + '\n'
         elif child_type == 'int':
             build_st_member = build_st_member + 'if (%s.%s != -1){'%(st_name, child) + '\n'
-        #elif child_type == 'bool':
-            #build_st_member = build_st_member + 'if (%s.%s != false){'%(st_name, child) + '\n'
         build_st_member = build_st_member +'\t' + 'ret_val = unc::restjson::JsonBuildParse::build(%s,%s.%s,%s);'%(key_name, st_name, child, parent) + '\n'
         build_st_member = build_st_member + 'if (restjson::REST_OP_SUCCESS != ret_val) {' + '\n'
         build_st_member = build_st_member + '\t' + 'pfc_log_error("Error in building request body %s");'%(key_s) + '\n'
@@ -667,16 +684,11 @@ def build_struct(item, st_name, member, parent_obj, output_file_name, d):
         mandatory_parm = parser.ReadValues(item, child)['mandatory']
         print "MANDAROTY PARAM", mandatory_parm, child
         type_mem = parser.ReadValues(item, child)['type']
-        #child_mem = parser.ReadValues(item,child)['members']
-        #for child_arr in child_mem.split(','):
-          #child_arr_type = parser.ReadValues(item,child_arr)['type']
         if mandatory_parm != 'no' and type_mem != 'struct' :
              if i == 0:
                 print "inside if ",i
                 if type_mem == 'string':
                     build_st_end = 'if((!%s.%s.empty())'%(st_name, child)
-                #if child_arr_type == 'string':
-                   # build_st_end = 'if((!%s.%s.empty())'%(st_name, child_arr)
                     i = i+1
                 elif type_mem == 'int':
                     build_st_end = 'if((%s.%s != -1) '%(st_name, child)
@@ -724,7 +736,7 @@ def parse_member(item, struct_name, obj_in, member, array_index,output_file_name
     struc_name = parser.ReadValues(item,member)['struct_name']
     parent_strct_type = parser.ReadValues(item, struc_name)['type']
     check_mand = parser.ReadValues(item,member)['mandatory']
-    print "Checking the struct types",class_struct, parent_strct_type
+    print "Checking the struct types",class_struct, parent_strct_type 
     key_s = req_key.replace('"', '')
     print "type_key", type_name
     parse = parser.ReadValues(item, member)['parse_support']
@@ -739,10 +751,6 @@ def parse_member(item, struct_name, obj_in, member, array_index,output_file_name
                 object = '\n' + 'ret_val = restjson::JsonBuildParse::parse(%s,%s'%(obj_in, req_key) +',-1,st_%s.%s);'%(struct_name, member) + '\n'
             if type_name == 'string' or type_name == 'int' or type_name == 'bool':
                 object =  object + 'if (restjson::REST_OP_SUCCESS != ret_val) {' + '\n'
-            elif type_name == 'int':
-                object = object + 'if (restjson::REST_OP_SUCCESS != ret_val) {'+ '\n'
-            elif type_name == 'bool':
-                object = object + 'if (restjson::REST_OP_SUCCESS != ret_val) {'+ '\n'
             object = object + '\t' + 'pfc_log_error(" Error while parsing %s");'%(key_s) + '\n'
             if check_mand == 'yes':
                 object = object + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' + '\n'
@@ -786,7 +794,7 @@ def parse_struct_object(item, struct_name, st_member, obj_in, array_index, outpu
             parent_obj = 'jobj_' + st_member
             parse_member(item, st_name, parent_obj, member, array_index, output_file_name, d)
         elif sub_mem_type == 'array':
-            parse_array_object(item, member, obj_in, output_file_name, d)
+            parse_array_object(item, member, obj_in, output_file_name, d) 
 
 # This method will generate parse methods for array-type structure  members
 def parse_array_object(item, member, obj_in, output_file_name, d):
@@ -810,7 +818,7 @@ def parse_array_object(item, member, obj_in, output_file_name, d):
        object = object + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' + '\n'
        object = object + '}' + '\n'
     elif str(check_mem) == 'True':
-       object = object + 'if (restjson::REST_OP_SUCCESS != ret_val) {' + '\n'
+       object = object + 'if (restjson::REST_OP_SUCCESS != ret_val) {' + '\n' 
        object = object + '\t' + 'json_object_put(json_parser);' + '\n'
        object = object + '\t' + 'pfc_log_error(" Error while parsing %s");'%(key_s) + '\n'
        object = object + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' + '\n'
@@ -1027,7 +1035,7 @@ def write_integer(item, file_desc, member, output_file_name, d):
 def write_long(item, file_desc, member, output_file_name, d):
     print 'long int'
     long = '\t' + 'long  long %s;'%(member) + '\n'
-    d['data_type'] = long
+    d['data_type'] = long 
     with open(output_file_name, "a") as f:
         f.write(d['data_type'])
 
@@ -1119,7 +1127,7 @@ def typedef_structure(item, file_desc, method, output_file_name, d):
         f = open(output_file_name, "a")
         f.write(d['end_paranthesis'])
 
-write_options = {'bool': write_boolean, 'int': write_integer, 'string' : write_string, 'array' : nested_objects, 'object' : nested_objects, 'list' : write_list, 'struct' : write_struct}
+write_options = {'bool': write_boolean, 'int': write_integer, 'string' : write_string, 'array' : nested_objects, 'object' : nested_objects, 'list' : write_list, 'struct' : write_struct, 'long': write_long}
 
 # This method will generate parser class
 def class_names(item, file_desc, url_name, output_file_name, d):
