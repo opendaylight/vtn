@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015-2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -469,30 +469,52 @@ public final class OVSDBEventHandler {
     }
 
     /**
+      * Get the bridge node for a particular bridge from config DS
+      * @param node  A {@link Node} instance.
+      * @param bridgeName   The name of the bridge.
+      * @return The {@link Node} for the manager node.
+      */
+    private Node getBridgeConfigNode(Node node, String bridgeName) {
+        InstanceIdentifier<Node> bridgeIid =
+                 this.createInstanceIdentifier(node.getKey(), bridgeName);
+        Node bridgeNode = mdsalUtils.
+                 read(LogicalDatastoreType.CONFIGURATION,
+                      bridgeIid).orNull();
+        return bridgeNode;
+    }
+
+    /**
      * Add a Port to the existing bridge.
-     * @param node        A {@link Node} instance.
+     * @param parentNode        A {@link Node} instance.
      * @param bridgeName  The name of the bridge.
      * @param portName    The name of the port.
      * @return true on success
      */
-    private boolean addPortToBridge(Node node, String bridgeName, String portName) throws Exception {
+    private boolean addPortToBridge(Node parentNode, String bridgeName, String portName) {
         boolean rv = true;
+        Node bridgeNode = getBridgeConfigNode(parentNode, bridgeName);
 
-        if (extractTerminationPointAugmentation(node, portName) == null) {
-            rv = addTerminationPoint(node, bridgeName, portName);
+        // This should never occur
+        if (bridgeNode == null) {
+            LOG.error("addPortToBridge: node: {}, bridge: {}, status: bridge not configured in OVS",
+                   parentNode.getNodeId(), bridgeName);
+            return false;
+        }
+
+        if (extractTerminationPointAugmentation(bridgeNode, portName) == null) {
+            rv = addTerminationPoint(bridgeNode, bridgeName, portName);
 
             if (rv) {
                 LOG.trace("addPortToBridge: node: {}, bridge: {}, portname: {} status: success",
-                        node.getNodeId().getValue(), bridgeName, portName);
+                        bridgeNode.getNodeId().getValue(), bridgeName, portName);
             } else {
-                LOG.error("addPortToBridge: node: {}, bridge: {}, portname: {} status: FAILED",
-                        node.getNodeId().getValue(), bridgeName, portName);
+                LOG.error("addPortToBridge: node: {}, bridge: {}, portname: {} status: failed",
+                        bridgeNode.getNodeId().getValue(), bridgeName, portName);
             }
         } else {
             LOG.trace("addPortToBridge: node: {}, bridge: {}, portname: {} status: not_needed",
-                    node.getNodeId().getValue(), bridgeName, portName);
+                    bridgeNode.getNodeId().getValue(), bridgeName, portName);
         }
-
         return rv;
     }
 
