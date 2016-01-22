@@ -125,7 +125,7 @@ UncRespCode OdcVbrIfCommand::create_request_body_port_map(
       &&
       (UNC_VF_VALID == vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_TAGGED_PM])) {
     if (vbrif_val.val_vbrif.portmap.tagged == UPLL_VLAN_TAGGED) {
-      ip_vbrif_port_st.input_vbrifport_.vlan =
+      ip_vbrif_port_st.input_vbrifport_.ip_vlan =
                                          vbrif_val.val_vbrif.portmap.vlan_id;
     }
   }
@@ -404,22 +404,25 @@ UncRespCode OdcVbrIfCommand::create_request_body(pfcdrv_val_vbr_if_t& val_vbrif,
                         ip_vbridge_config_st.input_vbrif_.input_description);
     }
   }
-  bool admin_status = 0;
+ // bool admin_status = 0;
   if (UNC_VF_VALID == val_vbrif.val_vbrif.valid[UPLL_IDX_ADMIN_STATUS_VBRI]) {
     if (UPLL_ADMIN_ENABLE == val_vbrif.val_vbrif.admin_status) {
-      if(admin_status != 0) {
+   //   if(admin_status != 0) {
         bool enabled = true;
         ip_vbridge_config_st.input_vbrif_.input_enabled = enabled;
         pfc_log_info("vbr enabled : %d", enabled);
-      }
+     // }
     } else if (UPLL_ADMIN_DISABLE == val_vbrif.val_vbrif.admin_status) {
-      if(admin_status == 0) {
+      //if(admin_status == 0) {
         bool disabled = false;
         ip_vbridge_config_st.input_vbrif_.input_enabled = disabled;
         pfc_log_info("vbr enabled : %d", disabled);
-   }
+   //}
   }
- }
+ } else {
+     ip_vbridge_config_st.input_vbrif_.input_enabled = true;
+     pfc_log_info("vbrif default admin_Status as true");
+   }
   return UNC_RC_SUCCESS;
 }
 
@@ -461,22 +464,25 @@ UncRespCode OdcVbrIfCommand::update_request_body(pfcdrv_val_vbr_if_t& val_vbrif,
                         ip_vbridge_config_st.input_vbrif_.input_description);
     }
   }
-  bool admin_status = 0;
+  //bool admin_status = 0;
   if (UNC_VF_VALID == val_vbrif.val_vbrif.valid[UPLL_IDX_ADMIN_STATUS_VBRI]) {
     if (UPLL_ADMIN_ENABLE == val_vbrif.val_vbrif.admin_status) {
-      if(admin_status != 0) {
+      //if(admin_status != 0) {
         bool enabled = true;
         ip_vbridge_config_st.input_vbrif_.input_enabled = enabled;
         pfc_log_info("vbr enabled : %d", enabled);
-      }
+      //}
     } else if (UPLL_ADMIN_DISABLE == val_vbrif.val_vbrif.admin_status) {
-      if(admin_status == 0) {
+      //if(admin_status == 0) {
         bool disabled = false;
         ip_vbridge_config_st.input_vbrif_.input_enabled = disabled;
         pfc_log_info("vbr enabled : %d", disabled);
-   }
+   //}
   }
- }
+ } else {
+     ip_vbridge_config_st.input_vbrif_.input_enabled = true;
+     pfc_log_info("settting vbrif admi_status default value as true");
+   }
   return UNC_RC_SUCCESS;
 }
 
@@ -581,7 +587,7 @@ UncRespCode OdcVbrIfCommand::parse_vbrif_response(std::string vtn_name,
 // Reading port-map from active controller
 UncRespCode  OdcVbrIfCommand::read_portmap(unc::driver::controller* ctr_ptr,
                                                key_vbr_if_t& vbrif_key,
-                                 std::list<portmap_config>  &vbrif_port_detail,
+                                 std::list<portmap_interface>  &vbrif_port_detail,
                                     std::vector<unc::vtndrvcache::ConfigNode *>
                                           &cfgnode_vector) {
   ODC_FUNC_TRACE;
@@ -618,14 +624,14 @@ UncRespCode  OdcVbrIfCommand::read_portmap(unc::driver::controller* ctr_ptr,
     return UNC_DRV_RC_ERR_GENERIC;
   }
 
-  ret_val = parser_obj->set_portmap_config(parser_obj->jobj);
+  ret_val = parser_obj->set_portmap_interface(parser_obj->jobj);
   if (UNC_RC_SUCCESS != ret_val) {
     pfc_log_error("set vinterface portmap_conf error");
     delete req_obj;
     delete parser_obj;
     return UNC_DRV_RC_ERR_GENERIC;
   }
-  vbrif_port_detail = parser_obj->portmap_config_;
+  vbrif_port_detail = parser_obj->portmap_interface_;
   return ret_val;
 
 }
@@ -674,7 +680,7 @@ UncRespCode OdcVbrIfCommand::fill_config_node_vector(std::string vtn_name,
     val_vbr_if.val_vbrif.admin_status = UPLL_ADMIN_DISABLE;
   }
 
-      std::list<portmap_config> vbrif_port_detail;
+      std::list<portmap_interface> vbrif_port_detail;
       UncRespCode ret_val = read_portmap(ctr,key_vbr_if,
                                     vbrif_port_detail, cfgnode_vector);
       if (ret_val != UNC_RC_SUCCESS){
@@ -683,13 +689,13 @@ UncRespCode OdcVbrIfCommand::fill_config_node_vector(std::string vtn_name,
        uint32_t vlan = 0;
        std::string node = "";
        std::string port_name = "";
-       std::list<portmap_config>::iterator it;
+       std::list<portmap_interface>::iterator it;
        for (it = vbrif_port_detail.begin();it != vbrif_port_detail.end();it++){
-         vlan = it->vlan;
-      pfc_log_debug("the obtained vlan:%d", it->vlan);
-         node = it->node_id;
-      pfc_log_debug("the obtained node id:%s", (it->node_id).c_str());
-         port_name = it->port;
+         vlan = it->portmap_config_.vlan;
+      pfc_log_debug("the obtained vlan:%d", it->portmap_config_.vlan);
+         node = it->portmap_config_.node_id;
+      pfc_log_debug("the obtained node id:%s", (it->portmap_config_.node_id).c_str());
+         port_name = it->portmap_config_.port;
       pfc_log_debug("the obtained port_name:%s", port_name.c_str());
        }
 

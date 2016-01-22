@@ -209,6 +209,7 @@ is_child=yes
 struct_name=flow_action
 members=dlsrc_address,valid
 build_support=no
+mandatory=no
 parse_support=yes
 
 [dlsrc_address]
@@ -216,7 +217,7 @@ type=string
 key="address"
 is_child=yes
 struct_name=vbr_dlsrc
-mandatory=yes
+mandatory=no
 build_support=no
 parse_support=yes
 
@@ -235,6 +236,7 @@ is_child=yes
 struct_name=flow_action
 members=vlan_pcp,valid
 build_support=no
+mandatory=no
 parse_support=yes
 
 [vlan_pcp]
@@ -253,6 +255,7 @@ is_child=yes
 struct_name=flow_action
 members=dlsdt_address,valid
 build_support=no
+mandatory=no
 parse_support=yes
 
 [dlsdt_address]
@@ -271,6 +274,7 @@ is_child=yes
 struct_name=flow_action
 members=inet4src_address,valid
 build_support=no
+mandatory=no
 parse_support=yes
 
 [inet4src_address]
@@ -279,6 +283,7 @@ key="address"
 is_child=yes
 struct_name=vbr_inet4src
 build_support=no
+mandatory=no
 parse_support=no
 
 [vbr_inet4dst]
@@ -288,6 +293,7 @@ is_child=yes
 struct_name=flow_action
 members=inet4dst_address,valid
 build_support=no
+mandatory=no
 parse_support=yes
 
 [inet4dst_address]
@@ -296,6 +302,7 @@ key="address"
 is_child=yes
 struct_name=vbr_inet4dst
 build_support=no
+mandatory=no
 parse_support=no
 
 [vbr_dscp]
@@ -304,6 +311,7 @@ key="vtn-set-inet-dscp-action"
 is_child=yes
 struct_name=flow_action
 members=dscp_value,valid
+mandatory=no
 build_support=no
 parse_support=yes
 
@@ -322,6 +330,7 @@ key="vtn-set-port-src-action"
 is_child=yes
 struct_name=flow_action
 members=port_value,valid
+mandatory=no
 build_support=no
 parse_support=no
 
@@ -330,6 +339,7 @@ type=int
 key="port"
 is_child=yes
 struct_name=flow_action
+mandatory=no
 build_support=no
 parse_support=no
 
@@ -340,6 +350,7 @@ is_child=yes
 struct_name=flow_action
 members=tpdst_port,valid
 build_support=no
+mandatory=no
 parse_support=no
 
 [tpdst_port]
@@ -348,6 +359,7 @@ key="port"
 is_child=yes
 struct_name=flow_action
 build_support=no
+mandatory=no
 parse_support=no
 
 [vbr_icmptype]
@@ -356,6 +368,7 @@ key="vtn-set-icmp-type-action"
 is_child=yes
 struct_name=flow_action
 members=icmp_type,valid
+mandatory=no
 build_support=no
 parse_support=no
 
@@ -365,6 +378,7 @@ key="type"
 is_child=yes
 struct_name=flow_action
 build_support=no
+mandatory=no
 parse_support=no
 
 [vbr_icmpcode]
@@ -373,6 +387,7 @@ key="vtn-set-icmp-code-action"
 is_child=yes
 struct_name=flow_action
 members=icmp_code,valid
+mandatory=no
 build_support=no
 parse_support=no
 
@@ -382,6 +397,7 @@ key="code"
 is_child=yes
 struct_name=flow_action
 build_support=no
+mandatory=no
 parse_support=no
 
 [flow_action]
@@ -392,6 +408,7 @@ struct_name=flow_action
 members=order,vbr_dlsrc,vbr_vlanpcp,vbr_dldst,vbr_inet4src,vbr_inet4dst,vbr_dscp,vbr_tpsrc,vbr_tpdst,vbr_icmptype,vbr_icmpcode,valid
 check_bool_set=yes
 build_support=no
+mandatory=no
 parse_support=yes
 
 [flow_filter]
@@ -413,6 +430,7 @@ check_bool_set=no
 struct_name=flow_filter
 members=flow_filter,valid
 build_support=no
+mandatory=yes
 parse_support=yes
 
 [vbridge_filter]
@@ -423,6 +441,7 @@ check_bool_set=yes
 struct_name=flow_filter
 members=vbr_flowfilter
 build_support=no
+mandatory=yes
 parse_support=yes
 
 [pa_vbr_flowfilters]
@@ -433,6 +452,7 @@ check_bool_set=yes
 struct_name=vbr_flowfilter
 members=flow_filter
 build_support=no
+mandatory=yes
 parse_support=no
 
 [vbrflowfilter_parser]

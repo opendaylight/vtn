@@ -147,7 +147,7 @@ class OdcVbrIfCommand: public unc::driver::vtn_driver_command
    */
   UncRespCode  read_portmap(unc::driver::controller* ctr,
                             key_vbr_if_t& vbrif_key,
-                            std::list<portmap_config>  &vbrif_port_detail,
+                            std::list<portmap_interface>  &vbrif_port_detail,
                             std::vector<unc::vtndrvcache::ConfigNode *>
                             &cfgnode_vector);
 
