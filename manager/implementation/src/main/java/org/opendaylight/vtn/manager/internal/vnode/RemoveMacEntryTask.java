@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -15,9 +15,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.TxContext;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcOutputGenerator;
 import org.opendaylight.vtn.manager.internal.util.tx.CompositeTxTask;
@@ -68,7 +68,7 @@ public final class RemoveMacEntryTask
         List<RemoveMacTask> taskList = new ArrayList<>();
         for (MacAddress mac: addrs) {
             // Verify the MAC address.
-            if (macSet.add(verify(mac))) {
+            if (macSet.add(MiscUtils.verify(mac))) {
                 InstanceIdentifier<MacTableEntry> path =
                     VBridgeIdentifier.getMacEntryPath(ident, mac);
                 taskList.add(new RemoveMacTask(path, mac));
@@ -76,28 +76,6 @@ public final class RemoveMacEntryTask
         }
 
         return new RemoveMacEntryTask(ident, taskList);
-    }
-
-    /**
-     * Verify the given MAC address.
-     *
-     * @param mac  The MAC address to be tested.
-     * @return  The given MAC address is returned.
-     * @throws RpcException
-     *    The given MAC address is invalid.
-     */
-    static MacAddress verify(MacAddress mac) throws RpcException {
-        try {
-            EtherAddress eaddr = EtherAddress.create(mac);
-            if (eaddr == null) {
-                throw RpcException.getNullArgumentException("MAC address");
-            }
-        } catch (RuntimeException e) {
-            throw RpcException.getBadArgumentException(
-                "Invalid MAC address: " + mac, e);
-        }
-
-        return mac;
     }
 
     /**
