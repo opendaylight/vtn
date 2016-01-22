@@ -213,6 +213,7 @@ is_child=yes
 struct_name=vtermif_flow_action
 members=dlsrc_address,valid
 build_support=no
+mandatory=no
 parse_support=yes
 
 [dlsrc_address]
@@ -239,6 +240,7 @@ is_child=yes
 struct_name=vtermif_flow_action
 members=vlan_pcp,valid
 build_support=no
+mandatory=no
 parse_support=yes
 
 [vlan_pcp]
@@ -257,6 +259,7 @@ is_child=yes
 struct_name=vtermif_flow_action
 members=dldst_address,valid
 build_support=no
+mandatory=no
 parse_support=yes
 
 [dldst_address]
@@ -275,6 +278,7 @@ is_child=yes
 struct_name=vtermif_flow_action
 members=inet4src_address,valid
 build_support=no
+mandatory=no
 parse_support=yes
 
 [inet4src_address]
@@ -284,6 +288,7 @@ is_child=yes
 struct_name=vtermif_inet4src
 members=inet4dst_address
 build_support=no
+mandatory=no
 parse_support=no
 
 [vtermif_inet4dst]
@@ -293,6 +298,7 @@ is_child=yes
 struct_name=vtermif_flow_action
 members=inet4dst_address,valid
 build_support=no
+mandatory=no
 parse_support=yes
 
 [inet4dst_address]
@@ -301,6 +307,7 @@ key="address"
 is_child=yes
 struct_name=vtermif_inet4dst
 build_support=no
+mandatory=no
 parse_support=no
 
 [vtermif_dscp]
@@ -310,6 +317,7 @@ is_child=yes
 struct_name=vtermif_flow_action
 members=dscp_value,valid
 build_support=no
+mandatory=no
 parse_support=yes
 
 [dscp_value]
@@ -328,6 +336,7 @@ is_child=yes
 struct_name=vtermif_flow_action
 members=port_value,valid
 build_support=no
+mandatory=no
 parse_support=no
 
 [port_value]
@@ -336,6 +345,7 @@ key="port"
 is_child=yes
 struct_name=vtermif_tpsrc
 build_support=no
+mandatory=no
 parse_support=no
 
 [vtermif_tpdst]
@@ -345,6 +355,7 @@ is_child=yes
 struct_name=vtermif_flow_action
 members=tpdst_port,valid
 build_support=no
+mandatory=no
 parse_support=no
 
 [tpdst_port]
@@ -353,6 +364,7 @@ key="port"
 is_child=yes
 struct_name=vtermif_tpdst
 build_support=no
+mandatory=no
 parse_support=no
 
 [vtermif_icmptype]
@@ -362,6 +374,7 @@ is_child=yes
 struct_name=vtermif_flow_action
 members=icmp_type,valid
 build_support=no
+mandatory=no
 parse_support=no
 
 [icmp_type]
@@ -370,6 +383,7 @@ key="type"
 is_child=yes
 struct_name=vtermif_icmptype
 build_support=no
+mandatory=no
 parse_support=no
 
 [vtermif_icmpcode]
@@ -379,6 +393,7 @@ is_child=yes
 struct_name=vtermif_flow_action
 members=icmp_code,valid
 build_support=no
+mandatory=no
 parse_support=no
 
 [icmp_code]
@@ -387,6 +402,7 @@ key="code"
 is_child=yes
 struct_name=vtermif_icmpcode
 build_support=no
+mandatory=no
 parse_support=no
 
 [vtermif_flow_action]
@@ -397,6 +413,7 @@ struct_name=vtermif_flow_action
 members=order,vtermif_dlsrc,vtermif_vlanpcp,vtermif_dldst,vtermif_inet4src,vtermif_inet4dst,vtermif_dscp,vtermif_tpsrc,vtermif_tpdst,vtermif_icmptype,vtermif_icmpcode,valid
 check_bool_set=no
 build_support=no
+mandatory=no
 parse_support=yes
 
 [vtermif_flow_filter]
@@ -418,6 +435,7 @@ check_bool_set=no
 struct_name=vtermif_flow_filter
 members=vtermif_flow_filter,valid
 build_support=no
+mandatory=no
 parse_support=yes
 
 [pa_vterm_if_flowfilters]
@@ -428,6 +446,7 @@ check_bool_set=yes
 struct_name=vinterface_flow_filter
 members=vtermif_flow_filter
 build_support=no
+mandatory=no
 parse_support=no
 
 [vtermif_filter]
@@ -438,6 +457,7 @@ check_bool_set=yes
 struct_name=vtermif_flow_filter
 members=vinterface_flow_filter
 build_support=no
+mandatory=no
 parse_support=yes
 
 [vtermif_flowfilter_parser]
