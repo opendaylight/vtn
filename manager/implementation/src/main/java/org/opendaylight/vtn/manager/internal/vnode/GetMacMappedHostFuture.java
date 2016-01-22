@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -10,7 +10,9 @@ package org.opendaylight.vtn.manager.internal.vnode;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Nonnull;
 
@@ -45,6 +47,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.v
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.vtn.mac.table.entry.MacTableEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.vtn.vbridge.list.Vbridge;
 
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
+
 /**
  * {@code GetMacMappedHostFuture} describes a future associated with the task
  * that implements get-mac-mapped-host RPC.
@@ -73,6 +77,11 @@ public final class GetMacMappedHostFuture
      * The number of background tasks that read MAC address table entries.
      */
     private int  taskCount;
+
+    /**
+     * A set of MAC addresses to be searched.
+     */
+    private final Set<MacAddress>  macAddresses;
 
     /**
      * A list of hosts mapped by the MAC mapping.
@@ -109,14 +118,17 @@ public final class GetMacMappedHostFuture
          */
         @Override
         public void onSuccess(@Nonnull Optional<MacTableEntry> result) {
+            MacTableEntry ment;
             if (result.isPresent()) {
-                addHost(result.get());
+                ment = result.get();
             } else {
                 // This should never happen.
                 LOG.warn("{}: MAC mapped host is not found: host={}",
                          bridgeId, targetHost);
-                addHost(null);
+                ment = null;
             }
+
+            addHost(ment, 1);
         }
 
         /**
@@ -150,6 +162,19 @@ public final class GetMacMappedHostFuture
         // Determine the target vBridge.
         VBridgeIdentifier vbrId = VBridgeIdentifier.create(input, true);
         bridgeId = vbrId;
+
+        // Determine MAC addresses to be searched.
+        List<MacAddress> maddrs = input.getMacAddresses();
+        Set<MacAddress> mset;
+        if (MiscUtils.isEmpty(maddrs)) {
+            mset = null;
+        } else {
+            mset = new HashSet<>();
+            for (MacAddress maddr: maddrs) {
+                mset.add(MiscUtils.verify(maddr));
+            }
+        }
+        macAddresses = mset;
 
         // Read the specified vBridge.
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
@@ -196,11 +221,12 @@ public final class GetMacMappedHostFuture
     /**
      * Add the given host information to the list of mapped hosts.
      *
-     * @param host  A {@link  MacTableEntry} instance.
-     *              {@code null} indicates the target host is not found in the
-     *              MAC address table.
+     * @param host   A {@link  MacTableEntry} instance.
+     *               {@code null} indicates the target host is not found in the
+     *               MAC address table.
+     * @param count  The number of count to decrement.
      */
-    private void addHost(MacTableEntry host) {
+    private void addHost(MacTableEntry host, int count) {
         MacMappedHost mhost = (host == null)
             ? null : new MacMappedHostBuilder(host).build();
         List<MacMappedHost> result;
@@ -210,8 +236,8 @@ public final class GetMacMappedHostFuture
                 mappedHosts.add(mhost);
             }
 
-            assert taskCount > 0;
-            taskCount--;
+            assert taskCount >= count;
+            taskCount -= count;
             if (taskCount == 0) {
                 result = mappedHosts;
                 mappedHosts = null;
@@ -244,11 +270,14 @@ public final class GetMacMappedHostFuture
             LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
             ReadTransaction rtx = context.getTransaction();
             for (MappedHost host: hosts) {
-                ReadMacTableCallback cb = new ReadMacTableCallback(host);
-                InstanceIdentifier<MacTableEntry> path = VBridgeIdentifier.
-                    getMacEntryPath(bridgeId, host.getMacAddress());
-                Futures.addCallback(rtx.read(oper, path), cb);
-                count--;
+                if (macAddresses == null ||
+                    macAddresses.contains(host.getMacAddress())) {
+                    ReadMacTableCallback cb = new ReadMacTableCallback(host);
+                    InstanceIdentifier<MacTableEntry> path = VBridgeIdentifier.
+                        getMacEntryPath(bridgeId, host.getMacAddress());
+                    Futures.addCallback(rtx.read(oper, path), cb);
+                    count--;
+                }
             }
         } catch (RuntimeException e) {
             context.log(LOG, VTNLogLevel.ERROR, e,
@@ -262,6 +291,12 @@ public final class GetMacMappedHostFuture
                 taskCount -= count;
             }
             cancelTransaction();
+            return;
+        }
+
+        if (count > 0) {
+            // Decrement the task counter.
+            addHost(null, count);
         }
     }
 
