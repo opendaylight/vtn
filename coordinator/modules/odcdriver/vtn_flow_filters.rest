@@ -91,6 +91,7 @@ key="vtn-set-vlan-pcp-action"
 is_child=yes
 struct_name=par_flow_action
 members=vlan_pcp,valid
+mandatory=no
 build_support=no
 parse_support=yes
 
@@ -110,6 +111,7 @@ is_child=yes
 struct_name=par_flow_action
 members=dscp_value,valid
 build_support=no
+mandatory=no
 parse_support=yes
 
 [dscp_value]
@@ -203,6 +205,7 @@ is_child=no
 check_bool_set=no
 struct_name=par_flow_filter
 members=par_flow_filter,valid
+mandatory=no
 build_support=no
 parse_support=yes
 
@@ -213,6 +216,7 @@ is_child=yes
 check_bool_set=yes
 struct_name=par_vtn_flowfilter
 members=par_flow_filter
+mandatory=no
 build_support=no
 parse_support=no
 
@@ -224,6 +228,7 @@ check_bool_set=yes
 struct_name=par_flow_filter
 members=par_vtn_flowfilter
 build_support=no
+mandatory=no
 parse_support=yes
 
 [vtnflowfilter_parser]

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015 NEC Corporation
+ * Copyright (c) 2014-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -563,7 +563,7 @@ UncRespCode OdcVtermIfCommand::fill_config_node_vector(
   } else if (enabled == false) {
       val_vterm_if.admin_status = UPLL_ADMIN_DISABLE;
   }
-     std::list<vterm_if> vtermif_port_detail;
+     std::list<vterm_if_portmap> vtermif_port_detail;
      UncRespCode ret_val = read_portmap(ctr,key_vterm_if,
                                 vtermif_port_detail, cfgnode_vector);
      if (ret_val != UNC_RC_SUCCESS){
@@ -572,11 +572,11 @@ UncRespCode OdcVtermIfCommand::fill_config_node_vector(
      uint32_t vlan = 0;
      std::string node = "";
      std::string port_name = "";
-     std::list<vterm_if>::iterator it;
+     std::list<vterm_if_portmap>::iterator it;
      for (it = vtermif_port_detail.begin();it!= vtermif_port_detail.end();it++){
-       vlan = it->vlan_id;
-       node = it->node_id;
-       port_name = it->port;
+       vlan = it->vterm_if_.vlan_id;
+       node = it->vterm_if_.node_id;
+       port_name = it->vterm_if_.port;
      }
       pfc_log_debug("the parsed node id:%s", node.c_str());
       val_vterm_if.valid[UPLL_IDX_PM_VTERMI] = UNC_VF_VALID;
@@ -626,7 +626,7 @@ UncRespCode OdcVtermIfCommand::fill_config_node_vector(
 
 UncRespCode OdcVtermIfCommand::read_portmap(unc::driver::controller* ctr_ptr,
                                           key_vterm_if_t& vterm_if_key,
-                                  std::list<vterm_if> &vtermif_port_detail,
+                                  std::list<vterm_if_portmap> &vtermif_port_detail,
                                   std::vector<unc::vtndrvcache::ConfigNode *>
                                              &cfgnode_vector) {
   ODC_FUNC_TRACE;
@@ -664,14 +664,14 @@ UncRespCode OdcVtermIfCommand::read_portmap(unc::driver::controller* ctr_ptr,
     return UNC_DRV_RC_ERR_GENERIC;
   }
 
-  ret_val = parse_obj->set_vterm_if(parse_obj->jobj);
+  ret_val = parse_obj->set_vterm_if_portmap(parse_obj->jobj);
   if (UNC_RC_SUCCESS != ret_val) {
     pfc_log_error("set vinterface portmap_conf error");
     delete req_obj;
     delete parse_obj;
     return UNC_DRV_RC_ERR_GENERIC;
   }
-  vtermif_port_detail = parse_obj->vterm_if_;
+  vtermif_port_detail = parse_obj->vterm_if_portmap_;
   return ret_val;
 }
 
