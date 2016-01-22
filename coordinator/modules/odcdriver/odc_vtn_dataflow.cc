@@ -396,7 +396,6 @@ UncRespCode OdcVtnDataFlowCommand::parse_flow_response_values(
        status = 1;
        vlink_flag = 0;
      }
-  }
 
   // match - START
   pfc_bool_t match_status = PFC_FALSE;
@@ -716,8 +715,9 @@ UncRespCode OdcVtnDataFlowCommand::parse_flow_response_values(
   for(uint32_t position = 0; position < switch_id.length(); position ++){
     if (switch_id.at(position) == ':') {
       if((flag%2) == 0) {
-        switch_id.erase(position, 1);
-        position--;
+        //switch_id.erase(position, 1);
+        pfc_log_info("logical port position");
+        //position--;
       } else {
         switch_id.erase(position, 1);
         switch_id.insert(position, COLON);
@@ -778,8 +778,9 @@ UncRespCode OdcVtnDataFlowCommand::parse_flow_response_values(
   for(uint32_t position = 0; position < egress_switch_id.length(); position ++){
     if (egress_switch_id.at(position) == ':') {
       if((flag%2) == 0) {
-        egress_switch_id.erase(position, 1);
-        position--;
+         pfc_log_info("logical port position");
+        //egress_switch_id.erase(position, 1);
+        //position--;
       } else {
         egress_switch_id.erase(position, 1);
         egress_switch_id.insert(position, COLON);
@@ -849,6 +850,7 @@ UncRespCode OdcVtnDataFlowCommand::parse_flow_response_values(
   } else {
     pfc_log_info("no element for noderoute array");
   }*/
+  }
   unc::vtnreadutil::driver_dataflow_read_util::add_read_value
       (df_cmn, df_util);
   }
