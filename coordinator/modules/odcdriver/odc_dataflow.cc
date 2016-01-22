@@ -175,14 +175,14 @@ UncRespCode OdcDataFlowCommand::parse_flow_response_values(
   ODC_FUNC_TRACE;
 
   // Populate values to dataflow
-  unc::dataflow::DataflowDetail *df_segm =
-      new unc::dataflow::DataflowDetail(
-          unc::dataflow::kidx_val_df_data_flow_cmn);
-  unc::dataflow::DataflowCmn *df_cmn =
-      new unc::dataflow::DataflowCmn(false, df_segm);
 
   std::list<data_flow>::iterator it;
   for (it = df_info.begin(); it != df_info.end(); it++) {
+    unc::dataflow::DataflowDetail *df_segm =
+      new unc::dataflow::DataflowDetail(
+          unc::dataflow::kidx_val_df_data_flow_cmn);
+    unc::dataflow::DataflowCmn *df_cmn =
+      new unc::dataflow::DataflowCmn(false, df_segm);
     uint32_t flowid = 0;
     uint32_t creationTime = 0;
     uint32_t hardTimeout = 0;
@@ -396,7 +396,6 @@ UncRespCode OdcDataFlowCommand::parse_flow_response_values(
           pfc_log_error("invalid pathinfo_inport_name ");
           return UNC_DRV_RC_ERR_GENERIC;
       }
-    }
 
     pfc_log_info("controller name %s", key_dataflow.controller_name);
     /* copy controller name to dataflow common struct */
@@ -530,14 +529,11 @@ UncRespCode OdcDataFlowCommand::parse_flow_response_values(
       pfc_log_trace("There is no Physical path related Information");
     }
 
-  // else {
-   // pfc_log_info("no element for noderoute array");
-  //}
+  }
   unc::vtnreadutil::driver_dataflow_read_util::add_read_value
       (df_cmn, df_util);
   }
 
-  // df_util.appendFlow(df_cmn);
   return UNC_RC_SUCCESS;
 }
 }  // namespace odcdriver
