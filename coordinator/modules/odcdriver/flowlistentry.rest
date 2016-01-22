@@ -356,6 +356,7 @@ check_bool_set=no
 struct_name = ip_flowlistentry
 members= name,match,valid
 build_support=yes
+mandatory=yes
 parse_support=no
 
 [ip_flowlistentry]
@@ -366,6 +367,7 @@ check_bool_set=yes
 struct_name = ip_flowlistentry
 members = in_flowcond,valid
 build_support=yes
+mandatory=yes
 parse_support=no
 
 [ip_flowlistentrys]
@@ -376,6 +378,7 @@ check_bool_set=yes
 struct_name = ip_flowlistentry
 members = ip_flowlistentry
 build_support=yes
+mandatory=yes
 parse_support=no
 
 [flowlistentrys]
@@ -386,6 +389,7 @@ check_bool_set=no
 struct_name = ip_flowlistentry
 members = flowlistentrys
 build_support=no
+mandatory=yes
 parse_support=no
 
 

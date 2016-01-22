@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015 NEC Corporation
+ * Copyright (c) 2014-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -147,7 +147,7 @@ class OdcVtermIfCommand: public unc::driver::vtn_driver_command
   UncRespCode read_portmap(
       unc::driver::controller* ctr_ptr,
       key_vterm_if_t& vterm_if_key,
-      std::list<vterm_if> &vtermif_port_detail,
+      std::list<vterm_if_portmap> &vtermif_port_detail,
       std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
   /**
