@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2014, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -685,5 +685,27 @@ public final class MiscUtils {
         }
 
         return found;
+    }
+
+    /**
+     * Verify the given MAC address.
+     *
+     * @param mac  The MAC address to be tested.
+     * @return  The given MAC address is returned.
+     * @throws RpcException
+     *    The given MAC address is invalid.
+     */
+    public static MacAddress verify(MacAddress mac) throws RpcException {
+        try {
+            EtherAddress eaddr = EtherAddress.create(mac);
+            if (eaddr == null) {
+                throw RpcException.getNullArgumentException("MAC address");
+            }
+        } catch (RuntimeException e) {
+            throw RpcException.getBadArgumentException(
+                "Invalid MAC address: " + mac, e);
+        }
+
+        return mac;
     }
 }

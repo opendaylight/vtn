@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2014, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -46,6 +46,7 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
+import org.opendaylight.vtn.manager.internal.TestMacAddress;
 import org.opendaylight.vtn.manager.internal.TestVlanId;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
@@ -869,6 +870,56 @@ public class MiscUtilsTest extends TestBase {
         Ipv4Address ipv4 = new Ipv4Address("127.0.0.1");
         addrs.add(new IpAddress(ipv4));
         assertEquals(true, MiscUtils.hasIpv4Address(addrs));
+    }
+
+    /**
+     * Test case for {@link MiscUtils#verify(MacAddress)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testVerifyMacAddress() throws Exception {
+        Random rand = new Random(0x11112222333L);
+        for (int i = 0; i < 30; i++) {
+            EtherAddress eaddr = new EtherAddress(rand.nextLong());
+            MacAddress mac = eaddr.getMacAddress();
+            assertSame(mac, MiscUtils.verify(mac));
+        }
+
+        // Null MAC address.
+        RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
+        String msg = "MAC address cannot be null";
+        try {
+            MiscUtils.verify((MacAddress)null);
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(etag, e.getErrorTag());
+            assertEquals(vtag, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
+        }
+
+        // Invalid MAC address.
+        etag = RpcErrorTag.BAD_ELEMENT;
+        String[] invAddrs = {
+            null,
+            "00:11:22",
+            "00:11:22:33:44:55:66",
+            "aa:bb:cc:dd:ee:gg",
+            "Bad address",
+        };
+        for (String addr: invAddrs) {
+            TestMacAddress mac = new TestMacAddress(addr);
+            msg = "Invalid MAC address: " + mac;
+            try {
+                MiscUtils.verify(mac);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
+            }
+        }
     }
 
     /**
