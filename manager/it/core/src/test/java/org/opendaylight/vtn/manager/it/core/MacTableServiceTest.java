@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -59,6 +59,119 @@ public final class MacTableServiceTest extends TestMethodBase {
      */
     public MacTableServiceTest(VTNManagerIT vit) {
         super(vit);
+    }
+
+    /**
+     * Create a new input builder for remove-mac-entry RPC.
+     *
+     * @param vbrId  The identifier for the target vBridge.
+     * @return  A {@link RemoveMacEntryInputBuilder} instance.
+     */
+    private RemoveMacEntryInputBuilder newRemoveMacEntryInputBuilder(
+        VBridgeIdentifier vbrId) {
+        return new RemoveMacEntryInputBuilder().
+            setTenantName(vbrId.getTenantNameString()).
+            setBridgeName(vbrId.getBridgeNameString());
+    }
+
+    /**
+     * Create a new input for remove-mac-entry RPC.
+     *
+     * @param vbrId   The identifier for the target vBridge.
+     * @param eaddrs  An array of {@link EtherAddress} instances.
+     * @return  A {@link RemoveMacEntryInput} instance.
+     */
+    private RemoveMacEntryInput newRemoveMacEntryInput(
+        VBridgeIdentifier vbrId, EtherAddress ... eaddrs) {
+        List<MacAddress> addrs;
+        if (eaddrs == null) {
+            addrs = null;
+        } else {
+            addrs = new ArrayList<>(eaddrs.length);
+            for (EtherAddress eaddr: eaddrs) {
+                MacAddress mac = (eaddr == null)
+                    ? null : eaddr.getMacAddress();
+                addrs.add(mac);
+            }
+        }
+
+        return newRemoveMacEntryInputBuilder(vbrId).
+            setMacAddresses(addrs).
+            build();
+    }
+
+    /**
+     * Remove the given MAC addresses from the MAC address table entry.
+     *
+     * @param macSrv  The vtn-mac-table service.
+     * @param vbrId   The identifier for the target vBridge.
+     * @param eaddrs  An array of {@link EtherAddress} instances.
+     * @return  A map that contains the output of the remove-mac-entry RPC.
+     */
+    private Map<MacAddress, VtnUpdateType> removeMacEntry(
+        VtnMacTableService macSrv, VBridgeIdentifier vbrId,
+        EtherAddress ... eaddrs) {
+        RemoveMacEntryInput input = newRemoveMacEntryInput(vbrId, eaddrs);
+        return removeMacEntry(macSrv, input);
+    }
+
+    /**
+     * Remove the given MAC addresses from the MAC address table entry.
+     *
+     * @param macSrv  The vtn-mac-table service.
+     * @param vbrId   The identifier for the target vBridge.
+     * @param addrs   A list of {@link MacAddress} instances.
+     * @return  A map that contains the output of the remove-mac-entry RPC.
+     */
+    private Map<MacAddress, VtnUpdateType> removeMacEntry(
+        VtnMacTableService macSrv, VBridgeIdentifier vbrId,
+        List<MacAddress> addrs) {
+        RemoveMacEntryInput input = newRemoveMacEntryInputBuilder(vbrId).
+            setMacAddresses(addrs).
+            build();
+        return removeMacEntry(macSrv, input);
+    }
+
+    /**
+     * Remove all the MAC addresses in the MAC address table.
+     *
+     * @param macSrv  The vtn-mac-table service.
+     * @param vbrId   The identifier for the target vBridge.
+     * @return  A map that contains the output of the remove-mac-entry RPC.
+     */
+    private Map<MacAddress, VtnUpdateType> clearMacEntry(
+        VtnMacTableService macSrv, VBridgeIdentifier vbrId) {
+        RemoveMacEntryInput input = newRemoveMacEntryInputBuilder(vbrId).
+            build();
+        return removeMacEntry(macSrv, input);
+    }
+
+    /**
+     * Remove the MAC addresses specified by the given RPC input.
+     *
+     * @param macSrv  The vtn-mac-table service.
+     * @param input   A {@link RemoveMacEntryInput} instance.
+     * @return  A map that contains the output of the remove-mac-entry RPC.
+     */
+    private Map<MacAddress, VtnUpdateType> removeMacEntry(
+        VtnMacTableService macSrv, RemoveMacEntryInput input) {
+        RemoveMacEntryOutput output =
+            getRpcOutput(macSrv.removeMacEntry(input));
+
+        Map<MacAddress, VtnUpdateType> result;
+        List<RemoveMacEntryResult> res = output.getRemoveMacEntryResult();
+        if (res == null) {
+            result = null;
+        } else {
+            result = new HashMap<>();
+            for (RemoveMacEntryResult rmres: res) {
+                MacAddress mac = rmres.getMacAddress();
+                VtnUpdateType status = rmres.getStatus();
+                assertEquals(null, result.put(mac, status));
+            }
+        }
+
+        return result;
     }
 
     // TestMethodBase
@@ -365,119 +478,5 @@ public final class MacTableServiceTest extends TestMethodBase {
         macWaiter1.await();
         macWaiter2.set(null).await();
         vnet.removeTenant(tname).verify();
-    }
-
-
-    /**
-     * Create a new input builder for remove-mac-entry RPC.
-     *
-     * @param vbrId  The identifier for the target vBridge.
-     * @return  A {@link RemoveMacEntryInputBuilder} instance.
-     */
-    private RemoveMacEntryInputBuilder newRemoveMacEntryInputBuilder(
-        VBridgeIdentifier vbrId) {
-        return new RemoveMacEntryInputBuilder().
-            setTenantName(vbrId.getTenantNameString()).
-            setBridgeName(vbrId.getBridgeNameString());
-    }
-
-    /**
-     * Create a new input for remove-mac-entry RPC.
-     *
-     * @param vbrId   The identifier for the target vBridge.
-     * @param eaddrs  An array of {@link EtherAddress} instances.
-     * @return  A {@link RemoveMacEntryInput} instance.
-     */
-    private RemoveMacEntryInput newRemoveMacEntryInput(
-        VBridgeIdentifier vbrId, EtherAddress ... eaddrs) {
-        List<MacAddress> addrs;
-        if (eaddrs == null) {
-            addrs = null;
-        } else {
-            addrs = new ArrayList<>(eaddrs.length);
-            for (EtherAddress eaddr: eaddrs) {
-                MacAddress mac = (eaddr == null)
-                    ? null : eaddr.getMacAddress();
-                addrs.add(mac);
-            }
-        }
-
-        return newRemoveMacEntryInputBuilder(vbrId).
-            setMacAddresses(addrs).
-            build();
-    }
-
-    /**
-     * Remove the given MAC addresses from the MAC address table entry.
-     *
-     * @param macSrv  The vtn-mac-table service.
-     * @param vbrId   The identifier for the target vBridge.
-     * @param eaddrs  An array of {@link EtherAddress} instances.
-     * @return  A map that contains the output of the remove-mac-entry RPC.
-     */
-    private Map<MacAddress, VtnUpdateType> removeMacEntry(
-        VtnMacTableService macSrv, VBridgeIdentifier vbrId,
-        EtherAddress ... eaddrs) {
-        RemoveMacEntryInput input = newRemoveMacEntryInput(vbrId, eaddrs);
-        return removeMacEntry(macSrv, input);
-    }
-
-    /**
-     * Remove the given MAC addresses from the MAC address table entry.
-     *
-     * @param macSrv  The vtn-mac-table service.
-     * @param vbrId   The identifier for the target vBridge.
-     * @param addrs   A list of {@link MacAddress} instances.
-     * @return  A map that contains the output of the remove-mac-entry RPC.
-     */
-    private Map<MacAddress, VtnUpdateType> removeMacEntry(
-        VtnMacTableService macSrv, VBridgeIdentifier vbrId,
-        List<MacAddress> addrs) {
-        RemoveMacEntryInput input = newRemoveMacEntryInputBuilder(vbrId).
-            setMacAddresses(addrs).
-            build();
-        return removeMacEntry(macSrv, input);
-    }
-
-    /**
-     * Remove all the MAC addresses in the MAC address table.
-     *
-     * @param macSrv  The vtn-mac-table service.
-     * @param vbrId   The identifier for the target vBridge.
-     * @return  A map that contains the output of the remove-mac-entry RPC.
-     */
-    private Map<MacAddress, VtnUpdateType> clearMacEntry(
-        VtnMacTableService macSrv, VBridgeIdentifier vbrId) {
-        RemoveMacEntryInput input = newRemoveMacEntryInputBuilder(vbrId).
-            build();
-        return removeMacEntry(macSrv, input);
-    }
-
-    /**
-     * Remove the MAC addresses specified by the given RPC input.
-     *
-     * @param macSrv  The vtn-mac-table service.
-     * @param input   A {@link RemoveMacEntryInput} instance.
-     * @return  A map that contains the output of the remove-mac-entry RPC.
-     */
-    private Map<MacAddress, VtnUpdateType> removeMacEntry(
-        VtnMacTableService macSrv, RemoveMacEntryInput input) {
-        RemoveMacEntryOutput output =
-            getRpcOutput(macSrv.removeMacEntry(input));
-
-        Map<MacAddress, VtnUpdateType> result;
-        List<RemoveMacEntryResult> res = output.getRemoveMacEntryResult();
-        if (res == null) {
-            result = null;
-        } else {
-            result = new HashMap<>();
-            for (RemoveMacEntryResult rmres: res) {
-                MacAddress mac = rmres.getMacAddress();
-                VtnUpdateType status = rmres.getStatus();
-                assertEquals(null, result.put(mac, status));
-            }
-        }
-
-        return result;
     }
 }

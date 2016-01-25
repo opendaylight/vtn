@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -73,218 +73,6 @@ public final class FlowFilterServiceTest extends TestMethodBase {
     public FlowFilterServiceTest(VTNManagerIT vit) {
         super(vit);
     }
-
-    // TestMethodBase
-
-    /**
-     * Run the test.
-     *
-     * @throws Exception  An error occurred.
-     */
-    @Override
-    protected void runTest() throws Exception {
-        VTNManagerIT vit = getTest();
-        VtnFlowFilterService ffSrv = vit.getFlowFilterService();
-
-        // Create virtual nodes.
-        VirtualNetwork vnet = getVirtualNetwork();
-        String tname1 = "vtn_1";
-        String tname2 = "vtn_2";
-        String bname1 = "node_1";
-        String bname2 = "node_2";
-        String iname1 = "if_1";
-        String iname2 = "if_2";
-        VTenantIdentifier vtnId1 = new VTenantIdentifier(tname1);
-        VTenantIdentifier vtnId2 = new VTenantIdentifier(tname2);
-        VBridgeIdentifier vbrId1 = new VBridgeIdentifier(tname1, bname1);
-        VBridgeIdentifier vbrId2 = new VBridgeIdentifier(tname1, bname2);
-        VInterfaceIdentifier<?> ifId1 = vbrId1.childInterface(iname1);
-        VInterfaceIdentifier<?> ifId2 = vbrId1.childInterface(iname2);
-        VInterfaceIdentifier<?> ifId3 =
-            new VTerminalIfIdentifier(tname1, bname1, iname1);
-        VInterfaceIdentifier<?> ifId4 =
-            new VTerminalIfIdentifier(tname2, bname1, iname1);
-        vnet.addBridge(vbrId1, vbrId2).
-            addInterface(ifId1, ifId2, ifId3, ifId4).
-            apply().
-            verify();
-
-        List<VNodeIdentifier<?>> identifiers = new ArrayList<>();
-        Collections.addAll(identifiers,
-                           vbrId1, vbrId2,
-                           ifId1, ifId2, ifId3, ifId4);
-
-        // VTN input filter test.
-        // VTN filter is always treated as input even if "output" is true.
-        Random rand = new Random(22360679L);
-        testFlowFilterService(ffSrv, vnet, rand, vtnId1, false);
-        testFlowFilterService(ffSrv, vnet, rand, vtnId2, true);
-
-        // vBridge/vInterface filter test.
-        boolean[] bools = {true, false};
-        for (VNodeIdentifier<?> ident: identifiers) {
-            for (boolean output: bools) {
-                testFlowFilterService(ffSrv, vnet, rand, ident, output);
-            }
-        }
-        Collections.addAll(identifiers, vtnId1, vtnId2);
-
-        // Error tests.
-
-        // Null input.
-        checkRpcError(ffSrv.setFlowFilter(null),
-                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
-        checkRpcError(ffSrv.removeFlowFilter(null),
-                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
-
-        // Missing path component.
-        List<VirtualNodePath> badPaths = new ArrayList<>();
-        Collections.addAll(
-            badPaths,
-            null,
-            new VirtualNodePathBuilder().build(),
-
-            // No VTN name.
-            newBridgePath(null, bname1, iname1),
-            newTerminalPath(null, bname1, iname1),
-
-            // No bridge name.
-            newBridgePath(tname1, null, iname1));
-
-        for (VirtualNodePath vpath: badPaths) {
-            testInvalidNodeFlowFilter(ffSrv, vpath, RpcErrorTag.MISSING_ELEMENT,
-                                      VtnErrorTag.BADREQUEST);
-        }
-
-        // The target virtual node is not present.
-        String unknown = "unknown_name";
-        badPaths.clear();
-        Collections.addAll(
-            badPaths,
-            newBridgePath(unknown, null, null),
-            newBridgePath(tname1, unknown, null),
-            newBridgePath(tname1, bname1, unknown),
-            newTerminalPath(tname1, bname1, unknown));
-
-        String[] badNames = {
-            "_badname",
-            "",
-            "12345678901234567890123456789012",
-        };
-        for (String name: badNames) {
-            Collections.addAll(
-                badPaths,
-                newBridgePath(name, null, null),
-                newBridgePath(tname1, name, null),
-                newBridgePath(tname1, bname1, name),
-                newTerminalPath(tname1, bname1, name));
-        }
-
-        for (VirtualNodePath vpath: badPaths) {
-            testInvalidNodeFlowFilter(ffSrv, vpath, RpcErrorTag.DATA_MISSING,
-                                      VtnErrorTag.NOTFOUND);
-        }
-
-        // Specifying vTerminal as the target virtual node.
-        badPaths.clear();
-        Collections.addAll(
-            badPaths,
-            newTerminalPath(tname1, unknown, null),
-            newTerminalPath(tname1, bname1, null),
-            newTerminalPath(tname2, bname1, null));
-
-        for (VirtualNodePath vpath: badPaths) {
-            testInvalidNodeFlowFilter(ffSrv, vpath, RpcErrorTag.BAD_ELEMENT,
-                                      VtnErrorTag.BADREQUEST);
-        }
-
-        // Errors should never affect flow filters.
-        vnet.verify();
-
-        // Remove all flow filters.
-        Map<VNodeIdentifier<?>, FlowFilterList> savedInputFilters =
-            new HashMap<>();
-        Map<VNodeIdentifier<?>, FlowFilterList> savedOutputFilters =
-            new HashMap<>();
-        for (VNodeIdentifier<?> ident: identifiers) {
-            for (boolean output: bools) {
-                if (output && ident.getType().equals(VNodeType.VTN)) {
-                    continue;
-                }
-
-                FlowFilterNode fnode = vnet.getFlowFilterNode(ident);
-                FlowFilterList flist = (output)
-                    ? fnode.getOutputFilter()
-                    : fnode.getInputFilter();
-                FlowFilterList saved = flist.clone();
-                List<Integer> indices1 = new ArrayList<>();
-                List<Integer> indices2 = new ArrayList<>();
-                List<Integer> indicesAll = new ArrayList<>();
-                Map<Integer, VtnUpdateType> resMap1 = new HashMap<>();
-                Map<Integer, VtnUpdateType> resMap2 = new HashMap<>();
-                Map<Integer, VtnUpdateType> resMapAll = new HashMap<>();
-                int count = 0;
-                for (FlowFilter<?> ff: saved.getFlowFilters()) {
-                    count++;
-                    List<Integer> indices;
-                    Map<Integer, VtnUpdateType> resMap;
-                    if (count <= 2) {
-                        indices = indices1;
-                        resMap = resMap1;
-                    } else {
-                        indices = indices2;
-                        resMap = resMap2;
-                    }
-
-                    Integer idx = ff.getIndex();
-                    indices.add(idx);
-                    indicesAll.add(idx);
-                    assertNull(resMap.put(idx, VtnUpdateType.REMOVED));
-                    assertNull(resMapAll.put(idx, null));
-                }
-
-                assertEquals(resMap1,
-                             removeFlowFilter(ident, output, indices1));
-                flist.remove(indices1);
-                vnet.verify();
-
-                assertEquals(resMap2,
-                             removeFlowFilter(ident, output, indices2));
-                flist.clear();
-                vnet.verify();
-
-                assertEquals(resMapAll,
-                             removeFlowFilter(ident, output, indicesAll));
-                vnet.verify();
-
-                Map<VNodeIdentifier<?>, FlowFilterList> savedMap = (output)
-                    ? savedOutputFilters : savedInputFilters;
-                assertNull(savedMap.put(ident, saved));
-            }
-        }
-
-        for (boolean empty: bools) {
-            // Restore all flow filters.
-            restoreFlowFilters(ffSrv, vnet, savedInputFilters, false);
-            restoreFlowFilters(ffSrv, vnet, savedOutputFilters, true);
-
-            // Clear the flow filter list.
-            for (VNodeIdentifier<?> ident: savedInputFilters.keySet()) {
-                clearFlowFilter(vnet, ident, false, empty);
-            }
-            for (VNodeIdentifier<?> ident: savedOutputFilters.keySet()) {
-                clearFlowFilter(vnet, ident, true, empty);
-            }
-        }
-
-        // Remove VTNs.
-        removeVtn(tname1);
-        removeVtn(tname2);
-        vnet.removeTenant(tname1).
-            removeTenant(tname2).
-            verify();
-    }
-
 
     /**
      * Test case for {@link VtnFlowFilterService}.
@@ -673,5 +461,216 @@ public final class FlowFilterServiceTest extends TestMethodBase {
         assertEquals(null,
                      removeFlowFilter(ident, out, indices));
         vnet.verify();
+    }
+
+    // TestMethodBase
+
+    /**
+     * Run the test.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Override
+    protected void runTest() throws Exception {
+        VTNManagerIT vit = getTest();
+        VtnFlowFilterService ffSrv = vit.getFlowFilterService();
+
+        // Create virtual nodes.
+        VirtualNetwork vnet = getVirtualNetwork();
+        String tname1 = "vtn_1";
+        String tname2 = "vtn_2";
+        String bname1 = "node_1";
+        String bname2 = "node_2";
+        String iname1 = "if_1";
+        String iname2 = "if_2";
+        VTenantIdentifier vtnId1 = new VTenantIdentifier(tname1);
+        VTenantIdentifier vtnId2 = new VTenantIdentifier(tname2);
+        VBridgeIdentifier vbrId1 = new VBridgeIdentifier(tname1, bname1);
+        VBridgeIdentifier vbrId2 = new VBridgeIdentifier(tname1, bname2);
+        VInterfaceIdentifier<?> ifId1 = vbrId1.childInterface(iname1);
+        VInterfaceIdentifier<?> ifId2 = vbrId1.childInterface(iname2);
+        VInterfaceIdentifier<?> ifId3 =
+            new VTerminalIfIdentifier(tname1, bname1, iname1);
+        VInterfaceIdentifier<?> ifId4 =
+            new VTerminalIfIdentifier(tname2, bname1, iname1);
+        vnet.addBridge(vbrId1, vbrId2).
+            addInterface(ifId1, ifId2, ifId3, ifId4).
+            apply().
+            verify();
+
+        List<VNodeIdentifier<?>> identifiers = new ArrayList<>();
+        Collections.addAll(identifiers,
+                           vbrId1, vbrId2,
+                           ifId1, ifId2, ifId3, ifId4);
+
+        // VTN input filter test.
+        // VTN filter is always treated as input even if "output" is true.
+        Random rand = new Random(22360679L);
+        testFlowFilterService(ffSrv, vnet, rand, vtnId1, false);
+        testFlowFilterService(ffSrv, vnet, rand, vtnId2, true);
+
+        // vBridge/vInterface filter test.
+        boolean[] bools = {true, false};
+        for (VNodeIdentifier<?> ident: identifiers) {
+            for (boolean output: bools) {
+                testFlowFilterService(ffSrv, vnet, rand, ident, output);
+            }
+        }
+        Collections.addAll(identifiers, vtnId1, vtnId2);
+
+        // Error tests.
+
+        // Null input.
+        checkRpcError(ffSrv.setFlowFilter(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+        checkRpcError(ffSrv.removeFlowFilter(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // Missing path component.
+        List<VirtualNodePath> badPaths = new ArrayList<>();
+        Collections.addAll(
+            badPaths,
+            null,
+            new VirtualNodePathBuilder().build(),
+
+            // No VTN name.
+            newBridgePath(null, bname1, iname1),
+            newTerminalPath(null, bname1, iname1),
+
+            // No bridge name.
+            newBridgePath(tname1, null, iname1));
+
+        for (VirtualNodePath vpath: badPaths) {
+            testInvalidNodeFlowFilter(ffSrv, vpath, RpcErrorTag.MISSING_ELEMENT,
+                                      VtnErrorTag.BADREQUEST);
+        }
+
+        // The target virtual node is not present.
+        String unknown = "unknown_name";
+        badPaths.clear();
+        Collections.addAll(
+            badPaths,
+            newBridgePath(unknown, null, null),
+            newBridgePath(tname1, unknown, null),
+            newBridgePath(tname1, bname1, unknown),
+            newTerminalPath(tname1, bname1, unknown));
+
+        String[] badNames = {
+            "_badname",
+            "",
+            "12345678901234567890123456789012",
+        };
+        for (String name: badNames) {
+            Collections.addAll(
+                badPaths,
+                newBridgePath(name, null, null),
+                newBridgePath(tname1, name, null),
+                newBridgePath(tname1, bname1, name),
+                newTerminalPath(tname1, bname1, name));
+        }
+
+        for (VirtualNodePath vpath: badPaths) {
+            testInvalidNodeFlowFilter(ffSrv, vpath, RpcErrorTag.DATA_MISSING,
+                                      VtnErrorTag.NOTFOUND);
+        }
+
+        // Specifying vTerminal as the target virtual node.
+        badPaths.clear();
+        Collections.addAll(
+            badPaths,
+            newTerminalPath(tname1, unknown, null),
+            newTerminalPath(tname1, bname1, null),
+            newTerminalPath(tname2, bname1, null));
+
+        for (VirtualNodePath vpath: badPaths) {
+            testInvalidNodeFlowFilter(ffSrv, vpath, RpcErrorTag.BAD_ELEMENT,
+                                      VtnErrorTag.BADREQUEST);
+        }
+
+        // Errors should never affect flow filters.
+        vnet.verify();
+
+        // Remove all flow filters.
+        Map<VNodeIdentifier<?>, FlowFilterList> savedInputFilters =
+            new HashMap<>();
+        Map<VNodeIdentifier<?>, FlowFilterList> savedOutputFilters =
+            new HashMap<>();
+        for (VNodeIdentifier<?> ident: identifiers) {
+            for (boolean output: bools) {
+                if (output && ident.getType().equals(VNodeType.VTN)) {
+                    continue;
+                }
+
+                FlowFilterNode fnode = vnet.getFlowFilterNode(ident);
+                FlowFilterList flist = (output)
+                    ? fnode.getOutputFilter()
+                    : fnode.getInputFilter();
+                FlowFilterList saved = flist.clone();
+                List<Integer> indices1 = new ArrayList<>();
+                List<Integer> indices2 = new ArrayList<>();
+                List<Integer> indicesAll = new ArrayList<>();
+                Map<Integer, VtnUpdateType> resMap1 = new HashMap<>();
+                Map<Integer, VtnUpdateType> resMap2 = new HashMap<>();
+                Map<Integer, VtnUpdateType> resMapAll = new HashMap<>();
+                int count = 0;
+                for (FlowFilter<?> ff: saved.getFlowFilters()) {
+                    count++;
+                    List<Integer> indices;
+                    Map<Integer, VtnUpdateType> resMap;
+                    if (count <= 2) {
+                        indices = indices1;
+                        resMap = resMap1;
+                    } else {
+                        indices = indices2;
+                        resMap = resMap2;
+                    }
+
+                    Integer idx = ff.getIndex();
+                    indices.add(idx);
+                    indicesAll.add(idx);
+                    assertNull(resMap.put(idx, VtnUpdateType.REMOVED));
+                    assertNull(resMapAll.put(idx, null));
+                }
+
+                assertEquals(resMap1,
+                             removeFlowFilter(ident, output, indices1));
+                flist.remove(indices1);
+                vnet.verify();
+
+                assertEquals(resMap2,
+                             removeFlowFilter(ident, output, indices2));
+                flist.clear();
+                vnet.verify();
+
+                assertEquals(resMapAll,
+                             removeFlowFilter(ident, output, indicesAll));
+                vnet.verify();
+
+                Map<VNodeIdentifier<?>, FlowFilterList> savedMap = (output)
+                    ? savedOutputFilters : savedInputFilters;
+                assertNull(savedMap.put(ident, saved));
+            }
+        }
+
+        for (boolean empty: bools) {
+            // Restore all flow filters.
+            restoreFlowFilters(ffSrv, vnet, savedInputFilters, false);
+            restoreFlowFilters(ffSrv, vnet, savedOutputFilters, true);
+
+            // Clear the flow filter list.
+            for (VNodeIdentifier<?> ident: savedInputFilters.keySet()) {
+                clearFlowFilter(vnet, ident, false, empty);
+            }
+            for (VNodeIdentifier<?> ident: savedOutputFilters.keySet()) {
+                clearFlowFilter(vnet, ident, true, empty);
+            }
+        }
+
+        // Remove VTNs.
+        removeVtn(tname1);
+        removeVtn(tname2);
+        vnet.removeTenant(tname1).
+            removeTenant(tname2).
+            verify();
     }
 }

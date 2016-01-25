@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -107,6 +107,11 @@ public abstract class TestBase extends Assert {
      * The maximum value of path policy ID.
      */
     public static final int  PATH_POLICY_ID_MAX = 3;
+
+    /**
+     * A mask value which represents valid bits in a VLAN ID.
+     */
+    public static final int  MASK_VLAN_ID = 0xfff;
 
     /**
      * A mask value which represents valid bits in a VLAN priority.
@@ -440,6 +445,16 @@ public abstract class TestBase extends Assert {
         } while (addr == 0);
 
         return new Ip4Network(addr);
+    }
+
+    /**
+     * Create a VLAN ID using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @return  A VLAN ID.
+     */
+    public static final int createVlanId(Random rand) {
+        return (rand.nextInt() & MASK_VLAN_ID);
     }
 
     /**

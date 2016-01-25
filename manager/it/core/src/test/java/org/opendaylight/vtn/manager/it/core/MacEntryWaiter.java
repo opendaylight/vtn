@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -180,9 +180,47 @@ public final class MacEntryWaiter {
      * @return  This instance.
      */
     public MacEntryWaiter clear() {
+        clear(true);
+        return this;
+    }
+
+    /**
+     * Clear the MAC address table entries.
+     *
+     * @param present  {@code true} indicates the target vBridge is present.
+     * @return  This instance.
+     */
+    public MacEntryWaiter clear(boolean present) {
+        if (present) {
+            Map<EtherAddress, MacEntry> map = macEntries;
+            if (map == null) {
+                macEntries = new HashMap<>();
+            } else {
+                map.clear();
+            }
+        } else {
+            macEntries = null;
+        }
+
+        return this;
+    }
+
+    /**
+     * Eliminate MAC address table entries associated with the given node.
+     *
+     * @param nid  The MD-SAL node identifier.
+     * @return  This instance.
+     */
+    public MacEntryWaiter filterOutByNode(String nid) {
         Map<EtherAddress, MacEntry> map = macEntries;
         if (map != null) {
-            map.clear();
+            for (Iterator<MacEntry> it = map.values().iterator();
+                 it.hasNext();) {
+                MacEntry ment = it.next();
+                if (nid.equals(ment.getNodeIdentifier())) {
+                    it.remove();
+                }
+            }
         }
 
         return this;
@@ -222,6 +260,27 @@ public final class MacEntryWaiter {
                  it.hasNext();) {
                 MacEntry ment = it.next();
                 if (pids.contains(ment.getPortIdentifier())) {
+                    it.remove();
+                }
+            }
+        }
+
+        return this;
+    }
+
+    /**
+     * Eliminate MAC address table entries associated with the given VLAN ID.
+     *
+     * @param vid  The VLAN ID.
+     * @return  This instance.
+     */
+    public MacEntryWaiter filterOut(int vid) {
+        Map<EtherAddress, MacEntry> map = macEntries;
+        if (map != null) {
+            for (Iterator<MacEntry> it = map.values().iterator();
+                 it.hasNext();) {
+                MacEntry ment = it.next();
+                if (ment.getVlanId() == vid) {
                     it.remove();
                 }
             }

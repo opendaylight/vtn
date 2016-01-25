@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2013, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -393,6 +393,33 @@ public final class VTNManagerIT extends ModelDrivenTestBase
     public void testPortMapStatus() throws Exception {
         LOG.info("Running testPortMapStatus().");
         new PortMapStatusTest(this).runTest();
+    }
+
+    /**
+     * Test case for {@link VtnMacMapService}.
+     *
+     * <p>
+     *   This test is independent of inventory information.
+     * </p>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testMacMapService() throws Exception {
+        LOG.info("Running testMacMapService().");
+        new MacMapServiceTest(this).runTest();
+    }
+
+    /**
+     * Test case for {@link VtnMacMapService} that depends on inventory
+     * information.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testMacMapStatus() throws Exception {
+        LOG.info("Running testMacMapStatus().");
+        new MacMapStatusTest(this).runTest();
     }
 
     /**

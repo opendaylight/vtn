@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -15,7 +15,6 @@ import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.IpNetwork;
 
 import org.opendaylight.vtn.manager.it.util.inventory.MacVlan;
-import org.opendaylight.vtn.manager.it.util.vnode.VTNMacMappedHost;
 import org.opendaylight.vtn.manager.it.util.vnode.mac.MacEntry;
 
 /**
@@ -85,10 +84,28 @@ public final class TestHost {
     }
 
     /**
+     * Construct a new instance.
+     *
+     * @param mac    MAC address of the host.
+     * @param vid    VLAN ID.
+     * @param pid    Port identifier.
+     * @param pname  The name of the port.
+     * @param iaddr  IP address of the host.
+     */
+    public TestHost(EtherAddress mac, int vid, String pid, String pname,
+                    IpNetwork iaddr) {
+        macAddress = mac;
+        vlanId = vid;
+        portIdentifier = pid;
+        portName = pname;
+        inetAddress = iaddr;
+    }
+
+    /**
      * Copy the given host with changing VLAN ID.
      *
      * @param host  A host to be copied.
-     * @param vid  VLAN ID.
+     * @param vid   VLAN ID.
      */
     public TestHost(TestHost host, int vid) {
         macAddress = host.macAddress;
@@ -169,15 +186,6 @@ public final class TestHost {
      */
     public MacVlan getMacVlan() {
         return new MacVlan(macAddress, vlanId);
-    }
-
-    /**
-     * Return a {@link VTNMacMappedHost} instance that represents this host.
-     *
-     * @return  A {@link VTNMacMappedHost} instance.
-     */
-    public VTNMacMappedHost getMacMappedHost() {
-        return new VTNMacMappedHost(macAddress, vlanId, portIdentifier);
     }
 
     /**

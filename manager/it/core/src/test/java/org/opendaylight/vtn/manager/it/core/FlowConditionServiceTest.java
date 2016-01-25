@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -129,110 +129,6 @@ public final class FlowConditionServiceTest extends TestMethodBase {
      */
     public FlowConditionServiceTest(VTNManagerIT vit) {
         super(vit);
-    }
-
-    // TestMethodBase
-
-    /**
-     * Run the test.
-     *
-     * @throws Exception  An error occurred.
-     */
-    @Override
-    protected void runTest() throws Exception {
-        Random rand = new Random(0xabcdef1234567L);
-        VTNManagerIT vit = getTest();
-        VtnFlowConditionService fcSrv = vit.getFlowConditionService();
-
-        String[] names = {
-            "flow_cond_1",
-            "a",
-            "1234567890123456789012345678901",
-            "flow_cond_2",
-            "fc3",
-        };
-        for (String name: names) {
-            testFlowConditionSevice(fcSrv, rand, name);
-        }
-
-        // Error tests.
-
-        // Null input.
-        checkRpcError(fcSrv.setFlowCondition(null),
-                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
-        checkRpcError(fcSrv.removeFlowCondition(null),
-                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
-        checkRpcError(fcSrv.setFlowConditionMatch(null),
-                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
-        checkRpcError(fcSrv.removeFlowConditionMatch(null),
-                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
-
-        // No flow condition name.
-        FlowCondition tmpfc = new FlowCondition(null);
-        Boolean[] bools = {null, Boolean.TRUE, Boolean.FALSE};
-        for (VtnUpdateOperationType op: MODIFY_OPERATIONS) {
-            for (Boolean present: bools) {
-                SetFlowConditionInput input = tmpfc.newInput(op, present);
-                checkRpcError(fcSrv.setFlowCondition(input),
-                              RpcErrorTag.MISSING_ELEMENT,
-                              VtnErrorTag.BADREQUEST);
-            }
-        }
-
-        RemoveFlowConditionInput rinput =
-            new RemoveFlowConditionInputBuilder().
-            build();
-        checkRpcError(fcSrv.removeFlowCondition(rinput),
-                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
-
-        SetFlowConditionMatchInput minput =
-            FlowCondition.newSetMatchInput((String)null, new FlowMatch(1));
-        checkRpcError(fcSrv.setFlowConditionMatch(minput),
-                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
-
-        List<Integer> idxList = Collections.singletonList(1);
-        RemoveFlowConditionMatchInput rminput =
-            new RemoveFlowConditionMatchInputBuilder().
-            setMatchIndex(idxList).
-            build();
-        checkRpcError(fcSrv.removeFlowConditionMatch(rminput),
-                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
-
-        // Invalid flow condition name.
-        for (String name: INVALID_VNODE_NAMES) {
-            notFoundTest(fcSrv, name, false);
-        }
-
-        // Errors should never affect path policies.
-        VirtualNetwork vnet = getVirtualNetwork();
-        vnet.verify();
-
-        // Remove all the flow conditions using remove-flow-condition.
-        FlowCondSet fcSet = vnet.getFlowConditions();
-        FlowCondSet savedSet = fcSet.clone();
-        for (FlowCondition fc: savedSet.getFlowConditions()) {
-            String name = fc.getName();
-            removeFlowCondition(name);
-            fcSet.remove(name);
-            vnet.verify();
-        }
-
-        // Restore all the flow conditions using set-flow-condition RPC.
-        for (FlowCondition fc: savedSet.getFlowConditions()) {
-            assertEquals(VtnUpdateType.CREATED, fc.update(fcSrv, null, false));
-            fcSet.add(fc);
-            vnet.verify();
-            assertEquals(null, fc.update(fcSrv, null, false));
-        }
-
-        // Remove all the flow conditions using clear-flow-condition.
-        assertEquals(VtnUpdateType.REMOVED,
-                     getRpcResult(fcSrv.clearFlowCondition()));
-        fcSet.clear();
-        vnet.verify();
-
-        assertEquals(null, getRpcResult(fcSrv.clearFlowCondition()));
-        vnet.verify();
     }
 
     /**
@@ -727,5 +623,109 @@ public final class FlowConditionServiceTest extends TestMethodBase {
             checkRpcError(fcSrv.removeFlowConditionMatch(rminput),
                           RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
         }
+    }
+
+    // TestMethodBase
+
+    /**
+     * Run the test.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Override
+    protected void runTest() throws Exception {
+        Random rand = new Random(0xabcdef1234567L);
+        VTNManagerIT vit = getTest();
+        VtnFlowConditionService fcSrv = vit.getFlowConditionService();
+
+        String[] names = {
+            "flow_cond_1",
+            "a",
+            "1234567890123456789012345678901",
+            "flow_cond_2",
+            "fc3",
+        };
+        for (String name: names) {
+            testFlowConditionSevice(fcSrv, rand, name);
+        }
+
+        // Error tests.
+
+        // Null input.
+        checkRpcError(fcSrv.setFlowCondition(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+        checkRpcError(fcSrv.removeFlowCondition(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+        checkRpcError(fcSrv.setFlowConditionMatch(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+        checkRpcError(fcSrv.removeFlowConditionMatch(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // No flow condition name.
+        FlowCondition tmpfc = new FlowCondition(null);
+        Boolean[] bools = {null, Boolean.TRUE, Boolean.FALSE};
+        for (VtnUpdateOperationType op: MODIFY_OPERATIONS) {
+            for (Boolean present: bools) {
+                SetFlowConditionInput input = tmpfc.newInput(op, present);
+                checkRpcError(fcSrv.setFlowCondition(input),
+                              RpcErrorTag.MISSING_ELEMENT,
+                              VtnErrorTag.BADREQUEST);
+            }
+        }
+
+        RemoveFlowConditionInput rinput =
+            new RemoveFlowConditionInputBuilder().
+            build();
+        checkRpcError(fcSrv.removeFlowCondition(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        SetFlowConditionMatchInput minput =
+            FlowCondition.newSetMatchInput((String)null, new FlowMatch(1));
+        checkRpcError(fcSrv.setFlowConditionMatch(minput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        List<Integer> idxList = Collections.singletonList(1);
+        RemoveFlowConditionMatchInput rminput =
+            new RemoveFlowConditionMatchInputBuilder().
+            setMatchIndex(idxList).
+            build();
+        checkRpcError(fcSrv.removeFlowConditionMatch(rminput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // Invalid flow condition name.
+        for (String name: INVALID_VNODE_NAMES) {
+            notFoundTest(fcSrv, name, false);
+        }
+
+        // Errors should never affect path policies.
+        VirtualNetwork vnet = getVirtualNetwork();
+        vnet.verify();
+
+        // Remove all the flow conditions using remove-flow-condition.
+        FlowCondSet fcSet = vnet.getFlowConditions();
+        FlowCondSet savedSet = fcSet.clone();
+        for (FlowCondition fc: savedSet.getFlowConditions()) {
+            String name = fc.getName();
+            removeFlowCondition(name);
+            fcSet.remove(name);
+            vnet.verify();
+        }
+
+        // Restore all the flow conditions using set-flow-condition RPC.
+        for (FlowCondition fc: savedSet.getFlowConditions()) {
+            assertEquals(VtnUpdateType.CREATED, fc.update(fcSrv, null, false));
+            fcSet.add(fc);
+            vnet.verify();
+            assertEquals(null, fc.update(fcSrv, null, false));
+        }
+
+        // Remove all the flow conditions using clear-flow-condition.
+        assertEquals(VtnUpdateType.REMOVED,
+                     getRpcResult(fcSrv.clearFlowCondition()));
+        fcSet.clear();
+        vnet.verify();
+
+        assertEquals(null, getRpcResult(fcSrv.clearFlowCondition()));
+        vnet.verify();
     }
 }

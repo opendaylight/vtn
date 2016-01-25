@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -51,6 +51,7 @@ import org.opendaylight.vtn.manager.it.util.vnode.VBridgeIdentifier;
 import org.opendaylight.vtn.manager.it.util.vnode.VInterfaceConfig;
 import org.opendaylight.vtn.manager.it.util.vnode.VInterfaceIdentifier;
 import org.opendaylight.vtn.manager.it.util.vnode.VNodeIdentifier;
+import org.opendaylight.vtn.manager.it.util.vnode.VTNMacMapConfig;
 import org.opendaylight.vtn.manager.it.util.vnode.VTNPortMapConfig;
 import org.opendaylight.vtn.manager.it.util.vnode.VTNVlanMapConfig;
 import org.opendaylight.vtn.manager.it.util.vnode.VTenantConfig;
@@ -63,6 +64,7 @@ import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnAclType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.vtn.mac.table.entry.MacTableEntry;
 
@@ -174,11 +176,11 @@ public abstract class TestMethodBase extends ModelDrivenTestBase {
      */
     protected final Map<String, VtnUpdateType> removeVlanMap(
         VBridgeIdentifier ident) {
-        return removeVlanMap(ident, null);
+        return removeVlanMap(ident, (List<String>)null);
     }
 
     /**
-     * Remove the specified VLAN mapping.
+     * Remove the specified VLAN mappings.
      *
      * @param ident   The identifier for the target vBridge.
      * @param mapIds  A list of VLAN mappings IDs to be removed.
@@ -188,6 +190,42 @@ public abstract class TestMethodBase extends ModelDrivenTestBase {
         VBridgeIdentifier ident, List<String> mapIds) {
         return VTNVlanMapConfig.removeVlanMap(
             theTest.getVlanMapService(), ident, mapIds);
+    }
+
+    /**
+     * Remove the specified VLAN mapping.
+     *
+     * @param ident    The identifier for the target vBridge.
+     * @param mapId    The VLAN mappings ID to be removed.
+     * @return  A {@link VtnUpdateType} instance.
+     */
+    protected final VtnUpdateType removeVlanMap(VBridgeIdentifier ident,
+                                                String mapId) {
+        return VTNVlanMapConfig.removeVlanMap(
+            theTest.getVlanMapService(), ident, mapId);
+    }
+
+    /**
+     * Remove the specified MAC mapping.
+     *
+     * @param ident   The identifier for the target vBridge.
+     * @return  A {@link VtnUpdateType} instance.
+     */
+    protected final VtnUpdateType removeMacMap(VBridgeIdentifier ident) {
+        return VTNMacMapConfig.removeMacMap(theTest.getMacMapService(), ident);
+    }
+
+    /**
+     * Remove the specified access control list in the MAC mapping.
+     *
+     * @param ident   The identifier for the target vBridge.
+     * @param acl     The type of the access control list.
+     * @return  A {@link VtnUpdateType} instance.
+     */
+    protected final VtnUpdateType removeMacMapAcl(
+        VBridgeIdentifier ident, VtnAclType acl) {
+        return VTNMacMapConfig.removeMacMapAcl(
+            theTest.getMacMapService(), ident, acl);
     }
 
     /**
