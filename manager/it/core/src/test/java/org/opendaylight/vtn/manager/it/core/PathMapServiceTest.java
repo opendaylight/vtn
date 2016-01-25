@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -66,107 +66,6 @@ public final class PathMapServiceTest extends TestMethodBase {
         return (num <= PATH_POLICY_ID_MAX) ? Integer.valueOf(num) : null;
     }
 
-    // TestMethodBase
-
-    /**
-     * Run the test.
-     *
-     * @throws Exception  An error occurred.
-     */
-    @Override
-    protected void runTest() throws Exception {
-        Random rand = new Random(111222333444555L);
-        VTNManagerIT vit = getTest();
-        VtnPathMapService pmSrv = vit.getPathMapService();
-
-        // Test for global path map.
-        testPathMapService(pmSrv, rand, null);
-
-        // Test for VTN path map.
-        String[] tenants = {
-            "vtn_1", "vtn_2", "vtn_3",
-        };
-        for (String tname: tenants) {
-            testPathMapService(pmSrv, rand, tname);
-        }
-
-        // Error tests.
-
-        // Null input.
-        checkRpcError(pmSrv.setPathMap(null),
-                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
-        checkRpcError(pmSrv.removePathMap(null),
-                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
-        checkRpcError(pmSrv.clearPathMap(null),
-                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
-
-        // Invalid VTN name.
-        for (String tname: INVALID_VNODE_NAMES) {
-            notFoundTest(pmSrv, rand, tname);
-        }
-
-        // Errors should never affect path policies.
-        VirtualNetwork vnet = getVirtualNetwork();
-        vnet.verify();
-
-        // Remove all the VTN path maps using remove-path-map.
-        Map<String, PathMapSet> vtnMaps = new HashMap<>();
-        for (String tname: tenants) {
-            PathMapSet pmSet = vnet.getTenant(tname).getPathMaps();
-            assertEquals(null, vtnMaps.put(tname, pmSet.clone()));
-            pmSet.removeAll(pmSrv, tname);
-            vnet.verify();
-        }
-
-        // Remove all the global path maps using remove-path-map.
-        PathMapSet gpmSet = vnet.getPathMaps();
-        PathMapSet gpmSaved = gpmSet.clone();
-        gpmSet.removeAll(pmSrv, null);
-        vnet.verify();
-
-        // Restore all the global and VTN path maps.
-        gpmSet.add(gpmSaved).restore(pmSrv, null);
-        vnet.verify();
-
-        for (Entry<String, PathMapSet> entry: vtnMaps.entrySet()) {
-            String tname = entry.getKey();
-            PathMapSet saved = entry.getValue();
-            PathMapSet pmSet = vnet.getTenant(tname).getPathMaps();
-            pmSet.add(saved).restore(pmSrv, tname);
-            vnet.verify();
-        }
-
-        // Remove all the global path maps using clear-path-map.
-        assertEquals(VtnUpdateType.REMOVED, clearPathMap(null));
-        gpmSet.clear();
-        vnet.verify();
-        assertEquals(null, clearPathMap(null));
-
-        // Remove all the VTN path maps using clear-path-map.
-        for (String tname: tenants) {
-            PathMapSet pmSet = vnet.getTenant(tname).getPathMaps();
-            assertEquals(VtnUpdateType.REMOVED, clearPathMap(tname));
-            pmSet.clear();
-            vnet.verify();
-            assertEquals(null, clearPathMap(tname));
-        }
-
-        // Restore VTN path maps again.
-        for (Entry<String, PathMapSet> entry: vtnMaps.entrySet()) {
-            String tname = entry.getKey();
-            PathMapSet saved = entry.getValue();
-            PathMapSet pmSet = vnet.getTenant(tname).getPathMaps();
-            pmSet.add(saved).restore(pmSrv, tname);
-            vnet.verify();
-        }
-
-        // Remove VTNs.
-        for (String tname: tenants) {
-            removeVtn(tname);
-            vnet.removeTenant(tname).verify();
-        }
-    }
-
     /**
      * Test case for {@link VtnPathMapService}.
      *
@@ -191,7 +90,7 @@ public final class PathMapServiceTest extends TestMethodBase {
             // VTN is not present.
             notFoundTest(pmSrv, rand, tname);
 
-            // Errors should never affect path policies.
+            // Errors should never affect path maps.
             vnet.verify();
 
             // Create the target VTN.
@@ -427,7 +326,7 @@ public final class PathMapServiceTest extends TestMethodBase {
         checkRpcError(pmSrv.removePathMap(rinput),
                       RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
 
-        // Errors should never affect path policies.
+        // Errors should never affect path maps.
         vnet.verify();
     }
 
@@ -463,5 +362,106 @@ public final class PathMapServiceTest extends TestMethodBase {
             build();
         checkRpcError(pmSrv.clearPathMap(cinput),
                       RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+    }
+
+    // TestMethodBase
+
+    /**
+     * Run the test.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Override
+    protected void runTest() throws Exception {
+        Random rand = new Random(111222333444555L);
+        VTNManagerIT vit = getTest();
+        VtnPathMapService pmSrv = vit.getPathMapService();
+
+        // Test for global path map.
+        testPathMapService(pmSrv, rand, null);
+
+        // Test for VTN path map.
+        String[] tenants = {
+            "vtn_1", "vtn_2", "vtn_3",
+        };
+        for (String tname: tenants) {
+            testPathMapService(pmSrv, rand, tname);
+        }
+
+        // Error tests.
+
+        // Null input.
+        checkRpcError(pmSrv.setPathMap(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+        checkRpcError(pmSrv.removePathMap(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+        checkRpcError(pmSrv.clearPathMap(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // Invalid VTN name.
+        for (String tname: INVALID_VNODE_NAMES) {
+            notFoundTest(pmSrv, rand, tname);
+        }
+
+        // Errors should never affect path maps.
+        VirtualNetwork vnet = getVirtualNetwork();
+        vnet.verify();
+
+        // Remove all the VTN path maps using remove-path-map.
+        Map<String, PathMapSet> vtnMaps = new HashMap<>();
+        for (String tname: tenants) {
+            PathMapSet pmSet = vnet.getTenant(tname).getPathMaps();
+            assertEquals(null, vtnMaps.put(tname, pmSet.clone()));
+            pmSet.removeAll(pmSrv, tname);
+            vnet.verify();
+        }
+
+        // Remove all the global path maps using remove-path-map.
+        PathMapSet gpmSet = vnet.getPathMaps();
+        PathMapSet gpmSaved = gpmSet.clone();
+        gpmSet.removeAll(pmSrv, null);
+        vnet.verify();
+
+        // Restore all the global and VTN path maps.
+        gpmSet.add(gpmSaved).restore(pmSrv, null);
+        vnet.verify();
+
+        for (Entry<String, PathMapSet> entry: vtnMaps.entrySet()) {
+            String tname = entry.getKey();
+            PathMapSet saved = entry.getValue();
+            PathMapSet pmSet = vnet.getTenant(tname).getPathMaps();
+            pmSet.add(saved).restore(pmSrv, tname);
+            vnet.verify();
+        }
+
+        // Remove all the global path maps using clear-path-map.
+        assertEquals(VtnUpdateType.REMOVED, clearPathMap(null));
+        gpmSet.clear();
+        vnet.verify();
+        assertEquals(null, clearPathMap(null));
+
+        // Remove all the VTN path maps using clear-path-map.
+        for (String tname: tenants) {
+            PathMapSet pmSet = vnet.getTenant(tname).getPathMaps();
+            assertEquals(VtnUpdateType.REMOVED, clearPathMap(tname));
+            pmSet.clear();
+            vnet.verify();
+            assertEquals(null, clearPathMap(tname));
+        }
+
+        // Restore VTN path maps again.
+        for (Entry<String, PathMapSet> entry: vtnMaps.entrySet()) {
+            String tname = entry.getKey();
+            PathMapSet saved = entry.getValue();
+            PathMapSet pmSet = vnet.getTenant(tname).getPathMaps();
+            pmSet.add(saved).restore(pmSrv, tname);
+            vnet.verify();
+        }
+
+        // Remove VTNs.
+        for (String tname: tenants) {
+            removeVtn(tname);
+            vnet.removeTenant(tname).verify();
+        }
     }
 }

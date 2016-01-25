@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -37,6 +37,7 @@ import org.opendaylight.vtn.manager.it.util.vnode.VBridgeIdentifier;
 import org.opendaylight.vtn.manager.it.util.vnode.VBridgeIfIdentifier;
 import org.opendaylight.vtn.manager.it.util.vnode.VInterfaceConfig;
 import org.opendaylight.vtn.manager.it.util.vnode.VTNMacMapConfig;
+import org.opendaylight.vtn.manager.it.util.vnode.VTNMacMapStatus;
 import org.opendaylight.vtn.manager.it.util.vnode.VTNPortMapConfig;
 import org.opendaylight.vtn.manager.it.util.vnode.VTNVlanMapConfig;
 import org.opendaylight.vtn.manager.it.util.vnode.VTerminalIfIdentifier;
@@ -313,6 +314,9 @@ public final class UnicastFlowTest extends TestMethodBase {
                  bridges.entrySet()) {
             VBridgeIdentifier bpath = entry.getKey();
             BridgeNetwork bridge = entry.getValue();
+            VBridgeConfig bconf = vnet.getBridge(bpath);
+            VTNMacMapConfig mmap = bconf.getMacMap();
+            VTNMacMapStatus vmst = mmap.getStatus();
             Set<TestHost> allowed = mmapAllowed.get(bpath);
             for (TestHost th: allowed) {
                 String pid = th.getPortIdentifier();
@@ -325,10 +329,8 @@ public final class UnicastFlowTest extends TestMethodBase {
                 }
                 bridge.addHost(th);
                 learnHost(bpath, bridge.getMappedVlans(), th);
-                vnet.getBridge(bpath).
-                    getMacMap().
-                    addAllowed(th.getMacVlan()).
-                    addMapped(th.getMacMappedHost());
+                mmap.addAllowed(th.getMacVlan());
+                vmst.add(th.getMacEntry());
 
                 if (remapped) {
                     // Ensure that flow entries for unmapped hosts have been

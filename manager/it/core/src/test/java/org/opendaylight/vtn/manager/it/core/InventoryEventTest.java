@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -27,6 +27,7 @@ import org.opendaylight.vtn.manager.it.util.vnode.VBridgeIdentifier;
 import org.opendaylight.vtn.manager.it.util.vnode.VBridgeIfIdentifier;
 import org.opendaylight.vtn.manager.it.util.vnode.VInterfaceConfig;
 import org.opendaylight.vtn.manager.it.util.vnode.VTNMacMapConfig;
+import org.opendaylight.vtn.manager.it.util.vnode.VTNMacMapStatus;
 import org.opendaylight.vtn.manager.it.util.vnode.VTNPortMapConfig;
 import org.opendaylight.vtn.manager.it.util.vnode.VTNVlanMapConfig;
 import org.opendaylight.vtn.manager.it.util.vnode.VTerminalIdentifier;
@@ -375,7 +376,8 @@ public final class InventoryEventTest extends TestMethodBase {
         sendBroadcast(ofmock, host);
         bpathMacHosts.add(host.getMacEntry()).await();
         waiter.set(bpathMac, VnodeState.UP).await();
-        macMap.addMapped(host.getMacMappedHost());
+        VTNMacMapStatus vmst = macMap.getStatus();
+        vmst.add(host.getMacEntry());
         vnet.verify();
         bpathVlan0Hosts.await();
         bpathNode1Hosts.await();
@@ -421,7 +423,7 @@ public final class InventoryEventTest extends TestMethodBase {
         // Disable port 2 on node 2.
         ofmock.setPortState(pids[2][2], false, false);
         waiter.set(bpathMac, VnodeState.DOWN).await();
-        macMap.removeMapped(host.getEtherAddress());
+        vmst.remove(host.getEtherAddress());
         vnet.verify();
 
         bpathVlan0Hosts.filterOut(pids[2][2]).await();
@@ -550,7 +552,7 @@ public final class InventoryEventTest extends TestMethodBase {
         biconfNode2Port1.setState(VnodeState.UP).
             setEntityState(VnodeState.UP);
         vmap1.setActive(true);
-        macMap.addMapped(host.getMacMappedHost());
+        vmst.add(host.getMacEntry());
         vnet.verify();
         bpathVlan0Hosts.set(bpathVlan0Entries).await();
         bpathNode1Hosts.set(bpathNode1Entries).await();
@@ -566,7 +568,7 @@ public final class InventoryEventTest extends TestMethodBase {
             set(bpathMac, VnodeState.DOWN).
             await();
         biconfNode2Port1.setState(VnodeState.DOWN);
-        macMap.removeMapped(host.getEtherAddress());
+        vmst.remove(host.getEtherAddress());
         vnet.verify();
 
         pidSet.clear();
@@ -591,7 +593,7 @@ public final class InventoryEventTest extends TestMethodBase {
             sendBroadcast(ofmock, ment);
         }
         waiter.set(bpathMac, VnodeState.UP).await();
-        macMap.addMapped(host.getMacMappedHost());
+        vmst.add(host.getMacEntry());
         vnet.verify();
 
         bpathVlan0Hosts.await();
@@ -622,7 +624,7 @@ public final class InventoryEventTest extends TestMethodBase {
             setEntityState(VnodeState.UNKNOWN).
             getPortMap().
             setMappedPort(null);
-        macMap.removeMapped(host.getEtherAddress());
+        vmst.remove(host.getEtherAddress());
         vnet.verify();
         pidSet.clear();
         for (int i = 1; i < npids; i++) {

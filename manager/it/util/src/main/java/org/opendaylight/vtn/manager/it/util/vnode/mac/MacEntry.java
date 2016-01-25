@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -30,7 +30,7 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
  * {@code MacEntry} describes a MAC address information in the MAC address
  * table.
  */
-public final class MacEntry {
+public final class MacEntry implements Cloneable {
     /**
      * The MAC address.
      */
@@ -44,24 +44,24 @@ public final class MacEntry {
     /**
      * The identifier for the switch where the MAC address is detected.
      */
-    private final String  nodeId;
+    private String  nodeId;
 
     /**
      * The port ID that specifies the switch port where the MAC address is
      * detected.
      */
-    private final String  portId;
+    private String  portId;
 
     /**
      * The port name that specifies the switch port where the MAC address is
      * detected.
      */
-    private final String  portName;
+    private String  portName;
 
     /**
      * A set of IP addresses found in the Ethernet frame.
      */
-    private final Set<IpNetwork>  ipAddresses;
+    private Set<IpNetwork>  ipAddresses;
 
     /**
      * The MD-SAL port identifier that specifies the switch port where the
@@ -198,12 +198,49 @@ public final class MacEntry {
     }
 
     /**
+     * Create a copy of this instance, and set the given switch port to the
+     * copied instance.
+     *
+     * @param pid    The MD-SAL port identifier.
+     * @param pname  The name of the switch port.
+     * @return  A copy of this instance with the given switch port information.
+     */
+    public MacEntry setPortIdentifier(String pid, String pname) {
+        MacEntry ment = clone();
+        ment.nodeId = OfMockUtils.getNodeIdentifier(pid);
+        ment.portId = OfMockUtils.getPortId(pid);
+        ment.portIdentifier = pid;
+        ment.portName = pname;
+        return ment;
+    }
+
+    /**
      * Return a set of IP addresses found in the Ethernet frame.
      *
      * @return  A set of {@link IpNetwork} instances.
      */
     public Set<IpNetwork> getIpAddresses() {
         return ipAddresses;
+    }
+
+    /**
+     * Create a copy of this instance, and add the given IP address to the
+     * copied instance.
+     *
+     * @param ipn  The IP address to be added.
+     * @return  A copy of this instance with adding the given IP address.
+     */
+    public MacEntry addIpAddress(IpNetwork ipn) {
+        MacEntry ment = clone();
+        if (ipAddresses.isEmpty()) {
+            ment.ipAddresses = Collections.singleton(ipn);
+        } else {
+            Set<IpNetwork> set = new HashSet<>(ipAddresses);
+            set.add(ipn);
+            ment.ipAddresses = Collections.unmodifiableSet(set);
+        }
+
+        return ment;
     }
 
     /**
@@ -277,5 +314,20 @@ public final class MacEntry {
         return "mac-entry[addr=" + macAddress + ", vlan=" + vlanId +
             ", node-id=" + nodeId + ", port-id=" + portId +
             ", port-name-" + portName + ", ip=" + ipAddresses + "]";
+    }
+
+    /**
+     * Create a shallow copy of this instance.
+     *
+     * @return  A shallow copy of this instance.
+     */
+    @Override
+    public MacEntry clone() {
+        try {
+            return (MacEntry)super.clone();
+        } catch (CloneNotSupportedException e) {
+            // This should never happen.
+            throw new IllegalStateException("clone() failed", e);
+        }
     }
 }

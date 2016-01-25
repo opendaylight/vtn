@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -48,129 +48,6 @@ public final class PathPolicyServiceTest extends TestMethodBase {
      */
     public PathPolicyServiceTest(VTNManagerIT vit) {
         super(vit);
-    }
-
-    // TestMethodBase
-
-    /**
-     * Run the test.
-     *
-     * @throws Exception  An error occurred.
-     */
-    @Override
-    protected void runTest() throws Exception {
-        Random rand = new Random(17320508L);
-        VTNManagerIT vit = getTest();
-        VtnPathPolicyService ppSrv = vit.getPathPolicyService();
-        for (int id = PATH_POLICY_ID_MIN; id <= PATH_POLICY_ID_MAX; id++) {
-            testPathPolicyService(ppSrv, rand, id);
-        }
-
-        // Error tests.
-
-        // Null input.
-        checkRpcError(ppSrv.setPathPolicy(null),
-                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
-        checkRpcError(ppSrv.removePathPolicy(null),
-                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
-        checkRpcError(ppSrv.setPathCost(null),
-                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
-        checkRpcError(ppSrv.removePathCost(null),
-                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
-
-        // No path policy ID.
-        String node = ID_OPENFLOW + "1";
-        PathCost pc = new PathCost(node, "2", null, 123L);
-        PathPolicy tmpp = new PathPolicy(null, 1L);
-        tmpp.add(pc);
-
-        SetPathPolicyInput input = tmpp.newInput(null, false);
-        checkRpcError(ppSrv.setPathPolicy(input),
-                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
-
-        RemovePathPolicyInput rinput = new RemovePathPolicyInputBuilder().
-            build();
-        checkRpcError(ppSrv.removePathPolicy(rinput),
-                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
-
-        SetPathCostInput cinput = PathPolicy.newSetCostInput(null, pc);
-        checkRpcError(ppSrv.setPathCost(cinput),
-                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
-
-        RemovePathCostInput rcinput =
-            PathPolicy.newRemoveCostInput(null, pc.getPortDesc());
-        checkRpcError(ppSrv.removePathCost(rcinput),
-                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
-
-        // Invalid path policy ID.
-        Integer[] badIds = {
-            Integer.MIN_VALUE, -1000, -2, -1,
-            0, 4, 5, 100, 9999999, Integer.MAX_VALUE,
-        };
-        for (Integer id: badIds) {
-            cinput = PathPolicy.newSetCostInput(id, pc);
-            checkRpcError(ppSrv.setPathCost(cinput),
-                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
-
-            rinput = new RemovePathPolicyInputBuilder().setId(id).build();
-            checkRpcError(ppSrv.removePathPolicy(rinput),
-                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
-
-            rcinput = PathPolicy.newRemoveCostInput(id, pc.getPortDesc());
-            checkRpcError(ppSrv.removePathCost(rcinput),
-                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
-        }
-
-        // Errors should never affect path policies.
-        VirtualNetwork vnet = getVirtualNetwork();
-        vnet.verify();
-
-        // Remove path policies.
-        PathPolicySet policySet = vnet.getPathPolicies();
-        List<PathPolicy> pplist = new ArrayList<>();
-        for (int id = PATH_POLICY_ID_MIN; id <= PATH_POLICY_ID_MAX; id++) {
-            Integer policy = Integer.valueOf(id);
-            pplist.add(policySet.get(policy));
-            policySet.remove(policy);
-            rinput = new RemovePathPolicyInputBuilder().setId(policy).build();
-            removePathPolicy(policy);
-            vnet.verify();
-
-            rinput = new RemovePathPolicyInputBuilder().setId(policy).build();
-            checkRpcError(ppSrv.removePathPolicy(rinput),
-                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
-        }
-
-        for (PathPolicy pp: pplist) {
-            // Create an empty path policy.
-            Integer id = pp.getId();
-            tmpp = new PathPolicy(id);
-            assertEquals(VtnUpdateType.CREATED,
-                         tmpp.update(ppSrv, null, null));
-            policySet.add(tmpp);
-            vnet.verify();
-
-            // Restore path policy by SET operation.
-            assertEquals(VtnUpdateType.CHANGED,
-                         pp.update(ppSrv, VtnUpdateOperationType.SET, true));
-            policySet.add(pp);
-            vnet.verify();
-
-            assertEquals(null,
-                         pp.update(ppSrv, VtnUpdateOperationType.SET, true));
-            assertEquals(null,
-                         pp.update(ppSrv, VtnUpdateOperationType.ADD, true));
-            vnet.verify();
-        }
-
-        // Remove all the path policies by clear-path-policy.
-        assertEquals(VtnUpdateType.REMOVED,
-                     getRpcResult(ppSrv.clearPathPolicy()));
-        policySet.clear();
-        vnet.verify();
-
-        assertEquals(null, getRpcResult(ppSrv.clearPathPolicy()));
-        vnet.verify();
     }
 
     /**
@@ -504,5 +381,128 @@ public final class PathPolicyServiceTest extends TestMethodBase {
         cinput = PathPolicy.newSetCostInput(policy, pcosts);
         checkRpcError(ppSrv.setPathCost(cinput),
                       RpcErrorTag.BAD_ELEMENT, VtnErrorTag.BADREQUEST);
+    }
+
+    // TestMethodBase
+
+    /**
+     * Run the test.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Override
+    protected void runTest() throws Exception {
+        Random rand = new Random(17320508L);
+        VTNManagerIT vit = getTest();
+        VtnPathPolicyService ppSrv = vit.getPathPolicyService();
+        for (int id = PATH_POLICY_ID_MIN; id <= PATH_POLICY_ID_MAX; id++) {
+            testPathPolicyService(ppSrv, rand, id);
+        }
+
+        // Error tests.
+
+        // Null input.
+        checkRpcError(ppSrv.setPathPolicy(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+        checkRpcError(ppSrv.removePathPolicy(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+        checkRpcError(ppSrv.setPathCost(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+        checkRpcError(ppSrv.removePathCost(null),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // No path policy ID.
+        String node = ID_OPENFLOW + "1";
+        PathCost pc = new PathCost(node, "2", null, 123L);
+        PathPolicy tmpp = new PathPolicy(null, 1L);
+        tmpp.add(pc);
+
+        SetPathPolicyInput input = tmpp.newInput(null, false);
+        checkRpcError(ppSrv.setPathPolicy(input),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        RemovePathPolicyInput rinput = new RemovePathPolicyInputBuilder().
+            build();
+        checkRpcError(ppSrv.removePathPolicy(rinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        SetPathCostInput cinput = PathPolicy.newSetCostInput(null, pc);
+        checkRpcError(ppSrv.setPathCost(cinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        RemovePathCostInput rcinput =
+            PathPolicy.newRemoveCostInput(null, pc.getPortDesc());
+        checkRpcError(ppSrv.removePathCost(rcinput),
+                      RpcErrorTag.MISSING_ELEMENT, VtnErrorTag.BADREQUEST);
+
+        // Invalid path policy ID.
+        Integer[] badIds = {
+            Integer.MIN_VALUE, -1000, -2, -1,
+            0, 4, 5, 100, 9999999, Integer.MAX_VALUE,
+        };
+        for (Integer id: badIds) {
+            cinput = PathPolicy.newSetCostInput(id, pc);
+            checkRpcError(ppSrv.setPathCost(cinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            rinput = new RemovePathPolicyInputBuilder().setId(id).build();
+            checkRpcError(ppSrv.removePathPolicy(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+
+            rcinput = PathPolicy.newRemoveCostInput(id, pc.getPortDesc());
+            checkRpcError(ppSrv.removePathCost(rcinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+        }
+
+        // Errors should never affect path policies.
+        VirtualNetwork vnet = getVirtualNetwork();
+        vnet.verify();
+
+        // Remove path policies.
+        PathPolicySet policySet = vnet.getPathPolicies();
+        List<PathPolicy> pplist = new ArrayList<>();
+        for (int id = PATH_POLICY_ID_MIN; id <= PATH_POLICY_ID_MAX; id++) {
+            Integer policy = Integer.valueOf(id);
+            pplist.add(policySet.get(policy));
+            policySet.remove(policy);
+            rinput = new RemovePathPolicyInputBuilder().setId(policy).build();
+            removePathPolicy(policy);
+            vnet.verify();
+
+            rinput = new RemovePathPolicyInputBuilder().setId(policy).build();
+            checkRpcError(ppSrv.removePathPolicy(rinput),
+                          RpcErrorTag.DATA_MISSING, VtnErrorTag.NOTFOUND);
+        }
+
+        for (PathPolicy pp: pplist) {
+            // Create an empty path policy.
+            Integer id = pp.getId();
+            tmpp = new PathPolicy(id);
+            assertEquals(VtnUpdateType.CREATED,
+                         tmpp.update(ppSrv, null, null));
+            policySet.add(tmpp);
+            vnet.verify();
+
+            // Restore path policy by SET operation.
+            assertEquals(VtnUpdateType.CHANGED,
+                         pp.update(ppSrv, VtnUpdateOperationType.SET, true));
+            policySet.add(pp);
+            vnet.verify();
+
+            assertEquals(null,
+                         pp.update(ppSrv, VtnUpdateOperationType.SET, true));
+            assertEquals(null,
+                         pp.update(ppSrv, VtnUpdateOperationType.ADD, true));
+            vnet.verify();
+        }
+
+        // Remove all the path policies by clear-path-policy.
+        assertEquals(VtnUpdateType.REMOVED,
+                     getRpcResult(ppSrv.clearPathPolicy()));
+        policySet.clear();
+        vnet.verify();
+
+        assertEquals(null, getRpcResult(ppSrv.clearPathPolicy()));
+        vnet.verify();
     }
 }

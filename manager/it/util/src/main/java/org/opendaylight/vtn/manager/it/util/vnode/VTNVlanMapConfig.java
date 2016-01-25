@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -12,6 +12,7 @@ import static org.junit.Assert.assertEquals;
 
 import static org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase.getRpcOutput;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,11 +83,11 @@ public final class VTNVlanMapConfig {
      */
     public static Map<String, VtnUpdateType> removeVlanMap(
         VtnVlanMapService service, VBridgeIdentifier ident) {
-        return removeVlanMap(service, ident, null);
+        return removeVlanMap(service, ident, (List<String>)null);
     }
 
     /**
-     * Remove the specified VLAN mapping.
+     * Remove the specified VLAN mappings.
      *
      * @param service  The vtn-vlan-map RPC service.
      * @param ident    The identifier for the target vBridge.
@@ -115,6 +116,22 @@ public final class VTNVlanMapConfig {
         }
 
         return result;
+    }
+
+    /**
+     * Remove the specified VLAN mapping.
+     *
+     * @param service  The vtn-vlan-map RPC service.
+     * @param ident    The identifier for the target vBridge.
+     * @param mapId    The VLAN mappings ID to be removed.
+     * @return  A {@link VtnUpdateType} instance.
+     */
+    public static VtnUpdateType removeVlanMap(
+        VtnVlanMapService service, VBridgeIdentifier ident, String mapId) {
+        Map<String, VtnUpdateType> result = removeVlanMap(
+            service, ident, Collections.singletonList(mapId));
+        assertEquals(Collections.singleton(mapId), result.keySet());
+        return result.get(mapId);
     }
 
     /**

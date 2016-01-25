@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -16,13 +16,9 @@ import static org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase.getRpcRes
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-
-import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.it.util.VTNServices;
 import org.opendaylight.vtn.manager.it.util.inventory.MacVlan;
@@ -33,8 +29,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.S
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.SetMacMapInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.VtnMacMapService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.vtn.mac.map.info.MacMapConfig;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.vtn.mac.map.info.MacMapStatus;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.vtn.mac.map.status.MappedHost;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.vtn.mac.mappable.MacMap;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VlanHostDesc;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VlanHostDescSet;
@@ -47,22 +41,21 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.vlan.ho
 /**
  * {@code VTNMacMapConfig} describes the configuration of a MAC mapping.
  */
-public final class VTNMacMapConfig {
+public final class VTNMacMapConfig implements Cloneable {
     /**
      * A set of hosts to be mapped by MAC mapping.
      */
-    private final Set<MacVlan>  allowedHosts = new HashSet<>();
+    private Set<MacVlan>  allowedHosts;
 
     /**
      * A set of hosts not to be mapped by MAC mapping.
      */
-    private final Set<MacVlan>  deniedHosts = new HashSet<>();
+    private Set<MacVlan>  deniedHosts;
 
     /**
-     * A set of hosts actually mapped by MAC mapping.
+     * The expected status of the MAC mapping.
      */
-    private final Map<EtherAddress, VTNMacMappedHost>  mappedHosts =
-        new HashMap<>();
+    private VTNMacMapStatus  mapStatus;
 
     /**
      * Remove the MAC mapping from the specified vBridge.
@@ -79,6 +72,27 @@ public final class VTNMacMapConfig {
             setOperation(VtnUpdateOperationType.SET).
             build();
         return getRpcResult(service.setMacMap(input));
+    }
+
+    /**
+     * Remove the specified access control list in the MAC mapping configured
+     * in the specified vBridge.
+     *
+     * @param service  The vtn-mac-map RPC service.
+     * @param ident    The identifier for the vBridge.
+     * @param aclType  The type of the access control list.
+     * @return  A {@link VtnUpdateType} instance.
+     */
+    public static VtnUpdateType removeMacMapAcl(
+        VtnMacMapService service, VBridgeIdentifier ident,
+        VtnAclType aclType) {
+        SetMacMapAclInput input = new SetMacMapAclInputBuilder().
+            setTenantName(ident.getTenantNameString()).
+            setBridgeName(ident.getBridgeNameString()).
+            setOperation(VtnUpdateOperationType.SET).
+            setAclType(aclType).
+            build();
+        return getRpcResult(service.setMacMapAcl(input));
     }
 
     /**
@@ -109,6 +123,9 @@ public final class VTNMacMapConfig {
      * Construct a new empty configuration.
      */
     public VTNMacMapConfig() {
+        allowedHosts = new HashSet<>();
+        deniedHosts = new HashSet<>();
+        mapStatus = new VTNMacMapStatus();
     }
 
     /**
@@ -148,6 +165,16 @@ public final class VTNMacMapConfig {
         for (MacVlan host: hosts) {
             allowedHosts.remove(host);
         }
+        return this;
+    }
+
+    /**
+     * Clear the allowed host set.
+     *
+     * @return  This instance.
+     */
+    public VTNMacMapConfig clearAllowed() {
+        allowedHosts.clear();
         return this;
     }
 
@@ -201,6 +228,16 @@ public final class VTNMacMapConfig {
     }
 
     /**
+     * Clear the denied host set.
+     *
+     * @return  This instance.
+     */
+    public VTNMacMapConfig clearDenied() {
+        deniedHosts.clear();
+        return this;
+    }
+
+    /**
      * Return an unmodifiable set of hosts to be mapped by MAC mapping.
      *
      * @return  An unmodifiable set of hosts to be mapped by MAC mapping.
@@ -210,30 +247,37 @@ public final class VTNMacMapConfig {
     }
 
     /**
-     * Add hosts to a set of hosts actually mapped by the MAC mapping.
+     * Clear the specified access control list.
      *
-     * @param hosts  Host information to be added to a set of mapped hosts.
+     * @param aclType  The type of the access control list to be cleared.
      * @return  This instance.
      */
-    public VTNMacMapConfig addMapped(VTNMacMappedHost ... hosts) {
-        for (VTNMacMappedHost host: hosts) {
-            EtherAddress addr = host.getMacAddress();
-            mappedHosts.put(addr, host);
+    public VTNMacMapConfig clear(VtnAclType aclType) {
+        if (aclType == VtnAclType.ALLOW) {
+            allowedHosts.clear();
+        } else if (aclType == VtnAclType.DENY) {
+            deniedHosts.clear();
         }
         return this;
     }
 
     /**
-     * Remove hosts from a set of hosts actually mapped by the MAC mapping.
+     * Determine whether this MAC mapping configuration is empty or not.
      *
-     * @param addrs  MAC addresses to be removed from a set of mapped hosts.
-     * @return  This instance.
+     * @return  {@code true} if this MAC mapping configuration is empty.
+     *          {@code false} otherwise.
      */
-    public VTNMacMapConfig removeMapped(EtherAddress ... addrs) {
-        for (EtherAddress addr: addrs) {
-            mappedHosts.remove(addr);
-        }
-        return this;
+    public boolean isEmpty() {
+        return (allowedHosts.isEmpty() && deniedHosts.isEmpty());
+    }
+
+    /**
+     * Return the status of the MAC mapping.
+     *
+     * @return  A {@link VTNMacMapStatus} instance.
+     */
+    public VTNMacMapStatus getStatus() {
+        return mapStatus;
     }
 
     /**
@@ -289,60 +333,60 @@ public final class VTNMacMapConfig {
     /**
      * Create a new input builder for set-mac-map-acl RPC.
      *
-     * @param acl    A {@link VtnAclType} instance that specifies the access
-     *               control list.
+     * @param aclType  A {@link VtnAclType} instance that specifies the access
+     *                 control list.
      * @return  A {@link SetMacMapAclInputBuilder} instance.
      */
-    public SetMacMapAclInputBuilder newAclInputBuilder(VtnAclType acl) {
-        return newAclInputBuilder(acl, false);
+    public SetMacMapAclInputBuilder newAclInputBuilder(VtnAclType aclType) {
+        return newAclInputBuilder(aclType, false);
     }
 
     /**
      * Create a new input builder for set-mac-map-acl RPC.
      *
-     * @param acl    A {@link VtnAclType} instance that specifies the access
-     *               control list.
-     * @param empty  If {@code true}, an empty host list is set if the host
-     *               set is empty.
+     * @param aclType  A {@link VtnAclType} instance that specifies the access
+     *                 control list.
+     * @param empty    If {@code true}, an empty host list is set if the host
+     *                 set is empty.
      * @return  A {@link SetMacMapAclInputBuilder} instance.
      */
-    public SetMacMapAclInputBuilder newAclInputBuilder(VtnAclType acl,
+    public SetMacMapAclInputBuilder newAclInputBuilder(VtnAclType aclType,
                                                        boolean empty) {
-        List<VlanHostDesc> hosts = (acl == VtnAclType.DENY)
+        List<VlanHostDesc> hosts = (aclType == VtnAclType.DENY)
             ? toVlanHostDescs(deniedHosts, empty)
             : toVlanHostDescs(allowedHosts, empty);
 
         return new SetMacMapAclInputBuilder().
-            setAclType(acl).
+            setAclType(aclType).
             setHosts(hosts);
     }
 
     /**
      * Create a new input builder for set-mac-map-acl RPC.
      *
-     * @param ident  The identifier for the vBridge.
-     * @param acl    A {@link VtnAclType} instance that specifies the access
-     *               control list.
+     * @param ident    The identifier for the vBridge.
+     * @param aclType  A {@link VtnAclType} instance that specifies the access
+     *                 control list.
      * @return  A {@link SetMacMapAclInputBuilder} instance.
      */
     public SetMacMapAclInputBuilder newAclInputBuilder(
-        VBridgeIdentifier ident, VtnAclType acl) {
-        return newAclInputBuilder(ident, acl, false);
+        VBridgeIdentifier ident, VtnAclType aclType) {
+        return newAclInputBuilder(ident, aclType, false);
     }
 
     /**
      * Create a new input builder for set-mac-map-acl RPC.
      *
-     * @param ident  The identifier for the vBridge.
-     * @param acl    A {@link VtnAclType} instance that specifies the access
-     *               control list.
-     * @param empty  If {@code true}, an empty host list is set if the host
-     *               set is empty.
+     * @param ident    The identifier for the vBridge.
+     * @param aclType  A {@link VtnAclType} instance that specifies the access
+     *                 control list.
+     * @param empty    If {@code true}, an empty host list is set if the host
+     *                 set is empty.
      * @return  A {@link SetMacMapAclInputBuilder} instance.
      */
     public SetMacMapAclInputBuilder newAclInputBuilder(
-        VBridgeIdentifier ident, VtnAclType acl, boolean empty) {
-        return newAclInputBuilder(acl, empty).
+        VBridgeIdentifier ident, VtnAclType aclType, boolean empty) {
+        return newAclInputBuilder(aclType, empty).
             setTenantName(ident.getTenantNameString()).
             setBridgeName(ident.getBridgeNameString());
     }
@@ -369,15 +413,15 @@ public final class VTNMacMapConfig {
      *
      * @param service  The vtn-mac-map service.
      * @param ident    The identifier for the vBridge.
-     * @param acl      A {@link VtnAclType} instance that specifies the access
+     * @param aclType  A {@link VtnAclType} instance that specifies the access
      * @param op       A {@link VtnUpdateOperationType} instance.
      *                 control list.
      * @return  A {@link VtnUpdateType} instance returned by the RPC.
      */
     public VtnUpdateType update(VtnMacMapService service,
-                                VBridgeIdentifier ident,
-                                VtnAclType acl, VtnUpdateOperationType op) {
-        SetMacMapAclInput input = newAclInputBuilder(ident, acl).
+                                VBridgeIdentifier ident, VtnAclType aclType,
+                                VtnUpdateOperationType op) {
+        SetMacMapAclInput input = newAclInputBuilder(ident, aclType).
             setOperation(op).
             build();
         return getRpcResult(service.setMacMapAcl(input));
@@ -397,33 +441,7 @@ public final class VTNMacMapConfig {
         verifyAcl(mmc.getDeniedHosts(), deniedHosts);
 
         // Verify the status.
-        MacMapStatus mst = mmap.getMacMapStatus();
-        List<MappedHost> mapped = mst.getMappedHost();
-        VnodeState state;
-        if (mappedHosts.isEmpty()) {
-            state = VnodeState.DOWN;
-            if (mapped != null) {
-                assertEquals(true, mapped.isEmpty());
-            }
-        } else {
-            assertNotNull(mapped);
-            state = VnodeState.UP;
-            Set<EtherAddress> checked = new HashSet<>();
-            for (MappedHost mh: mapped) {
-                EtherAddress eaddr = new EtherAddress(mh.getMacAddress());
-                VTNMacMappedHost mhost = mappedHosts.get(eaddr);
-                assertNotNull(mhost);
-                assertEquals(mhost.getMacAddress(), eaddr);
-                assertEquals(mhost.getVlanId(),
-                             mh.getVlanId().getValue().intValue());
-                assertEquals(mhost.getPortIdentifier(),
-                             mh.getPortId().getValue());
-                assertEquals(true, checked.add(eaddr));
-            }
-            assertEquals(checked, mappedHosts.keySet());
-        }
-
-        return state;
+        return mapStatus.verify(mmap.getMacMapStatus());
     }
 
     /**
@@ -452,6 +470,7 @@ public final class VTNMacMapConfig {
         if (hosts.isEmpty()) {
             assertEquals(null, acl);
         } else {
+            assertNotNull(acl);
             List<VlanHostDescList> list = acl.getVlanHostDescList();
             assertNotNull(list);
 
@@ -460,6 +479,27 @@ public final class VTNMacMapConfig {
                 assertEquals(true, set.add(new MacVlan(vhdl.getHost())));
             }
             assertEquals(hosts, set);
+        }
+    }
+
+    // Object
+
+    /**
+     * Create a shallow copy of this instance.
+     *
+     * @return  A shallow copy of this instance.
+     */
+    @Override
+    public VTNMacMapConfig clone() {
+        try {
+            VTNMacMapConfig mmap = (VTNMacMapConfig)super.clone();
+            mmap.allowedHosts = new HashSet<>(allowedHosts);
+            mmap.deniedHosts = new HashSet<>(deniedHosts);
+            mmap.mapStatus = mapStatus.clone();
+            return mmap;
+        } catch (CloneNotSupportedException e) {
+            // This should never happen.
+            throw new IllegalStateException("clone() failed", e);
         }
     }
 }
