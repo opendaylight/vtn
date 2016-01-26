@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -20,8 +20,6 @@ import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.List;
-
-import com.google.common.base.Optional;
 
 import org.slf4j.Logger;
 
@@ -48,8 +46,6 @@ import org.opendaylight.controller.md.sal.binding.api.ClusteredDataChangeListene
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
-import org.opendaylight.controller.md.sal.common.api.clustering.Entity;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipState;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -208,9 +204,7 @@ public class ConfigListenerTest extends TestBase {
         ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
         when(ctx.getReadWriteTransaction()).thenReturn(tx);
         VTNManagerProvider provider = mock(VTNManagerProvider.class);
-        Entity ent = VTNEntityType.getGlobalEntity(VTNEntityType.CONFIG);
-        when(provider.getOwnershipState(ent)).
-            thenReturn(Optional.of(new EntityOwnershipState(true, true)));
+        when(provider.isOwner(VTNEntityType.CONFIG)).thenReturn(true);
         when(ctx.getProvider()).thenReturn(provider);
         assertEquals(null, task.execute(ctx, 0));
 
@@ -219,7 +213,7 @@ public class ConfigListenerTest extends TestBase {
         verify(tx).merge(oper, path, ovcfg, true);
         verify(ctx).getReadWriteTransaction();
         verify(ctx).getProvider();
-        verify(provider).getOwnershipState(ent);
+        verify(provider).isOwner(VTNEntityType.CONFIG);
         verifyNoMoreInteractions(ctx, provider, tx);
 
         // Configuration should be saved into file.
@@ -245,59 +239,49 @@ public class ConfigListenerTest extends TestBase {
         XmlConfigFile.init();
         XmlConfigFile.Type cfType = XmlConfigFile.Type.CONFIG;
         String cfKey = VTNConfigManager.KEY_VTN_CONFIG;
-        EntityOwnershipState[] estates = {
-            null,
-            new EntityOwnershipState(false, true),
-        };
-
         int timeout = 120;
-        for (EntityOwnershipState estate: estates) {
-            VtnConfigBuilder builder = new VtnConfigBuilder().
-                setMaxRedirections(777).
-                setL2FlowPriority(150).
-                setInitTimeout(timeout);
-            timeout++;
-            VtnConfig vcfg = builder.build();
-            InstanceIdentifier<VtnConfig> path = getPath();
-            IdentifiedData<VtnConfig> data = new IdentifiedData<>(path, vcfg);
-            cfgListener.onCreated(null, data);
+        VtnConfigBuilder builder = new VtnConfigBuilder().
+            setMaxRedirections(777).
+            setL2FlowPriority(150).
+            setInitTimeout(timeout);
+        timeout++;
+        VtnConfig vcfg = builder.build();
+        InstanceIdentifier<VtnConfig> path = getPath();
+        IdentifiedData<VtnConfig> data = new IdentifiedData<>(path, vcfg);
+        cfgListener.onCreated(null, data);
 
-            // Verify posted MD-SAL transaction task.
-            @SuppressWarnings("unchecked")
-            ArgumentCaptor<TxTask> captor = (ArgumentCaptor<TxTask>)
-                ArgumentCaptor.forClass(TxTask.class);
-            verify(txQueue).post(captor.capture());
-            List<TxTask> posted = captor.getAllValues();
-            assertEquals(1, posted.size());
-            TxTask task = posted.get(0);
-            String taskName = ConfigListener.class.getName() +
-                ".ConfigUpdateTask";
-            assertEquals(taskName, task.getClass().getCanonicalName());
-            reset(txQueue);
+        // Verify posted MD-SAL transaction task.
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<TxTask> captor = (ArgumentCaptor<TxTask>)
+            ArgumentCaptor.forClass(TxTask.class);
+        verify(txQueue).post(captor.capture());
+        List<TxTask> posted = captor.getAllValues();
+        assertEquals(1, posted.size());
+        TxTask task = posted.get(0);
+        String taskName = ConfigListener.class.getName() + ".ConfigUpdateTask";
+        assertEquals(taskName, task.getClass().getCanonicalName());
+        reset(txQueue);
 
-            // Execute the task.
-            TxContext ctx = mock(TxContext.class);
-            ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
-            when(ctx.getReadWriteTransaction()).thenReturn(tx);
-            VTNManagerProvider provider = mock(VTNManagerProvider.class);
-            Entity ent = VTNEntityType.getGlobalEntity(VTNEntityType.CONFIG);
-            when(provider.getOwnershipState(ent)).
-                thenReturn(Optional.fromNullable(estate));
-            when(ctx.getProvider()).thenReturn(provider);
-            assertEquals(null, task.execute(ctx, 0));
+        // Execute the task.
+        TxContext ctx = mock(TxContext.class);
+        ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
+        when(ctx.getReadWriteTransaction()).thenReturn(tx);
+        VTNManagerProvider provider = mock(VTNManagerProvider.class);
+        when(provider.isOwner(VTNEntityType.CONFIG)).thenReturn(false);
+        when(ctx.getProvider()).thenReturn(provider);
+        assertEquals(null, task.execute(ctx, 0));
 
-            verify(ctx).getProvider();
-            verify(provider).getOwnershipState(ent);
-            verifyNoMoreInteractions(ctx, provider, tx);
+        verify(ctx).getProvider();
+        verify(provider).isOwner(VTNEntityType.CONFIG);
+        verifyNoMoreInteractions(ctx, provider, tx);
 
-            // Configuration should be saved into file.
-            task.onSuccess(null, null);
-            VTNConfigImpl vconf = new VTNConfigImpl(vcfg);
-            VTNConfigImpl loaded = XmlConfigFile.load(
-                cfType, cfKey, VTNConfigImpl.class);
-            assertEquals(vconf, loaded);
-            assertEquals(true, XmlConfigFile.delete(cfType, cfKey));
-        }
+        // Configuration should be saved into file.
+        task.onSuccess(null, null);
+        VTNConfigImpl vconf = new VTNConfigImpl(vcfg);
+        VTNConfigImpl loaded = XmlConfigFile.load(
+            cfType, cfKey, VTNConfigImpl.class);
+        assertEquals(vconf, loaded);
+        assertEquals(true, XmlConfigFile.delete(cfType, cfKey));
     }
 
     /**
@@ -337,9 +321,7 @@ public class ConfigListenerTest extends TestBase {
         ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
         when(ctx.getReadWriteTransaction()).thenReturn(tx);
         VTNManagerProvider provider = mock(VTNManagerProvider.class);
-        Entity ent = VTNEntityType.getGlobalEntity(VTNEntityType.CONFIG);
-        when(provider.getOwnershipState(ent)).
-            thenReturn(Optional.of(new EntityOwnershipState(true, true)));
+        when(provider.isOwner(VTNEntityType.CONFIG)).thenReturn(true);
         when(ctx.getProvider()).thenReturn(provider);
         assertEquals(null, task.execute(ctx, 0));
 
@@ -349,7 +331,7 @@ public class ConfigListenerTest extends TestBase {
         verify(tx).merge(oper, path, ovcfg, true);
         verify(ctx).getReadWriteTransaction();
         verify(ctx).getProvider();
-        verify(provider).getOwnershipState(ent);
+        verify(provider).isOwner(VTNEntityType.CONFIG);
         verifyNoMoreInteractions(ctx, provider, tx);
 
         // Configuration should be saved into file.
@@ -375,60 +357,50 @@ public class ConfigListenerTest extends TestBase {
         XmlConfigFile.init();
         XmlConfigFile.Type cfType = XmlConfigFile.Type.CONFIG;
         String cfKey = VTNConfigManager.KEY_VTN_CONFIG;
-        EntityOwnershipState[] estates = {
-            null,
-            new EntityOwnershipState(false, true),
-        };
-
         int timeout = 4444;
-        for (EntityOwnershipState estate: estates) {
-            VtnConfigBuilder builder = new VtnConfigBuilder();
-            VtnConfig old = builder.build();
-            builder.setFlowModTimeout(10000).
-                setFlowModTimeout(timeout).
-                setL2FlowPriority(33);
-            timeout++;
-            VtnConfig vcfg = builder.build();
-            InstanceIdentifier<VtnConfig> path = getPath();
-            ChangedData<VtnConfig> data = new ChangedData<>(path, vcfg, old);
-            cfgListener.onUpdated(null, data);
+        VtnConfigBuilder builder = new VtnConfigBuilder();
+        VtnConfig old = builder.build();
+        builder.setFlowModTimeout(10000).
+            setFlowModTimeout(timeout).
+            setL2FlowPriority(33);
+        timeout++;
+        VtnConfig vcfg = builder.build();
+        InstanceIdentifier<VtnConfig> path = getPath();
+        ChangedData<VtnConfig> data = new ChangedData<>(path, vcfg, old);
+        cfgListener.onUpdated(null, data);
 
-            // Verify posted MD-SAL transaction task.
-            @SuppressWarnings("unchecked")
-            ArgumentCaptor<TxTask> captor =
-                ArgumentCaptor.forClass(TxTask.class);
-            verify(txQueue).post(captor.capture());
-            List<TxTask> posted = captor.getAllValues();
-            assertEquals(1, posted.size());
-            TxTask task = posted.get(0);
-            String taskName = ConfigListener.class.getName() +
-                ".ConfigUpdateTask";
-            assertEquals(taskName, task.getClass().getCanonicalName());
-            reset(txQueue);
+        // Verify posted MD-SAL transaction task.
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<TxTask> captor =
+            ArgumentCaptor.forClass(TxTask.class);
+        verify(txQueue).post(captor.capture());
+        List<TxTask> posted = captor.getAllValues();
+        assertEquals(1, posted.size());
+        TxTask task = posted.get(0);
+        String taskName = ConfigListener.class.getName() + ".ConfigUpdateTask";
+        assertEquals(taskName, task.getClass().getCanonicalName());
+        reset(txQueue);
 
-            // Execute the task.
-            TxContext ctx = mock(TxContext.class);
-            ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
-            when(ctx.getReadWriteTransaction()).thenReturn(tx);
-            VTNManagerProvider provider = mock(VTNManagerProvider.class);
-            Entity ent = VTNEntityType.getGlobalEntity(VTNEntityType.CONFIG);
-            when(provider.getOwnershipState(ent)).
-                thenReturn(Optional.of(new EntityOwnershipState(false, true)));
-            when(ctx.getProvider()).thenReturn(provider);
-            assertEquals(null, task.execute(ctx, 0));
+        // Execute the task.
+        TxContext ctx = mock(TxContext.class);
+        ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
+        when(ctx.getReadWriteTransaction()).thenReturn(tx);
+        VTNManagerProvider provider = mock(VTNManagerProvider.class);
+        when(provider.isOwner(VTNEntityType.CONFIG)).thenReturn(false);
+        when(ctx.getProvider()).thenReturn(provider);
+        assertEquals(null, task.execute(ctx, 0));
 
-            verify(ctx).getProvider();
-            verify(provider).getOwnershipState(ent);
-            verifyNoMoreInteractions(ctx, provider, tx);
+        verify(ctx).getProvider();
+        verify(provider).isOwner(VTNEntityType.CONFIG);
+        verifyNoMoreInteractions(ctx, provider, tx);
 
-            // Configuration should be saved into file.
-            task.onSuccess(null, null);
-            VTNConfigImpl vconf = new VTNConfigImpl(vcfg);
-            VTNConfigImpl loaded = XmlConfigFile.load(
-                cfType, cfKey, VTNConfigImpl.class);
-            assertEquals(vconf, loaded);
-            assertEquals(true, XmlConfigFile.delete(cfType, cfKey));
-        }
+        // Configuration should be saved into file.
+        task.onSuccess(null, null);
+        VTNConfigImpl vconf = new VTNConfigImpl(vcfg);
+        VTNConfigImpl loaded = XmlConfigFile.load(
+            cfType, cfKey, VTNConfigImpl.class);
+        assertEquals(vconf, loaded);
+        assertEquals(true, XmlConfigFile.delete(cfType, cfKey));
     }
 
     /**
@@ -465,9 +437,7 @@ public class ConfigListenerTest extends TestBase {
         ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
         when(ctx.getReadWriteTransaction()).thenReturn(tx);
         VTNManagerProvider provider = mock(VTNManagerProvider.class);
-        Entity ent = VTNEntityType.getGlobalEntity(VTNEntityType.CONFIG);
-        when(provider.getOwnershipState(ent)).
-            thenReturn(Optional.of(new EntityOwnershipState(true, true)));
+        when(provider.isOwner(VTNEntityType.CONFIG)).thenReturn(true);
         when(ctx.getProvider()).thenReturn(provider);
         assertEquals(null, task.execute(ctx, 0));
 
@@ -478,7 +448,7 @@ public class ConfigListenerTest extends TestBase {
         verify(tx).merge(oper, path, ovcfg, true);
         verify(ctx).getReadWriteTransaction();
         verify(ctx).getProvider();
-        verify(provider).getOwnershipState(ent);
+        verify(provider).isOwner(VTNEntityType.CONFIG);
         verifyNoMoreInteractions(ctx, provider, tx);
 
         VTNConfigImpl vconf = new VTNConfigImpl(vcfg);
@@ -511,60 +481,50 @@ public class ConfigListenerTest extends TestBase {
         XmlConfigFile.init();
         XmlConfigFile.Type cfType = XmlConfigFile.Type.CONFIG;
         String cfKey = VTNConfigManager.KEY_VTN_CONFIG;
-        EntityOwnershipState[] estates = {
-            null,
-            new EntityOwnershipState(false, true),
-        };
-
         int timeout = 9999;
-        for (EntityOwnershipState estate: estates) {
-            VtnConfigBuilder builder = new VtnConfigBuilder().
-                setBulkFlowModTimeout(timeout);
-            timeout++;
-            VtnConfig vcfg = builder.build();
-            InstanceIdentifier<VtnConfig> path = getPath();
-            IdentifiedData<VtnConfig> data = new IdentifiedData<>(path, vcfg);
-            cfgListener.onRemoved(null, data);
+        VtnConfigBuilder builder = new VtnConfigBuilder().
+            setBulkFlowModTimeout(timeout);
+        timeout++;
+        VtnConfig vcfg = builder.build();
+        InstanceIdentifier<VtnConfig> path = getPath();
+        IdentifiedData<VtnConfig> data = new IdentifiedData<>(path, vcfg);
+        cfgListener.onRemoved(null, data);
 
-            // Verify posted MD-SAL transaction task.
-            @SuppressWarnings("unchecked")
+        // Verify posted MD-SAL transaction task.
+        @SuppressWarnings("unchecked")
             ArgumentCaptor<TxTask> captor = (ArgumentCaptor<TxTask>)
-                ArgumentCaptor.forClass(TxTask.class);
-            verify(txQueue).post(captor.capture());
-            List<TxTask> posted = captor.getAllValues();
-            assertEquals(1, posted.size());
-            TxTask task = posted.get(0);
-            String taskName = ConfigListener.class.getName() +
-                ".ConfigRemoveTask";
-            assertEquals(taskName, task.getClass().getCanonicalName());
-            reset(txQueue);
+            ArgumentCaptor.forClass(TxTask.class);
+        verify(txQueue).post(captor.capture());
+        List<TxTask> posted = captor.getAllValues();
+        assertEquals(1, posted.size());
+        TxTask task = posted.get(0);
+        String taskName = ConfigListener.class.getName() + ".ConfigRemoveTask";
+        assertEquals(taskName, task.getClass().getCanonicalName());
+        reset(txQueue);
 
-            // Execute the task.
-            TxContext ctx = mock(TxContext.class);
-            ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
-            when(ctx.getReadWriteTransaction()).thenReturn(tx);
-            VTNManagerProvider provider = mock(VTNManagerProvider.class);
-            Entity ent = VTNEntityType.getGlobalEntity(VTNEntityType.CONFIG);
-            when(provider.getOwnershipState(ent)).
-                thenReturn(Optional.of(new EntityOwnershipState(false, true)));
-            when(ctx.getProvider()).thenReturn(provider);
-            assertEquals(null, task.execute(ctx, 0));
+        // Execute the task.
+        TxContext ctx = mock(TxContext.class);
+        ReadWriteTransaction tx = mock(ReadWriteTransaction.class);
+        when(ctx.getReadWriteTransaction()).thenReturn(tx);
+        VTNManagerProvider provider = mock(VTNManagerProvider.class);
+        when(provider.isOwner(VTNEntityType.CONFIG)).thenReturn(false);
+        when(ctx.getProvider()).thenReturn(provider);
+        assertEquals(null, task.execute(ctx, 0));
 
-            verify(ctx).getProvider();
-            verify(provider).getOwnershipState(ent);
-            verifyNoMoreInteractions(ctx, provider, tx);
+        verify(ctx).getProvider();
+        verify(provider).isOwner(VTNEntityType.CONFIG);
+        verifyNoMoreInteractions(ctx, provider, tx);
 
-            VTNConfigImpl vconf = new VTNConfigImpl(vcfg);
-            XmlConfigFile.save(cfType, cfKey, vconf);
-            VTNConfigImpl loaded = XmlConfigFile.load(
-                cfType, cfKey, VTNConfigImpl.class);
-            assertEquals(loaded, vconf);
+        VTNConfigImpl vconf = new VTNConfigImpl(vcfg);
+        XmlConfigFile.save(cfType, cfKey, vconf);
+        VTNConfigImpl loaded = XmlConfigFile.load(
+            cfType, cfKey, VTNConfigImpl.class);
+        assertEquals(loaded, vconf);
 
-            // Configuration file should be removed.
-            task.onSuccess(null, null);
-            loaded = XmlConfigFile.load(cfType, cfKey, VTNConfigImpl.class);
-            assertEquals(null, loaded);
-        }
+        // Configuration file should be removed.
+        task.onSuccess(null, null);
+        loaded = XmlConfigFile.load(cfType, cfKey, VTNConfigImpl.class);
+        assertEquals(null, loaded);
     }
 
     /**
