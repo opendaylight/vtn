@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -10,8 +10,6 @@ package org.opendaylight.vtn.manager.internal.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Optional;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.EtherAddress;
@@ -28,8 +26,6 @@ import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
-import org.opendaylight.controller.md.sal.common.api.clustering.Entity;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipState;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -90,10 +86,7 @@ public final class ConfigListener extends DataStoreListener<VtnConfig, Void> {
          */
         @Override
         public Void execute(TxContext ctx) {
-            Entity ent = VTNEntityType.getGlobalEntity(VTNEntityType.CONFIG);
-            Optional<EntityOwnershipState> opt =
-                ctx.getProvider().getOwnershipState(ent);
-            if (opt.isPresent() && opt.get().isOwner()) {
+            if (ctx.getProvider().isOwner(VTNEntityType.CONFIG)) {
                 // Apply new configuration to operational view.
                 LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
                 ReadWriteTransaction tx = ctx.getReadWriteTransaction();
@@ -143,10 +136,7 @@ public final class ConfigListener extends DataStoreListener<VtnConfig, Void> {
          */
         @Override
         public Void execute(TxContext ctx) throws VTNException {
-            Entity ent = VTNEntityType.getGlobalEntity(VTNEntityType.CONFIG);
-            Optional<EntityOwnershipState> opt =
-                ctx.getProvider().getOwnershipState(ent);
-            if (opt.isPresent() && opt.get().isOwner()) {
+            if (ctx.getProvider().isOwner(VTNEntityType.CONFIG)) {
                 // Reset operational view to default.
                 VtnConfig vcfg = VTNConfigImpl.builder(macAddress).build();
                 ReadWriteTransaction tx = ctx.getReadWriteTransaction();
