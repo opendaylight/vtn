@@ -314,7 +314,8 @@ public final class TestOption {
 
             // Load JUnit and Mockito bundles.
             junitBundles(),
-            mavenBundle("org.mockito", "mockito-all"),
+            mavenBundle("org.mockito", "mockito-core"),
+            mavenBundle("org.objenesis", "objenesis"),
             frameworkProperty("felix.bootdelegation.implicit").value("false"));
     }
 
