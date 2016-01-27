@@ -80,19 +80,31 @@ url_format=BASEURL,SLASH,VTN_PORT,COLON,DEL_PORT
 [vtermif_portmap]
 type=READ,CU,DEL
 request_type=object
-parse_request_members=vterm_if
+parse_request_members=vterm_if_portmap
 build_request_members=ip_vterminal_configs
 request_members=vterminal_config
 response_members="vterminal-config"
 
+[vterm_if_portmap]
+type=array
+key="vinterface"
+is_child=yes
+check_bool_set=yes
+struct_name=vterm_if_portmap
+members=vterm_if
+build_support=no
+mandatory=no
+parse_support=yes
+
 [vterm_if]
 type=struct
 key="port-map-config"
-is_child=no
+is_child=yes
 check_bool_set=yes
-struct_name=vterm_if
-members=vlan_id,node_id,port
+struct_name=vterm_if_portmap
+members=vlan_id,node_id,port,valid
 build_support=no
+mandatory=no
 parse_support=yes
 
 [vlan_id]
@@ -101,6 +113,7 @@ key="vlan-id"
 struct_name=vterm_if
 is_child=yes
 build_support=no
+mandatory=no
 parse_support=yes
 
 [node_id]
@@ -110,6 +123,7 @@ struct_name=vterm_if
 is_child=yes
 check_bool_set=no
 build_support=no
+mandatory=no
 parse_support=yes
 
 [port]
@@ -119,6 +133,7 @@ struct_name=vterm_if
 is_child=yes
 check_bool_set=no
 build_support=no
+mandatory=no
 parse_support=yes
 
 [valid]
@@ -247,6 +262,6 @@ parse_support=no
 url_class = vtermifport_class
 parse_class=vtermif_portmap
 namespace=odcdriver
-struct_type = vterm_if,ip_vtermif_port
-data=vterm_if,input_vtermif_port,ip_vtermif_port
+struct_type = vterm_if_portmap,ip_vtermif_port
+data=vterm_if,vterm_if_portmap,input_vtermif_port,ip_vtermif_port
 methods= vtermifport_class
