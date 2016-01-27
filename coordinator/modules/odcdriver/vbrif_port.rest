@@ -84,7 +84,7 @@ response_members="vbridge-config"
 [vbrifport_parser]
 type=READ,CU,DEL
 request_type=object
-parse_request_members=portmap_config
+parse_request_members=portmap_interface
 build_request_members=ip_vbridge_configs
 request_members=vbridge_config
 response_members="vbridge-config"
@@ -95,7 +95,8 @@ key="input"
 is_child=yes
 check_bool_set=yes
 struct_name=vbrifport_input
-members=tenant_name,bridge_name,interface_name,node,port_name,vlan,valid
+members=tenant_name,bridge_name,interface_name,node,port_name,ip_vlan,valid
+mandatory=no
 build_support=yes
 parse_support=no
 
@@ -139,7 +140,7 @@ mandatory=yes
 build_support=yes
 parse_support=no
 
-[vlan]
+[ip_vlan]
 type=int
 key="vlan"
 struct_name=input_vbrifport
@@ -164,6 +165,7 @@ check_bool_set=yes
 struct_name=ip_vbrif_port
 members=input_vbrifport,valid
 build_support=yes
+mandatory=no
 parse_support=no
 
 [ip_vbridge_configs]
@@ -174,6 +176,7 @@ check_bool_set=yes
 struct_name=ip_vbrif_port
 members=ip_vbrif_port
 build_support=yes
+mandatory=no
 parse_support=no
 
 [vbridge_config]
@@ -184,6 +187,7 @@ check_bool_set=yes
 struct_name=portmap_config
 members=portmap_config
 build_support=no
+mandatory=no
 parse_support=no
 
 [port]
@@ -193,6 +197,7 @@ struct_name=portmap_config
 is_child=yes
 check_bool_set=no
 build_support=no
+mandatory=yes
 parse_support=yes
 
 [node_id]
@@ -202,6 +207,7 @@ struct_name=portmap_config
 is_child=yes
 check_bool_set=no
 build_support=no
+mandatory=yes
 parse_support=yes
 
 [vlan]
@@ -210,6 +216,7 @@ key="vlan-id"
 struct_name=portmap_config
 is_child=yes
 build_support=no
+mandatory=no
 parse_support=yes
 
 [valid]
@@ -223,17 +230,30 @@ parse_support=no
 [portmap_config]
 type=struct
 key="port-map-config"
-is_child=no
+is_child=yes
 check_bool_set=yes
-struct_name=portmap_config
-members=vlan,node_id,port
+struct_name=portmap_interface
+members=vlan,node_id,port,valid
 build_support=no
+mandatory=no
 parse_support=yes
+
+[portmap_interface]
+type=array
+key="vinterface"
+is_child=yes
+check_bool_set=yes
+struct_name=portmap_interface
+members=portmap_config
+build_support=no
+mandatory=no
+parse_support=yes
+
 
 [ROOT]
 url_class=vbrifport_class
 parse_class=vbrifport_parser
 namespace=odcdriver
-struct_type=portmap_config,ip_vbrif_port
-data=portmap_config,input_vbrifport,ip_vbrif_port
+struct_type=portmap_interface,ip_vbrif_port
+data=portmap_config,portmap_interface,input_vbrifport,ip_vbrif_port
 methods=vbrifport_class
