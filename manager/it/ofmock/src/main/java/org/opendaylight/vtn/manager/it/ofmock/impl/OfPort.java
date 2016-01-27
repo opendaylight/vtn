@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation.  All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -14,27 +14,28 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.TimeoutException;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
+
+import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnOpenflowVersion;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeConnectorUpdated;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeConnectorUpdatedBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.topology.discovery.rev130819.LinkDiscoveredBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.topology.discovery.rev130819.LinkRemovedBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeConnector;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeConnectorBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.port.rev130925.PortConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.port.rev130925.PortFeatures;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.port.rev130925.PortNumberUni;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.port.rev130925.flow.capable.port.StateBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRef;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRemoved;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRemovedBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorUpdated;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorUpdatedBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.node.NodeConnector;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.node.NodeConnectorBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
 
@@ -122,6 +123,11 @@ public final class OfPort {
     private final MacAddress  macAddress;
 
     /**
+     * The identifier string of the switch that contains this port.
+     */
+    private final String  nodeIdentifier;
+
+    /**
      * The identifier string of this port.
      */
     private final String  portIdentifier;
@@ -151,6 +157,7 @@ public final class OfPort {
     public OfPort(VtnOpenflowVersion ver, String nid, long id) {
         ofVersion = ver;
         portNumber = id;
+        nodeIdentifier = nid;
         portIdentifier = nid + ":" + id;
         portName = "eth" + id;
         macAddress = createMacAddress();
@@ -164,6 +171,15 @@ public final class OfPort {
      */
     public String getPortName() {
         return portName;
+    }
+
+    /**
+     * Return the identifier string of the switch that contains this port.
+     *
+     * @return  The MD-SAL node identifier.
+     */
+    public String getNodeIdentifier() {
+        return nodeIdentifier;
     }
 
     /**
@@ -185,22 +201,26 @@ public final class OfPort {
     }
 
     /**
-     * Return a {@link NodeConnectorUpdated} instance which indicates this port
-     * has been updated.
+     * Return a reference to this port.
      *
-     * @return  A {@link NodeConnectorUpdated} instance.
+     * @return  A {@link NodeConnectorRef} instance.
      */
-    public NodeConnectorUpdated getNodeConnectorUpdated() {
-        NodeConnectorUpdatedBuilder builder = new NodeConnectorUpdatedBuilder().
-            setId(new NodeConnectorId(portIdentifier)).
-            setNodeConnectorRef(new NodeConnectorRef(portPath));
+    public NodeConnectorRef getPortRef() {
+        return new NodeConnectorRef(portPath);
+    }
 
+    /**
+     * Create a new node-connector instance.
+     *
+     * @return  A {@link NodeConnector} instance.
+     */
+    public NodeConnector createNodeConnector() {
         boolean down = Boolean.valueOf(!linkUp);
         StateBuilder stBuilder = new StateBuilder().setBlocked(Boolean.FALSE).
             setLinkDown(down).setLive(Boolean.FALSE);
 
-        FlowCapableNodeConnectorUpdatedBuilder fcBuilder =
-            new FlowCapableNodeConnectorUpdatedBuilder().
+        FlowCapableNodeConnectorBuilder fcBuilder =
+            new FlowCapableNodeConnectorBuilder().
             setState(stBuilder.build()).setName(portName).
             setHardwareAddress(macAddress).
             setAdvertisedFeatures(FEATURES_EMPTY).
@@ -213,22 +233,11 @@ public final class OfPort {
                 setMaximumSpeed(SPEED_KBPS);
         }
 
-        builder.addAugmentation(FlowCapableNodeConnectorUpdated.class,
-                                fcBuilder.build());
-
-        return builder.build();
-    }
-
-    /**
-     * Return a {@link NodeConnectorRemoved} instance which indicates this port
-     * has been removed.
-     *
-     * @return  A {@link NodeConnectorRemoved} instance.
-     */
-    public NodeConnectorRemoved getNodeConnectorRemoved() {
-        NodeConnectorRemovedBuilder builder = new NodeConnectorRemovedBuilder().
-            setNodeConnectorRef(new NodeConnectorRef(portPath));
-        return builder.build();
+        return new NodeConnectorBuilder().
+            setId(new NodeConnectorId(portIdentifier)).
+            addAugmentation(FlowCapableNodeConnector.class,
+                            fcBuilder.build()).
+            build();
     }
 
     /**
@@ -259,10 +268,10 @@ public final class OfPort {
         peerIdentifier = peer;
         if (linkUp) {
             if (oldPeer != null) {
-                notifyLinkRemoved(provider, oldPeer);
+                TopologyUtils.removeLink(provider, portIdentifier);
             }
             if (peer != null) {
-                notifyLinkDiscovered(provider, peer);
+                TopologyUtils.addLink(provider, this, peer);
             }
         }
 
@@ -287,20 +296,30 @@ public final class OfPort {
      * @return  {@code true} if the port state has been changed.
      *          {@code false} not changed.
      */
-    public boolean setPortState(OfMockProvider provider, boolean state) {
+    public boolean setPortState(final OfMockProvider provider,
+                                final boolean state) {
         boolean changed = (linkUp != state);
 
         if (changed) {
             linkUp = state;
-            provider.publish(getNodeConnectorUpdated());
+            ListenableFuture<Void> future = publish(provider);
 
-            String peer = peerIdentifier;
+            final String peer = peerIdentifier;
             if (peer != null) {
-                if (state) {
-                    notifyLinkDiscovered(provider, peer);
-                } else {
-                    notifyLinkRemoved(provider, peer);
-                }
+                Futures.addCallback(future, new FutureCallback<Void>() {
+                    @Override
+                    public void onSuccess(Void result) {
+                        if (state) {
+                            TopologyUtils.addLink(provider, OfPort.this, peer);
+                        } else {
+                            TopologyUtils.removeLink(provider, portIdentifier);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Throwable calse) {
+                    }
+                });
             }
         }
 
@@ -369,18 +388,31 @@ public final class OfPort {
      * Publish notification that notifies this switch port.
      *
      * @param provider  The ofmock provider service.
+     * @return  A future associated with the task that put the port information
+     *          into the MD-SAL datastore.
      */
-    public void publish(OfMockProvider provider) {
-        provider.publish(getNodeConnectorUpdated());
+    public ListenableFuture<Void> publish(OfMockProvider provider) {
+        NodeConnector nc = createNodeConnector();
+        UpdateDataTask<NodeConnector> task = new UpdateDataTask<>(
+            provider.getDataBroker(), portPath, nc);
+        provider.getInventoryExecutor().execute(task);
+        return task.getFuture();
     }
 
     /**
-     * Publish notification that notifies the inter-switch link.
+     * Publish notification that notifies removal of this switch port.
      *
      * @param provider  The ofmock provider service.
      */
-    public void publishLink(OfMockProvider provider) {
-        notifyLinkDiscovered(provider, peerIdentifier);
+    public void publishRemoval(OfMockProvider provider) {
+        DataBroker broker = provider.getDataBroker();
+        DeleteDataTask<NodeConnector> task =
+            new DeleteDataTask<>(broker, portPath);
+        provider.getInventoryExecutor().execute(task);
+
+        DeleteTerminationPointTask tpTask =
+            new DeleteTerminationPointTask(broker, this);
+        provider.getTopologyExecutor().execute(tpTask);
     }
 
     /**
@@ -404,39 +436,5 @@ public final class OfPort {
         }
 
         return new MacAddress(builder.toString());
-    }
-
-    /**
-     * Send notification that indicates an inter-switch link has been
-     * discovered.
-     *
-     * @param provider  The ofmock provider service.
-     * @param peer      The identifier of the peer port.
-     */
-    private void notifyLinkDiscovered(OfMockProvider provider, String peer) {
-        LinkDiscoveredBuilder builder = new LinkDiscoveredBuilder();
-        NodeConnectorRef sref = new NodeConnectorRef(portPath);
-        InstanceIdentifier<NodeConnector> dpath =
-            OfMockUtils.getPortPath(peer);
-        NodeConnectorRef dref = new NodeConnectorRef(dpath);
-        builder.setSource(sref).setDestination(dref);
-        provider.publish(builder.build());
-    }
-
-    /**
-     * Send notification that indicates an inter-switch link has been
-     * removed.
-     *
-     * @param provider  The ofmock provider service.
-     * @param peer      The identifier of the peer port.
-     */
-    private void notifyLinkRemoved(OfMockProvider provider, String peer) {
-        LinkRemovedBuilder builder = new LinkRemovedBuilder();
-        NodeConnectorRef sref = new NodeConnectorRef(portPath);
-        InstanceIdentifier<NodeConnector> dpath =
-            OfMockUtils.getPortPath(peer);
-        NodeConnectorRef dref = new NodeConnectorRef(dpath);
-        builder.setSource(sref).setDestination(dref);
-        provider.publish(builder.build());
     }
 }

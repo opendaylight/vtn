@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2015 NEC Corporation
+# Copyright (c) 2015-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -204,35 +204,6 @@
                   <name>runtime-mapping-singleton</name>
                 </binding-mapping-service>
               </binding-forwarded-data-broker>
-            </module>
-
-            <!-- inventory-manager configuration -->
-            <module>
-              <type xmlns:prefix="urn:opendaylight:params:xml:ns:yang:inventory-manager:impl">
-                prefix:inventory-manager-impl
-              </type>
-              <name>inventory-manager-default</name>
-
-              <broker>
-                <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">
-                  binding:binding-broker-osgi-registry
-                </type>
-                <name>binding-osgi-broker</name>
-              </broker>
-            </module>
-
-            <!-- topology-manager configuration -->
-            <module>
-              <type xmlns:prefix="urn:opendaylight:params:xml:ns:yang:topology-manager:impl">
-                prefix:topology-manager-impl
-              </type>
-              <name>topology-manager-default</name>
-              <broker>
-                <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">
-                  binding:binding-broker-osgi-registry
-                </type>
-                <name>binding-osgi-broker</name>
-              </broker>
             </module>
 
             <!-- openflowplugin mock-up configuration -->
@@ -507,16 +478,6 @@
         <capability>
           urn:opendaylight:vtn:impl:mapping?module=vtn-mapping&amp;revision=2015-10-01
         </capability>
-
-        <!-- inventory-manager capabilities -->
-        <capability>
-          urn:opendaylight:params:xml:ns:yang:inventory-manager:impl?module=inventory-manager-impl&amp;revision=2015-05-30
-        </capability>
-
-        <!-- topology-manager capabilities -->
-        <capability>
-          urn:opendaylight:params:xml:ns:yang:topology-manager:impl?module=topology-manager-impl&amp;revision=2015-05-30
-       </capability>
 
         <!-- openflowplugin mock-up capabilities -->
         <capability>
