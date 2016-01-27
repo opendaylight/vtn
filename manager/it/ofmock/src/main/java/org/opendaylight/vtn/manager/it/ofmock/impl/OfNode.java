@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation.  All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -24,10 +24,12 @@ import java.util.concurrent.locks.Lock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 
 import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
 
+import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.sal.binding.api.BindingAwareBroker.RoutedRpcRegistration;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 
@@ -41,8 +43,8 @@ import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnOpenflowVersion;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FeatureCapability;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeUpdated;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeUpdatedBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowFeatureCapabilityFlowStats;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.flow.node.SwitchFeaturesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowInput;
@@ -102,10 +104,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeCon
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeContext;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRemoved;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRemovedBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeUpdated;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeUpdatedBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.NodeKey;
@@ -392,6 +390,15 @@ public final class OfNode
     }
 
     /**
+     * Return a reference to this node.
+     *
+     * @return  A {@link NodeRef} instance.
+     */
+    public NodeRef getNodeRef() {
+        return new NodeRef(nodePath);
+    }
+
+    /**
      * Register this node to MD-SAL.
      *
      * @param rpcReg  A {@link RpcProviderRegistry} service instance.
@@ -451,7 +458,7 @@ public final class OfNode
             throw new IllegalArgumentException("Unknown port: " + pid);
         }
 
-        ofMockProvider.publish(port.getNodeConnectorRemoved());
+        port.publishRemoval(ofMockProvider);
     }
 
     /**
@@ -671,8 +678,24 @@ public final class OfNode
     /**
      * Publish a node updated notification.
      */
-    public void publish() {
-        ofMockProvider.publish(createNodeUpdated());
+    private void publish() {
+        InstanceIdentifier<FlowCapableNode> path = nodePath.
+            augmentation(FlowCapableNode.class);
+        FlowCapableNode fcn = createFlowNode();
+        UpdateDataTask<FlowCapableNode> task =
+            new UpdateDataTask<>(ofMockProvider.getDataBroker(), path, fcn);
+        ofMockProvider.getInventoryExecutor().execute(task);
+
+        Futures.addCallback(task.getFuture(), new FutureCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                TopologyUtils.addTopologyNode(ofMockProvider, OfNode.this);
+            }
+
+            @Override
+            public void onFailure(Throwable calse) {
+            }
+        });
     }
 
     /**
@@ -692,40 +715,23 @@ public final class OfNode
     }
 
     /**
-     * Create a {@link NodeUpdated} notification.
+     * Create a new flow-capable-node.
      *
-     * @return  A {@link NodeUpdated} instance.
+     * @return  A {@link FlowCapableNode} instance.
      */
-    private NodeUpdated createNodeUpdated() {
-        NodeUpdatedBuilder builder = new NodeUpdatedBuilder();
-        builder.setId(new NodeId(nodeIdentifier)).
-            setNodeRef(new NodeRef(nodePath));
-
+    private FlowCapableNode createFlowNode() {
         SwitchFeaturesBuilder sfBuilder = new SwitchFeaturesBuilder().
             setMaxBuffers(Long.valueOf(NODE_BUFSIZE)).
             setMaxTables(Short.valueOf((short)1)).
             setCapabilities(CAPABILITIES);
 
         String na = "N/A";
-        FlowCapableNodeUpdatedBuilder fcBuilder = new FlowCapableNodeUpdatedBuilder().
+        return new FlowCapableNodeBuilder().
             setIpAddress(ipAddress).setSwitchFeatures(sfBuilder.build()).
             setDescription(na).setSerialNumber(na).
             setHardware("OpenFlow mock-up").
-            setManufacturer("OpenDaylight").setSoftware("0.1");
-        builder.addAugmentation(FlowCapableNodeUpdated.class,
-                                fcBuilder.build());
-
-        return builder.build();
-    }
-
-    /**
-     * Create a {@link NodeRemoved} notification.
-     *
-     * @return  A {@link NodeRemoved} instance.
-     */
-    private NodeRemoved createNodeRemoved() {
-        NodeRemovedBuilder builder = new NodeRemovedBuilder();
-        return builder.setNodeRef(new NodeRef(nodePath)).build();
+            setManufacturer("OpenDaylight").setSoftware("0.1").
+            build();
     }
 
     /**
@@ -988,7 +994,13 @@ public final class OfNode
             registrations.clear();
 
             LOG.debug("Node has been removed: {}", nodeIdentifier);
-            ofMockProvider.publish(createNodeRemoved());
+            DataBroker broker = ofMockProvider.getDataBroker();
+            DeleteDataTask<Node> task = new DeleteDataTask<>(broker, nodePath);
+            ofMockProvider.getInventoryExecutor().execute(task);
+
+            DeleteTopologyNodeTask topoTask = new DeleteTopologyNodeTask(
+                broker, nodeIdentifier);
+            ofMockProvider.getTopologyExecutor().execute(topoTask);
         }
     }
 

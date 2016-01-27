@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2013-2015 NEC Corporation
+# Copyright (c) 2013-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -129,19 +129,6 @@
     <dependency>
       <groupId>org.opendaylight.openflowplugin.model</groupId>
       <artifactId>model-flow-statistics</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opendaylight.openflowplugin.applications</groupId>
-      <artifactId>inventory-manager</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.openflowplugin.applications</groupId>
-      <artifactId>topology-manager</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.openflowplugin.applications</groupId>
-      <artifactId>forwardingrules-manager</artifactId>
     </dependency>
 
     <!-- Pax Exam -->
