@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -114,21 +114,10 @@ public final class TestOption {
     private static final String  MDSAL_MODEL = MDSAL + ".model";
 
     /**
-     * Group ID for openflowplugin.
-     */
-    private static final String  OPENFLOW = "org.opendaylight.openflowplugin";
-
-    /**
      * Group ID for YANG models provided by openflowplugin.
      */
     private static final String  OPENFLOW_MODEL =
         "org.opendaylight.openflowplugin.model";
-
-    /**
-     * Group ID for NSF applications provided by openflowplugin.
-     */
-    private static final String  OPENFLOW_APPS =
-        "org.opendaylight.openflowplugin.applications";
 
     /**
      * The name of the system property that specifies whether the config
@@ -311,11 +300,6 @@ public final class TestOption {
             mavenBundle(OPENFLOW_MODEL, "model-flow-base"),
             mavenBundle(OPENFLOW_MODEL, "model-flow-service"),
             mavenBundle(OPENFLOW_MODEL, "model-flow-statistics"),
-
-            // Load OpenFlow service applications.
-            mavenBundle(OPENFLOW, "openflowplugin-common"),
-            mavenBundle(OPENFLOW_APPS, "inventory-manager"),
-            mavenBundle(OPENFLOW_APPS, "topology-manager"),
 
             // Load OpenDaylight third-party bundles.
             mavenBundle(CONTROLLER_THIRD_PARTY, "net.sf.jung2"),

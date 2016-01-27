@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -72,7 +72,7 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.
 /**
  * MD-SAL service provider of the mock-up of openflowplugin.
  */
-public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
+public class OfMockProvider implements AutoCloseable, OfMockService {
     /**
      * Logger instance.
      */
@@ -100,16 +100,6 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
     static final long  TASK_TIMEOUT = 10000L;
 
     /**
-     * The number of milliseconds to wait for inventories to be initialized.
-     */
-    private static final long  INV_INIT_TIMEOUT = 1000L;
-
-    /**
-     * The number of attempts to initialize inventory information.
-     */
-    private static final int  INV_INIT_MAXTRY = 10;
-
-    /**
      * Data broker service.
      */
     private final DataBroker  dataBroker;
@@ -131,9 +121,15 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
         new ReentrantReadWriteLock();
 
     /**
-     * The global executor service.
+     * The executor service that updates inventory information.
      */
-    private final ExecutorService  globalExecutor =
+    private final ExecutorService  inventoryExecutor =
+        Executors.newSingleThreadExecutor();
+
+    /**
+     * The executor service that updates topology information.
+     */
+    private final ExecutorService  topologyExecutor =
         Executors.newSingleThreadExecutor();
 
     /**
@@ -194,6 +190,18 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
         nodeListener = new VtnNodeListener(broker);
         portListener = new VtnPortListener(broker);
         routingTable = new RoutingTable(nsv);
+
+        // Initialize the MD-SAL DS for inventory and topology.
+        InitDatastoreTask task = new InitDatastoreTask(broker);
+        inventoryExecutor.execute(task);
+        try {
+            task.getFuture().get(TASK_TIMEOUT, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            String msg = "Failed to initialize datastore.";
+            LOG.error(msg, e);
+            throw new IllegalStateException(msg, e);
+        }
+
         LOG.debug("openflowplugin mock-up has been created: {}", this);
     }
 
@@ -247,6 +255,24 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
         Lock lk = (writer) ? rwLock.writeLock() : rwLock.readLock();
         lk.lock();
         return lk;
+    }
+
+    /**
+     * Return the executor that updates inventory information.
+     *
+     * @return  An {@link Executor} instance.
+     */
+    public Executor getInventoryExecutor() {
+        return inventoryExecutor;
+    }
+
+    /**
+     * Return the executor that updates topology information.
+     *
+     * @return  An {@link Executor} instance.
+     */
+    public Executor getTopologyExecutor() {
+        return topologyExecutor;
     }
 
     /**
@@ -475,14 +501,9 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
         String nid = node.getNodeIdentifier();
         LOG.trace("Verifying node: {}", nid);
 
-        for (int i = 0; i < INV_INIT_MAXTRY; i++) {
-            if (nodeListener.awaitCreated(nid, INV_INIT_TIMEOUT)) {
-                LOG.trace("Node has been created: {}", nid);
-                return;
-            }
-
-            LOG.trace("Resending notification for node {}", nid);
-            node.publish();
+        if (nodeListener.awaitCreated(nid, TASK_TIMEOUT)) {
+            LOG.trace("Node has been created: {}", nid);
+            return;
         }
 
         String msg = "Node was not created: " + nid;
@@ -501,14 +522,9 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
         String pid = port.getPortIdentifier();
         LOG.trace("Verifying port: {}", pid);
 
-        for (int i = 0; i < INV_INIT_MAXTRY; i++) {
-            if (portListener.awaitCreated(pid, INV_INIT_TIMEOUT)) {
-                LOG.trace("Port has been created: {}", pid);
-                return;
-            }
-
-            LOG.trace("Resending notification for port {}", pid);
-            port.publish(this);
+        if (portListener.awaitCreated(pid, TASK_TIMEOUT)) {
+            LOG.trace("Port has been created: {}", pid);
+            return;
         }
 
         String msg = "Port was not created: " + pid;
@@ -528,16 +544,10 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
         String peer = port.getPeerIdentifier();
         LOG.trace("Verifying inter-switch link: {} -> {}", pid, peer);
 
-        for (int i = 0; i < INV_INIT_MAXTRY; i++) {
-            if (routingTable.awaitLinkUp(pid, peer, INV_INIT_TIMEOUT)) {
-                LOG.trace("Inter-swtich link has been established: {} -> {}",
-                          pid, peer);
-                return;
-            }
-
-            LOG.trace("Resending notification for inter-switch link: {} -> {}",
+        if (routingTable.awaitLinkUp(pid, peer, TASK_TIMEOUT)) {
+            LOG.trace("Inter-swtich link has been established: {} -> {}",
                       pid, peer);
-            port.publishLink(this);
+            return;
         }
 
         StringBuilder builder = new StringBuilder(
@@ -546,6 +556,25 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
         String msg = builder.toString();
         LOG.error(msg);
         throw new IllegalStateException(msg);
+    }
+
+    /**
+     * Shut down the given executor service.
+     *
+     * @param executor  Executor service.
+     * @throws InterruptedException
+     *    The calling thread was interrupted.
+     */
+    private void shutdown(ExecutorService executor)
+        throws InterruptedException {
+        executor.shutdown();
+        if (!executor.awaitTermination(TASK_TIMEOUT, TimeUnit.MILLISECONDS)) {
+            executor.shutdownNow();
+            if (!executor.awaitTermination(TASK_TIMEOUT,
+                                           TimeUnit.MILLISECONDS)) {
+                LOG.warn("Executor did not terminate.");
+            }
+        }
     }
 
     // AutoCloseable
@@ -572,15 +601,8 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
             }
             switches.clear();
 
-            globalExecutor.shutdown();
-            if (!globalExecutor.awaitTermination(TASK_TIMEOUT,
-                                                 TimeUnit.MILLISECONDS)) {
-                globalExecutor.shutdownNow();
-                if (!globalExecutor.awaitTermination(TASK_TIMEOUT,
-                                                     TimeUnit.MILLISECONDS)) {
-                    LOG.warn("Global executor did not terminate.");
-                }
-            }
+            shutdown(inventoryExecutor);
+            shutdown(topologyExecutor);
         } catch (Exception e) {
             LOG.error("Failed to close the openflowplugin mock-up.", e);
         } finally {
@@ -588,18 +610,6 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
         }
 
         LOG.debug("openflowplugin mock-up has been closed: {}", this);
-    }
-
-    // Executor
-
-    /**
-     * Execute the given task on the global executor service.
-     *
-     * @param task  The runnable task.
-     */
-    @Override
-    public void execute(Runnable task) {
-        globalExecutor.execute(task);
     }
 
     // OfMockService
