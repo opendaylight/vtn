@@ -77,7 +77,7 @@ type=string
 key="description"
 struct_name=vbridge_config
 build_support=no
-mandatory=yes
+mandatory=no
 parse_support=yes
 
 [vbridge_config]
@@ -161,7 +161,7 @@ parse_support=no
 type=string
 key="description"
 struct_name=vbr_input
-mandatory=yes
+mandatory=no
 build_support=yes
 parse_support=no
 
