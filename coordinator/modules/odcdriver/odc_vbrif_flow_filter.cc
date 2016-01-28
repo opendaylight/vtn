@@ -430,9 +430,9 @@ void OdcVbrIfFlowFilterEntryCmd::copy(
         reinterpret_cast<char*>(key_in.flowfilter_key.if_key.if_name);
 
     if (key_in.flowfilter_key.direction == UPLL_FLOWFILTER_DIR_OUT)
-      ip_vbr_if_flowfilter_st.input_vbrif_flow_filter_.output = "true";
+      ip_vbr_if_flowfilter_st.input_vbrif_flow_filter_.output = true;
     else if (key_in.flowfilter_key.direction == UPLL_FLOWFILTER_DIR_IN)
-      ip_vbr_if_flowfilter_st.input_vbrif_flow_filter_.output = "false";
+      ip_vbr_if_flowfilter_st.input_vbrif_flow_filter_.output = false;
 
     vbrin_flow_filter flowfilter_;
 
@@ -542,9 +542,9 @@ void OdcVbrIfFlowFilterEntryCmd::copy(
     ip_vbr_if_flowfilter_st.input_vbrif_flow_filter_.interface_name =
                  reinterpret_cast<char*>(key_in.flowfilter_key.if_key.if_name);
     if (key_in.flowfilter_key.direction == UPLL_FLOWFILTER_DIR_OUT)
-      ip_vbr_if_flowfilter_st.input_vbrif_flow_filter_.output = "true";
+      ip_vbr_if_flowfilter_st.input_vbrif_flow_filter_.output = true;
     else if (key_in.flowfilter_key.direction == UPLL_FLOWFILTER_DIR_IN)
-      ip_vbr_if_flowfilter_st.input_vbrif_flow_filter_.output = "false";
+      ip_vbr_if_flowfilter_st.input_vbrif_flow_filter_.output = false;
 
     vbrin_flow_filter flowfilter_;
 

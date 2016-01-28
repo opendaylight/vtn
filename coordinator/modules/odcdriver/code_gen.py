@@ -885,6 +885,7 @@ def parse_nested_array_object(item, member, obj_in, output_file_name, d, prefix)
     st_name = parser.ReadValues(item, member)['struct_name']
     parent_st_type = parser.ReadValues(item,st_name)['type']
     check_bool = parser.ReadValues(item, member)['check_bool_set']
+    check_mand = parser.ReadValues(item, member)['mandatory']
     array_index = "arr_idx_" + st_name
     #print "array_index" , array_index
     array_len = "array_len_" + st_name
@@ -896,19 +897,27 @@ def parse_nested_array_object(item, member, obj_in, output_file_name, d, prefix)
         elif parent_st_type != 'array':
             object = object +'ret_val = restjson::JsonBuildParse::parse(%s,%s'%(obj_in, req_key) +',0,obj_%s);'%(member) + '\n'
     elif check_bool == 'no':
-        object = object +'ret_val = restjson::JsonBuildParse::parse(%s,%s'%(obj_in, req_key) +',-1,obj_%s);'%(member) + '\n'
+        if parent_st_type == 'array':
+          key_parent = prefix.replace('st_', '')
+          #print "printing the parent",key_parent,prefix
+          object = object +'ret_val = restjson::JsonBuildParse::parse(obj_%s,%s'%(key_parent, req_key) +',arr_idx_%s,obj_%s);'%(key_parent,member) + '\n'
+        else:
+          object = object +'ret_val = restjson::JsonBuildParse::parse(%s,%s'%(obj_in, req_key) +',-1,obj_%s);'%(member) + '\n'
     object = object + 'if ((restjson::REST_OP_SUCCESS != ret_val) || (json_object_is_type(obj_%s, json_type_null))) {'%(member) + '\n'
-    object = object + '\t' + 'json_object_put(json_parser);' + '\n'
+    if check_bool == 'yes' or check_mand == 'yes':
+      object = object + '\t' + 'json_object_put(json_parser);' + '\n'
     object = object + '\t' + 'pfc_log_error(" Error while parsing %s");'%(member) + '\n'
-    object = object + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' + '\n'
+    if check_bool == 'yes' or check_mand == 'yes':
+      object = object + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' + '\n'
     object = object  + '}' + '\n'
     object = object + 'if (json_object_is_type(obj_%s, json_type_array)) {'%(member) + '\n'
     object = object + '\t' + '%s = restjson::JsonBuildParse::get_array_length(obj_%s);'%(array_len,member) + '\n'
     object = object +  '}' + '\n'
     object = object + 'if (0 == %s) {' %(array_len) + '\n'
     object = object + '\t' +'pfc_log_debug("No %s present");'%(member) +'\n'
-    object = object + '\t' +'json_object_put(jobj);' + '\n'
-    object = object + '\t' + 'return UNC_RC_SUCCESS;' + '\n'
+    if check_mand == 'yes':
+      object = object + '\t' +'json_object_put(jobj);' + '\n'
+      object = object + '\t' + 'return UNC_RC_SUCCESS;' + '\n'
     object = object +  '}' + '\n'
     object = object + 'for (uint32_t %s = 0; %s< %s; %s++) {' %(array_index,array_index, array_len, array_index)+'\n'
     object = object + st_name + ' st_%s;'%(st_name) +'\n'
@@ -929,12 +938,13 @@ def parse_nested_array_object(item, member, obj_in, output_file_name, d, prefix)
             parse_member(item, s_name, obj, members, array_index, output_file_name, d)
         elif sub_mem_type == 'array' and str(check_key) == 'True':
               submem_check_bool = parser.ReadValues(item, members)['check_bool_set']
+              #print "printing checkbool", submem_check_bool,members
               if submem_check_bool == 'no':
-                #print "SSS", prefix
-                prefix =  prefix + '_.' + st_name
-                #print "prefix value", prefix
-                parse_nested_array_object(item, members, obj_in, output_file_name, d, prefix)
-                #print "PRINTING THE PUSH BACK IN NESTEDssss", prefix,st_name
+                #print "checking prefix", prefix
+                prefix_child =  'st_' + st_name
+                #print "prefix value", prefix_child
+                parse_nested_array_object(item, members, obj_in, output_file_name, d, prefix_child)
+                #print "PRINTING THE PUSH BACK IN NESTEDchild", prefix,st_name
               elif submem_check_bool == 'yes':
                 #print "SSSyy", prefix
                 prefix =  '.' + st_name
