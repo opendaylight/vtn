@@ -68,7 +68,7 @@ value="set-flow-condition-match"
 
 [DEL_FLOWCONDITION]
 type=url_string
-value="remove-flow-condition"
+value="remove-flow-condition-match"
 
 [cond_name]
 type=url_string
