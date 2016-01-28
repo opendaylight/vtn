@@ -153,10 +153,10 @@ UncRespCode OdcCtrDataFlowCommand::parse_flow_response_values(
 
   // Populate values to dataflow
   unc::dataflow::DataflowDetail *df_segm =
-      new unc::dataflow::DataflowDetail(
-          unc::dataflow::kidx_val_df_data_flow_cmn);
+    new unc::dataflow::DataflowDetail(
+        unc::dataflow::kidx_val_df_data_flow_cmn);
   unc::dataflow::DataflowCmn *df_cmn =
-      new unc::dataflow::DataflowCmn(false, df_segm);
+    new unc::dataflow::DataflowCmn(false, df_segm);
 
   //flow-id
   std::list<data_flow>::iterator it;
@@ -166,189 +166,240 @@ UncRespCode OdcCtrDataFlowCommand::parse_flow_response_values(
     unsigned long long duration = 0;
     unsigned long long packets = 0;
 
-     flowid = it->flow_id;
-  if (option1 == UNC_OPT1_DETAIL && it->data_flow_stats_.valid == true) {
-    //bytes
-    if (it->data_flow_stats_.byte_count != -1 )
-         bytes = it->data_flow_stats_.byte_count;
-   //packet count
-   if (it->data_flow_stats_.packet_count!= -1 )
-     packets = it->data_flow_stats_.packet_count;
-   //duration
-   if(it->data_flow_stats_.duration_.second != -1)
-     duration = it->data_flow_stats_.duration_.second;
+    flowid = it->flow_id;
+    if (option1 == UNC_OPT1_DETAIL && it->data_flow_stats_.valid == true) {
+      //bytes
+      if (it->data_flow_stats_.byte_count != -1 )
+        bytes = it->data_flow_stats_.byte_count;
+      //packet count
+      if (it->data_flow_stats_.packet_count!= -1 )
+        packets = it->data_flow_stats_.packet_count;
+      //duration
+      if(it->data_flow_stats_.duration_.second != -1)
+        duration = it->data_flow_stats_.duration_.second;
 
-    data_flow_st.packets = packets;
-    pfc_log_info(" packets : %ld" ,
-                 data_flow_st.packets);
-    if(packets != UINT64_MAX) {
-      data_flow_st.valid[kidxDfDataFlowStPackets] = UNC_VF_VALID;
-    } else {
-      data_flow_st.valid[kidxDfDataFlowStPackets] = UNC_VF_INVALID;
+      data_flow_st.packets = packets;
+      pfc_log_info(" packets : %ld" ,
+          data_flow_st.packets);
+      if(packets != UINT64_MAX) {
+        data_flow_st.valid[kidxDfDataFlowStPackets] = UNC_VF_VALID;
+      } else {
+        data_flow_st.valid[kidxDfDataFlowStPackets] = UNC_VF_INVALID;
+      }
+      data_flow_st.duration = duration;
+      pfc_log_info(" duration : %d",
+          data_flow_st.duration);
+      if(duration != PFCAPI_DATAFLOW_REQ_ALL) {
+        data_flow_st.valid[kidxDfDataFlowStDuration] = UNC_VF_VALID;
+      } else {
+        data_flow_st.valid[kidxDfDataFlowStDuration] = UNC_VF_INVALID;
+      }
+      data_flow_st.octets = bytes;
+      pfc_log_info(" bytes : %ld",
+          data_flow_st.octets);
+      if(bytes != UINT64_MAX) {
+        data_flow_st.valid[kidxDfDataFlowStOctets] = UNC_VF_VALID;
+      } else {
+        data_flow_st.valid[kidxDfDataFlowStOctets] = UNC_VF_INVALID;
+      }
     }
-    data_flow_st.duration = duration;
-    pfc_log_info(" duration : %d",
-                 data_flow_st.duration);
-    if(duration != PFCAPI_DATAFLOW_REQ_ALL) {
-      data_flow_st.valid[kidxDfDataFlowStDuration] = UNC_VF_VALID;
-    } else {
-      data_flow_st.valid[kidxDfDataFlowStDuration] = UNC_VF_INVALID;
+    //ingressport
+    std::string switch_id = "";
+    std::string in_portname = "";
+    std::string station_id = "";
+    if (it->data_ingress_port_.valid == true) {
+      if(!it->data_ingress_port_.ig_node.empty()) {
+        switch_id = it->data_ingress_port_.ig_node;
+      } else {
+        pfc_log_error("switch-id is null");
+        return UNC_DRV_RC_ERR_GENERIC;
+      }
+      if(!it->data_ingress_port_.ig_port_name.empty())
+        in_portname = it->data_ingress_port_.ig_port_name;
+      else {
+        pfc_log_error("port-name is empty");
+        return UNC_DRV_RC_ERR_GENERIC;
+      }
+      if(!it->data_ingress_port_.ig_port_id.empty())
+        station_id = it->data_ingress_port_.ig_port_id;
+      else {
+        pfc_log_error("port-id is empty");
+        return UNC_DRV_RC_ERR_GENERIC;
+      }
     }
-    data_flow_st.octets = bytes;
-    pfc_log_info(" bytes : %ld",
-                 data_flow_st.octets);
-    if(bytes != UINT64_MAX) {
-      data_flow_st.valid[kidxDfDataFlowStOctets] = UNC_VF_VALID;
-    } else {
-      data_flow_st.valid[kidxDfDataFlowStOctets] = UNC_VF_INVALID;
+
+    std::string egress_switch_id = "";
+    std::string out_station_id = "";
+    std::string out_portname = "";
+    // egressPort
+    if (it->data_egress_port_.valid == true) {
+
+
+      if(!it->data_egress_port_.eg_node.empty())
+        egress_switch_id = it->data_egress_port_.eg_node;
+      else {
+        pfc_log_error("node-id is empty");
+        return UNC_DRV_RC_ERR_GENERIC;
+      }
+      if(!it->data_egress_port_.eg_port_id.empty())
+        out_station_id = it->data_egress_port_.eg_port_id;
+      else {
+        pfc_log_error("port-id is empty");
+        return UNC_DRV_RC_ERR_GENERIC;
+      }
+      if(!it->data_egress_port_.eg_port_name.empty())
+        out_portname = it->data_egress_port_.eg_port_name;
+      else {
+        pfc_log_error("port-id is empty");
+        return UNC_DRV_RC_ERR_GENERIC;
+      }
     }
-  }
-  //ingressport
-  std::string switch_id = "";
-  std::string in_portname = "";
-  std::string station_id = "";
-  if (it->data_ingress_port_.valid == true) {
-  if(!it->data_ingress_port_.ig_node.empty()) {
-    switch_id = it->data_ingress_port_.ig_node;
-  } else {
-      pfc_log_error("switch-id is null");
-      return UNC_DRV_RC_ERR_GENERIC;
-  }
-  if(!it->data_ingress_port_.ig_port_name.empty())
-    in_portname = it->data_ingress_port_.ig_port_name;
-  else {
-      pfc_log_error("port-name is empty");
-      return UNC_DRV_RC_ERR_GENERIC;
-  }
-  if(!it->data_ingress_port_.ig_port_id.empty())
-   station_id = it->data_ingress_port_.ig_port_id;
-  else {
-      pfc_log_error("port-id is empty");
-      return UNC_DRV_RC_ERR_GENERIC;
-  }
-}
 
-  std::string egress_switch_id = "";
-  std::string out_station_id = "";
-  std::string out_portname = "";
-  // egressPort
-  if (it->data_egress_port_.valid == true) {
+    // action
+    std::list<da_actions>::iterator itera;
+    uint32_t action_array_len = it->da_actions_.size();
+    pfc_log_debug("--------------action_count arraylength --- %d",
+        action_array_len);
+    if (action_array_len > 0) {
+      for ( itera = it->da_actions_.begin(); itera != it->da_actions_.end();
+          itera++ ) {
+        df_cmn->df_segment->df_common->action_count = action_array_len;
+        df_cmn->df_segment->df_common->valid[kidxDfDataFlowActionCount] =
+          UNC_VF_VALID;
+        pfc_log_info("action_count %u",
+            df_cmn->df_segment->df_common->action_count);
+        uint32_t pop_array_len = itera->pop_vlan;
+        pfc_log_info("pop_array_len = %d ",
+            pop_array_len);
+        unc::dataflow::val_actions_vect_st *ptr =
+          new unc::dataflow::val_actions_vect_st;
+        memset(ptr, 0, sizeof(unc::dataflow::val_actions_vect_st));
+        ptr->action_type = UNC_ACTION_STRIP_VLAN;
+        pfc_log_trace("vln_action_type : %d vln_action_type_enum : %d",
+            ptr->action_type, (uint32_t)UNC_ACTION_STRIP_VLAN);
+        df_cmn->df_segment->actions.push_back(ptr);
 
+        // check for action-vlanid
+        std::list<vlan_id>::iterator iterat;
+        uint32_t vlanid_array_len = itera->vlan_id_.size();
+        pfc_log_debug("--------------action_count arraylength --- %d",
+            vlanid_array_len);
+        for (iterat = itera->vlan_id_.begin(); iterat != itera->vlan_id_.end();
+            iterat++) {
 
-  if(!it->data_egress_port_.eg_node.empty())
-    egress_switch_id = it->data_egress_port_.eg_node;
-  else {
-      pfc_log_error("node-id is empty");
-      return UNC_DRV_RC_ERR_GENERIC;
-  }
-  if(!it->data_egress_port_.eg_port_id.empty())
-    out_station_id = it->data_egress_port_.eg_port_id;
-  else {
-      pfc_log_error("port-id is empty");
-      return UNC_DRV_RC_ERR_GENERIC;
-  }
-  if(!it->data_egress_port_.eg_port_name.empty())
-    out_portname = it->data_egress_port_.eg_port_name;
-  else {
-      pfc_log_error("port-id is empty");
-      return UNC_DRV_RC_ERR_GENERIC;
-  }
-  }
+          uint32_t action_vlanid = 0;
+          action_vlanid = iterat->act_vlan_id;
 
-  // action
-  df_cmn->df_segment->df_common->valid[kidxDfDataFlowActionCount] =
-          UNC_VF_INVALID;
-  // match - START
+          unc::dataflow::val_actions_vect_st *ptr =
+            new unc::dataflow::val_actions_vect_st;
+          memset(ptr, 0, sizeof(unc::dataflow::val_actions_vect_st));
+          ptr->action_type = UNC_ACTION_SET_VLAN_ID;
+          pfc_log_trace("vln_action_type : %d vln_action_type_enum : %d",
+              ptr->action_type, (uint32_t)UNC_ACTION_SET_VLAN_ID);
+          val_df_flow_action_set_vlan_id *set_vlan_id =
+            new val_df_flow_action_set_vlan_id;
+          memset(set_vlan_id, 0, sizeof(val_df_flow_action_set_vlan_id_t));
+          set_vlan_id->vlan_id = action_vlanid;
+          ptr->action_st_ptr = (void *) set_vlan_id;
+          df_cmn->df_segment->actions.push_back(ptr);
+        }
+      }
+    }else {
+      df_cmn->df_segment->df_common->valid[kidxDfDataFlowActionCount] =
+        UNC_VF_INVALID;
+    }
 
-  pfc_bool_t match_status = PFC_FALSE;
-  if (it->data_flow_match_.valid == true) {
+    // match - START
 
-  // check match-ethernet
-    df_cmn->df_segment->df_common->match_count = 1;
-    pfc_log_debug("match count = %u",
-                  df_cmn->df_segment->df_common->match_count);
+    pfc_bool_t match_status = PFC_FALSE;
+    if (it->data_flow_match_.valid == true) {
 
-    // match-ethernet-vlan
-    uint32_t vlan = 0;
-    if (it->data_flow_match_.da_vtn_ether_match_.vlan != -1) {
+      // check match-ethernet
+      df_cmn->df_segment->df_common->match_count = 1;
+      pfc_log_debug("match count = %u",
+          df_cmn->df_segment->df_common->match_count);
+
+      // match-ethernet-vlan
+      uint32_t vlan = 0;
+      if (it->data_flow_match_.da_vtn_ether_match_.vlan != -1) {
         vlan = it->data_flow_match_.da_vtn_ether_match_.vlan;
-      if (vlan !=0) {
-        pfc_log_info("vlan -- %d", vlan);
-        pfc_log_info("valid vlan. set and send");
-        val_df_flow_match_vlan_id_t* val_vlan_id_obj =
+        if (vlan !=0) {
+          pfc_log_info("vlan -- %d", vlan);
+          pfc_log_info("valid vlan. set and send");
+          val_df_flow_match_vlan_id_t* val_vlan_id_obj =
             new val_df_flow_match_vlan_id_t;
-        memset(val_vlan_id_obj, 0, sizeof(val_df_flow_match_vlan_id_t));
-        val_vlan_id_obj->vlan_id = vlan;
+          memset(val_vlan_id_obj, 0, sizeof(val_df_flow_match_vlan_id_t));
+          val_vlan_id_obj->vlan_id = vlan;
+          df_cmn->df_segment->matches.insert(
+              std::pair<UncDataflowFlowMatchType, void *>
+              (UNC_MATCH_VLAN_ID, val_vlan_id_obj));
+        } else {
+          pfc_log_info("vlan is 0 and not set to send");
+        }
+      } else {
+        pfc_log_error(" vlan id not vaild");
+      }
+
+      // match-ethernet-src
+      std::string src = "";
+      if(!it->data_flow_match_.da_vtn_ether_match_.src_arr.empty()) {
+        src = it->data_flow_match_.da_vtn_ether_match_.src_arr;
+        pfc_log_info("src df -- %s", src.c_str());
+        pfc_log_info("ethernet-src. success");
+        val_df_flow_match_dl_addr_t* val_dl_addr_obj =
+          new val_df_flow_match_dl_addr_t;
+        memset(val_dl_addr_obj, 0, sizeof(val_df_flow_match_dl_addr_t));
+        OdcUtil util_obj;
+        util_obj.convert_macstring_to_uint8(src, val_dl_addr_obj->dl_addr);
+        pfc_log_debug(
+            "match-ethernet-src mac address %02x:%02x:%02x:%02x:%02x:%02x ",
+            val_dl_addr_obj->dl_addr[0],
+            val_dl_addr_obj->dl_addr[1],
+            val_dl_addr_obj->dl_addr[2],
+            val_dl_addr_obj->dl_addr[3],
+            val_dl_addr_obj->dl_addr[4],
+            val_dl_addr_obj->dl_addr[5]);
+        val_dl_addr_obj->v_mask = UNC_MATCH_MASK_INVALID;
         df_cmn->df_segment->matches.insert(
             std::pair<UncDataflowFlowMatchType, void *>
-            (UNC_MATCH_VLAN_ID, val_vlan_id_obj));
+            (UNC_MATCH_DL_SRC, val_dl_addr_obj));
       } else {
-        pfc_log_info("vlan is 0 and not set to send");
+        pfc_log_error(" src mac empty.continue");
       }
-    } else {
-      pfc_log_error(" vlan id not vaild");
-    }
 
-    // match-ethernet-src
-    std::string src = "";
-    if(!it->data_flow_match_.da_vtn_ether_match_.src_arr.empty()) {
-       src = it->data_flow_match_.da_vtn_ether_match_.src_arr;
-       pfc_log_info("src df -- %s", src.c_str());
-      pfc_log_info("ethernet-src. success");
-      val_df_flow_match_dl_addr_t* val_dl_addr_obj =
+      // match-ethernet-dst
+      std::string dst = "";
+      if(!it->data_flow_match_.da_vtn_ether_match_.dst_arr.empty()) {
+        dst = it->data_flow_match_.da_vtn_ether_match_.dst_arr;
+        pfc_log_info("ethernet-dst. success");
+        pfc_log_info("dst -- %s", dst.c_str());
+        val_df_flow_match_dl_addr_t* val_dl_addr_obj =
           new val_df_flow_match_dl_addr_t;
-      memset(val_dl_addr_obj, 0, sizeof(val_df_flow_match_dl_addr_t));
-      OdcUtil util_obj;
-      util_obj.convert_macstring_to_uint8(src, val_dl_addr_obj->dl_addr);
-      pfc_log_debug(
-          "match-ethernet-src mac address %02x:%02x:%02x:%02x:%02x:%02x ",
-          val_dl_addr_obj->dl_addr[0],
-          val_dl_addr_obj->dl_addr[1],
-          val_dl_addr_obj->dl_addr[2],
-          val_dl_addr_obj->dl_addr[3],
-          val_dl_addr_obj->dl_addr[4],
-          val_dl_addr_obj->dl_addr[5]);
-      val_dl_addr_obj->v_mask = UNC_MATCH_MASK_INVALID;
-      df_cmn->df_segment->matches.insert(
-          std::pair<UncDataflowFlowMatchType, void *>
-          (UNC_MATCH_DL_SRC, val_dl_addr_obj));
+        memset(val_dl_addr_obj, 0, sizeof(val_df_flow_match_dl_addr_t));
+        OdcUtil util_obj;
+        util_obj.convert_macstring_to_uint8(dst, val_dl_addr_obj->dl_addr);
+        pfc_log_debug(
+            "match-ethernet-dst mac address %02x:%02x:%02x:%02x:%02x:%02x ",
+            val_dl_addr_obj->dl_addr[0],
+            val_dl_addr_obj->dl_addr[1],
+            val_dl_addr_obj->dl_addr[2],
+            val_dl_addr_obj->dl_addr[3],
+            val_dl_addr_obj->dl_addr[4],
+            val_dl_addr_obj->dl_addr[5]);
+        val_dl_addr_obj->v_mask = UNC_MATCH_MASK_INVALID;
+        df_cmn->df_segment->matches.insert(
+            std::pair<UncDataflowFlowMatchType, void *>
+            (UNC_MATCH_DL_DST, val_dl_addr_obj));
+      } else {
+        pfc_log_error(" Empty ethernet-dst.continue");
+      }
+      match_status = PFC_TRUE;
+      pfc_log_debug("match_status:%d", match_status);
     } else {
-      pfc_log_error(" src mac empty.continue");
+      pfc_log_error("Error occured while parsing ethernet."
+          "continue for inetMatch.");
     }
-
-    // match-ethernet-dst
-    std::string dst = "";
-    if(!it->data_flow_match_.da_vtn_ether_match_.dst_arr.empty()) {
-       dst = it->data_flow_match_.da_vtn_ether_match_.dst_arr;
-      pfc_log_info("ethernet-dst. success");
-      pfc_log_info("dst -- %s", dst.c_str());
-      val_df_flow_match_dl_addr_t* val_dl_addr_obj =
-          new val_df_flow_match_dl_addr_t;
-      memset(val_dl_addr_obj, 0, sizeof(val_df_flow_match_dl_addr_t));
-      OdcUtil util_obj;
-      util_obj.convert_macstring_to_uint8(dst, val_dl_addr_obj->dl_addr);
-      pfc_log_debug(
-          "match-ethernet-dst mac address %02x:%02x:%02x:%02x:%02x:%02x ",
-          val_dl_addr_obj->dl_addr[0],
-          val_dl_addr_obj->dl_addr[1],
-          val_dl_addr_obj->dl_addr[2],
-          val_dl_addr_obj->dl_addr[3],
-          val_dl_addr_obj->dl_addr[4],
-          val_dl_addr_obj->dl_addr[5]);
-      val_dl_addr_obj->v_mask = UNC_MATCH_MASK_INVALID;
-      df_cmn->df_segment->matches.insert(
-          std::pair<UncDataflowFlowMatchType, void *>
-          (UNC_MATCH_DL_DST, val_dl_addr_obj));
-    } else {
-      pfc_log_error(" Empty ethernet-dst.continue");
-    }
-    match_status = PFC_TRUE;
-    pfc_log_debug("match_status:%d", match_status);
-  } else {
-    pfc_log_error("Error occured while parsing ethernet."
-                  "continue for inetMatch.");
-  }
-  if (it->data_flow_match_.valid == true) {
+    if (it->data_flow_match_.valid == true) {
       // match-inetMatch-inet4-src
       std::string src = "";
       if (!it->data_flow_match_.da_vtn_inet_match_.src_ip.empty()) {
@@ -356,17 +407,17 @@ UncRespCode OdcCtrDataFlowCommand::parse_flow_response_values(
         src = it->data_flow_match_.da_vtn_inet_match_.src_ip;
         pfc_log_info("src df -- %s", src.c_str());
         val_df_flow_match_ipv4_addr_t* val_ipv4_addr_obj =
-            new val_df_flow_match_ipv4_addr_t;
+          new val_df_flow_match_ipv4_addr_t;
         memset(val_ipv4_addr_obj, 0, sizeof(val_df_flow_match_ipv4_addr_t));
         memcpy(&val_ipv4_addr_obj->ipv4_addr, src.c_str(),
-               sizeof(val_df_flow_match_ipv4_addr_t));
+            sizeof(val_df_flow_match_ipv4_addr_t));
         val_ipv4_addr_obj->v_mask = UNC_MATCH_MASK_INVALID;
         df_cmn->df_segment->matches.insert(
             std::pair<UncDataflowFlowMatchType, void *>(UNC_MATCH_IPV4_SRC,
-                                                        val_ipv4_addr_obj));
+              val_ipv4_addr_obj));
       } else {
         pfc_log_error(" Empty value"
-                      "inetMatch-inet4-src.continue");
+            "inetMatch-inet4-src.continue");
       }
 
       // match-inetMatch-inet4-dst
@@ -376,17 +427,17 @@ UncRespCode OdcCtrDataFlowCommand::parse_flow_response_values(
         pfc_log_info("match-inetMatch-inet4-dst. success");
         pfc_log_info("dst -- %s", dst.c_str());
         val_df_flow_match_ipv4_addr_t* val_ipv4_addr_obj =
-            new val_df_flow_match_ipv4_addr_t;
+          new val_df_flow_match_ipv4_addr_t;
         memset(val_ipv4_addr_obj, 0, sizeof(val_df_flow_match_ipv4_addr_t));
         memcpy(&val_ipv4_addr_obj->ipv4_addr, dst.c_str(),
-               sizeof(val_df_flow_match_ipv4_addr_t));
+            sizeof(val_df_flow_match_ipv4_addr_t));
         val_ipv4_addr_obj->v_mask = UNC_MATCH_MASK_INVALID;
         df_cmn->df_segment->matches.insert(
             std::pair<UncDataflowFlowMatchType, void *>(UNC_MATCH_IPV4_DST,
-                                                        val_ipv4_addr_obj));
+              val_ipv4_addr_obj));
       } else {
         pfc_log_error(" Empty value"
-                      "match-inetMatch-inet4-dst.continue");
+            "match-inetMatch-inet4-dst.continue");
       }
 
       // match-inetMatch-inet4-protocol
@@ -396,15 +447,15 @@ UncRespCode OdcCtrDataFlowCommand::parse_flow_response_values(
         pfc_log_info("match-inetMatch-inet4-protocol. success");
         pfc_log_info("protocol -- %d", proto);
         val_df_flow_match_ip_proto_t* val_ip_proto_obj =
-            new val_df_flow_match_ip_proto_t;
+          new val_df_flow_match_ip_proto_t;
         memset(val_ip_proto_obj, 0, sizeof(val_df_flow_match_ip_proto_t));
         val_ip_proto_obj->ip_proto = proto;
         df_cmn->df_segment->matches.insert(
             std::pair<UncDataflowFlowMatchType, void *>(UNC_MATCH_IP_PROTO,
-                                                        val_ip_proto_obj));
+              val_ip_proto_obj));
       } else {
         pfc_log_error(" proto invaild"
-                      "match-inetMatch-inet4-protocol.continue");
+            "match-inetMatch-inet4-protocol.continue");
       }
       pfc_bool_t match_status = PFC_FALSE;
       pfc_log_debug("match_status:%d", match_status);
@@ -412,207 +463,207 @@ UncRespCode OdcCtrDataFlowCommand::parse_flow_response_values(
       pfc_log_error(" Error occured while parsing inetMatch-inet4. continue");
     }
 
-  if (match_status == PFC_TRUE) {
-    pfc_log_error("match_status is true. match found");
-    df_cmn->df_segment->df_common->valid[kidxDfDataFlowMatchCount] =
+    if (match_status == PFC_TRUE) {
+      pfc_log_error("match_status is true. match found");
+      df_cmn->df_segment->df_common->valid[kidxDfDataFlowMatchCount] =
         UNC_VF_VALID;
-  } else {
-    pfc_log_error("match_status is false. match NOT found");
-    df_cmn->df_segment->df_common->valid[kidxDfDataFlowMatchCount] =
+    } else {
+      pfc_log_error("match_status is false. match NOT found");
+      df_cmn->df_segment->df_common->valid[kidxDfDataFlowMatchCount] =
         UNC_VF_INVALID;
-  }
-  // match - END
+    }
+    // match - END
 
 
-  struct path_info {
-    std::string switchid;
-    std::string inport;
-    std::string outport;
-  };
-  std::list<physical_route>::iterator iter;
+    struct path_info {
+      std::string switchid;
+      std::string inport;
+      std::string outport;
+    };
+    std::list<physical_route>::iterator iter;
     uint32_t node_array_len = it->physical_route_.size();
 
     pfc_log_info("--------------path-info arraylength --- %d", node_array_len);
     struct path_info pathinfo_record[node_array_len];
     uint32_t order = 0;
     for (iter = it->physical_route_.begin(),order = 0; iter !=
-            it->physical_route_.end(),order < node_array_len; iter++,order++) {
+        it->physical_route_.end(),order < node_array_len; iter++,order++) {
       std::string pathinfo_switch_id = "";
       if(!iter->node.empty()) {
         pathinfo_switch_id = iter->node;
-      pfc_log_info("pathinfo_switch_id -- %s", pathinfo_switch_id.c_str());
-      pathinfo_record[order].switchid = pathinfo_switch_id;
+        pfc_log_info("pathinfo_switch_id -- %s", pathinfo_switch_id.c_str());
+        pathinfo_record[order].switchid = pathinfo_switch_id;
       } else {
-          pfc_log_error("invalid pathinfo_switch_id ");
-          return UNC_DRV_RC_ERR_GENERIC;
-     }
+        pfc_log_error("invalid pathinfo_switch_id ");
+        return UNC_DRV_RC_ERR_GENERIC;
+      }
 
       std::string inport_name = "";
       if (!iter->phy_ingr_port_.port_name_ing.empty()) {
         inport_name = iter->phy_ingr_port_.port_name_ing;
         pfc_log_info("pathinfo_inport_name -- %s", inport_name.c_str());
         pathinfo_record[order].inport =  inport_name;
-     } else {
-         pfc_log_error("invalid pathinfo_inport_name ");
-         return UNC_DRV_RC_ERR_GENERIC;
-     }
+      } else {
+        pfc_log_error("invalid pathinfo_inport_name ");
+        return UNC_DRV_RC_ERR_GENERIC;
+      }
 
       std::string outport_name = "";
       if (!iter->phy_egr_port_.port_name_eg.empty()) {
         outport_name = iter->phy_egr_port_.port_name_eg;
         pfc_log_info("pathinfo_outport_name -- %s", outport_name.c_str());
         pathinfo_record[order].outport = outport_name;
-    } else {
-         pfc_log_error("invalid pathinfo_inport_name ");
-         return UNC_DRV_RC_ERR_GENERIC;
-     }
-  }
+      } else {
+        pfc_log_error("invalid pathinfo_inport_name ");
+        return UNC_DRV_RC_ERR_GENERIC;
+      }
+    }
     pfc_log_info("controller name %s", key_ctr_dataflow.ctr_key.controller_name);
     /* copy controller name to dataflow common struct */
     memcpy(df_cmn->df_segment->df_common->controller_name,
-           key_ctr_dataflow.ctr_key.controller_name,
-           sizeof(key_ctr_dataflow.ctr_key.controller_name));
+        key_ctr_dataflow.ctr_key.controller_name,
+        sizeof(key_ctr_dataflow.ctr_key.controller_name));
     df_cmn->df_segment->df_common->valid[kidxDfDataFlowControllerName] =
-        UNC_VF_VALID;
+      UNC_VF_VALID;
     /* copy controller type to dataflow common struct */
     df_cmn->df_segment->df_common->controller_type = UNC_CT_ODC;
     df_cmn->df_segment->df_common->valid[kidxDfDataFlowControllerType] =
-        UNC_VF_VALID;
+      UNC_VF_VALID;
 
     /* copy flow-id to dataflow common struct */
     df_cmn->df_segment->df_common->flow_id = flowid;
     df_cmn->df_segment->df_common->valid[kidxDfDataFlowFlowId] = UNC_VF_VALID;
     pfc_log_info(" flow-id : %" PFC_PFMT_u64,
-                 df_cmn->df_segment->df_common->flow_id);
+        df_cmn->df_segment->df_common->flow_id);
     /* copy Status to dataflow common struct */
     df_cmn->df_segment->df_common->valid[kidxDfDataFlowStatus] =
-        UNC_VF_INVALID;
+      UNC_VF_INVALID;
     /* copy flow_type to dataflow common struct */
     df_cmn->df_segment->df_common->valid[kidxDfDataFlowFlowType] =
-        UNC_VF_INVALID;
+      UNC_VF_INVALID;
     /* copy PolicyIndex to dataflow common struct */
     df_cmn->df_segment->df_common->valid[kidxDfDataFlowPolicyIndex] =
-        UNC_VF_INVALID;
+      UNC_VF_INVALID;
     /* copy VtnId to dataflow common struct */
     df_cmn->df_segment->df_common->valid[kidxDfDataFlowVtnId] =
-        UNC_VF_INVALID;
+      UNC_VF_INVALID;
     /* copy Ingress SwitchId to dataflow common struct */
     strncpy(reinterpret_cast<char*> (
-            df_cmn->df_segment->df_common->ingress_switch_id),
-            switch_id.c_str(),
-            strlen(switch_id.c_str()));
+          df_cmn->df_segment->df_common->ingress_switch_id),
+        switch_id.c_str(),
+        strlen(switch_id.c_str()));
     df_cmn->df_segment->df_common->valid[kidxDfDataFlowIngressSwitchId] =
-        UNC_VF_VALID;
+      UNC_VF_VALID;
     pfc_log_info("switch_id : %s",
-                 df_cmn->df_segment->df_common->ingress_switch_id);
+        df_cmn->df_segment->df_common->ingress_switch_id);
 
     /* copy Ingress Port to dataflow common struct */
     strncpy(reinterpret_cast<char*>(df_cmn->df_segment->df_common->in_port),
-            in_portname.c_str(),
-            strlen(in_portname.c_str()));
+        in_portname.c_str(),
+        strlen(in_portname.c_str()));
     df_cmn->df_segment->df_common->valid[kidxDfDataFlowInPort] = UNC_VF_VALID;
     pfc_log_info("Ingress InPortName : %s",
-                 df_cmn->df_segment->df_common->in_port);
+        df_cmn->df_segment->df_common->in_port);
 
     /* copy Ingress StationId to dataflow common struct */
     df_cmn->df_segment->df_common->in_station_id = atoi(station_id.c_str());
     df_cmn->df_segment->df_common->valid[kidxDfDataFlowInStationId] =
-        UNC_VF_VALID;
+      UNC_VF_VALID;
     pfc_log_trace("station_id : %" PFC_PFMT_u64,
-                  df_cmn->df_segment->df_common->in_station_id);
+        df_cmn->df_segment->df_common->in_station_id);
 
     /* copy In-Domain DEFAULT to dataflow common struct */
     strncpy(reinterpret_cast<char*> (df_cmn->df_segment->df_common->in_domain),
-            DOM_NAME.c_str(), strlen(DOM_NAME.c_str()));
+        DOM_NAME.c_str(), strlen(DOM_NAME.c_str()));
     df_cmn->df_segment->df_common->valid[kidxDfDataFlowInDomain] =
-        UNC_VF_VALID;
+      UNC_VF_VALID;
     pfc_log_trace("ingress_domain %s",
-                  df_cmn->df_segment->df_common->in_domain);
+        df_cmn->df_segment->df_common->in_domain);
 
     /* copy Egress SwitchId to dataflow common struct */
     strncpy(reinterpret_cast<char*> (
-            df_cmn->df_segment->df_common->egress_switch_id),
+          df_cmn->df_segment->df_common->egress_switch_id),
         egress_switch_id.c_str(),
-            strlen(egress_switch_id.c_str()));
+        strlen(egress_switch_id.c_str()));
     df_cmn->df_segment->df_common->valid[kidxDfDataFlowEgressSwitchId] =
-        UNC_VF_VALID;
+      UNC_VF_VALID;
     pfc_log_trace("Egress SwitchId : %s",
-                  df_cmn->df_segment->df_common->egress_switch_id);
+        df_cmn->df_segment->df_common->egress_switch_id);
 
     /* copy Egress OutPort to dataflow common struct */
     strncpy(reinterpret_cast<char*> (
-            df_cmn->df_segment->df_common->out_port), out_portname.c_str(),
-            strlen(out_portname.c_str()));
+          df_cmn->df_segment->df_common->out_port), out_portname.c_str(),
+        strlen(out_portname.c_str()));
     df_cmn->df_segment->df_common->valid[kidxDfDataFlowOutPort] = UNC_VF_VALID;
     pfc_log_info("Egress Out-port_name %s",
-                 df_cmn->df_segment->df_common->out_port);
+        df_cmn->df_segment->df_common->out_port);
 
     /* copy Egress OutStationId to dataflow common struct */
     df_cmn->df_segment->df_common->out_station_id =
-        atoi(out_station_id.c_str());
+      atoi(out_station_id.c_str());
     df_cmn->df_segment->df_common->valid[kidxDfDataFlowOutStationId] =
-        UNC_VF_VALID;
+      UNC_VF_VALID;
     pfc_log_trace("Out-station_id : %" PFC_PFMT_u64,
-                  df_cmn->df_segment->df_common->out_station_id);
+        df_cmn->df_segment->df_common->out_station_id);
 
     /* copy Out-Domain DEFAULT to dataflow common struct */
     strncpy(reinterpret_cast<char*> (
-            df_cmn->df_segment->df_common->out_domain),
-            DOM_NAME.c_str(), strlen(DOM_NAME.c_str()));
+          df_cmn->df_segment->df_common->out_domain),
+        DOM_NAME.c_str(), strlen(DOM_NAME.c_str()));
     df_cmn->df_segment->df_common->valid[kidxDfDataFlowOutDomain] =
-        UNC_VF_VALID;
+      UNC_VF_VALID;
     pfc_log_trace("egress_Out-domain %s",
-                  df_cmn->df_segment->df_common->out_domain);
+        df_cmn->df_segment->df_common->out_domain);
 
     /* copy Path-info to dataflow common struct */
     if (node_array_len > 0) {
       df_cmn->df_segment->df_common->path_info_count = node_array_len;
       df_cmn->df_segment->df_common->valid[kidxDfDataFlowPathInfoCount] =
-          UNC_VF_VALID;
+        UNC_VF_VALID;
       for (uint32_t count = 0; count < node_array_len; count++) {
         val_df_data_flow_path_info *ptr = new val_df_data_flow_path_info;
         memset(ptr, 0, sizeof(val_df_data_flow_path_info_t));
         /* copy Path-info SwitchId to dataflow common struct */
         strncpy(reinterpret_cast<char*> (ptr->switch_id),
-                pathinfo_record[count].switchid.c_str(),
-                strlen(pathinfo_record[count].switchid.c_str()));
+            pathinfo_record[count].switchid.c_str(),
+            strlen(pathinfo_record[count].switchid.c_str()));
         pfc_log_info("pathinfo_Switch_name1 -- %s",
-                     pathinfo_record[count].switchid.c_str());
+            pathinfo_record[count].switchid.c_str());
         ptr->valid[kidxDfDataFlowPathInfoSwitchId] = UNC_VF_VALID;
         strncpy(reinterpret_cast<char*> (ptr->in_port),
-                pathinfo_record[count].inport.c_str(),
-                strlen(pathinfo_record[count].inport.c_str()));
+            pathinfo_record[count].inport.c_str(),
+            strlen(pathinfo_record[count].inport.c_str()));
         pfc_log_info("pathinfo_Inport_name1 -- %s",
-                     pathinfo_record[count].inport.c_str());
+            pathinfo_record[count].inport.c_str());
         ptr->valid[kidxDfDataFlowPathInfoInPort] = UNC_VF_VALID;
         strncpy(reinterpret_cast<char*> (ptr->out_port),
-                pathinfo_record[count].outport.c_str(),
-                strlen(pathinfo_record[count].outport.c_str()));
+            pathinfo_record[count].outport.c_str(),
+            strlen(pathinfo_record[count].outport.c_str()));
         pfc_log_info("pathinfo_Outport_name1 -- %s",
-                     pathinfo_record[count].outport.c_str());
+            pathinfo_record[count].outport.c_str());
         ptr->valid[kidxDfDataFlowPathInfoOutPort] = UNC_VF_VALID;
         df_cmn->df_segment->path_infos.push_back(ptr);
       }
     } else {
       df_cmn->df_segment->df_common->valid[kidxDfDataFlowPathInfoCount] =
-          UNC_VF_INVALID;
+        UNC_VF_INVALID;
       pfc_log_trace("There is no Physical path related Information");
     }
 
   }
   //else {
-    //pfc_log_info("no element for noderoute array");
- // }
+  //pfc_log_info("no element for noderoute array");
+  // }
   df_util->alternate_flow = PFC_TRUE;
   unc::vtnreadutil::driver_dataflow_read_util::add_read_value
-      (df_cmn, df_util);
+    (df_cmn, df_util);
   if (option1 == UNC_OPT1_DETAIL) {
     unc::vtnreadutil::driver_read_util_io<val_df_data_flow_st>::add_read_value
-        (&data_flow_st, df_util);
+      (&data_flow_st, df_util);
   }
   // df_util.appendFlow(df_cmn);
- //}
-  return UNC_RC_SUCCESS;
+  //}
+return UNC_RC_SUCCESS;
 }
 }  // namespace odcdriver
 }  // namespace unc

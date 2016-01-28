@@ -73,6 +73,7 @@ is_child=yes
 struct_name=par_flow_action
 members=order,par_vlanpcp,par_dscp,valid
 check_bool_set=yes
+mandatory=yes
 build_support=no
 parse_support=yes
 
