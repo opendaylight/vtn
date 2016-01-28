@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2015 NEC Corporation
+# Copyright (c) 2013-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -29,5 +29,4 @@ include ../rules.mk
 $(OBJ_OBJECTS):	$(REST_HEADERS)
 
 $(OBJDIR)/%.hh: %.rest
-	echo $(OBJDIR)
 	python -B $(CODE_GENERATE_SCRIPT) $< $(OBJDIR)/
