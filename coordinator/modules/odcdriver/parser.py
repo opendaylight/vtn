@@ -1,4 +1,4 @@
-# Copyright (c) 2015 NEC Corporation
+# Copyright (c) 2015-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -24,7 +24,7 @@ def ReadValues(filename,section):
 
 if __name__ == '__main__':
       print 'Cannot Run this module as it holds only methods'
-else:
-      print "Parser Module Loaded"
+#else:
+#      print "Parser Module Loaded"
 
 

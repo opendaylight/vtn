@@ -29,5 +29,4 @@ include ../rules.mk
 $(OBJ_OBJECTS):	$(REST_HEADERS)
 
 $(OBJDIR)/%.hh: %.rest
-	echo $(OBJDIR)
 	python -B $(CODE_GENERATE_SCRIPT) $< $(OBJDIR)/

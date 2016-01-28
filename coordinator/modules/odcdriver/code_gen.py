@@ -34,12 +34,12 @@ def begin_namespace(item, file_desc, output_file_name, d):
     odc_name = parser.ReadValues(item, 'ROOT')['namespace']
     namespace = "namespace unc {" + '\n' + 'namespace ' + odc_name + '{' +  '\n'
     test['headers']['namespace'] = namespace
-    print  test['headers']['namespace']
+    #print  test['headers']['namespace']
 
 # This method will generate multiple objects if parse class has nested objects
 def read_nested_object(item, file_desc, members, output_file_name, d):
-    print 'objects'
-    print 'members', members
+    #print 'objects'
+    #print 'members', members
     url_name = parser.ReadValues(item, 'ROOT')['url_class']
     parse_name = parser.ReadValues(item, 'ROOT')['parse_class']
     get_check = parser.ReadValues(item, parse_name).has_key('get_req')
@@ -47,11 +47,11 @@ def read_nested_object(item, file_desc, members, output_file_name, d):
     method = parser.ReadValues(item, 'ROOT')['methods']
     check_key = parser.ReadValues(item, url_name).has_key('interface')
     objects = ''
-    print check_key
+    #print check_key
     if str(check_key) == 'True':
         interface_members = parser.ReadValues(item, url_name)['interface']
         for members in interface_members.split(','):
-            print 'members-----1---', members
+            #print 'members-----1---', members
             objects = objects + 'std::string ' + 'get_%s'%(members.lower()) + '()'
             objects = objects + '{' +'\n\t'
             objects = objects + 'return %s_;'%(members) + '\n'
@@ -92,7 +92,7 @@ def read_nested_object(item, file_desc, members, output_file_name, d):
     objects = objects + '}' +'\n'
     objects = objects + ' pfc_log_error("Response data is NULL");' +'\n'
     objects = objects + 'return UNC_DRV_RC_ERR_GENERIC;'+ '\n' + '}' +'\n'
-    print objects
+    #print objects
     d['objects'] = objects
     file = open(output_file_name, "a")
     file.write(d['objects'])
@@ -110,7 +110,7 @@ def create_parser_class(item, file_desc, output_file_name, d):
     if str(get_check) == 'True':
       name = name + 'json_object *get_obj;' + '\n'
     d['class'] = name
-    print 'class_name', d['class']
+    #print 'class_name', d['class']
     file = open(output_file_name, "a")
     file.write(d['class'])
     file.close()
@@ -183,20 +183,20 @@ def fill_config(item, req_mem, file_desc, output_file_name, d):
     file.write(d['fill'])
     file.close()
     for child in child_reqmem.split(','):
-        print 'child-name---', child
+        #print 'child-name---', child
         child_type = parser.ReadValues(item, child)['type']
-        print 'child_type=====', child_type
+        #print 'child_type=====', child_type
         obj_in = 'obj_' + req_mem
     if child_type == 'array':
-        print "obj_in-------->1", obj_in
+        #print "obj_in-------->1", obj_in
         ar_obj = parse_array_object(item, child, obj_in, output_file_name, d)
-        print "json object to parse member:", ar_obj
+        #print "json object to parse member:", ar_obj
     elif child_type != 'array' and (check_mem == 'no'):
         child_struct = parser.ReadValues(item,child)['struct_name']
         array_index = "arr_idx"
         parse_member(item, child_struct, obj_in, child, array_index, output_file_name, d)
     elif child_type != 'array' and (check_mem == 'yes'):
-        print 'SWE ENTERING FIRST IF FOR check_mem'
+        #print 'SWE ENTERING FIRST IF FOR check_mem'
         child_key = parser.ReadValues(item, child)['key']
         parse_supp = parser.ReadValues(item,child)['parse_support']
         if parse_supp == 'yes':
@@ -220,7 +220,7 @@ def fill_config(item, req_mem, file_desc, output_file_name, d):
           fill_struct = fill_struct + '}' + '\n'
           child_mem = parser.ReadValues(item,child)['members']
           for child_st in child_mem.split(','):
-             print 'Printing child-name---', child_st
+             #print 'Printing child-name---', child_st
              parse_suppo = parser.ReadValues(item,child_st)['parse_support']
              child_key = parser.ReadValues(item,child_st)['key']
              if parse_suppo == 'yes':
@@ -262,20 +262,20 @@ def build_config(item, req_mem, file_desc, output_file_name, d):
         file.write(d['build_begin'])
         file.close()
         for child in childs.split(','):
-            print "child in build_config", child
+            #print "child in build_config", child
             build_type = parser.ReadValues(item, child)['build_support']
             if build_type != 'no':
                 child_type = parser.ReadValues(item, child)['type']
                 key_name = parser.ReadValues(item, child)['key']
                 key_s = key_name.replace('"', '')
-                print key_s
+                #print key_s
                 if child_type != 'struct':
                      write_build(item, key_name, struct_name, child, key_s, child_type, output_file_name, d)
                 elif child_type == 'struct' :
-                     print " struct---", key_name
+                     #print " struct---", key_name
                      st_name = struct_name +'_st.'+ child +'_'
                      parent_obj = 'jobj'
-                     print "st_name from build struct--->", st_name
+                     #print "st_name from build struct--->", st_name
                      build_struct(item, st_name, child, parent_obj, output_file_name, d)
                      st_name =''
         build_end = 'return jobj;' + '\n'
@@ -284,8 +284,8 @@ def build_config(item, req_mem, file_desc, output_file_name, d):
         file = open(output_file_name, "a")
         file.write(d['build_end'])
         file.close()
-    else:
-        print "parent struct doesn't support build"
+    #else:
+        #print "parent struct doesn't support build"
 
 # This method will generate build methods for structure members during the GET OPERATION
 def get_build_config(item, req_mem, file_desc, output_file_name, d):
@@ -305,20 +305,20 @@ def get_build_config(item, req_mem, file_desc, output_file_name, d):
         file.write(d['build_begin'])
         file.close()
         for child in childs.split(','):
-            print "child in build_config", child
+            #print "child in build_config", child
             build_type = parser.ReadValues(item, child)['build_support']
             if build_type != 'no':
                 child_type = parser.ReadValues(item, child)['type']
                 key_name = parser.ReadValues(item, child)['key']
                 key_s = key_name.replace('"', '')
-                print key_s
+                #print key_s
                 if child_type != 'struct':
                      write_build(item, key_name, struct_name, child, key_s, child_type, output_file_name, d)
                 elif child_type == 'struct' :
-                     print " struct---", key_name
+                     #print " struct---", key_name
                      st_name = struct_name +'_st.'+ child +'_'
                      parent_obj = 'jobj'
-                     print "st_name from build struct--->", st_name
+                     #print "st_name from build struct--->", st_name
                      build_struct(item, st_name, child, parent_obj, output_file_name, d)
                      st_name =''
         build_end = 'get_obj = jobj;' + '\n'
@@ -328,8 +328,8 @@ def get_build_config(item, req_mem, file_desc, output_file_name, d):
         file = open(output_file_name, "a")
         file.write(d['build_end'])
         file.close()
-    else:
-        print "parent struct doesn't support build"
+    #else:
+        #print "parent struct doesn't support build"
 # This method will generate delete methods for structure members
 def del_build_config(item, req_mem, file_desc, output_file_name, d):
     class_name = parser.ReadValues(item, 'ROOT')['parse_class']
@@ -348,7 +348,7 @@ def del_build_config(item, req_mem, file_desc, output_file_name, d):
         file.write(d['build_begin'])
         file.close()
         for child in childs.split(','):
-            print "Input STructure", child
+            #print "Input STructure", child
             child_type = parser.ReadValues(item, child)['type']
             if child_type == 'struct' :
                child_mem = parser.ReadValues(item, child)['members']
@@ -357,19 +357,19 @@ def del_build_config(item, req_mem, file_desc, output_file_name, d):
                build_st_end = ''
                for child_input in child_mem.split(','):
                   child_key = parser.ReadValues(item, child)['key']
-                  print "printing child_input values", child_input
+                  #print "#printing child_input values", child_input
                   build_type = parser.ReadValues(item, child_input)['build_support']
                   if build_type != 'no':
                      child_type = parser.ReadValues(item, child_input)['type']
                      key_name = parser.ReadValues(item, child_input)['key']
                      key_s = key_name.replace('"', '')
                      if ((child_input.endswith('name')) or (child_type == 'array')) :
-                        print "child_mem", child_input
-                        print "struct---", key_name
+                        #print "child_mem", child_input
+                        #print "struct---", key_name
                         st_name = struct_name +'_st.'+ child +'_'
                         write_st_name = struct_name +'_st.'+ child
                         parent_obj = 'jobj'
-                        print "st_name from build struct--->", st_name
+                        #print "st_name from build struct--->", st_name
                         if i == 0:
                            build_st_begin = 'if (%s.valid == true) {' %(st_name)+ '\n'
                            build_st_begin = build_st_begin + '\t' + 'json_object *%s_obj = unc::restjson::JsonBuildParse::create_json_obj();'%(child) + '\n'
@@ -383,11 +383,11 @@ def del_build_config(item, req_mem, file_desc, output_file_name, d):
                                 child_arr = parser.ReadValues(item,child_input)['members']
                                 for child_arr_mem in child_arr.split(','):
                                   del_check = parser.ReadValues(item,child_arr_mem).has_key('del_key')
-                                  print "array del check", del_check,child_arr_mem
+                                  #print "array del check", del_check,child_arr_mem
                                   if str(del_check) == 'True':
                                     key_del = parser.ReadValues(item,child_arr_mem)['del_key']
                                     key_delete = key_del.replace('"', '')
-                                    print "Checking the delete key", key_del,child_arr_mem
+                                    #print "Checking the delete key", key_del,child_arr_mem
                                     del_write_build(item, key_name, write_st_name, child_input, key_delete, child_type, child, output_file_name, d)
                               else :
                                 del_write_build(item, key_name, write_st_name, child_input, key_s, child_type, child, output_file_name, d)
@@ -400,15 +400,15 @@ def del_build_config(item, req_mem, file_desc, output_file_name, d):
                                     build_st_end = build_st_end + 'if(%s.%s != -1 '%(st_name, child_input)
                                  j = j+1
                               else :
-                                 print "inside else",i
+                                 #print "inside else",i
                                  if child_type == 'string':
                                    build_st_end = build_st_end + ' && (!%s.%s.empty())'%(st_name, child_input)
-                                   print "PRintingG 2", st_name, child_input
+                                   #print "PRintingG 2", st_name, child_input
                                  elif child_type == 'bool':
                                    build_st_end = build_st_end + ' && (%s.%s != PFC_FALSE '%(st_name, child_input)
                                  elif child_type == 'int':
                                    build_st_end = build_st_end + ' && (%s.%s != -1 '%(st_name, child_input)
-               print "i value after loop end",i
+               #print "i value after loop end",i
                if i != 0:
                   build_st_end = build_st_end + '){' + '\n'
                   build_st_end = build_st_end + '\t' + 'ret_val = unc::restjson::JsonBuildParse::build <json_object*>' + '\n'
@@ -441,8 +441,8 @@ def del_build_config(item, req_mem, file_desc, output_file_name, d):
         file = open(output_file_name, "a")
         file.write(d['build_end'])
         file.close()
-    else:
-        print "parent struct doesn't support build"
+    #else:
+        #print "parent struct doesn't support build"
 
 # This method will generate the request body for build members
 def write_build(item, key_name, struct_name, child, key_s, child_type, output_file_name, d):
@@ -466,7 +466,7 @@ def write_build(item, key_name, struct_name, child, key_s, child_type, output_fi
         file.write(d['build_member'])
         file.close()
     elif child_type == 'array':
-        print "array object build method"
+        #print "array object build method"
         members = parser.ReadValues(item, child)['members']
         build_member = build_member + 'json_object* %s_obj = unc::restjson::JsonBuildParse::create_json_array_obj();' %(child) + '\n'
         build_member = build_member + 'std::list <%s>::iterator %s=%s_st.%s_.begin();' %(child,iter,struct_name,child) + '\n'
@@ -493,8 +493,8 @@ def write_build(item, key_name, struct_name, child, key_s, child_type, output_fi
         file = open(output_file_name, "a")
         file.write(d['build_member_end'])
         file.close()
-    else:
-        print "unsupported type"
+    #else:
+        #print "unsupported type"
 
 # This method will generate delete request body for build members
 def del_write_build(item, key_name, struct_name, child, key, child_type, child_input, output_file_name, d):
@@ -517,7 +517,7 @@ def del_write_build(item, key_name, struct_name, child, key, child_type, child_i
         file.write(d['build_member'])
         file.close()
     elif child_type == 'array':
-        print "array object build method"
+        #print "array object build method"
         members = parser.ReadValues(item, child)['members']
         build_member = build_member + 'json_object* %s_obj = unc::restjson::JsonBuildParse::create_json_array_obj();' %(child) + '\n'
         build_member = build_member + 'std::list <%s>::iterator iter=%s_.%s_.begin();' %(child,struct_name,child) + '\n'
@@ -543,8 +543,8 @@ def del_write_build(item, key_name, struct_name, child, key, child_type, child_i
         file = open(output_file_name, "a")
         file.write(d['build_member_end'])
         file.close()
-    else:
-        print "unsupported type"
+    #else:
+        #print "unsupported type"
 
 def build_array_object(item, arr_mem, mem_obj, iter,output_file_name, d):
     mem_type = parser.ReadValues(item, arr_mem)['type']
@@ -563,7 +563,7 @@ def build_array_object(item, arr_mem, mem_obj, iter,output_file_name, d):
 def write_array_st_build(key_name, st_name, child, key_s, child_type, parent, output_file_name, d):
   #for build structmembers
     build_st_member = ''
-    print "inside write_array_st_build", child_type
+    #print "inside write_array_st_build", child_type
     if child_type == 'string' or child_type == 'int' or child_type == 'bool':
         if child_type == 'string':
             build_st_member = build_st_member + 'if(!%s%s.empty()){'%(st_name, child) + '\n'
@@ -581,8 +581,8 @@ def write_array_st_build(key_name, st_name, child, key_s, child_type, parent, ou
         file = open(output_file_name, "a")
         file.write(d['build_st_member'])
         file.close()
-    else:
-        print "unsupported type"
+    #else:
+        #print "unsupported type"
 
 
 # This method will generate build methods for nested-structure members
@@ -590,7 +590,7 @@ def write_st_build(item,key_name, st_name, child, key_s, child_type, parent, out
   #for build structmembers
     iter = "iter_" + child
     build_st_member = ''
-    print "inside write_st_build",child_type
+    #print "inside write_st_build",child_type
     if child_type == 'string' or child_type == 'int' or child_type == 'bool':
         if child_type == 'string':
             build_st_member = build_st_member + 'if(!%s.%s.empty()){'%(st_name, child) + '\n'
@@ -609,15 +609,15 @@ def write_st_build(item,key_name, st_name, child, key_s, child_type, parent, out
         file.write(d['build_st_member'])
         file.close()
     elif child_type == 'array':
-        print "array object build method"
+        #print "array object build method"
         members = parser.ReadValues(item, child)['members']
         build_arr_member = 'json_object* %s_obj = unc::restjson::JsonBuildParse::create_json_array_obj();' %(child) + '\n'
         if st_name.endswith('->'):
-           print "PRINTING ITER in write_st_build", st_name, child
+           #print "PRINTING ITER in write_st_build", st_name, child
            build_arr_member = build_arr_member + 'std::list <%s>::iterator %s = %s%s_.begin();' %(child,iter,st_name,child) + '\n'
            build_arr_member = build_arr_member + 'while ( %s != %s%s_.end() ) {' %(iter,st_name,child) + '\n'
         else:
-           print "PRINTING ITER in ELSE write_st_build", st_name,child
+           #print "PRINTING ITER in ELSE write_st_build", st_name,child
            build_arr_member = build_arr_member + 'std::list <%s>::iterator %s = %s.%s_.begin();' %(child,iter,st_name,child) + '\n'
            build_arr_member = build_arr_member + 'while ( %s != %s.%s_.end() ) {' %(iter,st_name,child) + '\n'
         build_arr_member = build_arr_member + 'json_object *jobj_%s = unc::restjson::JsonBuildParse::create_json_obj();' %(child) + '\n'
@@ -643,38 +643,38 @@ def write_st_build(item,key_name, st_name, child, key_s, child_type, parent, out
         file.write(d['build_arr_member_end'])
         file.close()
 
-    else:
-        print "unsupported type"
+    #else:
+        #print "unsupported type"
 
 # This method will only generate build methods if they are mandatory using the mandatory parameter in .rest files
 def build_struct(item, st_name, member, parent_obj, output_file_name, d):
-    print "child object received in build_struct", member
+    #print "child object received in build_struct", member
     build_st_begin = 'if (%s.valid == true) {' %(st_name)+ '\n'
     build_st_begin = build_st_begin + '\t' + 'json_object *%s_obj = unc::restjson::JsonBuildParse::create_json_obj();'%(member) + '\n'
     d['build_st_begin'] = build_st_begin
     file = open(output_file_name, "a")
     file.write(d['build_st_begin'])
     file.close()
-    print "st_name inside build_struct -->",st_name,member
+    #print "st_name inside build_struct -->",st_name,member
     st_child_mem = parser.ReadValues(item, member)['members']
     st_key = parser.ReadValues(item, member)['key']
     for child in st_child_mem.split(','):
-        print "child", child
+        #print "child", child
         parent = member + '_obj'
         build_type = parser.ReadValues(item, child)['build_support']
         if build_type != 'no':
             child_type = parser.ReadValues(item, child)['type']
             key_name = parser.ReadValues(item, child)['key']
             key_s = key_name.replace('"', '')
-            print key_s
+            #print key_s
             if child_type != 'struct':
                 write_st_build(item,key_name, st_name, child, key_s, child_type, parent, output_file_name, d)
             elif child_type == 'struct':
                 key_name = parser.ReadValues(item, child)['key']
                 key_s = key_name.replace('"', '')
-                print "struct---", key_name
+                #print "struct---", key_name
                 struct_name = st_name + '.'+ child +'_'
-                print "st_name to build struct--->", st_name
+                #print "st_name to build struct--->", st_name
                 build_struct(item, struct_name, child, parent, output_file_name, d)
                 struct_name = st_name
     i = 0
@@ -682,11 +682,11 @@ def build_struct(item, st_name, member, parent_obj, output_file_name, d):
     build_st_end = ''
     for child in st_child_mem.split(','):
         mandatory_parm = parser.ReadValues(item, child)['mandatory']
-        print "MANDAROTY PARAM", mandatory_parm, child
+        #print "MANDAROTY PARAM", mandatory_parm, child
         type_mem = parser.ReadValues(item, child)['type']
         if mandatory_parm != 'no' and type_mem != 'struct' :
              if i == 0:
-                print "inside if ",i
+                #print "inside if ",i
                 if type_mem == 'string':
                     build_st_end = 'if((!%s.%s.empty())'%(st_name, child)
                     i = i+1
@@ -694,12 +694,12 @@ def build_struct(item, st_name, member, parent_obj, output_file_name, d):
                     build_st_end = 'if((%s.%s != -1) '%(st_name, child)
                     i = i+1
              else:
-                print "inside else",i
+                #print "inside else",i
                 if type_mem == 'string':
                     build_st_end = build_st_end + ' && (!%s.%s.empty())'%(st_name, child)
                 elif type_mem == 'int':
                     build_st_end = build_st_end + ' && (%s.%s != -1) '%(st_name, child)
-    print "i value after loop end",i
+    #print "i value after loop end",i
     if i != 0:
       build_st_end = build_st_end + '){' + '\n'
       build_st_end = build_st_end + '\t' + 'ret_val = unc::restjson::JsonBuildParse::build <json_object*>' + '\n'
@@ -736,9 +736,9 @@ def parse_member(item, struct_name, obj_in, member, array_index,output_file_name
     struc_name = parser.ReadValues(item,member)['struct_name']
     parent_strct_type = parser.ReadValues(item, struc_name)['type']
     check_mand = parser.ReadValues(item,member)['mandatory']
-    print "Checking the struct types",class_struct, parent_strct_type
+    #print "Checking the struct types",class_struct, parent_strct_type
     key_s = req_key.replace('"', '')
-    print "type_key", type_name
+    #print "type_key", type_name
     parse = parser.ReadValues(item, member)['parse_support']
     if type_name == 'struct':
         parse_struct_object(item, struct_name, member, obj_in, array_index, output_file_name, d)
@@ -759,15 +759,15 @@ def parse_member(item, struct_name, obj_in, member, array_index,output_file_name
             file = open(output_file_name, "a")
             file.write(d['object'])
             file.close()
-        else:
-            print"member doesnot support parse"
+        #else:
+            #print"member doesnot support parse"
 
 # This method will parse the structure objects
 def parse_struct_object(item, struct_name, st_member, obj_in, array_index, output_file_name, d):
     req_key = parser.ReadValues(item, st_member)['key']
     sub_members = parser.ReadValues(item, st_member)['members']
     check_key = parser.ReadValues(item,st_member)['is_child']
-    print 'sub_members', sub_members
+    #print 'sub_members', sub_members
     parse_st =  'json_object *jobj_'+st_member + '= NULL;' +'\n'
     if check_key == 'no':
         parse_st = parse_st + 'ret_val = unc::restjson::JsonBuildParse::parse(%s,%s,-1,jobj_%s);'%(obj_in, req_key, st_member) + '\n'
@@ -783,12 +783,12 @@ def parse_struct_object(item, struct_name, st_member, obj_in, array_index, outpu
     file = open(output_file_name, "a")
     file.write(d['parse_st'])
     file.close()
-    print "parse_struct_object st_mem:", sub_members
-    print 'struct %s', st_member
+    #print "parse_struct_object st_mem:", sub_members
+    #print 'struct %s', st_member
     for member in sub_members.split(','):
-        print "submember in parse_struct_object:", member
+        #print "submember in parse_struct_object:", member
         sub_mem_type = parser.ReadValues(item, member)['type']
-        print 'sub_mem_type', sub_mem_type
+        #print 'sub_mem_type', sub_mem_type
         if sub_mem_type != 'array':
             st_name = struct_name +'.'+st_member+'_'
             parent_obj = 'jobj_' + st_member
@@ -855,19 +855,19 @@ def parse_array_object(item, member, obj_in, output_file_name, d):
     file.close()
     sub_member = parser.ReadValues(item, member)['members']
     for members in sub_member.split(','):
-        print "submember in parse_array_object:", members
+        #print "submember in parse_array_object:", members
         sub_mem_type = parser.ReadValues(item, members)['type']
         obj = 'obj_' + member
         s_name = parser.ReadValues(item, members)['struct_name']
         if sub_mem_type != 'array':
-            print "member send to parse_member", obj
+            #print "member send to parse_member", obj
             array_index = "arr_idx"
             parse_member(item, s_name, obj, members, array_index,output_file_name, d)
         elif sub_mem_type == 'array':
             prefix = 'st_' + st_name
             parse_nested_array_object(item, members, obj, output_file_name, d, prefix)
       #cal nested parse_array obj with prefix
-    print "PRINTING THE PUSH BACK" , st_name
+    #print "PRINTING THE PUSH BACK" , st_name
     loop_end = st_name +'_.push_back(st_%s);'%(st_name) + '\n'
     loop_end = loop_end +'}' + '\n'
 
@@ -880,13 +880,13 @@ def parse_array_object(item, member, obj_in, output_file_name, d):
 
 # This method will generate nested array for structure members
 def parse_nested_array_object(item, member, obj_in, output_file_name, d, prefix):
-    print "calling array nested obj"
+    #print "calling array nested obj"
     req_key = parser.ReadValues(item, member)['key']
     st_name = parser.ReadValues(item, member)['struct_name']
     parent_st_type = parser.ReadValues(item,st_name)['type']
     check_bool = parser.ReadValues(item, member)['check_bool_set']
     array_index = "arr_idx_" + st_name
-    print "array_index" , array_index
+    #print "array_index" , array_index
     array_len = "array_len_" + st_name
     object = 'uint32_t %s  = 0;' %(array_len)+ '\n'
     object = object + 'json_object *obj_%s = NULL;'%(member) +'\n'
@@ -918,29 +918,29 @@ def parse_nested_array_object(item, member, obj_in, output_file_name, d, prefix)
     file.close()
     sub_member = parser.ReadValues(item, member)['members']
     for members in sub_member.split(','):
-        print "submember in parse_array_object:", members
+        #print "submember in parse_array_object:", members
         sub_mem_type = parser.ReadValues(item, members)['type']
         check_key = parser.ReadValues(item, members).has_key('check_bool_set')
-        print 'subtype', sub_mem_type,check_key
+        #print 'subtype', sub_mem_type,check_key
         if sub_mem_type != 'array':
             s_name = parser.ReadValues(item, members)['struct_name']
             obj = 'obj_' + member
-            print "member send to parse_member", obj
+            #print "member send to parse_member", obj
             parse_member(item, s_name, obj, members, array_index, output_file_name, d)
         elif sub_mem_type == 'array' and str(check_key) == 'True':
               submem_check_bool = parser.ReadValues(item, members)['check_bool_set']
               if submem_check_bool == 'no':
-                print "SSS", prefix
+                #print "SSS", prefix
                 prefix =  prefix + '_.' + st_name
-                print "prefix value", prefix
+                #print "prefix value", prefix
                 parse_nested_array_object(item, members, obj_in, output_file_name, d, prefix)
-                print "PRINTING THE PUSH BACK IN NESTEDssss", prefix,st_name
+                #print "PRINTING THE PUSH BACK IN NESTEDssss", prefix,st_name
               elif submem_check_bool == 'yes':
-                print "SSSyy", prefix
+                #print "SSSyy", prefix
                 prefix =  '.' + st_name
                 parse_nested_array_object(item, members, obj_in, output_file_name, d, prefix)
-                print "PRINTING THE PUSH BACK IN NESTED", prefix,st_name
-    print "PRINTING THE PUSH BACK IN NESTED OUTSIDE", prefix,st_name
+                #print "PRINTING THE PUSH BACK IN NESTED", prefix,st_name
+    #print "PRINTING THE PUSH BACK IN NESTED OUTSIDE", prefix,st_name
     loop = prefix + '.%s_' %(st_name) + '.push_back(st_%s);'%(st_name)  + '\n'
     loop = loop +'}' + '\n'
     #find length parse child members if type array call again parse array with prefix
@@ -969,12 +969,12 @@ def end_class(item, file_desc):
     file.close()
 
 # End of the header files
-def end_footers(file_desc):
-    print 'footer'
+#def end_footers(file_desc):
+    #print 'footer'
 
 # This method will generate boolean data type for structure members
 def write_boolean(item, file_desc, member, output_file_name, d):
-    print 'boolean'
+    #print 'boolean'
     boolean = '\t' + 'bool %s;'%(member) + '\n'
     d['data_type'] = boolean
     with open(output_file_name, "a") as f:
@@ -982,18 +982,18 @@ def write_boolean(item, file_desc, member, output_file_name, d):
 
 # This method will generate nested objects based on element_type
 def nested_objects(item, file_desc, member, output_name, d):
-    print 'entering in to objects nested object method'
-    print 'members', member
-    print 'object'
+    #print 'entering in to objects nested object method'
+    #print 'members', member
+    #print 'object'
     members = parser.ReadValues(item, member)['members']
-    print 'object_members:', members
+    #print 'object_members:', members
     for obj_members in members.split(','):
-        print 'obj_members:', obj_members
+        #print 'obj_members:', obj_members
         element_type = parser.ReadValues(item, obj_members)['type']
-        print 'element_type:', element_type
-        print 'member:', obj_members
+        #print 'element_type:', element_type
+        #print 'member:', obj_members
         if element_type == 'array':
-            print 'calling', write_list
+            #print 'calling', write_list
             write_list(item, file_desc, obj_members, output_file_name, d)
         elif element_type == 'struct':
             write_struct(item, file_desc, obj_members, output_file_name, d)
@@ -1002,9 +1002,9 @@ def nested_objects(item, file_desc, member, output_name, d):
 
 # This method will write the structure name into the list
 def write_list(item, file_desc, member, output_file_name, d):
-    print 'list'
+    #print 'list'
     struct_name = parser.ReadValues(item, member)['struct_name']
-    print 'write list struct name', struct_name
+    #print 'write list struct name', struct_name
     list = '\t' + 'std::list<%s> %s_;'%(member, struct_name) + '\n'
     d['data_type'] = list
     with open(output_file_name, "a") as f:
@@ -1012,7 +1012,7 @@ def write_list(item, file_desc, member, output_file_name, d):
 
 # This method will generate struct data types for structure members
 def write_struct(item, file_desc, member, output_file_name, d):
-    print 'struct member'
+    #print 'struct member'
     struct = '\t' + '%s %s_;'%(member, member) + '\n'
     d['data_type'] = struct
     with open(output_file_name, "a") as f:
@@ -1020,22 +1020,22 @@ def write_struct(item, file_desc, member, output_file_name, d):
 
 # This method will generate array data types for structure members
 def write_array(item, file_desc, member, output_file_name, d):
-    print 'array'
-    print 'array_member', member
+    #print 'array'
+    #print 'array_member', member
     array = '\t' + '%s %s;'%(member, member) + '\n'
     d['data_type'] = array
     with open(output_file_name, "a") as f:
         f.write(d['data_type'])
     obj_sub_member = parser.ReadValues(item, member)['members']
     for obj_member in obj_sub_member.split(','):
-        print 'arrr', obj_member
+        #print 'arrr', obj_member
         element_type = parser.ReadValues(item, obj_member)['type']
-        print element_type
+        #print element_type
         write_options[element_type](item, file_desc, obj_member, output_file_name, d)
 
 # This method will generate integer data types for structure members
 def write_integer(item, file_desc, member, output_file_name, d):
-    print 'integer'
+    #print 'integer'
     integer = '\t' + 'int %s;'%(member) + '\n'
     d['data_type'] = integer
     with open(output_file_name, "a") as f:
@@ -1043,7 +1043,7 @@ def write_integer(item, file_desc, member, output_file_name, d):
 
 # This method will generate long integer data types for structure members
 def write_long(item, file_desc, member, output_file_name, d):
-    print 'long int'
+    #print 'long int'
     long = '\t' + 'long  long %s;'%(member) + '\n'
     d['data_type'] = long
     with open(output_file_name, "a") as f:
@@ -1051,7 +1051,7 @@ def write_long(item, file_desc, member, output_file_name, d):
 
 # This method will generate string data types for structure members
 def write_string(item, file_desc, obj_member, output_file_name, d):
-    print 'string'
+    #print 'string'
     string = '\t' + 'std::string %s;'%(obj_member)+ '\n'
     d['data_type'] = string
     with open(output_file_name, "a") as f:
@@ -1061,36 +1061,36 @@ def write_string(item, file_desc, obj_member, output_file_name, d):
 def typedef_structure(item, file_desc, method, output_file_name, d):
     struct_members = parser.ReadValues(item, 'ROOT')['data']
     struct_type = parser.ReadValues(item, 'ROOT')['struct_type']
-    print 'members-->', struct_members
+    #print 'members-->', struct_members
     for member in struct_members.split(','):
-        print member
+        #print member
         members = 'struct %s {'%(member) + '\n'
         members = members + '\t' + 'public:' + '\n'
         d['struct'] = members
         with open(output_file_name, "a")as f:
             f.write(d['struct'])
         element_type = parser.ReadValues(item, member)['type']
-        print 'member-->', 'element_type-->', member, element_type
-        print 'member to send', member
+        #print 'member-->', 'element_type-->', member, element_type
+        #print 'member to send', member
         nested_objects(item, file_desc, member, output_file_name, d)
         code = parser.ReadValues(item, member)['members']
-        print 'Structure details',code
+        #print 'Structure details',code
         m_count = 0
         for name in code.split(','):
             name_type = parser.ReadValues(item,name)['type']
             m_count = m_count +1
-            print 'count', m_count
+            #print 'count', m_count
         if m_count == 0:
-            print 'count', m_count
+            #print 'count', m_count
             members = '%s()'%(member) + '\n'
         if m_count == 1:
              if name_type == 'array' or name_type == 'struct':
                 members = '%s()'%(member) + '\n'
              else :
                 members = '%s():'%(member) + '\n'
-             print 'count', m_count
+             #print 'count', m_count
         elif m_count > 1:
-            print 'count', m_count
+            #print 'count', m_count
             members = '%s():'%(member) + '\n'
         d['construct'] = members
         with open(output_file_name, "a") as f:
@@ -1099,8 +1099,8 @@ def typedef_structure(item, file_desc, method, output_file_name, d):
         i = 0
         for obj_members in child.split(','):
           element_type = parser.ReadValues(item, obj_members)['type']
-          print 'element_type:', element_type
-          print 'member:', obj_members
+          #print 'element_type:', element_type
+          #print 'member:', obj_members
           if i == 0:
             if element_type == 'string':
               initialize = '\t' + '%s'%(obj_members) + '("")' +'\n'
@@ -1109,7 +1109,7 @@ def typedef_structure(item, file_desc, method, output_file_name, d):
             elif element_type == 'bool':
               initialize = '\t' + '%s'%(obj_members) + '(false)' +'\n'
             else:
-              print "element type is struct or array"
+              #print "element type is struct or array"
               i = 0
               continue
             if element_type != 'struct' and element_type != 'array':
@@ -1124,8 +1124,8 @@ def typedef_structure(item, file_desc, method, output_file_name, d):
               initialize = '\t' + ',%s'%(obj_members) + '(-1)' +'\n'
             elif element_type == 'bool':
               initialize = '\t' + ',%s'%(obj_members) + '(false)' + '\n'
-            else:
-              print "element type is struct or array"
+            #else:
+              #print "element type is struct or array"
             if element_type != 'struct' and element_type != 'array':
               d['initialize'] = initialize
               f = open(output_file_name, "a")
@@ -1144,8 +1144,8 @@ write_options = {'bool': write_boolean, 'int': write_integer, 'string' : write_s
 # This method will generate parser class
 def class_names(item, file_desc, url_name, output_file_name, d):
     method_name = str(url_name)
-    print 'method_name', method_name
-    print  'public:'
+    #print 'method_name', method_name
+    #print  'public:'
     d['class_name'] = 'class %s {' %(method_name.lower()) + '\n' + 'public:' + '\n\t'
     file = open(output_file_name, "a")
     file.write(d['class_name'])
@@ -1187,9 +1187,9 @@ def class_name(item, file_desc):
               get_url_Read(item, file_desc, method, output_file_name, test)
               CU  = ['CREATE', 'UPDATE']
               for index in range(len(CU)):
-                  print len(CU)
+                  #print len(CU)
                   element = CU[index]
-                  print element
+                  #print element
                   if 'CREATE' in element:
                       create_CU_method(item, 'post', 'HTTP_METHOD_POST', 'HTTP_200_RESP_OK')
                   elif 'UPDATE' in element:
@@ -1197,7 +1197,7 @@ def class_name(item, file_desc):
                   else:
                       return 0
                   index = index +1
-                  print index
+                  #print index
             elif type == 'DEL':
                 get_del_url_Read(item, file_desc, method, output_file_name, test)
                 create_DEL_method(item, 'delete', 'HTTP_METHOD_POST', 'HTTP_200_RESP_OK')
@@ -1207,7 +1207,7 @@ def class_name(item, file_desc):
 def create_CU_method(item, operation, HTTP_METHOD_OPERATION, HTTP_CODE_RESP):
     class_name = parser.ReadValues(item, 'ROOT')['url_class']
     check_key = parser.ReadValues(item, class_name).has_key('set_delete')
-    print str(check_key)
+    #print str(check_key)
     if HTTP_METHOD_OPERATION == 'HTTP_METHOD_POST' or HTTP_METHOD_OPERATION == 'HTTP_METHOD_PUT':
         objects = 'UncRespCode  set_'+ operation + '(json_object *jobj){' + '\n'
         objects = objects + '\t' + 'std::string url = (get_cu_url());' + '\n'
@@ -1230,7 +1230,7 @@ def create_CU_method(item, operation, HTTP_METHOD_OPERATION, HTTP_CODE_RESP):
     objects = objects + '\n' + '\t\t'+'return UNC_DRV_RC_ERR_GENERIC;' +'\n' + '}'
     objects = objects +  '\n' + 'return UNC_RC_SUCCESS;' +'\n' '}' + '\n'
     d['objects'] = objects
-    print objects
+    #print objects
     file = open(output_file_name, "a")
     file.write(d['objects'])
     file.close()
@@ -1239,7 +1239,7 @@ def create_CU_method(item, operation, HTTP_METHOD_OPERATION, HTTP_CODE_RESP):
 def create_DEL_method(item, operation, HTTP_METHOD_OPERATION, HTTP_CODE_RESP):
     class_name = parser.ReadValues(item, 'ROOT')['url_class']
     check_key = parser.ReadValues(item, class_name).has_key('set_delete')
-    print str(check_key)
+    #print str(check_key)
     if(check_key):
         objects = 'UncRespCode  set_'+ operation + '(std::string  end_url){' + '\n'
         objects = objects + '\t' + 'std::string url = (get_del_url());' + '\n'
@@ -1262,7 +1262,7 @@ def create_DEL_method(item, operation, HTTP_METHOD_OPERATION, HTTP_CODE_RESP):
     objects = objects + '\n' + '\t\t'+'return UNC_DRV_RC_ERR_GENERIC;' +'\n' + '}'
     objects = objects +  '\n' + 'return UNC_RC_SUCCESS;' +'\n' '}' + '\n'
     d['objects'] = objects
-    print objects
+    #print objects
     file = open(output_file_name, "a")
     file.write(d['objects'])
     file.close()
@@ -1270,24 +1270,24 @@ def create_DEL_method(item, operation, HTTP_METHOD_OPERATION, HTTP_CODE_RESP):
 # It will create GET URL method
 def get_url_creation(item, file_desc, methods, output_file_name, d):
     url_name = parser.ReadValues(item, 'READ')['url']
-    print 'url_name', url_name
+    #print 'url_name', url_name
     url_format = parser.ReadValues(item, url_name)['url_format']
-    print 'url_format', url_format
-    print len(url_format)
-    print url_format
+    #print 'url_format', url_format
+    #print len(url_format)
+    #print url_format
     a = url_format.split(',')
-    print 'split_name', a
+    #print 'split_name', a
     base_url = ''
-    print 'base_url', base_url
+    #print 'base_url', base_url
     base_url = base_url + '\t\t' +  'std::string get_url() {' + '\n'
     base_url = base_url + '\t\t' +  'std::string url = "";' + '\n'
     for members in url_format.split(','):
-        print members
-        print 'url_format', url_name
+        #print members
+        #print 'url_format', url_name
         check_key = parser.ReadValues(item, members).has_key('value')
         check_get_abstract_key = parser.ReadValues(item, members).has_key('get_abstract')
-        print 'get_abstract', check_get_abstract_key
-        print 'check_key', check_key
+        #print 'get_abstract', check_get_abstract_key
+        #print 'check_key', check_key
         if str(check_key) == 'True':
             value = parser.ReadValues(item, members)['value']
             base_url = base_url + '\t\t' + 'url.append(%s);' %(value) + '\n'
@@ -1303,24 +1303,24 @@ def get_url_creation(item, file_desc, methods, output_file_name, d):
 # READ method for Create, Update URL's
 def get_url_Read(item, file_desc, methods, output_file_name, d):
     url_name = parser.ReadValues(item, 'CU')['url']
-    print 'url_name', url_name
+    #print 'url_name', url_name
     url_format = parser.ReadValues(item, url_name)['url_format']
-    print 'url_format', url_format
-    print len(url_format)
-    print url_format
+    #print 'url_format', url_format
+    #print len(url_format)
+    #print url_format
     a = url_format.split(',')
-    print 'split_name', a
+    #print 'split_name', a
     base_url = ''
-    print 'base_url', base_url
+    #print 'base_url', base_url
     base_url = 'std::string get_cu_url() {' + '\n'
     base_url = base_url + '\t\t' +  'std::string url = "";' + '\n'
     for members in url_format.split(','):
-        print members
-        print 'url_format', url_name
+        #print members
+        #print 'url_format', url_name
         check_key = parser.ReadValues(item, members).has_key('value')
         check_get_abstract_key = parser.ReadValues(item, members).has_key('get_abstract')
-        print 'get_abstract', check_get_abstract_key
-        print 'check_key', check_key
+        #print 'get_abstract', check_get_abstract_key
+        #print 'check_key', check_key
         if str(check_key) == 'True':
             value = parser.ReadValues(item, members)['value']
             base_url = base_url + '\t\t' + 'url.append(%s);' %(value) + '\n'
@@ -1336,24 +1336,24 @@ def get_url_Read(item, file_desc, methods, output_file_name, d):
 # READ method for Delete URL's
 def get_del_url_Read(item, file_desc, methods, output_file_name, d):
     url_name = parser.ReadValues(item, 'DEL')['url']
-    print 'url_name', url_name
+    #print 'url_name', url_name
     url_format = parser.ReadValues(item, url_name)['url_format']
-    print 'url_format', url_format
-    print len(url_format)
-    print url_format
+    #print 'url_format', url_format
+    #print len(url_format)
+    #print url_format
     a = url_format.split(',')
-    print 'split_name', a
+    #print 'split_name', a
     base_url = ''
-    print 'base_url', base_url
+    #print 'base_url', base_url
     base_url = 'std::string get_del_url() {' + '\n'
     base_url = base_url + '\t\t' +  'std::string url = "";' + '\n'
     for members in url_format.split(','):
-        print members
-        print 'url_format', url_name
+        #print members
+        #print 'url_format', url_name
         check_key = parser.ReadValues(item, members).has_key('value')
         check_get_abstract_key = parser.ReadValues(item, members).has_key('get_abstract')
-        print 'get_abstract', check_get_abstract_key
-        print 'check_key', check_key
+        #print 'get_abstract', check_get_abstract_key
+        #print 'check_key', check_key
         if str(check_key) == 'True':
             value = parser.ReadValues(item, members)['value']
             base_url = base_url + '\t\t' + 'url.append(%s);' %(value) + '\n'
@@ -1367,13 +1367,13 @@ def get_del_url_Read(item, file_desc, methods, output_file_name, d):
     file.close()
 
 def method(item, file_desc, output_file_name, d):
-    print 'method implementation'
+    #print 'method implementation'
     methods = parser.ReadValues(item, 'ROOT')['methods']
-    print 'methods', methods
+    #print 'methods', methods
     for method in methods.split(','):
-        print method
+        #print method
         Element_Type = parser.ReadValues(item, method)['type']
-        print Element_Type
+        #print Element_Type
         if Element_Type == 'POST' or Element_Type == 'PUT' or Element_Type == 'DELETE'\
             or Element_Type == 'GET' or Element_Type == 'VALIDATE' or Element_Type == 'READ':
             write_methods[Element_Type](item, file_desc, method, output_file_name, test)
@@ -1387,13 +1387,13 @@ def write_headers(item, file_desc, output_file_name, test):
 
 # This method will generate the build and parse methods for structure members
 def json_build_parse(item, file_desc, output_file_name, d):
-    print "Json Build Parse Started"
+    #print "Json Build Parse Started"
     begin_headers(item, file_desc, output_file_name, d)
     begin_include(item, file_desc, output_file_name, d)
     begin_namespace(item, file_desc, output_file_name, d)
     write_headers(item, file_desc, output_file_name, test)
     parser_valide = parser.ReadValues(item, 'ROOT').has_key('parse_class')
-    print 'parser_valide', parser_valide
+    #print 'parser_valide', parser_valide
     if str(parser_valide) == 'True':
         typedef_structure(item, file_desc, method, output_file_name, d)
         create_parser_class(item, file_desc, output_file_name, d)
@@ -1401,13 +1401,13 @@ def json_build_parse(item, file_desc, output_file_name, d):
     class_name(item, file_desc)
     end_class(item, file_desc)
     end_namespace(item, file_desc)
-    end_footers(file_desc)
+    #end_footers(file_desc)
 
 # Main Function
 if __name__ == '__main__':
     test = collections.defaultdict(dict)
     test['structs'] = collections.defaultdict(dict)
-    print 'dict', test['structs']
+    #print 'dict', test['structs']
     rest_file = sys.argv[1]
     output_file_name = sys.argv[2]
     file_name = rest_file[:-4] + 'hh'
