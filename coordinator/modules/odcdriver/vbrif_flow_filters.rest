@@ -25,6 +25,10 @@ value="vtn:vtns/vtn"
 type=url_string
 value="vbridge"
 
+[interface]
+type=url_string
+value="vinterface"
+
 [vinterface_input_filter]
 type=url_string
 value="vinterface-input-filter"
@@ -59,7 +63,7 @@ get_abstract=yes
 
 [VBRIF_FLOWFILTER_ENTRY_GETSUPPORT_URL]
 type=url_string
-url_format=GET_BASEURL,SLASH,VTN,SLASH,tenantName,SLASH,bridgeName,SLASH,ifName
+url_format=GET_BASEURL,SLASH,VTN,SLASH,tenantName,SLASH,vbridge,SLASH,bridgeName,SLASH,interface,SLASH,ifName
 
 [VBRIF_FLOWFILTER_ENTRY_COMANSUPPORT_URL]
 type=url_string
@@ -411,7 +415,7 @@ key="vtn-flow-action"
 is_child=yes
 struct_name=vbrif_flow_action
 members=order,vbrif_dlsrc,vbrif_vlanpcp,vbrif_dldst,vbrif_inet4src,vbrif_inet4dst,vbrif_dscp,vbrif_tpsrc,vbrif_tpdst,vbrif_icmptype,vbrif_icmpcode,valid
-check_bool_set=no
+check_bool_set=yes
 mandatory=no
 build_support=no
 parse_support=yes

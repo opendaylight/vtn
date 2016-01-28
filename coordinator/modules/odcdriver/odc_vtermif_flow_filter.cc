@@ -425,9 +425,9 @@ void OdcVTermIfFlowFilterEntryCmd::delete_request_body(
              reinterpret_cast<char*>(key_in.flowfilter_key.if_key.if_name);
 
      if (key_in.flowfilter_key.direction == UPLL_FLOWFILTER_DIR_OUT)
-       ip_vterm_if_flowfilter_st.input_vtermif_flow_filter_.output = "true";
+       ip_vterm_if_flowfilter_st.input_vtermif_flow_filter_.output = true;
      else if (key_in.flowfilter_key.direction == UPLL_FLOWFILTER_DIR_IN)
-       ip_vterm_if_flowfilter_st.input_vtermif_flow_filter_.output = "false";
+       ip_vterm_if_flowfilter_st.input_vtermif_flow_filter_.output = false;
 
      vtermin_flow_filter flowfilter_;
      flowfilter_.index = key_in.sequence_num;
@@ -536,9 +536,9 @@ void OdcVTermIfFlowFilterEntryCmd::delete_request_body(
         reinterpret_cast<char*>(key_in.flowfilter_key.if_key.if_name);
 
     if (key_in.flowfilter_key.direction == UPLL_FLOWFILTER_DIR_OUT)
-      ip_vterm_if_flowfilter_st.input_vtermif_flow_filter_.output = "true";
+      ip_vterm_if_flowfilter_st.input_vtermif_flow_filter_.output = true;
     else if (key_in.flowfilter_key.direction == UPLL_FLOWFILTER_DIR_IN)
-      ip_vterm_if_flowfilter_st.input_vtermif_flow_filter_.output = "false";
+      ip_vterm_if_flowfilter_st.input_vtermif_flow_filter_.output = false;
 
     vtermin_flow_filter flowfilter_;
 

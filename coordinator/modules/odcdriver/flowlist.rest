@@ -318,6 +318,7 @@ check_bool_set=yes
 struct_name=vtn_flow_match
 members=flow_index,vtn_ether_match,vtn_inet_match,icmp_type,icmp_code,tcp_source_range,tcp_destination_range,pa_udp_source_range,pa_udp_destination_range,valid
 build_support=no
+mandatory=yes
 parse_support=yes
 
 [name]
@@ -345,6 +346,7 @@ is_child=yes
 check_bool_set=no
 struct_name = flowlist
 members= name,vtn_flow_match
+mandatory=yes
 build_support=no
 parse_support=yes
 
