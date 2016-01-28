@@ -259,7 +259,7 @@ void OdcVtnFlowFilterEntryCmd::
     ODC_FUNC_TRACE;
 
     ip_vtn_flowfilter_st.input_vtn_flowfilter_.valid = true;
-    ip_vtn_flowfilter_st.input_vtn_flowfilter_.output = "false";
+    ip_vtn_flowfilter_st.input_vtn_flowfilter_.output = false;
     ip_vtn_flowfilter_st.input_vtn_flowfilter_.tenant_name =
            (reinterpret_cast<char*>(key_in.flowfilter_key.vtn_key.vtn_name));
 
@@ -309,7 +309,7 @@ void OdcVtnFlowFilterEntryCmd::
     ODC_FUNC_TRACE;
 
     ip_vtn_flowfilter_st.input_vtn_flowfilter_.valid = true;
-    ip_vtn_flowfilter_st.input_vtn_flowfilter_.output = "false";
+    ip_vtn_flowfilter_st.input_vtn_flowfilter_.output = false;
     ip_vtn_flowfilter_st.input_vtn_flowfilter_.tenant_name =
              (reinterpret_cast<char*>(key_in.flowfilter_key.vtn_key.vtn_name));
 

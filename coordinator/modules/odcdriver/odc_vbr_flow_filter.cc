@@ -115,7 +115,7 @@ OdcVbrFlowFilterCmd::r_copy(std::list<flow_filter> &filter_detail,
       // Key VTN Flow Filter Entry
       key_entry.sequence_num=iter->index;
       memcpy(&key_entry.flowfilter_key,&key_filter,
-             sizeof(key_vbr_flowfilter));
+             sizeof(key_vbr_if_flowfilter));
 
       // VAL VTN Flow Filter Entry
       strncpy(reinterpret_cast<char*> (val_entry.flowlist_name),
@@ -344,7 +344,10 @@ void OdcVbrFlowFilterEntryCmd::copy(ip_vbr_flowfilter&  ip_vbr_flowfilter_st,
     ODC_FUNC_TRACE;
 
     ip_vbr_flowfilter_st.input_flow_filter_.valid = true;
-    ip_vbr_flowfilter_st.input_flow_filter_.output = false;
+    if (key_in.flowfilter_key.direction == UPLL_FLOWFILTER_DIR_OUT)
+      ip_vbr_flowfilter_st.input_flow_filter_.output = true;
+    else if (key_in.flowfilter_key.direction == UPLL_FLOWFILTER_DIR_IN)
+      ip_vbr_flowfilter_st.input_flow_filter_.output = false;
     ip_vbr_flowfilter_st.input_flow_filter_.tenant_name = (reinterpret_cast<
                        char*>(key_in.flowfilter_key.vbr_key.vtn_key.vtn_name));
     ip_vbr_flowfilter_st.input_flow_filter_.bridge_name = (reinterpret_cast<
@@ -457,7 +460,10 @@ void OdcVbrFlowFilterEntryCmd::copy(ip_vbr_flowfilter&  ip_vbr_flowfilter_st,
 
 
     ip_vbr_flowfilter_st.input_flow_filter_.valid = true;
-    ip_vbr_flowfilter_st.input_flow_filter_.output = "false";
+    if (key_in.flowfilter_key.direction == UPLL_FLOWFILTER_DIR_OUT)
+      ip_vbr_flowfilter_st.input_flow_filter_.output = true;
+    else if (key_in.flowfilter_key.direction == UPLL_FLOWFILTER_DIR_IN)
+      ip_vbr_flowfilter_st.input_flow_filter_.output = false;
     ip_vbr_flowfilter_st.input_flow_filter_.tenant_name =
       (reinterpret_cast<char*>(key_in.flowfilter_key.vbr_key.vtn_key.vtn_name));
     ip_vbr_flowfilter_st.input_flow_filter_.bridge_name =
@@ -551,11 +557,13 @@ void OdcVbrFlowFilterEntryCmd::copy(ip_vbr_flowfilter&  ip_vbr_flowfilter_st,
           vtn_flow_filter_.vtn_redirect_filter_.redirect_output = true;
       }
     }
-
+    uint8_t order = 1;
     if (value_new_in.valid[UPLL_IDX_DSCP_FFE] == UNC_VF_VALID) {
       vtn_flow_action action_st;
       action_st.ip_dscp_.valid = true;
       action_st.ip_dscp_.dscp_value = value_new_in.dscp;
+      action_st.order = order;
+      order ++;
       pfc_log_info("New value structure of dscp attribute %d", value_new_in.dscp);
       vtn_flow_filter_.vtn_flow_action_.push_back(action_st);
       pfc_log_info("New value structure of dscp attribute PUSHED ");
@@ -564,6 +572,8 @@ void OdcVbrFlowFilterEntryCmd::copy(ip_vbr_flowfilter&  ip_vbr_flowfilter_st,
          vtn_flow_action action_st;
          action_st.ip_dscp_.valid = true;
          action_st.ip_dscp_.dscp_value = value_old_in.dscp;
+         action_st.order = order;
+         order ++;
          vtn_flow_filter_.vtn_flow_action_.push_back(action_st);
       } else {
     pfc_log_info("INVALID for new and old value structures of dscp attribute ");
@@ -572,12 +582,16 @@ void OdcVbrFlowFilterEntryCmd::copy(ip_vbr_flowfilter&  ip_vbr_flowfilter_st,
       vtn_flow_action action_st;
       action_st.ip_vlanpcp_.valid =true ;
       action_st.ip_vlanpcp_.vlan_pcp = value_new_in.priority;
+      action_st.order = order;
+      order ++;
       vtn_flow_filter_.vtn_flow_action_.push_back(action_st);
     } else if (value_new_in.valid[UPLL_IDX_PRIORITY_FFE] == UNC_VF_INVALID &&
                  value_old_in.valid[UPLL_IDX_PRIORITY_FFE] == UNC_VF_VALID ) {
         vtn_flow_action action_st;
         action_st.ip_vlanpcp_.valid =true ;
         action_st.ip_vlanpcp_.vlan_pcp = value_old_in.priority;
+        action_st.order = order;
+        order ++;
         vtn_flow_filter_.vtn_flow_action_.push_back(action_st);
       } else {
         pfc_log_info("INVALID for new and old value structures of PRIORITY ");
@@ -591,6 +605,8 @@ void OdcVbrFlowFilterEntryCmd::copy(ip_vbr_flowfilter&  ip_vbr_flowfilter_st,
       unc::odcdriver::OdcUtil util_;
       action_st.ip_dldst_.dlsdt_address = util_.macaddress_to_string(
                                     &value_new_in.modify_dstmac[0]);
+      action_st.order = order;
+      order ++;
       vtn_flow_filter_.vtn_flow_action_.push_back(action_st);
     } else if(value_new_in.valid[UPLL_IDX_MODIFY_DST_MAC_FFE] == UNC_VF_INVALID
          && value_old_in.valid[UPLL_IDX_MODIFY_DST_MAC_FFE] == UNC_VF_VALID ) {
@@ -599,6 +615,8 @@ void OdcVbrFlowFilterEntryCmd::copy(ip_vbr_flowfilter&  ip_vbr_flowfilter_st,
         unc::odcdriver::OdcUtil util_;
         action_st.ip_dldst_.dlsdt_address = util_.macaddress_to_string(
                                 &value_old_in.modify_dstmac[0]);
+        action_st.order = order;
+        order ++;
         vtn_flow_filter_.vtn_flow_action_.push_back(action_st);
      }else {
       pfc_log_info("INVALID for new and old valstruct of DSTMACADDR attribute");
@@ -611,6 +629,8 @@ void OdcVbrFlowFilterEntryCmd::copy(ip_vbr_flowfilter&  ip_vbr_flowfilter_st,
       unc::odcdriver::OdcUtil util_;
       action_st.ip_dlsrc_.dlsrc_address  = util_.macaddress_to_string(
                                      &value_new_in.modify_srcmac[0]);
+      action_st.order = order;
+      order ++;
       vtn_flow_filter_.vtn_flow_action_.push_back(action_st);
     } else if(value_new_in.valid[UPLL_IDX_MODIFY_SRC_MAC_FFE] == UNC_VF_INVALID
           && value_old_in.valid[UPLL_IDX_MODIFY_SRC_MAC_FFE] == UNC_VF_VALID ) {
@@ -619,6 +639,8 @@ void OdcVbrFlowFilterEntryCmd::copy(ip_vbr_flowfilter&  ip_vbr_flowfilter_st,
       unc::odcdriver::OdcUtil util_;
       action_st.ip_dlsrc_.dlsrc_address = util_.macaddress_to_string(
                                &value_old_in.modify_srcmac[0]);
+      action_st.order = order;
+      order ++;
       vtn_flow_filter_.vtn_flow_action_.push_back(action_st);
     } else {
       pfc_log_info("INVALID for new and old val structs of SRCMAC ADDR attribute");

@@ -361,9 +361,62 @@ UncRespCode OdcVtnDataFlowCommand::parse_flow_response_values(
       }
     }
 
-    // action
-    df_cmn->df_segment->vtn_df_common->valid[kidxDfDataFlowActionCount] = UNC_VF_INVALID;
-    // vnoderoute
+  //actions
+    std::list<da_actions>::iterator itera;
+    uint32_t action_array_len = it->da_actions_.size();
+    pfc_log_debug("--------------action_count arraylength --- %d",
+        action_array_len);
+    if (action_array_len > 0) {
+      for ( itera = it->da_actions_.begin(); itera != it->da_actions_.end();
+          itera++ ) {
+        df_cmn->df_segment->vtn_df_common->action_count = action_array_len;
+        df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_ACTION_COUNT_VVDC] =
+          UNC_VF_VALID;
+        pfc_log_info("action_count %u",
+            df_cmn->df_segment->vtn_df_common->action_count);
+        uint32_t pop_array_len = itera->pop_vlan;
+        pfc_log_info("pop_array_len = %d ",
+            pop_array_len);
+        unc::dataflow::val_actions_vect_st *ptr =
+          new unc::dataflow::val_actions_vect_st;
+        memset(ptr, 0, sizeof(unc::dataflow::val_actions_vect_st));
+        ptr->action_type = UNC_ACTION_STRIP_VLAN;
+        pfc_log_trace("vln_action_type : %d vln_action_type_enum : %d",
+            ptr->action_type, (uint32_t)UNC_ACTION_STRIP_VLAN);
+        df_cmn->df_segment->actions.push_back(ptr);
+
+        // check for action-vlanid
+        std::list<vlan_id>::iterator iterat;
+        uint32_t vlanid_array_len = itera->vlan_id_.size();
+        pfc_log_debug("--------------action_count arraylength --- %d",
+            vlanid_array_len);
+        for (iterat = itera->vlan_id_.begin(); iterat != itera->vlan_id_.end();
+            iterat++) {
+
+          uint32_t action_vlanid = 0;
+          action_vlanid = iterat->act_vlan_id;
+
+          unc::dataflow::val_actions_vect_st *ptr =
+            new unc::dataflow::val_actions_vect_st;
+          memset(ptr, 0, sizeof(unc::dataflow::val_actions_vect_st));
+          ptr->action_type = UNC_ACTION_SET_VLAN_ID;
+          pfc_log_trace("vln_action_type : %d vln_action_type_enum : %d",
+              ptr->action_type, (uint32_t)UNC_ACTION_SET_VLAN_ID);
+          val_df_flow_action_set_vlan_id *set_vlan_id =
+            new val_df_flow_action_set_vlan_id;
+          memset(set_vlan_id, 0, sizeof(val_df_flow_action_set_vlan_id_t));
+          set_vlan_id->vlan_id = action_vlanid;
+          ptr->action_st_ptr = (void *) set_vlan_id;
+          df_cmn->df_segment->actions.push_back(ptr);
+        }
+      }
+    }else {
+      pfc_log_error(" Error occured while parsing.continue ");
+      df_cmn->df_segment->vtn_df_common->valid[kidxDfDataFlowActionCount] =
+        UNC_VF_INVALID;
+    }
+
+ //vnoderoute
     std::list<virtual_route>::iterator iter;
     uint32_t node_array_len = it->virtual_route_.size();
 
@@ -402,101 +455,163 @@ UncRespCode OdcVtnDataFlowCommand::parse_flow_response_values(
       pfc_bool_t match_status = PFC_FALSE;
       if(it->data_flow_match_.valid == true){
 
-        // check match-ethernet
-        df_cmn->df_segment->vtn_df_common->match_count = 1;
-        pfc_log_debug("match count = %u",
-            df_cmn->df_segment->vtn_df_common->match_count);
+  // check match-ethernet
+    df_cmn->df_segment->vtn_df_common->match_count = 1;
+    pfc_log_debug("match count = %u",
+                  df_cmn->df_segment->vtn_df_common->match_count);
 
-        // match-ethernet-vlan
-        uint32_t vlan = 0;
-        if (it->data_flow_match_.da_vtn_ether_match_.vlan != -1) {
-          vlan = it->data_flow_match_.da_vtn_ether_match_.vlan;
-          if (vlan !=0) {
-            pfc_log_info("valid vlan. set and send");
-            val_df_flow_match_vlan_id_t* val_vlan_id_obj =
-              new val_df_flow_match_vlan_id_t;
-            memset(val_vlan_id_obj, 0, sizeof(val_df_flow_match_vlan_id_t));
-            val_vlan_id_obj->vlan_id = vlan;
-            df_cmn->df_segment->matches.insert(
-                std::pair<UncDataflowFlowMatchType, void *>
-                (UNC_MATCH_VLAN_ID, val_vlan_id_obj));
-          } else {
-            pfc_log_info("vlan is 0 and not set to send");
-          }
-        } else {
-          pfc_log_error(" Error occured while parsing.continue ");
-        }
-
-        // match-ethernet-src
-        std::string src = "";
-        if(!it->data_flow_match_.da_vtn_ether_match_.src_arr.empty()) {
-          src = it->data_flow_match_.da_vtn_ether_match_.src_arr;
-          pfc_log_info("src df -- %s", src.c_str());
-          pfc_log_info("ethernet-src. success");
-          val_df_flow_match_dl_addr_t* val_dl_addr_obj =
-            new val_df_flow_match_dl_addr_t;
-          memset(val_dl_addr_obj, 0, sizeof(val_df_flow_match_dl_addr_t));
-          OdcUtil util_obj;
-          util_obj.convert_macstring_to_uint8(src, val_dl_addr_obj->dl_addr);
-          pfc_log_debug(
-              "match-ethernet-src mac address %02x:%02x:%02x:%02x:%02x:%02x ",
-              val_dl_addr_obj->dl_addr[0],
-              val_dl_addr_obj->dl_addr[1],
-              val_dl_addr_obj->dl_addr[2],
-              val_dl_addr_obj->dl_addr[3],
-              val_dl_addr_obj->dl_addr[4],
-              val_dl_addr_obj->dl_addr[5]);
-          val_dl_addr_obj->v_mask = UNC_MATCH_MASK_INVALID;
-          df_cmn->df_segment->matches.insert(
-              std::pair<UncDataflowFlowMatchType, void *>
-              (UNC_MATCH_DL_SRC, val_dl_addr_obj));
-        } else {
-          pfc_log_error(" Error occured while parsing ethernet-src.continue");
-        }
-
-        // match-ethernet-dst
-        std::string dst = "";
-        if(!it->data_flow_match_.da_vtn_ether_match_.dst_arr.empty()) {
-          dst = it->data_flow_match_.da_vtn_ether_match_.dst_arr;
-          pfc_log_info("ethernet-dst. success");
-          val_df_flow_match_dl_addr_t* val_dl_addr_obj =
-            new val_df_flow_match_dl_addr_t;
-          memset(val_dl_addr_obj, 0, sizeof(val_df_flow_match_dl_addr_t));
-          OdcUtil util_obj;
-          util_obj.convert_macstring_to_uint8(dst, val_dl_addr_obj->dl_addr);
-          pfc_log_debug(
-              "match-ethernet-dst mac address %02x:%02x:%02x:%02x:%02x:%02x ",
-              val_dl_addr_obj->dl_addr[0],
-              val_dl_addr_obj->dl_addr[1],
-              val_dl_addr_obj->dl_addr[2],
-              val_dl_addr_obj->dl_addr[3],
-              val_dl_addr_obj->dl_addr[4],
-              val_dl_addr_obj->dl_addr[5]);
-          val_dl_addr_obj->v_mask = UNC_MATCH_MASK_INVALID;
-          df_cmn->df_segment->matches.insert(
-              std::pair<UncDataflowFlowMatchType, void *>
-              (UNC_MATCH_DL_DST, val_dl_addr_obj));
-        } else {
-          pfc_log_error(" Error occured while parsing ethernet-dst.continue");
-        }
-        match_status = PFC_TRUE;
-        pfc_log_debug("match_status:%d", match_status);
+    // match-ethernet-vlan
+    uint32_t vlan = 0;
+    if (it->data_flow_match_.da_vtn_ether_match_.vlan != -1) {
+      vlan = it->data_flow_match_.da_vtn_ether_match_.vlan;
+      if (vlan !=0) {
+        pfc_log_info("valid vlan. set and send");
+        val_df_flow_match_vlan_id_t* val_vlan_id_obj =
+            new val_df_flow_match_vlan_id_t;
+        memset(val_vlan_id_obj, 0, sizeof(val_df_flow_match_vlan_id_t));
+        val_vlan_id_obj->vlan_id = vlan;
+        df_cmn->df_segment->matches.insert(
+            std::pair<UncDataflowFlowMatchType, void *>
+            (UNC_MATCH_VLAN_ID, val_vlan_id_obj));
       } else {
-        pfc_log_error("Error occured while parsing ethernet."
-            "continue for inetMatch.");
+        pfc_log_info("vlan is 0 and not set to send");
+      }
+    } else {
+      pfc_log_error(" Error occured while parsing.continue ");
+    }
+
+    // match-ethernet-src
+    std::string src = "";
+    if(!it->data_flow_match_.da_vtn_ether_match_.src_arr.empty()) {
+      src = it->data_flow_match_.da_vtn_ether_match_.src_arr;
+      pfc_log_info("src df -- %s", src.c_str());
+      pfc_log_info("ethernet-src. success");
+      val_df_flow_match_dl_addr_t* val_dl_addr_obj =
+          new val_df_flow_match_dl_addr_t;
+      memset(val_dl_addr_obj, 0, sizeof(val_df_flow_match_dl_addr_t));
+      OdcUtil util_obj;
+      util_obj.convert_macstring_to_uint8(src, val_dl_addr_obj->dl_addr);
+      pfc_log_debug(
+          "match-ethernet-src mac address %02x:%02x:%02x:%02x:%02x:%02x ",
+          val_dl_addr_obj->dl_addr[0],
+          val_dl_addr_obj->dl_addr[1],
+          val_dl_addr_obj->dl_addr[2],
+          val_dl_addr_obj->dl_addr[3],
+          val_dl_addr_obj->dl_addr[4],
+          val_dl_addr_obj->dl_addr[5]);
+      val_dl_addr_obj->v_mask = UNC_MATCH_MASK_INVALID;
+      df_cmn->df_segment->matches.insert(
+          std::pair<UncDataflowFlowMatchType, void *>
+          (UNC_MATCH_DL_SRC, val_dl_addr_obj));
+    } else {
+      pfc_log_error(" Error occured while parsing ethernet-src.continue");
+    }
+
+    // match-ethernet-dst
+    std::string dst = "";
+    if(!it->data_flow_match_.da_vtn_ether_match_.dst_arr.empty()) {
+      dst = it->data_flow_match_.da_vtn_ether_match_.dst_arr;
+      pfc_log_info("ethernet-dst. success");
+      val_df_flow_match_dl_addr_t* val_dl_addr_obj =
+          new val_df_flow_match_dl_addr_t;
+      memset(val_dl_addr_obj, 0, sizeof(val_df_flow_match_dl_addr_t));
+      OdcUtil util_obj;
+      util_obj.convert_macstring_to_uint8(dst, val_dl_addr_obj->dl_addr);
+      pfc_log_debug(
+          "match-ethernet-dst mac address %02x:%02x:%02x:%02x:%02x:%02x ",
+          val_dl_addr_obj->dl_addr[0],
+          val_dl_addr_obj->dl_addr[1],
+          val_dl_addr_obj->dl_addr[2],
+          val_dl_addr_obj->dl_addr[3],
+          val_dl_addr_obj->dl_addr[4],
+          val_dl_addr_obj->dl_addr[5]);
+      val_dl_addr_obj->v_mask = UNC_MATCH_MASK_INVALID;
+      df_cmn->df_segment->matches.insert(
+          std::pair<UncDataflowFlowMatchType, void *>
+          (UNC_MATCH_DL_DST, val_dl_addr_obj));
+    } else {
+      pfc_log_error(" Error occured while parsing ethernet-dst.continue");
+    }
+    match_status = PFC_TRUE;
+    pfc_log_debug("match_status:%d", match_status);
+  } else {
+    pfc_log_error("Error occured while parsing ethernet."
+                  "continue for inetMatch.");
+  }
+
+  if (it->data_flow_match_.valid == true) {
+      // match-inetMatch-inet4-src
+      std::string src = "";
+      if (!it->data_flow_match_.da_vtn_inet_match_.src_ip.empty()) {
+        pfc_log_info("inetMatch-inet4-src. success");
+        src = it->data_flow_match_.da_vtn_inet_match_.src_ip;
+        pfc_log_info("src df -- %s", src.c_str());
+        val_df_flow_match_ipv4_addr_t* val_ipv4_addr_obj =
+            new val_df_flow_match_ipv4_addr_t;
+        memset(val_ipv4_addr_obj, 0, sizeof(val_df_flow_match_ipv4_addr_t));
+        memcpy(&val_ipv4_addr_obj->ipv4_addr, src.c_str(),
+               sizeof(val_df_flow_match_ipv4_addr_t));
+        val_ipv4_addr_obj->v_mask = UNC_MATCH_MASK_INVALID;
+        df_cmn->df_segment->matches.insert(
+            std::pair<UncDataflowFlowMatchType, void *>(UNC_MATCH_IPV4_SRC,
+                                                        val_ipv4_addr_obj));
+      } else {
+        pfc_log_error(" Empty value"
+                      "inetMatch-inet4-src.continue");
       }
 
-      if (match_status == PFC_TRUE) {
-        pfc_log_error("match_status is true. match found");
-        df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_MATCH_COUNT_VVDC] =
-          UNC_VF_VALID;
+      // match-inetMatch-inet4-dst
+      std::string dst = "";
+      if (!it->data_flow_match_.da_vtn_inet_match_.dst_ip.empty()) {
+        dst = it->data_flow_match_.da_vtn_inet_match_.dst_ip;
+        pfc_log_info("match-inetMatch-inet4-dst. success");
+        pfc_log_info("dst -- %s", dst.c_str());
+        val_df_flow_match_ipv4_addr_t* val_ipv4_addr_obj =
+            new val_df_flow_match_ipv4_addr_t;
+        memset(val_ipv4_addr_obj, 0, sizeof(val_df_flow_match_ipv4_addr_t));
+        memcpy(&val_ipv4_addr_obj->ipv4_addr, dst.c_str(),
+               sizeof(val_df_flow_match_ipv4_addr_t));
+        val_ipv4_addr_obj->v_mask = UNC_MATCH_MASK_INVALID;
+        df_cmn->df_segment->matches.insert(
+            std::pair<UncDataflowFlowMatchType, void *>(UNC_MATCH_IPV4_DST,
+                                                        val_ipv4_addr_obj));
       } else {
-        pfc_log_error("match_status is false. match NOT found");
-        df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_MATCH_COUNT_VVDC] =
-          UNC_VF_INVALID;
+        pfc_log_error(" Empty value"
+                      "match-inetMatch-inet4-dst.continue");
       }
 
-      // match - END
+      // match-inetMatch-inet4-protocol
+      uint32_t proto = 0;
+      if (it->data_flow_match_.da_vtn_inet_match_.protocol != -1) {
+        proto = it->data_flow_match_.da_vtn_inet_match_.protocol;
+        pfc_log_info("match-inetMatch-inet4-protocol. success");
+        pfc_log_info("protocol -- %d", proto);
+        val_df_flow_match_ip_proto_t* val_ip_proto_obj =
+            new val_df_flow_match_ip_proto_t;
+        memset(val_ip_proto_obj, 0, sizeof(val_df_flow_match_ip_proto_t));
+        val_ip_proto_obj->ip_proto = proto;
+        df_cmn->df_segment->matches.insert(
+            std::pair<UncDataflowFlowMatchType, void *>(UNC_MATCH_IP_PROTO,
+                                                        val_ip_proto_obj));
+      } else {
+        pfc_log_error(" proto invaild"
+                      "match-inetMatch-inet4-protocol.continue");
+      }
+      pfc_bool_t match_status = PFC_FALSE;
+      pfc_log_debug("match_status:%d", match_status);
+    } else {
+      pfc_log_error(" Error occured while parsing inetMatch-inet4. continue");
+    }
+
+  if (match_status == PFC_TRUE) {
+    pfc_log_error("match_status is true. match found");
+    df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_MATCH_COUNT_VVDC] =
+        UNC_VF_VALID;
+  } else {
+    pfc_log_error("match_status is false. match NOT found");
+    df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_MATCH_COUNT_VVDC] =
+        UNC_VF_INVALID;
+  }
 
       /*struct path_info {
         std::string switchid;

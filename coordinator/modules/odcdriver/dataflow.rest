@@ -122,6 +122,48 @@ build_support=no
 mandatory=yes
 parse_support=yes
 
+[act_vlan_id]
+type=int
+key="vlan-id"
+is_child=yes
+struct_name=vlan_id
+check_bool_set=yes
+build_support=no
+mandatory=no
+parse_support=yes
+
+[vlan_id]
+type=array
+key="vtn-set-vlan-id-action"
+is_child=yes
+struct_name=vlan_id
+members=act_vlan_id,valid
+check_bool_set=no
+build_support=no
+mandatory=no
+parse_support=yes
+
+[pop_vlan]
+type=int
+key="vtn-pop-vlan-action"
+is_child=yes
+struct_name=da_actions
+check_bool_set=no
+build_support=no
+mandatory=no
+parse_support=yes
+
+[da_actions]
+type=array
+key="actions"
+is_child=yes
+struct_name=da_actions
+members=pop_vlan,vlan_id,valid
+check_bool_set=yes
+build_support=no
+mandatory=no
+parse_support=yes
+
 [port_name_ing]
 type=string
 key="port-name"
@@ -609,7 +651,7 @@ key="data-flow-info"
 is_child=no
 check_bool_set=no
 struct_name=data_flow
-members=creation_time,data_egress_node,data_egress_port,data_flow_match,data_flow_stats,data_ingress_node,data_ingress_port,flow_id,hard_timeout,idle_timeout,physical_route,virtual_route,valid
+members=creation_time,data_egress_node,data_egress_port,da_actions,data_flow_match,data_flow_stats,data_ingress_node,data_ingress_port,flow_id,hard_timeout,idle_timeout,physical_route,virtual_route,valid
 build_support=no
 mandatory=yes
 parse_support=yes
@@ -777,6 +819,6 @@ response_members = "dataflows"
 url_class = dataflow_class
 parse_class = dataflow_parser
 namespace = odcdriver
-struct_type = ip_dataflow,data_flow
-data = phy_egr_port,phy_ingr_port,virt_node_path,virtual_route,physical_route,data_ingress_port,data_ingress_node,duration,data_flow_stats,da_vtn_ether_match,da_vtn_inet_match,data_flow_match,data_egress_port,data_egress_node,data_flow,dataflows,data_flow_port,data_flow_source,input_data_flow,ip_dataflow
+struct_type = ip_dataflow,data_flow 
+data = phy_egr_port,phy_ingr_port,virt_node_path,virtual_route,physical_route,data_ingress_port,data_ingress_node,duration,data_flow_stats,vlan_id,da_actions,da_vtn_ether_match,da_vtn_inet_match,data_flow_match,data_egress_port,data_egress_node,data_flow,dataflows,data_flow_port,data_flow_source,input_data_flow,ip_dataflow
 methods = dataflow_class
