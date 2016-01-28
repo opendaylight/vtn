@@ -115,7 +115,7 @@ OdcVbrFlowFilterCmd::r_copy(std::list<flow_filter> &filter_detail,
       // Key VTN Flow Filter Entry
       key_entry.sequence_num=iter->index;
       memcpy(&key_entry.flowfilter_key,&key_filter,
-             sizeof(key_vbr_if_flowfilter));
+             sizeof(key_vbr_flowfilter));
 
       // VAL VTN Flow Filter Entry
       strncpy(reinterpret_cast<char*> (val_entry.flowlist_name),
