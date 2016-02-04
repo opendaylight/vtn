@@ -244,7 +244,7 @@ def test_multi_vtn_with_vbr_audit_test():
         print "VTN Validate Failed"
         exit(1)
 
-    retval =  vtn_vbr.validate_vtn_at_controller('VtnTwo','ControllerFirst',position=1)
+    retval =  vtn_vbr.validate_vtn_at_controller('VtnTwo','ControllerFirst',position=0)
     if retval != 0:
         print "VTN Validate Failed"
         exit(1)

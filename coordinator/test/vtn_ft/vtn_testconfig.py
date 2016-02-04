@@ -37,7 +37,7 @@ def InProgress(delay):
 coordinator_url = "http://127.0.0.1:8083/vtn-webapi"
 coordinator_headers = {'content-type':'application/json', 'username' : 'admin' , 'password' : 'adminpass'}
 controller_headers = {'Accept':'application/json', 'content-type': 'application/json'}
-controller_url_part='/controller/nb/v2/vtn/default'
+controller_url_part='/restconf'
 VTNVBRDATA = "vtn_vbr.data"
 VBRIFDATA = "vtn_vbr_vbrif.data"
 VTNVTERMDATA = "vtn_vterm.data"

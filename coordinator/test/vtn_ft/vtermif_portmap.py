@@ -73,14 +73,14 @@ def validate_vtermif_at_controller(vtn_blockname, vterm_blockname, vtermif_block
     test_vtn_name = vtn_testconfig.ReadValues(VTNVTERMDATA,vtn_blockname)['vtn_name']
     test_vterminal_name = vtn_testconfig.ReadValues(VTNVTERMDATA,vterm_blockname)['vterminal_name']
     test_controller_ipaddr = vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['ipaddr']
-    test_controller_port = vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['port']
-    test_vtn_url = vtn_testconfig.ReadValues(VTNVTERMDATA,vtn_blockname)['vtn_url']
-    test_vterm_url = vtn_testconfig.ReadValues(VTNVTERMDATA,vterm_blockname)['vterm_url']
+    test_controller_port = vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['restconf_port']
+    test_vtn_url = vtn_testconfig.ReadValues(VTNVTERMDATA,'VTNURL')['ctr_url']
+    test_vterm_url = vtn_testconfig.ReadValues(VTNVTERMDATA,vterm_blockname)['ctrl_url']
     test_vtermif_url = vtn_testconfig.ReadValues(VTERMIFDATA,'VTERMIFURL')['ctr_url']
     test_vtermif_name = vtn_testconfig.ReadValues(VTERMIFDATA,vtermif_blockname)['vtermif_name']
     test_vtermif_adminstatus = vtn_testconfig.ReadValues(VTERMIFDATA,vtermif_blockname)['admin_status']
     print test_vterm_url
-    url = 'http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url+test_vterm_url+test_vtermif_url
+    url='http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url+'/'+test_vtn_name+test_vterm_url+test_vtermif_url+'/'+test_vtermif_name
     print url
     r = requests.get(url,headers = controller_headers,auth = ('admin','admin'))
 
@@ -88,6 +88,7 @@ def validate_vtermif_at_controller(vtn_blockname, vterm_blockname, vtermif_block
 
     if presence == "no":
         if r.status_code == resp_code.RESP_NOT_FOUND:
+            print 'vterminal interface name : '+test_vtermif_name+' is removed'
             return 0
 
     if r.status_code != resp_code.RESP_GET_SUCCESS:
@@ -97,11 +98,11 @@ def validate_vtermif_at_controller(vtn_blockname, vterm_blockname, vtermif_block
     data=json.loads(r.content)
     print data
     if presence == "no":
-        print data['interface']
-        if data['interface'] == []:
+        print data['vinterface']
+        if data['vinterface'] == []:
             return 0
     print position
-    vtn_content = data['interface'][position]
+    vtn_content = data['vinterface'][position]
 
     print vtn_content['name']
     if vtn_content == None:
@@ -117,6 +118,7 @@ def validate_vtermif_at_controller(vtn_blockname, vterm_blockname, vtermif_block
             return 0
     else:
         if presence == "yes":
+            print 'vterminal interface name : '+vtn_content['name']+' is present'
             return 0
         else:
             return 1
@@ -177,16 +179,17 @@ def validate_vtermif_portmap_at_controller(vtn_blockname, vterm_blockname, vterm
     test_vtn_name = vtn_testconfig.ReadValues(VTNVTERMDATA,vtn_blockname)['vtn_name']
     test_vterminal_name = vtn_testconfig.ReadValues(VTNVTERMDATA,vterm_blockname)['vterminal_name']
     test_controller_ipaddr = vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['ipaddr']
-    test_controller_port = vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['port']
-    test_vtn_url = vtn_testconfig.ReadValues(VTNVTERMDATA,vtn_blockname)['vtn_url']
-    test_vterm_url = vtn_testconfig.ReadValues(VTNVTERMDATA,vterm_blockname)['vterm_url']
+    test_controller_port = vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['restconf_port']
+    test_vtn_url = vtn_testconfig.ReadValues(VTNVTERMDATA,'VTNURL')['ctr_url']
+    test_vterm_url = vtn_testconfig.ReadValues(VTNVTERMDATA,'VTERMURL')['ctr_url']
     test_vtermif_url = vtn_testconfig.ReadValues(VTERMIFDATA,'VTERMIFURL')['ctr_url']
     test_vtermif_name = vtn_testconfig.ReadValues(VTERMIFDATA,vtermif_blockname)['vtermif_name']
     test_vtermif_admin_status = vtn_testconfig.ReadValues(VTERMIFDATA,vtermif_blockname)['admin_status']
     test_vtermif_logicalid = vtn_testconfig.ReadValues(VTERMIFDATA,vtermif_blockname)['logical_port_id']
     test_vtermif_node_id = vtn_testconfig.ReadValues(VTERMIFDATA,vtermif_blockname)['node_id']
 
-    url = 'http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url+test_vterm_url+test_vtermif_url+'/'+test_vtermif_name+'/portmap'
+    url='http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url+'/'+test_vtn_name+test_vterm_url+'/'+test_vterminal_name+test_vtermif_url+'/'+test_vtermif_name+'/port-map-config'
+
     print url
     r = requests.get(url,headers = controller_headers,auth = ('admin','admin'))
 
@@ -194,6 +197,7 @@ def validate_vtermif_portmap_at_controller(vtn_blockname, vterm_blockname, vterm
 
     if presence  == "no":
         if r.status_code == resp_code.RESP_NOT_FOUND:
+            print 'Portmap config is removed'
             return 0
         if r.status_code == resp_code.RESP_DELETE_SUCCESS or r.status_code == resp_code.RESP_DELETE_SUCCESS_U14:
             return 0
@@ -204,21 +208,27 @@ def validate_vtermif_portmap_at_controller(vtn_blockname, vterm_blockname, vterm
     data = json.loads(r.content)
     print data
 
-    vtn_content = data['node']['id']
+    vtn_content=data['port-map-config']
+    print vtn_content
+
     if vtn_content == None:
         if presence == "yes":
             return 0
         else:
             return 1
 
-    print "content is", vtn_content
-    if vtn_content != test_vtermif_node_id:
+    node = vtn_content['node']
+    port = vtn_content['port-name']
+    node_content = 'PP-'+node+'-'+port
+    print node_content
+    if node_content != test_vtermif_logicalid:
         if presence == "yes":
             return 1
         else:
             return 0
     else:
         if presence == "yes":
+            print 'Portmap is configured'
             return 0
         else:
             return 1
@@ -353,7 +363,7 @@ def test_multi_vterm_vtermif():
         print "VTERMONE Validate Failed"
         exit(1)
 
-    retval = vtn_vterm.validate_vterm_at_controller('VtnOne','VTermTwo','ControllerFirst',position = 1)
+    retval = vtn_vterm.validate_vterm_at_controller('VtnOne','VTermTwo','ControllerFirst',position = 0)
     if retval != 0:
         print "VTERMTWO Validate Failed"
         exit(1)
@@ -398,7 +408,7 @@ def test_multi_vterm_vtermif():
         print "VTERM1/VTN Validate Failed"
         exit(1)
 
-    retval = vtn_vterm.validate_vterm_at_controller('VtnOne','VTermTwo','ControllerFirst',presence = "no",position = 1)
+    retval = vtn_vterm.validate_vterm_at_controller('VtnOne','VTermTwo','ControllerFirst',presence = "no",position = 0)
     if retval != 0:
         print "VTERM2/VTN Validate Failed"
         exit(1)
@@ -486,7 +496,7 @@ def test_multi_vtn_vterm_vtermif():
         print "After Create VTN1 Validate Failed"
         exit(1)
 
-    retval = vtn_vterm.validate_vtn_at_controller('VtnTwo','ControllerFirst',position = 1)
+    retval = vtn_vterm.validate_vtn_at_controller('VtnTwo','ControllerFirst',position = 0)
     if retval != 0:
         print "After Create VTN1 Validate Failed"
         exit(1)
@@ -527,7 +537,7 @@ def test_multi_vtn_vterm_vtermif():
         print "Before VTERM1 Delete VTN1 Validate Failed"
         exit(1)
 
-    retval = vtn_vterm.validate_vtn_at_controller('VtnTwo','ControllerFirst',position = 1)
+    retval = vtn_vterm.validate_vtn_at_controller('VtnTwo','ControllerFirst',position = 0)
     if retval != 0:
         print "Before VTERM2 Delete VTN2 Validate Failed"
         exit(1)
@@ -557,7 +567,7 @@ def test_multi_vtn_vterm_vtermif():
         print "After VTERM1 Delete VTN1 Validate Failed"
         exit(1)
 
-    retval = vtn_vterm.validate_vtn_at_controller('VtnTwo','ControllerFirst',presence = "no",position = 1)
+    retval = vtn_vterm.validate_vtn_at_controller('VtnTwo','ControllerFirst',presence = "no",position = 0)
     if retval != 0:
         print "After VTERM1 Delete VTN1 Validate Failed"
         exit(1)
@@ -741,7 +751,7 @@ def test_vtn_multi_vterm_single_vtermif_portmap():
         print "After Create VTERM1 Validate Failed"
         exit(1)
 
-    retval = vtn_vterm.validate_vterm_at_controller('VtnOne','VTermTwo','ControllerFirst',position = 1)
+    retval = vtn_vterm.validate_vterm_at_controller('VtnOne','VTermTwo','ControllerFirst',position = 0)
     if retval != 0:
         print "After Create VTERM1 Validate Failed"
         exit(1)
@@ -796,7 +806,7 @@ def test_vtn_multi_vterm_single_vtermif_portmap():
         print "After Delete VTERM1 Validate Failed"
         exit(1)
 
-    retval = vtn_vterm.validate_vterm_at_controller('VtnOne','VTermTwo','ControllerFirst',presence = "no",position = 1)
+    retval = vtn_vterm.validate_vterm_at_controller('VtnOne','VTermTwo','ControllerFirst',presence = "no",position = 0)
     if retval != 0:
         print "After Delete VTERM2 Validate Failed"
         exit(1)
@@ -903,7 +913,7 @@ def test_multi_vtn_vterm_vtermif_portmap():
         print "VTN1 Validate Failed"
         exit(1)
 
-    retval = vtn_vterm.validate_vtn_at_controller('VtnTwo','ControllerFirst',position = 1)
+    retval = vtn_vterm.validate_vtn_at_controller('VtnTwo','ControllerFirst',position = 0)
     if retval != 0:
         print "VTN2 Validate Failed"
         exit(1)
@@ -963,7 +973,7 @@ def test_multi_vtn_vterm_vtermif_portmap():
         print "VTN1 Validate Failed after VTERM Deleted"
         exit(1)
 
-    retval = vtn_vterm.validate_vtn_at_controller('VtnTwo','ControllerFirst',presence = "no",position = 1)
+    retval = vtn_vterm.validate_vtn_at_controller('VtnTwo','ControllerFirst',presence = "no",position = 0)
     if retval != 0:
         print "VTN2 Validate Failed after VTERM Deleted"
         exit(1)
