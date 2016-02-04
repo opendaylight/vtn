@@ -212,7 +212,7 @@ parse_support=no
 
 [vlan]
 type=int
-key="vlan"
+key="vlan-id"
 struct_name=input_vtermif_port
 is_child=yes
 build_support=yes
