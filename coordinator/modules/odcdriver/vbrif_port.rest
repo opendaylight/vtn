@@ -95,7 +95,7 @@ key="input"
 is_child=yes
 check_bool_set=yes
 struct_name=vbrifport_input
-members=tenant_name,bridge_name,interface_name,node,port_name,ip_vlan,valid
+members=tenant_name,bridge_name,interface_name,node,port_name_ip,ip_vlan,valid
 mandatory=no
 build_support=yes
 parse_support=no
@@ -132,7 +132,7 @@ mandatory=yes
 build_support=yes
 parse_support=no
 
-[port_name]
+[port_name_ip]
 type=string
 key="port-name"
 struct_name=input_vbrifport

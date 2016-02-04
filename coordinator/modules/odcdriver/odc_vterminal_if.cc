@@ -118,10 +118,25 @@ void OdcVtermIfCommand::create_request_body_port_map(
     ip_vtermif_port_st.input_vtermif_port_.node  = switch_id;
     }
   if (!(port_name.empty())) {
-    ip_vtermif_port_st.input_vtermif_port_.port_name = port_name;
+    ip_vtermif_port_st.input_vtermif_port_.port_name_ip = port_name;
     }
 }
 
+// delete request Body for Port Map
+void OdcVtermIfCommand::delete_request_body_port_map(
+                                              val_vterm_if_t& vterm_if_val,
+                                              key_vterm_if_t& vterm_if_key,
+                                         ip_vtermif_port&  ip_vtermif_port_st){
+
+  ODC_FUNC_TRACE;
+  ip_vtermif_port_st.input_vtermif_port_.valid = true;
+  ip_vtermif_port_st.input_vtermif_port_.tenant_name =
+        reinterpret_cast<const char*>(vterm_if_key.vterm_key.vtn_key.vtn_name);
+  ip_vtermif_port_st.input_vtermif_port_.terminal_name =
+          reinterpret_cast<const char*>(vterm_if_key.vterm_key.vterminal_name);
+  ip_vtermif_port_st.input_vtermif_port_.interface_name =
+                  reinterpret_cast<const char*>(vterm_if_key.if_name);
+}
 
 void OdcVtermIfCommand::create_request_body(val_vterm_if_t& val_vterm_if,
                                             key_vterm_if_t& vterm_if_key,
@@ -393,9 +408,21 @@ UncRespCode OdcVtermIfCommand::update_cmd(key_vterm_if_t& vterm_if_key,
           && (vterm_if_val_new.valid[PFCDRV_IDX_VAL_VBRIF] == UNC_VF_VALID)){
     vtermifport_class *req_ob = new vtermifport_class(ctr_ptr,
                                                 vtnname, vterminalname, intfname);
-    if(req_ob->set_delete(jobj) != UNC_RC_SUCCESS) {
+    ip_vtermif_port  st_ob;
+    delete_request_body_port_map(vterm_if_val_new,vterm_if_key,
+                                                     st_ob);
+    vtermif_portmap  *parser_ob = new  vtermif_portmap();
+    json_object *job = parser_ob->del_req(st_ob);
+    if(jobj == NULL){
+      pfc_log_error("Error in create request");
+      delete req_ob;
+      delete parser_ob;
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    if(req_ob->set_delete(job) != UNC_RC_SUCCESS) {
       pfc_log_error("vtermifportmap delete Failed");
       delete req_ob;
+      delete parser_ob;
       return UNC_DRV_RC_ERR_GENERIC;
     }
    }

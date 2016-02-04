@@ -167,7 +167,16 @@ class OdcVtermIfCommand: public unc::driver::vtn_driver_command
                                     key_vterm_if_t& vterm_if_key,
                                     const std::string &logical_port_id,
                                     ip_vtermif_port&  ip_vtermif_port_st);
-
+  /**
+   * @brief                    - delete request Body for portmap
+   * @param[in]  vterm_if_val  - vtermif value structure val_vtermif_t
+   * @param[in]  vterm_if_key  - vtermif value structure key_vtermif_t
+   * @param[in]  vterm_if_st   - vtermif portmap local strucutre ip_vtermif_port
+   * @return  const char*      - returns the request body formed
+   */
+  void delete_request_body_port_map(val_vterm_if_t& vterm_if_val,
+                                              key_vterm_if_t& vterm_if_key,
+                                         ip_vtermif_port&  ip_vtermif_port_st);
   /**
    * @brief                - Creates the Request Body
    * @param[in] val_vtn    - VTN value structure val_vtn_t

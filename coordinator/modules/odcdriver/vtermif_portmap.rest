@@ -202,7 +202,7 @@ mandatory=yes
 build_support=yes
 parse_support=no
 
-[port_name]
+[port_name_ip]
 type=string
 key="port-name"
 struct_name=input_vtermif_port
@@ -233,7 +233,7 @@ key="input"
 is_child=yes
 check_bool_set=yes
 struct_name=vtermifport_input
-members=tenant_name,terminal_name,interface_name,node,port_name,vlan,valid
+members=tenant_name,terminal_name,interface_name,node,port_name_ip,vlan,valid
 build_support=yes
 parse_support=no
 
