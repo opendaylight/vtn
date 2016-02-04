@@ -10,26 +10,26 @@
 [VtnOne]
 vtn_name=vtnone
 description=first vtn
-controller_url=/controller/nb/v2/vtn/default/vtns/vtnone
+ctrl_url=/vtn/vtnone
 vtn_url=/vtns/vtnone
 
 
 [VtnTwo]
 vtn_name=vtntwo
 description=second vtn
-controller_url=/controller/nb/v2/vtn/default/vtns/vtntwo
+ctrl_url=/vtn/vtntwo
 vtn_url=/vtns/vtntwo
 
 [VtnThree]
 vtn_name=vtnthree
 description=third vtn
-controller_url=/controller/nb/v2/vtn/default/vtns/vtnthree
+ctrl_url=/vtn/vtnthree
 vtn_url=/vtns/vtnthree
 
 [VtnFour]
 vtn_name=vtnfour
 description=fourth vtn
-controller_url=/controller/nb/v2/vtn/default/vtns/vtnfour
+ctrl_url=/vtn/vtnfour
 vtn_url=/vtns/vtnfour
 
 [VTermOne]
@@ -37,7 +37,7 @@ vterminal_name=vtermone
 controller_id=controller1
 description=first vterm for controller1
 domain_id=(DEFAULT)
-controller_url=/vterminals/vtermone
+ctrl_url=/vterminal/vtermone
 vterm_url=/vterminals/vtermone
 
 [VTermTwo]
@@ -45,7 +45,7 @@ vterminal_name=vtermtwo
 controller_id=controller1
 description=second vterm for controller1
 domain_id=(DEFAULT)
-controller_url=/vterminals/vtermtwo
+ctrl_url=/vterminal/vtermtwo
 vterm_url=/vterminals/vtermtwo
 
 [VTermThree]
@@ -53,7 +53,7 @@ vterminal_name=vtermthree
 controller_id=controller2
 description=first vterm for controller2
 domain_id=(DEFAULT)
-controller_url=/vterminals/vtermthree
+ctrl_url=/vterminal/vtermthree
 vterm_url=/vterminals/vtermthree
 
 [VTermFour]
@@ -61,13 +61,13 @@ vterminal_name=vtermfour
 controller_id=controller2
 description=second vterm for controller2
 domain_id=(DEFAULT)
-controller_url=/vterminals/vtermfour
+ctrl_url=/vterminal/vtermfour
 vterm_url=/vterminals/vtermfour
 
 [VTNURL]
 url=/vtns.json
-ctr_url=/vtns
+ctr_url=/operational/vtn:vtns/vtn
 
 [VTERMURL]
 url=/vterminals.json
-ctr_url=/vterminals
+ctr_url=/vterminal

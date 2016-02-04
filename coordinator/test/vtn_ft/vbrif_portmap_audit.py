@@ -196,7 +196,7 @@ def test_audit_multi_vbrif():
       print "controller state change failed"
       exit(1)
 
-    retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfTwo','ControllerFirst',position=1)
+    retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfTwo','ControllerFirst',position=0)
     if retval != 0:
         print "VBRIFTWO Validate Failed"
         exit(1)
@@ -231,7 +231,7 @@ def test_audit_multi_vbrif():
         print "VTN1->VBR1->VBRIF1 Delete Failed"
         exit(1)
 
-    retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfTwo','ControllerFirst',presence="no",position=1)
+    retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfTwo','ControllerFirst',presence="no",position=0)
     if retval != 0:
         print "After Delete VBRIFTWO Validate Failed"
         exit(1)
@@ -392,7 +392,7 @@ def test_audit_vtn_multi_vbr_vbrif():
         print "VBRONE Validate Failed"
         exit(1)
 
-    retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst',position=1)
+    retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst',position=0)
     if retval != 0:
         print "VBRTWO Validate Failed"
         exit(1)
@@ -428,7 +428,7 @@ def test_audit_vtn_multi_vbr_vbrif():
         print "VBR2->VBRIF2 Delete Failed"
         exit(1)
 
-    retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst',presence="no",position=1)
+    retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst',presence="no",position=0)
     if retval != 0:
         print "VBR2->VBRIF2 Validate Failed"
         exit(1)
@@ -447,7 +447,7 @@ def test_audit_vtn_multi_vbr_vbrif():
         print "VBR1/VTN Validate Failed"
         exit(1)
 
-    retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst',presence="no",position=1)
+    retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst',presence="no",position=0)
     if retval != 0:
         print "VBR2/VTN Validate Failed"
         exit(1)
@@ -636,7 +636,7 @@ def test_audit_vtn_multi_vbr_vbrif_portmap():
         print "After Create VBRIF1 Validate Failed"
         exit(1)
 
-    retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfTwo','ControllerFirst',position=1)
+    retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfTwo','ControllerFirst',position=0)
     if retval != 0:
         print "After Create VBRIF2 Validate Failed"
         exit(1)
@@ -681,7 +681,7 @@ def test_audit_vtn_multi_vbr_vbrif_portmap():
       print "controller state change failed"
       exit(1)
 
-    retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfTwo','ControllerFirst',presence="yes",position=1);
+    retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfTwo','ControllerFirst',presence="yes",position=0);
     if retval != 0:
         print "VBRIF2 Portmap Validate Failed"
         exit(1)
@@ -719,6 +719,16 @@ def test_audit_vtn_multi_vbr_vbrif_portmap():
         print "Portmap Delete Failed"
         exit(1)
 
+    retval = vbrif_portmap.delete_vbrif('VtnOne','VbrOne','VbrIfOne')
+    if retval != 0:
+        print "VBRIF1 Delete Failed"
+        exit(1)
+
+    retval = vbrif_portmap.delete_vbrif('VtnOne','VbrOne','VbrIfTwo')
+    if retval != 0:
+        print "VBRIF2 Delete Failed"
+        exit(1)
+
     print "****UPDATE Controller IP to Valid****"
     test_controller_ipaddr=vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerFirst')['ipaddr']
     retval=controller.update_controller_ex('ControllerFirst',ipaddr=test_controller_ipaddr)
@@ -731,7 +741,7 @@ def test_audit_vtn_multi_vbr_vbrif_portmap():
       print "controller state change failed"
       exit(1)
 
-    retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfTwo','ControllerFirst',presence="no",position=1);
+    retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfTwo','ControllerFirst',presence="no",position=0);
     if retval != 0:
         print "After Delete VBRIF2 Portmap Validate Failed"
         exit(1)
@@ -741,22 +751,12 @@ def test_audit_vtn_multi_vbr_vbrif_portmap():
         print "After Delete VBRIF1 Portmap Validate Failed"
         exit(1)
 
-    retval = vbrif_portmap.delete_vbrif('VtnOne','VbrOne','VbrIfOne')
-    if retval != 0:
-        print "VBRIF1 Delete Failed"
-        exit(1)
-
-    retval = vbrif_portmap.delete_vbrif('VtnOne','VbrOne','VbrIfTwo')
-    if retval != 0:
-        print "VBRIF2 Delete Failed"
-        exit(1)
-
     retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',presence="no",position=0)
     if retval != 0:
         print "After Delete VBRIF1 Validate Failed"
         exit(1)
 
-    retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfTwo','ControllerFirst',presence="no",position=1)
+    retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfTwo','ControllerFirst',presence="no",position=0)
     if retval != 0:
         print "After Delete VBRIF2 Validate Failed"
         exit(1)
@@ -826,7 +826,7 @@ def test_audit_vtn_vbr_multi_vbrif_portmap():
         print "After Create VBRIF1 Validate Failed"
         exit(1)
 
-    retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfTwo','ControllerFirst',position=1)
+    retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfTwo','ControllerFirst',position=0)
     if retval != 0:
         print "After Create VBRIF2 Validate Failed"
         exit(1)
@@ -915,7 +915,7 @@ def test_audit_vtn_vbr_multi_vbrif_portmap():
         print "After Delete VBRIF1 Validate Failed"
         exit(1)
 
-    retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfTwo','ControllerFirst',presence="no",position=1)
+    retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfTwo','ControllerFirst',presence="no",position=0)
     if retval != 0:
         print "After Delete VBRIF2 Validate Failed"
         exit(1)
@@ -1030,7 +1030,7 @@ def test_audit_multi_vbr_vbrif():
         print "VBRONE Validate Failed"
         exit(1)
 
-    retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst',position=1)
+    retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst',position=0)
     if retval != 0:
         print "VBRTWO Validate Failed"
         exit(1)
@@ -1092,7 +1092,7 @@ def test_audit_multi_vbr_vbrif():
         print "VBR1/VTN Validate Failed"
         exit(1)
 
-    retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst',presence="no",position=1)
+    retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst',presence="no",position=0)
     if retval != 0:
         print "VBR2/VTN Validate Failed"
         exit(1)
@@ -1185,7 +1185,7 @@ def test_audit_multi_vtn_vbr_vbrif():
         print "After Create VTN1 Validate Failed"
         exit(1)
 
-    retval=vtn_vbr.validate_vtn_at_controller('VtnTwo','ControllerFirst',position=1)
+    retval=vtn_vbr.validate_vtn_at_controller('VtnTwo','ControllerFirst',position=0)
     if retval != 0:
         print "After Create VTN1 Validate Failed"
         exit(1)
@@ -1232,7 +1232,7 @@ def test_audit_multi_vtn_vbr_vbrif():
         print "Before VBR1 Delete VTN1 Validate Failed"
         exit(1)
 
-    retval=vtn_vbr.validate_vtn_at_controller('VtnTwo','ControllerFirst',position=1)
+    retval=vtn_vbr.validate_vtn_at_controller('VtnTwo','ControllerFirst',position=0)
     if retval != 0:
         print "Before VBR2 Delete VTN2 Validate Failed"
         exit(1)
@@ -1275,7 +1275,7 @@ def test_audit_multi_vtn_vbr_vbrif():
         print "After VBR1 Delete VTN1 Validate Failed"
         exit(1)
 
-    retval=vtn_vbr.validate_vtn_at_controller('VtnTwo','ControllerFirst',presence="no",position=1)
+    retval=vtn_vbr.validate_vtn_at_controller('VtnTwo','ControllerFirst',presence="no",position=0)
     if retval != 0:
         print "After VBR1 Delete VTN1 Validate Failed"
         exit(1)
@@ -1388,7 +1388,7 @@ def test_audit_vtn_multi_vbr_single_vbrif_portmap():
         print "After Create VBR1 Validate Failed"
         exit(1)
 
-    retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst',position=1)
+    retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst',position=0)
     if retval != 0:
         print "After Create VBR1 Validate Failed"
         exit(1)
@@ -1443,7 +1443,7 @@ def test_audit_vtn_multi_vbr_single_vbrif_portmap():
         print "After Delete VBR1 Validate Failed"
         exit(1)
 
-    retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst',presence="no",position=1)
+    retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst',presence="no",position=0)
     if retval != 0:
         print "After Delete VBR2 Validate Failed"
         exit(1)
@@ -1545,7 +1545,7 @@ def test_audit_multi_vtn_vbr_vbrif_portmap():
         print "VTN1 Validate Failed"
         exit(1)
 
-    retval=vtn_vbr.validate_vtn_at_controller('VtnTwo','ControllerFirst',position=1)
+    retval=vtn_vbr.validate_vtn_at_controller('VtnTwo','ControllerFirst',position=0)
     if retval != 0:
         print "VTN2 Validate Failed"
         exit(1)
@@ -1623,7 +1623,7 @@ def test_audit_multi_vtn_vbr_vbrif_portmap():
         print "VTN1 Validate Failed after VBR Deleted"
         exit(1)
 
-    retval=vtn_vbr.validate_vtn_at_controller('VtnTwo','ControllerFirst',presence="no",position=1)
+    retval=vtn_vbr.validate_vtn_at_controller('VtnTwo','ControllerFirst',presence="no",position=0)
     if retval != 0:
         print "VTN2 Validate Failed after VBR Deleted"
         exit(1)

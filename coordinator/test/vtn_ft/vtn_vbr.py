@@ -61,10 +61,10 @@ def delete_vtn(blockname):
 def validate_vtn_at_controller(vtn_blockname, controller_blockname, presence="yes",position=0):
     test_vtn_name=vtn_testconfig.ReadValues(VTNVBRDATA,vtn_blockname)['vtn_name']
     test_controller_ipaddr=vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['ipaddr']
-    test_controller_port=vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['port']
+    test_controller_port=vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['restconf_port']
     test_vtn_url=vtn_testconfig.ReadValues(VTNVBRDATA,'VTNURL')['ctr_url']
 
-    url='http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url
+    url='http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url+'/'+test_vtn_name
     print url
     r = requests.get(url,headers=controller_headers,auth=('admin','admin'))
 
@@ -72,6 +72,7 @@ def validate_vtn_at_controller(vtn_blockname, controller_blockname, presence="ye
 
     if presence == "no":
         if r.status_code == resp_code.RESP_NOT_FOUND:
+            print 'vtenant name : '+test_vtn_name+' is removed'
             return 0
     if r.status_code != resp_code.RESP_GET_SUCCESS:
         return 1
@@ -79,7 +80,6 @@ def validate_vtn_at_controller(vtn_blockname, controller_blockname, presence="ye
 
     data=json.loads(r.content)
 
-    print data
 
     if presence == "no":
         print data['vtn']
@@ -87,6 +87,7 @@ def validate_vtn_at_controller(vtn_blockname, controller_blockname, presence="ye
             return 0
 
     vtn_content=data['vtn'][position]
+    print vtn_content
 
     if vtn_content == None:
         if presence == "yes":
@@ -101,6 +102,7 @@ def validate_vtn_at_controller(vtn_blockname, controller_blockname, presence="ye
             return 0
     else:
         if presence == "yes":
+            print 'vtn name : '+vtn_content['name']+' is present'
             return 0
         else:
             return 1
@@ -164,17 +166,18 @@ def validate_vbr_at_controller(vtn_blockname, vbr_blockname,controller_blockname
     test_vbr_name=vtn_testconfig.ReadValues(VTNVBRDATA,vbr_blockname)['vbr_name']
     test_controller_ipaddr=vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['ipaddr']
     test_controller_id=vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['controller_id']
-    test_controller_port=vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['port']
+    test_controller_port=vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['restconf_port']
     test_vtn_url=vtn_testconfig.ReadValues(VTNVBRDATA,'VTNURL')['ctr_url']
     test_vbr_url=vtn_testconfig.ReadValues(VTNVBRDATA,'VBRURL')['ctr_url']
 
-    url='http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url+'/'+test_vtn_name+test_vbr_url
+    url='http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url+'/'+test_vtn_name+test_vbr_url+'/'+test_vbr_name
     print url
     r = requests.get(url,headers=controller_headers,auth=('admin','admin'))
     print r.status_code
 
     if presence == "no":
         if r.status_code == resp_code.RESP_NOT_FOUND:
+            print 'vbridge name : '+test_vbr_name+' is removed'
             return 0
 
     if r.status_code != resp_code.RESP_GET_SUCCESS:
@@ -201,6 +204,7 @@ def validate_vbr_at_controller(vtn_blockname, vbr_blockname,controller_blockname
             return 0
     else:
         if presence == "yes":
+            print 'vbridge name : '+vtn_content['name']+' is present'
             return 0
         else:
             return 1
@@ -306,7 +310,7 @@ def test_multi_vtn_with_vbr_test():
         print "VTN Validate Failed"
         exit(1)
 
-    retval=validate_vtn_at_controller('VtnTwo','ControllerFirst',position=1)
+    retval=validate_vtn_at_controller('VtnTwo','ControllerFirst',position=0)
     if retval != 0:
         print "VTN Validate Failed"
         exit(1)
@@ -410,7 +414,7 @@ def test_vtn_multi_vbr_test():
         print "VBROne Validate Failed"
         exit(1)
 
-    retval=validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst',position=1)
+    retval=validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst',position=0)
     if retval != 0:
         print "VBRTwo Validate Failed"
         exit(1)
