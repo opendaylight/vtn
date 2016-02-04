@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Copyright (c) 2014-2015 NEC Corporation
+# Copyright (c) 2014-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -68,7 +68,7 @@ def test_vbrif_flowfilter():
     print "After Create VBRIF Validate Failed"
     exit(1)
 
-  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 1)
+  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 0)
   if retval != 0:
     print "VBR Validate Failed"
     exit(1)
@@ -176,7 +176,7 @@ def update_vbrif_flowfilter():
     print "Controller Create Failed"
     exit(1)
 
-  print "TEST 1 : VBRIF->Update FLOWFILTER TEST"
+  print "TEST 2 : VBRIF->Update FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -223,7 +223,7 @@ def update_vbrif_flowfilter():
     print "After Create VBRIF Validate Failed"
     exit(1)
 
-  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 1)
+  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 0)
   if retval != 0:
     print "VBR Validate Failed"
     exit(1)
@@ -358,7 +358,7 @@ def negative_vbrif_flowfilter():
     print "Controller Create Failed"
     exit(1)
 
-  print "TEST 1 : VBRIF->Negative test scenario FLOWFILTER TEST"
+  print "TEST 9 : VBRIF->Negative test scenario FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -405,7 +405,7 @@ def negative_vbrif_flowfilter():
     print "After Create VBRIF Validate Failed"
     exit(1)
 
-  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 1)
+  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 0)
   if retval != 0:
     print "VBR Validate Failed"
     exit(1)
@@ -541,7 +541,7 @@ def test_vbrif_flowfilter_out():
     print "Controller Create Failed"
     exit(1)
 
-  print "TEST 1 : VBRIF->FLOWFILTER TEST"
+  print "TEST 7 : VBRIF->FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -588,7 +588,7 @@ def test_vbrif_flowfilter_out():
     print "After Create VBRIF Validate Failed"
     exit(1)
 
-  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 1)
+  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 0)
   if retval != 0:
     print "VBR Validate Failed"
     exit(1)
@@ -697,7 +697,7 @@ def update_vbrif_flowfilter_out():
     print "Controller Create Failed"
     exit(1)
 
-  print "TEST 1 : VBRIF->Update FLOWFILTER TEST"
+  print "TEST 8 : VBRIF->Update FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -744,7 +744,7 @@ def update_vbrif_flowfilter_out():
     print "After Create VBRIF Validate Failed"
     exit(1)
 
-  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 1)
+  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 0)
   if retval != 0:
     print "VBR Validate Failed"
     exit(1)
@@ -879,7 +879,7 @@ def negative_vbrif_flowfilter_out():
     print "Controller Create Failed"
     exit(1)
 
-  print "TEST 1 : VBRIF->Negative test scenario FLOWFILTER TEST"
+  print "TEST 10 : VBRIF->Negative test scenario FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -926,7 +926,7 @@ def negative_vbrif_flowfilter_out():
     print "After Create VBRIF Validate Failed"
     exit(1)
 
-  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 1)
+  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 0)
   if retval != 0:
     print "VBR Validate Failed"
     exit(1)
@@ -1109,7 +1109,7 @@ def test_vbrif_flowfilter_pass():
     print "After Create VBRIF Validate Failed"
     exit(1)
 
-  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 1)
+  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 0)
   if retval != 0:
     print "VBR Validate Failed"
     exit(1)
@@ -1259,7 +1259,7 @@ def update_vbrif_flowfilter_pass():
     print "After Create VBRIF Validate Failed"
     exit(1)
 
-  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 1)
+  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 0)
   if retval != 0:
     print "VBR Validate Failed"
     exit(1)
@@ -1426,7 +1426,7 @@ def test_vbrif_flowfilter_drop():
     print "After Create VBRIF Validate Failed"
     exit(1)
 
-  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 1)
+  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 0)
   if retval != 0:
     print "VBR Validate Failed"
     exit(1)
@@ -1578,7 +1578,7 @@ def update_vbrif_flowfilter_drop():
     print "After Create VBRIF Validate Failed"
     exit(1)
 
-  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 1)
+  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 0)
   if retval != 0:
     print "VBR Validate Failed"
     exit(1)
@@ -1709,7 +1709,7 @@ def test_vbrif_flowfilter_bulkdelete():
     print "Controller Create Failed"
     exit(1)
 
-  print "TEST 1 : VBRIF->FLOWFILTER TEST"
+  print "TEST 11 : VBRIF->FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -1756,7 +1756,7 @@ def test_vbrif_flowfilter_bulkdelete():
     print "After Create VBRIF Validate Failed"
     exit(1)
 
-  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 1)
+  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 0)
   if retval != 0:
     print "VBR Validate Failed"
     exit(1)

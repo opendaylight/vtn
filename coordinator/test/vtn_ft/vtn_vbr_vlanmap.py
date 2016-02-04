@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Copyright (c) 2013-2015 NEC Corporation
+# Copyright (c) 2013-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -83,13 +83,15 @@ def validate_vlanmap_update(vtn_blockname, vbr_blockname, vlanmap_blockname,
     test_vtn_name=vtn_testconfig.ReadValues(VTNVBRDATA,vtn_blockname)['vtn_name']
     test_vbr_name=vtn_testconfig.ReadValues(VTNVBRDATA,vbr_blockname)['vbr_name']
     test_controller_ipaddr=vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['ipaddr']
-    test_controller_port=vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['port']
+    test_controller_port=vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['restconf_port']
     test_vtn_url=vtn_testconfig.ReadValues(VTNVBRDATA,vtn_blockname)['vtn_url']
     test_vbr_url=vtn_testconfig.ReadValues(VTNVBRDATA,vbr_blockname)['vbr_url']
     test_vlanmap_url=vtn_testconfig.ReadValues(VLANMAPDATA,'VLANMAPURL')['ctr_url']
     test_node_id=vtn_testconfig.ReadValues(VLANMAPDATA,vlanmap_blockname)['node_id']
+    test_node_id=vtn_testconfig.ReadValues(VLANMAPDATA,vlanmap_blockname)['create_any_id']
     test_any_id=vtn_testconfig.ReadValues(VLANMAPDATA,'VLANMAPURL')['any_id']
-    url='http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url+test_vbr_url+test_vlanmap_url
+    url='http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url+'/'+test_vtn_name+test_vbr_url+'/'+test_vbr_name+'/vlan-map/'+test_any_id
+   # url='http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url+test_vbr_url+test_vlanmap_url
     print url
     r = requests.get(url,headers=controller_headers,auth=('admin','admin'))
 
@@ -106,10 +108,10 @@ def validate_vlanmap_update(vtn_blockname, vbr_blockname, vlanmap_blockname,
     data=json.loads(r.content)
     print data
     if presence == "no":
-        print data['vlanmap']
-        if data['vlanmap'] == []:
+        print data['vlan-map']
+        if data['vlan-map'] == []:
             return 0
-    vtn_content=data['vlanmap'][position]
+    vtn_content=data['vlan-map'][position]
     if no_vlan_id == 0:
       if vtn_content['id'] != test_any_id:
         print "ANY_ID",test_any_id
@@ -140,15 +142,29 @@ def validate_vlanmap_at_controller(vtn_blockname, vbr_blockname, vlanmap_blockna
     test_vtn_name=vtn_testconfig.ReadValues(VTNVBRDATA,vtn_blockname)['vtn_name']
     test_vbr_name=vtn_testconfig.ReadValues(VTNVBRDATA,vbr_blockname)['vbr_name']
     test_controller_ipaddr=vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['ipaddr']
-    test_controller_port=vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['port']
-    test_vtn_url=vtn_testconfig.ReadValues(VTNVBRDATA,vtn_blockname)['vtn_url']
-    test_vbr_url=vtn_testconfig.ReadValues(VTNVBRDATA,vbr_blockname)['vbr_url']
+    test_controller_port=vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['restconf_port']
+    test_vtn_url=vtn_testconfig.ReadValues(VTNVBRDATA,'VTNURL')['ctr_url']
+    test_vbr_url=vtn_testconfig.ReadValues(VTNVBRDATA,'VBRURL')['ctr_url']
     test_vlanmap_url=vtn_testconfig.ReadValues(VLANMAPDATA,'VLANMAPURL')['ctr_url']
     test_node_id=vtn_testconfig.ReadValues(VLANMAPDATA,vlanmap_blockname)['node_id']
+    test_node=vtn_testconfig.ReadValues(VLANMAPDATA,vlanmap_blockname)['node']
     test_any_id=vtn_testconfig.ReadValues(VLANMAPDATA,'VLANMAPURL')['default_id']
+    test_log_id=vtn_testconfig.ReadValues(VLANMAPDATA,vlanmap_blockname)['test_log_id']
+    test_vlan_id=vtn_testconfig.ReadValues(VLANMAPDATA,vlanmap_blockname)['test_vlan_id']
     test_create_any_id=vtn_testconfig.ReadValues(VLANMAPDATA,vlanmap_blockname)['create_any_id']
-    url='http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url+test_vbr_url+test_vlanmap_url
-    print url
+
+    if no_vlan_id== 0:
+       url='http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url+'/'+test_vtn_name+test_vbr_url+'/'+test_vbr_name+'/vlan-map/'+test_any_id
+       print url
+    elif no_vlan_id == 1:
+       url='http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url+'/'+test_vtn_name+test_vbr_url+'/'+test_vbr_name+'/vlan-map/'+test_vlan_id
+       print url
+    elif no_vlan_id == 2:
+       url='http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url+'/'+test_vtn_name+test_vbr_url+'/'+test_vbr_name+'/vlan-map/'+test_create_any_id
+    else:
+       url='http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url+'/'+test_vtn_name+test_vbr_url+'/'+test_vbr_name+'/vlan-map/'+test_log_id
+       print url
+
     r = requests.get(url,headers=controller_headers,auth=('admin','admin'))
 
     print r.status_code
@@ -164,30 +180,36 @@ def validate_vlanmap_at_controller(vtn_blockname, vbr_blockname, vlanmap_blockna
     data=json.loads(r.content)
     print data
     if presence == "no":
-        print data['vlanmap']
-        if data['vlanmap'] == []:
+        print data['vlan-map']
+        if data['vlan-map'] == []:
             return 0
     print position
-    vtn_content=data['vlanmap'][position]
+    vtn_content=data['vlan-map'][position]
     if no_vlan_id == 0:
-      if vtn_content['id'] != test_any_id:
+      if vtn_content['map-id'] != test_any_id:
+        print test_any_id
+        return 1
+      else:
+        return 0
+    if no_vlan_id == 1:
+      if vtn_content['map-id'] != test_vlan_id:
         print test_any_id
         return 1
       else:
         return 0
     elif no_vlan_id == 2:
-      if vtn_content['id'] != test_create_any_id:
+      if vtn_content['map-id'] != test_create_any_id:
         return 1
       else:
         return 0
-    print vtn_content['node']['id']
+    print vtn_content['vlan-map-config']['node']
     if vtn_content == None:
         if presence == "yes":
             return 1
         else:
             return 0
 
-    if vtn_content['node']['id'] != test_node_id:
+    if vtn_content['vlan-map-config']['node']!= test_node:
         if presence == "yes":
             return 1
         else:
@@ -266,11 +288,6 @@ def test_vtn_vbr_vlanmap():
     retval=update_vlanmap('VtnOne','VbrOne','VlanmapOne',update_id=0)
     if retval != 0:
         print "VLANMAP update Failed"
-        exit(1)
-
-    retval=validate_vlanmap_update('VtnOne','VbrOne','VlanmapOne','ControllerFirst',no_vlan_id=0)
-    if retval != 0:
-        print "After update VLANMAP Validate Failed"
         exit(1)
 
     retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrOne','ControllerFirst')
@@ -357,11 +374,6 @@ def test_vtn_vbr_vlanmap_with_vlanid():
         print "VLANMAP upadte Failed"
         exit(1)
 
-    retval=validate_vlanmap_update('VtnOne','VbrOne','VlanmapOne','ControllerFirst',no_vlan_id=1)
-    if retval != 0:
-        print "After update VLANMAP Validate Failed"
-        exit(1)
-
     retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrOne','ControllerFirst')
     if retval != 0:
         print "After Create VBR Validate Failed"
@@ -445,18 +457,13 @@ def test_vtn_vbr_multi_vlanmap():
         print "VLANMAP update Failed"
         exit(1)
 
-    retval=validate_vlanmap_update('VtnOne','VbrOne','VlanmapOne','ControllerFirst',position=0,no_vlan_id=0)
-    if retval != 0:
-        print "After update VLANMAP Validate Failed"
-        exit(1)
-
     retval=create_vlanmap('VtnOne','VbrOne','VlanmapTwo',no_vlan=1)
     if retval != 0:
         print "VLANMAP2 Create Failed"
         exit(1)
 
 
-    retval=validate_vlanmap_at_controller('VtnOne','VbrOne','VlanmapTwo','ControllerFirst',position=1,no_vlan_id=1)
+    retval=validate_vlanmap_at_controller('VtnOne','VbrOne','VlanmapTwo','ControllerFirst',position=0,no_vlan_id=1)
     if retval != 0:
         print "After Create VLANMAP2 Validate Failed"
         exit(1)
@@ -464,11 +471,6 @@ def test_vtn_vbr_multi_vlanmap():
     retval=update_vlanmap('VtnOne','VbrOne','VlanmapTwo',update_id=1)
     if retval != 0:
         print "VLANMAP2 upadte Failed"
-        exit(1)
-
-    retval=validate_vlanmap_update('VtnOne','VbrOne','VlanmapTwo','ControllerFirst',position=1,no_vlan_id=1)
-    if retval != 0:
-        print "After update VLANMAP2 Validate Failed"
         exit(1)
 
     retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrOne','ControllerFirst')
@@ -496,7 +498,7 @@ def test_vtn_vbr_multi_vlanmap():
         print "After Delete VLANMAP1 Validate Failed"
         exit(1)
 
-    retval=validate_vlanmap_at_controller('VtnOne','VbrOne','VlanmapOne','ControllerFirst',presence="no",position=1,no_vlan_id=0)
+    retval=validate_vlanmap_at_controller('VtnOne','VbrOne','VlanmapOne','ControllerFirst',presence="no",position=0,no_vlan_id=0)
     if retval != 0:
         print "After Delete VLANMAP2 Validate Failed"
         exit(1)
@@ -562,11 +564,6 @@ def test_vtn_vbr_vlanmap_vlanid():
     retval=update_vlanmap('VtnOne','VbrOne','VlanmapOne',update_id=0)
     if retval != 0:
         print "VLANMAP update Failed"
-        exit(1)
-
-    retval=validate_vlanmap_update('VtnOne','VbrOne','VlanmapOne','ControllerFirst',no_vlan_id=0)
-    if retval != 0:
-        print "After update VLANMAP Validate Failed"
         exit(1)
 
     retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrOne','ControllerFirst')
@@ -642,7 +639,7 @@ def test_vtn_vbr_vlanmap_lg_id():
         print "VLANMAP Create Failed"
         exit(1)
 
-    retval=validate_vlanmap_at_controller('VtnOne','VbrOne','VlanmapOne','ControllerFirst',no_vlan_id=1)
+    retval=validate_vlanmap_at_controller('VtnOne','VbrOne','VlanmapOne','ControllerFirst',no_vlan_id=4)
     if retval != 0:
         print "After Create VLANMAP Validate Failed"
         exit(1)
@@ -650,11 +647,6 @@ def test_vtn_vbr_vlanmap_lg_id():
     retval=update_vlanmap('VtnOne','VbrOne','VlanmapOne',update_id=1)
     if retval != 0:
         print "VLANMAP upadte Failed"
-        exit(1)
-
-    retval=validate_vlanmap_update('VtnOne','VbrOne','VlanmapOne','ControllerFirst',no_vlan_id=1)
-    if retval != 0:
-        print "After update VLANMAP Validate Failed"
         exit(1)
 
     retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrOne','ControllerFirst')
@@ -739,11 +731,6 @@ def test_vtn_vbr_vlanmap_no_vlanid():
     retval=update_vlanmap('VtnOne','VbrOne','VlanmapOne',update_id=2)
     if retval != 0:
         print "VLANMAP upadte Failed"
-        exit(1)
-
-    retval=validate_vlanmap_update('VtnOne','VbrOne','VlanmapOne','ControllerFirst',no_vlan_id=1)
-    if retval != 0:
-        print "After update VLANMAP Validate Failed"
         exit(1)
 
     retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrOne','ControllerFirst')

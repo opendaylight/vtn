@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2015 NEC Corporation
+# Copyright (c) 2013-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -14,8 +14,11 @@ u_id=20
 no_vlan_id = true
 vlanmap_id =lpid-SW-openflow:1
 node_id=00:00:00:00:00:00:00:01
+node=openflow:1
 any_id=ANY.20
 create_any_id=ANY.10
+test_vlan_id=openflow:1.10
+test_log_id=openflow:1.0
 
 [VlanmapTwo]
 logical_port_id=SW-openflow:2
@@ -24,8 +27,11 @@ u_id=20
 no_vlan_id = true
 vlanmap_id =lpid-SW-openflow:2
 node_id=00:00:00:00:00:00:00:02
+node=openflow:2
 any_id=ANY.20
 create_any_id=ANY.2
+test_vlan_id=openflow:2.2
+test_log_id=openflow:2.0
 
 [VlanmapThree]
 logical_port_id=SW-openflow:3
@@ -34,8 +40,11 @@ u_id=30
 no_vlan_id = true
 vlanmap_id =lpid-SW-openflow:3
 node_id=00:00:00:00:00:00:00:03
+node=openflow:3
 any_id=ANY.30
 create_any_id=ANY.3
+test_vlan_id=openflow:3.3
+test_log_id=openflow:3.0
 
 [VlanmapFour]
 logical_port_id=SW-openflow:4
@@ -44,8 +53,11 @@ u_id=40
 no_vlan_id = true
 vlanmap_id =lpid-SW-openflow:4
 node_id=00:00:00:00:00:00:00:04
+node=openflow:4
 any_id=ANY.40
 create_any_id=ANY.4
+test_vlan_id=openflow:4.4
+test_log_id=openflow:4.0
 
 [VLANMAPURL]
 url=/vlanmaps.json

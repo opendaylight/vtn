@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Copyright (c) 2014 NEC Corporation
+# Copyright (c) 2014-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -405,12 +405,12 @@ def test_multi_vtn_with_vterm_multi_controller_audit_test():
         print "VTN1 Validate Failed"
         exit(1)
 
-    retval =  vtn_vterm.validate_vtn_at_controller('VtnTwo','ControllerFirst',position=1)
+    retval =  vtn_vterm.validate_vtn_at_controller('VtnTwo','ControllerFirst',position=0)
     if retval != 0:
         print "VTN2 Validate Failed"
         exit(1)
 
-    retval =  vtn_vterm.validate_vtn_at_controller('VtnThree','ControllerSecond',position=1)
+    retval =  vtn_vterm.validate_vtn_at_controller('VtnThree','ControllerSecond',position=0)
     if retval != 0:
         print "VTN3 Validate Failed"
         exit(1)

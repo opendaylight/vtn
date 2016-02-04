@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2014-2015 NEC Corporation
+# Copyright (c) 2014-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -11,7 +11,7 @@
 vtermif_name=vtermifone
 description=first vtermif for vtermone
 admin_status=true
-controller_url=/interfaces/vtermifone
+controller_url=/interface/vtermifone
 vtermif_url=/interfaces/vtermifone
 logical_port_id=PP-openflow:1-s1-eth1
 node_id=00:00:00:00:00:00:00:01
@@ -24,7 +24,7 @@ tagged=true
 vtermif_name=vtermiftwo
 description=second vtermif for vtermone
 admin_status=false
-controller_url=/interfaces/vtermiftwo
+controller_url=/interface/vtermiftwo
 vtermif_url=/interfaces/vtermiftwo
 logical_port_id=PP-openflow:4-s4-eth1
 node_id=00:00:00:00:00:00:00:04
@@ -37,7 +37,7 @@ tagged=false
 vtermif_name=vtermifthree
 description=first vtermif for vtermtwo
 admin_status=true
-controller_url=/interfaces/vtermifthree
+controller_url=/interface/vtermifthree
 vtermif_url=/interfaces/vtermifthree
 logical_port_id=PP-openflow:1-s1-eth3
 node_id=00:00:00:00:00:00:00:01
@@ -50,7 +50,7 @@ tagged=false
 vtermif_name=vtermiffour
 description=second vtermif for vtermtwo
 admin_status=false
-controller_url=/interfaces/vtermiffour
+controller_url=/interface/vtermiffour
 vtermif_url=/interfaces/vtermiffour
 logical_port_id=PP-openflow:2-s2-eth2
 node_id=00:00:00:00:00:00:00:02
@@ -63,7 +63,7 @@ tagged=true
 vtermif_name=vtermifone
 description=first vtermif for vtermone
 admin_status=true
-controller_url=/interfaces/vtermifone
+controller_url=/interface/vtermifone
 vtermif_url=/interfaces/vtermifone
 logical_port_id=PP-openflow:2-s2-eth2
 node_id=00:00:00:00:00:00:00:02
@@ -75,7 +75,7 @@ tagged=true
 vtermif_name=vtermifthree
 description=first vtermif for vtermtwo
 admin_status=true
-controller_url=/interfaces/vtermifthree
+controller_url=/interface/vtermifthree
 vtermif_url=/interfaces/vtermifthree
 logical_port_id=PP-openflow:5-s5-eth2
 node_id=00:00:00:00:00:00:00:05
@@ -85,8 +85,8 @@ tagged=false
 
 [VTERMIFURL]
 url=/interfaces.json
-ctr_url=/interfaces
+ctr_url=/vinterface
 
 [PORTMAPURL]
 url=/portmap.json
-ctr_url=/portmaps
+ctr_url=/portmap
