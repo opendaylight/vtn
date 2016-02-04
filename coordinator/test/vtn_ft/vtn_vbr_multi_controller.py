@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2013-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -203,12 +203,12 @@ def test_vtn_multi_vbr_multi_controller():
         print "VBR1 Validate Failed"
         exit(1)
 
-    retval = vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst',position=1)
+    retval = vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst',position=0)
     if retval != 0:
         print "VBR2 Validate Failed"
         exit(1)
 
-    retval = vtn_vbr.validate_vbr_at_controller('VtnTwo','VbrThree','ControllerSecond',position=1)
+    retval = vtn_vbr.validate_vbr_at_controller('VtnTwo','VbrThree','ControllerSecond',position=0)
     if retval != 0:
         print "VBR3 Validate Failed"
         exit(1)
@@ -352,7 +352,7 @@ def test_multi_vtn_with_vbr_multi_controller():
         print "VTN1/CONTROLLER1 Validate Failed"
         exit(1)
 
-    retval = vtn_vbr.validate_vtn_at_controller('VtnTwo','ControllerFirst',position=1)
+    retval = vtn_vbr.validate_vtn_at_controller('VtnTwo','ControllerFirst',position=0)
     if retval != 0:
         print "VTN2/CONTROLLER2 Validate Failed"
         exit(1)
@@ -362,7 +362,7 @@ def test_multi_vtn_with_vbr_multi_controller():
         print "VTN1/CONTROLLER2 Validate Failed"
         exit(1)
 
-    retval = vtn_vbr.validate_vtn_at_controller('VtnTwo','ControllerSecond',position=1)
+    retval = vtn_vbr.validate_vtn_at_controller('VtnTwo','ControllerSecond',position=0)
     if retval != 0:
         print "VTN2/CONTROLLER2 Validate Failed"
         exit(1)
