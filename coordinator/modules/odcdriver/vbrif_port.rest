@@ -142,7 +142,7 @@ parse_support=no
 
 [ip_vlan]
 type=int
-key="vlan"
+key="vlan-id"
 struct_name=input_vbrifport
 is_child=yes
 build_support=yes
