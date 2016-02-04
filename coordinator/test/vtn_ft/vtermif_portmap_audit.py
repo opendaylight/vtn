@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Copyright (c) 2014-2015 NEC Corporation
+# Copyright (c) 2014-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -231,7 +231,7 @@ def test_audit_vtn_multi_vterm_vtermif():
       print "VTERMONE Validate Failed"
       exit(1)
 
-    retval=vtn_vterm.validate_vterm_at_controller('VtnOne','VTermTwo','ControllerFirst',position=1)
+    retval=vtn_vterm.validate_vterm_at_controller('VtnOne','VTermTwo','ControllerFirst',position=0)
     if retval != 0:
       print "VTERMTWO Validate Failed"
       exit(1)
@@ -267,7 +267,7 @@ def test_audit_vtn_multi_vterm_vtermif():
       print "VTERM2->VTERMIF2 Delete Failed"
       exit(1)
 
-    retval=vtermif_portmap.validate_vtermif_at_controller('VtnOne','VTermTwo','VTermIfTwo','ControllerFirst',presence="no",position=1)
+    retval=vtermif_portmap.validate_vtermif_at_controller('VtnOne','VTermTwo','VTermIfTwo','ControllerFirst',presence="no",position=0)
     if retval != 0:
       print "VTERM2->VTERMIF2 Validate Failed"
       exit(1)
@@ -286,7 +286,7 @@ def test_audit_vtn_multi_vterm_vtermif():
       print "VTERM1/VTN Validate Failed"
       exit(1)
 
-    retval=vtn_vterm.validate_vterm_at_controller('VtnOne','VTermTwo','ControllerFirst',presence="no",position=1)
+    retval=vtn_vterm.validate_vterm_at_controller('VtnOne','VTermTwo','ControllerFirst',presence="no",position=0)
     if retval != 0:
       print "VTERM2/VTN Validate Failed"
       exit(1)

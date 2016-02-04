@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2013-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -89,16 +89,6 @@ def test_vtn_vbr_vlanmap_multi_controller():
     retval=vtn_vbr_vlanmap.update_vlanmap('VtnOne','VbrThree','VlanmapTwo',update_id=0)
     if retval != 0:
         print "VLANMAP update Failed"
-        exit(1)
-
-    retval=vtn_vbr_vlanmap.validate_vlanmap_update('VtnOne','VbrOne','VlanmapOne','ControllerFirst',no_vlan_id=0)
-    if retval != 0:
-        print "After update VLANMAP Validate Failed"
-        exit(1)
-
-    retval=vtn_vbr_vlanmap.validate_vlanmap_update('VtnOne','VbrThree','VlanmapTwo','ControllerSecond',no_vlan_id=0)
-    if retval != 0:
-        print "After update VLANMAP Validate Failed"
         exit(1)
 
     retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrOne','ControllerFirst')
@@ -257,16 +247,6 @@ def test_vtn_vbr_vlanmap_with_vlanid_multi_controller():
     retval=vtn_vbr_vlanmap.update_vlanmap('VtnOne','VbrThree','VlanmapTwo',update_id=1)
     if retval != 0:
         print "VLANMAP update Failed"
-        exit(1)
-
-    retval=vtn_vbr_vlanmap.validate_vlanmap_update('VtnOne','VbrOne','VlanmapOne','ControllerFirst',no_vlan_id=1)
-    if retval != 0:
-        print "After update VLANMAP Validate Failed"
-        exit(1)
-
-    retval=vtn_vbr_vlanmap.validate_vlanmap_update('VtnOne','VbrThree','VlanmapTwo','ControllerSecond',no_vlan_id=1)
-    if retval != 0:
-        print "After update VLANMAP Validate Failed"
         exit(1)
 
     retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrOne','ControllerFirst')
@@ -428,16 +408,6 @@ def test_vtn_vbr_multi_vlanmap_multi_controller():
         print "VLANMAP3 update Failed"
         exit(1)
 
-    retval=vtn_vbr_vlanmap.validate_vlanmap_update('VtnOne','VbrOne','VlanmapOne','ControllerFirst',position=0,no_vlan_id=0)
-    if retval != 0:
-        print "After update VLANMAP Validate Failed"
-        exit(1)
-
-    retval=vtn_vbr_vlanmap.validate_vlanmap_update('VtnOne','VbrThree','VlanmapThree','ControllerSecond',position=0,no_vlan_id=0)
-    if retval != 0:
-        print "After update VLANMAP Validate Failed"
-        exit(1)
-
     retval=vtn_vbr_vlanmap.create_vlanmap('VtnOne','VbrOne','VlanmapTwo',no_vlan=1)
     if retval != 0:
         print "VLANMAP2 Create Failed"
@@ -448,12 +418,12 @@ def test_vtn_vbr_multi_vlanmap_multi_controller():
         print "VLANMAP2 Create Failed"
         exit(1)
 
-    retval=vtn_vbr_vlanmap.validate_vlanmap_at_controller('VtnOne','VbrOne','VlanmapTwo','ControllerFirst',position=1,no_vlan_id=1)
+    retval=vtn_vbr_vlanmap.validate_vlanmap_at_controller('VtnOne','VbrOne','VlanmapTwo','ControllerFirst',position=0,no_vlan_id=1)
     if retval != 0:
         print "After Create VLANMAP2 Validate Failed"
         exit(1)
 
-    retval=vtn_vbr_vlanmap.validate_vlanmap_at_controller('VtnOne','VbrThree','VlanmapFour','ControllerSecond',position=1,no_vlan_id=1)
+    retval=vtn_vbr_vlanmap.validate_vlanmap_at_controller('VtnOne','VbrThree','VlanmapFour','ControllerSecond',position=0,no_vlan_id=1)
     if retval != 0:
         print "After Create VLANMAP2 Validate Failed"
         exit(1)
@@ -466,16 +436,6 @@ def test_vtn_vbr_multi_vlanmap_multi_controller():
     retval=vtn_vbr_vlanmap.update_vlanmap('VtnOne','VbrThree','VlanmapFour',update_id=1)
     if retval != 0:
         print "VLANMAP2 upadte Failed"
-        exit(1)
-
-    retval=vtn_vbr_vlanmap.validate_vlanmap_update('VtnOne','VbrOne','VlanmapTwo','ControllerFirst',position=1,no_vlan_id=1)
-    if retval != 0:
-        print "After update VLANMAP2 Validate Failed"
-        exit(1)
-
-    retval=vtn_vbr_vlanmap.validate_vlanmap_update('VtnOne','VbrThree','VlanmapFour','ControllerSecond',position=1,no_vlan_id=1)
-    if retval != 0:
-        print "After update VLANMAP2 Validate Failed"
         exit(1)
 
     retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrOne','ControllerFirst')
@@ -533,7 +493,7 @@ def test_vtn_vbr_multi_vlanmap_multi_controller():
         print "After Delete VLANMAP3 Validate Failed"
         exit(1)
 
-    retval=vtn_vbr_vlanmap.validate_vlanmap_at_controller('VtnOne','VbrThree','VlanmapFour','ControllerSecond',presence="no",position=1,no_vlan_id=1)
+    retval=vtn_vbr_vlanmap.validate_vlanmap_at_controller('VtnOne','VbrThree','VlanmapFour','ControllerSecond',presence="no",position=0,no_vlan_id=1)
     if retval != 0:
         print "After Delete VLANMAP4 Validate Failed"
         exit(1)
@@ -656,16 +616,6 @@ def test_vtn_vbr_vlanmap_vlanid_multi_controller():
     retval=vtn_vbr_vlanmap.update_vlanmap('VtnOne','VbrThree','VlanmapTwo',update_id=1)
     if retval != 0:
         print "VLANMAP2 update Failed"
-        exit(1)
-
-    retval=vtn_vbr_vlanmap.validate_vlanmap_update('VtnOne','VbrOne','VlanmapOne','ControllerFirst',no_vlan_id=0)
-    if retval != 0:
-        print "After update VLANMAP1 Validate Failed"
-        exit(1)
-
-    retval=vtn_vbr_vlanmap.validate_vlanmap_update('VtnOne','VbrThree','VlanmapTwo','ControllerSecond',no_vlan_id=1)
-    if retval != 0:
-        print "After update VLANMAP2 Validate Failed"
         exit(1)
 
     retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrOne','ControllerFirst')
@@ -828,16 +778,6 @@ def test_vtn_vbr_vlanmap_lg_id_multi_controller():
         print "VLANMAP2 upadte Failed"
         exit(1)
 
-    retval=vtn_vbr_vlanmap.validate_vlanmap_update('VtnOne','VbrOne','VlanmapOne','ControllerFirst',no_vlan_id=1)
-    if retval != 0:
-        print "After update VLANMAP1 Validate Failed"
-        exit(1)
-
-    retval=vtn_vbr_vlanmap.validate_vlanmap_update('VtnOne','VbrTwo','VlanmapTwo','ControllerSecond',no_vlan_id=2)
-    if retval != 0:
-        print "After update VLANMAP2 Validate Failed"
-        exit(1)
-
     retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrOne','ControllerFirst')
     if retval != 0:
         print "After Create VBR1 Validate Failed"
@@ -996,16 +936,6 @@ def test_vtn_vbr_vlanmap_no_vlanid_multi_controller():
     retval=vtn_vbr_vlanmap.update_vlanmap('VtnOne','VbrThree','VlanmapTwo',update_id=2)
     if retval != 0:
         print "VLANMAP2 upadte Failed"
-        exit(1)
-
-    retval=vtn_vbr_vlanmap.validate_vlanmap_update('VtnOne','VbrOne','VlanmapOne','ControllerFirst',no_vlan_id=1)
-    if retval != 0:
-        print "After update VLANMAP Validate Failed"
-        exit(1)
-
-    retval=vtn_vbr_vlanmap.validate_vlanmap_update('VtnOne','VbrThree','VlanmapTwo','ControllerSecond',no_vlan_id=1)
-    if retval != 0:
-        print "After update VLANMAP Validate Failed"
         exit(1)
 
     retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrOne','ControllerFirst')
