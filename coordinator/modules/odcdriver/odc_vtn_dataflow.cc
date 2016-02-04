@@ -450,7 +450,7 @@ UncRespCode OdcVtnDataFlowCommand::parse_flow_response_values(
         status = 1;
         vlink_flag = 0;
       }
-
+    }
       // match - START
       pfc_bool_t match_status = PFC_FALSE;
       if(it->data_flow_match_.valid == true){
@@ -966,7 +966,6 @@ UncRespCode OdcVtnDataFlowCommand::parse_flow_response_values(
         } else {
         pfc_log_info("no element for noderoute array");
         }*/
-    }
     unc::vtnreadutil::driver_dataflow_read_util::add_read_value
       (df_cmn, df_util);
   }

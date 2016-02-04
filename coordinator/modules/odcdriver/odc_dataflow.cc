@@ -68,7 +68,17 @@ UncRespCode OdcDataFlowCommand::read_cmd(
     in_obj.input_data_flow_.data_flow_port_.ip_port_name =
                            reinterpret_cast<char*>(key_dataflow.port_id);
     in_obj.input_data_flow_.data_flow_source_.valid = true;
-    in_obj.input_data_flow_.data_flow_source_.ip_vlan = key_dataflow.vlan_id;
+    unsigned int vlan_id = 0;
+    if (key_dataflow.vlan_id) {
+       if (key_dataflow.vlan_id != 0xffff) {
+         in_obj.input_data_flow_.data_flow_source_.ip_vlan = key_dataflow.vlan_id;
+         pfc_log_info("vlan-id : %u", vlan_id);
+       } else {
+         in_obj.input_data_flow_.data_flow_source_.ip_vlan = 0;
+         pfc_log_info("vlan-id : not set.");
+       }
+    }
+
     uint8_t mac_arr[VAL_MAC_ADDR_SIZE];
     memset(&mac_arr, 0, VAL_MAC_ADDR_SIZE);
     string srcMac = "";
@@ -611,30 +621,30 @@ UncRespCode OdcDataFlowCommand::parse_flow_response_values(
         df_cmn->df_segment->df_common->path_info_count = node_array_len;
         df_cmn->df_segment->df_common->valid[kidxDfDataFlowPathInfoCount] =
           UNC_VF_VALID;
-        for (uint32_t count = 0; count < node_array_len; count++) {
+        //for (uint32_t count = 0; count < node_array_len; count++) {
           val_df_data_flow_path_info *ptr = new val_df_data_flow_path_info;
           memset(ptr, 0, sizeof(val_df_data_flow_path_info_t));
           /* copy Path-info SwitchId to dataflow common struct */
           strncpy(reinterpret_cast<char*> (ptr->switch_id),
-              pathinfo_record[count].switchid.c_str(),
-              strlen(pathinfo_record[count].switchid.c_str()));
+              pathinfo_record[order].switchid.c_str(),
+              strlen(pathinfo_record[order].switchid.c_str()));
           pfc_log_info("pathinfo_Switch_name1 -- %s",
-              pathinfo_record[count].switchid.c_str());
+              pathinfo_record[order].switchid.c_str());
           ptr->valid[kidxDfDataFlowPathInfoSwitchId] = UNC_VF_VALID;
           strncpy(reinterpret_cast<char*> (ptr->in_port),
-              pathinfo_record[count].inport.c_str(),
-              strlen(pathinfo_record[count].inport.c_str()));
+              pathinfo_record[order].inport.c_str(),
+              strlen(pathinfo_record[order].inport.c_str()));
           pfc_log_info("pathinfo_Inport_name1 -- %s",
-              pathinfo_record[count].inport.c_str());
+              pathinfo_record[order].inport.c_str());
           ptr->valid[kidxDfDataFlowPathInfoInPort] = UNC_VF_VALID;
           strncpy(reinterpret_cast<char*> (ptr->out_port),
-              pathinfo_record[count].outport.c_str(),
-              strlen(pathinfo_record[count].outport.c_str()));
+              pathinfo_record[order].outport.c_str(),
+              strlen(pathinfo_record[order].outport.c_str()));
           pfc_log_info("pathinfo_Outport_name1 -- %s",
-              pathinfo_record[count].outport.c_str());
+              pathinfo_record[order].outport.c_str());
           ptr->valid[kidxDfDataFlowPathInfoOutPort] = UNC_VF_VALID;
           df_cmn->df_segment->path_infos.push_back(ptr);
-        }
+       // }
       } else {
         df_cmn->df_segment->df_common->valid[kidxDfDataFlowPathInfoCount] =
           UNC_VF_INVALID;
