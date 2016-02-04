@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Copyright (c) 2014-2015 NEC Corporation
+# Copyright (c) 2014-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -103,9 +103,10 @@ def delete_flowfilter(blockname, ff_blockname):
 def validate_flowfilter_at_controller(blockname, controller_blockname, ff_blockname, presence = 'yes', position = 0):
     vtn_bn = blockname.split('|')[0]
     vtn_url=vtn_testconfig.ReadValues(VTNVBRDATA, vtn_bn)['vtn_url']
+    vtn_name=vtn_testconfig.ReadValues(VTNVBRDATA, vtn_bn)['vtn_name']
     controller_ipaddr = vtn_testconfig.ReadValues(CONTROLLERDATA, controller_blockname)['ipaddr']
-    controller_port = vtn_testconfig.ReadValues(CONTROLLERDATA, controller_blockname)['port']
-    vtn_url = vtn_testconfig.ReadValues(VTNVBRDATA, vtn_bn)['vtn_url']
+    controller_port = vtn_testconfig.ReadValues(CONTROLLERDATA, controller_blockname)['restconf_port']
+    vtn_url = vtn_testconfig.ReadValues(VTNVBRDATA, 'VTNURL')['ctr_url']
     ff_type = vtn_testconfig.ReadValues(FLOWFILTERDATA,  ff_blockname)['type']
     index = vtn_testconfig.ReadValues(FLOWFILTERDATA,  ff_blockname)['index']
     condition = vtn_testconfig.ReadValues(FLOWFILTERDATA,  ff_blockname)['condition']
@@ -114,13 +115,43 @@ def validate_flowfilter_at_controller(blockname, controller_blockname, ff_blockn
     direction = vtn_testconfig.ReadValues(FLOWFILTERDATA, ff_blockname)['direction']
 
     action_type = vtn_testconfig.ReadValues(FLOWFILTERDATA, ff_blockname)['action_type']
-    url = 'http://'+controller_ipaddr+':'+controller_port+controller_url_part+vtn_url
+    url='http://'+controller_ipaddr+':'+controller_port+controller_url_part+vtn_url+'/'+vtn_name
+    count = blockname.count('|')
+    vbr_bn = ""
+    vbrif_bn = ""
+    vtermif_bn = ""
+    if count == 3:
+        vtermif_bn = blockname.split('|')[3]
+        vtermif_name=vtn_testconfig.ReadValues(VTERMIFDATA, vtermif_bn)['vtermif_name']
+        vterm_bn = blockname.split('|')[1]
+        vterm_name=vtn_testconfig.ReadValues(VTNVTERMDATA, vterm_bn)['vterminal_name']
+        if ff_type == 'in':
+           url='http://'+controller_ipaddr+':'+controller_port+controller_url_part+vtn_url+'/'+vtn_name+'/vterminal/'+vterm_name+'/vinterface/'+vtermif_name+'/vinterface-input-filter/vtn-flow-filter/'+index
+        else:
+           url='http://'+controller_ipaddr+':'+controller_port+controller_url_part+vtn_url+'/'+vtn_name+'/vterminal/'+vterm_name+'/vinterface/'+vtermif_name+'/vinterface-output-filter/vtn-flow-filter/'+index
+    if count == 2:
+        vbrif_bn = blockname.split('|')[2]
+        vbrif_name=vtn_testconfig.ReadValues(VBRIFDATA, vbrif_bn)['vbrif_name']
+        vbr_bn = blockname.split('|')[1]
+        vbr_name=vtn_testconfig.ReadValues(VTNVBRDATA, vbr_bn)['vbr_name']
+        if ff_type == 'in':
+           url='http://'+controller_ipaddr+':'+controller_port+controller_url_part+vtn_url+'/'+vtn_name+'/vbridge/'+vbr_name+'/vinterface/'+vbrif_name+'/vinterface-input-filter/vtn-flow-filter/'+index
+        else:
+           url='http://'+controller_ipaddr+':'+controller_port+controller_url_part+vtn_url+'/'+vtn_name+'/vbridge/'+vbr_name+'/vinterface/'+vbrif_name+'/vinterface-output-filter/vtn-flow-filter/'+index
+        print 'vbrif_url************'
+    if count == 1:
+        vbr_bn = blockname.split('|')[1]
+        vbr_name=vtn_testconfig.ReadValues(VTNVBRDATA, vbr_bn)['vbr_name']
+        if ff_type == 'in':
+           url='http://'+controller_ipaddr+':'+controller_port+controller_url_part+vtn_url+'/'+vtn_name+'/vbridge/'+vbr_name+'/vbridge-input-filter/vtn-flow-filter/'+index
+        else:
+           url='http://'+controller_ipaddr+':'+controller_port+controller_url_part+vtn_url+'/'+vtn_name+'/vbridge/'+vbr_name+'/vbridge-output-filter/vtn-flow-filter/'+index
 
-    url = split_blockname(blockname, url)
-    url = url + '/flowfilters'
     count = blockname.count('|')
     if count > 0:
-        url = url + '/' + ff_type
+        url = url
+    else:
+        url = url+'/vtn-input-filter/vtn-flow-filter/'+index 
     print url
 
     r  =  requests.get(url, headers = controller_headers, auth = ('admin', 'admin'))
@@ -134,15 +165,17 @@ def validate_flowfilter_at_controller(blockname, controller_blockname, ff_blockn
 
     data = json.loads(r.content)
     print data
+    flowfilter_type = data['vtn-flow-filter']
+    print flowfilter_type
 
     if presence == "no":
-        print data['flowfilter']
-        if data['flowfilter'] == []:
+        print data['vtn-flow-filter']
+        if data['vtn-flow-filter'] == []:
             return 0
         else:
             return 0
     else:
-      flowfilter_content = data['flowfilter'][position]
+      flowfilter_content = data['vtn-flow-filter'][position]
       print flowfilter_content
       if flowfilter_content['condition']!=condition:
           return 1
@@ -150,20 +183,22 @@ def validate_flowfilter_at_controller(blockname, controller_blockname, ff_blockn
           return 1
       ret = validate_filter_type(flowfilter_content)
       if ret != 0:
+          print "vlaidate_filter_type"
           return 1
       ret = validate_actions(flowfilter_content, ff_blockname)
       if ret != 0:
+          print "vlaidate_actions------"
           return 1
     return 0
 
 def validate_filter_type(flowfilter_content):
   print "filtertype"
   try:
-      if flowfilter_content['filterType']['redirect']['destination']['bridge'] != bridge:
+      if flowfilter_content['vtn-redirect-filter']['redirect-destination']['bridge-name'] != bridge:
           return 1
-      if flowfilter_content['filterType']['redirect']['destination']['interface'] != interface:
+      if flowfilter_content['vtn-redirect-filter']['redirect-destination']['interface-name'] != interface:
           return 1
-      if bool(flowfilter_content['filterType']['redirect']['output']) != bool(locale.atof(output)):
+      if bool(flowfilter_content['vtn-redirect-filter']['output']) != bool(locale.atof(output)):
           return 1
   except(NameError, KeyError):
       print "Filtertype is either PASS or DROP"
@@ -172,47 +207,60 @@ def validate_filter_type(flowfilter_content):
 
 def validate_actions(flowfilter_content, ff_blockname):
   print "actions"
-  length = len(flowfilter_content['actions'])
+  length = len(flowfilter_content['vtn-flow-action'])
 
   for index in range(length):
     print "looping:", index
     ret = 1
-    element = flowfilter_content['actions'][index]
+    element = flowfilter_content['vtn-flow-action'][index]
     print element
-    if 'dscp' in element:
-       ret = validate_dscp(flowfilter_content['actions'][index], ff_blockname);
-    if 'vlanpcp' in element:
-       ret = validate_priority(flowfilter_content['actions'][index], ff_blockname);
-    if 'dlrsrc' in element:
-       ret = validate_dlsrc(flowfilter_content['actions'][index], ff_blockname);
+    if 'vtn-set-inet-dscp-action' in element:
+       print "entering dscp"
+       ret = validate_dscp(flowfilter_content['vtn-flow-action'][index], ff_blockname);
+    if 'vtn-set-vlan-pcp-action' in element:
+       ret = validate_priority(flowfilter_content['vtn-flow-action'][index], ff_blockname);
+    if 'vtn-set-dl-dst-action' in element:
+       ret = validate_dldst(flowfilter_content['vtn-flow-action'][index], ff_blockname);
+    if 'vtn-set-dl-src-action' in element:
+       ret = validate_dlsrc(flowfilter_content['vtn-flow-action'][index], ff_blockname);
     return ret
 
 def validate_dscp(json_array, ff_blockname):
     print "validate_dscp"
     dscp = vtn_testconfig.ReadValues(FLOWFILTERDATA,  ff_blockname)['dscp']
-    if int(json_array['dscp']['dscp']) == int(locale.atof(dscp)):
+    if int(json_array['vtn-set-inet-dscp-action']['dscp']) == int(locale.atof(dscp)):
       print "dscp"
       return 0
     else:
+      print 'fails dscp'
       return 1
 
 def validate_priority(json_array, ff_blockname):
     print "validate_priority"
-    priority = vtn_testconfig.ReadValues(FLOWFILTERDATA,  ff_blockname)['priority']
-    if int(json_array['vlanpcp']['priority']) == int(locale.atof(priority)):
-      print "priority"
+    vlanpcp = vtn_testconfig.ReadValues(FLOWFILTERDATA,  ff_blockname)['priority']
+    if int(json_array['vtn-set-vlan-pcp-action']['vlan-pcp']) == int(locale.atof(vlanpcp)):
+      print "vlan-pcp"
       return 0
     else:
       return 1
 
 def validate_dlsrc(json_array, ff_blockname):
     print "validate_dlsrc"
-    dlsrc = vtn_testconfig.ReadValues(FLOWFILTERDATA,  ff_blockname)['dlsrc']
-    if int(json_arrary['dlsrc']['address']) == int(locale.atof(dlsrc)):
+    dlsrc = vtn_testconfig.ReadValues(FLOWFILTERDATA, ff_blockname)['srcaddress']
+    print dlsrc
+    print json_array['vtn-set-dl-src-action']['address']
+    if (json_array['vtn-set-dl-src-action']['address']) == dlsrc:
       print "dlsrc"
-      return 0
-    else:
-      return 1
+    return 0
+
+def validate_dldst(json_array, ff_blockname):
+    print "validate_dldst"
+    macdstaddr = vtn_testconfig.ReadValues(FLOWFILTERDATA, ff_blockname)['dstaddress']
+    print macdstaddr
+    print json_array['vtn-set-dl-dst-action']['address']
+    if (json_array['vtn-set-dl-dst-action']['address']) == macdstaddr:
+      print "dldst"
+    return 0
 
 def create_flowfilter_entry(blockname, ff_blockname):
     vtn_bn = blockname.split('|')[0]
@@ -309,10 +357,6 @@ def update_flowfilter_entry(blockname, ff_blockname, update_ff_bn):
         dscp = vtn_testconfig.ReadValues(FLOWFILTERDATA, update_ff_bn)['dscp']
         action_type = vtn_testconfig.ReadValues(FLOWFILTERDATA, update_ff_bn)['action_type']
 
-
-
-
-
     url= coordinator_url + vtn_url
     url = split_blockname(blockname, url)
     url = url + '/flowfilters/' + ff_type + '/flowfilterentries/' + seqnum + '.json'
@@ -339,9 +383,6 @@ def update_flowfilter_entry(blockname, ff_blockname, update_ff_bn):
         action_type = vtn_testconfig.ReadValues(FLOWFILTERDATA,update_ff_bn )['action_type']
         priority = vtn_testconfig.ReadValues(FLOWFILTERDATA,update_ff_bn )['priority']
         dscp = vtn_testconfig.ReadValues(FLOWFILTERDATA, update_ff_bn)['dscp']
-
-
-
 
         redir = {'vnode_name':vnode_name, 'if_name':if_name, 'direction':direction, 'macdstaddr':macdstaddr, 'macsrcaddr':macsrcaddr}
 

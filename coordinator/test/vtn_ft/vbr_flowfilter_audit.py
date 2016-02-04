@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Copyright (c) 2014-2015 NEC Corporation
+# Copyright (c) 2014-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -83,7 +83,7 @@ def test_vbr_flowfilter_audit_1():
         print "After Create VBRIF Validate Failed"
         exit(1)
 
-    retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 1)
+    retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 0)
     if retval != 0:
       print "VBR Validate Failed"
       exit(1)
@@ -435,7 +435,7 @@ def update_vbr_flowfilter_audit():
     print "After Create VBRIF Validate Failed"
     exit(1)
 
-  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 1)
+  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 0)
   if retval != 0:
     print "VBR Validate Failed"
     exit(1)
@@ -660,7 +660,7 @@ def test_vbr_flowfilter_pass_audit():
     print "After Create VBRIF Validate Failed"
     exit(1)
 
-  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 1)
+  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 0)
   if retval != 0:
     print "VBR Validate Failed"
     exit(1)
@@ -823,7 +823,7 @@ def update_vbr_flowfilter_pass_audit():
     print "After Create VBRIF Validate Failed"
     exit(1)
 
-  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 1)
+  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 0)
   if retval != 0:
     print "VBR Validate Failed"
     exit(1)
@@ -1032,7 +1032,7 @@ def test_vbr_flowfilter_drop_audit():
     print "After Create VBRIF Validate Failed"
     exit(1)
 
-  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 1)
+  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 0)
   if retval != 0:
     print "VBR Validate Failed"
     exit(1)
@@ -1181,7 +1181,7 @@ def update_vbr_flowfilter_drop_audit():
     print "After Create VBRIF Validate Failed"
     exit(1)
 
-  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 1)
+  retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrTwo','ControllerFirst', presence = 'yes', position = 0)
   if retval != 0:
     print "VBR Validate Failed"
     exit(1)

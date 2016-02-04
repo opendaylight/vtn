@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2014-2015 NEC Corporation
+# Copyright (c) 2014-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -18,7 +18,7 @@ ipproto=1
 ipdscp=55
 icmptypenum=232
 icmpcodenum=232
-controller_url=/controller/nb/v2/vtn/default/flowconditions/flowlist1
+controller_url=/vtn-flow-condition:vtn-flow-conditions
 flowlistentry_url=/flowlists/flowlist1
 
 
@@ -34,7 +34,7 @@ ipproto=1
 ipdscp=5
 icmptypenum=23
 icmpcodenum=22
-controller_url=/controller/nb/v2/vtn/default/flowconditions/flowlist1
+controller_url=/vtn-flow-condition:vtn-flow-conditions
 flowlistentry_url=/flowlists/flowlist1
 
 
@@ -52,7 +52,7 @@ ipproto=1
 ipdscp=46
 icmptypenum=232
 icmpcodenum=232
-controller_url=/controller/nb/v2/vtn/default/flowconditions/flowlist2
+controller_url=/vtn-flow-condition:vtn-flow-conditions
 flowlistentry_url=/flowlists/flowlist2
 
 
@@ -67,7 +67,7 @@ ipproto=1
 ipdscp=55
 icmptypenum=232
 icmpcodenum=232
-controller_url=/controller/nb/v2/vtn/default/flowconditions/flowlist3
+controller_url=/vtn-flow-condition:vtn-flow-conditions
 flowlistentry_url=/flowlists/flowlist3
 
 
@@ -82,10 +82,10 @@ ipproto=1
 ipdscp=55
 icmptypenum=232
 icmpcodenum=232
-controller_url=/controller/nb/v2/vtn/default/flowconditions/flowlist4
+controller_url=/vtn-flow-condition:vtn-flow-conditions
 flowlistentry_url=/flowlists/flowlist4
 
 [FLOWLISTENTRYURL]
 url=/flowlistentries.json
 
-ctr_url=/flowconditions/
+ctr_url=/vtn-flow-condition:vtn-flow-conditions

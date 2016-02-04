@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2013-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -10,26 +10,26 @@
 [VtnOne]
 vtn_name=vtnone
 description=first vtn
-controller_url=/controller/nb/v2/vtn/default/vtns/vtnone
+ctrl_url=/vtn/vtnone
 vtn_url=/vtns/vtnone
 
 
 [VtnTwo]
 vtn_name=vtntwo
 description=second vtn
-controller_url=/controller/nb/v2/vtn/default/vtns/vtntwo
+ctrl_url=/vtn/vtntwo
 vtn_url=/vtns/vtntwo
 
 [VtnThree]
 vtn_name=vtnthree
 description=third vtn
-controller_url=/controller/nb/v2/vtn/default/vtns/vtnthree
+ctrl_url=/vtn/vtnthree
 vtn_url=/vtns/vtnthree
 
 [VtnFour]
 vtn_name=vtnfour
 description=fourth vtn
-controller_url=/controller/nb/v2/vtn/default/vtns/vtnfour
+ctrl_url=/vtn/vtnfour
 vtn_url=/vtns/vtnfour
 
 [VbrOne]
@@ -37,7 +37,7 @@ vbr_name=vbrone
 controller_id=controller1
 description=first vbr for controller1
 domain_id=(DEFAULT)
-controller_url=/vbridges/vbrone
+ctrl_url=/vbridge/vbrone
 vbr_url=/vbridges/vbrone
 
 [VbrTwo]
@@ -45,7 +45,7 @@ vbr_name=vbrtwo
 controller_id=controller1
 description=second vbr for controller1
 domain_id=(DEFAULT)
-controller_url=/vbridges/vbrtwo
+ctrl_url=/vbridge/vbrtwo
 vbr_url=/vbridges/vbrtwo
 
 [VbrThree]
@@ -53,7 +53,7 @@ vbr_name=vbrthree
 controller_id=controller2
 description=first vbr for controller2
 domain_id=(DEFAULT)
-controller_url=/vbridges/vbrthree
+ctrl_url=/vbridges/vbrthree
 vbr_url=/vbridges/vbrthree
 
 [VbrFour]
@@ -61,13 +61,13 @@ vbr_name=vbrfour
 controller_id=controller2
 description=second vbr for controller2
 domain_id=(DEFAULT)
-controller_url=/vbridges/vbrfour
+ctrl_url=/vbridges/vbrfour
 vbr_url=/vbridges/vbrfour
 
 [VTNURL]
 url=/vtns.json
-ctr_url=/vtns
+ctr_url=/operational/vtn:vtns/vtn
 
 [VBRURL]
 url=/vbridges.json
-ctr_url=/vbridges
+ctr_url=/vbridge
