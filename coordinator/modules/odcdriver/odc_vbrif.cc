@@ -73,7 +73,6 @@ odc_drv_resp_code_t OdcVbrIfCommand::check_logical_port_id_format(
   }
   return logical_port_retval;
 }
-
 // Creates Request Body for Port Map
 UncRespCode OdcVbrIfCommand::create_request_body_port_map(
                                            pfcdrv_val_vbr_if_t& vbrif_val,
@@ -134,8 +133,38 @@ UncRespCode OdcVbrIfCommand::create_request_body_port_map(
   }
 
   if (!(port_name.empty())) {
-    ip_vbrif_port_st.input_vbrifport_.port_name = port_name;
+    ip_vbrif_port_st.input_vbrifport_.port_name_ip = port_name;
   }
+  return UNC_DRV_RC_ERR_GENERIC;
+
+}
+// delete request Body for Port Map
+UncRespCode OdcVbrIfCommand::delete_request_body_port_map(
+                                      pfcdrv_val_vbr_if_t& vbrif_val,
+                                      key_vbr_if_t& vbrif_key,
+                                      ip_vbrif_port&  ip_vbrif_port_st) {
+  ODC_FUNC_TRACE;
+
+  ip_vbrif_port_st.input_vbrifport_.valid = true;
+  ip_vbrif_port_st.input_vbrifport_.tenant_name =
+    reinterpret_cast<const char*>(vbrif_key.vbr_key.vtn_key.vtn_name);
+  if (ip_vbrif_port_st.input_vbrifport_.tenant_name.empty()) {
+    pfc_log_error("Empty vtn name in %s", PFC_FUNCNAME);
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+  ip_vbrif_port_st.input_vbrifport_.bridge_name =
+    reinterpret_cast<const char*>(vbrif_key.vbr_key.vbridge_name);
+  if (ip_vbrif_port_st.input_vbrifport_.bridge_name.empty()) {
+    pfc_log_error("Empty vbr name in %s", PFC_FUNCNAME);
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+  ip_vbrif_port_st.input_vbrifport_.interface_name =
+    reinterpret_cast<const char*>(vbrif_key.if_name);
+  if (ip_vbrif_port_st.input_vbrifport_.interface_name.empty()) {
+    pfc_log_error("Empty interface name in %s", PFC_FUNCNAME);
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+
   return UNC_DRV_RC_ERR_GENERIC;
 }
 
@@ -314,9 +343,20 @@ UncRespCode OdcVbrIfCommand::update_cmd(key_vbr_if_t& vbrif_key,
            && (val_new.valid[PFCDRV_IDX_VAL_VBRIF] == UNC_VF_VALID)) {
     vbrifport_class *req_ob = new vbrifport_class(ctr_ptr, vtnname, vbrname,
                                                                ifname);
-    if(req_ob->set_delete(jobj) != UNC_RC_SUCCESS) {
+    ip_vbrif_port st_ob;
+    delete_request_body_port_map(val_old, vbrif_key, st_ob);
+    vbrifport_parser *parser_ob = new vbrifport_parser();
+    json_object *job = parser_ob->del_req(st_ob);
+    if(jobj == NULL){
+      pfc_log_error("Error in portmap delete request");
+      delete req_ob;
+      delete parser_ob;
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    if(req_ob->set_delete(job) != UNC_RC_SUCCESS) {
       pfc_log_error("Vbr_if_portmap Update Failed");
       delete req_ob;
+      delete parser_ob;
       return UNC_DRV_RC_ERR_GENERIC;
     }
   }
