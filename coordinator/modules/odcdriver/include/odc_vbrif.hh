@@ -157,20 +157,25 @@ class OdcVbrIfCommand: public unc::driver::vtn_driver_command
    * @param[in]  logical port  - logical port id
    * @return  const char*      - returns the request body formed
    */
-  /*json_object* create_request_body_port_map(pfcdrv_val_vbr_if_t& vbrif_val,
-                                            vbrport_if& vbrport_if_st,
-                                            const std::string &logical_port_id);*/
-
   UncRespCode create_request_body_port_map(pfcdrv_val_vbr_if_t& vbrif_val,
                                     key_vbr_if_t& key,
                                     const std::string &logical_port_id,
+                                    ip_vbrif_port&  ip_vbrif_port_st);
+  /**
+   * @brief                    - delete request Body for portmap
+   * @param[in]  vbrif_val     - Vbrif value structure val_vbrif_t
+   * @param[in]  vbrif_key     - Vbrif value structure val_vbrif_t
+   * @param[in]  portmap_st    - portmap local structure ip_vbrif_port
+   * @return  const char*      - returns the request body formed
+   */
+  UncRespCode delete_request_body_port_map(pfcdrv_val_vbr_if_t& vbrif_val,
+                                    key_vbr_if_t& key,
                                     ip_vbrif_port&  ip_vbrif_port_st);
   /**
    * @brief                - Creates the Request Body
    * @param[in] val_vtn    - VTN value structure val_vtn_t
    * @return const char*   - returns the request body formed
    */
-  //json_object* create_request_body(pfcdrv_val_vbr_if_t& val_vtn);
   UncRespCode create_request_body(pfcdrv_val_vbr_if_t& val_vtn,
                            key_vbr_if_t& key,
                            ip_vbridge_config&  ip_vbridge_config_st);
@@ -180,7 +185,6 @@ class OdcVbrIfCommand: public unc::driver::vtn_driver_command
    * @param[in] val_vtn    - VTN value structure val_vtn_t
    * @return const char*   - returns the request body formed
    */
-  //json_object* create_request_body(pfcdrv_val_vbr_if_t& val_vtn);
   UncRespCode update_request_body(pfcdrv_val_vbr_if_t& val_vtn,
                            key_vbr_if_t& key,
                            ip_vbridge_config&  ip_vbridge_config_st);
@@ -190,7 +194,6 @@ class OdcVbrIfCommand: public unc::driver::vtn_driver_command
    * @param[in] val_vtn    - VTN value structure val_vtn_t
    * @return const char*   - returns the request body formed
    */
-  //json_object* create_request_body(pfcdrv_val_vbr_if_t& val_vtn);
   UncRespCode delete_request_body(pfcdrv_val_vbr_if_t& val_vtn,
                            key_vbr_if_t& key,
                            ip_vbridge_config&  ip_vbridge_config_st);
