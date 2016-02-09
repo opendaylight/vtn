@@ -503,7 +503,7 @@ void OdcVbrIfFlowFilterEntryCmd::copy(
       pfc_log_info(" DST MAC Action Created");
       action_st.vbrin_dldst_.valid = true;
       unc::odcdriver::OdcUtil util_;
-      action_st.vbrin_dlsrc_.dlsrc_address =
+      action_st.vbrin_dldst_.dldst_address =
              util_.macaddress_to_string(&value_in.val_ff_entry.modify_dstmac[0]);
       action_st.order = order;
       order ++;
@@ -511,7 +511,7 @@ void OdcVbrIfFlowFilterEntryCmd::copy(
     }
     if ( value_in.val_ff_entry.valid[UPLL_IDX_MODIFY_SRC_MAC_FFE] == UNC_VF_VALID ) {
       vbrin_flow_action action_st;
-      pfc_log_info(" DST MAC Action Created");
+      pfc_log_info(" SRC MAC Action Created");
       action_st.vbrin_dlsrc_.valid = true;
       unc::odcdriver::OdcUtil util_;
       action_st.vbrin_dlsrc_.dlsrc_address =
