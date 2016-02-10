@@ -339,17 +339,22 @@ void OdcVtnFlowFilterEntryCmd::
       }
     }
 
+   uint8_t order = 1;
    if ( value_new_in.valid[UPLL_IDX_DSCP_VFFE] == UNC_VF_VALID) {
       vt_flow_action  action_st;
       action_st.vtn_dscp_.valid = true;
       action_st.vtn_dscp_.dscp_value = value_new_in.dscp;
       pfc_log_error("New value structure of dscp attribute %d", value_new_in.dscp);
+      action_st.order = order;
+      order ++;
       vtn_flow_filter_.vt_flow_action_.push_back(action_st);
     } else if (value_new_in.valid[UPLL_IDX_DSCP_VFFE] == UNC_VF_INVALID &&
                  value_old_in.valid[UPLL_IDX_DSCP_VFFE] == UNC_VF_VALID ) {
         vt_flow_action  action_st;
         action_st.vtn_dscp_.valid = true;
         action_st.vtn_dscp_.dscp_value = value_old_in.dscp;
+        action_st.order = order;
+        order ++;
         pfc_log_error("New value structure of dscp attribute %d", value_old_in.dscp);
         vtn_flow_filter_.vt_flow_action_.push_back(action_st);
       } else {
@@ -359,12 +364,16 @@ void OdcVtnFlowFilterEntryCmd::
       vt_flow_action  action_st;
       action_st.vtn_vlanpcp_.valid =true ;
       action_st.vtn_vlanpcp_.vlan_pcp = value_new_in.priority;
+      action_st.order = order;
+      order ++;
       vtn_flow_filter_.vt_flow_action_.push_back(action_st);
     } else if (value_new_in.valid[UPLL_IDX_PRIORITY_VFFE] == UNC_VF_INVALID &&
                  value_old_in.valid[UPLL_IDX_PRIORITY_VFFE] == UNC_VF_VALID ) {
         vt_flow_action  action_st;
         action_st.vtn_vlanpcp_.valid =true ;
         action_st.vtn_vlanpcp_.vlan_pcp = value_old_in.priority;
+        action_st.order = order;
+        order ++;
         vtn_flow_filter_.vt_flow_action_.push_back(action_st);
       } else {
       pfc_log_info("INVALID for new and old value structures of PRIORITY");

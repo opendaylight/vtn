@@ -531,23 +531,43 @@ OdcFlowListEntryCommand::copy(ip_flowlistentry&  ip_flowlistentry_st,
 
     if (val_new.valid[UPLL_IDX_DST_IP_FLE] == UNC_VF_VALID ||
         val_new.valid[UPLL_IDX_DST_IP_FLE] == UNC_VF_VALUE_NOT_MODIFIED) {
-      match_.inet_match_.dest_network.assign(
-                                        inet_ntoa(val_new.dst_ip));
-      pfc_log_info("dst ip:%s",match_.inet_match_.dest_network.c_str());
+      std::stringstream dst_ip;
+      dst_ip << inet_ntoa(val_new.dst_ip);
+      dst_ip << "/";
+      int ip = val_old.dst_ip_prefixlen;
+      dst_ip << ip;
+      match_.inet_match_.dest_network = dst_ip.str();
+      pfc_log_info("dst ip_new:%s",match_.inet_match_.dest_network.c_str());
     } else if ( val_new.valid[UPLL_IDX_DST_IP_FLE] == UNC_VF_INVALID &&
        val_old.valid[UPLL_IDX_DST_IP_FLE] == UNC_VF_VALID) {
-      match_.inet_match_.dest_network.assign(inet_ntoa(val_old.dst_ip));
-      pfc_log_info("dst ip:%s",match_.inet_match_.dest_network.c_str());
+      std::stringstream dst_ip;
+      dst_ip << inet_ntoa(val_old.dst_ip);
+      dst_ip << "/";
+      int ip = val_old.dst_ip_prefixlen;
+      dst_ip << ip;
+      match_.inet_match_.dest_network = dst_ip.str();
+      pfc_log_info("dst ip_old:%s",match_.inet_match_.dest_network.c_str());
     }
 
     if (val_new.valid[UPLL_IDX_SRC_IP_FLE] == UNC_VF_VALID ||
         val_new.valid[UPLL_IDX_SRC_IP_FLE] == UNC_VF_VALUE_NOT_MODIFIED) {
-      match_.inet_match_.src_network.assign(inet_ntoa(val_new.src_ip));
-      pfc_log_info("src ip:%s",match_.inet_match_.src_network.c_str());
+      std::stringstream src_ip;
+      src_ip << inet_ntoa(val_new.src_ip);
+      src_ip << "/";
+      int ip = val_old.src_ip_prefixlen;
+      src_ip << ip;
+      match_.inet_match_.src_network = src_ip.str();
+      pfc_log_info("src ip_new:%s",match_.inet_match_.src_network.c_str());
     } else if (val_new.valid[UPLL_IDX_SRC_IP_FLE] == UNC_VF_INVALID &&
         val_old.valid[UPLL_IDX_SRC_IP_FLE] == UNC_VF_VALID) {
+      std::stringstream src_ip;
+      src_ip << inet_ntoa(val_old.src_ip);
+      src_ip << "/";
+      int ip = val_old.src_ip_prefixlen;
+      src_ip << ip;
+      match_.inet_match_.src_network = src_ip.str();
       match_.inet_match_.src_network.assign(inet_ntoa(val_old.src_ip));
-      pfc_log_info("src ip:%s",match_.inet_match_.src_network.c_str());
+      pfc_log_info("src ip_old:%s",match_.inet_match_.src_network.c_str());
     }
     if (val_new.valid[UPLL_IDX_IP_PROTOCOL_FLE] == UNC_VF_VALID) {
       match_.inet_match_.protocol = val_new.ip_proto;
