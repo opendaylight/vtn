@@ -565,7 +565,7 @@ UncRespCode OdcVbrVlanMapCommand::del_existing_vlanmap(
   ip_vlan_config st_obj;
   delete_request_body(vlanmap_key,vlanmap_val,st_obj);
   vlan_parser *parser_obj = new vlan_parser();
-  json_object *jobj = parser_obj->create_req(st_obj);
+  json_object *jobj = parser_obj->del_req(st_obj);
   if(jobj == NULL){
     pfc_log_error("Error in create request");
     delete req_obj;
@@ -992,8 +992,8 @@ void OdcVbrVlanMapCommand::create_request_body(
       pfc_log_debug("%s: Logical_port_id(%s) ", PFC_FUNCNAME,
                     logical_port_id.c_str());
       pfc_log_debug("%s: Switch id(%s) ", PFC_FUNCNAME,
-                    switch_id.c_str());
-      ip_vlan_config_st.input_vlan_.node.assign(switch_id);
+                    of_switch_id.c_str());
+      ip_vlan_config_st.input_vlan_.node.assign(of_switch_id);
 
     }
 }
