@@ -124,7 +124,7 @@ parse_support=no
 type=string
 key="description"
 struct_name=input_vtermif
-mandatory=yes
+mandatory=no
 build_support=yes
 parse_support=no
 

@@ -78,7 +78,7 @@ type=string
 key="description"
 struct_name=vtenant_config
 build_support=no
-mandatory=yes
+mandatory=no
 parse_support=yes
 
 [vtenant_config]
@@ -113,7 +113,7 @@ type=string
 key="description"
 struct_name= input
 build_support=yes
-mandatory=yes
+mandatory=no
 parse_support=no
 
 [tenant_name]
