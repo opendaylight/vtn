@@ -226,6 +226,13 @@ OdcVbrFlowFilterEntryCmd::create_cmd(key_vbr_flowfilter_entry& key,
     std::string vbr_name(reinterpret_cast<char*>(
                       key.flowfilter_key.vbr_key.vbridge_name));
 
+    unc::odcdriver::odlutils::get_bridge_names(ctr_ptr,
+        vtn_name,
+        &bridges_);
+
+    unc::odcdriver::odlutils::get_terminal_names(ctr_ptr,
+        vtn_name,
+        &terminals_);
     vbrflowfilter_entry_class *req_obj = new vbrflowfilter_entry_class(ctr_ptr,
                                      vtn_name, vbr_name);
     ip_vbr_flowfilter st_obj;
@@ -264,6 +271,14 @@ OdcVbrFlowFilterEntryCmd::create_cmd(key_vbr_flowfilter_entry& key,
                              key.flowfilter_key.vbr_key.vtn_key.vtn_name));
     std::string vbr_name(reinterpret_cast<char*>(
                                    key.flowfilter_key.vbr_key.vbridge_name));
+
+    unc::odcdriver::odlutils::get_bridge_names(ctr_ptr,
+        vtn_name,
+        &bridges_);
+
+    unc::odcdriver::odlutils::get_terminal_names(ctr_ptr,
+        vtn_name,
+        &terminals_);
 
     vbrflowfilter_entry_class *req_obj = new vbrflowfilter_entry_class (ctr_ptr,
                                      vtn_name, vbr_name);
