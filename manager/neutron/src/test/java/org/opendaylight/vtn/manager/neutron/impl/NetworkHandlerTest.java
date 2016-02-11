@@ -28,11 +28,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.networks.rev150712.
 public class NetworkHandlerTest extends TestBase {
 
     /**
-     * String identifier to have default VBridge description.
-     */
-    final String defaultVBridgeDescription = "Bridge";
-
-    /**
      * String identifier to have default Network description.
      */
     final String defaultNetworkDescription = "Network";
@@ -46,20 +41,11 @@ public class NetworkHandlerTest extends TestBase {
      * VTNManagerService instance.
      */
     private VTNManagerService  vtnManager;
+
     /**
      * NetworkHandler instance.
      */
     private NetworkHandler networkHandler;
-
-    /**
-     * Status instance.
-     */
-    private Status status;
-
-    /**
-     * integer values used in mocking the functionality in unit testing.
-     */
-    private int hitCount, statusCodeIndex;
 
     final String tenantUuid1 = "b9a13232-525e-4d8c-be21-cd65e3436035";
     final String tenantName1 = "b9a13232525e4d8cbe21cd65e3436035";
@@ -85,7 +71,7 @@ public class NetworkHandlerTest extends TestBase {
     @Before
     public void setUp() throws Exception {
         vtnManager = PowerMockito.mock(VTNManagerService.class);
-        networkHandler = PowerMockito.spy(new NetworkHandler(vtnManager));
+        networkHandler = new NetworkHandler(vtnManager);
     }
 
     /**
@@ -94,7 +80,6 @@ public class NetworkHandlerTest extends TestBase {
      */
     @Test
     public void testNeutronNetworkCreated() {
-
         Network network = null;
 
         // Success Case - Sending already existing Tenants
