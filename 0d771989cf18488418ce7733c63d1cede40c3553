@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "9a3d3df0_881c0dc3",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 6
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2016-02-11T08:07:58Z",
+      "side": 1,
+      "message": "I like shorter commit message which is 50 chars or less.\n\nAlso I think it\u0027s better to wrap each line about 72 characters or so.\n\nFYI: http://git-scm.com/book/ch5-2.html#Commit-Guidelines",
+      "range": {
+        "startLine": 7,
+        "startChar": 0,
+        "endLine": 9,
+        "endChar": 112
+      },
+      "revId": "0d771989cf18488418ce7733c63d1cede40c3553",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
