@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -133,6 +133,7 @@ class JsonBuildParse {
    * @return json_object*        - returns converted json object
    */
   static json_object* get_json_object(char *data){
+    ODC_FUNC_TRACE;
     return json_tokener_parse(data);
   }
 };

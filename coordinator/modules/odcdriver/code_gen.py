@@ -749,8 +749,14 @@ def parse_member(item, struct_name, obj_in, member, array_index,output_file_name
                 object = '\n' + 'ret_val = restjson::JsonBuildParse::parse(%s,%s'%(obj_in, req_key) +',%s,st_%s.%s);'%(array_index,struct_name, member) + '\n'
             elif parent_strct_type != 'array':
                 object = '\n' + 'ret_val = restjson::JsonBuildParse::parse(%s,%s'%(obj_in, req_key) +',-1,st_%s.%s);'%(struct_name, member) + '\n'
-            if type_name == 'string' or type_name == 'int' or type_name == 'bool':
-                object =  object + 'if (restjson::REST_OP_SUCCESS != ret_val) {' + '\n'
+            if type_name == 'string' and check_mand == 'yes' :
+                object =  object + 'if ((restjson::REST_OP_SUCCESS != ret_val) || (st_%s.%s.empty())) {' %(struct_name, member)+ '\n'
+            elif type_name == 'string' and check_mand != 'yes':
+                object = object + 'if (restjson::REST_OP_SUCCESS != ret_val) {'+ '\n'
+            if type_name == 'int':
+                object = object + 'if (restjson::REST_OP_SUCCESS != ret_val) {'+ '\n'
+            if type_name == 'bool':
+                object = object + 'if (restjson::REST_OP_SUCCESS != ret_val) {'+ '\n'
             object = object + '\t' + 'pfc_log_error(" Error while parsing %s");'%(key_s) + '\n'
             if check_mand == 'yes':
                 object = object + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' + '\n'

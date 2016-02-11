@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015 NEC Corporation
+ * Copyright (c) 2013-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -381,6 +381,34 @@ TEST(odcdriver,  test_valid_create_cmd) {
   ctr= NULL;
 }
 
+TEST(odcdriver,  test_create_cmd_with_no_description) {
+  key_vtn_t key_vtn;
+  val_vtn_t val_vtn;
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
+  memset(&key_ctr, 0 , sizeof(key_ctr_t));
+  memset(&val_ctr,  0,  sizeof(val_ctr_t));
+
+  memset(&key_vtn, 0 , sizeof(key_vtn_t));
+  memset(&val_vtn,  0,  sizeof(val_vtn_t));
+  std::string CREATE_200      = "172.16.0.1";
+  inet_aton(CREATE_200.c_str(),  &val_ctr.ip_address);
+  unc::driver::controller* ctr  =
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
+  std::string vtnname =  "vtn1";
+  strncpy(reinterpret_cast<char*>(key_vtn.vtn_name) ,
+          vtnname.c_str(),  sizeof(vtnname));
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8181;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVtnCommand obj(conf_file);
+  EXPECT_EQ(UNC_RC_SUCCESS, obj.create_cmd(key_vtn, val_vtn, ctr));
+  delete ctr;
+  ctr= NULL;
+}
+
 #if 0
 
 TEST(odcdriver,  read_all_valid_) {
@@ -565,45 +593,5 @@ TEST(odcdriver,  read_all_valid_resp_no_vtn) {
   delete ctr;
   ctr= NULL;
 }
-#if 0
-// THis test case is not applicable for Codegen implementaion
-
-TEST(odcdriver, test_create_cmd_controller_username) {
-  key_ctr_t key_ctr;
-  val_ctr_t val_ctr;
-  unc::restjson::ConfFileValues_t conf_values;
-  key_vtn_t key_vtn;
-  val_vtn_t val_vtn;
-  memset(&key_ctr, 0 , sizeof(key_ctr_t));
-  memset(&val_ctr,  0,  sizeof(val_ctr_t));
-
-  memset(&key_vtn, 0 , sizeof(key_vtn_t));
-  memset(&val_vtn,  0,  sizeof(val_vtn_t));
-  std::string vtnname =  "ff";
-  strncpy(reinterpret_cast<char*>(key_vtn.vtn_name),
-          vtnname.c_str(),  sizeof(key_vtn.vtn_name)-1);
-  std::string ip_add =  "172.16.0.2";
-  inet_aton(ip_add.c_str(),  &val_ctr.ip_address);
-  unc::driver::controller *ctr =
-      new unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
-  unc::restjson::ConfFileValues_t conf_file;
-  conf_file.odc_port = 8181;
-  conf_file.user_name = "";
-  conf_file.password = "";
-
-  std::string user = "ctr_user";
-  strncpy(reinterpret_cast<char*>(val_ctr.user),
-          user.c_str(),  sizeof(val_ctr.user)-1);
-
-  std::string pass = "ctr_pass";
-  strncpy(reinterpret_cast<char*>(val_ctr.password),
-          pass.c_str(),  sizeof(val_ctr.password)-1);
-
-  unc::odcdriver::OdcVtnCommand obj(conf_file);
-  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC , obj.create_cmd(key_vtn, val_vtn, ctr));
-  delete ctr;
-  ctr= NULL;
-}
-#endif
 
 

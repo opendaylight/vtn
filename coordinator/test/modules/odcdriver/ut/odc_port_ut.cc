@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015 NEC Corporation
+ * Copyright (c) 2014-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -276,7 +276,7 @@ TEST(odcdriver_port, test_port_data_delete) {
           reinterpret_cast<char*> (key_port->sw_key.ctr_key.controller_name);
 
       if (flag == 1) {
-         EXPECT_EQ(1, port_id.compare("s2-eth1"));
+         EXPECT_EQ(0, port_id.compare("s2-eth1"));
          EXPECT_EQ(0, node_id.compare("openflow:2"));
         flag++;
       } else if (flag == 2) {
@@ -291,7 +291,7 @@ TEST(odcdriver_port, test_port_data_delete) {
     }
   }
 
-  EXPECT_EQ(ctr->physical_port_cache->cfg_list_count(), 3);
+  EXPECT_EQ(ctr->physical_port_cache->cfg_list_count(), 4);
   std::string PORT_RESP_DELETE = "172.16.0.25";
 
   inet_aton(PORT_RESP_DELETE.c_str(),  &val_ctr_update.ip_address);
@@ -301,7 +301,7 @@ TEST(odcdriver_port, test_port_data_delete) {
   //  Fills Key Structure
   strncpy(reinterpret_cast<char*> (key_switch.switch_id), switch_id.c_str(),
           strlen(switch_id.c_str()));
-  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
+  EXPECT_EQ(UNC_RC_SUCCESS,
             obj.fetch_config(ctr, &key_switch, cache_empty));
 
   delete ctr->physical_port_cache;
@@ -370,7 +370,7 @@ TEST(odcdriver_port, test_port_data_update) {
           reinterpret_cast<char*> (key_port->sw_key.ctr_key.controller_name);
 
       if (flag == 1) {
-         EXPECT_EQ(1, port_id.compare("s2-eth1"));
+         EXPECT_EQ(0, port_id.compare("s2-eth1"));
          EXPECT_EQ(0, node_id.compare("openflow:2"));
         flag++;
       } else if (flag == 2) {
@@ -385,7 +385,7 @@ TEST(odcdriver_port, test_port_data_update) {
     }
   }
 
-  EXPECT_EQ(ctr->physical_port_cache->cfg_list_count(), 3);
+  EXPECT_EQ(ctr->physical_port_cache->cfg_list_count(), 4);
   switch_id = "openflow:2";
   ctr->set_connection_status(0);
 
@@ -665,7 +665,7 @@ TEST(odcdriver_port, test_port_resp_conn_wrong) {
   inet_aton(PORT_NODE_CONN_PROP_WRONG.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(UNC_RC_SUCCESS,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   ctr->physical_port_cache = NULL;
@@ -788,7 +788,7 @@ TEST(odcdriver_port, test_port_conn_type_wrong) {
   inet_aton(PORT_NODE_CONN_TYPE_WRONG.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(UNC_RC_SUCCESS,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   ctr->physical_port_cache = NULL;
@@ -829,7 +829,7 @@ TEST(odcdriver_port, test_port_node_id_wrong) {
   inet_aton(PORT_NODE_ID_WRONG.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(UNC_RC_SUCCESS,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   ctr->physical_port_cache = NULL;
@@ -871,7 +871,7 @@ TEST(odcdriver_port, test_port_node_conn_id_wrong) {
   inet_aton(PORT_NODE_CONN_ID_WRONG.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(UNC_RC_SUCCESS,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   ctr->physical_port_cache = NULL;
@@ -912,7 +912,7 @@ TEST(odcdriver_port, test_port_node_id_SW_wrong) {
   inet_aton(PORT_NODE_ID_SW.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(UNC_RC_SUCCESS,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   ctr->physical_port_cache = NULL;
@@ -994,7 +994,7 @@ TEST(odcdriver_port, test_port_node_prop_name_wrong) {
   inet_aton(PORT_NODE_PROP_NAME_WRONG.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(UNC_RC_SUCCESS,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
@@ -1034,7 +1034,7 @@ TEST(odcdriver_port, test_port_node_prop_name_value_wrong) {
   inet_aton(PORT_NODE_PROP_NAME_VALUE_WRONG.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(UNC_RC_SUCCESS,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
@@ -1114,7 +1114,7 @@ TEST(odcdriver_port, test_port_node_prop_config_wrong) {
   inet_aton(PORT_COST_PROP_WRONG.c_str(),  &val_ctr.ip_address);
   ctr->update_ctr(key_ctr, val_ctr);
   unc::odcdriver::OdcPort obj(conf_file);
-  EXPECT_EQ(UNC_RC_SUCCESS,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_switch, cache_empty));
   delete ctr->physical_port_cache;
   delete ctr;
