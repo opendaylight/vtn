@@ -919,6 +919,7 @@ UncRespCode OdcVbrVlanMapCommand::delete_cmd(
 
   if(req_obj->set_delete(jobj) != UNC_RC_SUCCESS) {
     pfc_log_error("Vlan delete Failed");
+    return UNC_DRV_RC_ERR_GENERIC;
   }
   std::string vtn_name_req =
       reinterpret_cast<char*>(vlanmap_key.vbr_key.vtn_key.vtn_name);
