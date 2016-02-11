@@ -28,7 +28,6 @@ public final class VTNNeutronUtils {
      */
     private static final int UUID_VERSION_POS = 12;
 
-
     /**
      * UUID time-low field byte length in hex.
      */
@@ -59,7 +58,6 @@ public final class VTNNeutronUtils {
      */
     private static final int UUID_TIME_LEN = (UUID_TIME_LOW +
             UUID_TIME_MID + UUID_TIME_HIGH_VERSION);
-
 
     /**
      * Neutron UUID identifier length.
@@ -137,6 +135,7 @@ public final class VTNNeutronUtils {
         }
         return key;
     }
+
      /**
      * Verify the validity of neutron object identifiers.
      *
@@ -172,12 +171,7 @@ public final class VTNNeutronUtils {
         }
         return isValid;
     }
-    /**
-     * Convert string id to VTN key syntax.
-     *
-     * @param id neutron object id.
-     * @return key in compliance to VTN object key.
-     */
+
     /**
      * Convert string id to VTN key syntax.
      *

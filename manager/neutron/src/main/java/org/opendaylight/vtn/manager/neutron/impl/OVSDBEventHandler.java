@@ -126,11 +126,6 @@ public final class OVSDBEventHandler {
     private static final String DEFAULT_PORTNAME = "eth0";
 
     /**
-     * identifier to read for integration bridge name from config file.
-     */
-    private static final String CONFIG_INTEGRATION_BRIDGENAME = "bridgename";
-
-    /**
      * identifier to read for integration name from config file.
      */
     private static final String EXTERNAL_ID_INTERFACE_ID = "iface-id";
@@ -141,11 +136,6 @@ public final class OVSDBEventHandler {
     private static final String CONFIG_FAILMODE = "failmode";
 
     /**
-     * identifier to read protocol from config file.
-     */
-    private static final String CONFIG_PROTOCOLS = "protocols";
-
-    /**
      * identifier to openflow port,6653 is official openflow port.
      */
     private static final short OPENFLOW_PORT = 6653;
@@ -154,14 +144,11 @@ public final class OVSDBEventHandler {
      * identifier to read open flow protocol from config file.
      */
     public static final String OPENFLOW_CONNECTION_PROTOCOL = "tcp";
+
     /**
      * identifier to get Action of OVSDB Ports
      */
     private static final String ACTION_PORT = "delete";
-    /**
-     * identifier to read portname from config file.
-     */
-    private static final String CONFIG_PORTNAME = "portname";
 
     /**
      * Instance of {@link MdsalUtils}.
@@ -178,11 +165,6 @@ public final class OVSDBEventHandler {
      */
     public static final String BRIDGE_URI_PREFIX = "bridge";
 
-    /**
-     * identifier to represent radix for String while retrieving value from Long
-     * Type.
-     */
-    private static final int RADIX_FOR_STRING = 16;
     /**
      * VTN identifiers in neutron port object.
      */
