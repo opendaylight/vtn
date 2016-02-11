@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Copyright (c) 2014-2015 NEC Corporation
+# Copyright (c) 2014-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -57,7 +57,7 @@ def delete_flowlist(blockname):
 def validate_flowlist_at_controller(flowlist_blockname, controller_blockname, presence="yes",position=0):
   test_vtn_name=vtn_testconfig.ReadValues(FLOWLISTDATA,flowlist_blockname)['flowlist_name']
   test_controller_ipaddr=vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['ipaddr']
-  test_controller_port=vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['port']
+  test_controller_port=vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['restconf_port']
   test_vtn_url=vtn_testconfig.ReadValues(FLOWLISTDATA,'FLOWLISTURL')['ctr_url']
 
   url='http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url
@@ -82,7 +82,7 @@ def validate_flowlist_at_controller(flowlist_blockname, controller_blockname, pr
 #  if data['flowlist'] == []:
 #    return 0
 
-  vtn_content=data['flowlist'][position]
+  vtn_content=data['vtn-flow-condition'][position]
 
   if vtn_content == None:
     if presence == "yes":
@@ -90,7 +90,7 @@ def validate_flowlist_at_controller(flowlist_blockname, controller_blockname, pr
     else:
       return 1
 
-  if vtn_content['fl_name'] != test_vtn_name:
+  if vtn_content['name'] != test_vtn_name:
     if presence == "yes":
       return 1
     else:
