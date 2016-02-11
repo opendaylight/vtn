@@ -190,7 +190,7 @@ parse_support=no
 type=string
 key="description"
 struct-name=input_vterm
-mandatory=yes
+mandatory=no
 build_support=yes
 parse_support=no
 
