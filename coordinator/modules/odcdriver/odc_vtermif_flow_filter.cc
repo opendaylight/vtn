@@ -512,6 +512,8 @@ void OdcVTermIfFlowFilterEntryCmd::delete_request_body(
       action_st.vtermin_dlsrc_.valid = true;
       action_st.vtermin_dlsrc_.dlsrc_address =
         util_.macaddress_to_string(&value_in.modify_srcmac[0]);
+      action_st.order = order;
+      order++;
       flowfilter_.vtermin_flow_action_.push_back(action_st);
     }
     ip_vterm_if_flowfilter_st.input_vtermif_flow_filter_.vtermin_flow_filter_.push_back(flowfilter_);
