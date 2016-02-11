@@ -682,8 +682,7 @@ public final class OVSDBEventHandler {
                             OfNode ofNode = toOfNode(
                                 bridgeNode.getDatapathId());
                             Long ofPort = port.getOfport();
-                            if (neutronPort != null && ofNode != null &&
-                                ofPort != null) {
+                            if (neutronPort != null && ofNode != null) {
                                 setPortMapForInterface(
                                     neutronPort, ofNode, ofPort, ovsPortName);
                             }
@@ -721,16 +720,29 @@ public final class OVSDBEventHandler {
             String tenantID = vtnIDs[0];
             String bridgeID = vtnIDs[1];
             String portID = vtnIDs[2];
-            SetPortMapInput input = new SetPortMapInputBuilder().
-                setTenantName(tenantID).
-                setBridgeName(bridgeID).
-                setInterfaceName(portID).
-                setNode(ofNode.getNodeId()).
-                setPortId(ofPort.toString()).
-                setPortName(portName).
-                setVlanId(vlanId).
-                build();
-            result = vtnManager.setPortMap(input);
+            if (ofPort != null) {
+                SetPortMapInput input = new SetPortMapInputBuilder().
+                        setTenantName(tenantID).
+                        setBridgeName(bridgeID).
+                        setInterfaceName(portID).
+                        setNode(ofNode.getNodeId()).
+                        setPortId(ofPort.toString()).
+                        setVlanId(vlanId).
+                        build();
+                result = vtnManager.setPortMap(input);
+            } else {
+                if (portName != null) {
+                    SetPortMapInput input = new SetPortMapInputBuilder().
+                            setTenantName(tenantID).
+                            setBridgeName(bridgeID).
+                            setInterfaceName(portID).
+                            setNode(ofNode.getNodeId()).
+                            setPortName(portName).
+                            setVlanId(vlanId).
+                            build();
+                    result = vtnManager.setPortMap(input);
+                }
+            }
         }
 
         return result;
