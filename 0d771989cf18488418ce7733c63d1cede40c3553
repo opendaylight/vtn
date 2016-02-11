@@ -22,6 +22,30 @@
       "revId": "0d771989cf18488418ce7733c63d1cede40c3553",
       "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9a3d3df0_2e6fc9fe",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 6
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 1479
+      },
+      "writtenOn": "2016-02-11T15:26:13Z",
+      "side": 1,
+      "message": "Modified commit message. Please review and let us know in case of any comments",
+      "parentUuid": "9a3d3df0_881c0dc3",
+      "range": {
+        "startLine": 7,
+        "startChar": 0,
+        "endLine": 9,
+        "endChar": 112
+      },
+      "revId": "0d771989cf18488418ce7733c63d1cede40c3553",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
     }
   ]
 }
