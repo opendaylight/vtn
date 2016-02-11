@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015 NEC Corporation
+ * Copyright (c) 2013-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -100,6 +100,44 @@ TEST(odcdriver,  create_cmd_valid_admin_disable) {
   delete ctr;
 }
 
+TEST(odcdriver,  create_cmd_with_no_decription) {
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
+  memset(&key_ctr , 0, sizeof(key_ctr_t));
+  memset(&val_ctr, 0, sizeof(val_ctr_t));
+  std::string CREATE_201      = "172.16.0.1";
+
+  inet_aton(CREATE_201.c_str(),  &val_ctr.ip_address);
+  std::string user_name =  "user";
+  strncpy(reinterpret_cast<char*>(val_ctr.user),
+          user_name.c_str(),  sizeof(val_ctr.user));
+  unc::driver::controller* ctr  =
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);;
+  key_vbr_if_t vbrif_key;
+  pfcdrv_val_vbr_if_t vbrif_val;
+  memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  vbrif_val.val_vbrif.valid[UPLL_IDX_DESC_VBRI] = UNC_VF_INVALID;
+  vbrif_val.val_vbrif.valid[UPLL_IDX_ADMIN_STATUS_VBRI] = UNC_VF_VALID;
+  vbrif_val.val_vbrif.admin_status = UPLL_ADMIN_ENABLE;
+  std::string vtnname =  "vtn1_v";
+  strncpy(reinterpret_cast<char*>(vbrif_key.vbr_key.vtn_key.vtn_name),
+          vtnname.c_str(),  sizeof(vbrif_key.vbr_key.vtn_key.vtn_name)-1);
+  std::string vbrname =  "vbr1_v";
+  strncpy(reinterpret_cast<char*>(vbrif_key.vbr_key.vbridge_name),
+          vbrname.c_str(), sizeof(vbrif_key.vbr_key.vbridge_name)-1);
+  std::string intfname =  "if_v";
+  strncpy(reinterpret_cast<char*>(vbrif_key.if_name),
+          intfname.c_str(),  sizeof(vbrif_key.if_name)-1);
+  EXPECT_EQ(UNC_RC_SUCCESS,
+            obj.create_cmd(vbrif_key,  vbrif_val,  ctr));
+  delete ctr;
+}
 
 TEST(odcdriver,  create_cmd_invalid_resp) {
   unc::restjson::ConfFileValues_t conf_file;
@@ -2068,9 +2106,54 @@ TEST(odcdriver,  fetch_config) {
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::vector<unc::vtndrvcache::ConfigNode *>
       cfgnode_vector;
-  EXPECT_EQ(UNC_RC_SUCCESS,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_vbr, cfgnode_vector));
-  EXPECT_EQ(1U, cfgnode_vector.size());
+  EXPECT_EQ(0, cfgnode_vector.size());
+  for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
+       cfgnode_vector.begin(); it != cfgnode_vector.end(); ++it ) {
+    if (*it != NULL) {
+      delete *it;
+    }
+  }
+
+  delete ctr;
+}
+
+TEST(odcdriver,  read_portmap_empty_if) {
+  unc::restjson::ConfFileValues_t conf_file;
+  conf_file.odc_port = 8080;
+  conf_file.user_name = "admin";
+  conf_file.password = "admin";
+  unc::odcdriver::OdcVbrIfCommand obj(conf_file);
+  key_ctr_t key_ctr;
+  val_ctr_t val_ctr;
+  unc::restjson::ConfFileValues_t conf_values;
+  key_vbr_if_t key_vbr_if;
+  std::list<unc::odcdriver::portmap_interface> vbrif_port_detail;
+
+  memset(&key_ctr , 0, sizeof(key_ctr_t));
+  memset(&val_ctr, 0, sizeof(val_ctr_t));
+  std::string ifname =  "";
+  strncpy(reinterpret_cast<char*>(key_vbr_if.if_name),
+          ifname.c_str(),  sizeof(key_vbr_if.if_name)-1);
+  std::string vbrname =  "vbr1";
+  strncpy(reinterpret_cast<char*>(key_vbr_if.vbr_key.vbridge_name),
+          vbrname.c_str(),  sizeof(key_vbr_if.vbr_key.vbridge_name)-1);
+  std::string vtnname =  "vtn1";
+  strncpy(reinterpret_cast<char*>(key_vbr_if.vbr_key.vtn_key.vtn_name),
+          vtnname.c_str(),  sizeof(key_vbr_if.vbr_key.vtn_key.vtn_name)-1);
+  std::string VBRIF_GET_RESP = "172.16.0.6";
+  inet_aton(VBRIF_GET_RESP.c_str(),  &val_ctr.ip_address);
+  std::string user_name =  "user";
+  strncpy(reinterpret_cast<char*>(val_ctr.user),
+          user_name.c_str(),  sizeof(val_ctr.user));
+  unc::driver::controller* ctr  =
+      new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
+  std::vector<unc::vtndrvcache::ConfigNode *>
+      cfgnode_vector;
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
+            obj.read_portmap(ctr, key_vbr_if, vbrif_port_detail, cfgnode_vector));
+  EXPECT_EQ(0U, cfgnode_vector.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
        cfgnode_vector.begin(); it != cfgnode_vector.end(); ++it ) {
     if (*it != NULL) {
@@ -2274,9 +2357,9 @@ TEST(odcdriver,  fetch_config_with_portmap) {
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::vector<unc::vtndrvcache::ConfigNode *>
       cfgnode_vector;
-  EXPECT_EQ(UNC_RC_SUCCESS,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_vbr, cfgnode_vector));
-  EXPECT_EQ(1U, cfgnode_vector.size());
+  EXPECT_EQ(0U, cfgnode_vector.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
        cfgnode_vector.begin(); it != cfgnode_vector.end(); ++it ) {
     if (*it != NULL) {
@@ -2315,9 +2398,9 @@ TEST(odcdriver,  fetch_config_with_portmap_no_vlan) {
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr, conf_values);
   std::vector<unc::vtndrvcache::ConfigNode *>
       cfgnode_vector;
-  EXPECT_EQ(UNC_RC_SUCCESS,
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
             obj.fetch_config(ctr, &key_vbr, cfgnode_vector));
-  EXPECT_EQ(1U, cfgnode_vector.size());
+  EXPECT_EQ(0U, cfgnode_vector.size());
   for ( std::vector<unc::vtndrvcache::ConfigNode *>::iterator it =
        cfgnode_vector.begin(); it != cfgnode_vector.end(); ++it ) {
     if (*it != NULL) {

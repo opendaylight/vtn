@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015 NEC Corporation
+ * Copyright (c) 2013-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -293,7 +293,7 @@ TEST(odcdriver,  test_fetch_conf_empty_response) {
   std::vector <unc::vtndrvcache::ConfigNode *> cfgnode_vector;
   UncRespCode ret_val = odc_vbr_vlanmap.fetch_config(ctr, &key_vbr,
                                                          cfgnode_vector);
-  EXPECT_EQ(UNC_RC_SUCCESS,  ret_val);
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,  ret_val);
   EXPECT_EQ(0U, cfgnode_vector.size());
 
   if (ctr != NULL) {
@@ -435,10 +435,10 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_resp) {
           return;
         }
         if  (flag == 1) {
-          vlan_id = 65535;
+          vlan_id = 300;
           logical_id = "PP-OF:openflow:2-s2-eth2";
         }  else {
-          vlan_id = 7;
+          vlan_id = 200;
         }
         key_vlan_map_t *vlanmap_key = cache_util_ptr->get_key_structure();
         pfcdrv_val_vlan_map_t *vlanmap_val = cache_util_ptr->get_val_structure();
@@ -523,7 +523,7 @@ TEST(odcdriver,  test_fetch_conf_vlanmap_resp_max_vlanid) {
           strlen(switch_id.c_str()));
 
   val_vlan_map.vm.vlan_id = 65535;
-  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, odc_vbr_vlanmap.validate_vlan_exist(
+  EXPECT_EQ(UNC_RC_SUCCESS, odc_vbr_vlanmap.validate_vlan_exist(
                                             key_vlan_map,
                                             val_vlan_map, switch_id, ctr,
                                             is_switch_exist, port_id));
@@ -2082,6 +2082,7 @@ TEST(odcdriver, test_create_update_invalid) {
 
 TEST(odcdriver, test_delete_existing_vlan_map_null_strid) {
   key_vlan_map_t vlanmap_key;
+  pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   unc::restjson::ConfFileValues_t conf_values;
@@ -2117,7 +2118,7 @@ TEST(odcdriver, test_delete_existing_vlan_map_null_strid) {
   unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
 
   EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
-            obj.del_existing_vlanmap(vlanmap_key , ctr , str_mapping_id));
+            obj.del_existing_vlanmap(vlanmap_key , vlanmap_val, ctr , str_mapping_id));
   delete ctr;
   ctr = NULL;
 }
@@ -2125,6 +2126,7 @@ TEST(odcdriver, test_delete_existing_vlan_map_null_strid) {
 
 TEST(odcdriver, test_delete_existing_vlan_map_url_empty) {
   key_vlan_map_t vlanmap_key;
+  pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   unc::restjson::ConfFileValues_t conf_values;
@@ -2159,13 +2161,14 @@ TEST(odcdriver, test_delete_existing_vlan_map_url_empty) {
   unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
 
   EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
-            obj.del_existing_vlanmap(vlanmap_key , ctr , str_mapping_id));
+            obj.del_existing_vlanmap(vlanmap_key , vlanmap_val, ctr , str_mapping_id));
   delete ctr;
   ctr = NULL;
 }
 
 TEST(odcdriver, test_delete_existing_vlan_map_resp_null) {
   key_vlan_map_t vlanmap_key;
+  pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   unc::restjson::ConfFileValues_t conf_values;
@@ -2202,13 +2205,14 @@ TEST(odcdriver, test_delete_existing_vlan_map_resp_null) {
   unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
 
   EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
-            obj.del_existing_vlanmap(vlanmap_key , ctr , str_mapping_id));
+     obj.del_existing_vlanmap(vlanmap_key , vlanmap_val, ctr , str_mapping_id));
   delete ctr;
   ctr = NULL;
 }
 
 TEST(odcdriver, test_delete_existing_vlan_map__success) {
   key_vlan_map_t vlanmap_key;
+  pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   unc::restjson::ConfFileValues_t conf_values;
@@ -2246,7 +2250,7 @@ TEST(odcdriver, test_delete_existing_vlan_map__success) {
   unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
 
   EXPECT_EQ(UNC_RC_SUCCESS,
-            obj.del_existing_vlanmap(vlanmap_key , ctr , str_mapping_id));
+    obj.del_existing_vlanmap(vlanmap_key , vlanmap_val, ctr , str_mapping_id));
   delete ctr;
   ctr = NULL;
 }
@@ -2254,6 +2258,7 @@ TEST(odcdriver, test_delete_existing_vlan_map__success) {
 
 TEST(odcdriver, test_delete_existing_vlan_map__not_202) {
   key_vlan_map_t vlanmap_key;
+  pfcdrv_val_vlan_map_t vlanmap_val;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   unc::restjson::ConfFileValues_t conf_values;
@@ -2272,7 +2277,7 @@ TEST(odcdriver, test_delete_existing_vlan_map__not_202) {
           vtnname.c_str(),  sizeof(vlanmap_key.vbr_key.vtn_key.vtn_name)-1);
   std::string description =  "descrip";
   vlanmap_key.logical_port_id_valid  = 1;
-  std::string switch_id = "SW-00:00:00:00:00:00:00:01";
+  std::string switch_id = "SW-openflow:1";
   strncpy(reinterpret_cast<char*>
           (vlanmap_key.logical_port_id),
           switch_id.c_str(),
@@ -2290,12 +2295,14 @@ TEST(odcdriver, test_delete_existing_vlan_map__not_202) {
   conf_file.password = "admin";
   unc::odcdriver::OdcVbrVlanMapCommand obj(conf_file);
 
-  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
-            obj.del_existing_vlanmap(vlanmap_key , ctr , str_mapping_id));
+  EXPECT_EQ(UNC_RC_SUCCESS,
+     obj.del_existing_vlanmap(vlanmap_key , vlanmap_val, ctr , str_mapping_id));
   delete ctr;
   ctr = NULL;
 }
 
+#if 0
+// NOT Applicable for REST CONF Implementation
 TEST(odcdriver, test_delete_existing_vlan_map_201_resp) {
   key_vlan_map_t vlanmap_key;
   key_ctr_t key_ctr;
@@ -2341,6 +2348,7 @@ TEST(odcdriver, test_delete_existing_vlan_map_201_resp) {
     ctr = NULL;
   }
 }
+#endif
 
 
 
@@ -2594,7 +2602,7 @@ TEST(odcdriver,  test_delete_cmd_invalid_logicalport_id_2) {
   memset(&vlanmap_val, 0, sizeof(pfcdrv_val_vlan_map_t));
   std::string vtn_name = "vtn1";
   std::string vbr_name = "vbr1";
-  std::string logical_id = "SW-00:00:00:00:00:00:00:02";
+  std::string logical_id = "SW-openflow:3";
   std::string vlan_id =  "20";
   strncpy(reinterpret_cast<char*>(vlanmap_key.vbr_key.vtn_key.vtn_name),
           vtn_name.c_str(),  sizeof(vlanmap_key.vbr_key.vtn_key.vtn_name)-1);
