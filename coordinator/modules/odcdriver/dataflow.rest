@@ -77,7 +77,7 @@ is_child=yes
 struct_name=virt_node_path
 check_bool_set=yes
 build_support=no
-mandatory=yes
+mandatory=no
 parse_support=yes
 
 [reason]
