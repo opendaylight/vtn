@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -12,6 +12,7 @@ import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.it.ofmock.OfMockService;
 import org.opendaylight.vtn.manager.it.util.TestHost;
+import org.opendaylight.vtn.manager.it.util.VTNServices;
 import org.opendaylight.vtn.manager.it.util.packet.EthernetFactory;
 import org.opendaylight.vtn.manager.it.util.packet.Icmp4Factory;
 import org.opendaylight.vtn.manager.it.util.packet.Inet4Factory;
@@ -36,10 +37,11 @@ public final class Icmp4FlowFactory extends Inet4FlowFactory {
     /**
      * Construct a new instance.
      *
-     * @param ofmock  openflowplugin mock-up service.
+     * @param ofmock   openflowplugin mock-up service.
+     * @param service  A {@link VTNServices} instance.
      */
-    public Icmp4FlowFactory(OfMockService ofmock) {
-        super(ofmock);
+    public Icmp4FlowFactory(OfMockService ofmock, VTNServices service) {
+        super(ofmock, service);
         setProtocol(InetProtocols.ICMP.shortValue());
     }
 

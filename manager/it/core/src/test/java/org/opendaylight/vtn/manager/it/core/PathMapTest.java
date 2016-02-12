@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -400,7 +400,7 @@ public final class PathMapTest extends TestMethodBase {
 
         // Send ARP unicast packets that should be mapped by the default
         // route resolver. Ethernet type will be configured in flow match.
-        ArpFlowFactory arpfc = new ArpFlowFactory(ofmock);
+        ArpFlowFactory arpfc = new ArpFlowFactory(ofmock, vit);
         arpfc.addMatchType(FlowMatchType.ETH_TYPE);
         List<UnicastFlow> flows00 =
             unicastTest(arpfc, bpath, VnodeState.UP, hosts0, hosts2,
@@ -412,7 +412,7 @@ public final class PathMapTest extends TestMethodBase {
         // value 10, DSCP should not be configured in flow match because
         // udp_src_50000 will be evaluated before dscp_10.
         Udp4FlowFactory udpfc =
-            new Udp4FlowFactory(ofmock, udpSrcPort, (short)53);
+            new Udp4FlowFactory(ofmock, vit, udpSrcPort, (short)53);
         udpfc.setDscp(dscpValue).
             addMatchType(FlowMatchType.ETH_TYPE).
             addMatchType(FlowMatchType.IP_PROTO).
@@ -427,7 +427,7 @@ public final class PathMapTest extends TestMethodBase {
         // should be mapped by dscp_10 because it will be evaluated before
         // tcp_dst_23.
         Tcp4FlowFactory tcpfc1 =
-            new Tcp4FlowFactory(ofmock, (short)12345, tcpDstPort);
+            new Tcp4FlowFactory(ofmock, vit, (short)12345, tcpDstPort);
         tcpfc1.setDscp(dscpValue).
             addMatchType(FlowMatchType.ETH_TYPE).
             addMatchType(FlowMatchType.IP_PROTO).
@@ -441,7 +441,7 @@ public final class PathMapTest extends TestMethodBase {
         // Ethernet type, IPv4 protocol, IP DSCP, and TCP destination port
         // will be configured in flow match.
         Tcp4FlowFactory tcpfc2 =
-            new Tcp4FlowFactory(ofmock, (short)12345, tcpDstPort);
+            new Tcp4FlowFactory(ofmock, vit, (short)12345, tcpDstPort);
         tcpfc2.addMatchType(FlowMatchType.ETH_TYPE).
             addMatchType(FlowMatchType.IP_PROTO).
             addMatchType(FlowMatchType.IP_DSCP).
@@ -453,7 +453,7 @@ public final class PathMapTest extends TestMethodBase {
 
         // Send TCP packet that should not be matched by any flow condition.
         Tcp4FlowFactory tcpfc3 =
-            new Tcp4FlowFactory(ofmock, (short)333, (short)444);
+            new Tcp4FlowFactory(ofmock, vit, (short)333, (short)444);
         tcpfc3.addMatchType(FlowMatchType.ETH_TYPE).
             addMatchType(FlowMatchType.IP_PROTO).
             addMatchType(FlowMatchType.IP_DSCP).

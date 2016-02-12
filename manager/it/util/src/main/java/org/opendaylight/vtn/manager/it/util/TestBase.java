@@ -13,9 +13,7 @@ import static org.opendaylight.vtn.manager.util.NumberUtils.MASK_SHORT;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -234,62 +232,6 @@ public abstract class TestBase extends Assert {
         list.add(Boolean.FALSE);
         return list;
     }
-
-    /**
-     * Learn the given host mapped to the given bridge network.
-     *
-     * @param ofmock    openflowplugin mock-up service.
-     * @param allPorts  A map that contains all switch ports as map keys.
-     *                  A set of VLAN IDs mapped to the given vBridge must
-     *                  be associated with the key.
-     * @param host      A test host to learn.
-     * @throws Exception  An error occurred.
-     */
-    public static final void learnHost(OfMockService ofmock,
-                                       Map<String, Set<Integer>> allPorts,
-                                       TestHost host) throws Exception {
-        String ingress = host.getPortIdentifier();
-        EtherAddress sha = host.getEtherAddress();
-        byte[] spa = host.getRawInetAddress();
-        int vid = host.getVlanId();
-        EthernetFactory efc = new EthernetFactory(sha, EtherAddress.BROADCAST).
-            setVlanId(vid);
-        ArpFactory afc = ArpFactory.newInstance(efc);
-        afc.setSenderHardwareAddress(sha.getBytes()).
-            setTargetHardwareAddress(MAC_ZERO.getBytes()).
-            setSenderProtocolAddress(spa).
-            setTargetProtocolAddress(IPV4_DUMMY.getBytes());
-        byte[] payload = efc.create();
-        ofmock.sendPacketIn(ingress, payload);
-
-        for (Map.Entry<String, Set<Integer>> entry: allPorts.entrySet()) {
-            Set<Integer> vids = entry.getValue();
-            if (vids == null) {
-                continue;
-            }
-
-            String portId = entry.getKey();
-            if (portId.equals(ingress)) {
-                vids = new HashSet<>(vids);
-                assertTrue(vids.remove(vid));
-                if (vids.isEmpty()) {
-                    continue;
-                }
-            }
-
-            int count = vids.size();
-            for (int i = 0; i < count; i++) {
-                byte[] transmitted = ofmock.awaitTransmittedPacket(portId);
-                vids = efc.verify(ofmock, transmitted, vids);
-            }
-            assertTrue(vids.isEmpty());
-        }
-
-        for (String pid: allPorts.keySet()) {
-            assertNull(ofmock.getTransmittedPacket(pid));
-        }
-    }
-
 
     /**
      * Send a broadcast ARP packet.

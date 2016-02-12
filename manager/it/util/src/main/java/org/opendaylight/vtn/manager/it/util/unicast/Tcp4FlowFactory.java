@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -12,6 +12,7 @@ import org.opendaylight.vtn.manager.util.InetProtocols;
 
 import org.opendaylight.vtn.manager.it.ofmock.OfMockService;
 import org.opendaylight.vtn.manager.it.util.TestHost;
+import org.opendaylight.vtn.manager.it.util.VTNServices;
 import org.opendaylight.vtn.manager.it.util.packet.EthernetFactory;
 import org.opendaylight.vtn.manager.it.util.packet.Inet4Factory;
 import org.opendaylight.vtn.manager.it.util.packet.TcpFactory;
@@ -31,12 +32,14 @@ public final class Tcp4FlowFactory extends Inet4PortFlowFactory {
     /**
      * Construct a new instance.
      *
-     * @param ofmock  openflowplugin mock-up service.
-     * @param src     The source port.
-     * @param dst     The destination port.
+     * @param ofmock   openflowplugin mock-up service.
+     * @param service  A {@link VTNServices} instance.
+     * @param src      The source port.
+     * @param dst      The destination port.
      */
-    public Tcp4FlowFactory(OfMockService ofmock, int src, int dst) {
-        super(ofmock, InetProtocols.TCP.shortValue(), src, dst);
+    public Tcp4FlowFactory(OfMockService ofmock, VTNServices service,
+                           int src, int dst) {
+        super(ofmock, service, InetProtocols.TCP.shortValue(), src, dst);
     }
 
     // UnicastFlowFactory

@@ -280,6 +280,7 @@ public final class UnicastFlowTest extends TestMethodBase {
             sendBroadcast(ofmock, th);
         }
         sleep(SHORT_DELAY);
+        flushTask();
         for (List<String> ports: edgePorts.values()) {
             for (String pid: ports) {
                 assertNull(ofmock.getTransmittedPacket(pid));
