@@ -408,7 +408,7 @@ public final class MacMapStatusTest extends TestMethodBase {
                 mwaiter.add(ment);
             }
 
-            learnHost(ofmock, vmst.getMappedVlans(portSet), th);
+            learnHost(ofmock, getTest(), vmst.getMappedVlans(portSet), th);
         }
 
         verify(mmapSrv);
@@ -519,11 +519,15 @@ public final class MacMapStatusTest extends TestMethodBase {
      */
     private void restore(VtnMacMapService mmapSrv, int index,
                          List<MacEntry> mentries) throws Exception {
-        VirtualNetwork vnet = getVirtualNetwork();
-        OfMockService ofmock = getTest().getOfMockService();
+        sleep(SHORT_DELAY);
+        flushTask();
+
+        VTNManagerIT vit = getTest();
+        OfMockService ofmock = vit.getOfMockService();
         Set<String> portSet = portNames.keySet();
         VBridgeIdentifier vbrId = vbridgeIds.get(index);
         MacEntryWaiter mwaiter = macWaiters.get(index);
+        VirtualNetwork vnet = getVirtualNetwork();
         VTNMacMapStatus vmst = vnet.getBridge(vbrId).getMacMap().getStatus();
 
         for (MacEntry ment: mentries) {
@@ -538,7 +542,7 @@ public final class MacMapStatusTest extends TestMethodBase {
             Map<String, Set<Integer>> vlans = vmst.getMappedVlans(portSet);
             for (IpNetwork ipn: ment.getIpAddresses()) {
                 TestHost th = new TestHost(eaddr, vid, pid, pname, ipn);
-                learnHost(ofmock, vlans, th);
+                learnHost(ofmock, vit, vlans, th);
                 sent = true;
             }
 
@@ -577,6 +581,9 @@ public final class MacMapStatusTest extends TestMethodBase {
      * @throws Exception  An error occurred.
      */
     private void verify(VtnMacMapService mmapSrv) throws Exception {
+        sleep(SHORT_DELAY);
+        flushTask();
+
         vnodeWaiter.await();
         for (MacEntryWaiter mwaiter: macWaiters) {
             mwaiter.await();

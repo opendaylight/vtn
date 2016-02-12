@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -14,8 +14,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -26,6 +29,10 @@ import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.EtherTypes;
 
 import org.opendaylight.vtn.manager.it.ofmock.DataStoreUtils;
+import org.opendaylight.vtn.manager.it.ofmock.OfMockService;
+import org.opendaylight.vtn.manager.it.util.packet.ArpFactory;
+import org.opendaylight.vtn.manager.it.util.packet.EthernetFactory;
+import org.opendaylight.vtn.manager.it.util.vnode.VTenantConfig;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
@@ -38,6 +45,7 @@ import org.opendaylight.yangtools.yang.common.RpcResult;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePath;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePathBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.VtnService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.Vtns;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.Vtn;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.VtnStaticTopology;
@@ -786,5 +794,95 @@ public abstract class ModelDrivenTestBase extends TestBase {
             setTerminalName(bname).
             setInterfaceName(iname).
             build();
+    }
+
+    /**
+     * Learn the given host mapped to the given bridge network.
+     *
+     * @param ofmock    openflowplugin mock-up service.
+     * @param service   A {@link VTNServices} instance.
+     * @param allPorts  A map that contains all switch ports as map keys.
+     *                  A set of VLAN IDs mapped to the given vBridge must
+     *                  be associated with the key.
+     * @param host      A test host to learn.
+     * @throws Exception  An error occurred.
+     */
+    public static final void learnHost(OfMockService ofmock,
+                                       VTNServices service,
+                                       Map<String, Set<Integer>> allPorts,
+                                       TestHost host) throws Exception {
+        String ingress = host.getPortIdentifier();
+        EtherAddress sha = host.getEtherAddress();
+        byte[] spa = host.getRawInetAddress();
+        int vid = host.getVlanId();
+        EthernetFactory efc = new EthernetFactory(sha, EtherAddress.BROADCAST).
+            setVlanId(vid);
+        ArpFactory afc = ArpFactory.newInstance(efc);
+        afc.setSenderHardwareAddress(sha.getBytes()).
+            setTargetHardwareAddress(MAC_ZERO.getBytes()).
+            setSenderProtocolAddress(spa).
+            setTargetProtocolAddress(IPV4_DUMMY.getBytes());
+        byte[] payload = efc.create();
+        ofmock.sendPacketIn(ingress, payload);
+
+        for (Map.Entry<String, Set<Integer>> entry: allPorts.entrySet()) {
+            Set<Integer> vids = entry.getValue();
+            if (vids == null) {
+                continue;
+            }
+
+            String portId = entry.getKey();
+            if (portId.equals(ingress)) {
+                vids = new HashSet<>(vids);
+                assertTrue(vids.remove(vid));
+                if (vids.isEmpty()) {
+                    continue;
+                }
+            }
+
+            int count = vids.size();
+            for (int i = 0; i < count; i++) {
+                byte[] transmitted = ofmock.awaitTransmittedPacket(portId);
+                vids = efc.verify(ofmock, transmitted, vids);
+            }
+            assertTrue(vids.isEmpty());
+        }
+
+        flushTask(ofmock, service);
+
+        for (String pid: allPorts.keySet()) {
+            assertNull(ofmock.getTransmittedPacket(pid));
+        }
+    }
+
+    /**
+     * Flush all the asynchronous tasks on the VTN Manager's global queue.
+     *
+     * @param ofmock   openflowplugin mock-up service.
+     * @param service  A {@link VTNServices} instance.
+     * @throws Exception  An error occurred.
+     */
+    public static final void flushTask(
+        OfMockService ofmock, VTNServices service) throws Exception {
+        VtnService vtnSrv = service.getVtnService();
+
+        // Choose one present VTN.
+        List<Vtn> vtns = getVtns(service);
+        if (vtns.isEmpty()) {
+            // Create one VTN and then remove it.
+            // update-vtn and remove-vtn RPC request is processed on the
+            String tname = "vtn_tmp";
+            VTenantConfig tconf = new VTenantConfig();
+            assertEquals(VtnUpdateType.CREATED,
+                         tconf.update(vtnSrv, tname, null, null));
+            VTenantConfig.removeVtn(vtnSrv, tname);
+        } else {
+            // Issue update-vtn RPC that does not change the configuration.
+            Vtn vtn = vtns.get(0);
+            String tname = vtn.getName().getValue();
+            VTenantConfig tconf = new VTenantConfig(vtn.getVtenantConfig());
+            assertEquals(null, tconf.update(vtnSrv, tname, null,
+                                            VtnUpdateOperationType.SET));
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -37,6 +37,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.RemoveVtnInpu
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.UpdateVtnInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.UpdateVtnInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.VtnService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.VtnVtenantConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtn.info.VtenantConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.Vtn;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.VtnBuilder;
@@ -127,6 +128,17 @@ public final class VTenantConfig extends VNodeConfig<VTenantConfig>
         super(desc);
         idleTimeout = idle;
         hardTimeout = hard;
+    }
+
+    /**
+     * Construct a new instance that contains the given VTN configuration.
+     *
+     * @param vtnc  A VTN configuration.
+     */
+    public VTenantConfig(VtnVtenantConfig vtnc) {
+        super(vtnc.getDescription());
+        idleTimeout = vtnc.getIdleTimeout();
+        hardTimeout = vtnc.getHardTimeout();
     }
 
     /**

@@ -132,6 +132,15 @@ public abstract class TestMethodBase extends ModelDrivenTestBase {
     }
 
     /**
+     * Flush all the asynchronous tasks on the VTN Manager's global queue.
+     *
+     * @throws Exception  An error occurred.
+     */
+    public void flushTask() throws Exception {
+        flushTask(theTest.getOfMockService(), theTest);
+    }
+
+    /**
      * Remove the specified VTN.
      *
      * @param tname  The name of the VTN.
@@ -347,6 +356,7 @@ public abstract class TestMethodBase extends ModelDrivenTestBase {
      * @param allPorts  A map that contains all switch ports as map keys.
      *                  A set of VLAN IDs mapped to the given vBridge must be
      *                  associated with the key.
+     * @throws Exception  An error occurred.
      */
     protected final void sendBroadcastIcmp(TestHost host, IpNetwork dstIp,
                                            Map<String, Set<Integer>> allPorts)
@@ -397,6 +407,8 @@ public abstract class TestMethodBase extends ModelDrivenTestBase {
             }
         }
 
+        // Ensure that no packet was forwarded.
+        flushTask();
         for (String p: allPorts.keySet()) {
             assertNull(ofmock.getTransmittedPacket(p));
         }
@@ -433,7 +445,7 @@ public abstract class TestMethodBase extends ModelDrivenTestBase {
     protected final void learnHost(VBridgeIdentifier vbrId,
                                    Map<String, Set<Integer>> allPorts,
                                    TestHost host) throws Exception {
-        learnHost(theTest.getOfMockService(), allPorts, host);
+        learnHost(theTest.getOfMockService(), theTest, allPorts, host);
 
         MacAddress mac = host.getEtherAddress().getMacAddress();
         try (ReadOnlyTransaction rtx = theTest.newReadOnlyTransaction()) {
@@ -460,7 +472,7 @@ public abstract class TestMethodBase extends ModelDrivenTestBase {
         BridgeNetwork bridge, Set<String> islPorts, boolean up)
         throws Exception {
         ArpFlowFactory factory =
-            new ArpFlowFactory(theTest.getOfMockService());
+            new ArpFlowFactory(theTest.getOfMockService(), theTest);
         return unicastTest(factory, bridge, islPorts, up);
     }
 
@@ -481,7 +493,7 @@ public abstract class TestMethodBase extends ModelDrivenTestBase {
         BridgeNetwork bridge, Set<String> islPorts, boolean up,
         VnodeState bridgeState) throws Exception {
         ArpFlowFactory factory =
-            new ArpFlowFactory(theTest.getOfMockService());
+            new ArpFlowFactory(theTest.getOfMockService(), theTest);
         return unicastTest(factory, bridge, islPorts, up, bridgeState);
     }
 
@@ -655,6 +667,7 @@ public abstract class TestMethodBase extends ModelDrivenTestBase {
      * @param host      The source host.
      * @param allPorts  A set of all port identifiers.
      * @return  A flow entry that drops incoming packet from the given host.
+     * @throws Exception  An error occurred.
      */
     protected final OfMockFlow dropTest(TestHost host, Set<String> allPorts)
         throws Exception {
@@ -683,6 +696,7 @@ public abstract class TestMethodBase extends ModelDrivenTestBase {
         verifyDropFlow(flow.getInstructions());
 
         // Ensure that no packet was forwarded.
+        flushTask();
         for (String pid: allPorts) {
             assertNull(ofmock.getTransmittedPacket(pid));
         }
@@ -697,6 +711,7 @@ public abstract class TestMethodBase extends ModelDrivenTestBase {
      * @param pid    The port identifier of the unmapped network.
      * @param vid    The VLAN ID of the unmapped network.
      * @param flows  A list of {@link UnicastFlow} instances.
+     * @throws Exception  An error occurred.
      */
     protected final void verifyFlowUninstalled(String pid, int vid,
                                                List<UnicastFlow> flows)

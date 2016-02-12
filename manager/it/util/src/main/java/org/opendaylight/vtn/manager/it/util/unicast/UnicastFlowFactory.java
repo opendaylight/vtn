@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -20,6 +20,7 @@ import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockLink;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockService;
 import org.opendaylight.vtn.manager.it.util.TestHost;
+import org.opendaylight.vtn.manager.it.util.VTNServices;
 import org.opendaylight.vtn.manager.it.util.action.ActionVerifier;
 import org.opendaylight.vtn.manager.it.util.flow.match.FlowMatchType;
 import org.opendaylight.vtn.manager.it.util.packet.EthernetFactory;
@@ -43,6 +44,11 @@ public abstract class UnicastFlowFactory {
      * openflowplugin mock-up service.
      */
     private final OfMockService  ofMockService;
+
+    /**
+     * VTN service provider.
+     */
+    private final VTNServices  vtnServices;
 
     /**
      * A set of port identifiers that specifies all the switch ports detected
@@ -82,10 +88,12 @@ public abstract class UnicastFlowFactory {
     /**
      * Construct a new instance.
      *
-     * @param ofmock  openflowplugin mock-up service.
+     * @param ofmock   openflowplugin mock-up service.
+     * @param service  A {@link VTNServices} instance.
      */
-    UnicastFlowFactory(OfMockService ofmock) {
+    UnicastFlowFactory(OfMockService ofmock, VTNServices service) {
         ofMockService = ofmock;
+        vtnServices = service;
     }
 
     /**
@@ -95,6 +103,15 @@ public abstract class UnicastFlowFactory {
      */
     public final OfMockService getOfMockService() {
         return ofMockService;
+    }
+
+    /**
+     * Return the VTN service provider.
+     *
+     * @return  A {@link VTNServices} instance.
+     */
+    public final VTNServices getVTNServices() {
+        return vtnServices;
     }
 
     /**

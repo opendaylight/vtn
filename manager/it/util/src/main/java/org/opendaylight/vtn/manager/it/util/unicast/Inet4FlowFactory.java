@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -10,6 +10,7 @@ package org.opendaylight.vtn.manager.it.util.unicast;
 
 import org.opendaylight.vtn.manager.it.ofmock.OfMockService;
 import org.opendaylight.vtn.manager.it.util.TestHost;
+import org.opendaylight.vtn.manager.it.util.VTNServices;
 import org.opendaylight.vtn.manager.it.util.packet.EthernetFactory;
 import org.opendaylight.vtn.manager.it.util.packet.Inet4Factory;
 
@@ -44,10 +45,11 @@ public class Inet4FlowFactory extends UnicastFlowFactory {
     /**
      * Construct a new instance.
      *
-     * @param ofmock  openflowplugin mock-up service.
+     * @param ofmock   openflowplugin mock-up service.
+     * @param service  A {@link VTNServices} instance.
      */
-    public Inet4FlowFactory(OfMockService ofmock) {
-        super(ofmock);
+    public Inet4FlowFactory(OfMockService ofmock, VTNServices service) {
+        super(ofmock, service);
     }
 
     /**
