@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2013, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,9 @@
  */
 
 package org.opendaylight.vtn.manager.internal;
+
+import static org.opendaylight.vtn.manager.util.NumberUtils.MASK_BYTE;
+import static org.opendaylight.vtn.manager.util.NumberUtils.MASK_SHORT;
 
 import static org.opendaylight.vtn.manager.internal.util.packet.EtherHeader.VLAN_NONE;
 import static org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag.MISSING_ELEMENT;
@@ -20,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -84,6 +88,41 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
  * Abstract base class for JUnit tests.
  */
 public abstract class TestBase extends Assert {
+    /**
+     * The minimum value of vtn-index.
+     */
+    public static final int  VTN_INDEX_MIN = 1;
+
+    /**
+     * The maximum value of vtn-index.
+     */
+    public static final int  VTN_INDEX_MAX = 65535;
+
+    /**
+     * The exclusive upper boundary of the valid VLAN ID range.
+     */
+    public static final int  MAX_VLAN_ID = 4096;
+
+    /**
+     * The exclusive upper boundary of the valid VLAN priority range.
+     */
+    public static final int  MAX_VLAN_PRI = 8;
+
+    /**
+     * The exclusive upper boundary of the valid IP DSCP range.
+     */
+    public static final int  MAX_IP_DSCP = 64;
+
+    /**
+     * The maximum number of resources to be added random add operation.
+     */
+    public static final int  MAX_RANDOM = 20;
+
+    /**
+     * The maximum value of an unsigned short integer.
+     */
+    public static final int  MAX_UNSIGNED_SHORT = MASK_SHORT + 1;
+
     /**
      * XML declaration.
      */
@@ -1137,5 +1176,128 @@ public abstract class TestBase extends Assert {
         } catch (VTNException e) {
             assertEquals(VtnErrorTag.TIMEOUT, e.getVtnErrorTag());
         }
+    }
+
+    /**
+     * Create a vtn-index value using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @param set   A set of vtn-index values to store generated values.
+     * @return  An unique vtn-index value.
+     */
+    public static final Integer createVtnIndex(Random rand, Set<Integer> set) {
+        Integer value;
+        int upper = VTN_INDEX_MAX - VTN_INDEX_MIN + 1;
+        do {
+            value = rand.nextInt(upper) + VTN_INDEX_MIN;
+        } while (set != null && !set.add(value));
+
+        return value;
+    }
+
+    /**
+     * Create an unicast MAC address using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @return  An {@link EtherAddress} instance.
+     */
+    public static final EtherAddress createEtherAddress(Random rand) {
+        long addr = rand.nextLong() & EtherAddress.BROADCAST.getAddress();
+        addr &= ~EtherAddress.MASK_MULTICAST;
+        return new EtherAddress(addr);
+    }
+
+    /**
+     * Create an IPv4 address using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @return  An {@link Ip4Network} instance.
+     */
+    public static final Ip4Network createIp4Network(Random rand) {
+        int addr;
+        do {
+            addr = rand.nextInt();
+        } while (addr == 0);
+
+        return new Ip4Network(addr);
+    }
+
+    /**
+     * Create a VLAN ID using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @return  A VLAN ID.
+     */
+    public static final int createVlanId(Random rand) {
+        return rand.nextInt(MAX_VLAN_ID);
+    }
+
+    /**
+     * Create a VLAN PCP value using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @return  A VLAN PCP value.
+     */
+    public static final short createVlanPcp(Random rand) {
+        return (short)rand.nextInt(MAX_VLAN_PRI);
+    }
+
+    /**
+     * Create an IP DSCP value using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @return  An IP DSCP value.
+     */
+    public static final short createDscp(Random rand) {
+        return (short)rand.nextInt(MAX_IP_DSCP);
+    }
+
+    /**
+     * Create a unique integer using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @param set   A set of integer values to store generated values.
+     * @return  An unique integer.
+     */
+    public static final Integer createInteger(Random rand, Set<Integer> set) {
+        Integer value;
+        do {
+            value = rand.nextInt();
+        } while (!set.add(value));
+
+        return value;
+    }
+
+    /**
+     * Create an integer value using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @param min   The minimum value of the returned value.
+     * @param max   The maximum value of the returned value.
+     * @return  An integer value.
+     */
+    public static final Integer createInteger(Random rand, int min, int max) {
+        int upper = max - min + 1;
+        return rand.nextInt(upper) + min;
+    }
+
+    /**
+     * Create an unsigned short value using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @return  An unsigned short value.
+     */
+    public static final int createUnsignedShort(Random rand) {
+        return rand.nextInt() & MASK_SHORT;
+    }
+
+    /**
+     * Create an unsigned byte value using the given random generator.
+     *
+     * @param rand  A pseudo random generator.
+     * @return  An unsigned byte value.
+     */
+    public static final short createUnsignedByte(Random rand) {
+        return (short)(rand.nextInt() & MASK_BYTE);
     }
 }
