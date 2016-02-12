@@ -233,7 +233,6 @@ UncRespCode OdcVtnDataFlowCommand::parse_flow_response_values(
       in_vinterface = it->data_ingress_node_.ig_if_name;
     } else {
       pfc_log_error("vinterface is empty");
-      return UNC_DRV_RC_ERR_GENERIC;
     }
     if (!in_vinterface.empty()) {
       strncpy(reinterpret_cast<char*>(df_cmn->df_segment->vtn_df_common->ingress_vinterface),
