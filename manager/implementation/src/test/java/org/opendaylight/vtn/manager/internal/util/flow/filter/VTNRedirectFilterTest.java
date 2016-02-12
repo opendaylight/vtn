@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -113,6 +113,17 @@ public class VTNRedirectFilterTest extends TestBase {
 
         // "output" field does not need to be tested.
         return dlist;
+    }
+
+    /**
+     * Return a vtn-redirect-filter-type instance created by the given
+     * REDIRECT filter.
+     *
+     * @param vrf  A {@link VTNRedirectFilter} instance.
+     * @return  A {@link VtnRedirectFilterCase} instance.
+     */
+    public static VtnRedirectFilterCase getFilterType(VTNRedirectFilter vrf) {
+        return vrf.getVtnFlowFilterType();
     }
 
     /**
