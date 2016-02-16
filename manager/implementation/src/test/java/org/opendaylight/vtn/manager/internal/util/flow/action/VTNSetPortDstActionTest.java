@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -169,18 +169,21 @@ public class VTNSetPortDstActionTest extends TestBase {
 
             // Default port number test.
             if (order != null) {
-                VtnSetPortDstAction vact = new VtnSetPortDstActionBuilder().
-                    build();
-                VtnSetPortDstActionCase vac = vacBuilder.
-                    setVtnSetPortDstAction(vact).build();
-                VTNSetPortDstAction va = new VTNSetPortDstAction(vac, order);
-                assertEquals(order, va.getIdentifier());
-                assertEquals(0, va.getPort());
-
-                vac = vacBuilder.setVtnSetPortDstAction(null).build();
-                va = new VTNSetPortDstAction(vac, order);
-                assertEquals(order, va.getIdentifier());
-                assertEquals(0, va.getPort());
+                VtnSetPortDstActionBuilder actb =
+                    new VtnSetPortDstActionBuilder();
+                VtnSetPortDstAction[] vacts = {
+                    null,
+                    actb.build(),
+                    actb.setPort(new TestPortNumber()).build(),
+                };
+                for (VtnSetPortDstAction vact: vacts) {
+                    VtnSetPortDstActionCase vac = vacBuilder.
+                        setVtnSetPortDstAction(vact).build();
+                    VTNSetPortDstAction va =
+                        new VTNSetPortDstAction(vac, order);
+                    assertEquals(order, va.getIdentifier());
+                    assertEquals(0, va.getPort());
+                }
             }
         }
 

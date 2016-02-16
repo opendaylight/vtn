@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -11,6 +11,7 @@ package org.opendaylight.vtn.manager.internal.util.pathpolicy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -834,13 +835,11 @@ public class PathPolicyUtilsTest extends TestBase {
 
         assertEquals(vpp1, PathPolicyUtils.readVtnPathPolicy(rtx, 1));
         verify(rtx).read(store, path1);
-        verify(rtx, Mockito.never()).read(store, path2);
-        verify(rtx, Mockito.never()).read(store, path3);
+        verifyNoMoreInteractions(rtx);
 
         assertEquals(vpp2, PathPolicyUtils.readVtnPathPolicy(rtx, 2));
-        verify(rtx).read(store, path1);
         verify(rtx).read(store, path2);
-        verify(rtx, Mockito.never()).read(store, path3);
+        verifyNoMoreInteractions(rtx);
 
         try {
             PathPolicyUtils.readVtnPathPolicy(rtx, 3);
@@ -853,9 +852,8 @@ public class PathPolicyUtilsTest extends TestBase {
             assertEquals(msg, e.getMessage());
         }
 
-        verify(rtx).read(store, path1);
-        verify(rtx).read(store, path2);
         verify(rtx).read(store, path3);
+        verifyNoMoreInteractions(rtx);
     }
 
     /**
@@ -965,86 +963,33 @@ public class PathPolicyUtilsTest extends TestBase {
         assertEquals(vpc11, PathPolicyUtils.readVtnPathCost(rtx, 1, vdesc1));
         verify(rtx).read(store, path1);
         verify(rtx).read(store, cpath11);
-        verify(rtx, Mockito.never()).read(store, cpath12);
-        verify(rtx, Mockito.never()).read(store, cpath13);
-        verify(rtx, Mockito.never()).read(store, path2);
-        verify(rtx, Mockito.never()).read(store, cpath21);
-        verify(rtx, Mockito.never()).read(store, cpath22);
-        verify(rtx, Mockito.never()).read(store, cpath23);
-        verify(rtx, Mockito.never()).read(store, path3);
-        verify(rtx, Mockito.never()).read(store, cpath31);
-        verify(rtx, Mockito.never()).read(store, cpath32);
-        verify(rtx, Mockito.never()).read(store, cpath33);
+        verifyNoMoreInteractions(rtx);
+
+        // In case where the vtn-port-desc is not found.
+        assertEquals(null, PathPolicyUtils.readVtnPathCost(rtx, 1, null));
+        verify(rtx, times(2)).read(store, path1);
+        verifyNoMoreInteractions(rtx);
 
         assertEquals(vpc12, PathPolicyUtils.readVtnPathCost(rtx, 1, vdesc2));
-        verify(rtx).read(store, path1);
-        verify(rtx).read(store, cpath11);
         verify(rtx).read(store, cpath12);
-        verify(rtx, Mockito.never()).read(store, cpath13);
-        verify(rtx, Mockito.never()).read(store, path2);
-        verify(rtx, Mockito.never()).read(store, cpath21);
-        verify(rtx, Mockito.never()).read(store, cpath22);
-        verify(rtx, Mockito.never()).read(store, cpath23);
-        verify(rtx, Mockito.never()).read(store, path3);
-        verify(rtx, Mockito.never()).read(store, cpath31);
-        verify(rtx, Mockito.never()).read(store, cpath32);
-        verify(rtx, Mockito.never()).read(store, cpath33);
+        verifyNoMoreInteractions(rtx);
 
         assertEquals(vpc13, PathPolicyUtils.readVtnPathCost(rtx, 1, vdesc3));
-        verify(rtx).read(store, path1);
-        verify(rtx).read(store, cpath11);
-        verify(rtx).read(store, cpath12);
         verify(rtx).read(store, cpath13);
-        verify(rtx, Mockito.never()).read(store, path2);
-        verify(rtx, Mockito.never()).read(store, cpath21);
-        verify(rtx, Mockito.never()).read(store, cpath22);
-        verify(rtx, Mockito.never()).read(store, cpath23);
-        verify(rtx, Mockito.never()).read(store, path3);
-        verify(rtx, Mockito.never()).read(store, cpath31);
-        verify(rtx, Mockito.never()).read(store, cpath32);
-        verify(rtx, Mockito.never()).read(store, cpath33);
+        verifyNoMoreInteractions(rtx);
 
         assertEquals(vpc21, PathPolicyUtils.readVtnPathCost(rtx, 2, vdesc1));
-        verify(rtx).read(store, path1);
-        verify(rtx).read(store, cpath11);
-        verify(rtx).read(store, cpath12);
-        verify(rtx).read(store, cpath13);
-        verify(rtx, Mockito.never()).read(store, path2);
         verify(rtx).read(store, cpath21);
-        verify(rtx, Mockito.never()).read(store, cpath22);
-        verify(rtx, Mockito.never()).read(store, cpath23);
-        verify(rtx, Mockito.never()).read(store, path3);
-        verify(rtx, Mockito.never()).read(store, cpath31);
-        verify(rtx, Mockito.never()).read(store, cpath32);
-        verify(rtx, Mockito.never()).read(store, cpath33);
+        verifyNoMoreInteractions(rtx);
 
         assertEquals(vpc22, PathPolicyUtils.readVtnPathCost(rtx, 2, vdesc2));
-        verify(rtx).read(store, path1);
-        verify(rtx).read(store, cpath11);
-        verify(rtx).read(store, cpath12);
-        verify(rtx).read(store, cpath13);
-        verify(rtx, Mockito.never()).read(store, path2);
-        verify(rtx).read(store, cpath21);
         verify(rtx).read(store, cpath22);
-        verify(rtx, Mockito.never()).read(store, cpath23);
-        verify(rtx, Mockito.never()).read(store, path3);
-        verify(rtx, Mockito.never()).read(store, cpath31);
-        verify(rtx, Mockito.never()).read(store, cpath32);
-        verify(rtx, Mockito.never()).read(store, cpath33);
+        verifyNoMoreInteractions(rtx);
 
         assertEquals(vpc23, PathPolicyUtils.readVtnPathCost(rtx, 2, vdesc3));
-        verify(rtx).read(store, path1);
-        verify(rtx).read(store, cpath11);
-        verify(rtx).read(store, cpath12);
-        verify(rtx).read(store, cpath13);
         verify(rtx).read(store, path2);
-        verify(rtx).read(store, cpath21);
-        verify(rtx).read(store, cpath22);
         verify(rtx).read(store, cpath23);
-        verify(rtx, Mockito.never()).read(store, path3);
-        verify(rtx, Mockito.never()).read(store, cpath31);
-        verify(rtx, Mockito.never()).read(store, cpath32);
-        verify(rtx, Mockito.never()).read(store, cpath33);
+        verifyNoMoreInteractions(rtx);
 
         try {
             PathPolicyUtils.readVtnPathCost(rtx, 3, vdesc1);
@@ -1056,19 +1001,9 @@ public class PathPolicyUtilsTest extends TestBase {
             String msg = "3: Path policy does not exist.";
             assertEquals(msg, e.getMessage());
         }
-
-        verify(rtx).read(store, path1);
-        verify(rtx).read(store, cpath11);
-        verify(rtx).read(store, cpath12);
-        verify(rtx).read(store, cpath13);
-        verify(rtx).read(store, path2);
-        verify(rtx).read(store, cpath21);
-        verify(rtx).read(store, cpath22);
-        verify(rtx).read(store, cpath23);
-        verify(rtx).read(store, path3);
         verify(rtx).read(store, cpath31);
-        verify(rtx, Mockito.never()).read(store, cpath32);
-        verify(rtx, Mockito.never()).read(store, cpath33);
+        verify(rtx).read(store, path3);
+        verifyNoMoreInteractions(rtx);
 
         try {
             PathPolicyUtils.readVtnPathCost(rtx, 3, vdesc2);
@@ -1080,19 +1015,9 @@ public class PathPolicyUtilsTest extends TestBase {
             String msg = "3: Path policy does not exist.";
             assertEquals(msg, e.getMessage());
         }
-
-        verify(rtx).read(store, path1);
-        verify(rtx).read(store, cpath11);
-        verify(rtx).read(store, cpath12);
-        verify(rtx).read(store, cpath13);
-        verify(rtx).read(store, path2);
-        verify(rtx).read(store, cpath21);
-        verify(rtx).read(store, cpath22);
-        verify(rtx).read(store, cpath23);
-        verify(rtx, times(2)).read(store, path3);
-        verify(rtx).read(store, cpath31);
         verify(rtx).read(store, cpath32);
-        verify(rtx, Mockito.never()).read(store, cpath33);
+        verify(rtx, times(2)).read(store, path3);
+        verifyNoMoreInteractions(rtx);
 
         try {
             PathPolicyUtils.readVtnPathCost(rtx, 3, vdesc3);
@@ -1104,18 +1029,8 @@ public class PathPolicyUtilsTest extends TestBase {
             String msg = "3: Path policy does not exist.";
             assertEquals(msg, e.getMessage());
         }
-
-        verify(rtx).read(store, path1);
-        verify(rtx).read(store, cpath11);
-        verify(rtx).read(store, cpath12);
-        verify(rtx).read(store, cpath13);
-        verify(rtx).read(store, path2);
-        verify(rtx).read(store, cpath21);
-        verify(rtx).read(store, cpath22);
-        verify(rtx).read(store, cpath23);
-        verify(rtx, times(3)).read(store, path3);
-        verify(rtx).read(store, cpath31);
-        verify(rtx).read(store, cpath32);
         verify(rtx).read(store, cpath33);
+        verify(rtx, times(3)).read(store, path3);
+        verifyNoMoreInteractions(rtx);
     }
 }

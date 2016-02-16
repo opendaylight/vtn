@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -13,12 +13,18 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Map;
 
 import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
+
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.Matcher;
 
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.IpNetwork;
@@ -38,9 +44,15 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.IpMatchFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.Ipv4MatchFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.Match;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.IpMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.layer._3.match.ArpMatchBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.layer._3.match.Ipv4Match;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.layer._3.match.Ipv4MatchBuilder;
 
 /**
  * JUnit test for {@link VTNInet4Match}.
@@ -372,6 +384,55 @@ public class VTNInet4MatchTest extends TestBase {
         }
 
         assertEquals(null, VTNInetMatch.create(ematch, null));
+    }
+
+    /**
+     * Test case for
+     * {@link VTNInet4Match#VTNInet4Match(IpMatchFields, Ipv4MatchFields)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testConstructor4() throws Exception {
+        // ipv4-prefix contains null.
+        Ipv4Prefix pfx = new TestIpv4Prefix();
+        Ipv4MatchFields[] fields = {
+            new Ipv4MatchBuilder().setIpv4Source(pfx).build(),
+            new Ipv4MatchBuilder().setIpv4Destination(pfx).build(),
+        };
+        IpMatchFields ipm = new IpMatchBuilder().build();
+        for (Ipv4MatchFields ip4m: fields) {
+            VTNInet4Match imatch = new VTNInet4Match(ipm, ip4m);
+            assertEquals(null, imatch.getSourceNetwork());
+            assertEquals(null, imatch.getDestinationNetwork());
+            assertEquals(null, imatch.getProtocol());
+            assertEquals(null, imatch.getDscp());
+        }
+
+        // ipv4-prefix contains invalid value.
+        pfx = new TestIpv4Prefix("Bad IPv4 address.");
+        Map<Ipv4Match, String> cases = new HashMap<>();
+        cases.put(new Ipv4MatchBuilder().setIpv4Source(pfx).build(),
+                  "source");
+        cases.put(new Ipv4MatchBuilder().setIpv4Destination(pfx).build(),
+                  "destination");
+
+        RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
+        for (Entry<Ipv4Match, String> entry: cases.entrySet()) {
+            Ipv4Match ip4m = entry.getKey();
+            String desc = entry.getValue();
+            String pattern = "Invalid " + desc + " IP address: ";
+            Matcher<String> msgPat = CoreMatchers.startsWith(pattern);
+            try {
+                new VTNInet4Match(ipm, ip4m);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertThat(e.getMessage(), msgPat);
+            }
+        }
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -34,6 +34,70 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
  * JUnit test for {@link IpNetwork}.
  */
 public class IpNetworkTest extends TestBase {
+    /**
+     * Describes an empty ip-prefix.
+     */
+    private static final class EmptyIpPrefix extends IpPrefix {
+        /**
+         * Construct a new instance.
+         */
+        private EmptyIpPrefix() {
+            super(new Ipv4Prefix("127.0.0.1/32"));
+        }
+
+        /**
+         * Return {@code null} as ipv4-prefix.
+         *
+         * @return  {@code null}.
+         */
+        @Override
+        public Ipv4Prefix getIpv4Prefix() {
+            return null;
+        }
+
+        /**
+         * Return {@code null} as value.
+         *
+         * @return  {@code null}.
+         */
+        @Override
+        public char[] getValue() {
+            return null;
+        }
+    }
+
+    /**
+     * Describes an empty ip-address.
+     */
+    private static final class EmptyIpAddress extends IpAddress {
+        /**
+         * Construct a new instance.
+         */
+        private EmptyIpAddress() {
+            super(new Ipv4Address("127.0.0.1"));
+        }
+
+        /**
+         * Return {@code null} as ipv4-address.
+         *
+         * @return  {@code null}.
+         */
+        @Override
+        public Ipv4Address getIpv4Address() {
+            return null;
+        }
+
+        /**
+         * Return {@code null} as value.
+         *
+         * @return  {@code null}.
+         */
+        @Override
+        public char[] getValue() {
+            return null;
+        }
+    }
+
     /**
      * Pseudo random number generator.
      */
@@ -182,7 +246,7 @@ public class IpNetworkTest extends TestBase {
                 assertEquals(prefix, ip.getPrefixLength());
 
                 Ipv4 i4 = new Ipv4Builder().setIpv4Address(ipv4).build();
-                ip = IpNetwork.create(ipp);
+                ip = IpNetwork.create(i4);
                 assertTrue(ip instanceof Ip4Network);
                 assertEquals(expected, ip);
                 assertEquals(prefix, ip.getPrefixLength());
@@ -261,8 +325,16 @@ public class IpNetworkTest extends TestBase {
         assertEquals(null, IpNetwork.create((Ipv4)null));
         assertEquals(null, IpNetwork.create((Ipv6)null));
 
+        // Empty ip-prefix.
+        IpPrefix ipp = new EmptyIpPrefix();
+        assertEquals(null, IpNetwork.create(ipp));
+
+        // Empty ip-address.
+        IpAddress ipa = new EmptyIpAddress();
+        assertEquals(null, IpNetwork.create(ipa));
+
         Ipv6Prefix ipv6 = new Ipv6Prefix("::1/64");
-        IpPrefix ipp = new IpPrefix(ipv6);
+        ipp = new IpPrefix(ipv6);
         try {
             IpNetwork.create(ipp);
             unexpected();

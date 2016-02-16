@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -552,6 +552,7 @@ public class VBridgeIdentifierTest extends TestBase {
         // vBridge may contain vBridge interface, VLAN mapping, MAC mapping,
         // and MAC mapped hosts.
         List<VNodeIdentifier<?>> falseList = new ArrayList<>();
+        falseList.add(null);
 
         VnodeName[] tnames = {new VnodeName("vtn"), new VnodeName("vtn_1")};
         VnodeName[] bnames = {new VnodeName("vbr"), new VnodeName("vbridge_1")};

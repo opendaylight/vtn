@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -353,11 +353,11 @@ public class VTNMacMapStatusTest extends TestBase {
         MacVlan[] hosts = {
             new MacVlan(0x001122334455L, 0),
             new MacVlan(0xfeffabcdef00L, 0),
-            new MacVlan(0xfeffabcdef01L, 1),
-            new MacVlan(0xfeffabcdef02L, 100),
+            new MacVlan(0xfeffabcdef05L, 1),
+            new MacVlan(0xfeffabcdef0aL, 100),
             new MacVlan(0xfeffabcdefffL, 123),
             new MacVlan(0x000000000001L, 4094),
-            new MacVlan(0x000000000002L, 4094),
+            new MacVlan(0x00000000000aL, 4094),
             new MacVlan(0xfc927ace41d7L, 4095),
         };
 
@@ -376,6 +376,39 @@ public class VTNMacMapStatusTest extends TestBase {
                 setMappedHost(mhosts).build();
             vmst = new VTNMacMapStatus(mst);
             hostMap.verify(vmst.toMacMapStatus());
+
+            // Add one more host at the same port.
+            long mac = mv.getAddress();
+            MacVlan newMv = new MacVlan(mac + 1L, mv.getVlanId());
+            hostMap.put(newMv, sport);
+
+            mhost = new MappedHostBuilder().
+                setMacAddress(newMv.getMacAddress()).
+                setPortId(sport.getNodeConnectorId()).
+                setVlanId(new VlanId(newMv.getVlanId())).
+                build();
+            mhosts.add(mhost);
+            mst = new MacMapStatusBuilder().
+                setMappedHost(mhosts).build();
+            vmst = new VTNMacMapStatus(mst);
+            hostMap.verify(vmst.toMacMapStatus());
+        }
+
+        // Test case for invalid mac-map-status.
+        MappedHost mhost = new MappedHostBuilder().build();
+        mhosts = Collections.singletonList(mhost);
+        MacMapStatus mst = new MacMapStatusBuilder().
+            setMappedHost(mhosts).
+            build();
+        try {
+            new VTNMacMapStatus(mst);
+            unexpected();
+        } catch (IllegalStateException e) {
+            Throwable cause = e.getCause();
+            assertEquals(NullPointerException.class, cause.getClass());
+            String msg = "Unable to cache mac-map-status: " +
+                cause.getMessage();
+            assertEquals(msg, e.getMessage());
         }
     }
 

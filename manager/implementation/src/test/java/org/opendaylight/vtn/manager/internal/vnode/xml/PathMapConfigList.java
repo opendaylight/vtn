@@ -11,7 +11,6 @@ package org.opendaylight.vtn.manager.internal.vnode.xml;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -123,11 +122,7 @@ public final class PathMapConfigList
     public void verify(List<XmlPathMap> xpms, boolean jaxb) {
         Map<Object, PathMapConfig> cfMap = getConfigMap();
         if (cfMap.isEmpty()) {
-            if (jaxb) {
-                assertEquals(Collections.<XmlPathMap>emptyList(), xpms);
-            } else {
-                assertEquals(null, xpms);
-            }
+            assertEquals(null, xpms);
         } else {
             assertNotNull(xpms);
             Iterator<XmlPathMap> it = xpms.iterator();
