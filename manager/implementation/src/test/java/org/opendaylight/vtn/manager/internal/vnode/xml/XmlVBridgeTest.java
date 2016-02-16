@@ -414,14 +414,13 @@ public class XmlVBridgeTest extends TestBase {
             }
         }
 
-        // Test for vinterface.
-        Random rand = new Random(777777777L);
+        // Test for empty vinterfaces.
         String name = "vbr";
         String desc = "vBridge";
         int age = 60000;
         VBridgeConfig bconf = new VBridgeConfig(name, desc).
             setAgeInterval(age);
-        VInterfaceConfigList iconfList = new VInterfaceConfigList(rand, 10);
+        VInterfaceConfigList iconfList = new VInterfaceConfigList();
         bconf.setInterfaces(iconfList);
         XmlNode xnode = bconf.toXmlNode();
         XmlVBridge xvbr = unmarshal(um, xnode.toString(), type);
@@ -429,8 +428,26 @@ public class XmlVBridgeTest extends TestBase {
         jaxbTest(xvbr, type, XML_ROOT);
         bconf.testToVbridgeBuilder(xvbr);
 
-        // Test for vlan-map.
-        XmlVlanMapConfigList xvmaps = new XmlVlanMapConfigList(rand, 20);
+        // Test for vinterfaces.
+        Random rand = new Random(777777777L);
+        iconfList = new VInterfaceConfigList(rand, 10);
+        bconf.setInterfaces(iconfList);
+        xnode = bconf.toXmlNode();
+        xvbr = unmarshal(um, xnode.toString(), type);
+        bconf.verify(xvbr, true);
+        jaxbTest(xvbr, type, XML_ROOT);
+        bconf.testToVbridgeBuilder(xvbr);
+
+        // Test for empty vlan-maps.
+        XmlVlanMapConfigList xvmaps = new XmlVlanMapConfigList();
+        xnode = bconf.setVlanMaps(xvmaps).toXmlNode();
+        xvbr = unmarshal(um, xnode.toString(), type);
+        bconf.verify(xvbr, true);
+        jaxbTest(xvbr, type, XML_ROOT);
+        bconf.testToVbridgeBuilder(xvbr);
+
+        // Test for vlan-maps.
+        xvmaps = new XmlVlanMapConfigList(rand, 20);
         xnode = bconf.setVlanMaps(xvmaps).toXmlNode();
         xvbr = unmarshal(um, xnode.toString(), type);
         bconf.verify(xvbr, true);
@@ -450,14 +467,29 @@ public class XmlVBridgeTest extends TestBase {
         jaxbTest(xvbr, type, XML_ROOT);
         bconf.testToVbridgeBuilder(xvbr);
 
+        // Test for empty input-filters.
+        XmlFlowFilterList xinput = new XmlFlowFilterList();
+        xnode = bconf.setInputFilters(xinput).toXmlNode();
+        xvbr = unmarshal(um, xnode.toString(), type);
+        bconf.verify(xvbr, true);
+        jaxbTest(xvbr, type, XML_ROOT);
+        bconf.testToVbridgeBuilder(xvbr);
+
         // Test for input-filters.
         XmlDropFilter xdrop = new XmlDropFilter(111, "drop1");
         XmlPassFilter xpass = new XmlPassFilter(222, "pass1");
-        XmlFlowFilterList xinput = new XmlFlowFilterList().
-            add(xdrop).
+        xinput.add(xdrop).
             add(xpass).
             addAll(rand);
-        xnode = bconf.setInputFilters(xinput).toXmlNode();
+        xnode = bconf.toXmlNode();
+        xvbr = unmarshal(um, xnode.toString(), type);
+        bconf.verify(xvbr, true);
+        jaxbTest(xvbr, type, XML_ROOT);
+        bconf.testToVbridgeBuilder(xvbr);
+
+        // Test for empty output-filters.
+        XmlFlowFilterList xoutput = new XmlFlowFilterList();
+        xnode = bconf.setOutputFilters(xoutput).toXmlNode();
         xvbr = unmarshal(um, xnode.toString(), type);
         bconf.verify(xvbr, true);
         jaxbTest(xvbr, type, XML_ROOT);
@@ -466,12 +498,10 @@ public class XmlVBridgeTest extends TestBase {
         // Test for output-filters.
         xdrop = new XmlDropFilter(65534, "drop2");
         xpass = new XmlPassFilter(65535, "pass2");
-        XmlFlowFilterList xoutput = new XmlFlowFilterList().
-            add(xdrop).
+        xoutput.add(xdrop).
             add(xpass).
             addAll(rand);
-        xnode = bconf.setOutputFilters(xoutput).toXmlNode();
-        System.out.printf("xml=%s\n", xnode);
+        xnode = bconf.toXmlNode();
         xvbr = unmarshal(um, xnode.toString(), type);
         bconf.verify(xvbr, true);
         jaxbTest(xvbr, type, XML_ROOT);

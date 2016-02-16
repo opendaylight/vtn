@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -58,6 +58,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.VtnKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.vtn.mappable.vinterface.VinterfaceStatus;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.vtn.mappable.vinterface.list.Vinterface;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.vtn.mappable.vinterface.list.VinterfaceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.vtn.mappable.vinterface.list.VinterfaceKey;
@@ -430,6 +431,7 @@ public class VTerminalIfIdentifierTest extends TestBase {
         // VTerminalIfIdentifier.contains() returns true only if the given
         // instance is equal to the instance.
         List<VNodeIdentifier<?>> falseList = new ArrayList<>();
+        falseList.add(null);
 
         VnodeName[] tnames = {new VnodeName("vtn"), new VnodeName("vtn_1")};
         VnodeName[] bnames = {new VnodeName("vbr"), new VnodeName("vterm_1")};
@@ -571,6 +573,42 @@ public class VTerminalIfIdentifierTest extends TestBase {
                         setInterfaceName(iname.getValue()).
                         build();
                     assertEquals(vpath, ifId.getVirtualNodePath());
+                }
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link VInterfaceIdentifier#getStatusPath()}.
+     */
+    @Test
+    public void testGetStatusPath() {
+        VnodeName[] tnames = {new VnodeName("vtn"), new VnodeName("vtn_1")};
+        VnodeName[] bnames = {new VnodeName("vbr"), new VnodeName("vterm_1")};
+        VnodeName[] inames = {new VnodeName("if"), new VnodeName("vif_1")};
+        for (VnodeName tname: tnames) {
+            VtnKey vtnKey = new VtnKey(tname);
+            for (VnodeName bname: bnames) {
+                VterminalKey vtermKey = new VterminalKey(bname);
+                for (VnodeName iname: inames) {
+                    VinterfaceKey vifKey = new VinterfaceKey(iname);
+                    VTerminalIfIdentifier ifId =
+                        new VTerminalIfIdentifier(tname, bname, iname);
+                    InstanceIdentifier<VinterfaceStatus> expected =
+                        InstanceIdentifier.builder(Vtns.class).
+                        child(Vtn.class, vtnKey).
+                        child(Vterminal.class, vtermKey).
+                        child(Vinterface.class, vifKey).
+                        child(VinterfaceStatus.class).
+                        build();
+                    InstanceIdentifier<VinterfaceStatus> path =
+                        ifId.getStatusPath();
+                    assertEquals(expected, path);
+
+                    // The status path should be cached.
+                    for (int i = 0; i < 10; i++) {
+                        assertSame(path, ifId.getStatusPath());
+                    }
                 }
             }
         }

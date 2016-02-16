@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -425,7 +425,21 @@ public class VTNSetDlSrcActionTest extends TestBase {
             }
         }
 
-        int expected = (orders.length + 1) * addresses.length * 2;
+        // Create empty instances using JAXB.
+        Unmarshaller um = createUnmarshaller(VTNDlAddrAction.class);
+        String xml = new XmlNode(XML_ROOT).toString();
+        Class<VTNSetDlSrcAction> srcType = VTNSetDlSrcAction.class;
+        VTNSetDlSrcAction vsrc1 = unmarshal(um, xml, srcType);
+        VTNSetDlSrcAction vsrc2 = unmarshal(um, xml, srcType);
+        testEquals(set, vsrc1, vsrc2);
+
+        xml = new XmlNode("vtn-set-dl-dst-action").toString();
+        Class<VTNSetDlDstAction> dstType = VTNSetDlDstAction.class;
+        VTNSetDlDstAction vdst1 = unmarshal(um, xml, dstType);
+        VTNSetDlDstAction vdst2 = unmarshal(um, xml, dstType);
+        testEquals(set, vdst1, vdst2);
+
+        int expected = ((orders.length + 1) * addresses.length * 2) + 2;
         assertEquals(expected, set.size());
     }
 

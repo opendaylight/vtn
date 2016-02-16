@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -166,18 +166,21 @@ public class VTNSetInetDscpActionTest extends TestBase {
 
             if (order != null) {
                 // Default DSCP test.
-                VtnSetInetDscpAction vact = new VtnSetInetDscpActionBuilder().
-                    build();
-                VtnSetInetDscpActionCase vac = vacBuilder.
-                    setVtnSetInetDscpAction(vact).build();
-                VTNSetInetDscpAction va = new VTNSetInetDscpAction(vac, order);
-                assertEquals(order, va.getIdentifier());
-                assertEquals((short)0, va.getDscp());
-
-                vac = vacBuilder.setVtnSetInetDscpAction(null).build();
-                va = new VTNSetInetDscpAction(vac, order);
-                assertEquals(order, va.getIdentifier());
-                assertEquals((short)0, va.getDscp());
+                VtnSetInetDscpActionBuilder actb =
+                    new VtnSetInetDscpActionBuilder();
+                VtnSetInetDscpAction[] vacts = {
+                    null,
+                    actb.build(),
+                    actb.setDscp(new TestDscp()).build(),
+                };
+                for (VtnSetInetDscpAction vact: vacts) {
+                    VtnSetInetDscpActionCase vac = vacBuilder.
+                        setVtnSetInetDscpAction(vact).build();
+                    VTNSetInetDscpAction va =
+                        new VTNSetInetDscpAction(vac, order);
+                    assertEquals(order, va.getIdentifier());
+                    assertEquals((short)0, va.getDscp());
+                }
             }
         }
 

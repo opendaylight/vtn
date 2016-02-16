@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -64,6 +64,18 @@ public class LogRecordTest extends TestBase {
 
         verify(mock, times(count)).error(msg, args);
         verifyNoMoreInteractions(mock);
+
+        mock = mock(Logger.class);
+        logger = new FixedLogger(mock, VTNLogLevel.WARN);
+        msg = "A log message.";
+        args = null;
+        lr = new LogRecord(logger, msg, args);
+        for (int i = 0; i < count; i++) {
+            lr.log();
+        }
+
+        verify(mock, times(count)).warn(msg);
+        verifyNoMoreInteractions(mock);
     }
 
     /**
@@ -116,5 +128,15 @@ public class LogRecordTest extends TestBase {
         verify(mock).isErrorEnabled();
         verifyNoMoreInteractions(mock);
         reset(mock);
+
+        mock = mock(Logger.class);
+        when(mock.isInfoEnabled()).thenReturn(true);
+        logger = new FixedLogger(mock, VTNLogLevel.INFO);
+        msg = "A log message.";
+        lr = new LogRecord(logger, ise, msg, (Object[])null);
+        lr.log();
+        verify(mock).isInfoEnabled();
+        verify(mock).info(msg, ise);
+        verifyNoMoreInteractions(mock);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -167,6 +167,10 @@ public class VTNPushVlanActionTest extends TestBase {
                 : "0x" + Integer.toHexString(etype.intValue());
             String desc = "PUSH_VLAN(type=" + etherType + ")";
             assertEquals(desc, va.getDescription(action));
+            if (etype == null) {
+                action = new PushVlanActionCaseBuilder().build();
+                assertEquals(desc, va.getDescription(action));
+            }
 
             // getDescription() should never affect instance variables.
             assertEquals(VlanType.VLAN, va.getVlanType());
