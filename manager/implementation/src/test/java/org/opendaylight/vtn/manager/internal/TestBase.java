@@ -505,7 +505,7 @@ public abstract class TestBase extends Assert {
         assertFalse(o1.equals(set));
 
         for (Object o : set) {
-            assertFalse("o1=" + o1 + ", o=" + o, o1.equals(o));
+            assertFalse(o1.equals(o));
             assertFalse(o.equals(o1));
         }
 

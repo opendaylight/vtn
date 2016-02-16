@@ -469,8 +469,7 @@ public class XmlVTenantTest extends TestBase {
             }
         }
 
-        // Test for vbridge.
-        Random rand = new Random(0xa0b0c0d0e0f0L);
+        // Test for empty vbridges.
         String name = "vtn";
         String desc = "Virtual Tenant Network";
         Integer idle = 300;
@@ -478,24 +477,57 @@ public class XmlVTenantTest extends TestBase {
         VTenantConfig tconf = new VTenantConfig(name, desc).
             setIdleTimeout(idle).
             setHardTimeout(hard);
-        VBridgeConfigList bconfList = new VBridgeConfigList(rand, 10);
+        VBridgeConfigList bconfList = new VBridgeConfigList();
         XmlNode xnode = tconf.setBridges(bconfList).toXmlNode();
         XmlVTenant xvtn = unmarshal(um, xnode.toString(), type);
         tconf.verify(xvtn, true);
         jaxbTest(xvtn, type, XML_ROOT);
         tconf.testToVtnBuilder(xvtn);
 
-        // Test for vterminal.
-        VTerminalConfigList vtconfList = new VTerminalConfigList(rand, 10);
+        // Test for vbridges.
+        Random rand = new Random(0xa0b0c0d0e0f0L);
+        bconfList = new VBridgeConfigList(rand, 10);
+        xnode = tconf.setBridges(bconfList).toXmlNode();
+        xvtn = unmarshal(um, xnode.toString(), type);
+        tconf.verify(xvtn, true);
+        jaxbTest(xvtn, type, XML_ROOT);
+        tconf.testToVtnBuilder(xvtn);
+
+        // Test for empty vterminals.
+        VTerminalConfigList vtconfList = new VTerminalConfigList();
         xnode = tconf.setTerminals(vtconfList).toXmlNode();
         xvtn = unmarshal(um, xnode.toString(), type);
         tconf.verify(xvtn, true);
         jaxbTest(xvtn, type, XML_ROOT);
         tconf.testToVtnBuilder(xvtn);
 
-        // Test for vtn-path-map.
-        PathMapConfigList pmaps = new PathMapConfigList(rand, 10);
+        // Test for vterminals.
+        vtconfList = new VTerminalConfigList(rand, 10);
+        xnode = tconf.setTerminals(vtconfList).toXmlNode();
+        xvtn = unmarshal(um, xnode.toString(), type);
+        tconf.verify(xvtn, true);
+        jaxbTest(xvtn, type, XML_ROOT);
+        tconf.testToVtnBuilder(xvtn);
+
+        // Test for empty vtn-path-maps.
+        PathMapConfigList pmaps = new PathMapConfigList();
         xnode = tconf.setPathMaps(pmaps).toXmlNode();
+        xvtn = unmarshal(um, xnode.toString(), type);
+        tconf.verify(xvtn, true);
+        jaxbTest(xvtn, type, XML_ROOT);
+        tconf.testToVtnBuilder(xvtn);
+
+        // Test for vtn-path-maps.
+        pmaps = new PathMapConfigList(rand, 10);
+        xnode = tconf.setPathMaps(pmaps).toXmlNode();
+        xvtn = unmarshal(um, xnode.toString(), type);
+        tconf.verify(xvtn, true);
+        jaxbTest(xvtn, type, XML_ROOT);
+        tconf.testToVtnBuilder(xvtn);
+
+        // Test for empty input-filters.
+        XmlFlowFilterList xinput = new XmlFlowFilterList();
+        xnode = tconf.setInputFilters(xinput).toXmlNode();
         xvtn = unmarshal(um, xnode.toString(), type);
         tconf.verify(xvtn, true);
         jaxbTest(xvtn, type, XML_ROOT);
@@ -504,11 +536,10 @@ public class XmlVTenantTest extends TestBase {
         // Test for input-filters.
         XmlDropFilter xdrop = new XmlDropFilter(12345, "drop1");
         XmlPassFilter xpass = new XmlPassFilter(6789, "pass1");
-        XmlFlowFilterList xinput = new XmlFlowFilterList().
-            add(xdrop).
+        xinput.add(xdrop).
             add(xpass).
             addAll(rand);
-        xnode = tconf.setInputFilters(xinput).toXmlNode();
+        xnode = tconf.toXmlNode();
         xvtn = unmarshal(um, xnode.toString(), type);
         tconf.verify(xvtn, true);
         jaxbTest(xvtn, type, XML_ROOT);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -29,6 +29,8 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
+import org.opendaylight.yangtools.yang.binding.Augmentation;
+
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.VtnOrderedFlowAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowAction;
@@ -37,7 +39,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VlanTyp
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.Ordered;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.DropActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.DropActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.OutputActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.OutputActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.PopPbbActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.PopVlanActionCaseBuilder;
@@ -52,6 +56,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.acti
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.SetVlanIdActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.SetVlanPcpActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.drop.action._case.DropActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.output.action._case.OutputAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.output.action._case.OutputActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.pop.pbb.action._case.PopPbbActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.pop.vlan.action._case.PopVlanActionBuilder;
@@ -875,6 +880,7 @@ public class FlowActionUtilsTest extends TestBase {
         Instruction write = new InstructionBuilder().
             setInstruction(new WriteActionsCaseBuilder().build()).
             build();
+        ilist.clear();
         ilist.add(write);
         insts = new InstructionsBuilder().setInstruction(ilist).build();
         assertEquals(empty, FlowActionUtils.getActions(insts, comp));
@@ -883,6 +889,7 @@ public class FlowActionUtilsTest extends TestBase {
         Instruction apply = new InstructionBuilder().
             setInstruction(new ApplyActionsCaseBuilder().build()).
             build();
+        ilist.clear();
         ilist.add(apply);
         insts = new InstructionsBuilder().setInstruction(ilist).build();
         assertEquals(empty, FlowActionUtils.getActions(insts, comp));
@@ -923,7 +930,7 @@ public class FlowActionUtilsTest extends TestBase {
                                setAction(actions).build()).
                            build()).
             build();
-        ilist = new ArrayList<Instruction>();
+        ilist.clear();
         ilist.add(apply);
         insts = new InstructionsBuilder().setInstruction(ilist).build();
 
@@ -1442,5 +1449,25 @@ public class FlowActionUtilsTest extends TestBase {
                          converter.getDescription(action.getAction()));
             index++;
         }
+
+        // Error should be ignored.
+        OutputActionCase outCase = new OutputActionCase() {
+            @Override
+            public Class<DropActionCase> getImplementedInterface() {
+                return DropActionCase.class;
+            }
+
+            @Override
+            public OutputAction getOutputAction() {
+                return null;
+            }
+
+            @Override
+            public <E extends Augmentation<OutputActionCase>> E getAugmentation(
+                Class<E> type) {
+                return null;
+            }
+        };
+        assertEquals(outCase.toString(), converter.getDescription(outCase));
     }
 }

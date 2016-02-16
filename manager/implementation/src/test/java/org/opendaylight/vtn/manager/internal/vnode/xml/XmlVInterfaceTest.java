@@ -388,15 +388,30 @@ public class XmlVInterfaceTest extends TestBase {
         jaxbTest(xvif, type, XML_ROOT);
         iconf.testToVinterfaceBuilder(xvif);
 
+        // Test for empty input-filters.
+        XmlFlowFilterList xinput = new XmlFlowFilterList();
+        xnode = iconf.setInputFilters(xinput).toXmlNode();
+        xvif = unmarshal(um, xnode.toString(), type);
+        iconf.verify(xvif, true);
+        jaxbTest(xvif, type, XML_ROOT);
+        iconf.testToVinterfaceBuilder(xvif);
+
         // Test for input-filters.
         Random rand = new Random(0xaabbccddL);
         XmlDropFilter xdrop = new XmlDropFilter(345, "drop1");
         XmlPassFilter xpass = new XmlPassFilter(123, "pass1");
-        XmlFlowFilterList xinput = new XmlFlowFilterList().
-            add(xdrop).
+        xinput.add(xdrop).
             add(xpass).
             addAll(rand);
-        xnode = iconf.setInputFilters(xinput).toXmlNode();
+        xnode = iconf.toXmlNode();
+        xvif = unmarshal(um, xnode.toString(), type);
+        iconf.verify(xvif, true);
+        jaxbTest(xvif, type, XML_ROOT);
+        iconf.testToVinterfaceBuilder(xvif);
+
+        // Test for empty output-filters.
+        XmlFlowFilterList xoutput = new XmlFlowFilterList();
+        xnode = iconf.setOutputFilters(xoutput).toXmlNode();
         xvif = unmarshal(um, xnode.toString(), type);
         iconf.verify(xvif, true);
         jaxbTest(xvif, type, XML_ROOT);
@@ -405,11 +420,10 @@ public class XmlVInterfaceTest extends TestBase {
         // Test for output-filters.
         xdrop = new XmlDropFilter(1, "drop2");
         xpass = new XmlPassFilter(2, "pass2");
-        XmlFlowFilterList xoutput = new XmlFlowFilterList().
-            add(xdrop).
+        xoutput.add(xdrop).
             add(xpass).
             addAll(rand);
-        xnode = iconf.setOutputFilters(xoutput).toXmlNode();
+        xnode = iconf.toXmlNode();
         xvif = unmarshal(um, xnode.toString(), type);
         iconf.verify(xvif, true);
         jaxbTest(xvif, type, XML_ROOT);

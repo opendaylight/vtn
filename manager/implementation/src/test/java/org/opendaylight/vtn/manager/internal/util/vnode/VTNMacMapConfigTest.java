@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -332,6 +332,31 @@ public class VTNMacMapConfigTest extends TestBase {
                 assertEquals(deniedSet, mmc.getDeniedHosts());
                 assertEquals(allowedSet.isEmpty() && deniedSet.isEmpty(),
                              mmc.isEmpty());
+            }
+        }
+
+        // Test case for invalid mac-map-config.
+        vhdescs = Collections.singletonList((VlanHostDescList)null);
+        allowed = new AllowedHostsBuilder().
+            setVlanHostDescList(vhdescs).build();
+        denied = new DeniedHostsBuilder().
+            setVlanHostDescList(vhdescs).build();
+        MacMapConfig[] badConfigs = {
+            new MacMapConfigBuilder().setAllowedHosts(allowed).build(),
+            new MacMapConfigBuilder().setDeniedHosts(denied).build(),
+        };
+
+        RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
+        String msg = "vlan-host-desc-list cannot be null";
+        for (MacMapConfig mmc: badConfigs) {
+            try {
+                new VTNMacMapConfig(mmc);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
             }
         }
     }

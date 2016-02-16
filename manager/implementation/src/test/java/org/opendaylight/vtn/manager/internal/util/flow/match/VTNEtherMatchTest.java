@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -14,13 +14,19 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Map;
 import java.util.Set;
 
 import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
+
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.Matcher;
 
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
@@ -30,6 +36,7 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.vtn.manager.internal.TestEtherType;
+import org.opendaylight.vtn.manager.internal.TestMacAddress;
 import org.opendaylight.vtn.manager.internal.TestVlanId;
 import org.opendaylight.vtn.manager.internal.TestVlanPcp;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
@@ -42,10 +49,18 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.EthernetMatchFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.Match;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.VlanMatchFields;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.ethernet.match.fields.EthernetDestination;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.ethernet.match.fields.EthernetDestinationBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.ethernet.match.fields.EthernetSource;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.ethernet.match.fields.EthernetSourceBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.EthernetMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.VlanMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.vlan.match.fields.VlanIdBuilder;
 
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.EtherType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanId;
 
@@ -165,7 +180,7 @@ public class VTNEtherMatchTest extends TestBase {
         };
         Integer[] types = {null, 0x800, 0x86dd};
         Integer[] vlans = {null, 0, 1, 4095};
-        Short[] priorities = {0, 3, 7};
+        Short[] priorities = {null, 0, 3, 7};
 
         EtherMatchParams params = new EtherMatchParams();
         for (EtherAddress src: srcs) {
@@ -417,6 +432,7 @@ public class VTNEtherMatchTest extends TestBase {
         }
 
         // Invalid ether types.
+        RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
         VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         Long[] badTypes = {
             0x10000L, 0x10001L, 0x20000L, 0x7fffffffL, 0x80000000L,
@@ -429,7 +445,7 @@ public class VTNEtherMatchTest extends TestBase {
                 new VTNEtherMatch(vem);
                 unexpected();
             } catch (RpcException e) {
-                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                assertEquals(etag, e.getErrorTag());
                 assertEquals(vtag, e.getVtnErrorTag());
                 assertEquals("Invalid Ethernet type: " + type, e.getMessage());
             }
@@ -446,11 +462,91 @@ public class VTNEtherMatchTest extends TestBase {
                     new VTNEtherMatch(vem);
                     unexpected();
                 } catch (RpcException e) {
-                    assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                    assertEquals(etag, e.getErrorTag());
                     assertEquals(vtag, e.getVtnErrorTag());
                     assertEquals("VLAN priority requires a valid VLAN ID.",
                                  e.getMessage());
                 }
+            }
+        }
+
+        // mac-address contains invalid value.
+        MacAddress mac = new TestMacAddress("Invalid MAC address");
+        Map<VtnEtherMatch, String> cases = new HashMap<>();
+        VtnEtherMatch vem = new VtnEtherMatchBuilder().
+            setSourceAddress(mac).
+            build();
+        cases.put(vem, "source");
+        vem = new VtnEtherMatchBuilder().
+            setDestinationAddress(mac).
+            build();
+        cases.put(vem, "destination");
+
+        for (Entry<VtnEtherMatch, String> entry: cases.entrySet()) {
+            vem = entry.getKey();
+            String desc = entry.getValue();
+            String pattern = "Invalid " + desc + " MAC address: ";
+            Matcher<String> msgPat = CoreMatchers.startsWith(pattern);
+            try {
+                new VTNEtherMatch(vem);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertThat(e.getMessage(), msgPat);
+            }
+        }
+    }
+
+    /**
+     * Test case for
+     * {@link VTNEtherMatch#VTNEtherMatch(EthernetMatchFields,VlanMatchFields)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testConstructor4() throws Exception {
+        // Empty ethernet-match and vlan-match.
+        VlanMatchFields vmf = new VlanMatchBuilder().build();
+        VTNEtherMatch ematch = new VTNEtherMatch(
+            new EthernetMatchBuilder().build(), vmf);
+        assertEquals(null, ematch.getSourceAddress());
+        assertEquals(null, ematch.getDestinationAddress());
+        assertEquals(null, ematch.getEtherType());
+        assertEquals(null, ematch.getVlanId());
+        assertEquals(null, ematch.getVlanPriority());
+        assertEquals(true, ematch.isEmpty());
+
+        // mac-address contains invalid value.
+        MacAddress mac = new TestMacAddress("Bad MAC address");
+        Map<EthernetMatchFields, String> cases = new HashMap<>();
+        EthernetSource src = new EthernetSourceBuilder().
+            setAddress(mac).build();
+        EthernetMatchFields emf = new EthernetMatchBuilder().
+            setEthernetSource(src).
+            build();
+        cases.put(emf, "source");
+        EthernetDestination dst = new EthernetDestinationBuilder().
+            setAddress(mac).build();
+        emf = new EthernetMatchBuilder().
+            setEthernetDestination(dst).
+            build();
+        cases.put(emf, "destination");
+
+        RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
+        VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
+        for (Entry<EthernetMatchFields, String> entry: cases.entrySet()) {
+            emf = entry.getKey();
+            String desc = entry.getValue();
+            String pattern = "Invalid " + desc + " MAC address: ";
+            Matcher<String> msgPat = CoreMatchers.startsWith(pattern);
+            try {
+                new VTNEtherMatch(emf, vmf);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertThat(e.getMessage(), msgPat);
             }
         }
     }

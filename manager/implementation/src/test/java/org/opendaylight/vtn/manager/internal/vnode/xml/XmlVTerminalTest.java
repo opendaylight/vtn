@@ -199,15 +199,24 @@ public class XmlVTerminalTest extends TestBase {
             }
         }
 
+        // Test for empty vinterfaces.
         String name = "vterm";
         String desc = "vTerminal";
         VTerminalConfig vtconf = new VTerminalConfig(name, desc);
-
-        Random rand = new Random(141421356L);
-        VInterfaceConfigList iconfList = new VInterfaceConfigList(rand, 10);
+        VInterfaceConfigList iconfList = new VInterfaceConfigList();
         vtconf.setInterfaces(iconfList);
         XmlNode xnode = vtconf.toXmlNode();
         XmlVTerminal xvterm = unmarshal(um, xnode.toString(), type);
+        vtconf.verify(xvterm, true);
+        jaxbTest(xvterm, type, XML_ROOT);
+        vtconf.testToVterminalBuilder(xvterm);
+
+        // Test for vinterfaces.
+        Random rand = new Random(141421356L);
+        iconfList = new VInterfaceConfigList(rand, 10);
+        vtconf.setInterfaces(iconfList);
+        xnode = vtconf.toXmlNode();
+        xvterm = unmarshal(um, xnode.toString(), type);
         vtconf.verify(xvterm, true);
         jaxbTest(xvterm, type, XML_ROOT);
         vtconf.testToVterminalBuilder(xvterm);

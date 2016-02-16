@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -251,6 +251,58 @@ public class VTNVlanMapConfigTest extends TestBase {
                 assertEquals(etag, e.getErrorTag());
                 assertEquals(vtag, e.getVtnErrorTag());
                 assertEquals("Invalid node ID: " + bad, e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link VTNVlanMapConfig#getMapId()}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testGetMapId() throws Exception {
+        SalNode[] nodes = {
+            null,
+            new SalNode(1L),
+            new SalNode(12345678L),
+            new SalNode(-1L),
+        };
+        Integer[] vids = {
+            null, 0, 1, 2, 100, 678, 1234, 3456, 4094, 4095,
+        };
+
+        VlanMapConfigBuilder builder = new VlanMapConfigBuilder();
+        for (SalNode snode: nodes) {
+            NodeId node;
+            String nodeId;
+            if (snode == null) {
+                node = null;
+                nodeId = "ANY";
+            } else {
+                node = snode.getNodeId();
+                nodeId = snode.toString();
+            }
+            builder.setNode(node);
+            for (Integer vid: vids) {
+                String expected;
+                VlanId vlanId;
+                if (vid == null) {
+                    vlanId = null;
+                    expected = nodeId + ".0";
+                } else {
+                    vlanId = new VlanId(vid);
+                    expected = nodeId + "." + vid;
+                }
+                VtnVlanMapConfig vvmc = builder.setVlanId(vlanId).build();
+                VTNVlanMapConfig vmc = new VTNVlanMapConfig(vvmc);
+                String mapId = vmc.getMapId();
+                assertEquals(expected, mapId);
+
+                // The map ID should be cached.
+                for (int i = 0; i < 10; i++) {
+                    assertSame(mapId, vmc.getMapId());
+                }
             }
         }
     }
