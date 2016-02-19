@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -622,6 +622,12 @@ public class InventoryUtilsTest extends TestBase {
         nc = new NodeConnectorBuilder().
             setId(new NodeConnectorId("openflow:1:LOCAL")).build();
         badNcList.add(nc);
+
+        // Empty node connector should be ignored.
+        nc = new NodeConnectorBuilder().
+            setId(new NodeConnectorId("openflow:1:2")).build();
+        badNcList.add(nc);
+
         node = builder.setNodeConnector(badNcList).build();
         assertEquals(null, InventoryUtils.getVtnPorts(vportList, node));
         vbuilder = InventoryUtils.toVtnNodeBuilder(node);

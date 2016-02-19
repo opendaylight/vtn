@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation.  All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -11,6 +11,7 @@ package org.opendaylight.vtn.manager.internal.util.inventory;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.Test;
 
@@ -222,7 +223,7 @@ public class LinkEdgeTest extends TestBase {
      */
     @Test
     public void testEquals() {
-        HashSet<Object> set = new HashSet<Object>();
+        Set<Object> set = new HashSet<>();
 
         NodeConnectorId[] source = {
             new NodeConnectorId("openflow:1:1"),
@@ -247,27 +248,29 @@ public class LinkEdgeTest extends TestBase {
             new NodeConnectorId("openflow:30:42"),
         };
 
-        for (int i = 0; i < source.length; i++) {
-            NodeConnectorId src = source[i];
-            NodeConnectorId dst = destination[i];
-            VtnLink vlink = new VtnLinkBuilder().setSource(src).
-                setDestination(dst).build();
-            LinkEdge le1 = new LinkEdge(vlink);
-            vlink = new VtnLinkBuilder().setSource(new NodeConnectorId(src)).
-                setDestination(new NodeConnectorId(dst)).build();
-            LinkEdge le2 = new LinkEdge(vlink);
-            testEquals(set, le1, le2);
+        for (NodeConnectorId src: source) {
+            for (NodeConnectorId dst: destination) {
+                VtnLink vlink = new VtnLinkBuilder().setSource(src).
+                    setDestination(dst).build();
+                LinkEdge le1 = new LinkEdge(vlink);
+                vlink = new VtnLinkBuilder().
+                    setSource(new NodeConnectorId(src)).
+                    setDestination(new NodeConnectorId(dst)).build();
+                LinkEdge le2 = new LinkEdge(vlink);
+                testEquals(set, le1, le2);
 
-            vlink = new VtnLinkBuilder().setSource(dst).
-                setDestination(src).build();
-            le1 = new LinkEdge(vlink);
-            vlink = new VtnLinkBuilder().setSource(new NodeConnectorId(dst)).
-                setDestination(new NodeConnectorId(src)).build();
-            le2 = new LinkEdge(vlink);
-            testEquals(set, le1, le2);
+                vlink = new VtnLinkBuilder().setSource(dst).
+                    setDestination(src).build();
+                le1 = new LinkEdge(vlink);
+                vlink = new VtnLinkBuilder().
+                    setSource(new NodeConnectorId(dst)).
+                    setDestination(new NodeConnectorId(src)).build();
+                le2 = new LinkEdge(vlink);
+                testEquals(set, le1, le2);
+            }
         }
 
-        assertEquals(source.length * 2, set.size());
+        assertEquals(source.length * destination.length * 2, set.size());
     }
 
     /**
