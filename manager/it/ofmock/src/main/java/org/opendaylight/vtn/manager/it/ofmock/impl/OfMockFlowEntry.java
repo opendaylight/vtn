@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -14,7 +14,7 @@ import java.util.Objects;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockFlow;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.Flow;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowModFlags;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Instructions;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match;
@@ -23,6 +23,26 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.M
  * An internal implementation of {@link OfMockFlow}.
  */
 public final class OfMockFlowEntry implements OfMockFlow {
+    /**
+     * The name of the table-id field.
+     */
+    private static final String  FIELD_TABLE_ID = "table-id";
+
+    /**
+     * The name of the priority field.
+     */
+    private static final String  FIELD_PRIORITY = "priority";
+
+    /**
+     * The name of the idle-timeout field.
+     */
+    private static final String  FIELD_IDLE_TIMEOUT = "idle-timeout";
+
+    /**
+     * The name of the hard-timeout field.
+     */
+    private static final String  FIELD_HARD_TIMEOUT = "hard-timeout";
+
     /**
      * The node identifier corresponding to an OpenFlow switch.
      */
@@ -68,6 +88,16 @@ public final class OfMockFlowEntry implements OfMockFlow {
     private final FlowModFlags  flowModFlags;
 
     /**
+     * The MD-SAL flow entry associated with this instance.
+     */
+    private Flow  flowEntry;
+
+    /**
+     * A cache for the hash code.
+     */
+    private int  hash;
+
+    /**
      * Construct a new instance.
      *
      * @param nid   The node identifier.
@@ -75,19 +105,21 @@ public final class OfMockFlowEntry implements OfMockFlow {
      * @throws IllegalArgumentException
      *    {@code flow} is invalid.
      */
-    public OfMockFlowEntry(String nid, Flow flow) {
+    public OfMockFlowEntry(
+        String nid,
+        org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.Flow flow) {
         if (flow == null) {
             throw new IllegalArgumentException("Input cannot be null.");
         }
 
         nodeIdentifier = nid;
-        tableId = getInteger(flow.getTableId(), "table-id");
-        priority = getInteger(flow.getPriority(), "priority");
-        idleTimeout = getInteger(flow.getIdleTimeout(), "idle-timeout");
-        hardTimeout = getInteger(flow.getHardTimeout(), "hard-timeout");
+        tableId = getInteger(flow.getTableId(), FIELD_TABLE_ID);
+        priority = getInteger(flow.getPriority(), FIELD_PRIORITY);
+        idleTimeout = getInteger(flow.getIdleTimeout(), FIELD_IDLE_TIMEOUT);
+        hardTimeout = getInteger(flow.getHardTimeout(), FIELD_HARD_TIMEOUT);
 
         flowCookie = OfMockUtils.getCookie(flow.getCookie());
-        flowMatch = flow.getMatch();
+        flowMatch = verify(flow.getMatch());
         flowInstructions = flow.getInstructions();
         flowModFlags = flow.getFlags();
     }
@@ -107,9 +139,42 @@ public final class OfMockFlowEntry implements OfMockFlow {
         idleTimeout = 0;
         hardTimeout = 0;
         flowCookie = BigInteger.ZERO;
-        flowMatch = match;
+        flowMatch = verify(match);
         flowInstructions = null;
         flowModFlags = null;
+    }
+
+    /**
+     * Determine whether the given MD-SAL flow entry is identical to this
+     * instance or not.
+     *
+     * @param flow  The MD-SAL flow entry to be compared.
+     * @return   {@code true} if identical. Otherwise {@code false}.
+     */
+    public boolean equalsFlow(
+        org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.Flow flow) {
+        return (tableId == getInteger(flow.getTableId(), FIELD_TABLE_ID) &&
+                priority == getInteger(flow.getPriority(), FIELD_PRIORITY) &&
+                flowMatch.equals(flow.getMatch()));
+    }
+
+    /**
+     * Return the MD-SAL flow entry associated with this instance.
+     *
+     * @return  The MD-SAL flow entry if configured.
+     *          {@code null} if not configured.
+     */
+    public Flow getFlowEntry() {
+        return flowEntry;
+    }
+
+    /**
+     * Associate the given MD-SAL flow entry with this instance.
+     *
+     * @param flow  The MD-SAL flow entry.
+     */
+    public void setFlowEntry(Flow flow) {
+        flowEntry = flow;
     }
 
     /**
@@ -128,6 +193,21 @@ public final class OfMockFlowEntry implements OfMockFlow {
         }
 
         return num.intValue();
+    }
+
+    /**
+     * Ensure that the given flow match is not {@code null}.
+     *
+     * @param match  The MD-SAL flow match to be verified.
+     * @return  {@code flow}.
+     * @throws IllegalArgumentException
+     *    The specified flow is {@code null}.
+     */
+    private Match verify(Match match) {
+        if (match == null) {
+            throw new IllegalArgumentException("Flow match cannot be null.");
+        }
+        return match;
     }
 
     /**
@@ -150,7 +230,7 @@ public final class OfMockFlowEntry implements OfMockFlow {
             return false;
         }
 
-        return Objects.equals(flowMatch, ofent.flowMatch);
+        return flowMatch.equals(ofent.flowMatch);
     }
 
     /**
@@ -160,7 +240,13 @@ public final class OfMockFlowEntry implements OfMockFlow {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(tableId, priority, flowMatch);
+        int h = hash;
+        if (h == 0) {
+            h = Objects.hash(tableId, priority, flowMatch);
+            hash = h;
+        }
+
+        return h;
     }
 
     /**

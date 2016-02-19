@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -12,10 +12,11 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -47,14 +48,13 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.Fl
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowFeatureCapabilityFlowStats;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.flow.node.SwitchFeaturesBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.Table;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.TableBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SwitchFlowRemovedBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.UpdateFlowInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.UpdateFlowOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.UpdateFlowOutputBuilder;
@@ -78,11 +78,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.table.statistics.rev13
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.table.statistics.rev131215.OpendaylightFlowTableStatisticsService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.transaction.rev150304.TransactionId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.Flow;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowModFlags;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.RemovedReasonFlags;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.group.service.rev130918.AddGroupInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.group.service.rev130918.AddGroupOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.group.service.rev130918.RemoveGroupInput;
@@ -99,7 +95,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.group.statistics.rev131111.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.group.statistics.rev131111.GetGroupStatisticsInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.group.statistics.rev131111.GetGroupStatisticsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.group.statistics.rev131111.OpendaylightGroupStatisticsService;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeContext;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
@@ -174,6 +169,11 @@ public final class OfNode
     private static final Logger  LOG = LoggerFactory.getLogger(OfNode.class);
 
     /**
+     * The flow table ID supported by the ofmock service.
+     */
+    public static final short  TABLE_ID = 0;
+
+    /**
      * The buffer size to be notified.
      */
     private static final long  NODE_BUFSIZE = 256L;
@@ -244,14 +244,19 @@ public final class OfNode
     private final Map<String, OfPort>  physicalPorts = new HashMap<>();
 
     /**
-     * A list of installed flow entries.
-     */
-    private final List<OfMockFlowEntry>  flowEntries = new LinkedList<>();
-
-    /**
      * The identifier of the next transaction.
      */
     private final AtomicLong  nextTransactionId = new AtomicLong();
+
+    /**
+     * The executor service that updates inventory information.
+     */
+    private final ExecutorService  inventoryExecutor;
+
+    /**
+     * The flow table.
+     */
+    private final FlowTable  flowTable;
 
     /**
      * Initialize static configurations.
@@ -263,96 +268,22 @@ public final class OfNode
     }
 
     /**
-     * A thread that notifies flow statistics.
+     * Create a dummy flow statistics for the specified flow entry.
+     *
+     * @param flow  The MD-SAL flow entry.
+     * @return  A dummy flow statistics information.
      */
-    private final class FlowStatsThread extends Thread
-        implements FlowTableScanner {
-        /**
-         * The transaction ID associated with the flow statistics request.
-         */
-        private final TransactionId  transactionId;
+    public static FlowAndStatisticsMapList getStatistics(Flow flow) {
+        Duration duration = new DurationBuilder().
+            setSecond(new Counter32(DURATION_SEC)).
+            setNanosecond(new Counter32(DURATION_NANOSEC)).
+            build();
 
-        /**
-         * The condition to select flow entries to be notified.
-         */
-        private final Flow  condition;
-
-        /**
-         * A list of flow statistics.
-         */
-        private final List<FlowAndStatisticsMapList>  flowStats =
-            new ArrayList<>();
-
-        /**
-         * Construct a new instance.
-         *
-         * @param xid   OpenFlow transaction ID.
-         * @param cond  The MD-SAL flow entry which specifies the condition to
-         *              select flow entries.
-         */
-        private FlowStatsThread(TransactionId xid, Flow cond) {
-            super("FlowStatsThread: xid=" + xid.getValue());
-            transactionId = xid;
-            condition = cond;
-        }
-
-        // Runnable
-
-        /**
-         * Scan the flow table, and notify flow statistics.
-         */
-        @Override
-        public void run() {
-            try {
-                scanFlowTable(condition, this);
-
-                // Publish a flows-statistics-update notification.
-                FlowsStatisticsUpdateBuilder builder =
-                    new FlowsStatisticsUpdateBuilder();
-                builder.setId(new NodeId(nodeIdentifier)).
-                    setMoreReplies(false).
-                    setTransactionId(transactionId).
-                    setFlowAndStatisticsMapList(flowStats);
-
-                ofMockProvider.publish(builder.build());
-            } catch (RuntimeException e) {
-                BigInteger xid = transactionId.getValue();
-                LOG.error("Unexpected exception: xid=" + xid, e);
-            }
-        }
-
-        // FlowTableScanner
-
-        /**
-         * Invoked when a flow entry to be notified has been found.
-         *
-         * @param ofent  The flow entry to be notified.
-         * @return  {@code false}.
-         */
-        @Override
-        public boolean flowEntryFound(OfMockFlowEntry ofent) {
-            Duration duration = new DurationBuilder().
-                setSecond(new Counter32(DURATION_SEC)).
-                setNanosecond(new Counter32(DURATION_NANOSEC)).
-                build();
-
-            FlowAndStatisticsMapList fs = new FlowAndStatisticsMapListBuilder().
-                setPacketCount(new Counter64(BigInteger.valueOf(PACKET_COUNT))).
-                setByteCount(new Counter64(BigInteger.valueOf(BYTE_COUNT))).
-                setDuration(duration).
-                setPriority(Integer.valueOf(ofent.getPriority())).
-                setTableId(Short.valueOf((short)ofent.getTableId())).
-                setCookie(new FlowCookie(ofent.getCookie())).
-                setMatch(ofent.getMatch()).
-                setInstructions(ofent.getInstructions()).
-                setFlags(ofent.getFlowModFlags()).
-                setIdleTimeout(Integer.valueOf(ofent.getIdleTimeout())).
-                setHardTimeout(Integer.valueOf(ofent.getHardTimeout())).
-                build();
-            flowStats.add(fs);
-
-            return false;
-        }
+        return new FlowAndStatisticsMapListBuilder(flow).
+            setPacketCount(new Counter64(BigInteger.valueOf(PACKET_COUNT))).
+            setByteCount(new Counter64(BigInteger.valueOf(BYTE_COUNT))).
+            setDuration(duration).
+            build();
     }
 
     /**
@@ -378,6 +309,17 @@ public final class OfNode
             ip = 1;
         }
         ipAddress = new IpAddress(new Ipv4Address("192.168.111." + ip));
+        inventoryExecutor = Executors.newSingleThreadExecutor();
+        flowTable = new FlowTable(this, TABLE_ID);
+    }
+
+    /**
+     * Return the ofmock provider service.
+     *
+     * @return  The ofmock provider service.
+     */
+    public OfMockProvider getOfMockProvider() {
+        return ofMockProvider;
     }
 
     /**
@@ -390,12 +332,48 @@ public final class OfNode
     }
 
     /**
+     * Return the path to this node.
+     *
+     * @return  The path to this node.
+     */
+    public InstanceIdentifier<Node> getNodePath() {
+        return nodePath;
+    }
+
+    /**
+     * Return the executor that updates inventory information.
+     *
+     * @return  An {@link Executor} instance.
+     */
+    public Executor getExecutor() {
+        return inventoryExecutor;
+    }
+
+    /**
      * Return a reference to this node.
      *
      * @return  A {@link NodeRef} instance.
      */
     public NodeRef getNodeRef() {
         return new NodeRef(nodePath);
+    }
+
+    /**
+     * Return the OpenFlow version.
+     *
+     * @return  A {@link VtnOpenflowVersion} instance.
+     */
+    public VtnOpenflowVersion getOfVersion() {
+        return ofVersion;
+    }
+
+    /**
+     * Return the flow table.
+     *
+     * @return  A {@link FlowTable} instance.
+     */
+    public FlowTable getFlowTable() {
+        return flowTable;
     }
 
     /**
@@ -431,15 +409,24 @@ public final class OfNode
      * @return    An {@link OfPort} instance.
      */
     public OfPort addPort(long id) {
-        OfPort port = new OfPort(ofVersion, nodeIdentifier, id);
-        String portId = port.getPortIdentifier();
+        final OfPort port = new OfPort(ofVersion, nodeIdentifier, id);
+        final String portId = port.getPortIdentifier();
         if (physicalPorts.put(portId, port) != null) {
             String msg = "Duplicate port number: " + id;
             LOG.error(msg);
             throw new IllegalArgumentException(msg);
         }
 
-        port.publish(ofMockProvider);
+        Futures.addCallback(port.publish(this), new FutureCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                TopologyUtils.addTerminationPoint(ofMockProvider, port);
+            }
+
+            @Override
+            public void onFailure(Throwable cause) {
+            }
+        });
         return port;
     }
 
@@ -458,7 +445,7 @@ public final class OfNode
             throw new IllegalArgumentException("Unknown port: " + pid);
         }
 
-        port.publishRemoval(ofMockProvider);
+        port.publishRemoval(this);
     }
 
     /**
@@ -547,7 +534,7 @@ public final class OfNode
      */
     public void setPortState(boolean state) {
         for (OfPort port: physicalPorts.values()) {
-            port.setPortState(ofMockProvider, state);
+            port.setPortState(this, state);
         }
     }
 
@@ -580,26 +567,19 @@ public final class OfNode
     }
 
     /**
-     * Wait for the flow entry specified by the given match and priority is
-     * installed.
+     * Return the flow entry specified by the given ofmock flow entry.
      *
-     * @param target  An {@link OfMockFlowEntry} instance which represents
-     *                the target flow.
+     * @param target  An {@link OfMockFlowEntry} instance that specifies the
+     *                target flow.
      * @return  An {@link OfMockFlowEntry} instance if found.
      *          {@code null} if not found.
      */
-    public synchronized OfMockFlowEntry getFlow(OfMockFlowEntry target) {
-        for (OfMockFlowEntry ofent: flowEntries) {
-            if (ofent.equals(target)) {
-                return ofent;
-            }
-        }
-        return null;
+    public OfMockFlowEntry getFlow(OfMockFlowEntry target) {
+        return flowTable.getFlow(target);
     }
 
     /**
-     * Wait for the flow entry specified by the given match and priority is
-     * installed.
+     * Wait for the specified flow entry to be installed or uninstalled.
      *
      * @param target     An {@link OfMockFlowEntry} instance which represents
      *                   the target flow.
@@ -613,23 +593,20 @@ public final class OfNode
      * @throws InterruptedException
      *    The calling thread was interrupted.
      * @throws TimeoutException
-     *    {@code timeout} is zero or negative.
+     *    The specified condition was not satisfied within the timeout.
      */
-    public synchronized OfMockFlowEntry awaitFlow(OfMockFlowEntry target,
-                                                  boolean installed,
-                                                  long timeout)
+    public OfMockFlowEntry awaitFlow(OfMockFlowEntry target, boolean installed,
+                                     long timeout)
         throws InterruptedException, TimeoutException {
-        OfMockFlowEntry ofent = getFlow(target);
-        if ((ofent != null) == installed) {
-            return ofent;
+        OfMockFlowEntry result;
+        if (installed) {
+            result = flowTable.awaitAdded(target, timeout);
+        } else {
+            flowTable.awaitRemoved(target, timeout);
+            result = null;
         }
 
-        if (timeout <= 0) {
-            throw new TimeoutException();
-        }
-        wait(timeout);
-
-        return getFlow(target);
+        return result;
     }
 
     /**
@@ -641,25 +618,9 @@ public final class OfNode
      * @throws TimeoutException
      *    At least one flow entry is present after the wait.
      */
-    public synchronized void awaitFlowCleared(long timeout)
+    public void awaitFlowCleared(long timeout)
         throws InterruptedException, TimeoutException {
-        if (flowEntries.isEmpty()) {
-            return;
-        }
-
-        long tmout = OfMockProvider.TASK_TIMEOUT;
-        long deadline = System.currentTimeMillis() + tmout;
-        do {
-            wait(tmout);
-            if (flowEntries.isEmpty()) {
-                return;
-            }
-            tmout = deadline - System.currentTimeMillis();
-        } while (tmout > 0);
-
-        StringBuilder builder = new StringBuilder("Flow table is not empty: ").
-            append(flowEntries);
-        throw new TimeoutException(builder.toString());
+        flowTable.awaitCleared(timeout);
     }
 
     /**
@@ -671,8 +632,58 @@ public final class OfNode
      *
      * @return  The number of flow entries.
      */
-    public synchronized int getFlowCount() {
-        return flowEntries.size();
+    public int getFlowCount() {
+        return flowTable.size();
+    }
+
+    /**
+     * Create a {@link TransactionId} instance which representse the OpenFlow
+     * transaction ID.
+     *
+     * @return  A {@link TransactionId} instance.
+     */
+    public TransactionId createTransactionId() {
+        long id = nextTransactionId.incrementAndGet();
+        return new TransactionId(BigInteger.valueOf(id));
+    }
+
+    /**
+     * Publish a flows-statistics-update notification.
+     *
+     * @param xid    The transaction ID associated with the flow statistics
+     *               request.
+     * @param stats  A list of flow statistics.
+     */
+    public void publishFlowStatsUpdate(TransactionId xid,
+                                       List<FlowAndStatisticsMapList> stats) {
+        FlowsStatisticsUpdateBuilder builder =
+            new FlowsStatisticsUpdateBuilder().
+            setId(new NodeId(nodeIdentifier)).
+            setMoreReplies(false).
+            setTransactionId(xid).
+            setFlowAndStatisticsMapList(stats);
+
+        ofMockProvider.publish(builder.build());
+    }
+
+    /**
+     * Return the flow table ID in the given flow entry.
+     *
+     * @param flow  The MD-SAL flow entry.
+     * @return  The flow table ID in the given flow entry.
+     * @throws IllegalArgumentException
+     *    The flow table ID in the given flow entry is invalid.
+     */
+    public Short getTableId(Flow flow) {
+        Short table = flow.getTableId();
+        if (table == null) {
+            throw new IllegalArgumentException("table-id cannot be null.");
+        }
+        if (table.shortValue() != TABLE_ID) {
+            throw new IllegalArgumentException(
+                "Unsupported table-id: " + table);
+        }
+        return table;
     }
 
     /**
@@ -684,7 +695,7 @@ public final class OfNode
         FlowCapableNode fcn = createFlowNode();
         UpdateDataTask<FlowCapableNode> task =
             new UpdateDataTask<>(ofMockProvider.getDataBroker(), path, fcn);
-        ofMockProvider.getInventoryExecutor().execute(task);
+        inventoryExecutor.execute(task);
 
         Futures.addCallback(task.getFuture(), new FutureCallback<Void>() {
             @Override
@@ -693,7 +704,7 @@ public final class OfNode
             }
 
             @Override
-            public void onFailure(Throwable calse) {
+            public void onFailure(Throwable cause) {
             }
         });
     }
@@ -725,12 +736,17 @@ public final class OfNode
             setMaxTables(Short.valueOf((short)1)).
             setCapabilities(CAPABILITIES);
 
+        // Create table 0.
+        Table table0 = new TableBuilder().setId(TABLE_ID).build();
+        List<Table> tables = Collections.singletonList(table0);
+
         String na = "N/A";
         return new FlowCapableNodeBuilder().
             setIpAddress(ipAddress).setSwitchFeatures(sfBuilder.build()).
             setDescription(na).setSerialNumber(na).
             setHardware("OpenFlow mock-up").
             setManufacturer("OpenDaylight").setSoftware("0.1").
+            setTable(tables).
             build();
     }
 
@@ -757,6 +773,23 @@ public final class OfNode
     }
 
     /**
+     * Create a future that returns an error that indicates an unexpected
+     * exception was caught.
+     *
+     * @param cls    The class that specifies the type of RPC output.
+     * @param cause  A throwable that indicates the cause of error.
+     * @param <T>    The type of RPC output.
+     * @return  A {@link Future} instance.
+     */
+    private <T> Future<RpcResult<T>> createRpcError(Class<T> cls,
+                                                    Throwable cause) {
+        RpcResultBuilder<T> builder = RpcResultBuilder.<T>failed().
+            withError(ErrorType.RPC, "operation-failed",
+                      "Caught an unexpected exception", null, null, cause);
+        return Futures.immediateFuture(builder.build());
+    }
+
+    /**
      * Create a future that returns an error that indicates the requested
      * feature is not supported.
      *
@@ -766,7 +799,7 @@ public final class OfNode
      */
     private <T> Future<RpcResult<T>> createUnsupported(Class<T> cls) {
         RpcResultBuilder<T> builder = RpcResultBuilder.<T>failed().
-            withError(ErrorType.RPC, "unsupported",
+            withError(ErrorType.RPC, "operation-not-supported",
                       "The requested RPC is not supported.");
         return Futures.immediateFuture(builder.build());
     }
@@ -798,184 +831,6 @@ public final class OfNode
         return createIllegalArgument(Void.class, msg);
     }
 
-    /**
-     * Create a {@link TransactionId} instance which representse the OpenFlow
-     * transaction ID.
-     *
-     * @return  A {@link TransactionId} instance.
-     */
-    private TransactionId createTransactionId() {
-        long id = nextTransactionId.incrementAndGet();
-        return new TransactionId(BigInteger.valueOf(id));
-    }
-
-    /**
-     * Check whether the MD-SAL match contains another MD-SAL match.
-     *
-     * @param match1  The first MD-SAL match to be tested.
-     * @param match2  The second MD-SAL match to be tested.
-     * @return  {@code true} only if {@code match1} contains {@code match2}.
-     */
-    private boolean contains(Match match1, Match match2) {
-        if (match1 == null) {
-            return true;
-        }
-
-        Match m = (match2 == null)
-            ? new MatchBuilder().build()
-            : match2;
-
-        // Currently, only IN_PORT match is supported.
-        NodeConnectorId inPort1 = match1.getInPort();
-        if (inPort1 != null && !inPort1.equals(m.getInPort())) {
-            return false;
-        }
-
-        // Return false if unsupported filed is specified.
-        return (match1.getInPhyPort() == null &&
-                match1.getMetadata() == null &&
-                match1.getTunnel() == null &&
-                match1.getEthernetMatch() == null &&
-                match1.getVlanMatch() == null &&
-                match1.getIpMatch() == null &&
-                match1.getLayer3Match() == null &&
-                match1.getLayer4Match() == null &&
-                match1.getIcmpv4Match() == null &&
-                match1.getIcmpv6Match() == null &&
-                match1.getProtocolMatchFields() == null &&
-                match1.getTcpFlagMatch() == null);
-    }
-
-    /**
-     * Check whether the given flow cookie satisfies the given condition.
-     *
-     * @param cookie    The flow cookie to be tested.
-     * @param expected  The expected flow cookie.
-     * @param mask      The flow cookie mask.
-     * @return  {@code true} if the given flow cookie satisfies the condition.
-     *          Otherwise {@code false}.
-     */
-    private boolean checkCookie(BigInteger cookie, FlowCookie expected,
-                                FlowCookie mask) {
-        if (ofVersion == VtnOpenflowVersion.OF10) {
-            // Cookie mask is not supported.
-            return true;
-        }
-
-        long lmask = OfMockUtils.getCookie(mask).longValue();
-        if (lmask == 0) {
-            // Cookie mask is not specified.
-            return true;
-        }
-
-        long lexp = OfMockUtils.getCookie(expected).longValue();
-        long lcookie = cookie.longValue();
-
-        return ((lcookie & lmask) == (lexp & lmask));
-    }
-
-    /**
-     * Scan the flow table.
-     *
-     * @param cond     The MD-SAL flow entry which specifies the condition to
-     *                 select flow entries.
-     * @param scanner  A {@link FlowTableScanner} instance.
-     *                 Flow entries that satisfies the condition specified by
-     *                 {@code flow} will be passed to this instance.
-     */
-    private synchronized void scanFlowTable(Flow cond,
-                                            FlowTableScanner scanner) {
-        Short table = cond.getTableId();
-        Match match = cond.getMatch();
-        BigInteger oport = cond.getOutPort();
-        String outPort = (oport == null)
-            ? null
-            : OfMockUtils.getPortIdentifier(nodeIdentifier, oport);
-        FlowCookie cookie = cond.getCookie();
-        FlowCookie cookieMask = cond.getCookieMask();
-
-        for (Iterator<OfMockFlowEntry> it = flowEntries.iterator();
-             it.hasNext();) {
-            OfMockFlowEntry ofent = it.next();
-            if (table != null && table.intValue() != ofent.getTableId()) {
-                continue;
-            }
-
-            if (!contains(match, ofent.getMatch())) {
-                continue;
-            }
-
-            if (outPort != null &&
-                !OfMockUtils.hasOutput(ofent.getInstructions(), outPort)) {
-                continue;
-            }
-
-            if (!checkCookie(ofent.getCookie(), cookie, cookieMask)) {
-                continue;
-            }
-
-            if (scanner.flowEntryFound(ofent)) {
-                it.remove();
-            }
-        }
-    }
-
-    /**
-     * Process a bulk flow remove request.
-     *
-     * @param input  An input of this RPC.
-     * @return  A list of flow entries removed from the flow table.
-     */
-    private synchronized List<OfMockFlowEntry> removeFlows(
-        RemoveFlowInput input) {
-        FlowEntryRemover remover = new FlowEntryRemover();
-        scanFlowTable(input, remover);
-
-        List<OfMockFlowEntry> removed = remover.getRemovedFlows();
-        if (!removed.isEmpty()) {
-            notifyAll();
-        }
-
-        return removed;
-    }
-
-    /**
-     * Publish a switch-flow-removed notification.
-     *
-     * @param ofent   A {@link OfMockFlowEntry} instance.
-     * @param reason  A {@link RemovedReasonFlags} instance.
-     */
-    private void publishFlowRemoved(OfMockFlowEntry ofent,
-                                    RemovedReasonFlags reason) {
-        FlowModFlags flags = ofent.getFlowModFlags();
-        if (flags == null || !Boolean.TRUE.equals(flags.isSENDFLOWREM())) {
-            // FLOW_REMOVED is not requested.
-            return;
-        }
-
-        org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.mod.removed.Match match =
-            new org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.mod.removed.MatchBuilder(ofent.getMatch()).build();
-
-        SwitchFlowRemovedBuilder builder = new SwitchFlowRemovedBuilder().
-            setPacketCount(BigInteger.valueOf(PACKET_COUNT)).
-            setByteCount(BigInteger.valueOf(BYTE_COUNT)).
-            setDurationSec(Long.valueOf(DURATION_SEC)).
-            setDurationNsec(Long.valueOf(DURATION_NANOSEC)).
-            setPriority(Integer.valueOf(ofent.getPriority())).
-            setTableId(Short.valueOf((short)ofent.getTableId())).
-            setIdleTimeout(Integer.valueOf(ofent.getIdleTimeout())).
-            setHardTimeout(Integer.valueOf(ofent.getHardTimeout())).
-            setRemovedReason(reason).setMatch(match).
-            setNode(new NodeRef(nodePath));
-
-        BigInteger cookie = ofent.getCookie();
-        if (cookie != null) {
-            builder.setCookie(new FlowCookie(cookie));
-        }
-
-        ofMockProvider.publish(builder.build());
-    }
-
     // AutoCloseable
 
     /**
@@ -992,15 +847,18 @@ public final class OfNode
                 }
             }
             registrations.clear();
-
             LOG.debug("Node has been removed: {}", nodeIdentifier);
-            DataBroker broker = ofMockProvider.getDataBroker();
-            DeleteDataTask<Node> task = new DeleteDataTask<>(broker, nodePath);
-            ofMockProvider.getInventoryExecutor().execute(task);
+        }
 
+        if (!inventoryExecutor.isShutdown()) {
+            DataBroker broker = ofMockProvider.getDataBroker();
             DeleteTopologyNodeTask topoTask = new DeleteTopologyNodeTask(
                 broker, nodeIdentifier);
             ofMockProvider.getTopologyExecutor().execute(topoTask);
+
+            DeleteDataTask<Node> task = new DeleteDataTask<>(broker, nodePath);
+            inventoryExecutor.execute(task);
+            OfMockProvider.shutdown(inventoryExecutor);
         }
     }
 
@@ -1013,21 +871,29 @@ public final class OfNode
      * @return  A {@link Future} instance associated with the RPC task.
      */
     @Override
-    public synchronized Future<RpcResult<AddFlowOutput>> addFlow(
-        AddFlowInput input) {
+    public Future<RpcResult<AddFlowOutput>> addFlow(AddFlowInput input) {
+        OfMockFlowEntry ofent = null;
+        boolean rollback = false;
         try {
-            OfMockFlowEntry ofent = new OfMockFlowEntry(nodeIdentifier, input);
-            flowEntries.add(ofent);
+            // Associate a new flow ID with the given flow entry.
+            ofent = new OfMockFlowEntry(nodeIdentifier, input);
+            String id = flowTable.newFlowId(ofent);
+            rollback = true;
+            AddFlowTask task = new AddFlowTask(this, input, ofent, id);
+            inventoryExecutor.execute(task);
+            rollback = false;
+            return task.getFuture();
         } catch (IllegalArgumentException e) {
-            LOG.error("addFlow: Invalid input: " + input, e);
+            LOG.error("Attempting to add invalid flow entry: " + input, e);
             return createIllegalArgument(AddFlowOutput.class, e.getMessage());
+        } catch (RuntimeException e) {
+            LOG.error("Failed to start add-flow task: input=" + input, e);
+            return createRpcError(AddFlowOutput.class, e);
+        } finally {
+            if (rollback) {
+                flowTable.abort(ofent);
+            }
         }
-
-        notifyAll();
-
-        AddFlowOutput output = new AddFlowOutputBuilder().
-            setTransactionId(createTransactionId()).build();
-        return createRpcResult(output);
     }
 
     /**
@@ -1039,48 +905,22 @@ public final class OfNode
     @Override
     public Future<RpcResult<RemoveFlowOutput>> removeFlow(
         RemoveFlowInput input) {
-        List<OfMockFlowEntry> removed;
-        if (Boolean.TRUE.equals(input.isStrict())) {
-            removed = new ArrayList<>();
-            FlowCookie cookie = input.getCookie();
-            FlowCookie cookieMask = input.getCookieMask();
-            OfMockFlowEntry target;
-            try {
-                target = new OfMockFlowEntry(nodeIdentifier, input);
-            } catch (IllegalArgumentException e) {
-                LOG.error("removeFlow: Invalid input: " + input, e);
-                return createIllegalArgument(RemoveFlowOutput.class,
-                                             e.getMessage());
+        try {
+            RemoveFlowTask task = RemoveFlowTask.create(this, input);
+            Future<RpcResult<RemoveFlowOutput>> future = task.getFuture();
+            if (!future.isDone()) {
+                inventoryExecutor.execute(task);
             }
-
-            synchronized (this) {
-                for (Iterator<OfMockFlowEntry> it = flowEntries.iterator();
-                     it.hasNext();) {
-                    OfMockFlowEntry ofent = it.next();
-                    if (ofent.equals(target) &&
-                        checkCookie(ofent.getCookie(), cookie, cookieMask)) {
-                        it.remove();
-                        removed.add(ofent);
-                    }
-                }
-
-                if (!removed.isEmpty()) {
-                    notifyAll();
-                }
-            }
-        } else {
-            removed = removeFlows(input);
+            return future;
+        } catch (IllegalArgumentException e) {
+            LOG.error("Attempting to remove invalid flow entry: " + input, e);
+            return createIllegalArgument(RemoveFlowOutput.class,
+                                         e.getMessage());
+        } catch (RuntimeException e) {
+            LOG.error("Failed to start remove-flow task: input=" + input, e);
+            return createIllegalArgument(RemoveFlowOutput.class,
+                                         e.getMessage());
         }
-
-        RemovedReasonFlags reason =
-            new RemovedReasonFlags(true, false, false, false);
-        for (OfMockFlowEntry ofent: removed) {
-            publishFlowRemoved(ofent, reason);
-        }
-
-        RemoveFlowOutput output = new RemoveFlowOutputBuilder().
-            setTransactionId(createTransactionId()).build();
-        return createRpcResult(output);
     }
 
     /**
@@ -1425,10 +1265,22 @@ public final class OfNode
     @Override
     public Future<RpcResult<GetFlowStatisticsFromFlowTableOutput>> getFlowStatisticsFromFlowTable(
         GetFlowStatisticsFromFlowTableInput input) {
+        Short table = input.getTableId();
+        if (table == null) {
+            return createIllegalArgument(
+                GetFlowStatisticsFromFlowTableOutput.class,
+                "Table ID cannot be null.");
+        } else if (!table.equals(flowTable.getTableId())) {
+            return createIllegalArgument(
+                GetFlowStatisticsFromFlowTableOutput.class,
+                "Invalid table ID: " + table);
+        }
+
         // Start flow statistics read transaction.
         TransactionId xid = createTransactionId();
-        FlowStatsThread t = new FlowStatsThread(xid, input);
-        t.start();
+        FlowMatcher matcher = new FlowMatcher(this, input);
+        FlowStatsNotifier notifier = new FlowStatsNotifier(this, matcher, xid);
+        inventoryExecutor.execute(notifier);
 
         // Return the transaction ID only.
         GetFlowStatisticsFromFlowTableOutputBuilder builder =

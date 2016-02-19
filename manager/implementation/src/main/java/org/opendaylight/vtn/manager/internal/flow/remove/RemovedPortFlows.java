@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -14,7 +14,7 @@ import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
-import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpc;
+import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpcList;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
@@ -41,7 +41,7 @@ public final class RemovedPortFlows extends RemovedDataFlows<PortFlowRemover> {
      * {@inheritDoc}
      */
     @Override
-    protected List<RemoveFlowRpc> removeFlowEntries(
+    protected RemoveFlowRpcList removeFlowEntries(
         SalFlowService sfs, List<FlowCache> flows, InventoryReader reader)
         throws VTNException {
         SalPort target = getFlowRemover().getFlowPort();

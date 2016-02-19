@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,9 +8,9 @@
 
 package org.opendaylight.vtn.manager.internal.flow.remove;
 
-import java.util.List;
+import static org.opendaylight.vtn.manager.internal.flow.remove.FlowRemoveContext.LOG;
 
-import org.slf4j.Logger;
+import java.util.List;
 
 import org.opendaylight.vtn.manager.VTNException;
 
@@ -19,7 +19,6 @@ import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowEntryDesc;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
-import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpc;
 import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpcList;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
@@ -63,36 +62,34 @@ public final class RemovedDataFlow implements RemovedFlows {
      * {@inheritDoc}
      */
     @Override
-    public List<RemoveFlowRpc> removeFlowEntries(TxContext ctx,
-                                                 SalFlowService sfs)
+    public RemoveFlowRpcList removeFlowEntries(TxContext ctx,
+                                               SalFlowService sfs)
         throws VTNException {
-        Logger logger = FlowRemoveContext.LOG;
-        if (logger.isDebugEnabled()) {
+        if (LOG.isDebugEnabled()) {
             String desc = flowRemover.getDescription();
-            FlowUtils.removedLog(logger, desc, removedFlow);
+            FlowUtils.removedLog(LOG, desc, removedFlow);
         }
 
         List<VtnFlowEntry> entries = removedFlow.getFlowEntries();
-        RemoveFlowRpcList rpcs = new RemoveFlowRpcList();
+        RemoveFlowRpcList rpcs = new RemoveFlowRpcList(sfs);
         InventoryReader reader = ctx.getReadSpecific(InventoryReader.class);
         String flowNode = flowRemover.getFlowNode().toString();
         for (VtnFlowEntry vfent: entries) {
             String nid = vfent.getNode().getValue();
             if (flowNode.equals(nid)) {
-                FlowRemoveContext.LOG.
-                    trace("Ignore flow entry notified by FLOW_REMOVED: {}",
+                LOG.trace("Ignore flow entry notified by FLOW_REMOVED: {}",
                           new FlowEntryDesc(vfent));
             } else {
                 SalNode snode = SalNode.create(nid);
                 RemoveFlowInputBuilder builder = FlowUtils.
                     createRemoveFlowInputBuilder(snode, vfent, reader);
                 if (builder != null) {
-                    rpcs.add(snode, builder);
+                    rpcs.invoke(builder.build());
                 }
             }
         }
 
-        return rpcs.invoke(sfs);
+        return rpcs;
     }
 
     /**

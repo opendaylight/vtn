@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -93,7 +93,17 @@ public class SalNode {
             return null;
         }
 
-        NodeKey key = id.firstKeyOf(Node.class);
+        return create(id.firstKeyOf(Node.class));
+    }
+
+    /**
+     * Convert a MD-SAL node key into a {@link SalNode} instance.
+     *
+     * @param key  A {@link NodeKey} instance.
+     * @return  A {@code SalNode} instance on success.
+     *          {@code null} on failure.
+     */
+    public static final SalNode create(NodeKey key) {
         return (key == null) ? null : create(key.getId());
     }
 

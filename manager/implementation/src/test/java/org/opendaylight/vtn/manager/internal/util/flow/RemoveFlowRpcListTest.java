@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,31 +8,46 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow;
 
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.SettableFuture;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
+import org.mockito.ArgumentCaptor;
+
+import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
+import org.opendaylight.yangtools.yang.common.RpcResult;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
+
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 
@@ -41,90 +56,218 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCo
  */
 public class RemoveFlowRpcListTest extends TestBase {
     /**
-     * Test case for
-     * {@link RemoveFlowRpcList#add(SalNode, RemoveFlowInputBuilder)} and
-     * {@link RemoveFlowRpcList#invoke(SalFlowService)}.
+     * Test case for {@link RemoveFlowRpcList#getFlowService()}
+     */
+    @Test
+    public void testGetFlowService() {
+        SalFlowService sfs = mock(SalFlowService.class);
+        RemoveFlowRpcList rpcList = new RemoveFlowRpcList(sfs);
+        assertEquals(sfs, rpcList.getFlowService());
+    }
+
+    /**
+     * Test case for successful completion.
+     *
+     * <ul>
+     *   <li>{@link RemoveFlowRpcList#invoke(RemoveFlowInput)}</li>
+     *   <li>{@link RemoveFlowRpcList#getRpcs()}</li>
+     *   <li>{@link RemoveFlowRpcList#size()}</li>
+     *   <li>{@link RemoveFlowRpcList#verify(Logger, long, TimeUnit)}</li>
      *
      * @throws Exception  An error occurred.
      */
     @Test
-    public void testInvoke() throws Exception {
-        RemoveFlowRpcList rpcList = new RemoveFlowRpcList();
+    public void testSuccess() throws Exception {
         SalFlowService sfs = mock(SalFlowService.class);
+        RemoveFlowRpcList rpcList = new RemoveFlowRpcList(sfs);
         assertEquals(Collections.<RemoveFlowRpc>emptyList(),
-                     rpcList.invoke(sfs));
-        verifyZeroInteractions(sfs);
+                     rpcList.getRpcs());
+        assertEquals(0, rpcList.size());
 
-        // Remove flow entries in a single switch.
-        rpcList = new RemoveFlowRpcList();
-        SalNode snode1 = new SalNode(1L);
+        Logger logger = mock(Logger.class);
+        rpcList.verify(logger, 1L, TimeUnit.SECONDS);
+        verifyZeroInteractions(sfs, logger);
 
+        // Test case for successful completion.
         List<RemoveFlowInput> inputs = new ArrayList<>();
         for (long l = 1L; l <= 10L; l++) {
             FlowCookie fc = new FlowCookie(BigInteger.valueOf(l));
-            RemoveFlowInputBuilder builder = new RemoveFlowInputBuilder().
-                setCookie(fc);
-            rpcList.add(snode1, builder);
-
-            Boolean barrier = (l == 10L);
             RemoveFlowInput input = new RemoveFlowInputBuilder().
-                setCookie(fc).
-                setBarrier(barrier).
-                build();
+                setCookie(fc).build();
+            RemoveFlowOutput output = new RemoveFlowOutputBuilder().build();
+            Future<RpcResult<RemoveFlowOutput>> future = getRpcResult(output);
+            when(sfs.removeFlow(input)).thenReturn(future);
+            rpcList.invoke(input);
+            verify(sfs).removeFlow(input);
             inputs.add(input);
         }
+        verifyNoMoreInteractions(sfs, logger);
 
-        List<RemoveFlowRpc> rpcs = rpcList.invoke(sfs);
+        assertEquals(inputs.size(), rpcList.size());
         Iterator<RemoveFlowInput> it = inputs.iterator();
-        for (RemoveFlowRpc rpc: rpcs) {
-            RemoveFlowInput input = it.next();
-            assertEquals(input, rpc.getInput());
-            verify(sfs).removeFlow(input);
+        for (RemoveFlowRpc rpc: rpcList.getRpcs()) {
+            assertEquals(rpc.getInput(), it.next());
         }
         assertEquals(false, it.hasNext());
-        verifyNoMoreInteractions(sfs);
 
-        // Remove flow entries in multiple switches.
-        reset(sfs);
-        rpcList = new RemoveFlowRpcList();
-        SalNode[] snodes = {
-            snode1,
-            new SalNode(-1L),
-            new SalNode(1234567L),
-            new SalNode(99887766554433L),
-            new SalNode(112233445566L),
-            new SalNode(-12345L),
-            new SalNode(7777777777777L),
-        };
-        Random rand = new Random(0x123456789abcdeL);
-        Map<SalNode, FlowCookie> lastCookie = new HashMap<>();
-        List<RemoveFlowInputBuilder> builders = new ArrayList<>();
-        for (long l = 1L; l <= 50L; l++) {
+        rpcList.verify(logger, 10L, TimeUnit.SECONDS);
+        String msg = "remove-flow RPC has completed successfully: {}";
+        for (RemoveFlowInput input: inputs) {
+            verify(logger).trace(msg, input);
+        }
+        verifyNoMoreInteractions(sfs, logger);
+    }
+
+    /**
+     * Test case for RPC failure.
+     *
+     * <ul>
+     *   <li>{@link RemoveFlowRpcList#invoke(RemoveFlowInput)}</li>
+     *   <li>{@link RemoveFlowRpcList#getRpcs()}</li>
+     *   <li>{@link RemoveFlowRpcList#size()}</li>
+     *   <li>{@link RemoveFlowRpcList#verify(Logger, long, TimeUnit)}</li>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testFailure() throws Exception {
+        SalFlowService sfs = mock(SalFlowService.class);
+        RemoveFlowRpcList rpcList = new RemoveFlowRpcList(sfs);
+        Logger logger = mock(Logger.class);
+        VTNException first = new VTNException("first error");
+        VTNException second = new VTNException("second error");
+        Map<RemoveFlowInput, VTNException> errors = new HashMap<>();
+        List<RemoveFlowInput> inputs = new ArrayList<>();
+
+        for (long l = 1L; l <= 10L; l++) {
             FlowCookie fc = new FlowCookie(BigInteger.valueOf(l));
-            SalNode snode = snodes[rand.nextInt(snodes.length)];
-            RemoveFlowInputBuilder builder = new RemoveFlowInputBuilder().
-                setCookie(fc);
-            rpcList.add(snode, builder);
-            lastCookie.put(snode, fc);
-            builders.add(new RemoveFlowInputBuilder().setCookie(fc));
-        }
+            RemoveFlowInput input = new RemoveFlowInputBuilder().
+                setCookie(fc).build();
+            VTNException e;
+            if (l == 3L) {
+                e = first;
+            } else if (l == 7L) {
+                e = second;
+            } else {
+                e = null;
+            }
 
-        Set<FlowCookie> lastSet = new HashSet<>(lastCookie.values());
-        inputs.clear();
-        for (RemoveFlowInputBuilder builder: builders) {
-            FlowCookie fc = builder.getCookie();
-            Boolean barrier = lastSet.contains(fc);
-            inputs.add(builder.setBarrier(barrier).build());
-        }
-
-        rpcs = rpcList.invoke(sfs);
-        it = inputs.iterator();
-        for (RemoveFlowRpc rpc: rpcs) {
-            RemoveFlowInput input = it.next();
-            assertEquals(input, rpc.getInput());
+            Future<RpcResult<RemoveFlowOutput>> future;
+            if (e == null) {
+                RemoveFlowOutput output = new RemoveFlowOutputBuilder().
+                    build();
+                future = getRpcResult(output);
+            } else {
+                future = Futures.
+                    <RpcResult<RemoveFlowOutput>>immediateFailedFuture(e);
+                errors.put(input, e);
+            }
+            when(sfs.removeFlow(input)).thenReturn(future);
+            rpcList.invoke(input);
             verify(sfs).removeFlow(input);
+            inputs.add(input);
+        }
+        verifyNoMoreInteractions(sfs, logger);
+
+        assertEquals(inputs.size(), rpcList.size());
+        Iterator<RemoveFlowInput> it = inputs.iterator();
+        for (RemoveFlowRpc rpc: rpcList.getRpcs()) {
+            assertEquals(rpc.getInput(), it.next());
         }
         assertEquals(false, it.hasNext());
-        verifyNoMoreInteractions(sfs);
+
+        try {
+            rpcList.verify(logger, 10L, TimeUnit.SECONDS);
+            unexpected();
+        } catch (VTNException e) {
+            assertEquals(first, e);
+        }
+
+        for (Entry<RemoveFlowInput, VTNException> entry: errors.entrySet()) {
+            String msg = "remove-flow: Caught an exception: canceled=false," +
+                " input=" + entry.getKey();
+            ArgumentCaptor<ExecutionException> captor =
+                ArgumentCaptor.forClass(ExecutionException.class);
+            verify(logger).error(eq(msg), captor.capture());
+            List<ExecutionException> wrappers = captor.getAllValues();
+            assertEquals(1, wrappers.size());
+            ExecutionException ee = wrappers.get(0);
+            assertEquals(entry.getValue(), ee.getCause());
+        }
+
+        String msg = "remove-flow RPC has completed successfully: {}";
+        for (RemoveFlowInput input: inputs) {
+            if (!errors.containsKey(input)) {
+                verify(logger).trace(msg, input);
+            }
+        }
+        verifyNoMoreInteractions(sfs, logger);
+    }
+
+    /**
+     * Test case for timeout error.
+     *
+     * <ul>
+     *   <li>{@link RemoveFlowRpcList#invoke(RemoveFlowInput)}</li>
+     *   <li>{@link RemoveFlowRpcList#getRpcs()}</li>
+     *   <li>{@link RemoveFlowRpcList#size()}</li>
+     *   <li>{@link RemoveFlowRpcList#verify(Logger, long, TimeUnit)}</li>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testTimeout() throws Exception {
+        SalFlowService sfs = mock(SalFlowService.class);
+        RemoveFlowRpcList rpcList = new RemoveFlowRpcList(sfs);
+        Logger logger = mock(Logger.class);
+        List<RemoveFlowInput> inputs = new ArrayList<>();
+        RemoveFlowInput badInput = null;
+
+        for (long l = 1L; l <= 10L; l++) {
+            FlowCookie fc = new FlowCookie(BigInteger.valueOf(l));
+            RemoveFlowInput input = new RemoveFlowInputBuilder().
+                setCookie(fc).build();
+            Future<RpcResult<RemoveFlowOutput>> future;
+            if (l == 6L) {
+                future = SettableFuture.<RpcResult<RemoveFlowOutput>>create();
+                badInput = input;
+            } else {
+                RemoveFlowOutput output = new RemoveFlowOutputBuilder().
+                    build();
+                future = getRpcResult(output);
+            }
+            when(sfs.removeFlow(input)).thenReturn(future);
+            rpcList.invoke(input);
+            verify(sfs).removeFlow(input);
+            inputs.add(input);
+        }
+        verifyNoMoreInteractions(sfs, logger);
+
+        assertEquals(inputs.size(), rpcList.size());
+        Iterator<RemoveFlowInput> it = inputs.iterator();
+        for (RemoveFlowRpc rpc: rpcList.getRpcs()) {
+            assertEquals(rpc.getInput(), it.next());
+        }
+        assertEquals(false, it.hasNext());
+
+        try {
+            rpcList.verify(logger, 1L, TimeUnit.SECONDS);
+            unexpected();
+        } catch (VTNException e) {
+            assertEquals(VtnErrorTag.TIMEOUT, e.getVtnErrorTag());
+
+            String msg = "remove-flow: Caught an exception: canceled=true," +
+                " input=" + badInput;
+            verify(logger).error(msg, e.getCause());
+        }
+
+        String msg = "remove-flow RPC has completed successfully: {}";
+        for (RemoveFlowInput input: inputs) {
+            if (!badInput.equals(input)) {
+                verify(logger).trace(msg, input);
+            }
+        }
+
+        verifyNoMoreInteractions(sfs, logger);
     }
 }

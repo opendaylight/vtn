@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -107,6 +107,14 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
 
     /**
      * Resolve MD-SAL flow IDs.
+     *
+     * <p>
+     *   Flow entries installed by the VTN Manager has no MD-SAL flow ID
+     *   because VTN Manager installs flow entries without using the MD-SAL
+     *   FRM. But pseudo MD-SAL flow identifier will be assigned to every
+     *   flow entries by openflowplugin. This method determines MD-SAL flow
+     *   IDs assigned to newly added flow entries.
+     * </p>
      *
      * @param txq  A {@link TxQueue} instance to run operation.
      */
