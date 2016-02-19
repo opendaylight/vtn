@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -56,6 +56,30 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
  */
 public class SalPortTest extends TestBase {
     /**
+     * Describes an empty node-connector-ref.
+     */
+    private static final class EmptyRef extends NodeConnectorRef {
+        /**
+         * Construct a new instance.
+         */
+        private EmptyRef() {
+            super(InstanceIdentifier.create(Nodes.class));
+        }
+
+        // NodeConnectorRef
+
+        /**
+         * Return {@code null} as value.
+         *
+         * @return {@code null}.
+         */
+        @Override
+        public InstanceIdentifier<?> getValue() {
+            return null;
+        }
+    }
+
+    /**
      * Test case for the following methods.
      *
      * <ul>
@@ -77,6 +101,7 @@ public class SalPortTest extends TestBase {
         assertEquals(null, SalPort.create((Source)null));
         assertEquals(null, SalPort.create((Destination)null));
         assertEquals(null, SalPort.create((TpId)null));
+        assertEquals(null, SalPort.create(new EmptyRef()));
         assertFalse(SalPort.isLogicalPort(null));
 
         // Invalid node connector path.

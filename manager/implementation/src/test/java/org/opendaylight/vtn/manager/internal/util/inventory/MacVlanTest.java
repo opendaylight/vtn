@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2013, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -30,9 +30,10 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
+import org.opendaylight.vtn.manager.internal.TestVlanHostDesc;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
-import org.opendaylight.vtn.manager.internal.XmlValueType;
 import org.opendaylight.vtn.manager.internal.XmlNode;
+import org.opendaylight.vtn.manager.internal.XmlValueType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.input.DataFlowSource;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.input.DataFlowSourceBuilder;
@@ -275,14 +276,16 @@ public class MacVlanTest extends TestBase {
         RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
         VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
         String emsg = "vlan-host-desc cannot be null";
-        VlanHostDesc vhdesc = null;
-        try {
-            new MacVlan(vhdesc);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(etag, e.getErrorTag());
-            assertEquals(vtag, e.getVtnErrorTag());
-            assertEquals(emsg, e.getMessage());
+        VlanHostDesc[] nullDescs = {null, new TestVlanHostDesc()};
+        for (VlanHostDesc vhdesc: nullDescs) {
+            try {
+                new MacVlan(vhdesc);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
+            }
         }
 
         // Invalid VLAN ID.
@@ -292,7 +295,7 @@ public class MacVlanTest extends TestBase {
             0x80000000L, 0x1000000000L, Long.MAX_VALUE,
         };
         for (long vid: badVids) {
-            vhdesc = new VlanHostDesc("00:aa:bb:cc:dd:ee@" + vid);
+            VlanHostDesc vhdesc = new VlanHostDesc("00:aa:bb:cc:dd:ee@" + vid);
             emsg = "Invalid VLAN ID in vlan-host-desc: " + vhdesc.getValue();
             try {
                 new MacVlan(vhdesc);
@@ -315,8 +318,29 @@ public class MacVlanTest extends TestBase {
             }
         }
 
+        // Invalid MAC address.
+        String[] badMacs = {
+            "Bad MAC address",
+            "ab:cd:ef:gh:ij:kl",
+            "00:11:22:33:44:55:66",
+            "00:11:22:33:44;55",
+        };
+        for (String mac: badMacs) {
+            String desc = mac + "@0";
+            VlanHostDesc vhdesc = new TestVlanHostDesc(desc);
+            emsg = "Invalid MAC address in vlan-host-desc: " + desc;
+            try {
+                new MacVlan(vhdesc);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(vtag, e.getVtnErrorTag());
+                assertEquals(emsg, e.getMessage());
+            }
+        }
+
         // Broadcast address.
-        vhdesc = new VlanHostDesc("ff:ff:ff:ff:ff:ff@0");
+        VlanHostDesc vhdesc = new VlanHostDesc("ff:ff:ff:ff:ff:ff@0");
         emsg = "Broadcast address cannot be specified: ff:ff:ff:ff:ff:ff";
         try {
             new MacVlan(vhdesc);
@@ -628,7 +652,6 @@ public class MacVlanTest extends TestBase {
             mv = entry.getKey();
             try {
                 mv.checkMacMap();
-                System.err.printf("*** mv=%s, msg=%s\n", mv, entry.getValue());
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());

@@ -1098,6 +1098,19 @@ public abstract class TestBase extends Assert {
         SalPort sport, Boolean enabled, boolean edge) {
         String name = "sw" + sport.getNodeNumber() + "-eth" +
             sport.getPortNumber();
+        return createVtnPortBuilder(sport, name, enabled, edge);
+    }
+
+    /**
+     * Create a {@link VtnPortBuilder} instance.
+     *
+     * @param sport    A {@link SalPort} instance.
+     * @param name     The name of the port.
+     * @param enabled  The state of the port.
+     * @param edge     Determine edge port or not.
+     */
+    protected static VtnPortBuilder createVtnPortBuilder(
+        SalPort sport, String name, Boolean enabled, boolean edge) {
         VtnPortBuilder builder = new VtnPortBuilder();
         builder.setCost(Long.valueOf(1000)).
             setId(sport.getNodeConnectorId()).setName(name).
@@ -1108,7 +1121,7 @@ public abstract class TestBase extends Assert {
             long n = sport.getNodeNumber() + 100L;
             NodeConnectorId peer = new SalPort(n, sport.getPortNumber()).
                 getNodeConnectorId();
-            pbuilder.setLinkId(new LinkId("isl:" + name)).
+            pbuilder.setLinkId(new LinkId("isl:" + sport)).
                 setPeer(peer);
             List<PortLink> list = new ArrayList<>();
             list.add(pbuilder.build());

@@ -324,6 +324,7 @@ public class IpNetworkTest extends TestBase {
         assertEquals(null, IpNetwork.create((Address)null));
         assertEquals(null, IpNetwork.create((Ipv4)null));
         assertEquals(null, IpNetwork.create((Ipv6)null));
+        assertEquals(null, IpNetwork.create(new Ipv4Builder().build()));
 
         // Empty ip-prefix.
         IpPrefix ipp = new EmptyIpPrefix();
