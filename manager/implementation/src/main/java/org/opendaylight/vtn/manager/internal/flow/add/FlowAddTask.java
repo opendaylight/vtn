@@ -8,11 +8,11 @@
 
 package org.opendaylight.vtn.manager.internal.flow.add;
 
+import static org.opendaylight.vtn.manager.internal.flow.add.FlowAddContext.LOG;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
 
 import org.opendaylight.vtn.manager.VTNException;
 
@@ -124,7 +124,7 @@ public final class FlowAddTask implements Runnable {
         for (SalNode snode: builder.getFlowNodes()) {
             if (reader.get(snode) == null) {
                 String msg = "Target node is not present: " + snode;
-                FlowAddContext.LOG.error(msg);
+                LOG.error(msg);
                 throw RpcException.getNotFoundException(msg);
             }
         }
@@ -133,11 +133,10 @@ public final class FlowAddTask implements Runnable {
     /**
      * Install intermediate flows and egress flow.
      *
-     * @param service  MD-SAL flow service.
+     * @param sfs   MD-SAL flow service.
      * @throws VTNException  Failed to install flow entries.
      */
-    private void installFlows(SalFlowService service)
-        throws VTNException {
+    private void installFlows(SalFlowService sfs) throws VTNException {
         int size = flowEntries.size();
         if (size <= 0) {
             // The target data flow contains only one flow entry.
@@ -147,7 +146,7 @@ public final class FlowAddTask implements Runnable {
         List<AddFlowRpc> rpcs = new ArrayList<>(size);
         for (VtnFlowEntry vfent: flowEntries) {
             AddFlowInput input = FlowUtils.createAddFlowInput(vfent);
-            rpcs.add(new AddFlowRpc(service, input));
+            rpcs.add(new AddFlowRpc(sfs, input));
         }
 
         TimeUnit nano = TimeUnit.NANOSECONDS;
@@ -156,20 +155,19 @@ public final class FlowAddTask implements Runnable {
         long timeout = milli.toNanos((long)msec);
         long deadline = System.nanoTime() + timeout;
 
-        Logger logger = FlowAddContext.LOG;
         VTNException firstError = null;
         int index = 0;
         for (AddFlowRpc rpc: rpcs) {
             VtnFlowEntry vfent = flowEntries.get(index);
             try {
-                rpc.getResult(timeout, nano, logger);
+                rpc.getResult(timeout, nano, LOG);
             } catch (VTNException e) {
                 if (firstError == null) {
                     firstError = e;
                 }
                 continue;
             }
-            traceLog(logger, vfent);
+            traceLog(vfent);
 
             timeout = deadline - System.nanoTime();
             if (timeout <= 0) {
@@ -188,30 +186,27 @@ public final class FlowAddTask implements Runnable {
     /**
      * Install the ingress flow entry and wait for the result.
      *
-     * @param service  MD-SAL flow service.
+     * @param sfs   MD-SAL flow service.
      * @throws VTNException  Failed to install the ingress flow.
      */
-    private void installIngressFlow(SalFlowService service)
-        throws VTNException {
+    private void installIngressFlow(SalFlowService sfs) throws VTNException {
         AddFlowInput input = FlowUtils.createAddFlowInput(ingressFlow);
-        AddFlowRpc rpc = new AddFlowRpc(service, input);
+        AddFlowRpc rpc = new AddFlowRpc(sfs, input);
         long timeout = (long)vtnConfig.getFlowModTimeout();
-        Logger logger = FlowAddContext.LOG;
-        rpc.getResult(timeout, TimeUnit.MILLISECONDS, logger);
-        traceLog(logger, ingressFlow);
+        rpc.getResult(timeout, TimeUnit.MILLISECONDS, LOG);
+        traceLog(ingressFlow);
     }
 
     /**
      * Record a trace log which indicates the given flow entry has been
      * installed successfully.
      *
-     * @param logger  A {@link Logger} instance.
-     * @param vfent   A {@link VtnFlowEntry} instance.
+     * @param vfent  A {@link VtnFlowEntry} instance.
      */
-    private void traceLog(Logger logger, VtnFlowEntry vfent) {
-        if (logger.isTraceEnabled()) {
-            logger.trace("Flow entry has been installed: {}",
-                         new FlowEntryDesc(vfent));
+    private void traceLog(VtnFlowEntry vfent) {
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("Flow entry has been installed: {}",
+                      new FlowEntryDesc(vfent));
         }
     }
 
@@ -225,13 +220,13 @@ public final class FlowAddTask implements Runnable {
      * </p>
      *
      * @param ctx      A read-only MD-SAL datastore transaction.
-     * @param service  MD-SAL flow service.
+     * @param sfs      MD-SAL flow service.
      * @param builder  A {@link VTNFlowBuilder} instance which contains
      *                 data flow to be installed.
      */
-    private void rollback(TxContext ctx, SalFlowService service,
+    private void rollback(TxContext ctx, SalFlowService sfs,
                           VTNFlowBuilder builder) {
-        RemoveFlowRpcList rpcList = new RemoveFlowRpcList();
+        RemoveFlowRpcList rpcList = new RemoveFlowRpcList(sfs);
         List<VtnFlowEntry> vfents = new ArrayList<>();
         for (VtnFlowEntry vfent: builder.getDataFlow().getVtnFlowEntry()) {
             SalNode snode = SalNode.create(vfent.getNode());
@@ -242,21 +237,20 @@ public final class FlowAddTask implements Runnable {
                 rfib = FlowUtils.
                     createRemoveFlowInputBuilder(snode, vfent, reader);
             } catch (VTNException e) {
-                FlowAddContext.LOG.
-                    warn("Failed to create remove-flow input.", e);
+                LOG.warn("Failed to create remove-flow input.", e);
                 continue;
             }
 
             if (rfib != null) {
-                rpcList.add(snode, rfib);
+                rpcList.invoke(rfib);
                 vfents.add(vfent);
             }
         }
 
         int idx = 0;
-        for (RemoveFlowRpc rpc: rpcList.invoke(service)) {
+        for (RemoveFlowRpc rpc: rpcList.getRpcs()) {
             RpcErrorCallback<RemoveFlowOutput> cb = new RpcErrorCallback<>(
-                rpc, FlowAddContext.LOG, "Failed to rollback flow entry: %s",
+                rpc, LOG, "Failed to rollback flow entry: %s",
                 new FlowEntryDesc(vfents.get(idx)));
             vtnProvider.setCallback(rpc.getFuture(), cb);
             idx++;
@@ -267,8 +261,7 @@ public final class FlowAddTask implements Runnable {
         if (f.isCancelled()) {
             // There is no way to rollback because the DS queue is already
             // closed.
-            FlowAddContext.LOG.
-                warn("{}: Flow DS queue is already closed: match={}",
+            LOG.warn("{}: Flow DS queue is already closed: match={}",
                      builder.getDataFlow().getFlowId().getValue(),
                      builder.getIngressMatchKey());
         }
@@ -283,25 +276,24 @@ public final class FlowAddTask implements Runnable {
     public void run() {
         vtnConfig = vtnProvider.getVTNConfig();
         VTNFlowBuilder builder = context.getFlowBuilder();
-        SalFlowService service = context.getFlowService();
+        SalFlowService sfs = context.getFlowService();
         TxContext ctx = vtnProvider.newTxContext();
         try {
             checkNodes(ctx, builder);
-            installFlows(service);
-            installIngressFlow(service);
+            installFlows(sfs);
+            installIngressFlow(sfs);
         } catch (VTNException | RuntimeException t) {
             context.setFailure(t);
-            rollback(ctx, service, builder);
+            rollback(ctx, sfs, builder);
             return;
         } finally {
             ctx.cancelTransaction();
         }
 
-        Logger logger = FlowAddContext.LOG;
         VtnFlowId flowId = builder.getDataFlow().getFlowId();
-        if (logger.isDebugEnabled()) {
-            logger.debug("Data flow has been installed: id={}",
-                         flowId.getValue());
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Data flow has been installed: id={}",
+                      flowId.getValue());
         }
 
         context.setResult(flowId);

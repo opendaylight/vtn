@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -64,6 +64,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.Remo
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
@@ -509,8 +510,6 @@ public final class FlowUtils {
      * @param snode   A {@link SalNode} instance which specifies the target
      *                switch.
      * @return  A {@link RemoveFlowInputBuilder} instance.
-     *          Note that this method never sets barrier flag into the returned
-     *          input builder.
      */
     @Nonnull
     public static RemoveFlowInputBuilder createRemoveFlowInputBuilder(
@@ -519,11 +518,15 @@ public final class FlowUtils {
         FlowTableRef tref =
             new FlowTableRef(snode.getFlowTableIdentifier(table));
 
+        // openflowplugin-li does not allow null match.
+        Match match  = new MatchBuilder().build();
+
         return new RemoveFlowInputBuilder().
             setNode(snode.getNodeRef()).
             setTableId(table).
             setFlowTable(tref).
             setTransactionUri(new Uri("remove-flow:all")).
+            setMatch(match).
             setCookie(COOKIE_VTN).
             setCookieMask(COOKIE_MASK_VTN).
             setStrict(false);
@@ -538,8 +541,6 @@ public final class FlowUtils {
      * @param reader  A {@link InventoryReader} instance.
      * @return  A {@link RemoveFlowInputBuilder} instance on success.
      *          {@code null} if the target node is not present.
-     *          Note that this method never sets barrier flag into the returned
-     *          input builder.
      * @throws VTNException  An error occurred.
      */
     @Nullable
@@ -562,8 +563,6 @@ public final class FlowUtils {
      *                switch.
      * @param vfent   A {@link VtnFlowEntry} instance.
      * @return  A {@link RemoveFlowInputBuilder} instance.
-     *          Note that this method never sets barrier flag into the returned
-     *          input builder.
      */
     @Nonnull
     public static RemoveFlowInputBuilder createRemoveFlowInputBuilder(
@@ -585,8 +584,6 @@ public final class FlowUtils {
      * @param flow   A {@link Flow} instance.
      * @param uri    A {@link Uri} to be assigned to the input.
      * @return  A {@link RemoveFlowInputBuilder} instance.
-     *          Note that this method never sets barrier flag into the returned
-     *          input builder.
      */
     @Nonnull
     public static RemoveFlowInputBuilder createRemoveFlowInputBuilder(
@@ -595,12 +592,19 @@ public final class FlowUtils {
         FlowTableRef tref =
             new FlowTableRef(snode.getFlowTableIdentifier(table));
 
-        return new RemoveFlowInputBuilder(flow).
+        RemoveFlowInputBuilder builder = new RemoveFlowInputBuilder(flow).
             setNode(snode.getNodeRef()).
             setFlowTable(tref).
             setTransactionUri(uri).
             setCookieMask(COOKIE_MASK_ALL).
             setStrict(true);
+
+        if (builder.getMatch() == null) {
+            // openflowplugin-li does not allow null match.
+            builder.setMatch(new MatchBuilder().build());
+        }
+
+        return builder;
     }
 
     /**
@@ -629,8 +633,6 @@ public final class FlowUtils {
      * @param sport   A {@link SalPort} instance which specifies the switch
      *                port.
      * @return  A list of {@link RemoveFlowInputBuilder} instances.
-     *          Note that this method never sets barrier flag into the returned
-     *          input builder.
      */
     @Nonnull
     public static List<RemoveFlowInputBuilder> createRemoveFlowInputBuilder(
@@ -643,8 +645,9 @@ public final class FlowUtils {
             new FlowTableRef(snode.getFlowTableIdentifier(table));
         NodeRef nref = snode.getNodeRef();
 
-        MatchBuilder mb = new MatchBuilder().
-            setInPort(sport.getNodeConnectorId());
+        Match match = new MatchBuilder().
+            setInPort(sport.getNodeConnectorId()).
+            build();
 
         List<RemoveFlowInputBuilder> list = new ArrayList<>();
         RemoveFlowInputBuilder ingress = new RemoveFlowInputBuilder().
@@ -652,9 +655,12 @@ public final class FlowUtils {
             setTableId(table).
             setFlowTable(tref).
             setTransactionUri(new Uri(ub.toString())).
-            setMatch(mb.build()).
+            setMatch(match).
             setStrict(false);
         list.add(ingress);
+
+        // openflowplugin-li does not allow null match.
+        match = new MatchBuilder().build();
 
         ub = new StringBuilder("remove-flow:OUT_PORT=").append(sport);
         RemoveFlowInputBuilder egress = new RemoveFlowInputBuilder().
@@ -662,6 +668,7 @@ public final class FlowUtils {
             setTableId(table).
             setFlowTable(tref).
             setTransactionUri(new Uri(ub.toString())).
+            setMatch(match).
             setOutPort(NumberUtils.getUnsigned(sport.getPortNumber())).
             setStrict(false);
         list.add(egress);
@@ -816,25 +823,25 @@ public final class FlowUtils {
      * @param sfs     MD-SAL flow service.
      * @param flows   A list of {@link FlowCache} instances.
      * @param reader  A {@link InventoryReader} instance.
-     * @return  A list of {@link RemoveFlowRpc} instances.
+     * @return  A {@link RemoveFlowRpcList} instance.
      * @throws VTNException  An error occurred.
      */
-    public static List<RemoveFlowRpc> removeFlowEntries(
+    public static RemoveFlowRpcList removeFlowEntries(
         SalFlowService sfs, List<FlowCache> flows, InventoryReader reader)
         throws VTNException {
-        RemoveFlowRpcList rpcs = new RemoveFlowRpcList();
+        RemoveFlowRpcList rpcs = new RemoveFlowRpcList(sfs);
         for (FlowCache fc: flows) {
             for (VtnFlowEntry vfent: fc.getFlowEntries()) {
                 SalNode snode = SalNode.create(vfent.getNode());
                 RemoveFlowInputBuilder builder =
                     createRemoveFlowInputBuilder(snode, vfent, reader);
                 if (builder != null) {
-                    rpcs.add(snode, builder);
+                    rpcs.invoke(builder);
                 }
             }
         }
 
-        return rpcs.invoke(sfs);
+        return rpcs;
     }
 
     /**
@@ -853,10 +860,10 @@ public final class FlowUtils {
      * @return  A list of {@link RemoveFlowRpc} instances.
      * @throws VTNException  An error occurred.
      */
-    public static List<RemoveFlowRpc> removeFlowEntries(
+    public static RemoveFlowRpcList removeFlowEntries(
         SalFlowService sfs, List<FlowCache> flows, SalPort sport,
         InventoryReader reader) throws VTNException {
-        RemoveFlowRpcList rpcs = new RemoveFlowRpcList();
+        RemoveFlowRpcList rpcs = new RemoveFlowRpcList(sfs);
         long dpid = sport.getNodeNumber();
         boolean done = false;
 
@@ -868,19 +875,20 @@ public final class FlowUtils {
                 }
 
                 if (snode.getNodeNumber() != dpid) {
-                    rpcs.add(snode,
-                             createRemoveFlowInputBuilder(snode, vfent));
+                    RemoveFlowInputBuilder builder =
+                        createRemoveFlowInputBuilder(snode, vfent);
+                    rpcs.invoke(builder);
                 } else if (!done) {
                     for (RemoveFlowInputBuilder builder:
                              createRemoveFlowInputBuilder(snode, sport)) {
-                        rpcs.add(snode, builder);
+                        rpcs.invoke(builder);
                     }
                     done = true;
                 }
             }
         }
 
-        return rpcs.invoke(sfs);
+        return rpcs;
     }
 
     /**

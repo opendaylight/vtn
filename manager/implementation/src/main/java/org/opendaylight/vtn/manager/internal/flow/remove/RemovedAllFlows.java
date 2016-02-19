@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,12 +8,12 @@
 
 package org.opendaylight.vtn.manager.internal.flow.remove;
 
+import static org.opendaylight.vtn.manager.internal.flow.remove.FlowRemoveContext.LOG;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.slf4j.Logger;
 
 import org.opendaylight.vtn.manager.VTNException;
 
@@ -21,7 +21,6 @@ import org.opendaylight.vtn.manager.internal.RemovedFlows;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
-import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpc;
 import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpcList;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
@@ -53,7 +52,7 @@ public final class RemovedAllFlows implements RemovedFlows {
      * Consruct an empty instance.
      */
     public RemovedAllFlows() {
-        removedFlows = (FlowRemoveContext.LOG.isDebugEnabled())
+        removedFlows = (LOG.isDebugEnabled())
             ? new ArrayList<FlowCache>()
             : null;
     }
@@ -86,22 +85,20 @@ public final class RemovedAllFlows implements RemovedFlows {
      * {@inheritDoc}
      */
     @Override
-    public List<RemoveFlowRpc> removeFlowEntries(TxContext ctx,
-                                                 SalFlowService sfs)
+    public RemoveFlowRpcList removeFlowEntries(TxContext ctx,
+                                               SalFlowService sfs)
         throws VTNException {
         if (removedFlows != null) {
-            Logger logger = FlowRemoveContext.LOG;
-            if (logger.isDebugEnabled()) {
+            if (LOG.isDebugEnabled()) {
                 String desc = AllFlowRemover.DESCRIPTION;
                 for (FlowCache fc: removedFlows) {
-                    FlowUtils.removedLog(logger, desc, fc);
+                    FlowUtils.removedLog(LOG, desc, fc);
                 }
             }
         }
 
         InventoryReader reader = ctx.getReadSpecific(InventoryReader.class);
-        RemoveFlowRpcList rpcs = new RemoveFlowRpcList();
-        Logger logger = FlowRemoveContext.LOG;
+        RemoveFlowRpcList rpcs = new RemoveFlowRpcList(sfs);
         for (Map.Entry<SalNode, List<VtnFlowEntry>> entry:
                  flowEntries.entrySet()) {
             SalNode snode = entry.getKey();
@@ -111,23 +108,22 @@ public final class RemovedAllFlows implements RemovedFlows {
             }
 
             if (vnode.getOpenflowVersion() == VtnOpenflowVersion.OF13) {
-                logger.trace("Remove all flow entries by cookie mask: {}",
-                             snode);
-                rpcs.add(snode,
-                         FlowUtils.createRemoveFlowInputBuilder(snode));
+                LOG.trace("Remove all flow entries by cookie mask: {}", snode);
+                RemoveFlowInputBuilder builder =
+                    FlowUtils.createRemoveFlowInputBuilder(snode);
+                rpcs.invoke(builder);
             } else {
-                logger.trace("Remove all flow entries individually: {}",
-                             snode);
+                LOG.trace("Remove all flow entries individually: {}", snode);
                 List<VtnFlowEntry> list = entry.getValue();
                 for (VtnFlowEntry vfent: list) {
                     RemoveFlowInputBuilder builder = FlowUtils.
                         createRemoveFlowInputBuilder(snode, vfent);
-                    rpcs.add(snode, builder);
+                    rpcs.invoke(builder);
                 }
             }
         }
 
-        return rpcs.invoke(sfs);
+        return rpcs;
     }
 
     /**

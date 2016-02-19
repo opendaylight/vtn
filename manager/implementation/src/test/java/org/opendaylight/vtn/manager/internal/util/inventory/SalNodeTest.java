@@ -71,6 +71,7 @@ public class SalNodeTest extends TestBase {
      *   <li>{@link SalNode#create(String)}</li>
      *   <li>{@link SalNode#create(NodeId)}</li>
      *   <li>{@link SalNode#create(NodeRef)}</li>
+     *   <li>{@link SalNode#create(NodeKey)}</li>
      *   <li>{@link SalNode#checkedCreate(String)}</li>
      *   <li>{@link SalNode#checkedCreate(NodeId)}</li>
      *   <li>{@link SalNode#getNodeNumber()}</li>
@@ -82,6 +83,7 @@ public class SalNodeTest extends TestBase {
     public void testCreateString() throws Exception {
         assertEquals(null, SalNode.create((NodeId)null));
         assertEquals(null, SalNode.create((NodeRef)null));
+        assertEquals(null, SalNode.create((NodeKey)null));
         assertEquals(null, SalNode.create(new EmptyRef()));
 
         VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
@@ -151,9 +153,12 @@ public class SalNodeTest extends TestBase {
                     assertEquals(msg, e.getMessage());
                 }
 
+                NodeKey nkey = new NodeKey(nid);
+                assertEquals(null, SalNode.create(nkey));
+
                 InstanceIdentifier<Node> path = InstanceIdentifier.
                     builder(Nodes.class).
-                    child(Node.class, new NodeKey(nid)).build();
+                    child(Node.class, nkey).build();
                 NodeRef ref = new NodeRef(path);
                 assertEquals(null, SalNode.create(ref));
             }
@@ -182,10 +187,16 @@ public class SalNodeTest extends TestBase {
             snode = SalNode.create(nid);
             assertEquals(dpid.longValue(), snode.getNodeNumber());
 
+            NodeKey nkey = new NodeKey(nid);
+            snode = SalNode.create(nkey);
+            assertEquals(dpid.longValue(), snode.getNodeNumber());
+
             InstanceIdentifier<Node> path = InstanceIdentifier.
                 builder(Nodes.class).
-                child(Node.class, new NodeKey(nid)).build();
+                child(Node.class, nkey).build();
             NodeRef ref = new NodeRef(path);
+            snode = SalNode.create(ref);
+            assertEquals(dpid.longValue(), snode.getNodeNumber());
         }
     }
 

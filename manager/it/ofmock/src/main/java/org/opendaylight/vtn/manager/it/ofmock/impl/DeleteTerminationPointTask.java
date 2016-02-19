@@ -25,7 +25,7 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
  * termination point from the MD-SAL operational datastore for the
  * network topology.
  */
-public final class DeleteTerminationPointTask extends TxTask
+public final class DeleteTerminationPointTask extends TxTask<Void>
     implements FutureCallback<Void> {
     /**
      * Logger instance.

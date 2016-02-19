@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -908,6 +908,7 @@ public class FlowUtilsTest extends TestBase {
             new FlowCookie(NumberUtils.getUnsigned(VTN_FLOW_COOKIE));
         FlowCookie cookieMask =
             new FlowCookie(NumberUtils.getUnsigned(0xffff000000000000L));
+        Match match = new MatchBuilder().build();
 
         for (SalNode snode: nodes) {
             FlowTableRef tref =
@@ -920,6 +921,7 @@ public class FlowUtilsTest extends TestBase {
             assertEquals(uri, builder.getTransactionUri());
             assertEquals(cookie, builder.getCookie());
             assertEquals(cookieMask, builder.getCookieMask());
+            assertEquals(match, builder.getMatch());
             assertEquals(Boolean.FALSE, builder.isStrict());
             assertEquals(null, builder.isBarrier());
             assertEquals(null, builder.getOutPort());
@@ -1088,6 +1090,7 @@ public class FlowUtilsTest extends TestBase {
 
         // The second element should remove flows that transmit packets to the
         // specified port.
+        match = new MatchBuilder().build();
         builder = list.get(1);
         assertEquals(snode.getNodeRef(), builder.getNode());
         assertEquals(null, builder.getPriority());
@@ -1096,7 +1099,7 @@ public class FlowUtilsTest extends TestBase {
         assertEquals(null, builder.getHardTimeout());
         assertEquals(null, builder.getCookie());
         assertEquals(null, builder.getCookieMask());
-        assertEquals(null, builder.getMatch());
+        assertEquals(match, builder.getMatch());
         assertEquals(null, builder.getFlags());
         assertEquals(null, builder.getInstructions());
         assertEquals(Boolean.FALSE, builder.isStrict());
@@ -1821,8 +1824,6 @@ public class FlowUtilsTest extends TestBase {
         while (flows.size() < 4) {
             int order = 0;
             List<VtnFlowEntry> entries = new ArrayList<>();
-            Boolean barrier = (flows.size() == 3)
-                ? Boolean.TRUE : Boolean.FALSE;
             for (long nodeId: nodeIds) {
                 SalPort ingress = new SalPort(nodeId, portId);
                 VtnFlowEntry vfent =
@@ -1832,7 +1833,7 @@ public class FlowUtilsTest extends TestBase {
                     SalNode snode = new SalNode(nodeId);
                     RemoveFlowInput input =
                         FlowUtils.createRemoveFlowInputBuilder(snode, vfent).
-                        setBarrier(barrier).
+                        setBarrier(true).
                         build();
                     Future<RpcResult<RemoveFlowOutput>> f =
                         new SettableVTNFuture<>();
@@ -1852,11 +1853,11 @@ public class FlowUtilsTest extends TestBase {
             flowId += 127L;
         }
 
-        List<RemoveFlowRpc> result =
+        RemoveFlowRpcList result =
             FlowUtils.removeFlowEntries(sfs, flows, reader);
         verifyZeroInteractions(rtx);
 
-        for (RemoveFlowRpc rpc: result) {
+        for (RemoveFlowRpc rpc: result.getRpcs()) {
             assertEquals(true, inputs.remove(rpc.getInput()));
             assertEquals(true, futures.remove(rpc.getFuture()));
         }
@@ -1905,8 +1906,6 @@ public class FlowUtilsTest extends TestBase {
         while (flows.size() < 4) {
             int order = 0;
             List<VtnFlowEntry> entries = new ArrayList<>();
-            Boolean barrier = (flows.size() == 3)
-                ? Boolean.TRUE : Boolean.FALSE;
             for (long nodeId: nodeIds) {
                 SalPort ingress = new SalPort(nodeId, portId);
                 VtnFlowEntry vfent =
@@ -1920,8 +1919,7 @@ public class FlowUtilsTest extends TestBase {
                         Iterator<RemoveFlowInputBuilder> it = rfi.iterator();
                         while (it.hasNext()) {
                             RemoveFlowInputBuilder builder = it.next();
-                            Boolean b = !it.hasNext();
-                            RemoveFlowInput input = builder.setBarrier(b).
+                            RemoveFlowInput input = builder.setBarrier(true).
                                 build();
                             Future<RpcResult<RemoveFlowOutput>> f =
                                 new SettableVTNFuture<>();
@@ -1935,7 +1933,7 @@ public class FlowUtilsTest extends TestBase {
                     SalNode snode = new SalNode(nodeId);
                     RemoveFlowInput input = FlowUtils.
                         createRemoveFlowInputBuilder(snode, vfent).
-                        setBarrier(barrier).
+                        setBarrier(true).
                         build();
                     Future<RpcResult<RemoveFlowOutput>> f =
                         new SettableVTNFuture<>();
@@ -1955,11 +1953,11 @@ public class FlowUtilsTest extends TestBase {
             flowId += 127L;
         }
 
-        List<RemoveFlowRpc> result =
+        RemoveFlowRpcList result =
             FlowUtils.removeFlowEntries(sfs, flows, target, reader);
         verifyZeroInteractions(rtx);
 
-        for (RemoveFlowRpc rpc: result) {
+        for (RemoveFlowRpc rpc: result.getRpcs()) {
             assertEquals(true, inputs.remove(rpc.getInput()));
             assertEquals(true, futures.remove(rpc.getFuture()));
         }
@@ -1977,8 +1975,6 @@ public class FlowUtilsTest extends TestBase {
             reader.prefetch(snode, vnode);
         }
 
-        Map<SalNode, RemoveFlowInput> lastInputs = new HashMap<>();
-        List<RemoveFlowInput> inputList = new ArrayList<>();
         for (FlowCache fc: flows) {
             for (VtnFlowEntry vfent: fc.getFlowEntries()) {
                 SalNode snode = SalNode.create(vfent.getNode());
@@ -1986,30 +1982,21 @@ public class FlowUtilsTest extends TestBase {
                 if (nodeNumber != removedNode && nodeNumber != targetNode) {
                     RemoveFlowInput input =
                         FlowUtils.createRemoveFlowInputBuilder(snode, vfent).
+                        setBarrier(true).
                         build();
-                    lastInputs.put(snode, input);
-                    inputList.add(input);
+                    inputs.add(input);
+                    Future<RpcResult<RemoveFlowOutput>> f =
+                        new SettableVTNFuture<>();
+                    when(sfs.removeFlow(input)).thenReturn(f);
+                    futures.add(f);
                 }
             }
-        }
-
-        Set<RemoveFlowInput> lastSet = new HashSet<>(lastInputs.values());
-        for (RemoveFlowInput input: inputList) {
-            Boolean barrier = lastSet.contains(input);
-            RemoveFlowInput in = new RemoveFlowInputBuilder(input).
-                setBarrier(barrier).
-                build();
-            Future<RpcResult<RemoveFlowOutput>> f =
-                new SettableVTNFuture<>();
-            when(sfs.removeFlow(in)).thenReturn(f);
-            inputs.add(in);
-            futures.add(f);
         }
 
         result = FlowUtils.removeFlowEntries(sfs, flows, target, reader);
         verifyZeroInteractions(rtx);
 
-        for (RemoveFlowRpc rpc: result) {
+        for (RemoveFlowRpc rpc: result.getRpcs()) {
             assertEquals(true, inputs.remove(rpc.getInput()));
             assertEquals(true, futures.remove(rpc.getFuture()));
         }
