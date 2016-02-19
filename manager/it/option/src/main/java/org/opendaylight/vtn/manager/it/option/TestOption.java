@@ -290,6 +290,7 @@ public final class TestOption {
 
             // Load YANG models.
             mavenBundle(MDSAL_MODEL, "yang-ext"),
+            mavenBundle(MDSAL_MODEL, "ietf-type-util"),
             mavenBundle(MDSAL_MODEL, "ietf-yang-types"),
             mavenBundle(MDSAL_MODEL, "ietf-yang-types-20130715"),
             mavenBundle(MDSAL_MODEL, "ietf-inet-types"),
