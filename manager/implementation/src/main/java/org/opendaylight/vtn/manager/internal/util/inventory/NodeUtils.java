@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2014, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -27,16 +27,6 @@ public final class NodeUtils {
      * Private constructor that protects this class from instantiating.
      */
     private NodeUtils() {}
-
-    /**
-     * Return a new {@link RpcException} which indicates the location of the
-     * switch port is not specified.
-     *
-     * @return  An {@link RpcException}.
-     */
-    public static RpcException getNullPortLocationException() {
-        return RpcException.getNullArgumentException("Port location");
-    }
 
     /**
      * Return a new {@link RpcException} that indicates the port descriptor

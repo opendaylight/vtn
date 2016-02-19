@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -750,9 +750,7 @@ public abstract class VNodeIdentifier<T extends DataObject> {
         boolean ret = (o == this);
         if (!ret && o != null && getClass().equals(o.getClass())) {
             VNodeIdentifier<?> ident = (VNodeIdentifier<?>)o;
-            if (getType() == ident.getType()) {
-                ret = getComponents().equals(ident.getComponents());
-            }
+            ret = getComponents().equals(ident.getComponents());
         }
 
         return ret;
@@ -767,7 +765,7 @@ public abstract class VNodeIdentifier<T extends DataObject> {
     public final int hashCode() {
         int h = hashValue;
         if (h == 0) {
-            h = Objects.hash(getType(), getComponents());
+            h = Objects.hash(getClass(), getComponents());
             hashValue = h;
         }
 

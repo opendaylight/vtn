@@ -14,8 +14,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.math.BigInteger;
-import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -59,9 +57,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeCon
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanId;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv6Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.Counter32;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.Counter64;
@@ -71,21 +66,6 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.
  * JUnit test for {@link MiscUtils}.
  */
 public class MiscUtilsTest extends TestBase {
-    /**
-     * Test case for {@link MiscUtils#formatMacAddress(long mac)}.
-     */
-    @Test
-    public void testFormatMacAddress() {
-        assertEquals("00:00:00:00:00:00", MiscUtils.formatMacAddress(0L));
-        assertEquals("00:00:00:00:00:01", MiscUtils.formatMacAddress(1L));
-        assertEquals("00:00:00:00:00:ff", MiscUtils.formatMacAddress(0xffL));
-        assertEquals("00:00:00:00:a0:ff", MiscUtils.formatMacAddress(0xa0ffL));
-        assertEquals("00:00:00:12:34:56",
-                     MiscUtils.formatMacAddress(0x123456L));
-        assertEquals("aa:bb:cc:dd:ee:ff",
-                     MiscUtils.formatMacAddress(0xaabbccddeeffL));
-    }
-
     /**
      * Test case for {@link MiscUtils#toEtherAddress(MacAddress)}.
      *
@@ -224,45 +204,6 @@ public class MiscUtilsTest extends TestBase {
         } catch (RpcException e) {
             checkException(e, msg);
             assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
-        }
-    }
-
-    /**
-     * Test case for {@link MiscUtils#toInetAddress(int)} and
-     * {@link MiscUtils#toInteger(InetAddress)}.
-     */
-    @Test
-    public void testToInetAddress() {
-        Random rand = new Random();
-        for (int i = 0; i < 100; i++) {
-            int v = rand.nextInt();
-            InetAddress iaddr = MiscUtils.toInetAddress(v);
-            assertTrue(iaddr instanceof Inet4Address);
-
-            byte[] raw = iaddr.getAddress();
-            assertEquals(4, raw.length);
-            for (int j = 0; j < raw.length; j++) {
-                byte b = (byte)(v >>> ((3 - j) * Byte.SIZE));
-                assertEquals(b, raw[j]);
-            }
-
-            assertEquals(v, MiscUtils.toInteger(iaddr));
-        }
-
-        List<InetAddress> invalid = new ArrayList<InetAddress>();
-        invalid.add(null);
-        try {
-            invalid.add(InetAddress.getByName("::1"));
-        } catch (Exception e) {
-            unexpected(e);
-        }
-
-        for (InetAddress iaddr: invalid) {
-            try {
-                MiscUtils.toInteger(iaddr);
-                unexpected();
-            } catch (IllegalStateException e) {
-            }
         }
     }
 
@@ -844,32 +785,6 @@ public class MiscUtilsTest extends TestBase {
     public void testToVnodeState() {
         assertEquals(VnodeState.UP, MiscUtils.toVnodeState(true));
         assertEquals(VnodeState.DOWN, MiscUtils.toVnodeState(false));
-    }
-
-    /**
-     * Test case for {@link MiscUtils#hasIpv4Address(Collection)}.
-     */
-    @Test
-    public void testHasIpv4Address() {
-        List<IpAddress> addrs = null;
-        assertEquals(false, MiscUtils.hasIpv4Address(addrs));
-        addrs = new ArrayList<>();
-        assertEquals(false, MiscUtils.hasIpv4Address(addrs));
-
-        addrs.add(null);
-        assertEquals(false, MiscUtils.hasIpv4Address(addrs));
-
-        Ipv6Address ipv6 = new Ipv6Address("::1");
-        addrs.add(new IpAddress(ipv6));
-        assertEquals(false, MiscUtils.hasIpv4Address(addrs));
-
-        ipv6 = new Ipv6Address("aaaa:bbbb:cdef:0123::4567");
-        addrs.add(new IpAddress(ipv6));
-        assertEquals(false, MiscUtils.hasIpv4Address(addrs));
-
-        Ipv4Address ipv4 = new Ipv4Address("127.0.0.1");
-        addrs.add(new IpAddress(ipv4));
-        assertEquals(true, MiscUtils.hasIpv4Address(addrs));
     }
 
     /**

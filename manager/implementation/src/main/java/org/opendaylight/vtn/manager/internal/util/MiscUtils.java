@@ -9,8 +9,6 @@
 package org.opendaylight.vtn.manager.internal.util;
 
 import java.math.BigInteger;
-import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,7 +30,6 @@ import com.google.common.collect.ImmutableSet;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.EtherAddress;
-import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
@@ -44,7 +41,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnVlan
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanId;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.Counter32;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.Counter64;
@@ -103,16 +99,6 @@ public final class MiscUtils {
      * Private constructor that protects this class from instantiating.
      */
     private MiscUtils() {}
-
-    /**
-     * Convert a long value which represents a MAC address into a string.
-     *
-     * @param mac  A long value which represents a MAC address.
-     * @return  A string representation of MAC address.
-     */
-    public static String formatMacAddress(long mac) {
-        return new EtherAddress(mac).getText();
-    }
 
     /**
      * Convert the given {@link MacAddress} instance into an
@@ -189,48 +175,6 @@ public final class MiscUtils {
         if (vname == null) {
             throw RpcException.getNullArgumentException(desc + " name");
         }
-    }
-
-    /**
-     * Convert an integer into an IPv4 address.
-     *
-     * @param address  An integer value which represents an IPv4 address.
-     * @return  An {@link InetAddress} instance.
-     * @throws IllegalStateException
-     *    An error occurred.
-     */
-    public static InetAddress toInetAddress(int address) {
-        byte[] addr = NumberUtils.toBytes(address);
-        try {
-            return InetAddress.getByAddress(addr);
-        } catch (Exception e) {
-            // This should never happen.
-            StringBuilder builder =
-                new StringBuilder("Unexpected exception: addr=");
-            builder.append(Integer.toHexString(address));
-            throw new IllegalStateException(builder.toString(), e);
-        }
-    }
-
-    /**
-     * Convert an IPv4 address into an integer.
-     *
-     * @param addr  A {@link InetAddress} instance which represents an IPv4
-     *              address.
-     * @return  An integer value.
-     * @throws IllegalStateException
-     *    An error occurred.
-     */
-    public static int toInteger(InetAddress addr) {
-        if (addr instanceof Inet4Address) {
-            byte[] bytes = addr.getAddress();
-            return NumberUtils.toInteger(bytes);
-        }
-
-        StringBuilder builder =
-            new StringBuilder("Unexpected InetAddress: addr=");
-        builder.append(addr);
-        throw new IllegalStateException(builder.toString());
     }
 
     /**
@@ -663,28 +607,6 @@ public final class MiscUtils {
      */
     public static VnodeState toVnodeState(boolean b) {
         return (b) ? VnodeState.UP : VnodeState.DOWN;
-    }
-
-    /**
-     * Determine whether the given collection contains at least one IPv4
-     * address or not.
-     *
-     * @param addrs  A collection of {@link IpAddress} instances.
-     * @return  {@code true} only if the given collection contains at least
-     *          one IPv4 address.
-     */
-    public static boolean hasIpv4Address(Collection<IpAddress> addrs) {
-        boolean found = false;
-        if (addrs != null) {
-            for (IpAddress ip: addrs) {
-                found = (ip != null && ip.getIpv4Address() != null);
-                if (found) {
-                    break;
-                }
-            }
-        }
-
-        return found;
     }
 
     /**

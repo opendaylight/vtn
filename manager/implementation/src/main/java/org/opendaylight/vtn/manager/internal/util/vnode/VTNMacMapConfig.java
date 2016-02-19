@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -22,6 +22,8 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
+
+import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
@@ -70,7 +72,7 @@ public final class VTNMacMapConfig {
      * @return  A {@link RpcException} instance.
      */
     public static RpcException getDuplicateMacAddressException(long mac) {
-        String maddr = MiscUtils.formatMacAddress(mac);
+        String maddr = new EtherAddress(mac).getText();
         return RpcException.getBadArgumentException(
             "Duplicate MAC address in allowed set: " + maddr);
     }
@@ -83,7 +85,7 @@ public final class VTNMacMapConfig {
      * @return  A {@link RpcException} instance.
      */
     public static RpcException getAlreadyMappedException(long mac) {
-        String maddr = MiscUtils.formatMacAddress(mac);
+        String maddr = new EtherAddress(mac).getText();
         return RpcException.getDataExistsException(
             "Already mapped to this vBridge: " + maddr);
     }
