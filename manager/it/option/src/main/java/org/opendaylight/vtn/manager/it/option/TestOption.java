@@ -313,10 +313,8 @@ public final class TestOption {
             mavenBundle(VTN, "manager.it.ownermock"),
             mavenBundle(VTN, "manager.it.util"),
 
-            // Load JUnit and Mockito bundles.
+            // Load JUnit bundle.
             junitBundles(),
-            mavenBundle("org.mockito", "mockito-core"),
-            mavenBundle("org.objenesis", "objenesis"),
             frameworkProperty("felix.bootdelegation.implicit").value("false"));
     }
 

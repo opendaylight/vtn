@@ -87,6 +87,9 @@
     <odl.neutron.version>0.7.0-SNAPSHOT</odl.neutron.version>
     <odl.ovsdb.version>1.3.0-SNAPSHOT</odl.ovsdb.version>
     <odl.thirdparty.jung2.version>2.0.1</odl.thirdparty.jung2.version>
+
+    <!-- Third party artifacts -->
+    <powermock.version>1.6.4</powermock.version>
   </properties>
 
   <profiles>
@@ -692,6 +695,20 @@
         <artifactId>opendaylight-karaf-empty</artifactId>
         <version>${karaf.empty.version}</version>
         <type>zip</type>
+        <scope>test</scope>
+      </dependency>
+
+      <!-- For testing -->
+      <dependency>
+        <groupId>org.powermock</groupId>
+        <artifactId>powermock-module-junit4</artifactId>
+        <version>${powermock.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.powermock</groupId>
+        <artifactId>powermock-api-mockito</artifactId>
+        <version>${powermock.version}</version>
         <scope>test</scope>
       </dependency>
     </dependencies>
