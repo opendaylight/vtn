@@ -131,11 +131,6 @@ public final class OVSDBEventHandler {
     private static final String EXTERNAL_ID_INTERFACE_ID = "iface-id";
 
     /**
-     * identifier to read failmode from config file.
-     */
-    private static final String CONFIG_FAILMODE = "failmode";
-
-    /**
      * identifier to openflow port,6653 is official openflow port.
      */
     private static final short OPENFLOW_PORT = 6653;
@@ -241,10 +236,10 @@ public final class OVSDBEventHandler {
 
     /**
      * Create InternalNetwork if not already present.
+     *
      * @param node Instance of Node object.
-     * @throws Exception while Neutron network create.
      */
-    public void createInternalNetworkForNeutron(Node node) throws Exception {
+    public void createInternalNetworkForNeutron(Node node) {
         getSystemProperties(node);
         LOG.trace("createInternalNetworkForNeutron() - node ={}, integration bridge ={}", node.toString());
 
