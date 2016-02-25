@@ -1,0 +1,7 @@
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+2: Shigeru Yasuda <s-yasuda@da.jp.nec.com>
+Submitted-by: Shigeru Yasuda <s-yasuda@da.jp.nec.com>
+Submitted-at: Thu, 25 Feb 2016 07:22:00 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/35347
+Project: vtn
+Branch: refs/heads/master
