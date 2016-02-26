@@ -9,7 +9,7 @@
 package org.opendaylight.vtn.manager.neutron.impl;
 
 import static org.opendaylight.vtn.manager.util.ByteUtils.HEX_RADIX;
-import static org.opendaylight.vtn.manager.util.ByteUtils.HEX_SEPARATOR;
+import static org.opendaylight.vtn.manager.util.ByteUtils.HEX_SEPARATOR_MATCHER;
 
 import java.math.BigInteger;
 
@@ -47,7 +47,7 @@ public final class OfNode {
      */
     public OfNode(DatapathId dpid) {
         // Eliminate octet separator.
-        String hex = dpid.getValue().replace(HEX_SEPARATOR, "");
+        String hex = HEX_SEPARATOR_MATCHER.removeFrom(dpid.getValue());
         nodeNumber = new BigInteger(hex, HEX_RADIX);
     }
 

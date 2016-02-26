@@ -10,6 +10,8 @@ package org.opendaylight.vtn.manager.util;
 
 import static org.opendaylight.vtn.manager.util.NumberUtils.MASK_BYTE;
 
+import com.google.common.base.CharMatcher;
+
 /**
  * {@code ByteUtils} class is a collection of utility class fields and methods
  * for byte array handling.
@@ -27,6 +29,11 @@ public final class ByteUtils {
      */
     public static final String  HEX_SEPARATOR =
         String.valueOf(HEX_SEPARATOR_CHAR);
+
+    /**
+     * A CharMatcher which matches on ':'. Useful for filtering and replacement.
+     */
+    public static final CharMatcher HEX_SEPARATOR_MATCHER = CharMatcher.is(HEX_SEPARATOR_CHAR);
 
     /**
      * Radix to be used in intepreting a hex string.
