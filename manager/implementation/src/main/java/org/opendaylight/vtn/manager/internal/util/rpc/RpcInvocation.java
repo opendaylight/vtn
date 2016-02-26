@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,8 +8,11 @@
 
 package org.opendaylight.vtn.manager.internal.util.rpc;
 
+import java.util.Collection;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 
@@ -17,6 +20,7 @@ import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.util.concurrent.AbstractVTNFuture;
 
+import org.opendaylight.yangtools.yang.common.RpcError;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 
 /**
@@ -26,7 +30,7 @@ import org.opendaylight.yangtools.yang.common.RpcResult;
  * @param <I>  The type of the RPC input.
  * @param <O>  The type of the RPC output.
  */
-public abstract class RpcInvocation<I, O> {
+public abstract class RpcInvocation<I, O> implements RpcRequest {
     /**
      * The RPC input.
      */
@@ -81,21 +85,57 @@ public abstract class RpcInvocation<I, O> {
         try {
             result = future.get(timeout, unit);
         } catch (Exception e) {
-            boolean canceled = future.cancel(true);
-            String msg = new StringBuilder(getName()).
-                append(": Caught an exception: canceled=").append(canceled).
-                append(", input=").append(input).toString();
-            logger.error(msg, e);
+            if (needErrorLog(e)) {
+                boolean canceled = future.cancel(true);
+                String msg = new StringBuilder(getName()).
+                    append(": Caught an exception: canceled=").
+                    append(canceled).append(", input=").
+                    append(getInputForLog()).toString();
+                logger.error(msg, e);
+            }
             throw AbstractVTNFuture.getException(e);
         }
 
-        return RpcUtils.checkResult(result, getName(), logger);
+        return RpcUtils.checkResult(this, result, logger);
     }
 
     /**
-     * Return the name of the RPC.
+     * Determine whether the RPC failure should be logged or not.
      *
-     * @return  The name of the RPC.
+     * @param cause  An throwable thrown by the RPC implementation.
+     * @return  {@code true} if the RPC failure should be logged.
+     *          {@code false} otherwise.
      */
-    public abstract String getName();
+    public boolean needErrorLog(@Nonnull Throwable cause) {
+        return true;
+    }
+
+    // RpcRequest
+
+    /**
+     * Return an object that indicates an RPC input.
+     *
+     * <p>
+     *   Returned object is embedded into a log message.
+     * </p>
+     *
+     * @return  An object that indicates an RPC input.
+     */
+    @Override
+    public I getInputForLog() {
+        return input;
+    }
+
+    /**
+     * Determine whether the RPC failure should be logged or not.
+     *
+     * @param errors  A collection of RPC errors returned by the RPC
+     *                implementation.
+     * @return  {@code true} if the RPC failure should be logged.
+     *          {@code false} otherwise.
+     */
+    @Override
+    public boolean needErrorLog(@Nonnull Collection<RpcError> errors) {
+        return true;
+    }
 }

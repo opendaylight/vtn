@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -256,8 +256,7 @@ public final class FlowAddTask implements Runnable {
         int idx = 0;
         for (RemoveFlowRpc rpc: rpcList.invoke(service)) {
             RpcErrorCallback<RemoveFlowOutput> cb = new RpcErrorCallback<>(
-                FlowAddContext.LOG, "add-flow-rollback",
-                "Failed to rollback flow entry: %s",
+                rpc, FlowAddContext.LOG, "Failed to rollback flow entry: %s",
                 new FlowEntryDesc(vfents.get(idx)));
             vtnProvider.setCallback(rpc.getFuture(), cb);
             idx++;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -24,14 +24,14 @@ import org.opendaylight.yangtools.yang.common.RpcResult;
  */
 public class RpcErrorCallback<T> implements FutureCallback<RpcResult<T>> {
     /**
+     * An {@link RpcRequest} instance that indicates an RPC request.
+     */
+    private final RpcRequest  request;
+
+    /**
      * A logger instance.
      */
     private final Logger  logger;
-
-    /**
-     * A brief description about the RPC.
-     */
-    private final String  description;
 
     /**
      * A format string to construct an error message.
@@ -52,15 +52,16 @@ public class RpcErrorCallback<T> implements FutureCallback<RpcResult<T>> {
      *   with specifying the given format string and arguments.
      * </p>
      *
+     * @param req   An {@link RpcRequest} instance that indicates an RPC
+     *              request.
      * @param log   A logger instance.
-     * @param desc  A brief description about the RPC.
      * @param fmt   A format string.
      * @param args  Arguments for an error message.
      */
-    public RpcErrorCallback(Logger log, String desc, String fmt,
+    public RpcErrorCallback(RpcRequest req, Logger log, String fmt,
                             Object ... args) {
+        request = req;
         logger = log;
-        description = desc;
         format = fmt;
         arguments = (args == null) ? null : args.clone();
     }
@@ -71,8 +72,9 @@ public class RpcErrorCallback<T> implements FutureCallback<RpcResult<T>> {
      * @return  The error message.
      */
     private String getErrorMessage() {
-        return new StringBuilder(description).
+        return new StringBuilder(request.getName()).
             append(": ").append(String.format(format, arguments)).
+            append(": input=").append(request.getInputForLog()).
             toString();
     }
 
@@ -86,14 +88,15 @@ public class RpcErrorCallback<T> implements FutureCallback<RpcResult<T>> {
     @Override
     public void onSuccess(RpcResult<T> result) {
         try {
-            T ret = RpcUtils.checkResult(result, description, logger);
+            T ret = RpcUtils.checkResult(request, result, logger);
             logger.trace("{}: RPC completed successfully: result={}",
-                         description, ret);
+                         request.getName(), ret);
             return;
         } catch (VTNException e) {
             // This error should be logged by checkResult().
         } catch (RuntimeException e) {
-            logger.error(description + ": Failed to check the RPC result.", e);
+            logger.error(request.getName() +
+                         ": Failed to check the RPC result.", e);
         }
 
         logger.error(getErrorMessage());
