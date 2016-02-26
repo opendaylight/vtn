@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -9,6 +9,7 @@
 package org.opendaylight.vtn.manager.internal.util.rpc;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -144,18 +145,19 @@ public final class RpcUtils {
     /**
      * Check the given RPC result.
      *
+     * @param rpc     An {@link RpcRequest} instance.
      * @param result  An {@link RpcResult} instance.
-     * @param desc    A brief description about the RPC.
      * @param logger  A {@link Logger} instance.
      * @param <T>     The type of the value returned by the RPC.
      * @return  The value returned by the RPC.
      * @throws VTNException  The RPC call was failed.
      */
-    public static <T> T checkResult(RpcResult<T> result, String desc,
+    public static <T> T checkResult(RpcRequest rpc, RpcResult<T> result,
                                     Logger logger) throws VTNException {
         if (result == null) {
             String msg = "RPC did not return the result";
-            logger.error("{}: {}", desc, msg);
+            logger.error("{}: {}: input={}", rpc.getName(), msg,
+                         rpc.getInputForLog());
             throw new VTNException(msg);
         }
 
@@ -167,7 +169,9 @@ public final class RpcUtils {
         // Determine the cause of failure.
         Collection<RpcError> errors = result.getErrors();
         Throwable cause = null;
-        if (errors != null) {
+        if (errors == null) {
+            errors = Collections.<RpcError>emptyList();
+        } else {
             for (RpcError re: errors) {
                 Throwable t = re.getCause();
                 if (t != null) {
@@ -178,12 +182,17 @@ public final class RpcUtils {
         }
 
         String msg = "RPC returned error";
-        if (cause == null) {
-            logger.error("{}: {}: errors={}", desc, msg, errors);
-        } else {
-            StringBuilder builder = new StringBuilder(desc).
-                append(": ").append(msg).append(": errors=").append(errors);
-            logger.error(builder.toString(), cause);
+        if (rpc.needErrorLog(errors)) {
+            if (cause == null) {
+                logger.error("{}: {}: input={}, errors={}", rpc.getName(), msg,
+                             rpc.getInputForLog(), errors);
+            } else {
+                StringBuilder builder = new StringBuilder(rpc.getName()).
+                    append(": ").append(msg).
+                    append(": input=").append(rpc.getInputForLog()).
+                    append(", errors=").append(errors);
+                logger.error(builder.toString(), cause);
+            }
         }
 
         throw new VTNException(msg);

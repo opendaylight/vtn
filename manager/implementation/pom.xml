@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2013-2015 NEC Corporation
+# Copyright (c) 2013-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -117,6 +117,10 @@
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>sal-common-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>sal-core-api</artifactId>
     </dependency>
 
     <dependency>
