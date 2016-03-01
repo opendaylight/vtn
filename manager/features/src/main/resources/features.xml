@@ -52,7 +52,6 @@
     <feature version="${odl.controller.mdsal.version}">odl-mdsal-broker</feature>
     <feature version="${project.version}">odl-vtn-manager</feature>
     <feature version='${odl.neutron.version}'>odl-neutron-service</feature>
-    <bundle>mvn:org.opendaylight.neutron/dummyprovider/${odl.neutron.version}</bundle>
     <feature version='${odl.ovsdb.version}'>odl-ovsdb-southbound-impl</feature>
     <bundle>mvn:org.opendaylight.vtn/manager.neutron/${project.version}</bundle>
     <configfile finalname="etc/opendaylight/karaf/90-vtn-neutron.xml">mvn:org.opendaylight.vtn/manager.neutron/${project.version}/xml/config</configfile>
