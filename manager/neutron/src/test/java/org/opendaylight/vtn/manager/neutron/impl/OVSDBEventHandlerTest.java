@@ -109,6 +109,23 @@ public final class OVSDBEventHandlerTest {
     }
     /**
      * Test case for
+     * {@link OVSDBEventHandler#nodeRemoved(Node)}.
+     */
+    @Test
+    public void testNodeRemoved() throws Exception {
+        Node mockNode = PowerMockito.mock(Node.class);
+        PowerMockito.doReturn(true).
+                        when(handler, "deleteBridge",
+                             Matchers.eq(mockNode), Matchers.eq(null));
+        handler.nodeRemoved(mockNode);
+        PowerMockito.verifyPrivate(handler, Mockito.times(1)).
+                                   invoke("deleteBridge",
+                                   mockNode, null);
+
+    }
+
+    /**
+     * Test case for
      * {@link OVSDBEventHandler
      *        #extractTerminationPointAugmentation(Node,portName)}.
      */
