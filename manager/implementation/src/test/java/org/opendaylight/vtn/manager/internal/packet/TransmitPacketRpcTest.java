@@ -6,8 +6,9 @@
  * and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.vtn.manager.internal.util.flow;
+package org.opendaylight.vtn.manager.internal.packet;
 
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -21,6 +22,7 @@ import static org.opendaylight.yangtools.yang.common.RpcError.ErrorType.PROTOCOL
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
@@ -33,12 +35,14 @@ import com.google.common.util.concurrent.SettableFuture;
 
 import org.junit.Test;
 
+import org.mockito.ArgumentCaptor;
+
 import org.slf4j.Logger;
 
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcWatcher;
-import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
@@ -50,83 +54,107 @@ import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.TransmitPacketInput;
 
 /**
- * JUnit test for {@link RemoveFlowRpc}.
+ * JUnit test for {@link TransmitPacketRpc}.
  */
-public class RemoveFlowRpcTest extends TestBase {
+public class TransmitPacketRpcTest extends TestBase {
     /**
-     * The name of the remove-flow RPC.
+     * The name of the transmit-packet RPC.
      */
-    private static final String  RPC_NAME = "remove-flow";
+    private static final String  RPC_NAME = "transmit-packet";
 
     /**
-     * Test case for {@link RemoveFlowRpc#getInput()} and
-     * {@link RemoveFlowRpc#getInputForLog()}.
+     * Test case for {@link TransmitPacketRpc#getInput()}.
      */
     @Test
     public void testGetInput() {
-        SalNode snode = new SalNode(1L);
-        RemoveFlowInput input = mock(RemoveFlowInput.class);
-        when(input.getNode()).thenReturn(snode.getNodeRef());
+        SalPort egress = new SalPort(1L, 2L);
+        TransmitPacketInput input = mock(TransmitPacketInput.class);
+        when(input.getNode()).thenReturn(egress.getNodeRef());
+        when(input.getEgress()).thenReturn(egress.getNodeConnectorRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        SalFlowService sfs = mock(SalFlowService.class);
-        RemoveFlowRpc rpc = new RemoveFlowRpc(watcher, sfs, input);
+        PacketProcessingService pps = mock(PacketProcessingService.class);
+        TransmitPacketRpc rpc = new TransmitPacketRpc(watcher, pps, input);
         assertSame(input, rpc.getInput());
-        assertSame(input, rpc.getInputForLog());
     }
 
     /**
-     * Test case for {@link RemoveFlowRpc#getName()}.
+     * Test case for {@link TransmitPacketRpc#getInputForLog()}.
+     */
+    @Test
+    public void testGetInputForLog() {
+        String[] ports = {
+            "openflow:1:1",
+            "openflow:123:456",
+            "openflow:18446744073709551615:4294967040",
+        };
+        for (String port: ports) {
+            SalPort egress = SalPort.create(port);
+            TransmitPacketInput input = mock(TransmitPacketInput.class);
+            when(input.getNode()).thenReturn(egress.getNodeRef());
+            when(input.getEgress()).thenReturn(egress.getNodeConnectorRef());
+            NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+            PacketProcessingService pps = mock(PacketProcessingService.class);
+            TransmitPacketRpc rpc = new TransmitPacketRpc(watcher, pps, input);
+            String egressStr = "{egress=" + port + "}";
+            assertEquals(egressStr, rpc.getInputForLog());
+        }
+    }
+
+    /**
+     * Test case for {@link TransmitPacketRpc#getName()}.
      */
     @Test
     public void testGetName() {
-        SalNode snode = new SalNode(1L);
-        RemoveFlowInput input = mock(RemoveFlowInput.class);
-        when(input.getNode()).thenReturn(snode.getNodeRef());
+        SalPort egress = new SalPort(1L, 2L);
+        TransmitPacketInput input = mock(TransmitPacketInput.class);
+        when(input.getNode()).thenReturn(egress.getNodeRef());
+        when(input.getEgress()).thenReturn(egress.getNodeConnectorRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        SalFlowService sfs = mock(SalFlowService.class);
-        RemoveFlowRpc rpc = new RemoveFlowRpc(watcher, sfs, input);
+        PacketProcessingService pps = mock(PacketProcessingService.class);
+        TransmitPacketRpc rpc = new TransmitPacketRpc(watcher, pps, input);
         assertEquals(RPC_NAME, rpc.getName());
     }
 
     /**
-     * Test case for {@link RemoveFlowRpc#getFuture()}.
+     * Test case for {@link TransmitPacketRpc#getFuture()}.
      */
     @Test
     public void testGetFuture() {
-        SalNode snode = new SalNode(1L);
-        RemoveFlowInput input = mock(RemoveFlowInput.class);
-        when(input.getNode()).thenReturn(snode.getNodeRef());
+        SalPort egress = new SalPort(1L, 2L);
+        TransmitPacketInput input = mock(TransmitPacketInput.class);
+        when(input.getNode()).thenReturn(egress.getNodeRef());
+        when(input.getEgress()).thenReturn(egress.getNodeConnectorRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        SalFlowService sfs = mock(SalFlowService.class);
-        Future<RpcResult<RemoveFlowOutput>> future =
-            SettableFuture.<RpcResult<RemoveFlowOutput>>create();
-        when(sfs.removeFlow(input)).thenReturn(future);
-        RemoveFlowRpc rpc = new RemoveFlowRpc(watcher, sfs, input);
+        PacketProcessingService pps = mock(PacketProcessingService.class);
+        Future<RpcResult<Void>> future =
+            SettableFuture.<RpcResult<Void>>create();
+        when(pps.transmitPacket(input)).thenReturn(future);
+        TransmitPacketRpc rpc = new TransmitPacketRpc(watcher, pps, input);
         assertSame(future, rpc.getFuture());
-        verify(sfs).removeFlow(input);
+        verify(pps).transmitPacket(input);
         verify(input).getNode();
-        verifyNoMoreInteractions(watcher, sfs, input);
+        verifyNoMoreInteractions(watcher, pps, input);
     }
 
     /**
-     * Test case for {@link RemoveFlowRpc#needErrorLog(Throwable)}.
+     * Test case for {@link TransmitPacketRpc#needErrorLog(Throwable)}.
      */
     @Test
     public void testNeedErrorLog1() {
-        SalNode snode = new SalNode(1L);
-        RemoveFlowInput input = mock(RemoveFlowInput.class);
-        when(input.getNode()).thenReturn(snode.getNodeRef());
+        SalPort egress = new SalPort(1L, 2L);
+        TransmitPacketInput input = mock(TransmitPacketInput.class);
+        when(input.getNode()).thenReturn(egress.getNodeRef());
+        when(input.getEgress()).thenReturn(egress.getNodeConnectorRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        SalFlowService sfs = mock(SalFlowService.class);
-        Future<RpcResult<RemoveFlowOutput>> future =
-            SettableFuture.<RpcResult<RemoveFlowOutput>>create();
-        when(sfs.removeFlow(input)).thenReturn(future);
-        RemoveFlowRpc rpc = new RemoveFlowRpc(watcher, sfs, input);
+        PacketProcessingService pps = mock(PacketProcessingService.class);
+        Future<RpcResult<Void>> future =
+            SettableFuture.<RpcResult<Void>>create();
+        when(pps.transmitPacket(input)).thenReturn(future);
+        TransmitPacketRpc rpc = new TransmitPacketRpc(watcher, pps, input);
 
         Map<Throwable, Boolean> cases = new HashMap<>();
         assertNull(cases.put(new Throwable(), true));
@@ -141,13 +169,13 @@ public class RemoveFlowRpcTest extends TestBase {
         assertNull(cases.put(e, true));
 
         e = new DOMRpcImplementationNotAvailableException("error 1");
-        assertNull(cases.put(e, false));
+        assertNull(cases.put(e, true));
 
         e = new DOMRpcImplementationNotAvailableException("error 2");
         for (int i = 0; i < 5; i++) {
             e = new ExecutionException(e);
         }
-        assertNull(cases.put(e, false));
+        assertNull(cases.put(e, true));
 
         for (Entry<Throwable, Boolean> entry: cases.entrySet()) {
             Throwable cause = entry.getKey();
@@ -158,6 +186,7 @@ public class RemoveFlowRpcTest extends TestBase {
 
         // Cancel the RPC.
         assertEquals(true, rpc.onNodeRemoved());
+        assertEquals(true, future.isCancelled());
         for (Throwable cause: cases.keySet()) {
             assertEquals(false, rpc.needErrorLog(cause));
             assertEquals(true, rpc.isNodeRemoved());
@@ -165,28 +194,29 @@ public class RemoveFlowRpcTest extends TestBase {
     }
 
     /**
-     * Test case for {@link RemoveFlowRpc#needErrorLog(Collection)}.
+     * Test case for {@link TransmitPacketRpc#needErrorLog(Collection)}.
      */
     @Test
     public void testNeedErrorLog2() {
-        SalNode snode = new SalNode(1L);
-        RemoveFlowInput input = mock(RemoveFlowInput.class);
-        when(input.getNode()).thenReturn(snode.getNodeRef());
+        SalPort egress = new SalPort(1L, 2L);
+        TransmitPacketInput input = mock(TransmitPacketInput.class);
+        when(input.getNode()).thenReturn(egress.getNodeRef());
+        when(input.getEgress()).thenReturn(egress.getNodeConnectorRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        SalFlowService sfs = mock(SalFlowService.class);
-        Future<RpcResult<RemoveFlowOutput>> future =
-            SettableFuture.<RpcResult<RemoveFlowOutput>>create();
-        when(sfs.removeFlow(input)).thenReturn(future);
-        RemoveFlowRpc rpc = new RemoveFlowRpc(watcher, sfs, input);
+        PacketProcessingService pps = mock(PacketProcessingService.class);
+        Future<RpcResult<Void>> future =
+            SettableFuture.<RpcResult<Void>>create();
+        when(pps.transmitPacket(input)).thenReturn(future);
+        TransmitPacketRpc rpc = new TransmitPacketRpc(watcher, pps, input);
 
         Map<String, Boolean> cases = new HashMap<>();
         assertNull(cases.put(null, true));
         assertNull(cases.put("Unknown error", true));
         assertNull(cases.put("Operation timed out", true));
         assertNull(cases.put("Invalid input", true));
-        assertNull(cases.put("Device disconnected", false));
+        assertNull(cases.put("Device disconnected", true));
         assertNull(cases.put("Outbound queue wasn't able to reserve XID.",
-                             false));
+                             true));
 
         for (Entry<String, Boolean> entry: cases.entrySet()) {
             String msg = entry.getKey();
@@ -200,7 +230,7 @@ public class RemoveFlowRpcTest extends TestBase {
     }
 
     /**
-     * Test case for {@link RemoveFlowRpc#getResult(long,TimeUnit,Logger)}.
+     * Test case for {@link TransmitPacketRpc#getResult(long,TimeUnit,Logger)}.
      *
      * <ul>
      *   <li>RPC completed successfully.</li>
@@ -210,19 +240,19 @@ public class RemoveFlowRpcTest extends TestBase {
      */
     @Test
     public void testGetResult() throws Exception {
-        SalNode snode = new SalNode(1L);
-        RemoveFlowInput input = mock(RemoveFlowInput.class);
-        when(input.getNode()).thenReturn(snode.getNodeRef());
+        SalPort egress = new SalPort(1L, 2L);
+        TransmitPacketInput input = mock(TransmitPacketInput.class);
+        when(input.getNode()).thenReturn(egress.getNodeRef());
+        when(input.getEgress()).thenReturn(egress.getNodeConnectorRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        SalFlowService sfs = mock(SalFlowService.class);
-        RemoveFlowOutput output = mock(RemoveFlowOutput.class);
-        final SettableFuture<RpcResult<RemoveFlowOutput>> future =
-            SettableFuture.<RpcResult<RemoveFlowOutput>>create();
-        when(sfs.removeFlow(input)).thenReturn(future);
-        RemoveFlowRpc rpc = new RemoveFlowRpc(watcher, sfs, input);
+        PacketProcessingService pps = mock(PacketProcessingService.class);
+        final SettableFuture<RpcResult<Void>> future =
+            SettableFuture.<RpcResult<Void>>create();
+        when(pps.transmitPacket(input)).thenReturn(future);
+        TransmitPacketRpc rpc = new TransmitPacketRpc(watcher, pps, input);
 
-        final RpcResult<RemoveFlowOutput> result = RpcResultBuilder.
-            success(output).build();
+        final RpcResult<Void> result = RpcResultBuilder.
+            success((Void)null).build();
         Logger logger = mock(Logger.class);
 
         Thread t = new Thread() {
@@ -237,7 +267,7 @@ public class RemoveFlowRpcTest extends TestBase {
         };
         t.start();
 
-        assertSame(output, rpc.getResult(10L, TimeUnit.SECONDS, logger));
+        assertSame(null, rpc.getResult(10L, TimeUnit.SECONDS, logger));
 
         verify(watcher).registerRpc(rpc);
         verify(watcher).unregisterRpc(rpc);
@@ -245,7 +275,7 @@ public class RemoveFlowRpcTest extends TestBase {
     }
 
     /**
-     * Test case for {@link RemoveFlowRpc#getResult(long,TimeUnit,Logger)}.
+     * Test case for {@link TransmitPacketRpc#getResult(long,TimeUnit,Logger)}.
      *
      * <ul>
      *   <li>RPC timed out.</li>
@@ -255,15 +285,16 @@ public class RemoveFlowRpcTest extends TestBase {
      */
     @Test
     public void testGetResultTimeout() throws Exception {
-        SalNode snode = new SalNode(1L);
-        RemoveFlowInput input = mock(RemoveFlowInput.class);
-        when(input.getNode()).thenReturn(snode.getNodeRef());
+        SalPort egress = new SalPort(1L, 2L);
+        TransmitPacketInput input = mock(TransmitPacketInput.class);
+        when(input.getNode()).thenReturn(egress.getNodeRef());
+        when(input.getEgress()).thenReturn(egress.getNodeConnectorRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        SalFlowService sfs = mock(SalFlowService.class);
-        Future<RpcResult<RemoveFlowOutput>> future =
-            SettableFuture.<RpcResult<RemoveFlowOutput>>create();
-        when(sfs.removeFlow(input)).thenReturn(future);
-        RemoveFlowRpc rpc = new RemoveFlowRpc(watcher, sfs, input);
+        PacketProcessingService pps = mock(PacketProcessingService.class);
+        Future<RpcResult<Void>> future =
+            SettableFuture.<RpcResult<Void>>create();
+        when(pps.transmitPacket(input)).thenReturn(future);
+        TransmitPacketRpc rpc = new TransmitPacketRpc(watcher, pps, input);
         Logger logger = mock(Logger.class);
 
         Throwable cause = null;
@@ -277,7 +308,7 @@ public class RemoveFlowRpcTest extends TestBase {
         }
 
         String msg = RPC_NAME + ": Caught an exception: canceled=true, " +
-            "input=" + input;
+            "input={egress=" + egress + "}";
         verify(logger).error(msg, cause);
         verify(watcher).registerRpc(rpc);
         verify(watcher).unregisterRpc(rpc);
@@ -285,7 +316,7 @@ public class RemoveFlowRpcTest extends TestBase {
     }
 
     /**
-     * Test case for {@link RemoveFlowRpc#getResult(long,TimeUnit,Logger)}.
+     * Test case for {@link TransmitPacketRpc#getResult(long,TimeUnit,Logger)}.
      *
      * <ul>
      *   <li>RPC was canceled.</li>
@@ -295,15 +326,17 @@ public class RemoveFlowRpcTest extends TestBase {
      */
     @Test
     public void testGetResultCancel() throws Exception {
-        SalNode snode = new SalNode(1L);
-        RemoveFlowInput input = mock(RemoveFlowInput.class);
-        when(input.getNode()).thenReturn(snode.getNodeRef());
+        SalPort egress = new SalPort(1L, 2L);
+        TransmitPacketInput input = mock(TransmitPacketInput.class);
+        when(input.getNode()).thenReturn(egress.getNodeRef());
+        when(input.getEgress()).thenReturn(egress.getNodeConnectorRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        SalFlowService sfs = mock(SalFlowService.class);
-        SettableFuture<RpcResult<RemoveFlowOutput>> future =
-            SettableFuture.<RpcResult<RemoveFlowOutput>>create();
-        when(sfs.removeFlow(input)).thenReturn(future);
-        final RemoveFlowRpc rpc = new RemoveFlowRpc(watcher, sfs, input);
+        PacketProcessingService pps = mock(PacketProcessingService.class);
+        SettableFuture<RpcResult<Void>> future =
+            SettableFuture.<RpcResult<Void>>create();
+        when(pps.transmitPacket(input)).thenReturn(future);
+        final TransmitPacketRpc rpc =
+            new TransmitPacketRpc(watcher, pps, input);
 
         Logger logger = mock(Logger.class);
 
@@ -338,7 +371,7 @@ public class RemoveFlowRpcTest extends TestBase {
     }
 
     /**
-     * Test case for {@link RemoveFlowRpc#getResult(long,TimeUnit,Logger)}.
+     * Test case for {@link TransmitPacketRpc#getResult(long,TimeUnit,Logger)}.
      *
      * <ul>
      *   <li>No RPC implementation.</li>
@@ -348,17 +381,18 @@ public class RemoveFlowRpcTest extends TestBase {
      */
     @Test
     public void testGetResultNoRpc() throws Exception {
-        SalNode snode = new SalNode(1L);
-        RemoveFlowInput input = mock(RemoveFlowInput.class);
-        when(input.getNode()).thenReturn(snode.getNodeRef());
+        SalPort egress = new SalPort(1L, 2L);
+        TransmitPacketInput input = mock(TransmitPacketInput.class);
+        when(input.getNode()).thenReturn(egress.getNodeRef());
+        when(input.getEgress()).thenReturn(egress.getNodeConnectorRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        SalFlowService sfs = mock(SalFlowService.class);
+        PacketProcessingService pps = mock(PacketProcessingService.class);
         final DOMRpcImplementationNotAvailableException cause =
             new DOMRpcImplementationNotAvailableException("No implementation");
-        final SettableFuture<RpcResult<RemoveFlowOutput>> future =
-            SettableFuture.<RpcResult<RemoveFlowOutput>>create();
-        when(sfs.removeFlow(input)).thenReturn(future);
-        RemoveFlowRpc rpc = new RemoveFlowRpc(watcher, sfs, input);
+        final SettableFuture<RpcResult<Void>> future =
+            SettableFuture.<RpcResult<Void>>create();
+        when(pps.transmitPacket(input)).thenReturn(future);
+        TransmitPacketRpc rpc = new TransmitPacketRpc(watcher, pps, input);
         Logger logger = mock(Logger.class);
 
         Thread t = new Thread() {
@@ -382,14 +416,23 @@ public class RemoveFlowRpcTest extends TestBase {
             assertEquals(cause, e.getCause());
         }
 
-        // No error message should be logged.
+        String msg = RPC_NAME + ": Caught an exception: canceled=false, " +
+            "input={egress=" + egress + "}";
+        ArgumentCaptor<Throwable> captor =
+            ArgumentCaptor.forClass(Throwable.class);
+        verify(logger).error(eq(msg), captor.capture());
+        List<Throwable> causes = captor.getAllValues();
+        assertEquals(1, causes.size());
+        Throwable c = causes.get(0);
+        assertThat(c, instanceOf(ExecutionException.class));
+        assertEquals(cause, c.getCause());
         verify(watcher).registerRpc(rpc);
         verify(watcher).unregisterRpc(rpc);
         verifyNoMoreInteractions(watcher, logger);
     }
 
     /**
-     * Test case for {@link RemoveFlowRpc#getResult(long,TimeUnit,Logger)}.
+     * Test case for {@link TransmitPacketRpc#getResult(long,TimeUnit,Logger)}.
      *
      * <ul>
      *   <li>RPC failed.</li>
@@ -405,23 +448,27 @@ public class RemoveFlowRpcTest extends TestBase {
             null,
             "Unknown error.",
             "Invalid input.",
+            "Device disconnected",
+            "Outbound queue wasn't able to reserve XID.",
         };
 
-        SalNode snode = new SalNode(1L);
+        SalPort egress = new SalPort(1L, 2L);
+        String egressStr = "{egress=" + egress + "}";
         for (String emsg: msgs) {
-            RemoveFlowInput input = mock(RemoveFlowInput.class);
-            when(input.getNode()).thenReturn(snode.getNodeRef());
+            TransmitPacketInput input = mock(TransmitPacketInput.class);
+            when(input.getNode()).thenReturn(egress.getNodeRef());
+            when(input.getEgress()).thenReturn(egress.getNodeConnectorRef());
             NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-            SalFlowService sfs = mock(SalFlowService.class);
-            final SettableFuture<RpcResult<RemoveFlowOutput>> future =
-                SettableFuture.<RpcResult<RemoveFlowOutput>>create();
-            when(sfs.removeFlow(input)).thenReturn(future);
-            final RpcResult<RemoveFlowOutput> result =
-                RpcResultBuilder.<RemoveFlowOutput>failed().
+            PacketProcessingService pps = mock(PacketProcessingService.class);
+            final SettableFuture<RpcResult<Void>> future =
+                SettableFuture.<RpcResult<Void>>create();
+            when(pps.transmitPacket(input)).thenReturn(future);
+            final RpcResult<Void> result =
+                RpcResultBuilder.<Void>failed().
                 withError(PROTOCOL, "Protocol error").
                 withError(APPLICATION, emsg).
                 build();
-            RemoveFlowRpc rpc = new RemoveFlowRpc(watcher, sfs, input);
+            TransmitPacketRpc rpc = new TransmitPacketRpc(watcher, pps, input);
             Logger logger = mock(Logger.class);
 
             Thread t = new Thread() {
@@ -443,7 +490,7 @@ public class RemoveFlowRpcTest extends TestBase {
             }
 
             verify(logger).
-                error("{}: {}: input={}, errors={}", RPC_NAME, msg, input,
+                error("{}: {}: input={}, errors={}", RPC_NAME, msg, egressStr,
                       result.getErrors());
             verify(watcher).registerRpc(rpc);
             verify(watcher).unregisterRpc(rpc);
@@ -452,7 +499,7 @@ public class RemoveFlowRpcTest extends TestBase {
     }
 
     /**
-     * Test case for {@link RemoveFlowRpc#getResult(long,TimeUnit,Logger)}.
+     * Test case for {@link TransmitPacketRpc#getResult(long,TimeUnit,Logger)}.
      *
      * <ul>
      *   <li>RPC failed.</li>
@@ -468,24 +515,27 @@ public class RemoveFlowRpcTest extends TestBase {
             null,
             "Unknown error.",
             "Invalid input.",
+            "Device disconnected",
+            "Outbound queue wasn't able to reserve XID.",
         };
         IllegalStateException ise = new IllegalStateException();
 
-        SalNode snode = new SalNode(1L);
+        SalPort egress = new SalPort(1L, 2L);
+        String egressStr = "{egress=" + egress + "}";
         for (String emsg: msgs) {
-            RemoveFlowInput input = mock(RemoveFlowInput.class);
-            when(input.getNode()).thenReturn(snode.getNodeRef());
+            TransmitPacketInput input = mock(TransmitPacketInput.class);
+            when(input.getNode()).thenReturn(egress.getNodeRef());
+            when(input.getEgress()).thenReturn(egress.getNodeConnectorRef());
             NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-            SalFlowService sfs = mock(SalFlowService.class);
-            final SettableFuture<RpcResult<RemoveFlowOutput>> future =
-                SettableFuture.<RpcResult<RemoveFlowOutput>>create();
-            when(sfs.removeFlow(input)).thenReturn(future);
-            final RpcResult<RemoveFlowOutput> result =
-                RpcResultBuilder.<RemoveFlowOutput>failed().
+            PacketProcessingService pps = mock(PacketProcessingService.class);
+            final SettableFuture<RpcResult<Void>> future =
+                SettableFuture.<RpcResult<Void>>create();
+            when(pps.transmitPacket(input)).thenReturn(future);
+            final RpcResult<Void> result = RpcResultBuilder.<Void>failed().
                 withError(PROTOCOL, "Protocol error").
                 withError(APPLICATION, emsg, ise).
                 build();
-            RemoveFlowRpc rpc = new RemoveFlowRpc(watcher, sfs, input);
+            TransmitPacketRpc rpc = new TransmitPacketRpc(watcher, pps, input);
             Logger logger = mock(Logger.class);
 
             Thread t = new Thread() {
@@ -506,78 +556,12 @@ public class RemoveFlowRpcTest extends TestBase {
                 assertEquals(null, e.getCause());
             }
 
-            String lmsg = RPC_NAME + ": RPC returned error: input=" + input +
-                ", errors=" + result.getErrors();
+            String lmsg = RPC_NAME + ": RPC returned error: input=" +
+                egressStr + ", errors=" + result.getErrors();
             verify(logger).error(lmsg, ise);
             verify(watcher).registerRpc(rpc);
             verify(watcher).unregisterRpc(rpc);
             verifyNoMoreInteractions(watcher, logger);
-        }
-    }
-
-    /**
-     * Test case for {@link RemoveFlowRpc#getResult(long,TimeUnit,Logger)}.
-     *
-     * <ul>
-     *   <li>RPC failed.</li>
-     *   <li>The result should not be logged.</li>
-     * </ul>
-     *
-     * @throws Exception  An error occurred.
-     */
-    @Test
-    public void testGetResultNoLog() throws Exception {
-        String[] msgs = {
-            "Device disconnected",
-            "Outbound queue wasn't able to reserve XID.",
-        };
-        Throwable[] causes = {
-            null,
-            new IllegalStateException(),
-            new IllegalArgumentException(),
-        };
-
-        SalNode snode = new SalNode(1L);
-        for (String emsg: msgs) {
-            for (Throwable cause: causes) {
-                RemoveFlowInput input = mock(RemoveFlowInput.class);
-                when(input.getNode()).thenReturn(snode.getNodeRef());
-                NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-                SalFlowService sfs = mock(SalFlowService.class);
-                final SettableFuture<RpcResult<RemoveFlowOutput>> future =
-                    SettableFuture.<RpcResult<RemoveFlowOutput>>create();
-                when(sfs.removeFlow(input)).thenReturn(future);
-                final RpcResult<RemoveFlowOutput> result =
-                    RpcResultBuilder.<RemoveFlowOutput>failed().
-                    withError(PROTOCOL, "Protocol error").
-                    withError(APPLICATION, emsg, cause).
-                    build();
-                RemoveFlowRpc rpc = new RemoveFlowRpc(watcher, sfs, input);
-                Logger logger = mock(Logger.class);
-
-                Thread t = new Thread() {
-                    @Override
-                    public void run() {
-                        future.set(result);
-                    }
-                };
-                t.start();
-
-                String msg = "RPC returned error";
-                try {
-                    rpc.getResult(10L, TimeUnit.SECONDS, logger);
-                    unexpected();
-                } catch (VTNException e) {
-                    assertEquals(VtnErrorTag.INTERNALERROR, e.getVtnErrorTag());
-                    assertEquals(msg, e.getMessage());
-                    assertEquals(null, e.getCause());
-                }
-
-                // No error message should be logged.
-                verify(watcher).registerRpc(rpc);
-                verify(watcher).unregisterRpc(rpc);
-                verifyNoMoreInteractions(watcher, logger);
-            }
         }
     }
 }

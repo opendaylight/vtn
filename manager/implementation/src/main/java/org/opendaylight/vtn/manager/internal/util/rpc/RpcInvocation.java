@@ -79,7 +79,7 @@ public abstract class RpcInvocation<I, O> implements RpcRequest {
      * @return  The result of the RPC.
      * @throws VTNException  An error occurred.
      */
-    public final O getResult(long timeout, TimeUnit unit, Logger logger)
+    public O getResult(long timeout, TimeUnit unit, Logger logger)
         throws VTNException {
         RpcResult<O> result;
         try {
@@ -122,7 +122,7 @@ public abstract class RpcInvocation<I, O> implements RpcRequest {
      * @return  An object that indicates an RPC input.
      */
     @Override
-    public I getInputForLog() {
+    public Object getInputForLog() {
         return input;
     }
 

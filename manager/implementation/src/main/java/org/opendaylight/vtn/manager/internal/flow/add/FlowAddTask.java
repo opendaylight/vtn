@@ -29,8 +29,8 @@ import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpc;
 import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpcList;
 import org.opendaylight.vtn.manager.internal.util.flow.VTNFlowBuilder;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcErrorCallback;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
-import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorCallback;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnFlowId;
@@ -147,7 +147,7 @@ public final class FlowAddTask implements Runnable {
         List<AddFlowRpc> rpcs = new ArrayList<>(size);
         for (VtnFlowEntry vfent: flowEntries) {
             AddFlowInput input = FlowUtils.createAddFlowInput(vfent);
-            rpcs.add(new AddFlowRpc(service, input));
+            rpcs.add(new AddFlowRpc(vtnProvider, service, input));
         }
 
         TimeUnit nano = TimeUnit.NANOSECONDS;
@@ -194,7 +194,7 @@ public final class FlowAddTask implements Runnable {
     private void installIngressFlow(SalFlowService service)
         throws VTNException {
         AddFlowInput input = FlowUtils.createAddFlowInput(ingressFlow);
-        AddFlowRpc rpc = new AddFlowRpc(service, input);
+        AddFlowRpc rpc = new AddFlowRpc(vtnProvider, service, input);
         long timeout = (long)vtnConfig.getFlowModTimeout();
         Logger logger = FlowAddContext.LOG;
         rpc.getResult(timeout, TimeUnit.MILLISECONDS, logger);
@@ -231,7 +231,7 @@ public final class FlowAddTask implements Runnable {
      */
     private void rollback(TxContext ctx, SalFlowService service,
                           VTNFlowBuilder builder) {
-        RemoveFlowRpcList rpcList = new RemoveFlowRpcList();
+        RemoveFlowRpcList rpcList = new RemoveFlowRpcList(vtnProvider);
         List<VtnFlowEntry> vfents = new ArrayList<>();
         for (VtnFlowEntry vfent: builder.getDataFlow().getVtnFlowEntry()) {
             SalNode snode = SalNode.create(vfent.getNode());
@@ -255,7 +255,7 @@ public final class FlowAddTask implements Runnable {
 
         int idx = 0;
         for (RemoveFlowRpc rpc: rpcList.invoke(service)) {
-            RpcErrorCallback<RemoveFlowOutput> cb = new RpcErrorCallback<>(
+            NodeRpcErrorCallback<RemoveFlowOutput> cb = new NodeRpcErrorCallback<>(
                 rpc, FlowAddContext.LOG, "Failed to rollback flow entry: %s",
                 new FlowEntryDesc(vfents.get(idx)));
             vtnProvider.setCallback(rpc.getFuture(), cb);
