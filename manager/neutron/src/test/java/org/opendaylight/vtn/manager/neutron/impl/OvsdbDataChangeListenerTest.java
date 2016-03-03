@@ -166,7 +166,8 @@ public class OvsdbDataChangeListenerTest {
          * getCreatedData and getUpdatedData methods.
          */
         verify(asyncDataChangeEventMockObj , times(2)).getCreatedData();
-        verify(asyncDataChangeEventMockObj , times(1)).getUpdatedData();
+        //verify(asyncDataChangeEventMockObj , times(1)).getUpdatedData();
+        verify(asyncDataChangeEventMockObj , times(2)).getRemovedPaths();
 
 
     }

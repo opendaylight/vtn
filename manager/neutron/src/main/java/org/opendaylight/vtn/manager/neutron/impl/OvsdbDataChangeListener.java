@@ -88,43 +88,42 @@ public final class OvsdbDataChangeListener
          AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> changes) {
         LOG.trace("onDataChanged: {}", changes);
         processOvsdbConnections(changes);
-        processOvsdbConnectionAttributeUpdates(changes);
         processPortCreation(changes);
         processPortDeletion(changes);
+        processOvsdbDisConnected(changes);
     }
 
     /**
-     * Method invoked when the open flow switch is Added.
+     * Method invoked when the ovs switch gets connected to ODL
      * @param changes
      */
     private void processOvsdbConnections(AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> changes) {
         for (Entry<InstanceIdentifier<?>, DataObject> created : changes.getCreatedData().entrySet()) {
             if (created.getValue() instanceof OvsdbNodeAugmentation) {
-                Node ovsdbNode = getNode(changes.getCreatedData(), created);
-                LOG.trace("process Ovsdb Node: <{}>, ovsdbNode: <{}>", created, ovsdbNode);
+                Node parentNode = getNode(changes.getCreatedData(), created);
+                if (parentNode == null) {
+                    continue;
+                } else {
+                    LOG.trace("process Ovsdb Node: <{}>, ovsdbNode: <{}>", created, parentNode);
+                    ovsdbeventHandler.nodeAdded(parentNode, created.getValue());
+                }
             }
         }
     }
 
     /**
-     * Method invoked when the open flow switch is Updated.
+     * Method invoked when the ovs switch gets disconnected from ODL
      * @param changes
      */
-    private void processOvsdbConnectionAttributeUpdates(
-            AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> changes) {
-
-        for (Entry<InstanceIdentifier<?>, DataObject> updatedOvsdbNode : changes.getUpdatedData().entrySet()) {
-            if (updatedOvsdbNode.getKey().getTargetType().equals(OvsdbNodeAugmentation.class)) {
-                LOG.trace("processOvsdbConnectionAttributeUpdates: {}", updatedOvsdbNode);
-                Node parentNode  = getNode(changes.getUpdatedData(), updatedOvsdbNode);
-                if (parentNode == null) {
-                    // Logging this warning, to catch any change in southbound plugin's behavior.
-                    LOG.warn("Parent Node for OvsdbNodeAugmentation is not found. On OvsdbNodeAugmentation update "
-                            + "data store must provide the parent node update. This condition should not occur "
-                            + "with the existing models defined in southbound plugin.");
+    private void processOvsdbDisConnected(AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> changes) {
+        for (InstanceIdentifier<?> removed : changes.getRemovedPaths()) {
+            if (removed.getTargetType().equals(OvsdbNodeAugmentation.class)) {
+                Node parentNode = getNode(changes.getOriginalData(), removed);
+                if (parentNode  == null) {
                     continue;
+                } else {
+                    ovsdbeventHandler.nodeRemoved(parentNode);
                 }
-                ovsdbeventHandler.nodeAdded(parentNode, updatedOvsdbNode.getValue());
             }
         }
     }
