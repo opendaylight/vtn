@@ -109,6 +109,39 @@ public final class OVSDBEventHandlerTest {
     }
     /**
      * Test case for
+     * {@link OVSDBEventHandler#nodeRemoved(Node)}.
+     */
+    @Test
+    public void testNodeRemoved() throws Exception {
+        Node mockNode = PowerMockito.mock(Node.class);
+        PowerMockito.doReturn(true).
+                        when(handler, "deleteBridge",
+                             Matchers.eq(mockNode), Matchers.eq(null));
+        handler.nodeRemoved(mockNode);
+        PowerMockito.verifyPrivate(handler, Mockito.times(1)).
+                                   invoke("deleteBridge",
+                                   mockNode, null);
+
+    }
+    /**
+     * Test case for
+     * {@link OVSDBEventHandler#DeleteBridge()}.
+     */
+    @Test
+    public void testDeleteBridge() throws Exception {
+        Node mockNode = PowerMockito.mock(Node.class);
+        InstanceIdentifier<Node> mockInstanceIdentifier  =
+                                    PowerMockito.mock(InstanceIdentifier.class);
+        utils = Mockito.mock(MdsalUtils.class);
+        Mockito.when(utils.delete(Matchers.eq(LogicalDatastoreType.CONFIGURATION), Matchers.eq(mockInstanceIdentifier))).thenReturn(true);
+        handler = PowerMockito.spy(new OVSDBEventHandler(utils, service));
+        PowerMockito.doReturn(mockInstanceIdentifier).
+            when(handler , "createInstanceIdentifier" , null, "br-int");
+        boolean output = handler.deleteBridge(mockNode, "br-int");
+        Assert.assertTrue(output);
+    }
+    /**
+     * Test case for
      * {@link OVSDBEventHandler
      *        #extractTerminationPointAugmentation(Node,portName)}.
      */
