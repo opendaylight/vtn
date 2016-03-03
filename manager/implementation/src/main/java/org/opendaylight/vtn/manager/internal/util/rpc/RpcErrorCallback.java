@@ -81,7 +81,7 @@ public class RpcErrorCallback<T> implements FutureCallback<RpcResult<T>> {
     // FutureCallback
 
     /**
-     * Invoked when the future has completed successfully.
+     * Invoked when the RPC has completed.
      *
      * @param result  An object returned by the RPC.
      */
@@ -103,7 +103,7 @@ public class RpcErrorCallback<T> implements FutureCallback<RpcResult<T>> {
     }
 
     /**
-     * Invoked when the future has failed.
+     * Invoked when the RPC has failed.
      *
      * @param t  A {@link Throwable} thrown by the RPC implementation.
      */

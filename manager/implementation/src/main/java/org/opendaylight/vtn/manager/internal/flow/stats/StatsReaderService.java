@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -75,6 +75,11 @@ public final class StatsReaderService extends SalNotificationListener
      * The timeout for transaction in milliseconds.
      */
     private static final long  TX_TIMEOUT = 10000L;
+
+    /**
+     * VTN Manager provider service.
+     */
+    private final VTNManagerProvider  vtnProvider;
 
     /**
      * MD-SAL flow statistics service.
@@ -229,7 +234,8 @@ public final class StatsReaderService extends SalNotificationListener
         public final void run() {
             String nid = getTargetNodeId();
             GetFlowStatisticsFromFlowTableInput input = getInput();
-            GetFlowStatsRpc rpc = new GetFlowStatsRpc(statsService, input);
+            GetFlowStatsRpc rpc =
+                new GetFlowStatsRpc(vtnProvider, statsService, input);
             StatsReaderCallback cb = getCallback();
             String xkey = startTransaction(nid, rpc, cb);
             if (xkey == null) {
@@ -474,6 +480,7 @@ public final class StatsReaderService extends SalNotificationListener
      */
     public StatsReaderService(VTNManagerProvider provider,
                               NotificationService nsv) {
+        vtnProvider = provider;
         timer = provider.getTimer();
         taskThread = new VTNThreadPool("StatsReader Task Thread");
         addCloseable(taskThread);

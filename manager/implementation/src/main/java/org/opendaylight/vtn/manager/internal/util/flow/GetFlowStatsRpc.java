@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -15,7 +15,8 @@ import org.slf4j.Logger;
 
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.vtn.manager.internal.util.rpc.RpcInvocation;
+import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcInvocation;
+import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcWatcher;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetFlowStatisticsFromFlowTableInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetFlowStatisticsFromFlowTableOutput;
@@ -28,17 +29,19 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.transaction.rev150304.
  * statistics service.
  */
 public final class GetFlowStatsRpc
-    extends RpcInvocation<GetFlowStatisticsFromFlowTableInput,
-                          GetFlowStatisticsFromFlowTableOutput> {
+    extends NodeRpcInvocation<GetFlowStatisticsFromFlowTableInput,
+                              GetFlowStatisticsFromFlowTableOutput> {
     /**
      * Issue a get-flow-statistics-from-flow-table RPC request.
      *
+     * @param w    The node RPC watcher.
      * @param fss  MD-SAL flow statistics service.
      * @param in   The RPC input.
      */
-    public GetFlowStatsRpc(OpendaylightFlowStatisticsService fss,
+    public GetFlowStatsRpc(NodeRpcWatcher w,
+                           OpendaylightFlowStatisticsService fss,
                            GetFlowStatisticsFromFlowTableInput in) {
-        super(in, fss.getFlowStatisticsFromFlowTable(in));
+        super(w, in, fss.getFlowStatisticsFromFlowTable(in));
     }
 
     /**

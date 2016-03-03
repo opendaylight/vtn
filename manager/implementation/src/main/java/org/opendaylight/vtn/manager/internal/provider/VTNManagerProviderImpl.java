@@ -58,6 +58,7 @@ import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNThreadPool;
 import org.opendaylight.vtn.manager.internal.util.flow.VTNFlowBuilder;
+import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcInvocation;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
 import org.opendaylight.vtn.manager.internal.util.tx.ReadTxContext;
@@ -707,6 +708,34 @@ public final class VTNManagerProviderImpl
             globalExecutor.close();
 
             LOG.info("VTN Manager provider has been closed.");
+        }
+    }
+
+    // NodeRpcWatcher
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void registerRpc(NodeRpcInvocation<?, ?> rpc) {
+        VTNInventoryManager vim = inventoryManager.get();
+        if (vim == null) {
+            rpc.onNodeRemoved();
+        } else {
+            vim.getVtnNodeManager().registerRpc(rpc);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void unregisterRpc(NodeRpcInvocation<?, ?> rpc) {
+        VTNInventoryManager vim = inventoryManager.get();
+        if (vim == null) {
+            rpc.onNodeRemoved();
+        } else {
+            vim.getVtnNodeManager().unregisterRpc(rpc);
         }
     }
 

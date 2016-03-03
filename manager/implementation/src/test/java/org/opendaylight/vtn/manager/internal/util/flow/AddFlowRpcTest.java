@@ -12,7 +12,6 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -26,14 +25,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.google.common.util.concurrent.SettableFuture;
-
-import org.opendaylight.controller.md.sal.dom.api.DOMRpcImplementationNotAvailableException;
 
 import org.junit.Test;
 
@@ -43,7 +41,12 @@ import org.slf4j.Logger;
 
 import org.opendaylight.vtn.manager.VTNException;
 
+import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcWatcher;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
+
 import org.opendaylight.vtn.manager.internal.TestBase;
+
+import org.opendaylight.controller.md.sal.dom.api.DOMRpcImplementationNotAvailableException;
 
 import org.opendaylight.yangtools.yang.common.RpcError;
 import org.opendaylight.yangtools.yang.common.RpcResult;
@@ -70,9 +73,12 @@ public class AddFlowRpcTest extends TestBase {
      */
     @Test
     public void testGetInput() {
-        SalFlowService sfs = mock(SalFlowService.class);
+        SalNode snode = new SalNode(1L);
         AddFlowInput input = mock(AddFlowInput.class);
-        AddFlowRpc rpc = new AddFlowRpc(sfs, input);
+        when(input.getNode()).thenReturn(snode.getNodeRef());
+        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+        SalFlowService sfs = mock(SalFlowService.class);
+        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
         assertSame(input, rpc.getInput());
         assertSame(input, rpc.getInputForLog());
     }
@@ -82,9 +88,12 @@ public class AddFlowRpcTest extends TestBase {
      */
     @Test
     public void testGetName() {
-        SalFlowService sfs = mock(SalFlowService.class);
+        SalNode snode = new SalNode(1L);
         AddFlowInput input = mock(AddFlowInput.class);
-        AddFlowRpc rpc = new AddFlowRpc(sfs, input);
+        when(input.getNode()).thenReturn(snode.getNodeRef());
+        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+        SalFlowService sfs = mock(SalFlowService.class);
+        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
         assertEquals(RPC_NAME, rpc.getName());
     }
 
@@ -93,15 +102,19 @@ public class AddFlowRpcTest extends TestBase {
      */
     @Test
     public void testGetFuture() {
-        SalFlowService sfs = mock(SalFlowService.class);
+        SalNode snode = new SalNode(1L);
         AddFlowInput input = mock(AddFlowInput.class);
+        when(input.getNode()).thenReturn(snode.getNodeRef());
+        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+        SalFlowService sfs = mock(SalFlowService.class);
         Future<RpcResult<AddFlowOutput>> future =
             SettableFuture.<RpcResult<AddFlowOutput>>create();
         when(sfs.addFlow(input)).thenReturn(future);
-        AddFlowRpc rpc = new AddFlowRpc(sfs, input);
+        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
         assertSame(future, rpc.getFuture());
         verify(sfs).addFlow(input);
-        verifyNoMoreInteractions(sfs, input);
+        verify(input).getNode();
+        verifyNoMoreInteractions(watcher, sfs, input);
     }
 
     /**
@@ -109,12 +122,15 @@ public class AddFlowRpcTest extends TestBase {
      */
     @Test
     public void testNeedErrorLog1() {
-        SalFlowService sfs = mock(SalFlowService.class);
+        SalNode snode = new SalNode(1L);
         AddFlowInput input = mock(AddFlowInput.class);
+        when(input.getNode()).thenReturn(snode.getNodeRef());
+        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+        SalFlowService sfs = mock(SalFlowService.class);
         Future<RpcResult<AddFlowOutput>> future =
             SettableFuture.<RpcResult<AddFlowOutput>>create();
         when(sfs.addFlow(input)).thenReturn(future);
-        AddFlowRpc rpc = new AddFlowRpc(sfs, input);
+        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
 
         Map<Throwable, Boolean> cases = new HashMap<>();
         assertNull(cases.put(new Throwable(), true));
@@ -141,6 +157,15 @@ public class AddFlowRpcTest extends TestBase {
             Throwable cause = entry.getKey();
             boolean expected = entry.getValue().booleanValue();
             assertEquals(expected, rpc.needErrorLog(cause));
+            assertEquals(false, rpc.isNodeRemoved());
+        }
+
+        // Cancel the RPC.
+        assertEquals(true, rpc.onNodeRemoved());
+        assertEquals(true, future.isCancelled());
+        for (Throwable cause: cases.keySet()) {
+            assertEquals(false, rpc.needErrorLog(cause));
+            assertEquals(true, rpc.isNodeRemoved());
         }
     }
 
@@ -149,12 +174,15 @@ public class AddFlowRpcTest extends TestBase {
      */
     @Test
     public void testNeedErrorLog2() {
-        SalFlowService sfs = mock(SalFlowService.class);
+        SalNode snode = new SalNode(1L);
         AddFlowInput input = mock(AddFlowInput.class);
+        when(input.getNode()).thenReturn(snode.getNodeRef());
+        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+        SalFlowService sfs = mock(SalFlowService.class);
         Future<RpcResult<AddFlowOutput>> future =
             SettableFuture.<RpcResult<AddFlowOutput>>create();
         when(sfs.addFlow(input)).thenReturn(future);
-        AddFlowRpc rpc = new AddFlowRpc(sfs, input);
+        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
 
         Map<String, Boolean> cases = new HashMap<>();
         assertNull(cases.put(null, true));
@@ -187,13 +215,16 @@ public class AddFlowRpcTest extends TestBase {
      */
     @Test
     public void testGetResult() throws Exception {
-        SalFlowService sfs = mock(SalFlowService.class);
+        SalNode snode = new SalNode(1L);
         AddFlowInput input = mock(AddFlowInput.class);
+        when(input.getNode()).thenReturn(snode.getNodeRef());
+        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+        SalFlowService sfs = mock(SalFlowService.class);
         AddFlowOutput output = mock(AddFlowOutput.class);
         final SettableFuture<RpcResult<AddFlowOutput>> future =
             SettableFuture.<RpcResult<AddFlowOutput>>create();
         when(sfs.addFlow(input)).thenReturn(future);
-        AddFlowRpc rpc = new AddFlowRpc(sfs, input);
+        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
 
         final RpcResult<AddFlowOutput> result = RpcResultBuilder.
             success(output).build();
@@ -212,7 +243,10 @@ public class AddFlowRpcTest extends TestBase {
         t.start();
 
         assertSame(output, rpc.getResult(10L, TimeUnit.SECONDS, logger));
-        verifyZeroInteractions(logger);
+
+        verify(watcher).registerRpc(rpc);
+        verify(watcher).unregisterRpc(rpc);
+        verifyNoMoreInteractions(watcher, logger);
     }
 
     /**
@@ -226,13 +260,15 @@ public class AddFlowRpcTest extends TestBase {
      */
     @Test
     public void testGetResultTimeout() throws Exception {
-        SalFlowService sfs = mock(SalFlowService.class);
+        SalNode snode = new SalNode(1L);
         AddFlowInput input = mock(AddFlowInput.class);
-        AddFlowOutput output = mock(AddFlowOutput.class);
+        when(input.getNode()).thenReturn(snode.getNodeRef());
+        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+        SalFlowService sfs = mock(SalFlowService.class);
         Future<RpcResult<AddFlowOutput>> future =
             SettableFuture.<RpcResult<AddFlowOutput>>create();
         when(sfs.addFlow(input)).thenReturn(future);
-        AddFlowRpc rpc = new AddFlowRpc(sfs, input);
+        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
         Logger logger = mock(Logger.class);
 
         Throwable cause = null;
@@ -248,7 +284,62 @@ public class AddFlowRpcTest extends TestBase {
         String msg = RPC_NAME + ": Caught an exception: canceled=true, " +
             "input=" + input;
         verify(logger).error(msg, cause);
-        verifyNoMoreInteractions(logger);
+        verify(watcher).registerRpc(rpc);
+        verify(watcher).unregisterRpc(rpc);
+        verifyNoMoreInteractions(watcher, logger);
+    }
+
+    /**
+     * Test case for {@link AddFlowRpc#getResult(long,TimeUnit,Logger)}.
+     *
+     * <ul>
+     *   <li>RPC was canceled.</li>
+     * </ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testGetResultCancel() throws Exception {
+        SalNode snode = new SalNode(1L);
+        AddFlowInput input = mock(AddFlowInput.class);
+        when(input.getNode()).thenReturn(snode.getNodeRef());
+        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+        SalFlowService sfs = mock(SalFlowService.class);
+        SettableFuture<RpcResult<AddFlowOutput>> future =
+            SettableFuture.<RpcResult<AddFlowOutput>>create();
+        when(sfs.addFlow(input)).thenReturn(future);
+        final AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
+
+        Logger logger = mock(Logger.class);
+
+        Thread t = new Thread() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                }
+                rpc.onNodeRemoved();
+            }
+        };
+        t.start();
+
+        Throwable cause = null;
+        try {
+            rpc.getResult(10L, TimeUnit.SECONDS, logger);
+            unexpected();
+        } catch (VTNException e) {
+            assertEquals(VtnErrorTag.INTERNALERROR, e.getVtnErrorTag());
+            cause = e.getCause();
+            assertThat(cause, instanceOf(CancellationException.class));
+        }
+
+        // No error should be logged.
+        verify(watcher).registerRpc(rpc);
+        verify(watcher).unregisterRpc(rpc);
+        verifyNoMoreInteractions(watcher, logger);
+
+        assertEquals(true, future.isCancelled());
     }
 
     /**
@@ -262,15 +353,17 @@ public class AddFlowRpcTest extends TestBase {
      */
     @Test
     public void testGetResultNoRpc() throws Exception {
-        SalFlowService sfs = mock(SalFlowService.class);
+        SalNode snode = new SalNode(1L);
         AddFlowInput input = mock(AddFlowInput.class);
-        AddFlowOutput output = mock(AddFlowOutput.class);
+        when(input.getNode()).thenReturn(snode.getNodeRef());
+        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+        SalFlowService sfs = mock(SalFlowService.class);
         final DOMRpcImplementationNotAvailableException cause =
             new DOMRpcImplementationNotAvailableException("No implementation");
         final SettableFuture<RpcResult<AddFlowOutput>> future =
             SettableFuture.<RpcResult<AddFlowOutput>>create();
         when(sfs.addFlow(input)).thenReturn(future);
-        AddFlowRpc rpc = new AddFlowRpc(sfs, input);
+        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
         Logger logger = mock(Logger.class);
 
         Thread t = new Thread() {
@@ -304,7 +397,9 @@ public class AddFlowRpcTest extends TestBase {
         Throwable c = causes.get(0);
         assertThat(c, instanceOf(ExecutionException.class));
         assertEquals(cause, c.getCause());
-        verifyNoMoreInteractions(logger);
+        verify(watcher).registerRpc(rpc);
+        verify(watcher).unregisterRpc(rpc);
+        verifyNoMoreInteractions(watcher, logger);
     }
 
     /**
@@ -328,9 +423,12 @@ public class AddFlowRpcTest extends TestBase {
             "Outbound queue wasn't able to reserve XID.",
         };
 
+        SalNode snode = new SalNode(1L);
         for (String emsg: msgs) {
-            SalFlowService sfs = mock(SalFlowService.class);
             AddFlowInput input = mock(AddFlowInput.class);
+            when(input.getNode()).thenReturn(snode.getNodeRef());
+            NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+            SalFlowService sfs = mock(SalFlowService.class);
             final SettableFuture<RpcResult<AddFlowOutput>> future =
                 SettableFuture.<RpcResult<AddFlowOutput>>create();
             when(sfs.addFlow(input)).thenReturn(future);
@@ -339,7 +437,7 @@ public class AddFlowRpcTest extends TestBase {
                 withError(PROTOCOL, "Protocol error").
                 withError(APPLICATION, emsg).
                 build();
-            AddFlowRpc rpc = new AddFlowRpc(sfs, input);
+            AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
             Logger logger = mock(Logger.class);
 
             Thread t = new Thread() {
@@ -363,7 +461,9 @@ public class AddFlowRpcTest extends TestBase {
             verify(logger).
                 error("{}: {}: input={}, errors={}", RPC_NAME, msg, input,
                       result.getErrors());
-            verifyNoMoreInteractions(logger);
+            verify(watcher).registerRpc(rpc);
+            verify(watcher).unregisterRpc(rpc);
+            verifyNoMoreInteractions(watcher, logger);
         }
     }
 
@@ -389,9 +489,12 @@ public class AddFlowRpcTest extends TestBase {
         };
         IllegalStateException ise = new IllegalStateException();
 
+        SalNode snode = new SalNode(1L);
         for (String emsg: msgs) {
-            SalFlowService sfs = mock(SalFlowService.class);
             AddFlowInput input = mock(AddFlowInput.class);
+            when(input.getNode()).thenReturn(snode.getNodeRef());
+            NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+            SalFlowService sfs = mock(SalFlowService.class);
             final SettableFuture<RpcResult<AddFlowOutput>> future =
                 SettableFuture.<RpcResult<AddFlowOutput>>create();
             when(sfs.addFlow(input)).thenReturn(future);
@@ -400,7 +503,7 @@ public class AddFlowRpcTest extends TestBase {
                 withError(PROTOCOL, "Protocol error").
                 withError(APPLICATION, emsg, ise).
                 build();
-            AddFlowRpc rpc = new AddFlowRpc(sfs, input);
+            AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
             Logger logger = mock(Logger.class);
 
             Thread t = new Thread() {
@@ -424,7 +527,9 @@ public class AddFlowRpcTest extends TestBase {
             String lmsg = RPC_NAME + ": RPC returned error: input=" + input +
                 ", errors=" + result.getErrors();
             verify(logger).error(lmsg, ise);
-            verifyNoMoreInteractions(logger);
+            verify(watcher).registerRpc(rpc);
+            verify(watcher).unregisterRpc(rpc);
+            verifyNoMoreInteractions(watcher, logger);
         }
     }
 }

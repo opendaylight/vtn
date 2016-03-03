@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -18,6 +18,7 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.internal.FlowRemover;
 import org.opendaylight.vtn.manager.internal.RemovedFlows;
 import org.opendaylight.vtn.manager.internal.TxContext;
+import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpc;
@@ -33,6 +34,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalF
  */
 public class RemovedDataFlows<T extends FlowRemover> implements RemovedFlows {
     /**
+     * The VTN Manager provider service.
+     */
+    private final VTNManagerProvider  vtnProvider;
+
+    /**
      * A list of VTN data flows removed by {@link FlowRemover}.
      */
     private final List<FlowCache>  removedFlows = new ArrayList<>();
@@ -45,10 +51,21 @@ public class RemovedDataFlows<T extends FlowRemover> implements RemovedFlows {
     /**
      * Construct an empty instance.
      *
+     * @param ctx      The MD-SAL datastore transaction context.
      * @param remover  A {@link FlowRemover} instance that removed data flows.
      */
-    public RemovedDataFlows(T remover) {
+    public RemovedDataFlows(TxContext ctx, T remover) {
+        vtnProvider = ctx.getProvider();
         flowRemover = remover;
+    }
+
+    /**
+     * Return the VTN Manager provider service.
+     *
+     * @return  The VTN Manager provider service.
+     */
+    public final VTNManagerProvider getProvider() {
+        return vtnProvider;
     }
 
     /**
@@ -81,7 +98,7 @@ public class RemovedDataFlows<T extends FlowRemover> implements RemovedFlows {
     protected List<RemoveFlowRpc> removeFlowEntries(
         SalFlowService sfs, List<FlowCache> flows, InventoryReader reader)
         throws VTNException {
-        return FlowUtils.removeFlowEntries(sfs, flows, reader);
+        return FlowUtils.removeFlowEntries(vtnProvider, sfs, flows, reader);
     }
 
     // RemovedFlows
