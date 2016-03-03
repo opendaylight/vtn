@@ -232,6 +232,10 @@ public final class OVSDBEventHandler {
      */
     public void nodeRemoved(Node node) {
         LOG.trace("nodeRemoved() - {}", node.toString());
+        boolean result = deleteBridge(node, integrationBridgeName);
+        if (!result) {
+            LOG.error("Failure in delete the bridge node entry from Config Datastore");
+        }
     }
 
     /**
@@ -239,7 +243,7 @@ public final class OVSDBEventHandler {
      *
      * @param node Instance of Node object.
      */
-    public void createInternalNetworkForNeutron(Node node) {
+    private void createInternalNetworkForNeutron(Node node) {
         getSystemProperties(node);
         LOG.trace("createInternalNetworkForNeutron() - node ={}, integration bridge ={}", node.toString());
 
@@ -249,7 +253,7 @@ public final class OVSDBEventHandler {
      * Read the parameters configured in configuration file(default.config).
      * @param node instance of Node
      */
-    public void getSystemProperties(Node node) {
+    private void getSystemProperties(Node node) {
         LOG.trace("System properties from default config : {},{},{},{}:",
                   ovsdbBridgeName, ovsdbPortName, ovsdbProtocol, ovsdbFailMode);
         integrationBridgeName = ovsdbBridgeName;
@@ -342,7 +346,7 @@ public final class OVSDBEventHandler {
      * @param bridgeName the bridgename of the bridge to be added
      * @return true if the bridge add is successful.
      */
-    public boolean addBridge(Node ovsdbNode, String bridgeName) {
+    private boolean addBridge(Node ovsdbNode, String bridgeName) {
         boolean result = false;
         String target = getControllerTarget(ovsdbNode);
         LOG.trace("addBridge: node: {}, bridgeName: {}, target: {}",
@@ -377,6 +381,18 @@ public final class OVSDBEventHandler {
             throw new InvalidParameterException("Could not find ConnectionInfo");
         }
         return result;
+    }
+
+    /**
+     * Delete Bridge on the given Node
+     * @param ovsdbNode the node object of the OVS instance
+     * @param bridgeName the bridgename of the bridge to be removed
+     * @return true if the bridge deleted is successful.
+     */
+    private boolean deleteBridge(Node ovsdbNode, String bridgeName) {
+        InstanceIdentifier<Node> bridgeIid =
+              this.createInstanceIdentifier(ovsdbNode.getKey(), bridgeName);
+        return mdsalUtils.delete(LogicalDatastoreType.CONFIGURATION, bridgeIid);
     }
 
     /**
