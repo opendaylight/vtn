@@ -232,6 +232,10 @@ public final class OVSDBEventHandler {
      */
     public void nodeRemoved(Node node) {
         LOG.trace("nodeRemoved() - {}", node.toString());
+        boolean result = deleteBridge(node, integrationBridgeName);
+        if (!result) {
+            LOG.error("Failure in delete the bridge node entry from Config Datastore");
+        }
     }
 
     /**
@@ -377,6 +381,18 @@ public final class OVSDBEventHandler {
             throw new InvalidParameterException("Could not find ConnectionInfo");
         }
         return result;
+    }
+
+    /**
+     * Delete Bridge on the given Node
+     * @param ovsdbNode the node object of the OVS instance
+     * @param bridgeName the bridgename of the bridge to be added
+     * @return true if the bridge add is successful.
+     */
+    public boolean deleteBridge(Node ovsdbNode, String bridgeName) {
+        InstanceIdentifier<Node> bridgeIid =
+              this.createInstanceIdentifier(ovsdbNode.getKey(), bridgeName);
+        return mdsalUtils.delete(LogicalDatastoreType.CONFIGURATION, bridgeIid);
     }
 
     /**
