@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -24,6 +24,7 @@ import org.opendaylight.vtn.manager.packet.Packet;
 import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.flow.VTNFlowBuilder;
+import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcWatcher;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
@@ -43,7 +44,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnFlowI
  * This interface defines an internal OSGi service which provides MD-SAL
  * VTN Manager services used by AD-SAL interface.
  */
-public interface VTNManagerProvider extends AutoCloseable, Executor, TxQueue {
+public interface VTNManagerProvider
+    extends AutoCloseable, Executor, TxQueue, NodeRpcWatcher {
     /**
      * Return a {@link VTNConfig} instance that contains current configuration.
      *

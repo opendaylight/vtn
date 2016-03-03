@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -55,6 +55,7 @@ import org.opendaylight.vtn.manager.internal.util.flow.match.VTNPortRange;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNUdpMatch;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.MacVlan;
+import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcWatcher;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.pathmap.PathMapUtils;
@@ -1790,7 +1791,7 @@ public class FlowUtilsTest extends TestBase {
 
     /**
      * Test case for
-     * {@link FlowUtils#removeFlowEntries(SalFlowService,List,InventoryReader)}.
+     * {@link FlowUtils#removeFlowEntries(NodeRpcWatcher,SalFlowService,List,InventoryReader)}.
      */
     @Test
     public void testRemoveFlowEntries1() throws Exception {
@@ -1799,8 +1800,10 @@ public class FlowUtilsTest extends TestBase {
         ReadTransaction rtx = mock(ReadTransaction.class);
         InventoryReader reader = new InventoryReader(rtx);
         SalFlowService sfs = mock(SalFlowService.class);
-        assertEquals(0, FlowUtils.removeFlowEntries(sfs, flows, reader).size());
-        verifyZeroInteractions(sfs, rtx);
+        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+        assertEquals(0, FlowUtils.removeFlowEntries(watcher, sfs, flows,
+                                                    reader).size());
+        verifyZeroInteractions(watcher, sfs, rtx);
 
         // Create node information.
         long removedNode = 12345L;
@@ -1853,7 +1856,7 @@ public class FlowUtilsTest extends TestBase {
         }
 
         List<RemoveFlowRpc> result =
-            FlowUtils.removeFlowEntries(sfs, flows, reader);
+            FlowUtils.removeFlowEntries(watcher, sfs, flows, reader);
         verifyZeroInteractions(rtx);
 
         for (RemoveFlowRpc rpc: result) {
@@ -1866,7 +1869,7 @@ public class FlowUtilsTest extends TestBase {
 
     /**
      * Test case for
-     * {@link FlowUtils#removeFlowEntries(SalFlowService,List,SalPort,InventoryReader)}.
+     * {@link FlowUtils#removeFlowEntries(NodeRpcWatcher,SalFlowService,List,SalPort,InventoryReader)}.
      *
      * @throws Exception  An error occurred.
      */
@@ -1877,13 +1880,13 @@ public class FlowUtilsTest extends TestBase {
         ReadTransaction rtx = mock(ReadTransaction.class);
         InventoryReader reader = new InventoryReader(rtx);
         SalFlowService sfs = mock(SalFlowService.class);
+        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
         long targetNode = 12345L;
         long targetPort = 99999999L;
         SalPort target = new SalPort(targetNode, targetPort);
-        assertEquals(0, FlowUtils.removeFlowEntries(sfs, flows, target,
-                                                    reader).size());
-        verifyZeroInteractions(sfs);
-        verifyZeroInteractions(rtx);
+        assertEquals(0, FlowUtils.removeFlowEntries(watcher, sfs, flows,
+                                                    target, reader).size());
+        verifyZeroInteractions(watcher, sfs, rtx);
 
         // Create node information.
         long removedNode = 3141592L;
@@ -1956,7 +1959,7 @@ public class FlowUtilsTest extends TestBase {
         }
 
         List<RemoveFlowRpc> result =
-            FlowUtils.removeFlowEntries(sfs, flows, target, reader);
+            FlowUtils.removeFlowEntries(watcher, sfs, flows, target, reader);
         verifyZeroInteractions(rtx);
 
         for (RemoveFlowRpc rpc: result) {
@@ -2006,7 +2009,8 @@ public class FlowUtilsTest extends TestBase {
             futures.add(f);
         }
 
-        result = FlowUtils.removeFlowEntries(sfs, flows, target, reader);
+        result = FlowUtils.removeFlowEntries(watcher, sfs, flows, target,
+                                             reader);
         verifyZeroInteractions(rtx);
 
         for (RemoveFlowRpc rpc: result) {

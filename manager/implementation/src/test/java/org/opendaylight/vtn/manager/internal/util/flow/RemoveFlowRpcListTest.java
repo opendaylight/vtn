@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -27,6 +27,7 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcWatcher;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
@@ -49,25 +50,29 @@ public class RemoveFlowRpcListTest extends TestBase {
      */
     @Test
     public void testInvoke() throws Exception {
-        RemoveFlowRpcList rpcList = new RemoveFlowRpcList();
+        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+        RemoveFlowRpcList rpcList = new RemoveFlowRpcList(watcher);
         SalFlowService sfs = mock(SalFlowService.class);
         assertEquals(Collections.<RemoveFlowRpc>emptyList(),
                      rpcList.invoke(sfs));
-        verifyZeroInteractions(sfs);
+        verifyZeroInteractions(watcher, sfs);
 
         // Remove flow entries in a single switch.
-        rpcList = new RemoveFlowRpcList();
+        rpcList = new RemoveFlowRpcList(watcher);
         SalNode snode1 = new SalNode(1L);
 
         List<RemoveFlowInput> inputs = new ArrayList<>();
         for (long l = 1L; l <= 10L; l++) {
+            SalNode snode = new SalNode(1000L + l);
             FlowCookie fc = new FlowCookie(BigInteger.valueOf(l));
             RemoveFlowInputBuilder builder = new RemoveFlowInputBuilder().
+                setNode(snode.getNodeRef()).
                 setCookie(fc);
             rpcList.add(snode1, builder);
 
             Boolean barrier = (l == 10L);
             RemoveFlowInput input = new RemoveFlowInputBuilder().
+                setNode(snode.getNodeRef()).
                 setCookie(fc).
                 setBarrier(barrier).
                 build();
@@ -82,11 +87,11 @@ public class RemoveFlowRpcListTest extends TestBase {
             verify(sfs).removeFlow(input);
         }
         assertEquals(false, it.hasNext());
-        verifyNoMoreInteractions(sfs);
+        verifyNoMoreInteractions(watcher, sfs);
 
         // Remove flow entries in multiple switches.
         reset(sfs);
-        rpcList = new RemoveFlowRpcList();
+        rpcList = new RemoveFlowRpcList(watcher);
         SalNode[] snodes = {
             snode1,
             new SalNode(-1L),
@@ -103,10 +108,11 @@ public class RemoveFlowRpcListTest extends TestBase {
             FlowCookie fc = new FlowCookie(BigInteger.valueOf(l));
             SalNode snode = snodes[rand.nextInt(snodes.length)];
             RemoveFlowInputBuilder builder = new RemoveFlowInputBuilder().
+                setNode(snode.getNodeRef()).
                 setCookie(fc);
             rpcList.add(snode, builder);
             lastCookie.put(snode, fc);
-            builders.add(new RemoveFlowInputBuilder().setCookie(fc));
+            builders.add(new RemoveFlowInputBuilder(builder.build()));
         }
 
         Set<FlowCookie> lastSet = new HashSet<>(lastCookie.values());
@@ -125,6 +131,6 @@ public class RemoveFlowRpcListTest extends TestBase {
             verify(sfs).removeFlow(input);
         }
         assertEquals(false, it.hasNext());
-        verifyNoMoreInteractions(sfs);
+        verifyNoMoreInteractions(watcher, sfs);
     }
 }

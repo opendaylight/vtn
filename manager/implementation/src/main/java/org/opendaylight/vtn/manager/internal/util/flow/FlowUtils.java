@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -27,6 +27,7 @@ import org.opendaylight.vtn.manager.util.NumberUtils;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcWatcher;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
@@ -813,16 +814,17 @@ public final class FlowUtils {
     /**
      * Remove all flow entries in the given VTN data flows.
      *
-     * @param sfs     MD-SAL flow service.
-     * @param flows   A list of {@link FlowCache} instances.
-     * @param reader  A {@link InventoryReader} instance.
+     * @param watcher  The node-routed RPC watcher.
+     * @param sfs      MD-SAL flow service.
+     * @param flows    A list of {@link FlowCache} instances.
+     * @param reader   A {@link InventoryReader} instance.
      * @return  A list of {@link RemoveFlowRpc} instances.
      * @throws VTNException  An error occurred.
      */
     public static List<RemoveFlowRpc> removeFlowEntries(
-        SalFlowService sfs, List<FlowCache> flows, InventoryReader reader)
-        throws VTNException {
-        RemoveFlowRpcList rpcs = new RemoveFlowRpcList();
+        NodeRpcWatcher watcher, SalFlowService sfs, List<FlowCache> flows,
+        InventoryReader reader) throws VTNException {
+        RemoveFlowRpcList rpcs = new RemoveFlowRpcList(watcher);
         for (FlowCache fc: flows) {
             for (VtnFlowEntry vfent: fc.getFlowEntries()) {
                 SalNode snode = SalNode.create(vfent.getNode());
@@ -845,18 +847,19 @@ public final class FlowUtils {
      *   by a bulk flow remove request.
      * </p>
      *
-     * @param sfs     MD-SAL flow service.
-     * @param flows   A list of {@link FlowCache} instances.
-     * @param sport   A {@link SalPort} instance which specifies the switch
-     *                port.
-     * @param reader  A {@link InventoryReader} instance.
+     * @param watcher  The node-routed RPC watcher.
+     * @param sfs      MD-SAL flow service.
+     * @param flows    A list of {@link FlowCache} instances.
+     * @param sport    A {@link SalPort} instance which specifies the switch
+     *                 port.
+     * @param reader   A {@link InventoryReader} instance.
      * @return  A list of {@link RemoveFlowRpc} instances.
      * @throws VTNException  An error occurred.
      */
     public static List<RemoveFlowRpc> removeFlowEntries(
-        SalFlowService sfs, List<FlowCache> flows, SalPort sport,
-        InventoryReader reader) throws VTNException {
-        RemoveFlowRpcList rpcs = new RemoveFlowRpcList();
+        NodeRpcWatcher watcher, SalFlowService sfs, List<FlowCache> flows,
+        SalPort sport, InventoryReader reader) throws VTNException {
+        RemoveFlowRpcList rpcs = new RemoveFlowRpcList(watcher);
         long dpid = sport.getNodeNumber();
         boolean done = false;
 

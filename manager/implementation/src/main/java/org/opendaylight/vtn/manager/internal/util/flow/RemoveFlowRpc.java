@@ -15,7 +15,8 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nonnull;
 
-import org.opendaylight.vtn.manager.internal.util.rpc.RpcInvocation;
+import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcInvocation;
+import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcWatcher;
 
 import org.opendaylight.controller.md.sal.dom.api.DOMRpcImplementationNotAvailableException;
 
@@ -30,7 +31,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalF
  * by the MD-SAL flow service.
  */
 public final class RemoveFlowRpc
-    extends RpcInvocation<RemoveFlowInput, RemoveFlowOutput> {
+    extends NodeRpcInvocation<RemoveFlowInput, RemoveFlowOutput> {
     /**
      * Regular expression that matches error messages that indicate
      * disconnection of OpenFlow secure channel.
@@ -42,11 +43,13 @@ public final class RemoveFlowRpc
     /**
      * Issue an remove-flow RPC request.
      *
+     * @param w    The node RPC watcher.
      * @param sfs  MD-SAL flow service.
      * @param in   The RPC input.
      */
-    public RemoveFlowRpc(SalFlowService sfs, RemoveFlowInput in) {
-        super(in, sfs.removeFlow(in));
+    public RemoveFlowRpc(NodeRpcWatcher w, SalFlowService sfs,
+                         RemoveFlowInput in) {
+        super(w, in, sfs.removeFlow(in));
     }
 
     // RpcInvocation
@@ -73,7 +76,7 @@ public final class RemoveFlowRpc
             t = t.getCause();
         } while (t != null);
 
-        return true;
+        return super.needErrorLog(cause);
     }
 
     // RpcRequest

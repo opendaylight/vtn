@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -124,7 +124,8 @@ public final class ClearNodeFlowsTask
                 createRemoveFlowInputBuilder(snode).
                 setBarrier(true).
                 build();
-            rpcList = Collections.singletonList(new RemoveFlowRpc(sfs, input));
+            rpcList = Collections.singletonList(
+                new RemoveFlowRpc(vtnProvider, sfs, input));
             rpcFuture.set(null);
         } else {
             // Read flow entries in the given switch.
@@ -218,7 +219,8 @@ public final class ClearNodeFlowsTask
                 prev.setBarrier(true);
             }
 
-            rpcList.add(new RemoveFlowRpc(flowService, prev.build()));
+            rpcList.add(
+                new RemoveFlowRpc(vtnProvider, flowService, prev.build()));
         }
     }
 
@@ -295,7 +297,7 @@ public final class ClearNodeFlowsTask
                 setBarrier(true).
                 build();
 
-            rpcList.add(new RemoveFlowRpc(flowService, input));
+            rpcList.add(new RemoveFlowRpc(vtnProvider, flowService, input));
             rpcFuture.set(null);
         }
     }

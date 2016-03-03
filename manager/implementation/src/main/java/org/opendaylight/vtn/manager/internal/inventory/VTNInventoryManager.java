@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -79,10 +79,9 @@ public final class VTNInventoryManager
     private final TxQueueImpl  inventoryQueue;
 
     /**
-     * A set of node-id values for switches present in the vtn-inventory tree.
+     * The VTN node manager.
      */
-    private final ConcurrentMap<String, Boolean>  nodeIds =
-        new ConcurrentHashMap<>();
+    private final VtnNodeManager  nodeManager = new VtnNodeManager();
 
     /**
      * A set of node-connector-id values for switch ports present in the
@@ -156,10 +155,20 @@ public final class VTNInventoryManager
     }
 
     /**
+     * Return the VTN node manager.
+     *
+     * @return  The VTN node manager.
+     */
+    public VtnNodeManager getVtnNodeManager() {
+        return nodeManager;
+    }
+
+    /**
      * Shutdown listener service.
      */
     public void shutdown() {
         vtnListeners.clear();
+        nodeManager.close();
     }
 
     /**
@@ -316,28 +325,20 @@ public final class VTNInventoryManager
     }
 
     /**
-     * Update {@link #nodeIds} for the given node.
+     * Update the VTN node information.
      *
      * @param vnode  A {@link VtnNode} instance.
      * @param type   {@link VtnUpdateType#CREATED} indicates the given node
      *               has been created.
      *               {@link VtnUpdateType#REMOVED} indicates the given node
      *               has been removed.
-     * @return  The node-id value if {@link #nodeIds} was updated.
+     * @return  The node-id value if the VTN node information was updated.
      *          {@code null} if not updated.
      */
     private String updateNode(VtnNode vnode, VtnUpdateType type) {
-        String id = vnode.getId().getValue();
-
-        if (type == VtnUpdateType.CREATED) {
-            if (nodeIds.putIfAbsent(id, Boolean.TRUE) != null) {
-                id = null;
-            }
-        } else if (nodeIds.remove(id) == null) {
-            id = null;
-        }
-
-        return id;
+        return (type == VtnUpdateType.CREATED)
+            ? nodeManager.add(vnode)
+            : nodeManager.remove(vnode);
     }
 
     /**

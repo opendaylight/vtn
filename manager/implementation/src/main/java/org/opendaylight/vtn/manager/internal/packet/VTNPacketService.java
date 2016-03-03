@@ -8,7 +8,6 @@
 
 package org.opendaylight.vtn.manager.internal.packet;
 
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +16,6 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
@@ -35,14 +33,10 @@ import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
 import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
 import org.opendaylight.vtn.manager.internal.util.SalNotificationListener;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcErrorCallback;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
-import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorCallback;
-import org.opendaylight.vtn.manager.internal.util.rpc.RpcRequest;
 
 import org.opendaylight.controller.md.sal.binding.api.NotificationService;
-
-import org.opendaylight.yangtools.yang.common.RpcError;
-import org.opendaylight.yangtools.yang.common.RpcResult;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
@@ -91,51 +85,6 @@ public final class VTNPacketService extends SalNotificationListener
      */
     private ConcurrentMap<SalPort, TimerTask>  topologyWaiting =
         new ConcurrentHashMap<SalPort, TimerTask>();
-
-    /**
-     * Describes a transmit-packet RPC request.
-     */
-    private static final class TransmitPacketRequest implements RpcRequest {
-        /**
-         * The port identifier that specifies an egress port.
-         */
-        private final SalPort  egress;
-
-        /**
-         * Construct a new instance.
-         *
-         * @param sport  The port identifier that specifies an egress port.
-         */
-        private TransmitPacketRequest(SalPort sport) {
-            egress = sport;
-        }
-
-        // RpcResult
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public String getName() {
-            return "transmit-packet";
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public String getInputForLog() {
-            return "{egress=" + egress + "}";
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public boolean needErrorLog(Collection<RpcError> errors) {
-            return true;
-        }
-    }
 
     /**
      * Construct a new instance.
@@ -229,12 +178,11 @@ public final class VTNPacketService extends SalNotificationListener
                 setNode(egress.getNodeRef()).
                 setEgress(egress.getNodeConnectorRef()).
                 setPayload(payload);
-
-            Future<RpcResult<Void>> f = pps.transmitPacket(builder.build());
-            RpcErrorCallback<Void> cb = new RpcErrorCallback<>(
-                new TransmitPacketRequest(egress), LOG,
-                "Failed to transmit packet.");
-            vtnProvider.setCallback(f, cb);
+            TransmitPacketRpc rpc =
+                new TransmitPacketRpc(vtnProvider, pps, builder.build());
+            NodeRpcErrorCallback<Void> cb = new NodeRpcErrorCallback<>(
+                rpc, LOG, "Failed to transmit packet.");
+            vtnProvider.setCallback(rpc.getFuture(), cb);
         }
     }
 

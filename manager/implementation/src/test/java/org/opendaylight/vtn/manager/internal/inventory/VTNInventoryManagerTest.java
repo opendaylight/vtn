@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -29,7 +29,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.slf4j.Logger;
@@ -45,6 +44,7 @@ import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.IdentifierTargetComparator;
 import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
+import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcInvocation;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.tx.TxEvent;
@@ -577,17 +577,17 @@ public class VTNInventoryManagerTest extends TestBase {
         throws Exception {
         reset(vtnProvider);
 
-        @SuppressWarnings("unchecked")
-        ConcurrentMap<String, Boolean> nodeIds = (ConcurrentMap<String, Boolean>)
-            getFieldValue(inventoryManager, ConcurrentMap.class, "nodeIds");
+        Map<String, Set<NodeRpcInvocation<?, ?>>> expectedNodes =
+            new HashMap<>();
+        Map<String, Boolean> expectedPorts = new HashMap<>();
+
+        VtnNodeManager nodeMgr = inventoryManager.getVtnNodeManager();
+        Set<NodeRpcInvocation<?, ?>> emptyRpcs =
+            Collections.<NodeRpcInvocation<?, ?>>emptySet();
+
         @SuppressWarnings("unchecked")
         ConcurrentMap<String, Boolean> portIds = (ConcurrentMap<String, Boolean>)
             getFieldValue(inventoryManager, ConcurrentMap.class, "portIds");
-
-        ConcurrentMap<String, Boolean> expectedNodes =
-            new ConcurrentHashMap<>();
-        ConcurrentMap<String, Boolean> expectedPorts =
-            new ConcurrentHashMap<>();
 
         SalNode snode = new SalNode(1L);
         SalPort esport = new SalPort(123L, 456L);
@@ -595,8 +595,11 @@ public class VTNInventoryManagerTest extends TestBase {
         SalPort dsport = new SalPort(4444L, 123L);
         boolean created = (utype == VtnUpdateType.CREATED);
         if (!created) {
-            nodeIds.put(snode.toString(), Boolean.TRUE);
-            expectedNodes.put(snode.toString(), Boolean.TRUE);
+            VtnNode vnode = new VtnNodeBuilder().
+                setId(snode.getNodeId()).
+                build();
+            assertEquals(snode.toString(), nodeMgr.add(vnode));
+            expectedNodes.put(snode.toString(), emptyRpcs);
 
             portIds.put(esport.toString(), Boolean.TRUE);
             portIds.put(isport.toString(), Boolean.TRUE);
@@ -624,13 +627,13 @@ public class VTNInventoryManagerTest extends TestBase {
             new IdentifiedData<>(snode.getVtnNodeIdentifier(), vnode);
         if (created) {
             inventoryManager.onCreated(null, ndata);
-            expectedNodes.put(snode.toString(), Boolean.TRUE);
+            expectedNodes.put(snode.toString(), emptyRpcs);
         } else {
             inventoryManager.onRemoved(null, ndata);
             expectedNodes.remove(snode.toString());
         }
 
-        assertEquals(expectedNodes, nodeIds);
+        assertEquals(expectedNodes, nodeMgr.getNodeMap());
         assertEquals(expectedPorts, portIds);
         verify(vtnProvider).isOwner(VTNEntityType.INVENTORY);
         if (owner) {
@@ -659,7 +662,7 @@ public class VTNInventoryManagerTest extends TestBase {
         } else {
             inventoryManager.onRemoved(null, ndata);
         }
-        assertEquals(expectedNodes, nodeIds);
+        assertEquals(expectedNodes, nodeMgr.getNodeMap());
         assertEquals(expectedPorts, portIds);
         verify(vtnProvider, times(2)).isOwner(VTNEntityType.INVENTORY);
         verifyNoMoreInteractions(vtnProvider);
@@ -683,7 +686,7 @@ public class VTNInventoryManagerTest extends TestBase {
             expectedPorts.remove(esport.toString());
         }
 
-        assertEquals(expectedNodes, nodeIds);
+        assertEquals(expectedNodes, nodeMgr.getNodeMap());
         assertEquals(expectedPorts, portIds);
         verify(vtnProvider).isOwner(VTNEntityType.INVENTORY);
         if (owner) {
@@ -724,7 +727,7 @@ public class VTNInventoryManagerTest extends TestBase {
         } else {
             inventoryManager.onRemoved(null, epdata);
         }
-        assertEquals(expectedNodes, nodeIds);
+        assertEquals(expectedNodes, nodeMgr.getNodeMap());
         assertEquals(expectedPorts, portIds);
         verify(vtnProvider, times(2)).isOwner(VTNEntityType.INVENTORY);
         verifyNoMoreInteractions(vtnProvider);
@@ -753,7 +756,7 @@ public class VTNInventoryManagerTest extends TestBase {
             expectedPorts.remove(isport.toString());
         }
 
-        assertEquals(expectedNodes, nodeIds);
+        assertEquals(expectedNodes, nodeMgr.getNodeMap());
         assertEquals(expectedPorts, portIds);
         verify(vtnProvider).isOwner(VTNEntityType.INVENTORY);
         if (owner) {
@@ -794,7 +797,7 @@ public class VTNInventoryManagerTest extends TestBase {
         } else {
             inventoryManager.onRemoved(null, ipdata);
         }
-        assertEquals(expectedNodes, nodeIds);
+        assertEquals(expectedNodes, nodeMgr.getNodeMap());
         assertEquals(expectedPorts, portIds);
         verify(vtnProvider, times(2)).isOwner(VTNEntityType.INVENTORY);
         verifyNoMoreInteractions(vtnProvider);
@@ -816,7 +819,7 @@ public class VTNInventoryManagerTest extends TestBase {
             expectedPorts.remove(dsport.toString());
         }
 
-        assertEquals(expectedNodes, nodeIds);
+        assertEquals(expectedNodes, nodeMgr.getNodeMap());
         assertEquals(expectedPorts, portIds);
         verify(vtnProvider).isOwner(VTNEntityType.INVENTORY);
         if (owner) {
@@ -857,7 +860,7 @@ public class VTNInventoryManagerTest extends TestBase {
         } else {
             inventoryManager.onRemoved(null, dpdata);
         }
-        assertEquals(expectedNodes, nodeIds);
+        assertEquals(expectedNodes, nodeMgr.getNodeMap());
         assertEquals(expectedPorts, portIds);
         verify(vtnProvider, times(2)).isOwner(VTNEntityType.INVENTORY);
         verifyNoMoreInteractions(vtnProvider);
@@ -877,7 +880,7 @@ public class VTNInventoryManagerTest extends TestBase {
             inventoryManager.onRemoved(null, badData);
         }
 
-        assertEquals(expectedNodes, nodeIds);
+        assertEquals(expectedNodes, nodeMgr.getNodeMap());
         assertEquals(expectedPorts, portIds);
         verify(vtnProvider).isOwner(VTNEntityType.INVENTORY);
         verifyNoMoreInteractions(vtnProvider, badNode);
@@ -1218,9 +1221,7 @@ public class VTNInventoryManagerTest extends TestBase {
         assertNull(original.put(vnPath, vnodeOld));
         assertNull(updated.put(vnPath, vnode));
 
-        @SuppressWarnings("unchecked")
-        ConcurrentMap<String, Boolean> nodeIds = (ConcurrentMap<String, Boolean>)
-            getFieldValue(inventoryManager, ConcurrentMap.class, "nodeIds");
+        VtnNodeManager nodeMgr = inventoryManager.getVtnNodeManager();
 
         // 3 nodes have been removed.
         Set<InstanceIdentifier<?>> removed = new HashSet<>();
@@ -1238,7 +1239,7 @@ public class VTNInventoryManagerTest extends TestBase {
             assertNull(removedNodes.put(snode, nev));
             assertTrue(removed.add(vnPath));
             assertNull(original.put(vnPath, vnode));
-            assertNull(nodeIds.put(snode.toString(), Boolean.TRUE));
+            assertEquals(snode.toString(), nodeMgr.add(vnode));
             dpid++;
         }
 
