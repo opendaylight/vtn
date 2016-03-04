@@ -294,6 +294,7 @@ public final class TestOption {
             mavenBundle(MDSAL_MODEL, "ietf-yang-types-20130715"),
             mavenBundle(MDSAL_MODEL, "ietf-inet-types"),
             mavenBundle(MDSAL_MODEL, "ietf-topology"),
+            mavenBundle(MDSAL_MODEL, "ietf-type-util"),
             mavenBundle(MDSAL_MODEL, "opendaylight-l2-types"),
             mavenBundle(CONTROLLER_MODEL, "model-inventory"),
             mavenBundle(CONTROLLER_MODEL, "model-topology"),
