@@ -16,7 +16,7 @@
   <parent>
     <groupId>org.opendaylight.vtn</groupId>
     <artifactId>manager.common.java</artifactId>
-    <version>0.3.4-Lithium-SR4</version>
+    <version>0.3.5-SNAPSHOT</version>
     <relativePath>../common/java</relativePath>
   </parent>
 
