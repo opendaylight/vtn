@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -21,7 +21,7 @@ import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
  *
  * @see TxTask
  */
-public interface TxContext {
+public interface TxContext extends AutoCloseable {
     /**
      * Return read-only transaction for MD-SAL datastore.
      *
@@ -198,4 +198,16 @@ public interface TxContext {
      */
     void log(Logger logger, VTNLogLevel level, Throwable t, String format,
              Object ... args);
+
+    // AutoCloseable
+
+    /**
+     * Close this transaction context.
+     *
+     * <p>
+     *   Note that this method discards unsubmitted data in the transaction.
+     * </p>
+     */
+    @Override
+    void close();
 }

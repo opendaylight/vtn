@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -18,6 +18,7 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
+import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
@@ -530,6 +531,38 @@ public final class InventoryUtils {
         }
 
         return VtnOpenflowVersion.OF10;
+    }
+
+    /**
+     * Return the OpenFlow protocol version used by the specified switch.
+     *
+     * @param rtx    A read-only MD-SAL datastore transaction.
+     * @param snode  A {@link SalNode} instance that specifies the target
+     *               switch.
+     * @return  A {@link VtnOpenflowVersion} instance on success.
+     *          {@code null} if the specified switch is not present or
+     *          the protocol version is not yet determined.
+     * @throws VTNException  An error occurred.
+     */
+    public static VtnOpenflowVersion getOpenflowVersion(
+        ReadTransaction rtx, SalNode snode) throws VTNException {
+        VtnOpenflowVersion version;
+        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        Optional<VtnNode> vopt = DataStoreUtils.read(
+            rtx, oper, snode.getVtnNodeIdentifier());
+        if (vopt.isPresent()) {
+            // Check to see if the specified node is still present in
+            // opendaylight-inventory.
+            Optional<Node> opt = DataStoreUtils.read(
+                rtx, oper, snode.getNodeIdentifier());
+            version = (opt.isPresent())
+                ? vopt.get().getOpenflowVersion()
+                : null;
+        } else {
+            version = null;
+        }
+
+        return version;
     }
 
     /**

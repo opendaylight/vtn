@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -38,11 +38,56 @@ import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.Action;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Instructions;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.instruction.ApplyActionsCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.instruction.apply.actions._case.ApplyActions;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.list.Instruction;
 
 /**
  * JUnit test for {@link VTNActionList}.
  */
 public class VTNActionListTest extends TestBase {
+    /**
+     * Test case for {@link VTNActionList#newInstructions(List)}.
+     */
+    @Test
+    public void testNewInstructions() {
+        List<List<Action>> cases = new ArrayList<>();
+        List<Action> list = new ArrayList<>();
+        list.add(createDropAction(1));
+        cases.add(list);
+
+        list.clear();
+        list.add(createOutputAction(0, "CONTROLLER"));
+        cases.add(list);
+
+        list.clear();
+        Collections.addAll(
+            list,
+            createPushVlanAction(0),
+            createSetVlanIdAction(1, 1234),
+            createOutputAction(2, "openflow:5:6"));
+        cases.add(list);
+
+        Integer zero = 0;
+        for (List<Action> actions: cases) {
+            Instructions insts = VTNActionList.newInstructions(actions);
+            assertNotNull(insts);
+            List<Instruction> ilist = insts.getInstruction();
+            assertNotNull(ilist);
+            assertEquals(1, ilist.size());
+            Instruction inst = ilist.get(0);
+            assertNotNull(inst);
+            assertEquals(zero, inst.getOrder());
+            org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.
+                rev131026.instruction.Instruction ins = inst.getInstruction();
+            assertTrue(ins instanceof ApplyActionsCase);
+            ApplyActionsCase ac = (ApplyActionsCase)ins;
+            ApplyActions apply = ac.getApplyActions();
+            assertNotNull(apply);
+            assertEquals(actions, apply.getAction());
+        }
+    }
+
     /**
      * Test case for flow action that drops every packet.
      */

@@ -8,6 +8,9 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow;
 
+import static org.opendaylight.vtn.manager.internal.util.flow.action.VTNActionList.newInstructions;
+import static org.opendaylight.vtn.manager.internal.util.flow.action.VTNOutputAction.newOutputActionCase;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -58,6 +61,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.flows.VtnFlowTableKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnFlowTimeoutConfig;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.Action;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.ActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowTableRef;
@@ -65,6 +71,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.Remo
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowModFlags;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowRef;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.OutputPortValues;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Instructions;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
@@ -84,32 +95,66 @@ public final class FlowUtils {
     public static final short  TABLE_ID = 0;
 
     /**
-     * Bits in a flow cookie which identifies the VTN flows.
+     * Bits in a flow cookie that identifies flow entries installed by the
+     * VTN Manager.
      */
-    private static final long  VTN_FLOW_COOKIE = 0x7f56000000000000L;
+    private static final long  COOKIE_BITS_VTN = 0x7f56000000000000L;
 
     /**
-     * A bitmask that represents {@link #VTN_FLOW_COOKIE} in a flow cookie.
+     * A bitmask that specifies cookie bits for VTN flows or a table miss
+     * flow entries.
      */
-    private static final long  VTN_FLOW_COOKIE_MASK = 0xffff000000000000L;
+    private static final long  COOKIE_MASKVAL_VTN = 0xffff000000000000L;
 
     /**
-     * A flow cookie which contains the {@link #VTN_FLOW_COOKIE} bits.
+     * A fixed cookie value for a table miss flow entry.
+     */
+    private static final long  COOKIE_VALUE_MISS = 0x7f57ffffffffffffL;
+
+    /**
+     * A flow cookie that specifies cookie bits for VTN flows.
      */
     public static final FlowCookie  COOKIE_VTN =
-        new FlowCookie(NumberUtils.getUnsigned(VTN_FLOW_COOKIE));
+        new FlowCookie(NumberUtils.getUnsigned(COOKIE_BITS_VTN));
 
     /**
-     * A flow cookie mask which specifies all bits in the cookie.
+     * A fixed flow cookie for a table miss flow entry.
+     */
+    public static final FlowCookie  COOKIE_MISS =
+        new FlowCookie(NumberUtils.getUnsigned(COOKIE_VALUE_MISS));
+
+    /**
+     * A flow cookie mask that specifies all bits in the cookie.
      */
     public static final FlowCookie  COOKIE_MASK_ALL =
         new FlowCookie(NumberUtils.getUnsigned(-1L));
 
     /**
-     * A flow cookie mask which specifies the {@link #VTN_FLOW_COOKIE} bits.
+     * A flow cookie mask that specifies the {@link #COOKIE_MASKVAL_VTN} bits.
      */
     public static final FlowCookie  COOKIE_MASK_VTN =
-        new FlowCookie(NumberUtils.getUnsigned(VTN_FLOW_COOKIE_MASK));
+        new FlowCookie(NumberUtils.getUnsigned(COOKIE_MASKVAL_VTN));
+
+    /**
+     * The minimum value of the VTN flow ID.
+     */
+    public static final long  MIN_FLOW_ID = 1L;
+
+    /**
+     * The maximum value of the VTN flow ID.
+     */
+    public static final long  MAX_FLOW_ID = ~COOKIE_MASKVAL_VTN;
+
+    /**
+     * A MD-SAL flow match that matches every packets.
+     */
+    public static final Match  EMPTY_MATCH = new MatchBuilder().build();
+
+    /**
+     * Flags for FLOW_MOD message that contains only SEND_FLOW_REM flag.
+     */
+    public static final FlowModFlags  FLOW_MOD_FLAGS =
+        new FlowModFlagsBuilder().setSendFlowRem(true).build();
 
     /**
      * A bitmask that represents valid bits in a flow timeout value.
@@ -119,12 +164,18 @@ public final class FlowUtils {
     /**
      * A brief description about flow idle-timeout value.
      */
-    private static final String DESC_IDLE_TIMEOUT = "idle-timeout";
+    private static final String  DESC_IDLE_TIMEOUT = "idle-timeout";
 
     /**
      * A brief description about flow hard-timeout value.
      */
-    private static final String DESC_HARD_TIMEOUT = "hard-timeout";
+    private static final String  DESC_HARD_TIMEOUT = "hard-timeout";
+
+    /**
+     * A prefix for a MD-SAL flow ID to be associated with a table miss flow
+     * entry.
+     */
+    private static final String  ID_PREFIX_MISS = "vtn:table-miss:";
 
     /**
      * Private constructor that protects this class from instantiating.
@@ -246,7 +297,7 @@ public final class FlowUtils {
      * @return  The initial value of the VTN flow ID.
      */
     public static VtnFlowId getInitialFlowId() {
-        return new VtnFlowId(BigInteger.ONE);
+        return new VtnFlowId(BigInteger.valueOf(MIN_FLOW_ID));
     }
 
     /**
@@ -278,7 +329,7 @@ public final class FlowUtils {
      * @return  A {@link FlowCookie} instance.
      */
     public static FlowCookie createCookie(VtnFlowId fid) {
-        long value = fid.getValue().longValue() | VTN_FLOW_COOKIE;
+        long value = fid.getValue().longValue() | COOKIE_BITS_VTN;
         return new FlowCookie(NumberUtils.getUnsigned(value));
     }
 
@@ -295,11 +346,11 @@ public final class FlowUtils {
         }
 
         long value = cookie.getValue().longValue();
-        if ((value & VTN_FLOW_COOKIE_MASK) != VTN_FLOW_COOKIE) {
+        if ((value & COOKIE_MASKVAL_VTN) != COOKIE_BITS_VTN) {
             return null;
         }
 
-        long id = (value & ~VTN_FLOW_COOKIE_MASK);
+        long id = (value & ~COOKIE_MASKVAL_VTN);
         return new VtnFlowId(NumberUtils.getUnsigned(id));
     }
 
@@ -450,19 +501,6 @@ public final class FlowUtils {
     }
 
     /**
-     * Return the name of the VTN configured in the given instance identifier
-     * which specifies the object in the vtn-flows container.
-     *
-     * @param path  An {@link InstanceIdentifier} instance.
-     * @return  The name of the VTN if found.
-     *          {@code null} if not found.
-     */
-    public static String getTenantName(InstanceIdentifier<?> path) {
-        VtnFlowTableKey key = path.firstKeyOf(VtnFlowTable.class);
-        return (key == null) ? null : key.getTenantName();
-    }
-
-    /**
      * Create a MD-SAL transaction URI for the given flow entryu.
      *
      * @param vfent   A {@link VtnFlowEntry} instance.
@@ -499,6 +537,59 @@ public final class FlowUtils {
     }
 
     /**
+     * Create a MD-SAL flow ID to be associated with a table miss flow entry.
+     *
+     * @param snode  A {@link SalNode} instance that specifies the target
+     *               switch.
+     * @return  A MD-SAL flow ID.
+     */
+    public static String createTableMissFlowId(SalNode snode) {
+        return ID_PREFIX_MISS + snode;
+    }
+
+    /**
+     * Construct an RPC input to install a table miss flow entry for the
+     * specified switch.
+     *
+     * @param snode   A {@link SalNode} instance which specifies the target
+     *                switch.
+     * @return  An {@link AddFlowInput} instance.
+     */
+    public static AddFlowInput createTableMissInput(SalNode snode) {
+        // Create an instruction that tosses packets to the controller.
+        Uri port = new Uri(OutputPortValues.CONTROLLER.toString());
+        List<Action> actions = Collections.singletonList(
+            new ActionBuilder().setAction(newOutputActionCase(port)).
+            setOrder(MiscUtils.ORDER_MIN).build());
+        Instructions inst = newInstructions(actions);
+
+        // Associate a unique MD-SAL flow ID for a table miss flow entry.
+        Short table = TABLE_ID;
+        FlowId fid = new FlowId(createTableMissFlowId(snode));
+        FlowRef fref = new FlowRef(snode.getFlowIdentifier(table, fid));
+
+        // Create an add-flow input that tosses unmatched packets to the
+        // controller.
+        FlowTableRef tref =
+            new FlowTableRef(snode.getFlowTableIdentifier(table));
+        return new AddFlowInputBuilder().
+            setNode(snode.getNodeRef()).
+            setFlowRef(fref).
+            setFlowTable(tref).
+            setTransactionUri(new Uri("table-miss:" + table)).
+            setCookie(COOKIE_MISS).
+            setPriority(0).
+            setTableId(table).
+            setIdleTimeout(0).
+            setHardTimeout(0).
+            setMatch(EMPTY_MATCH).
+            setFlags(FLOW_MOD_FLAGS).
+            setInstructions(inst).
+            setBarrier(true).
+            build();
+    }
+
+    /**
      * Construct an RPC input builder to uninstall all the VTN flow entries
      * from the given switch.
      *
@@ -525,6 +616,7 @@ public final class FlowUtils {
             setTableId(table).
             setFlowTable(tref).
             setTransactionUri(new Uri("remove-flow:all")).
+            setMatch(EMPTY_MATCH).
             setCookie(COOKIE_VTN).
             setCookieMask(COOKIE_MASK_VTN).
             setStrict(false);
@@ -596,12 +688,19 @@ public final class FlowUtils {
         FlowTableRef tref =
             new FlowTableRef(snode.getFlowTableIdentifier(table));
 
-        return new RemoveFlowInputBuilder(flow).
+        RemoveFlowInputBuilder builder = new RemoveFlowInputBuilder(flow).
             setNode(snode.getNodeRef()).
             setFlowTable(tref).
             setTransactionUri(uri).
             setCookieMask(COOKIE_MASK_ALL).
             setStrict(true);
+
+        if (builder.getMatch() == null) {
+            // openflowplugin-li does not allow null match.
+            builder.setMatch(EMPTY_MATCH);
+        }
+
+        return builder;
     }
 
     /**
@@ -644,8 +743,9 @@ public final class FlowUtils {
             new FlowTableRef(snode.getFlowTableIdentifier(table));
         NodeRef nref = snode.getNodeRef();
 
-        MatchBuilder mb = new MatchBuilder().
-            setInPort(sport.getNodeConnectorId());
+        Match match = new MatchBuilder().
+            setInPort(sport.getNodeConnectorId()).
+            build();
 
         List<RemoveFlowInputBuilder> list = new ArrayList<>();
         RemoveFlowInputBuilder ingress = new RemoveFlowInputBuilder().
@@ -653,7 +753,7 @@ public final class FlowUtils {
             setTableId(table).
             setFlowTable(tref).
             setTransactionUri(new Uri(ub.toString())).
-            setMatch(mb.build()).
+            setMatch(match).
             setStrict(false);
         list.add(ingress);
 
@@ -663,6 +763,7 @@ public final class FlowUtils {
             setTableId(table).
             setFlowTable(tref).
             setTransactionUri(new Uri(ub.toString())).
+            setMatch(EMPTY_MATCH).
             setOutPort(NumberUtils.getUnsigned(sport.getPortNumber())).
             setStrict(false);
         list.add(egress);
@@ -818,25 +919,25 @@ public final class FlowUtils {
      * @param sfs      MD-SAL flow service.
      * @param flows    A list of {@link FlowCache} instances.
      * @param reader   A {@link InventoryReader} instance.
-     * @return  A list of {@link RemoveFlowRpc} instances.
+     * @return  A {@link RemoveFlowRpcList} instance.
      * @throws VTNException  An error occurred.
      */
-    public static List<RemoveFlowRpc> removeFlowEntries(
+    public static RemoveFlowRpcList removeFlowEntries(
         NodeRpcWatcher watcher, SalFlowService sfs, List<FlowCache> flows,
         InventoryReader reader) throws VTNException {
-        RemoveFlowRpcList rpcs = new RemoveFlowRpcList(watcher);
+        RemoveFlowRpcList rpcs = new RemoveFlowRpcList(watcher, sfs);
         for (FlowCache fc: flows) {
             for (VtnFlowEntry vfent: fc.getFlowEntries()) {
                 SalNode snode = SalNode.create(vfent.getNode());
                 RemoveFlowInputBuilder builder =
                     createRemoveFlowInputBuilder(snode, vfent, reader);
                 if (builder != null) {
-                    rpcs.add(snode, builder);
+                    rpcs.invoke(builder);
                 }
             }
         }
 
-        return rpcs.invoke(sfs);
+        return rpcs.flush();
     }
 
     /**
@@ -853,13 +954,13 @@ public final class FlowUtils {
      * @param sport    A {@link SalPort} instance which specifies the switch
      *                 port.
      * @param reader   A {@link InventoryReader} instance.
-     * @return  A list of {@link RemoveFlowRpc} instances.
+     * @return  A {@link RemoveFlowRpcList} instance.
      * @throws VTNException  An error occurred.
      */
-    public static List<RemoveFlowRpc> removeFlowEntries(
+    public static RemoveFlowRpcList removeFlowEntries(
         NodeRpcWatcher watcher, SalFlowService sfs, List<FlowCache> flows,
         SalPort sport, InventoryReader reader) throws VTNException {
-        RemoveFlowRpcList rpcs = new RemoveFlowRpcList(watcher);
+        RemoveFlowRpcList rpcs = new RemoveFlowRpcList(watcher, sfs);
         long dpid = sport.getNodeNumber();
         boolean done = false;
 
@@ -871,19 +972,20 @@ public final class FlowUtils {
                 }
 
                 if (snode.getNodeNumber() != dpid) {
-                    rpcs.add(snode,
-                             createRemoveFlowInputBuilder(snode, vfent));
+                    RemoveFlowInputBuilder builder =
+                        createRemoveFlowInputBuilder(snode, vfent);
+                    rpcs.invoke(builder);
                 } else if (!done) {
                     for (RemoveFlowInputBuilder builder:
                              createRemoveFlowInputBuilder(snode, sport)) {
-                        rpcs.add(snode, builder);
+                        rpcs.invoke(builder);
                     }
                     done = true;
                 }
             }
         }
 
-        return rpcs.invoke(sfs);
+        return rpcs.flush();
     }
 
     /**

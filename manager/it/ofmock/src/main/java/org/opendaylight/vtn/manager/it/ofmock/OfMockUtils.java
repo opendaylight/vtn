@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -10,6 +10,7 @@ package org.opendaylight.vtn.manager.it.ofmock;
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Objects;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
@@ -258,6 +259,64 @@ public final class OfMockUtils {
     }
 
     /**
+     * Determine whether the given instruction list contains only one apply
+     * output action that transmits packets to the given port or not.
+     *
+     * @param insts  A flow instructions.
+     * @param pid    The target port identifier.
+     * @return  {@code true} if the given instruction list contains only one
+     *          apply output action that specifies the given port.
+     *          Otherwise {@code false}.
+     */
+    public static boolean isOutput(Instructions insts, String pid) {
+        boolean result = false;
+        if (insts != null) {
+            List<Instruction> instList = insts.getInstruction();
+            if (instList != null && instList.size() == 1) {
+                Instruction i = instList.get(0);
+                org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.
+                    rev131026.instruction.Instruction ic = i.getInstruction();
+                if (ic instanceof ApplyActionsCase) {
+                    ApplyActionsCase apCase = (ApplyActionsCase)ic;
+                    ActionList al = apCase.getApplyActions();
+                    result = (al != null && isOutput(al.getAction(), pid));
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Determine whether the given action list contains only one output action
+     * that transmits packets to the given port or not.
+     *
+     * @param actions  An action list.
+     * @param pid      The target port identifier.
+     * @return  {@code true} if the given action list contains only one output
+     *          action that specifies the given port.
+     *          Otherwise {@code false}.
+     */
+    public static boolean isOutput(List<Action> actions, String pid) {
+        boolean result = false;
+        if (actions != null && actions.size() == 1) {
+            Action act = actions.get(0);
+            org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.
+                rev131112.action.Action a = act.getAction();
+            if (a instanceof OutputActionCase) {
+                OutputActionCase outCase = (OutputActionCase)a;
+                OutputAction out = outCase.getOutputAction();
+                if (out != null) {
+                    Uri uri = out.getOutputNodeConnector();
+                    result = (uri != null && pid.equals(uri.getValue()));
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /**
      * Return the flow cookie configured in the given instance.
      *
      * @param cookie  A flow cookie.
@@ -266,5 +325,23 @@ public final class OfMockUtils {
     public static BigInteger getCookie(FlowCookie cookie) {
         BigInteger value = (cookie == null) ? null : cookie.getValue();
         return (value == null) ? COOKIE_DEFAULT : value;
+    }
+
+    /**
+     * Ensure that the specified two objects are identical.
+     *
+     * @param expected  The expected value.
+     * @param value     The value to be compared.
+     * @param msg       An error message that indicates the given two objects
+     *                  are not identical.
+     * @throws IllegalArgumentException
+     *    The given two objects are not identical.
+     */
+    public static void verify(Object expected, Object value, String msg) {
+        if (!Objects.equals(expected, value)) {
+            String emsg = msg + ": expected=" + expected +
+                ", actual=" + value;
+            throw new IllegalArgumentException(emsg);
+        }
     }
 }

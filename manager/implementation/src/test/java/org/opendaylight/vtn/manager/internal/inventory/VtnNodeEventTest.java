@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -41,17 +41,15 @@ public class VtnNodeEventTest extends TestBase {
         };
 
         for (SalNode snode: snodes) {
-            VTNInventoryListener l1 = mock(VTNInventoryListener.class);
             VtnNode vnode = new VtnNodeBuilder().
                 setId(snode.getNodeId()).build();
-            VtnNodeEvent ev1 = new VtnNodeEvent(
-                l1, vnode, VtnUpdateType.CREATED);
+            VtnNodeEvent ev1 = new VtnNodeEvent(vnode, VtnUpdateType.CREATED);
             assertEquals(snode, ev1.getSalNode());
 
-            VTNInventoryListener l2 = mock(VTNInventoryListener.class);
-            VtnNodeEvent ev2 = new VtnNodeEvent(l2, ev1);
+            VTNInventoryListener l = mock(VTNInventoryListener.class);
+            VtnNodeEvent ev2 = new VtnNodeEvent(l, ev1);
             assertSame(ev1.getSalNode(), ev2.getSalNode());
-            verifyZeroInteractions(l1, l2);
+            verifyZeroInteractions(l);
         }
     }
 
@@ -69,16 +67,14 @@ public class VtnNodeEventTest extends TestBase {
         };
 
         for (SalNode snode: snodes) {
-            VTNInventoryListener l1 = mock(VTNInventoryListener.class);
-            VTNInventoryListener l2 = mock(VTNInventoryListener.class);
+            VTNInventoryListener l = mock(VTNInventoryListener.class);
             VtnNode vnode = new VtnNodeBuilder().
                 setId(snode.getNodeId()).build();
-            VtnNodeEvent ev1 = new VtnNodeEvent(
-                l1, vnode, VtnUpdateType.CREATED);
-            VtnNodeEvent ev2 = new VtnNodeEvent(l2, ev1);
+            VtnNodeEvent ev1 = new VtnNodeEvent(vnode, VtnUpdateType.CREATED);
+            VtnNodeEvent ev2 = new VtnNodeEvent(l, ev1);
             assertSame(vnode, ev1.getVtnNode());
             assertSame(vnode, ev2.getVtnNode());
-            verifyZeroInteractions(l1, l2);
+            verifyZeroInteractions(l);
         }
     }
 
@@ -91,13 +87,12 @@ public class VtnNodeEventTest extends TestBase {
         VtnNode vnode = new VtnNodeBuilder().setId(snode.getNodeId()).build();
 
         for (VtnUpdateType type: VtnUpdateType.values()) {
-            VTNInventoryListener l1 = mock(VTNInventoryListener.class);
-            VTNInventoryListener l2 = mock(VTNInventoryListener.class);
-            VtnNodeEvent ev1 = new VtnNodeEvent(l1, vnode, type);
-            VtnNodeEvent ev2 = new VtnNodeEvent(l2, ev1);
+            VTNInventoryListener l = mock(VTNInventoryListener.class);
+            VtnNodeEvent ev1 = new VtnNodeEvent(vnode, type);
+            VtnNodeEvent ev2 = new VtnNodeEvent(l, ev1);
             assertSame(type, ev1.getUpdateType());
             assertSame(type, ev2.getUpdateType());
-            verifyZeroInteractions(l1, l2);
+            verifyZeroInteractions(l);
         }
     }
 
@@ -108,18 +103,19 @@ public class VtnNodeEventTest extends TestBase {
      */
     @Test
     public void testnotifyEvent() throws Exception {
-        VTNInventoryListener l1 = mock(VTNInventoryListener.class);
         SalNode snode = new SalNode(12345L);
         VtnNode vnode = new VtnNodeBuilder().setId(snode.getNodeId()).build();
-        VtnNodeEvent ev1 = new VtnNodeEvent(l1, vnode, VtnUpdateType.CREATED);
-        ev1.notifyEvent();
-        verify(l1).notifyVtnNode(ev1);
+        VtnNodeEvent ev1 = new VtnNodeEvent(vnode, VtnUpdateType.CREATED);
+        try {
+            ev1.notifyEvent();
+            unexpected();
+        } catch (NullPointerException e) {
+        }
 
-        VTNInventoryListener l2 = mock(VTNInventoryListener.class);
-        VtnNodeEvent ev2 = new VtnNodeEvent(l2, ev1);
+        VTNInventoryListener l = mock(VTNInventoryListener.class);
+        VtnNodeEvent ev2 = new VtnNodeEvent(l, ev1);
         ev2.notifyEvent();
-        verify(l2).notifyVtnNode(ev2);
-
-        verifyNoMoreInteractions(l1, l2);
+        verify(l).notifyVtnNode(ev2);
+        verifyNoMoreInteractions(l);
     }
 }

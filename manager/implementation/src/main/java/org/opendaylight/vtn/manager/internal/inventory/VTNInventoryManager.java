@@ -44,7 +44,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpda
  * Internal inventory manager.
  */
 public final class VTNInventoryManager
-    extends MultiDataStoreListener<VtnNode, Void> {
+    extends MultiDataStoreListener<VtnNode, InventoryEvents> {
     /**
      * Logger instance.
      */
@@ -174,22 +174,25 @@ public final class VTNInventoryManager
     /**
      * Handle inventory creation or removal event.
      *
+     * @param ectx  An {@link InventoryEvents} instance associated with the
+     *              inventory event.
      * @param data  A created or removed data object.
      * @param type  {@link VtnUpdateType#CREATED} on added,
      *              {@link VtnUpdateType#REMOVED} on removed.
      */
-    private void onCreatedOrRemoved(IdentifiedData<?> data,
+    private void onCreatedOrRemoved(InventoryEvents ectx,
+                                    IdentifiedData<?> data,
                                     VtnUpdateType type) {
         boolean owner = vtnProvider.isOwner(VTNEntityType.INVENTORY);
         IdentifiedData<VtnNode> nodeData = data.checkType(VtnNode.class);
         if (nodeData != null) {
-            onCreatedOrRemoved(nodeData.getValue(), type, owner);
+            onCreatedOrRemoved(ectx, nodeData.getValue(), type, owner);
             return;
         }
 
         IdentifiedData<VtnPort> portData = data.checkType(VtnPort.class);
         if (portData != null) {
-            onCreatedOrRemoved(portData.getValue(), type, owner);
+            onCreatedOrRemoved(ectx, portData.getValue(), type, owner);
             return;
         }
 
@@ -201,14 +204,16 @@ public final class VTNInventoryManager
     /**
      * Handle node creation or removal event.
      *
+     * @param ectx   An {@link InventoryEvents} instance associated with the
+     *               inventory event.
      * @param vnode  A {@link VtnNode} instance.
      * @param type   {@link VtnUpdateType#CREATED} on added,
      *               {@link VtnUpdateType#REMOVED} on removed.
      * @param owner  {@code true} indicates that this process is the owner of
      *               inventory information.
      */
-    private void onCreatedOrRemoved(VtnNode vnode, VtnUpdateType type,
-                                    boolean owner) {
+    private void onCreatedOrRemoved(InventoryEvents ectx, VtnNode vnode,
+                                    VtnUpdateType type, boolean owner) {
         String id = updateNode(vnode, type);
         if (id != null) {
             LOG.info("Node has been {}: id={}, proto={}",
@@ -216,7 +221,7 @@ public final class VTNInventoryManager
                      vnode.getOpenflowVersion());
             if (owner) {
                 LOG.trace("Delivering node event: id={}, type={}", id, type);
-                postVtnNodeEvent(vnode, type);
+                ectx.add(new VtnNodeEvent(vnode, type));
             } else {
                 LOG.trace("Don't deliver node event: id={}, type={}",
                           id, type);
@@ -227,14 +232,16 @@ public final class VTNInventoryManager
     /**
      * Handle port creation or removal event.
      *
+     * @param ectx   An {@link InventoryEvents} instance associated with the
+     *               inventory event.
      * @param vport  A {@link VtnPort} instance.
      * @param type   {@link VtnUpdateType#CREATED} on added,
      *               {@link VtnUpdateType#REMOVED} on removed.
      * @param owner  {@code true} indicates that this process is the owner of
      *               inventory information.
      */
-    private void onCreatedOrRemoved(VtnPort vport, VtnUpdateType type,
-                                    boolean owner) {
+    private void onCreatedOrRemoved(InventoryEvents ectx, VtnPort vport,
+                                    VtnUpdateType type, boolean owner) {
         String id = updatePort(vport, type);
         if (id != null) {
             Boolean state = InventoryUtils.isEnabled(vport);
@@ -243,7 +250,7 @@ public final class VTNInventoryManager
                      InventoryUtils.toString(vport));
             if (owner) {
                 LOG.trace("Delivering port event: id={}, type={}", id, type);
-                postVtnPortEvent(vport, state, isl, type);
+                ectx.add(new VtnPortEvent(vport, state, isl, type));
             } else {
                 LOG.trace("Don't deliver port event: id={}, type={}",
                           id, type);
@@ -254,25 +261,32 @@ public final class VTNInventoryManager
     /**
      * Handle VTN node change event.
      *
+     * @param ectx     An {@link InventoryEvents} instance associated with the
+     *                 inventory event.
      * @param oldNode  A {@link VtnNode} instance before updated.
      * @param newNode  An updated {@link VtnNode} instance.
      */
-    private void onChanged(VtnNode oldNode, VtnNode newNode) {
+    private void onChanged(InventoryEvents ectx, VtnNode oldNode,
+                           VtnNode newNode) {
         VtnOpenflowVersion oldVer = oldNode.getOpenflowVersion();
         VtnOpenflowVersion newVer = newNode.getOpenflowVersion();
         if (oldVer == null && newVer != null) {
             LOG.info("{}: Protocol version has been detected: {}",
                      newNode.getId().getValue(), newVer);
+            ectx.add(new VtnNodeEvent(newNode, VtnUpdateType.CHANGED));
         }
     }
 
     /**
      * Handle VTN port change event.
      *
+     * @param ectx     An {@link InventoryEvents} instance associated with the
+     *                 inventory event.
      * @param oldPort  A {@link VtnPort} instance before updated.
      * @param newPort  An updated {@link VtnPort} instance.
      */
-    private void onChanged(VtnPort oldPort, VtnPort newPort) {
+    private void onChanged(InventoryEvents ectx, VtnPort oldPort,
+                           VtnPort newPort) {
         boolean oldState = InventoryUtils.isEnabled(oldPort);
         boolean newState = InventoryUtils.isEnabled(newPort);
         Boolean state = (oldState == newState)
@@ -284,44 +298,7 @@ public final class VTNInventoryManager
         LOG.info("Port has been changed: old={}, new={}",
                  InventoryUtils.toString(oldPort),
                  InventoryUtils.toString(newPort));
-        postVtnPortEvent(newPort, state, isl, VtnUpdateType.CHANGED);
-    }
-
-    /**
-     * Post a VTN node event.
-     *
-     * @param vnode  A {@link VtnNode} instance.
-     * @param type   A {@link VtnUpdateType} instance.
-     */
-    private void postVtnNodeEvent(VtnNode vnode, VtnUpdateType type) {
-        VtnNodeEvent ev = null;
-        for (VTNInventoryListener l: vtnListeners) {
-            ev = (ev == null)
-                ? new VtnNodeEvent(l, vnode, type)
-                : new VtnNodeEvent(l, ev);
-            vtnProvider.post(ev);
-        }
-    }
-
-    /**
-     * Post a VTN port event.
-     *
-     * @param vport  A {@link VtnPort} instance.
-     * @param state  A {@link Boolean} instance which describes the change of
-     *               running state of the given port.
-     * @param isl    A {@link Boolean} instance which describes the change of
-     *               inter-switch link state.
-     * @param type   A {@link VtnUpdateType} instance.
-     */
-    private void postVtnPortEvent(VtnPort vport, Boolean state, Boolean isl,
-                                  VtnUpdateType type) {
-        VtnPortEvent ev = null;
-        for (VTNInventoryListener l: vtnListeners) {
-            ev = (ev == null)
-                ? new VtnPortEvent(l, vport, state, isl, type)
-                : new VtnPortEvent(l, ev);
-            vtnProvider.post(ev);
-        }
+        ectx.add(new VtnPortEvent(newPort, state, isl, VtnUpdateType.CHANGED));
     }
 
     /**
@@ -401,41 +378,42 @@ public final class VTNInventoryManager
      * {@inheritDoc}
      */
     @Override
-    protected Void enterEvent(
+    protected InventoryEvents enterEvent(
         AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
-        return null;
+        return new InventoryEvents();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void exitEvent(Void ectx) {
+    protected void exitEvent(InventoryEvents ectx) {
+        ectx.post(vtnProvider, vtnListeners);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void onCreated(Void ectx, IdentifiedData<?> data) {
-        onCreatedOrRemoved(data, VtnUpdateType.CREATED);
+    protected void onCreated(InventoryEvents ectx, IdentifiedData<?> data) {
+        onCreatedOrRemoved(ectx, data, VtnUpdateType.CREATED);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void onUpdated(Void ectx, ChangedData<?> data) {
+    protected void onUpdated(InventoryEvents ectx, ChangedData<?> data) {
         if (vtnProvider.isOwner(VTNEntityType.INVENTORY)) {
             ChangedData<VtnNode> nodeData = data.checkType(VtnNode.class);
             if (nodeData != null) {
-                onChanged(nodeData.getOldValue(), nodeData.getValue());
+                onChanged(ectx, nodeData.getOldValue(), nodeData.getValue());
                 return;
             }
 
             ChangedData<VtnPort> portData = data.checkType(VtnPort.class);
             if (portData != null) {
-                onChanged(portData.getOldValue(), portData.getValue());
+                onChanged(ectx, portData.getOldValue(), portData.getValue());
                 return;
             }
 
@@ -450,8 +428,8 @@ public final class VTNInventoryManager
      * {@inheritDoc}
      */
     @Override
-    protected void onRemoved(Void ectx, IdentifiedData<?> data) {
-        onCreatedOrRemoved(data, VtnUpdateType.REMOVED);
+    protected void onRemoved(InventoryEvents ectx, IdentifiedData<?> data) {
+        onCreatedOrRemoved(ectx, data, VtnUpdateType.REMOVED);
     }
 
     // AbstractDataChangeListener

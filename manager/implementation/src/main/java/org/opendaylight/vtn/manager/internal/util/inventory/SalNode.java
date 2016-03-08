@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -22,8 +22,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev15020
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNodeKey;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.Table;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.TableKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
@@ -93,7 +96,17 @@ public class SalNode {
             return null;
         }
 
-        NodeKey key = id.firstKeyOf(Node.class);
+        return create(id.firstKeyOf(Node.class));
+    }
+
+    /**
+     * Convert a MD-SAL node key into a {@link SalNode} instance.
+     *
+     * @param key  A {@link NodeKey} instance.
+     * @return  A {@code SalNode} instance on success.
+     *          {@code null} on failure.
+     */
+    public static final SalNode create(NodeKey key) {
         return (key == null) ? null : create(key.getId());
     }
 
@@ -246,6 +259,22 @@ public class SalNode {
         return getNodeIdentifierBuilder().
             augmentation(FlowCapableNode.class).
             child(Table.class, new TableKey(tid)).
+            build();
+    }
+
+    /**
+     * Return an instance identifier for the specified MD-SAL flow entry.
+     *
+     * @param tid  The identifier for the flow table.
+     * @param fid  The identifier for the flow entry.
+     * @return  An instance identifier for the specified MD-SAL flow entry.
+     */
+    public final InstanceIdentifier<Flow> getFlowIdentifier(
+        Short tid, FlowId fid) {
+        return getNodeIdentifierBuilder().
+            augmentation(FlowCapableNode.class).
+            child(Table.class, new TableKey(tid)).
+            child(Flow.class, new FlowKey(fid)).
             build();
     }
 

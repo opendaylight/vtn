@@ -8,10 +8,10 @@
 
 package org.opendaylight.vtn.manager.internal.flow.remove;
 
+import static org.opendaylight.vtn.manager.internal.flow.remove.FlowRemoveContext.LOG;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import org.slf4j.Logger;
 
 import org.opendaylight.vtn.manager.VTNException;
 
@@ -21,7 +21,7 @@ import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
-import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpc;
+import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpcList;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
@@ -92,10 +92,10 @@ public class RemovedDataFlows<T extends FlowRemover> implements RemovedFlows {
      * @param sfs     MD-SAL flow service.
      * @param flows   A VTN data flows to be removed.
      * @param reader  An {@link InventoryReader} instance.
-     * @return  A list of remove-flow RPC invocations.
+     * @return  A {@link RemoveFlowRpcList} instance.
      * @throws VTNException  An error occurred.
      */
-    protected List<RemoveFlowRpc> removeFlowEntries(
+    protected RemoveFlowRpcList removeFlowEntries(
         SalFlowService sfs, List<FlowCache> flows, InventoryReader reader)
         throws VTNException {
         return FlowUtils.removeFlowEntries(vtnProvider, sfs, flows, reader);
@@ -107,14 +107,13 @@ public class RemovedDataFlows<T extends FlowRemover> implements RemovedFlows {
      * {@inheritDoc}
      */
     @Override
-    public final List<RemoveFlowRpc> removeFlowEntries(TxContext ctx,
-                                                       SalFlowService sfs)
+    public final RemoveFlowRpcList removeFlowEntries(TxContext ctx,
+                                                     SalFlowService sfs)
         throws VTNException {
-        Logger logger = FlowRemoveContext.LOG;
-        if (logger.isDebugEnabled()) {
+        if (LOG.isDebugEnabled()) {
             String desc = flowRemover.getDescription();
             for (FlowCache fc: removedFlows) {
-                FlowUtils.removedLog(logger, desc, fc);
+                FlowUtils.removedLog(LOG, desc, fc);
             }
         }
 

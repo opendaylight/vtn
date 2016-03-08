@@ -29,7 +29,7 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
  *
  * @param <T>  The type of the target data model.
  */
-public final class DeleteDataTask<T extends DataObject> extends TxTask
+public final class DeleteDataTask<T extends DataObject> extends TxTask<Void>
     implements FutureCallback<Void> {
     /**
      * Logger instance.

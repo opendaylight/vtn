@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,8 @@
  */
 
 package org.opendaylight.vtn.manager.internal.util.flow;
+
+import static org.opendaylight.vtn.manager.internal.util.flow.FlowUtils.FLOW_MOD_FLAGS;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,7 +38,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.VtnFlowEntryBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowModFlags;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
@@ -57,12 +58,6 @@ public final class VTNFlowBuilder implements VTNDataFlow {
      * Idle/Hard timeout value for intermediate and egress flow entries.
      */
     private static final int  INTER_FLOW_TIMEOUT = 0;
-
-    /**
-     * Flags for FLOW_MOD message.
-     */
-    private static final FlowModFlags  FLOW_MOD_FLAGS =
-        new FlowModFlagsBuilder().setSendFlowRem(true).build();
 
     /**
      * The name of the VTN.

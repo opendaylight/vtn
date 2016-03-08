@@ -28,8 +28,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev15020
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.Table;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.TableKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
@@ -71,6 +74,7 @@ public class SalNodeTest extends TestBase {
      *   <li>{@link SalNode#create(String)}</li>
      *   <li>{@link SalNode#create(NodeId)}</li>
      *   <li>{@link SalNode#create(NodeRef)}</li>
+     *   <li>{@link SalNode#create(NodeKey)}</li>
      *   <li>{@link SalNode#checkedCreate(String)}</li>
      *   <li>{@link SalNode#checkedCreate(NodeId)}</li>
      *   <li>{@link SalNode#getNodeNumber()}</li>
@@ -82,6 +86,7 @@ public class SalNodeTest extends TestBase {
     public void testCreateString() throws Exception {
         assertEquals(null, SalNode.create((NodeId)null));
         assertEquals(null, SalNode.create((NodeRef)null));
+        assertEquals(null, SalNode.create((NodeKey)null));
         assertEquals(null, SalNode.create(new EmptyRef()));
 
         VtnErrorTag vtag = VtnErrorTag.BADREQUEST;
@@ -151,9 +156,12 @@ public class SalNodeTest extends TestBase {
                     assertEquals(msg, e.getMessage());
                 }
 
+                NodeKey nkey = new NodeKey(nid);
+                assertEquals(null, SalNode.create(nkey));
+
                 InstanceIdentifier<Node> path = InstanceIdentifier.
                     builder(Nodes.class).
-                    child(Node.class, new NodeKey(nid)).build();
+                    child(Node.class, nkey).build();
                 NodeRef ref = new NodeRef(path);
                 assertEquals(null, SalNode.create(ref));
             }
@@ -182,10 +190,16 @@ public class SalNodeTest extends TestBase {
             snode = SalNode.create(nid);
             assertEquals(dpid.longValue(), snode.getNodeNumber());
 
+            NodeKey nkey = new NodeKey(nid);
+            snode = SalNode.create(nkey);
+            assertEquals(dpid.longValue(), snode.getNodeNumber());
+
             InstanceIdentifier<Node> path = InstanceIdentifier.
                 builder(Nodes.class).
-                child(Node.class, new NodeKey(nid)).build();
+                child(Node.class, nkey).build();
             NodeRef ref = new NodeRef(path);
+            snode = SalNode.create(ref);
+            assertEquals(dpid.longValue(), snode.getNodeNumber());
         }
     }
 
@@ -227,6 +241,7 @@ public class SalNodeTest extends TestBase {
      *   <li>{@link SalNode#getNodeRef()}</li>
      *   <li>{@link SalNode#getFlowNodeIdentifier()}</li>
      *   <li>{@link SalNode#getFlowTableIdentifier(Short)}</li>
+     *   <li>{@link SalNode#getFlowIdentifier(Short, FlowId)}</li>
      *   <li>{@link SalNode#getVtnNodeKey()}</li>
      *   <li>{@link SalNode#getVtnNodeIdentifier()}</li>
      *   <li>{@link SalNode#toStringBuilder()}</li>
@@ -253,6 +268,11 @@ public class SalNodeTest extends TestBase {
             new BigInteger("18446744073709551614"),
             new BigInteger("18446744073709551615"),
         };
+        String[] flowIds = {
+            "md-flow-1",
+            "md-flow-2",
+            "test-flow-3",
+        };
 
         for (BigInteger dpid: ids) {
             long id = dpid.longValue();
@@ -278,9 +298,17 @@ public class SalNodeTest extends TestBase {
             assertEquals(fnodePath, snode.getFlowNodeIdentifier());
 
             for (short table = 0; table < 10; table++) {
+                Short tid = table;
                 InstanceIdentifier<Table> tablePath = fnodePath.builder().
-                    child(Table.class, new TableKey(table)).build();
-                assertEquals(tablePath, snode.getFlowTableIdentifier(table));
+                    child(Table.class, new TableKey(tid)).build();
+                assertEquals(tablePath, snode.getFlowTableIdentifier(tid));
+
+                for (String flowId: flowIds) {
+                    FlowId fid = new FlowId(flowId);
+                    InstanceIdentifier<Flow> flowPath = tablePath.builder().
+                        child(Flow.class, new FlowKey(fid)).build();
+                    assertEquals(flowPath, snode.getFlowIdentifier(tid, fid));
+                }
             }
 
             VtnNodeKey vkey = new VtnNodeKey(nid);

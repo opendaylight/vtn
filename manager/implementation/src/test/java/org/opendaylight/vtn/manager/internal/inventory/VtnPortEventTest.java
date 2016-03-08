@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -39,16 +39,15 @@ public class VtnPortEventTest extends TestBase {
         };
 
         for (SalPort sport: sports) {
-            VTNInventoryListener l1 = mock(VTNInventoryListener.class);
             VtnPort vport = createVtnPortBuilder(sport).build();
             VtnPortEvent ev1 = new VtnPortEvent(
-                l1, vport, null, null, VtnUpdateType.CREATED);
+                vport, null, null, VtnUpdateType.CREATED);
             assertEquals(sport, ev1.getSalPort());
 
-            VTNInventoryListener l2 = mock(VTNInventoryListener.class);
-            VtnPortEvent ev2 = new VtnPortEvent(l2, ev1);
+            VTNInventoryListener l = mock(VTNInventoryListener.class);
+            VtnPortEvent ev2 = new VtnPortEvent(l, ev1);
             assertSame(ev1.getSalPort(), ev2.getSalPort());
-            verifyZeroInteractions(l1, l2);
+            verifyZeroInteractions(l);
         }
     }
 
@@ -65,15 +64,14 @@ public class VtnPortEventTest extends TestBase {
         };
 
         for (SalPort sport: sports) {
-            VTNInventoryListener l1 = mock(VTNInventoryListener.class);
-            VTNInventoryListener l2 = mock(VTNInventoryListener.class);
+            VTNInventoryListener l = mock(VTNInventoryListener.class);
             VtnPort vport = createVtnPortBuilder(sport).build();
             VtnPortEvent ev1 = new VtnPortEvent(
-                l1, vport, null, null, VtnUpdateType.CREATED);
-            VtnPortEvent ev2 = new VtnPortEvent(l2, ev1);
+                vport, null, null, VtnUpdateType.CREATED);
+            VtnPortEvent ev2 = new VtnPortEvent(l, ev1);
             assertSame(vport, ev1.getVtnPort());
             assertSame(vport, ev2.getVtnPort());
-            verifyZeroInteractions(l1, l2);
+            verifyZeroInteractions(l);
         }
     }
 
@@ -88,11 +86,9 @@ public class VtnPortEventTest extends TestBase {
 
         for (Boolean state: bools) {
             for (VtnUpdateType type: VtnUpdateType.values()) {
-                VTNInventoryListener l1 = mock(VTNInventoryListener.class);
-                VTNInventoryListener l2 = mock(VTNInventoryListener.class);
-                VtnPortEvent ev1 = new VtnPortEvent(l1, vport, state, null,
-                                                    type);
-                VtnPortEvent ev2 = new VtnPortEvent(l2, ev1);
+                VTNInventoryListener l = mock(VTNInventoryListener.class);
+                VtnPortEvent ev1 = new VtnPortEvent(vport, state, null, type);
+                VtnPortEvent ev2 = new VtnPortEvent(l, ev1);
                 if (type == VtnUpdateType.REMOVED) {
                     // State change should be ignored on REMOVED event.
                     assertEquals(null, ev1.getStateChange());
@@ -101,7 +97,7 @@ public class VtnPortEventTest extends TestBase {
                     assertSame(state, ev1.getStateChange());
                     assertSame(state, ev2.getStateChange());
                 }
-                verifyZeroInteractions(l1, l2);
+                verifyZeroInteractions(l);
             }
         }
     }
@@ -117,10 +113,9 @@ public class VtnPortEventTest extends TestBase {
 
         for (Boolean isl: bools) {
             for (VtnUpdateType type: VtnUpdateType.values()) {
-                VTNInventoryListener l1 = mock(VTNInventoryListener.class);
-                VTNInventoryListener l2 = mock(VTNInventoryListener.class);
-                VtnPortEvent ev1 = new VtnPortEvent(l1, vport, null, isl, type);
-                VtnPortEvent ev2 = new VtnPortEvent(l2, ev1);
+                VTNInventoryListener l = mock(VTNInventoryListener.class);
+                VtnPortEvent ev1 = new VtnPortEvent(vport, null, isl, type);
+                VtnPortEvent ev2 = new VtnPortEvent(l, ev1);
                 if (type == VtnUpdateType.REMOVED) {
                     // ISL change should be ignored on REMOVED event.
                     assertEquals(null, ev1.getInterSwitchLinkChange());
@@ -129,7 +124,7 @@ public class VtnPortEventTest extends TestBase {
                     assertSame(isl, ev1.getInterSwitchLinkChange());
                     assertSame(isl, ev2.getInterSwitchLinkChange());
                 }
-                verifyZeroInteractions(l1, l2);
+                verifyZeroInteractions(l);
             }
         }
     }
@@ -143,13 +138,12 @@ public class VtnPortEventTest extends TestBase {
         VtnPort vport = createVtnPortBuilder(sport).build();
 
         for (VtnUpdateType type: VtnUpdateType.values()) {
-            VTNInventoryListener l1 = mock(VTNInventoryListener.class);
-            VTNInventoryListener l2 = mock(VTNInventoryListener.class);
-            VtnPortEvent ev1 = new VtnPortEvent(l1, vport, null, null, type);
-            VtnPortEvent ev2 = new VtnPortEvent(l2, ev1);
+            VTNInventoryListener l = mock(VTNInventoryListener.class);
+            VtnPortEvent ev1 = new VtnPortEvent(vport, null, null, type);
+            VtnPortEvent ev2 = new VtnPortEvent(l, ev1);
             assertSame(type, ev1.getUpdateType());
             assertSame(type, ev2.getUpdateType());
-            verifyZeroInteractions(l1, l2);
+            verifyZeroInteractions(l);
         }
     }
 
@@ -165,16 +159,14 @@ public class VtnPortEventTest extends TestBase {
             for (VtnUpdateType type: VtnUpdateType.values()) {
                 VtnPort vport = createVtnPortBuilder(sport).
                     setEnabled(en).build();
-                VTNInventoryListener l1 = mock(VTNInventoryListener.class);
-                VTNInventoryListener l2 = mock(VTNInventoryListener.class);
-                VtnPortEvent ev1 = new VtnPortEvent(l1, vport, null, null,
-                                                    type);
-                VtnPortEvent ev2 = new VtnPortEvent(l2, ev1);
+                VTNInventoryListener l = mock(VTNInventoryListener.class);
+                VtnPortEvent ev1 = new VtnPortEvent(vport, null, null, type);
+                VtnPortEvent ev2 = new VtnPortEvent(l, ev1);
                 boolean disabled = (type == VtnUpdateType.REMOVED ||
                                     !Boolean.TRUE.equals(en));
                 assertEquals(disabled, ev1.isDisabled());
                 assertEquals(disabled, ev2.isDisabled());
-                verifyZeroInteractions(l1, l2);
+                verifyZeroInteractions(l);
             }
         }
     }
@@ -186,19 +178,20 @@ public class VtnPortEventTest extends TestBase {
      */
     @Test
     public void testNotifyEvent() throws Exception {
-        VTNInventoryListener l1 = mock(VTNInventoryListener.class);
         SalPort sport = new SalPort(10L, 20L);
         VtnPort vport = createVtnPortBuilder(sport).build();
         VtnPortEvent ev1 = new VtnPortEvent(
-            l1, vport, Boolean.FALSE, Boolean.FALSE, VtnUpdateType.CREATED);
-        ev1.notifyEvent();
-        verify(l1).notifyVtnPort(ev1);
+            vport, Boolean.FALSE, Boolean.FALSE, VtnUpdateType.CREATED);
+        try {
+            ev1.notifyEvent();
+            unexpected();
+        } catch (NullPointerException e) {
+        }
 
-        VTNInventoryListener l2 = mock(VTNInventoryListener.class);
-        VtnPortEvent ev2 = new VtnPortEvent(l2, ev1);
+        VTNInventoryListener l = mock(VTNInventoryListener.class);
+        VtnPortEvent ev2 = new VtnPortEvent(l, ev1);
         ev2.notifyEvent();
-        verify(l2).notifyVtnPort(ev2);
-
-        verifyNoMoreInteractions(l1, l2);
+        verify(l).notifyVtnPort(ev2);
+        verifyNoMoreInteractions(l);
     }
 }

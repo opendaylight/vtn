@@ -380,17 +380,30 @@ public class VTNInventoryManagerTest extends TestBase {
     @Test
     public void testEnterEvent() {
         AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev = null;
-        assertEquals(null, inventoryManager.enterEvent(ev));
+        InventoryEvents ectx = inventoryManager.enterEvent(ev);
+        assertNotNull(ectx);
     }
 
     /**
      * Test case for
-     * {@link VTNInventoryManager#exitEvent(Void)}.
+     * {@link VTNInventoryManager#exitEvent(InventoryEvents)}.
      */
     @Test
     public void testExitEvent() {
-        // exitEvent() should do nothing.
-        inventoryManager.exitEvent(null);
+        VTNInventoryListener[] listeners = {
+            mock(VTNInventoryListener.class),
+            mock(VTNInventoryListener.class),
+            mock(VTNInventoryListener.class),
+        };
+        for (VTNInventoryListener l: listeners) {
+            inventoryManager.addListener(l);
+        }
+
+        // No event should be delivered if InventoryEvents is empty.
+        inventoryManager.exitEvent(new InventoryEvents());
+        for (VTNInventoryListener l: listeners) {
+            verifyZeroInteractions(l);
+        }
     }
 
     /**
@@ -399,7 +412,7 @@ public class VTNInventoryManagerTest extends TestBase {
      * inventory.
      *
      * <ul>
-     *   <li>{@link VTNInventoryManager#onCreated(Void,IdentifiedData)}</li>
+     *   <li>{@link VTNInventoryManager#onCreated(InventoryEvents,IdentifiedData)}</li>
      *   <li>{@link VTNInventoryManager#addListener(VTNInventoryListener)}</li>
      * </ul>
      *
@@ -416,7 +429,7 @@ public class VTNInventoryManagerTest extends TestBase {
      * inventory.
      *
      * <ul>
-     *   <li>{@link VTNInventoryManager#onCreated(Void,IdentifiedData)}</li>
+     *   <li>{@link VTNInventoryManager#onCreated(InventoryEvents,IdentifiedData)}</li>
      *   <li>{@link VTNInventoryManager#addListener(VTNInventoryListener)}</li>
      * </ul>
      *
@@ -433,7 +446,7 @@ public class VTNInventoryManagerTest extends TestBase {
      * inventory.
      *
      * <ul>
-     *   <li>{@link VTNInventoryManager#onUpdated(Void,ChangedData)}</li>
+     *   <li>{@link VTNInventoryManager#onUpdated(InventoryEvents,ChangedData)}</li>
      *   <li>{@link VTNInventoryManager#addListener(VTNInventoryListener)}</li>
      * </ul>
      *
@@ -450,7 +463,7 @@ public class VTNInventoryManagerTest extends TestBase {
      * inventory.
      *
      * <ul>
-     *   <li>{@link VTNInventoryManager#onUpdated(Void,ChangedData)}</li>
+     *   <li>{@link VTNInventoryManager#onUpdated(InventoryEvents,ChangedData)}</li>
      *   <li>{@link VTNInventoryManager#addListener(VTNInventoryListener)}</li>
      * </ul>
      *
@@ -467,7 +480,7 @@ public class VTNInventoryManagerTest extends TestBase {
      * inventory.
      *
      * <ul>
-     *   <li>{@link VTNInventoryManager#onRemoved(Void,IdentifiedData)}</li>
+     *   <li>{@link VTNInventoryManager#onRemoved(InventoryEvents,IdentifiedData)}</li>
      *   <li>{@link VTNInventoryManager#addListener(VTNInventoryListener)}</li>
      * </ul>
      *
@@ -484,7 +497,7 @@ public class VTNInventoryManagerTest extends TestBase {
      * inventory.
      *
      * <ul>
-     *   <li>{@link VTNInventoryManager#onRemoved(Void,IdentifiedData)}</li>
+     *   <li>{@link VTNInventoryManager#onRemoved(InventoryEvents,IdentifiedData)}</li>
      *   <li>{@link VTNInventoryManager#addListener(VTNInventoryListener)}</li>
      * </ul>
      *
@@ -503,9 +516,9 @@ public class VTNInventoryManagerTest extends TestBase {
      *   <li>
      *     {@link VTNInventoryManager#onDataChanged(AsyncDataChangeEvent)}
      *   </li>
-     *   <li>{@link VTNInventoryManager#onCreated(Void,IdentifiedData)}</li>
-     *   <li>{@link VTNInventoryManager#onUpdated(Void,ChangedData)}</li>
-     *   <li>{@link VTNInventoryManager#onRemoved(Void,IdentifiedData)}</li>
+     *   <li>{@link VTNInventoryManager#onCreated(InventoryEvents,IdentifiedData)}</li>
+     *   <li>{@link VTNInventoryManager#onUpdated(InventoryEvents,ChangedData)}</li>
+     *   <li>{@link VTNInventoryManager#onRemoved(InventoryEvents,IdentifiedData)}</li>
      *   <li>{@link VTNInventoryManager#addListener(VTNInventoryListener)}</li>
      * </ul>
      *
@@ -524,9 +537,9 @@ public class VTNInventoryManagerTest extends TestBase {
      *   <li>
      *     {@link VTNInventoryManager#onDataChanged(AsyncDataChangeEvent)}
      *   </li>
-     *   <li>{@link VTNInventoryManager#onCreated(Void,IdentifiedData)}</li>
-     *   <li>{@link VTNInventoryManager#onUpdated(Void,ChangedData)}</li>
-     *   <li>{@link VTNInventoryManager#onRemoved(Void,IdentifiedData)}</li>
+     *   <li>{@link VTNInventoryManager#onCreated(InventoryEvents,IdentifiedData)}</li>
+     *   <li>{@link VTNInventoryManager#onUpdated(InventoryEvents,ChangedData)}</li>
+     *   <li>{@link VTNInventoryManager#onRemoved(InventoryEvents,IdentifiedData)}</li>
      *   <li>{@link VTNInventoryManager#addListener(VTNInventoryListener)}</li>
      * </ul>
      *
@@ -618,6 +631,7 @@ public class VTNInventoryManagerTest extends TestBase {
         }
 
         // In case of node event.
+        InventoryEvents ectx = new InventoryEvents();
         when(vtnProvider.isOwner(VTNEntityType.INVENTORY)).thenReturn(owner);
         VtnNode vnode = new VtnNodeBuilder().
             setId(snode.getNodeId()).
@@ -626,12 +640,13 @@ public class VTNInventoryManagerTest extends TestBase {
         IdentifiedData<VtnNode> ndata =
             new IdentifiedData<>(snode.getVtnNodeIdentifier(), vnode);
         if (created) {
-            inventoryManager.onCreated(null, ndata);
+            inventoryManager.onCreated(ectx, ndata);
             expectedNodes.put(snode.toString(), emptyRpcs);
         } else {
-            inventoryManager.onRemoved(null, ndata);
+            inventoryManager.onRemoved(ectx, ndata);
             expectedNodes.remove(snode.toString());
         }
+        inventoryManager.exitEvent(ectx);
 
         assertEquals(expectedNodes, nodeMgr.getNodeMap());
         assertEquals(expectedPorts, portIds);
@@ -657,11 +672,14 @@ public class VTNInventoryManagerTest extends TestBase {
         verifyNoMoreInteractions(vtnProvider);
 
         // Same event should be ignored.
+        ectx = new InventoryEvents();
         if (created) {
-            inventoryManager.onCreated(null, ndata);
+            inventoryManager.onCreated(ectx, ndata);
         } else {
-            inventoryManager.onRemoved(null, ndata);
+            inventoryManager.onRemoved(ectx, ndata);
         }
+        inventoryManager.exitEvent(ectx);
+
         assertEquals(expectedNodes, nodeMgr.getNodeMap());
         assertEquals(expectedPorts, portIds);
         verify(vtnProvider, times(2)).isOwner(VTNEntityType.INVENTORY);
@@ -678,13 +696,15 @@ public class VTNInventoryManagerTest extends TestBase {
             build();
         IdentifiedData<VtnPort> epdata =
             new IdentifiedData<>(esport.getVtnPortIdentifier(), evport);
+        ectx = new InventoryEvents();
         if (created) {
-            inventoryManager.onCreated(null, epdata);
+            inventoryManager.onCreated(ectx, epdata);
             expectedPorts.put(esport.toString(), Boolean.TRUE);
         } else {
-            inventoryManager.onRemoved(null, epdata);
+            inventoryManager.onRemoved(ectx, epdata);
             expectedPorts.remove(esport.toString());
         }
+        inventoryManager.exitEvent(ectx);
 
         assertEquals(expectedNodes, nodeMgr.getNodeMap());
         assertEquals(expectedPorts, portIds);
@@ -722,11 +742,14 @@ public class VTNInventoryManagerTest extends TestBase {
         verifyNoMoreInteractions(vtnProvider);
 
         // Same event should be ignored.
+        ectx = new InventoryEvents();
         if (created) {
-            inventoryManager.onCreated(null, epdata);
+            inventoryManager.onCreated(ectx, epdata);
         } else {
-            inventoryManager.onRemoved(null, epdata);
+            inventoryManager.onRemoved(ectx, epdata);
         }
+        inventoryManager.exitEvent(ectx);
+
         assertEquals(expectedNodes, nodeMgr.getNodeMap());
         assertEquals(expectedPorts, portIds);
         verify(vtnProvider, times(2)).isOwner(VTNEntityType.INVENTORY);
@@ -748,13 +771,15 @@ public class VTNInventoryManagerTest extends TestBase {
             build();
         IdentifiedData<VtnPort> ipdata =
             new IdentifiedData<>(isport.getVtnPortIdentifier(), ivport);
+        ectx = new InventoryEvents();
         if (created) {
-            inventoryManager.onCreated(null, ipdata);
+            inventoryManager.onCreated(ectx, ipdata);
             expectedPorts.put(isport.toString(), Boolean.TRUE);
         } else {
-            inventoryManager.onRemoved(null, ipdata);
+            inventoryManager.onRemoved(ectx, ipdata);
             expectedPorts.remove(isport.toString());
         }
+        inventoryManager.exitEvent(ectx);
 
         assertEquals(expectedNodes, nodeMgr.getNodeMap());
         assertEquals(expectedPorts, portIds);
@@ -792,11 +817,14 @@ public class VTNInventoryManagerTest extends TestBase {
         verifyNoMoreInteractions(vtnProvider);
 
         // Same event should be ignored.
+        ectx = new InventoryEvents();
         if (created) {
-            inventoryManager.onCreated(null, ipdata);
+            inventoryManager.onCreated(ectx, ipdata);
         } else {
-            inventoryManager.onRemoved(null, ipdata);
+            inventoryManager.onRemoved(ectx, ipdata);
         }
+        inventoryManager.exitEvent(ectx);
+
         assertEquals(expectedNodes, nodeMgr.getNodeMap());
         assertEquals(expectedPorts, portIds);
         verify(vtnProvider, times(2)).isOwner(VTNEntityType.INVENTORY);
@@ -811,13 +839,15 @@ public class VTNInventoryManagerTest extends TestBase {
             build();
         IdentifiedData<VtnPort> dpdata =
             new IdentifiedData<>(dsport.getVtnPortIdentifier(), dvport);
+        ectx = new InventoryEvents();
         if (created) {
-            inventoryManager.onCreated(null, dpdata);
+            inventoryManager.onCreated(ectx, dpdata);
             expectedPorts.put(dsport.toString(), Boolean.TRUE);
         } else {
-            inventoryManager.onRemoved(null, dpdata);
+            inventoryManager.onRemoved(ectx, dpdata);
             expectedPorts.remove(dsport.toString());
         }
+        inventoryManager.exitEvent(ectx);
 
         assertEquals(expectedNodes, nodeMgr.getNodeMap());
         assertEquals(expectedPorts, portIds);
@@ -855,11 +885,14 @@ public class VTNInventoryManagerTest extends TestBase {
         verifyNoMoreInteractions(vtnProvider);
 
         // Same event should be ignored.
+        ectx = new InventoryEvents();
         if (created) {
-            inventoryManager.onCreated(null, dpdata);
+            inventoryManager.onCreated(ectx, dpdata);
         } else {
-            inventoryManager.onRemoved(null, dpdata);
+            inventoryManager.onRemoved(ectx, dpdata);
         }
+        inventoryManager.exitEvent(ectx);
+
         assertEquals(expectedNodes, nodeMgr.getNodeMap());
         assertEquals(expectedPorts, portIds);
         verify(vtnProvider, times(2)).isOwner(VTNEntityType.INVENTORY);
@@ -874,11 +907,13 @@ public class VTNInventoryManagerTest extends TestBase {
             build();
         Node badNode = mock(Node.class);
         IdentifiedData<Node> badData = new IdentifiedData<>(badPath, badNode);
+        ectx = new InventoryEvents();
         if (created) {
-            inventoryManager.onCreated(null, badData);
+            inventoryManager.onCreated(ectx, badData);
         } else {
-            inventoryManager.onRemoved(null, badData);
+            inventoryManager.onRemoved(ectx, badData);
         }
+        inventoryManager.exitEvent(ectx);
 
         assertEquals(expectedNodes, nodeMgr.getNodeMap());
         assertEquals(expectedPorts, portIds);
@@ -892,14 +927,16 @@ public class VTNInventoryManagerTest extends TestBase {
         // No events should be delivered after shutdown.
         when(vtnProvider.isOwner(VTNEntityType.INVENTORY)).thenReturn(owner);
         inventoryManager.shutdown();
-        inventoryManager.onCreated(null, ndata);
-        inventoryManager.onCreated(null, epdata);
-        inventoryManager.onCreated(null, ipdata);
-        inventoryManager.onCreated(null, badData);
-        inventoryManager.onRemoved(null, ndata);
-        inventoryManager.onRemoved(null, epdata);
-        inventoryManager.onRemoved(null, ipdata);
-        inventoryManager.onRemoved(null, badData);
+        inventoryManager.exitEvent(ectx);
+        inventoryManager.onCreated(ectx, ndata);
+        inventoryManager.onCreated(ectx, epdata);
+        inventoryManager.onCreated(ectx, ipdata);
+        inventoryManager.onCreated(ectx, badData);
+        inventoryManager.onRemoved(ectx, ndata);
+        inventoryManager.onRemoved(ectx, epdata);
+        inventoryManager.onRemoved(ectx, ipdata);
+        inventoryManager.onRemoved(ectx, badData);
+        inventoryManager.exitEvent(ectx);
 
         verify(vtnProvider, times(8)).isOwner(VTNEntityType.INVENTORY);
         verifyNoMoreInteractions(vtnProvider);
@@ -938,48 +975,78 @@ public class VTNInventoryManagerTest extends TestBase {
             thenReturn(VtnOpenflowVersion.OF10);
         ChangedData<VtnNode> ndata = new ChangedData<>(
             snode.getVtnNodeIdentifier(), vnodeNew, vnodeOld);
-        inventoryManager.onUpdated(null, ndata);
-
-        // Node change event should never be delivered to listeners.
-        for (VTNInventoryListener l: listeners) {
-            verifyZeroInteractions(l);
-        }
+        InventoryEvents ectx = new InventoryEvents();
+        inventoryManager.onUpdated(ectx, ndata);
+        inventoryManager.exitEvent(ectx);
 
         verify(vtnProvider).isOwner(VTNEntityType.INVENTORY);
         if (owner) {
+            // Verify delivered events.
+            ArgumentCaptor<VtnNodeEvent> captor =
+                ArgumentCaptor.forClass(VtnNodeEvent.class);
+            verify(vtnProvider, never()).post(isA(VtnPortEvent.class));
+            verify(vtnProvider, times(nlisteners)).post(captor.capture());
+            List<VtnNodeEvent> delivered = captor.getAllValues();
+            assertEquals(listeners.length, delivered.size());
+            for (int i = 0; i < nlisteners; i++) {
+                VtnNodeEvent ev = delivered.get(i);
+                assertEquals(listeners[i],
+                             getFieldValue(ev, VTNInventoryListener.class,
+                                           "listener"));
+                assertEquals(snode, ev.getSalNode());
+                assertEquals(vnodeNew, ev.getVtnNode());
+                assertEquals(VtnUpdateType.CHANGED, ev.getUpdateType());
+                verifyZeroInteractions(listeners[i]);
+            }
+
             // The change of OpenFlow version should be logged.
             verify(vnodeOld, never()).getId();
             verify(vnodeOld).getOpenflowVersion();
-            verify(vnodeNew).getId();
+            verify(vnodeNew, times(2)).getId();
             verify(vnodeNew).getOpenflowVersion();
         }
         verifyNoMoreInteractions(vtnProvider, vnodeOld, vnodeNew);
         reset(vtnProvider);
 
-        // In case where the node is not changed.
-        when(vtnProvider.isOwner(VTNEntityType.INVENTORY)).thenReturn(owner);
-        vnodeOld = mock(VtnNode.class);
-        when(vnodeOld.getId()).thenReturn(snode.getNodeId());
-        when(vnodeOld.getOpenflowVersion()).
-            thenReturn((VtnOpenflowVersion)null);
-        vnodeNew = mock(VtnNode.class);
-        when(vnodeNew.getId()).thenReturn(snode.getNodeId());
-        when(vnodeNew.getOpenflowVersion()).
-            thenReturn((VtnOpenflowVersion)null);
-        ndata = new ChangedData<>(snode.getVtnNodeIdentifier(), vnodeNew,
-                                  vnodeOld);
-        inventoryManager.onUpdated(null, ndata);
+        // Node change event should be ignored in the following cases.
+        //   - The node is no changed.
+        //   - The old node already contains OF version.
+        //   - The new node does not contain OF version.
+        VtnOpenflowVersion[][] verCases = {
+            {null, null},
+            {VtnOpenflowVersion.OF10, null},
+            {VtnOpenflowVersion.OF13, null},
+            {VtnOpenflowVersion.OF10, VtnOpenflowVersion.OF10},
+            {VtnOpenflowVersion.OF13, VtnOpenflowVersion.OF13},
+        };
+        for (VtnOpenflowVersion[] vers: verCases) {
+            when(vtnProvider.isOwner(VTNEntityType.INVENTORY)).
+                thenReturn(owner);
+            vnodeOld = mock(VtnNode.class);
+            when(vnodeOld.getId()).thenReturn(snode.getNodeId());
+            when(vnodeOld.getOpenflowVersion()).
+                thenReturn(vers[0]);
+            vnodeNew = mock(VtnNode.class);
+            when(vnodeNew.getId()).thenReturn(snode.getNodeId());
+            when(vnodeNew.getOpenflowVersion()).
+                thenReturn(vers[1]);
+            ndata = new ChangedData<>(snode.getVtnNodeIdentifier(), vnodeNew,
+                                      vnodeOld);
+            ectx = new InventoryEvents();
+            inventoryManager.onUpdated(ectx, ndata);
+            inventoryManager.exitEvent(ectx);
 
-        for (VTNInventoryListener l: listeners) {
-            verifyZeroInteractions(l);
+            for (VTNInventoryListener l: listeners) {
+                verifyZeroInteractions(l);
+            }
+            verify(vtnProvider).isOwner(VTNEntityType.INVENTORY);
+            if (owner) {
+                verify(vnodeOld).getOpenflowVersion();
+                verify(vnodeNew).getOpenflowVersion();
+            }
+            verifyNoMoreInteractions(vtnProvider, vnodeOld, vnodeNew);
+            reset(vtnProvider);
         }
-        verify(vtnProvider).isOwner(VTNEntityType.INVENTORY);
-        if (owner) {
-            verify(vnodeOld).getOpenflowVersion();
-            verify(vnodeNew).getOpenflowVersion();
-        }
-        verifyNoMoreInteractions(vtnProvider, vnodeOld, vnodeNew);
-        reset(vtnProvider);
 
         // In case where the port name is enabled.
         when(vtnProvider.isOwner(VTNEntityType.INVENTORY)).thenReturn(owner);
@@ -997,11 +1064,13 @@ public class VTNInventoryManagerTest extends TestBase {
             build();
         ChangedData<VtnPort> pdata1 = new ChangedData<>(
             sport.getVtnPortIdentifier(), vportNew, vportOld);
-        inventoryManager.onUpdated(null, pdata1);
+        ectx = new InventoryEvents();
+        inventoryManager.onUpdated(ectx, pdata1);
+        inventoryManager.exitEvent(ectx);
 
         verify(vtnProvider).isOwner(VTNEntityType.INVENTORY);
         if (owner) {
-            // Vefiry delivered events.
+            // Verify delivered events.
             ArgumentCaptor<VtnPortEvent> captor =
                 ArgumentCaptor.forClass(VtnPortEvent.class);
             verify(vtnProvider, never()).post(isA(VtnNodeEvent.class));
@@ -1047,11 +1116,13 @@ public class VTNInventoryManagerTest extends TestBase {
             build();
         ChangedData<VtnPort> pdata2 = new ChangedData<>(
             sport.getVtnPortIdentifier(), vportNew, vportOld);
-        inventoryManager.onUpdated(null, pdata2);
+        ectx = new InventoryEvents();
+        inventoryManager.onUpdated(ectx, pdata2);
+        inventoryManager.exitEvent(ectx);
 
         verify(vtnProvider).isOwner(VTNEntityType.INVENTORY);
         if (owner) {
-            // Vefiry delivered events.
+            // Verify delivered events.
             ArgumentCaptor<VtnPortEvent> captor =
                 ArgumentCaptor.forClass(VtnPortEvent.class);
             verify(vtnProvider, never()).post(isA(VtnNodeEvent.class));
@@ -1092,11 +1163,13 @@ public class VTNInventoryManagerTest extends TestBase {
             build();
         ChangedData<VtnPort> pdata3 = new ChangedData<>(
             sport.getVtnPortIdentifier(), vportNew, vportOld);
-        inventoryManager.onUpdated(null, pdata3);
+        ectx = new InventoryEvents();
+        inventoryManager.onUpdated(ectx, pdata3);
+        inventoryManager.exitEvent(ectx);
 
         verify(vtnProvider).isOwner(VTNEntityType.INVENTORY);
         if (owner) {
-            // Vefiry delivered events.
+            // Verify delivered events.
             ArgumentCaptor<VtnPortEvent> captor =
                 ArgumentCaptor.forClass(VtnPortEvent.class);
             verify(vtnProvider, never()).post(isA(VtnNodeEvent.class));
@@ -1130,7 +1203,9 @@ public class VTNInventoryManagerTest extends TestBase {
         Node badNode2 = mock(Node.class);
         ChangedData<Node> badData =
             new ChangedData<>(badPath, badNode1, badNode2);
-        inventoryManager.onUpdated(null, badData);
+        ectx = new InventoryEvents();
+        inventoryManager.onUpdated(ectx, badData);
+        inventoryManager.exitEvent(ectx);
 
         verify(vtnProvider).isOwner(VTNEntityType.INVENTORY);
         verifyNoMoreInteractions(vtnProvider, badNode1, badNode2);
@@ -1142,11 +1217,13 @@ public class VTNInventoryManagerTest extends TestBase {
         // No events should be delivered after shutdown.
         when(vtnProvider.isOwner(VTNEntityType.INVENTORY)).thenReturn(owner);
         inventoryManager.shutdown();
-        inventoryManager.onUpdated(null, ndata);
-        inventoryManager.onUpdated(null, pdata1);
-        inventoryManager.onUpdated(null, pdata2);
-        inventoryManager.onUpdated(null, pdata3);
-        inventoryManager.onUpdated(null, badData);
+        ectx = new InventoryEvents();
+        inventoryManager.onUpdated(ectx, ndata);
+        inventoryManager.onUpdated(ectx, pdata1);
+        inventoryManager.onUpdated(ectx, pdata2);
+        inventoryManager.onUpdated(ectx, pdata3);
+        inventoryManager.onUpdated(ectx, badData);
+        inventoryManager.exitEvent(ectx);
 
         verify(vtnProvider, times(5)).isOwner(VTNEntityType.INVENTORY);
         verifyNoMoreInteractions(vtnProvider);
@@ -1188,7 +1265,7 @@ public class VTNInventoryManagerTest extends TestBase {
                 setOpenflowVersion(ver).
                 build();
             VtnNodeEvent nev =
-                new VtnNodeEvent(null, vnode, VtnUpdateType.CREATED);
+                new VtnNodeEvent(vnode, VtnUpdateType.CREATED);
             assertNull(createdNodes.put(snode, nev));
             assertNull(created.put(snode.getVtnNodeIdentifier(), vnode));
             dpid++;
@@ -1197,29 +1274,27 @@ public class VTNInventoryManagerTest extends TestBase {
         // 2 nodes have been changed.
         Map<InstanceIdentifier<?>, DataObject> original = new HashMap<>();
         Map<InstanceIdentifier<?>, DataObject> updated = new HashMap<>();
-        SalNode snode = new SalNode(10L);
-        VtnNode vnodeOld = new VtnNodeBuilder().
-            setId(snode.getNodeId()).
-            build();
-        VtnNode vnode = new VtnNodeBuilder().
-            setId(snode.getNodeId()).
-            setOpenflowVersion(VtnOpenflowVersion.OF10).
-            build();
-        InstanceIdentifier<VtnNode> vnPath = snode.getVtnNodeIdentifier();
-        assertNull(original.put(vnPath, vnodeOld));
-        assertNull(updated.put(vnPath, vnode));
-
-        snode = new SalNode(11L);
-        vnodeOld = new VtnNodeBuilder().
-            setId(snode.getNodeId()).
-            build();
-        vnode = new VtnNodeBuilder().
-            setId(snode.getNodeId()).
-            setOpenflowVersion(VtnOpenflowVersion.OF13).
-            build();
-        vnPath = snode.getVtnNodeIdentifier();
-        assertNull(original.put(vnPath, vnodeOld));
-        assertNull(updated.put(vnPath, vnode));
+        Map<SalNode, VtnNodeEvent> changedNodes = new HashMap<>();
+        dpid = 10L;
+        for (VtnOpenflowVersion ver: vers) {
+            if (ver != null) {
+                SalNode snode = new SalNode(dpid++);
+                VtnNode vnodeOld = new VtnNodeBuilder().
+                    setId(snode.getNodeId()).
+                    build();
+                VtnNode vnode = new VtnNodeBuilder().
+                    setId(snode.getNodeId()).
+                    setOpenflowVersion(ver).
+                    build();
+                InstanceIdentifier<VtnNode> vnPath =
+                    snode.getVtnNodeIdentifier();
+                VtnNodeEvent nev =
+                    new VtnNodeEvent(vnode, VtnUpdateType.CHANGED);
+                assertNull(changedNodes.put(snode, nev));
+                assertNull(original.put(vnPath, vnodeOld));
+                assertNull(updated.put(vnPath, vnode));
+            }
+        }
 
         VtnNodeManager nodeMgr = inventoryManager.getVtnNodeManager();
 
@@ -1228,14 +1303,14 @@ public class VTNInventoryManagerTest extends TestBase {
         Map<SalNode, VtnNodeEvent> removedNodes = new HashMap<>();
         dpid = 100L;
         for (VtnOpenflowVersion ver: vers) {
-            snode = new SalNode(dpid);
-            vnode = new VtnNodeBuilder().
+            SalNode snode = new SalNode(dpid);
+            VtnNode vnode = new VtnNodeBuilder().
                 setId(snode.getNodeId()).
                 setOpenflowVersion(ver).
                 build();
             VtnNodeEvent nev =
-                new VtnNodeEvent(null, vnode, VtnUpdateType.REMOVED);
-            vnPath = snode.getVtnNodeIdentifier();
+                new VtnNodeEvent(vnode, VtnUpdateType.REMOVED);
+            InstanceIdentifier<VtnNode> vnPath = snode.getVtnNodeIdentifier();
             assertNull(removedNodes.put(snode, nev));
             assertTrue(removed.add(vnPath));
             assertNull(original.put(vnPath, vnode));
@@ -1260,8 +1335,7 @@ public class VTNInventoryManagerTest extends TestBase {
                     setCost(1000L).
                     build();
                 VtnPortEvent pev = new VtnPortEvent(
-                    null, vport, Boolean.TRUE, Boolean.FALSE,
-                    VtnUpdateType.CREATED);
+                    vport, Boolean.TRUE, Boolean.FALSE, VtnUpdateType.CREATED);
                 assertNull(createdPorts.put(sport, pev));
                 assertNull(created.put(sport.getVtnPortIdentifier(), vport));
             }
@@ -1277,8 +1351,7 @@ public class VTNInventoryManagerTest extends TestBase {
                     setCost(1000L).
                     build();
                 VtnPortEvent pev = new VtnPortEvent(
-                    null, vport, Boolean.TRUE, Boolean.TRUE,
-                    VtnUpdateType.CREATED);
+                    vport, Boolean.TRUE, Boolean.TRUE, VtnUpdateType.CREATED);
                 assertNull(createdPorts.put(sport, pev));
                 assertNull(created.put(sport.getVtnPortIdentifier(), vport));
             }
@@ -1296,9 +1369,8 @@ public class VTNInventoryManagerTest extends TestBase {
         VtnPort vport = new VtnPortBuilder(vportOld).
             setEnabled(true).
             build();
-        VtnPortEvent pev =
-            new VtnPortEvent(null, vport, Boolean.TRUE, null,
-                             VtnUpdateType.CHANGED);
+        VtnPortEvent pev = new VtnPortEvent(
+            vport, Boolean.TRUE, null, VtnUpdateType.CHANGED);
         InstanceIdentifier<VtnPort> vpPath = sport.getVtnPortIdentifier();
         assertNull(changedPorts.put(sport, pev));
         assertNull(original.put(vpPath, vportOld));
@@ -1315,8 +1387,8 @@ public class VTNInventoryManagerTest extends TestBase {
         vport = new VtnPortBuilder(vportOld).
             setEnabled(false).
             build();
-        pev = new VtnPortEvent(null, vport, Boolean.FALSE, null,
-                               VtnUpdateType.CHANGED);
+        pev = new VtnPortEvent(
+            vport, Boolean.FALSE, null, VtnUpdateType.CHANGED);
         vpPath = sport.getVtnPortIdentifier();
         assertNull(changedPorts.put(sport, pev));
         assertNull(original.put(vpPath, vportOld));
@@ -1333,8 +1405,8 @@ public class VTNInventoryManagerTest extends TestBase {
         vport = new VtnPortBuilder(vportOld).
             setPortLink(plinks).
             build();
-        pev = new VtnPortEvent(null, vport, null, Boolean.TRUE,
-                               VtnUpdateType.CHANGED);
+        pev = new VtnPortEvent(
+            vport, null, Boolean.TRUE, VtnUpdateType.CHANGED);
         vpPath = sport.getVtnPortIdentifier();
         assertNull(changedPorts.put(sport, pev));
         assertNull(original.put(vpPath, vportOld));
@@ -1352,8 +1424,8 @@ public class VTNInventoryManagerTest extends TestBase {
         vport = new VtnPortBuilder(vportOld).
             setPortLink(null).
             build();
-        pev = new VtnPortEvent(null, vport, null, Boolean.FALSE,
-                               VtnUpdateType.CHANGED);
+        pev = new VtnPortEvent(
+            vport, null, Boolean.FALSE, VtnUpdateType.CHANGED);
         vpPath = sport.getVtnPortIdentifier();
         assertNull(changedPorts.put(sport, pev));
         assertNull(original.put(vpPath, vportOld));
@@ -1373,7 +1445,7 @@ public class VTNInventoryManagerTest extends TestBase {
             setPortLink(plinks).
             setCost(1000L).
             build();
-        pev = new VtnPortEvent(null, vport, null, null, VtnUpdateType.REMOVED);
+        pev = new VtnPortEvent(vport, null, null, VtnUpdateType.REMOVED);
         vpPath = sport.getVtnPortIdentifier();
         assertNull(removedPorts.put(sport, pev));
         assertTrue(removed.add(sport.getVtnPortIdentifier()));
@@ -1387,7 +1459,7 @@ public class VTNInventoryManagerTest extends TestBase {
             setEnabled(true).
             setCost(1000L).
             build();
-        pev = new VtnPortEvent(null, vport, null, null, VtnUpdateType.REMOVED);
+        pev = new VtnPortEvent(vport, null, null, VtnUpdateType.REMOVED);
         vpPath = sport.getVtnPortIdentifier();
         assertNull(removedPorts.put(sport, pev));
         assertTrue(removed.add(sport.getVtnPortIdentifier()));
@@ -1401,7 +1473,7 @@ public class VTNInventoryManagerTest extends TestBase {
             setEnabled(false).
             setCost(10000L).
             build();
-        pev = new VtnPortEvent(null, vport, null, null, VtnUpdateType.REMOVED);
+        pev = new VtnPortEvent(vport, null, null, VtnUpdateType.REMOVED);
         vpPath = sport.getVtnPortIdentifier();
         assertNull(removedPorts.put(sport, pev));
         assertTrue(removed.add(sport.getVtnPortIdentifier()));
@@ -1432,11 +1504,11 @@ public class VTNInventoryManagerTest extends TestBase {
             ArgumentCaptor<TxEvent> captor =
                 ArgumentCaptor.forClass(TxEvent.class);
             int numNodeEvents =
-                (createdNodes.size() + removedNodes.size()) * nlisteners;
+                (createdNodes.size() + changedNodes.size() +
+                 removedNodes.size()) * nlisteners;
             int numPortEvents =
                 (createdPorts.size() + changedPorts.size() +
-                 removedPorts.size()) *
-                nlisteners;
+                 removedPorts.size()) * nlisteners;
             int numEvents = numNodeEvents + numPortEvents;
             verify(vtnProvider, times(numEvents)).post(captor.capture());
             List<TxEvent> delivered = captor.getAllValues();
@@ -1448,7 +1520,7 @@ public class VTNInventoryManagerTest extends TestBase {
                 TxEvent tev = it.next();
                 assertTrue(tev instanceof VtnNodeEvent);
                 VtnNodeEvent nev = (VtnNodeEvent)tev;
-                snode = nev.getSalNode();
+                SalNode snode = nev.getSalNode();
                 VtnNodeEvent expected = nodeEvents.remove(snode);
                 assertNotNull(expected);
                 for (int j = 0; j < nlisteners; j++) {
@@ -1463,6 +1535,31 @@ public class VTNInventoryManagerTest extends TestBase {
                     assertEquals(snode, nev.getSalNode());
                     assertSame(expected.getVtnNode(), nev.getVtnNode());
                     assertEquals(VtnUpdateType.CREATED, nev.getUpdateType());
+                }
+            }
+            assertTrue(nodeEvents.isEmpty());
+
+            // The next must be node update events.
+            nodeEvents = new HashMap<>(changedNodes);
+            for (int i = 0; i < changedNodes.size(); i++) {
+                TxEvent tev = it.next();
+                assertTrue(tev instanceof VtnNodeEvent);
+                VtnNodeEvent nev = (VtnNodeEvent)tev;
+                SalNode snode = nev.getSalNode();
+                VtnNodeEvent expected = nodeEvents.remove(snode);
+                assertNotNull(expected);
+                for (int j = 0; j < nlisteners; j++) {
+                    if (j != 0) {
+                        tev = it.next();
+                        assertTrue(tev instanceof VtnNodeEvent);
+                        nev = (VtnNodeEvent)tev;
+                    }
+                    assertEquals(listeners[j],
+                                 getFieldValue(nev, VTNInventoryListener.class,
+                                               "listener"));
+                    assertEquals(snode, nev.getSalNode());
+                    assertSame(expected.getVtnNode(), nev.getVtnNode());
+                    assertEquals(VtnUpdateType.CHANGED, nev.getUpdateType());
                 }
             }
             assertTrue(nodeEvents.isEmpty());
@@ -1533,7 +1630,7 @@ public class VTNInventoryManagerTest extends TestBase {
                 TxEvent tev = it.next();
                 assertTrue(tev instanceof VtnNodeEvent);
                 VtnNodeEvent nev = (VtnNodeEvent)tev;
-                snode = nev.getSalNode();
+                SalNode snode = nev.getSalNode();
                 VtnNodeEvent expected = nodeEvents.remove(snode);
                 assertNotNull(expected);
                 for (int j = 0; j < nlisteners; j++) {

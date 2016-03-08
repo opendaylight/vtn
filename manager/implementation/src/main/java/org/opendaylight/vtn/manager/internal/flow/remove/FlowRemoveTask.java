@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,10 +8,9 @@
 
 package org.opendaylight.vtn.manager.internal.flow.remove;
 
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import static org.opendaylight.vtn.manager.internal.flow.remove.FlowRemoveContext.LOG;
 
-import org.slf4j.Logger;
+import java.util.concurrent.TimeUnit;
 
 import org.opendaylight.vtn.manager.VTNException;
 
@@ -19,7 +18,7 @@ import org.opendaylight.vtn.manager.internal.RemovedFlows;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNConfig;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
-import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpc;
+import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpcList;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 
@@ -52,49 +51,18 @@ public final class FlowRemoveTask implements Runnable {
     /**
      * Check the result of remove-flow RPC invocations.
      *
-     * @param rpcs  A list of remove-flow RPC invocations.
+     * @param rpcs  A {@link RemoveFlowRpcList} instance.
      * @throws VTNException  An error occurred.
      */
-    private void checkResults(List<RemoveFlowRpc> rpcs) throws VTNException {
+    private void checkResults(RemoveFlowRpcList rpcs) throws VTNException {
         int size = rpcs.size();
-        if (size <= 0) {
-            return;
-        }
-
-        // Determine timeout.
-        TimeUnit nano = TimeUnit.NANOSECONDS;
-        TimeUnit milli = TimeUnit.MILLISECONDS;
-        VTNConfig vcfg = vtnProvider.getVTNConfig();
-        int msec = (size == 1)
-            ? vcfg.getFlowModTimeout()
-            : vcfg.getBulkFlowModTimeout();
-        long timeout = milli.toNanos((long)msec);
-        long deadline = System.nanoTime() + timeout;
-
-        Logger logger = FlowRemoveContext.LOG;
-        VTNException firstError = null;
-        for (RemoveFlowRpc rpc: rpcs) {
-            try {
-                rpc.getResult(timeout, nano, logger);
-            } catch (VTNException e) {
-                if (firstError == null) {
-                    firstError = e;
-                }
-                continue;
-            }
-            logger.trace("remove-flow has completed successfully: " +
-                         "remover={}, input={}",
-                         context.getRemoverDescription(), rpc.getInput());
-
-            timeout = deadline - System.nanoTime();
-            if (timeout <= 0) {
-                // Wait one more millisecond.
-                timeout = milli.toNanos(1L);
-            }
-        }
-
-        if (firstError != null) {
-            throw firstError;
+        if (size > 0) {
+            // Determine timeout.
+            VTNConfig vcfg = vtnProvider.getVTNConfig();
+            int timeout = (size == 1)
+                ? vcfg.getFlowModTimeout()
+                : vcfg.getBulkFlowModTimeout();
+            rpcs.verify(LOG, timeout, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -105,13 +73,10 @@ public final class FlowRemoveTask implements Runnable {
      */
     @Override
     public void run() {
-        Logger logger = FlowRemoveContext.LOG;
-        SalFlowService service = context.getFlowService();
+        SalFlowService sfs = context.getFlowService();
         RemovedFlows removed = context.getRemovedFlows();
-        TxContext ctx = vtnProvider.newTxContext();
-        try {
-            List<RemoveFlowRpc> rpcs = removed.removeFlowEntries(ctx, service);
-            checkResults(rpcs);
+        try (TxContext ctx = vtnProvider.newTxContext()) {
+            checkResults(removed.removeFlowEntries(ctx, sfs));
         } catch (VTNException e) {
             context.setFailure(e);
             return;
@@ -119,15 +84,13 @@ public final class FlowRemoveTask implements Runnable {
             String msg = new StringBuilder("Failed to remove flow entries: " +
                                            "remover=").
                 append(context.getRemoverDescription()).toString();
-            logger.error(msg, e);
+            LOG.error(msg, e);
             context.setFailure(e);
             return;
-        } finally {
-            ctx.cancelTransaction();
         }
 
-        logger.debug("Flow entries have been removed: remover={}",
-                     context.getRemoverDescription());
+        LOG.debug("Flow entries have been removed: remover={}",
+                  context.getRemoverDescription());
         context.setSuccess();
     }
 }

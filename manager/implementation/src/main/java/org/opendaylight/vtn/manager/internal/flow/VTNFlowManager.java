@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,8 @@
  */
 
 package org.opendaylight.vtn.manager.internal.flow;
+
+import static org.opendaylight.vtn.manager.internal.util.flow.FlowUtils.COOKIE_MISS;
 
 import java.util.List;
 import java.util.Timer;
@@ -32,6 +34,7 @@ import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxTask;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.VTNSubSystem;
+import org.opendaylight.vtn.manager.internal.flow.add.AddMdFlowTask;
 import org.opendaylight.vtn.manager.internal.flow.add.FlowAddContext;
 import org.opendaylight.vtn.manager.internal.flow.add.PutFlowTxTask;
 import org.opendaylight.vtn.manager.internal.flow.reader.FlowCountFuture;
@@ -50,16 +53,17 @@ import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
 import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
 import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
-import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.SalNotificationListener;
 import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
+import org.opendaylight.vtn.manager.internal.util.concurrent.RunnableVTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.TimeoutCounter;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNThreadPool;
-import org.opendaylight.vtn.manager.internal.util.flow.FlowFinder;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.VTNFlowBuilder;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
+import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcFuture;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcUtils;
@@ -89,7 +93,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.Nex
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.NextFlowIdBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.VtnFlows;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.VtnFlowsBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.VtnDataFlow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnOpenflowVersion;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
@@ -174,6 +177,19 @@ public final class VTNFlowManager extends SalNotificationListener
      */
     private final AtomicReference<EntityOwnershipListenerRegistration>  entityListener =
         new AtomicReference<>();
+
+    /**
+     * Describes an interface for a factory class that create flow task.
+     */
+    private interface FlowTaskFactory {
+        /**
+         * Construct a new flow task.
+         *
+         * @param sfs  A {@link SalFlowService} instance.
+         * @return  A new flow task.
+         */
+        RunnableVTNFuture<Void> newTask(SalFlowService sfs);
+    }
 
     /**
      * MD-SAL transaction task to initialize internal flow containers.
@@ -290,7 +306,23 @@ public final class VTNFlowManager extends SalNotificationListener
      *
      * @param <T>  The type of the value returned by the future.
      */
-    private final class TxCounterCallback<T> implements FutureCallback<T> {
+    protected static class TxCounterCallback<T> implements FutureCallback<T> {
+        /**
+         * The VTN flow manager.
+         */
+        private final VTNFlowManager  flowManager;
+
+        /**
+         * Construct a new instance.
+         *
+         * @param fmgr  The VTN flow manager.
+         */
+        protected TxCounterCallback(VTNFlowManager fmgr) {
+            flowManager = fmgr;
+        }
+
+        // FutureCallback
+
         /**
          * Invoked when the future has completed successfully.
          *
@@ -298,7 +330,7 @@ public final class VTNFlowManager extends SalNotificationListener
          */
         @Override
         public void onSuccess(T result) {
-            decrementCounter();
+            flowManager.decrementCounter();
         }
 
         /**
@@ -308,7 +340,80 @@ public final class VTNFlowManager extends SalNotificationListener
          */
         @Override
         public void onFailure(Throwable t) {
-            decrementCounter();
+            flowManager.decrementCounter();
+        }
+    }
+
+    /**
+     * A callback for flow transaction future associated with the task that
+     * installs a table miss flow entry.
+     */
+    private static final class TableMissCallback
+        extends TxCounterCallback<Void> {
+        /**
+         * The identifier for the target switch.
+         */
+        private final SalNode  targetNode;
+
+        /**
+         * The task that installs a flow entry.
+         */
+        private AddMdFlowTask  flowTask;
+
+        /**
+         * Construct a new instance.
+         *
+         * @param fmgr   The VTN flow manager.
+         * @param snode  A {@link SalNode} instance that specifies the target
+         *               switch.
+         */
+        private TableMissCallback(VTNFlowManager fmgr, SalNode snode) {
+            super(fmgr);
+            targetNode = snode;
+        }
+
+        /**
+         * Set the task that installs a table miss flow entry.
+         *
+         * @param task  The task that installs a table miss flow entry.
+         */
+        private void setTask(AddMdFlowTask task) {
+            flowTask = task;
+        }
+
+        // TxCounterCallback
+
+        /**
+         * Invoked when a table miss flow entry has been installed
+         * successfully.
+         *
+         * @param result  {@code null}.
+         */
+        @Override
+        public void onSuccess(Void result) {
+            super.onSuccess(result);
+            LOG.info("Table miss flow entry has been installed: node={}",
+                     targetNode);
+        }
+
+        /**
+         * Invoked when it failed to install a table miss flow entry.
+         *
+         * @param t  A {@link Throwable} instance that indicates the cause
+         *           of failure.
+         */
+        @Override
+        public void onFailure(Throwable t) {
+            super.onFailure(t);
+
+            // Don't record error log if the add-flow RPC was canceled.
+            if (flowTask.isNodeRemoved()) {
+                LOG.debug("Installation of table miss flow entry has been " +
+                          "canceled: node={}", targetNode);
+            } else {
+                LOG.error("Failed to install table miss flow entry: node=" +
+                          targetNode, t);
+            }
         }
     }
 
@@ -484,7 +589,7 @@ public final class VTNFlowManager extends SalNotificationListener
 
         // Add callback which will decrement the transaction counter when
         // the future completes.
-        TxCounterCallback<T> cb = new TxCounterCallback<>();
+        TxCounterCallback<T> cb = new TxCounterCallback<>(this);
         Futures.addCallback(future, cb);
 
         // Start the task.
@@ -516,49 +621,61 @@ public final class VTNFlowManager extends SalNotificationListener
      *               OpenFlow protocol version. {@code null} means the protocol
      *               version is not yet determined.
      */
-    private synchronized void clearFlowTable(SalNode snode,
-                                             VtnOpenflowVersion ofver) {
-        SalFlowService sfs = flowService;
-        if (sfs == null) {
-            return;
-        }
-
-        // Increment the transaction counter.
-        assert txCount >= 0;
-        txCount++;
-
-        // Start ClearNodeFlowsTask.
-        ClearNodeFlowsTask task = new ClearNodeFlowsTask(
-            vtnProvider, sfs, statsReader, snode, ofver);
-        VTNFuture<Void> f = task.getFuture();
-        if (!flowThread.executeTask(task)) {
-            f.cancel(false);
-        }
-
-        // Add callback which will decrement the transaction counter when
-        // the future completes.
-        TxCounterCallback<Void> cb = new TxCounterCallback<>();
-        Futures.addCallback(f, cb);
+    private void clearFlowTable(final SalNode snode,
+                                final VtnOpenflowVersion ofver) {
+        FlowTaskFactory factory = new FlowTaskFactory() {
+            @Override
+            public ClearNodeFlowsTask newTask(SalFlowService sfs) {
+                return new ClearNodeFlowsTask(
+                    vtnProvider, sfs, statsReader, snode, ofver);
+            }
+        };
+        runFlowTask(factory, new TxCounterCallback<Void>(this));
     }
 
     /**
-     * Search for the VTN data flow associated with the given ID.
+     * Install a table miss flow entry into the specified switch.
      *
-     * @param flowId  Identifier for the VTN data flow.
-     * @return  An {@link IdentifiedData} instance which contains VTN data flow
-     *          if found. {@code null} if not found.
+     * @param snode  A {@link SalNode} instance which specifies the target
+     *               switch.
      */
-    private IdentifiedData<VtnDataFlow> findFlow(VtnFlowId flowId) {
-        TxContext ctx = vtnProvider.newTxContext();
-        try {
-            ReadTransaction rtx = ctx.getTransaction();
-            return new FlowFinder(rtx).find(flowId);
-        } catch (VTNException e) {
-            String msg = "Failed to find VTN data flow: " + flowId.getValue();
-            LOG.error(msg, e);
-            return null;
-        } finally {
-            ctx.cancelTransaction();
+    private void addTableMissFlow(final SalNode snode) {
+        final TableMissCallback cb = new TableMissCallback(this, snode);
+        FlowTaskFactory factory = new FlowTaskFactory() {
+            @Override
+            public AddMdFlowTask newTask(SalFlowService sfs) {
+                AddMdFlowTask task = new AddMdFlowTask(
+                    vtnProvider, sfs, FlowUtils.createTableMissInput(snode));
+                cb.setTask(task);
+                return task;
+            }
+        };
+        runFlowTask(factory, cb);
+    }
+
+    /**
+     * Run a task on the flow task thread.
+     *
+     * @param factory   A factory class that instantiates a new task.
+     * @param callback  A callback to be invoked when a task completes.
+     */
+    private synchronized void runFlowTask(FlowTaskFactory factory,
+                                          TxCounterCallback<Void> callback) {
+        SalFlowService sfs = flowService;
+        if (sfs != null) {
+            // Increment the transaction counter.
+            assert txCount >= 0;
+            txCount++;
+
+            // Create a new task, and run it on the flow task thread.
+            RunnableVTNFuture<Void> task = factory.newTask(sfs);
+            if (!flowThread.executeTask(task)) {
+                task.cancel(false);
+            }
+
+            // Add callback which will decrement the transaction counter when
+            // the task completes.
+            Futures.addCallback(task, callback);
         }
     }
 
@@ -584,6 +701,42 @@ public final class VTNFlowManager extends SalNotificationListener
         if (task != null) {
             task.cancel();
             LOG.info("Flow statistics timer task has been canceled.");
+        }
+    }
+
+    /**
+     * Record a log message that indicates the given removed flow entry is
+     * ignored.
+     *
+     * @param level    The logging level.
+     * @param msg      A log message.
+     * @param snode    The node identifier that specifies the switch.
+     * @param removed  The FLOW_REMOVED notification.
+     */
+    private void ignoreFlowRemoved(VTNLogLevel level, String msg,
+                                   SalNode snode, SwitchFlowRemoved removed) {
+        level.log(LOG, "Ignore FLOW_REMOVED: {}: node={}, flow={}",
+                  msg, snode, removed);
+    }
+
+    /**
+     * Determine whether a table miss flow entry needs to be installed to
+     * the specified switch.
+     *
+     * @param snode  A {@link SalNode} instance which specifies the target
+     *               switch.
+     * @return  {@code true} if a table miss flow entry needs to be installed
+     *          to the specified switch. {@code false} otherwise.
+     */
+    private boolean needTableMissFlow(SalNode snode) {
+        try (TxContext ctx = vtnProvider.newTxContext()) {
+            ReadTransaction rtx = ctx.getTransaction();
+            VtnOpenflowVersion ver =
+                InventoryUtils.getOpenflowVersion(rtx, snode);
+            return (ver != null && ver != VtnOpenflowVersion.OF10);
+        } catch (VTNException | RuntimeException e) {
+            LOG.error("Failed to determine OpenFlow version for " + snode, e);
+            return false;
         }
     }
 
@@ -645,14 +798,33 @@ public final class VTNFlowManager extends SalNotificationListener
     @Override
     public void notifyVtnNode(VtnNodeEvent ev) throws VTNException {
         VtnUpdateType type = ev.getUpdateType();
-        if (type == VtnUpdateType.CREATED) {
-            // Clear the flow table in the new switch.
+        boolean doRemove = (type == VtnUpdateType.REMOVED);
+        if (!doRemove) {
+            // Check to see if OpenFlow protocol version has been determined.
+            // On CREATED event, the version may not be determined yet.
+            // In that case we should wait for the version to be determined.
+            // When the version is determined, it will be notified by a
+            // CHANGED event before any port CREATED events.
+            // So nothing to do here if the version is not yet determined.
             VtnOpenflowVersion ofver = ev.getVtnNode().getOpenflowVersion();
-            clearFlowTable(ev.getSalNode(), ofver);
+            doRemove = (ofver != null);
+            if (doRemove) {
+                // Clear the flow table in the new switch.
+                clearFlowTable(ev.getSalNode(), ofver);
+
+                if (ofver != VtnOpenflowVersion.OF10) {
+                    // OF1.3+ switch drops unmatched packets by default.
+                    // So a table miss flow entry that tosses unmatched
+                    // packets to the controller needs to be installed.
+                    addTableMissFlow(ev.getSalNode());
+                }
+            }
         }
 
-        // Uninstall VTN flows affected by the node.
-        removeFlows(new NodeFlowRemover(ev.getSalNode()));
+        if (doRemove) {
+            // Uninstall VTN flows affected by the node.
+            removeFlows(new NodeFlowRemover(ev.getSalNode()));
+        }
     }
 
     /**
@@ -678,13 +850,11 @@ public final class VTNFlowManager extends SalNotificationListener
     @Override
     public Future<RpcResult<GetDataFlowOutput>> getDataFlow(
         GetDataFlowInput input) {
-        TxContext ctx = vtnProvider.newTxContext();
-        try {
+        try (TxContext ctx = vtnProvider.newTxContext()) {
             ReadFlowFuture f =
                 ReadFlowFuture.create(ctx, txQueue, statsReader, input);
             return new RpcFuture<List<DataFlowInfo>, GetDataFlowOutput>(f, f);
         } catch (VTNException | RuntimeException e) {
-            ctx.cancelTransaction();
             return RpcUtils.getErrorBuilder(GetDataFlowOutput.class, e).
                 buildFuture();
         }
@@ -699,12 +869,10 @@ public final class VTNFlowManager extends SalNotificationListener
     @Override
     public Future<RpcResult<GetDataFlowCountOutput>> getDataFlowCount(
         GetDataFlowCountInput input) {
-        TxContext ctx = vtnProvider.newTxContext();
-        try {
+        try (TxContext ctx = vtnProvider.newTxContext()) {
             FlowCountFuture f = FlowCountFuture.create(ctx, input);
             return new RpcFuture<Integer, GetDataFlowCountOutput>(f, f);
         } catch (RpcException | RuntimeException e) {
-            ctx.cancelTransaction();
             return RpcUtils.getErrorBuilder(GetDataFlowCountOutput.class, e).
                 buildFuture();
         }
@@ -783,31 +951,26 @@ public final class VTNFlowManager extends SalNotificationListener
         }
 
         FlowCookie cookie = notification.getCookie();
-        VtnFlowId flowId = FlowUtils.getVtnFlowId(cookie);
-        if (flowId == null) {
-            LOG.debug("Ignore FLOW_REMOVED: Unexpected cookie: {}",
-                      notification);
-            return;
-        }
+        if (!COOKIE_MISS.equals(cookie)) {
+            VtnFlowId flowId = FlowUtils.getVtnFlowId(cookie);
+            if (flowId == null) {
+                ignoreFlowRemoved(VTNLogLevel.DEBUG, "Unexpected cookie",
+                                  snode, notification);
+            } else if (removedCookies.putIfAbsent(cookie, flowId) != null) {
+                ignoreFlowRemoved(VTNLogLevel.TRACE, "Already removed",
+                                  snode, notification);
+            } else {
+                Timer timer = vtnProvider.getTimer();
+                CookieExpireTask task = new CookieExpireTask(cookie);
+                timer.schedule(task, REMOVED_COOKIE_EXPIRE);
 
-        if (removedCookies.putIfAbsent(cookie, flowId) != null) {
-            LOG.trace("Ignore FLOW_REMOVED: Already removed: flowId={}: {}",
-                      flowId.getValue(), notification);
-            return;
-        }
-
-        Timer timer = vtnProvider.getTimer();
-        CookieExpireTask task = new CookieExpireTask(cookie);
-        timer.schedule(task, REMOVED_COOKIE_EXPIRE);
-
-        // Determine the VTN data flow to be removed.
-        IdentifiedData<VtnDataFlow> data = findFlow(flowId);
-        if (data == null) {
-            LOG.debug("Ignore FLOW_REMOVED: Data flow not found: flowId={}",
-                      flowId.getValue());
-        } else {
-            // Remove VTN data flow.
-            removeFlows(new RemovedFlowRemover(data, snode));
+                // Remove VTN data flow that contains removed flow entry.
+                removeFlows(new RemovedFlowRemover(flowId, snode));
+            }
+        } else if (needTableMissFlow(snode)) {
+            // Install table miss flow entry again.
+            LOG.warn("Table miss flow entry has been removed: node={}", snode);
+            addTableMissFlow(snode);
         }
     }
 
