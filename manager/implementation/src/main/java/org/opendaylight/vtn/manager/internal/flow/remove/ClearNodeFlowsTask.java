@@ -8,9 +8,8 @@
 
 package org.opendaylight.vtn.manager.internal.flow.remove;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import static org.opendaylight.vtn.manager.internal.util.flow.FlowUtils.EMPTY_MATCH;
+
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -23,16 +22,15 @@ import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.flow.stats.StatsReaderCallback;
 import org.opendaylight.vtn.manager.internal.flow.stats.StatsReaderService;
 import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
-import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
+import org.opendaylight.vtn.manager.internal.util.concurrent.RunnableVTNFuture;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
-import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpc;
+import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpcList;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnFlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnOpenflowVersion;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowTableRef;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.FlowAndStatisticsMap;
@@ -48,10 +46,12 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
  * <p>
  *   This task will remove only flow entries installed by the VTN Manager, and
  *   will keep flow entries installed by another component.
+ *   Note that this task never removes table miss flow entries from OF1.3
+ *   switches.
  * </p>
  */
-public final class ClearNodeFlowsTask
-    implements Runnable, StatsReaderCallback {
+public final class ClearNodeFlowsTask extends RunnableVTNFuture<Void>
+    implements StatsReaderCallback {
     /**
      * Logger instance.
      */
@@ -69,20 +69,9 @@ public final class ClearNodeFlowsTask
     private final VTNManagerProvider  vtnProvider;
 
     /**
-     * The MD-SAL flow service.
-     */
-    private final SalFlowService  flowService;
-
-    /**
      * The target switch.
      */
     private final SalNode  targetNode;
-
-    /**
-     * A future associated with this task.
-     */
-    private final SettableVTNFuture<Void>  taskFuture =
-        new SettableVTNFuture<>();
 
     /**
      * A future used to wait for RPC invocations.
@@ -93,12 +82,7 @@ public final class ClearNodeFlowsTask
     /**
      * A list of RPC invocations which uninstalls VTN flows.
      */
-    private final List<RemoveFlowRpc>  rpcList;
-
-    /**
-     * An input builder for remove-flow RPC.
-     */
-    private RemoveFlowInputBuilder  inputBuilder;
+    private final RemoveFlowRpcList  rpcList;
 
     /**
      * Construct a new instance.
@@ -115,35 +99,22 @@ public final class ClearNodeFlowsTask
                               StatsReaderService srs, SalNode snode,
                               VtnOpenflowVersion ofver) {
         vtnProvider = provider;
-        flowService = sfs;
         targetNode = snode;
+        rpcList = new RemoveFlowRpcList(provider, sfs);
 
-        if (ofver == VtnOpenflowVersion.OF13) {
-            LOG.debug("Remove all VTN flows by cookie mask: {}", snode);
-            RemoveFlowInput input = FlowUtils.
-                createRemoveFlowInputBuilder(snode).
-                setBarrier(true).
-                build();
-            rpcList = Collections.singletonList(
-                new RemoveFlowRpc(vtnProvider, sfs, input));
-            rpcFuture.set(null);
-        } else {
+        if (ofver == VtnOpenflowVersion.OF10) {
             // Read flow entries in the given switch.
             LOG.debug("Scanning flow table to remove VTN flows: {}", snode);
-            rpcList = new ArrayList<>();
             if (!srs.start(snode, this)) {
                 transactionCanceled();
             }
+        } else {
+            LOG.debug("Remove all VTN flows by cookie mask: {}", snode);
+            RemoveFlowInputBuilder builder = FlowUtils.
+                createRemoveFlowInputBuilder(snode);
+            rpcList.invoke(builder);
+            completeRpc();
         }
-    }
-
-    /**
-     * Return a future associated with this task.
-     *
-     * @return  A {@link VTNFuture} instance associated with this task.
-     */
-    public VTNFuture<Void> getFuture() {
-        return taskFuture;
     }
 
     /**
@@ -166,62 +137,22 @@ public final class ClearNodeFlowsTask
         }
 
         // Wait for completion of RPC tasks.
-        TimeUnit nano = TimeUnit.NANOSECONDS;
-        TimeUnit milli = TimeUnit.MILLISECONDS;
         VTNConfig vcfg = vtnProvider.getVTNConfig();
-        int msec = vcfg.getBulkFlowModTimeout();
-        long timeout = milli.toNanos((long)msec);
-        long deadline = System.nanoTime() + timeout;
-
-        VTNException firstError = null;
-        for (RemoveFlowRpc rpc: rpcList) {
-            try {
-                rpc.getResult(timeout, nano, LOG);
-            } catch (VTNException e) {
-                if (firstError == null) {
-                    firstError = e;
-                }
-                continue;
-            }
-            LOG.trace("remove-flow has completed successfully: input={}",
-                      rpc.getInput());
-
-            timeout = deadline - System.nanoTime();
-            if (timeout <= 0) {
-                // Wait one more millisecond.
-                timeout = milli.toNanos(1L);
-            }
-        }
-
-        if (firstError == null) {
+        long timeout = (long)vcfg.getBulkFlowModTimeout();
+        try {
+            rpcList.verify(LOG, timeout, TimeUnit.MILLISECONDS);
             LOG.debug("VTN flows has been cleared: {}", targetNode);
-        } else {
-            LOG.error("Failed to remove VTN flows in " + targetNode,
-                      firstError);
-            throw firstError;
+        } catch (VTNException e) {
+            LOG.error("Failed to remove VTN flows in " + targetNode, e);
         }
     }
 
     /**
-     * Schedule a call of remove-flow RPC.
-     *
-     * @param builder  An input builder for remove-flow RPC.
-     *                 {@code null} indicates that all the RPC calls have been
-     *                 scheduled.
+     * Complete the task that invokes remove-flow RPC.
      */
-    private void schedule(RemoveFlowInputBuilder builder) {
-        RemoveFlowInputBuilder prev = inputBuilder;
-        inputBuilder = builder;
-
-        if (prev != null) {
-            if (builder == null) {
-                // Set barrier flag to the last input.
-                prev.setBarrier(true);
-            }
-
-            rpcList.add(
-                new RemoveFlowRpc(vtnProvider, flowService, prev.build()));
-        }
+    private void completeRpc() {
+        rpcList.flush();
+        rpcFuture.set(null);
     }
 
     // Runnable
@@ -233,12 +164,12 @@ public final class ClearNodeFlowsTask
     public void run() {
         try {
             uninstall();
-            taskFuture.set(null);
+            set(null);
         } catch (VTNException e) {
-            taskFuture.setException(e);
+            setException(e);
         } catch (RuntimeException e) {
             LOG.error("Caught an unexpected exception", e);
-            taskFuture.setException(e);
+            setException(e);
         }
     }
 
@@ -259,7 +190,7 @@ public final class ClearNodeFlowsTask
             Uri uri = new Uri("clear-node-flows:" + fid.getValue());
             RemoveFlowInputBuilder builder = FlowUtils.
                 createRemoveFlowInputBuilder(targetNode, fstats, uri);
-            schedule(builder);
+            rpcList.invoke(builder);
         }
     }
 
@@ -268,9 +199,8 @@ public final class ClearNodeFlowsTask
      */
     @Override
     public void transactionCompleted() {
-        schedule(null);
         LOG.debug("All the flow entries have been scanned: {}", targetNode);
-        rpcFuture.set(null);
+        completeRpc();
     }
 
     /**
@@ -288,17 +218,17 @@ public final class ClearNodeFlowsTask
                 new FlowTableRef(targetNode.getFlowTableIdentifier(tid));
             StringBuilder sb = new StringBuilder("clean-up:").
                 append(targetNode);
-            RemoveFlowInput input = new RemoveFlowInputBuilder().
+
+            RemoveFlowInputBuilder builder = new RemoveFlowInputBuilder().
                 setNode(targetNode.getNodeRef()).
                 setFlowTable(tref).
                 setTransactionUri(new Uri(sb.toString())).
                 setTableId(tid).
-                setStrict(false).
-                setBarrier(true).
-                build();
+                setMatch(EMPTY_MATCH).
+                setStrict(false);
 
-            rpcList.add(new RemoveFlowRpc(vtnProvider, flowService, input));
-            rpcFuture.set(null);
+            rpcList.invoke(builder);
+            completeRpc();
         }
     }
 }

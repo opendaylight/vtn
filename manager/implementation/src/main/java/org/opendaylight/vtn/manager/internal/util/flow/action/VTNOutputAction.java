@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -45,6 +45,23 @@ public final class VTNOutputAction extends VTNFlowAction {
      * Construct an empty instance.
      */
     VTNOutputAction() {
+    }
+
+    /**
+     * Create a new MD-SAL output action that transmits packets to the
+     * specified port.
+     *
+     * @param port  The URI that specifies the output port.
+     * @return  An {@link OutputActionCase} instance.
+     */
+    public static OutputActionCase newOutputActionCase(Uri port) {
+        OutputAction out = new OutputActionBuilder().
+            setOutputNodeConnector(port).
+            setMaxLength(OUTPUT_MAX_LEN).
+            build();
+        return new OutputActionCaseBuilder().
+            setOutputAction(out).
+            build();
     }
 
     /**
@@ -123,12 +140,9 @@ public final class VTNOutputAction extends VTNFlowAction {
      */
     @Override
     protected ActionBuilder set(ActionBuilder builder) {
-        OutputAction out = new OutputActionBuilder().
-            setOutputNodeConnector(outputPort.getNodeConnectorId()).
-            setMaxLength(OUTPUT_MAX_LEN).
-            build();
-        return builder.setAction(new OutputActionCaseBuilder().
-                                 setOutputAction(out).build());
+        OutputActionCase ac =
+            newOutputActionCase(outputPort.getNodeConnectorId());
+        return builder.setAction(ac);
     }
 
     /**

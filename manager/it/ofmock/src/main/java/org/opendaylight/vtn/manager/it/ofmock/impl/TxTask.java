@@ -24,8 +24,10 @@ import org.opendaylight.controller.md.sal.common.api.data.TransactionCommitFaile
 
 /**
  * {@code TxTask} is an abstract task that updates MD-SAL datastore.
+ *
+ * @param <T>  The type of the value to be returned by the task.
  */
-public abstract class TxTask implements Runnable {
+public abstract class TxTask<T> implements Runnable {
     /**
      * The number of times for retrying transaction.
      */
@@ -44,7 +46,7 @@ public abstract class TxTask implements Runnable {
     /**
      * A future associated with this task.
      */
-    private SettableFuture<Void>  taskFuture = SettableFuture.<Void>create();
+    private SettableFuture<T>  taskFuture = SettableFuture.<T>create();
 
     /**
      * Construct a new instance.
@@ -60,7 +62,7 @@ public abstract class TxTask implements Runnable {
      *
      * @return  A {@link ListenableFuture} instance.
      */
-    public ListenableFuture<Void> getFuture() {
+    public ListenableFuture<T> getFuture() {
         return taskFuture;
     }
 
@@ -71,6 +73,22 @@ public abstract class TxTask implements Runnable {
      */
     protected final DataBroker getDataBroker() {
         return dataBroker;
+    }
+
+    /**
+     * Complete the task.
+     */
+    protected final void complete() {
+        taskFuture.set(getResult());
+    }
+
+    /**
+     * Return the value to be retuned by the task on successful completion.
+     *
+     * @return  {@code null}.
+     */
+    protected T getResult() {
+        return null;
     }
 
     /**
@@ -116,10 +134,6 @@ public abstract class TxTask implements Runnable {
             } else {
                 throw e;
             }
-        } finally {
-            if (!submitted) {
-                tx.cancel();
-            }
         }
 
         return submitted;
@@ -134,16 +148,22 @@ public abstract class TxTask implements Runnable {
     public void run() {
         for (int i = 0; true; i++) {
             ReadWriteTransaction tx = dataBroker.newReadWriteTransaction();
+            boolean submitted = false;
             try {
                 execute(tx);
-                if (submit(tx, i)) {
-                    taskFuture.set(null);
+                submitted = submit(tx, i);
+                if (submitted) {
+                    complete();
                     return;
                 }
             } catch (Exception e) {
                 String msg = "Failed to update transaction.";
                 getLogger().error(msg, e);
                 taskFuture.setException(new IllegalStateException(msg, e));
+            } finally {
+                if (!submitted) {
+                    tx.cancel();
+                }
             }
         }
     }

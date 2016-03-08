@@ -9,11 +9,14 @@
 package org.opendaylight.vtn.manager.it.ofmock.impl;
 
 import java.math.BigInteger;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -121,12 +124,6 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
         new ReentrantReadWriteLock();
 
     /**
-     * The executor service that updates inventory information.
-     */
-    private final ExecutorService  inventoryExecutor =
-        Executors.newSingleThreadExecutor();
-
-    /**
      * The executor service that updates topology information.
      */
     private final ExecutorService  topologyExecutor =
@@ -174,6 +171,27 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
         new ConcurrentHashMap<>();
 
     /**
+     * Shut down the given executor service.
+     *
+     * @param executor  Executor service.
+     */
+    public static void shutdown(ExecutorService executor) {
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(TASK_TIMEOUT,
+                                           TimeUnit.MILLISECONDS)) {
+                executor.shutdownNow();
+                if (!executor.awaitTermination(TASK_TIMEOUT,
+                                               TimeUnit.MILLISECONDS)) {
+                    LOG.warn("Executor did not terminate.");
+                }
+            }
+        } catch (InterruptedException e) {
+            LOG.warn("Calling thread was interrupted.", e);
+        }
+    }
+
+    /**
      * Construct a new instance.
      *
      * @param broker  A {@link DataBroker} service instance.
@@ -193,7 +211,7 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
 
         // Initialize the MD-SAL DS for inventory and topology.
         InitDatastoreTask task = new InitDatastoreTask(broker);
-        inventoryExecutor.execute(task);
+        topologyExecutor.execute(task);
         try {
             task.getFuture().get(TASK_TIMEOUT, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
@@ -255,15 +273,6 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
         Lock lk = (writer) ? rwLock.writeLock() : rwLock.readLock();
         lk.lock();
         return lk;
-    }
-
-    /**
-     * Return the executor that updates inventory information.
-     *
-     * @return  An {@link Executor} instance.
-     */
-    public Executor getInventoryExecutor() {
-        return inventoryExecutor;
     }
 
     /**
@@ -332,12 +341,20 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
     private OfNode createNode(VtnOpenflowVersion ver, String prefix,
                               BigInteger dpid) {
         OfNode node = new OfNode(this, ver, prefix, dpid);
-        String nid = node.getNodeIdentifier();
-        node.register(rpcRegistry);
-        OfNode old = switches.put(nid, node);
-        if (old != null) {
-            switches.put(nid, old);
-            throw new IllegalArgumentException("Node ID confilict: " + nid);
+        boolean succeeded = false;
+        try {
+            String nid = node.getNodeIdentifier();
+            node.register(rpcRegistry);
+            OfNode old = switches.put(nid, node);
+            if (old != null) {
+                switches.put(nid, old);
+                throw new IllegalArgumentException("Node ID confilict: " + nid);
+            }
+            succeeded = true;
+        } finally {
+            if (!succeeded) {
+                node.close();
+            }
         }
 
         return node;
@@ -386,6 +403,31 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
     }
 
     /**
+     * Return an {@link Entry} instance that contains a pair of node and port
+     * specified by the given MD-SAL node connector identifier.
+     *
+     * <p>
+     *   This method must be called with holding {@link #rwLock}.
+     * </p>
+     *
+     * @param pid  The port identifier string.
+     * @return  An {@link Entry} instance if found.
+     *          {@code null} if not found.
+     */
+    private Entry<OfNode, OfPort> getPortEntry(String pid) {
+        String nid = OfMockUtils.getNodeIdentifier(pid);
+        Entry<OfNode, OfPort> entry = null;
+        OfNode node = switches.get(nid);
+        if (node != null) {
+            OfPort port = node.getPort(pid);
+            if (port != null) {
+                entry = new SimpleEntry<>(node, port);
+            }
+        }
+        return entry;
+    }
+
+    /**
      * Return an {@link OfPort} instance associated with the given MD-SAL
      * node connector identifier.
      *
@@ -400,13 +442,47 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
         try {
             OfPort port = getPort(pid);
             if (port == null) {
-                throw new IllegalArgumentException("Unknown port: " + pid);
+                throw unknownPort(pid);
             }
 
             return port;
         } finally {
             rdlock.unlock();
         }
+    }
+
+    /**
+     * Return an {@link Entry} instance that contains a pair of node and port
+     * specified by the given MD-SAL node connector identifier.
+     *
+     * @param pid  The port identifier string.
+     * @return  An {@link Entry} instance.
+     * @throws IllegalArgumentException
+     *    The node connector specified by {@code pid} was not found.
+     */
+    private Entry<OfNode, OfPort> checkPortEntry(String pid) {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            Entry<OfNode, OfPort> entry = getPortEntry(pid);
+            if (entry == null) {
+                throw unknownPort(pid);
+            }
+
+            return entry;
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Return an exception that indicates the unknown port is specified.
+     *
+     * @param pid  The port identifier string.
+     * @return  An {@link IllegalArgumentException} instance.
+     */
+    private IllegalArgumentException unknownPort(String pid) {
+        return new IllegalArgumentException("Unknown port: " + pid);
     }
 
     /**
@@ -436,15 +512,16 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
      * Invoked when inventory information has been initialized on the first
      * run.
      *
-     * @param allPorts  A list of {@link OfPort} instances which represents
-     *                  all the physical ports present in the test environment.
+     * @param allPorts  A collection of {@link OfPort} instances which
+     *                  represents all the physical ports present in the test
+     *                  environment.
      * @param links     A map that keeps inter-switch links to be configured.
      *                  {@code null} is specified if inventory information is
      *                  already initialized.
      * @throws InterruptedException
      *    The calling thread was interrupted.
      */
-    private void initInventory(List<OfPort> allPorts,
+    private void initInventory(Collection<OfPort> allPorts,
                                Map<String, String> links)
         throws InterruptedException {
         if (links == null) {
@@ -502,8 +579,15 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
         LOG.trace("Verifying node: {}", nid);
 
         if (nodeListener.awaitCreated(nid, TASK_TIMEOUT)) {
-            LOG.trace("Node has been created: {}", nid);
-            return;
+            try {
+                node.awaitFlowCleared(TASK_TIMEOUT);
+                LOG.trace("Node has been created: {}", nid);
+                return;
+            } catch (TimeoutException | RuntimeException e) {
+                String msg = "Flow table was not initialized: " + nid;
+                LOG.error(msg, e);
+                throw new IllegalStateException(msg, e);
+            }
         }
 
         String msg = "Node was not created: " + nid;
@@ -558,25 +642,6 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
         throw new IllegalStateException(msg);
     }
 
-    /**
-     * Shut down the given executor service.
-     *
-     * @param executor  Executor service.
-     * @throws InterruptedException
-     *    The calling thread was interrupted.
-     */
-    private void shutdown(ExecutorService executor)
-        throws InterruptedException {
-        executor.shutdown();
-        if (!executor.awaitTermination(TASK_TIMEOUT, TimeUnit.MILLISECONDS)) {
-            executor.shutdownNow();
-            if (!executor.awaitTermination(TASK_TIMEOUT,
-                                           TimeUnit.MILLISECONDS)) {
-                LOG.warn("Executor did not terminate.");
-            }
-        }
-    }
-
     // AutoCloseable
 
     /**
@@ -600,8 +665,6 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
                 node.close();
             }
             switches.clear();
-
-            shutdown(inventoryExecutor);
             shutdown(topologyExecutor);
         } catch (Exception e) {
             LOG.error("Failed to close the openflowplugin mock-up.", e);
@@ -628,7 +691,7 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
         }
 
         boolean done = false;
-        List<OfPort> allPorts = new ArrayList<>();
+        Map<OfPort, OfNode> allPorts = new HashMap<>();
         Map<String, String> links = null;
 
         Lock wrlock = rwLock.writeLock();
@@ -657,8 +720,8 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
                     // Link port 1 with node1.
                     OfPort port = node.addPort(1L);
                     OfPort peer = node1.addPort((long)(i + 1));
-                    allPorts.add(port);
-                    allPorts.add(peer);
+                    allPorts.put(port, node);
+                    allPorts.put(peer, node1);
                     String portId = port.getPortIdentifier();
                     String peerId = peer.getPortIdentifier();
                     links.put(portId, peerId);
@@ -667,18 +730,20 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
                     // Create 2 edge ports.
                     for (long p = MIN_EDGE_PORT_ID; p <= MAX_EDGE_PORT_ID;
                          p++) {
-                        allPorts.add(node.addPort(p));
+                        allPorts.put(node.addPort(p), node);
                     }
                 }
 
                 // Enable all ports.
-                for (OfPort port: allPorts) {
-                    port.setPortState(this, true);
+                for (Entry<OfPort, OfNode> entry: allPorts.entrySet()) {
+                    OfPort p = entry.getKey();
+                    OfNode n = entry.getValue();
+                    p.setPortState(n, true);
                 }
             }
 
             done = true;
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             String msg = "Failed to initialize openflowplugin mock-up.";
             LOG.error(msg, e);
             throw new IllegalStateException(msg, e);
@@ -690,7 +755,7 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
         }
 
         // Ensure that all inventory events have been notified.
-        initInventory(allPorts, links);
+        initInventory(allPorts.keySet(), links);
 
         LOG.debug("Test environment has been initialized.");
     }
@@ -1154,8 +1219,10 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            OfPort port = checkPort(pid);
-            changed = port.setPortState(this, state);
+            Entry<OfNode, OfPort> entry = checkPortEntry(pid);
+            OfNode node = entry.getKey();
+            OfPort port = entry.getValue();
+            changed = port.setPortState(node, state);
         } finally {
             rdlock.unlock();
         }
@@ -1223,22 +1290,12 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
                                 boolean installed)
         throws InterruptedException {
         OfMockFlowEntry target = new OfMockFlowEntry(nid, table, match, pri);
-        long deadline = System.currentTimeMillis() + TASK_TIMEOUT;
-        long timeout = TASK_TIMEOUT;
-        OfMockFlowEntry ofent;
+        OfNode node = checkNode(nid);
         try {
-            for (;;) {
-                OfNode node = checkNode(nid);
-                ofent = node.awaitFlow(target, installed, timeout);
-                if ((ofent != null) == installed) {
-                    return ofent;
-                }
-                timeout = deadline - System.currentTimeMillis();
-            }
+            return node.awaitFlow(target, installed, TASK_TIMEOUT);
         } catch (TimeoutException e) {
+            return node.getFlow(target);
         }
-
-        return getFlow(nid, table, match, pri);
     }
 
     /**

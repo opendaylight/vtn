@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -58,10 +59,8 @@ import org.opendaylight.vtn.manager.internal.util.inventory.MacVlan;
 import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcWatcher;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
-import org.opendaylight.vtn.manager.internal.util.pathmap.PathMapUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-import org.opendaylight.vtn.manager.internal.util.vnode.VTenantIdentifier;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
@@ -103,6 +102,13 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev15020
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnFlowTimeoutConfig;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.OutputActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.OutputActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.output.action._case.OutputAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.output.action._case.OutputActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.Action;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.ActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowTableRef;
@@ -113,9 +119,17 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalF
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowModFlags;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowRef;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.OutputPortValues;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Instructions;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.InstructionsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.instruction.ApplyActionsCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.instruction.ApplyActionsCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.instruction.apply.actions._case.ApplyActionsBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.list.Instruction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.list.InstructionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.statistics.types.rev130925.duration.Duration;
@@ -129,9 +143,43 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.
  */
 public class FlowUtilsTest extends TestBase {
     /**
-     * Bits in a flow cookie which identifies the VTN flows.
+     * Bits in a flow cookie that identifies flow entries installed by the
+     * VTN Manager.
      */
-    public static final long  VTN_FLOW_COOKIE = 0x7f56000000000000L;
+    public static final long  COOKIE_BITS_VTN = 0x7f56000000000000L;
+
+    /**
+     * Bits in a flow cookie that identifies the table miss flow entry
+     * installed by the VTN Manager.
+     */
+    public static final long  COOKIE_BITS_MISS = 0x7f57000000000000L;
+
+    /**
+     * A bitmask that specifies cookie bits for all the flow entries installed
+     * by the VTN Manager.
+     */
+    public static final long  COOKIE_MASKVAL_VTN_ALL = 0xfffe000000000000L;
+
+    /**
+     * A bitmask that specifies cookie bits for VTN flows or a table miss
+     * flow entries.
+     */
+    public static final long  COOKIE_MASKVAL_VTN = 0xffff000000000000L;
+
+    /**
+     * A fixed cookie value for a table miss entry.
+     */
+    public static final long  COOKIE_VALUE_MISS = 0x7f57ffffffffffffL;
+
+    /**
+     * The minimum value of the VTN flow ID.
+     */
+    public static final long  MIN_FLOW_ID = 1L;
+
+    /**
+     * The maximum value of the VTN flow ID.
+     */
+    public static final long  MAX_FLOW_ID = 0x0000ffffffffffffL;
 
     /**
      * An implementation of {@link VtnFlowTimeoutConfig} for test.
@@ -196,6 +244,74 @@ public class FlowUtilsTest extends TestBase {
         public Integer getHardTimeout() {
             return hardTimeout;
         }
+    }
+
+    /**
+     * Test case for public constants.
+     *
+     * <ul>
+     *   <li>{@link FlowUtils#TABLE_ID}</li>
+     *   <li>{@link FlowUtils#COOKIE_VTN}</li>
+     *   <li>{@link FlowUtils#COOKIE_MISS}</li>
+     *   <li>{@link FlowUtils#COOKIE_MASK_ALL}</li>
+     *   <li>{@link FlowUtils#COOKIE_MASK_VTN}</li>
+     *   <li>{@link FlowUtils#MIN_FLOW_ID}</li>
+     *   <li>{@link FlowUtils#MAX_FLOW_ID}</li>
+     *   <li>{@link FlowUtils#EMPTY_MATCH}</li>
+     *   <li>{@link FlowUtils#FLOW_MOD_FLAGS}</li>
+     * </ul>
+     */
+    @Test
+    public void testConstants() {
+        assertEquals((short)0, FlowUtils.TABLE_ID);
+        long vtnBits = FlowUtils.COOKIE_VTN.getValue().longValue();
+        assertEquals(COOKIE_BITS_VTN, vtnBits);
+        assertEquals(COOKIE_VALUE_MISS,
+                     FlowUtils.COOKIE_MISS.getValue().longValue());
+        assertEquals(0xffffffffffffffffL,
+                     FlowUtils.COOKIE_MASK_ALL.getValue().longValue());
+        assertEquals(COOKIE_MASKVAL_VTN,
+                     FlowUtils.COOKIE_MASK_VTN.getValue().longValue());
+        assertEquals(MIN_FLOW_ID, FlowUtils.MIN_FLOW_ID);
+        assertEquals(MAX_FLOW_ID, FlowUtils.MAX_FLOW_ID);
+
+        // Ensure that a table miss flow cookie can be distinguished from
+        // VTN data flows.
+        long[] ids = {MIN_FLOW_ID, 12345L, MAX_FLOW_ID - 1L, MAX_FLOW_ID};
+        for (long id: ids) {
+            // (COOKIE_BITS_VTN & COOKIE_MASKVAL_VTN) should select only
+            // VTN data flows.
+            long cookie = id | COOKIE_BITS_VTN;
+            assertEquals(cookie & COOKIE_MASKVAL_VTN,
+                         COOKIE_BITS_VTN & COOKIE_MASKVAL_VTN);
+            assertNotEquals(COOKIE_VALUE_MISS & COOKIE_MASKVAL_VTN,
+                            COOKIE_BITS_VTN & COOKIE_MASKVAL_VTN);
+
+            // (COOKIE_BITS_MISS & COOKIE_MASKVAL_VTN) should select only
+            // a table miss flow entry.
+            assertNotEquals(cookie & COOKIE_MASKVAL_VTN,
+                            COOKIE_BITS_MISS & COOKIE_MASKVAL_VTN);
+            assertEquals(COOKIE_VALUE_MISS & COOKIE_MASKVAL_VTN,
+                         COOKIE_BITS_MISS & COOKIE_MASKVAL_VTN);
+
+            // COOKIE_MASKVAL_VTN_ALL should select all the flow entries
+            // installed by the VTN Manager.
+            assertEquals(cookie & COOKIE_MASKVAL_VTN_ALL,
+                         COOKIE_BITS_VTN & COOKIE_MASKVAL_VTN_ALL);
+            assertEquals(COOKIE_VALUE_MISS & COOKIE_MASKVAL_VTN_ALL,
+                         COOKIE_BITS_VTN & COOKIE_MASKVAL_VTN_ALL);
+        }
+
+        // EMPTY_MATCH must not contain any condition.
+        assertEquals(new MatchBuilder().build(), FlowUtils.EMPTY_MATCH);
+
+        // FLOW_MOD_FLAGS must contain only SEND_FLOW_REM bit.
+        FlowModFlags flags = FlowUtils.FLOW_MOD_FLAGS;
+        assertEquals(Boolean.FALSE, flags.isCHECKOVERLAP());
+        assertEquals(Boolean.FALSE, flags.isRESETCOUNTS());
+        assertEquals(Boolean.FALSE, flags.isNOPKTCOUNTS());
+        assertEquals(Boolean.FALSE, flags.isNOBYTCOUNTS());
+        assertEquals(Boolean.TRUE, flags.isSENDFLOWREM());
     }
 
     /**
@@ -474,19 +590,20 @@ public class FlowUtilsTest extends TestBase {
     @Test
     public void testCreateFlowCookie() {
         long[] ids = {
-            1L,
-            2L,
+            MIN_FLOW_ID,
+            MIN_FLOW_ID + 1L,
             1234567L,
             0xffffffffL,
             0x100000000L,
-            0x123456789abcdL,
-            0xfffffffffffffL,
+            0x123456789abcL,
+            MAX_FLOW_ID - 1L,
+            MAX_FLOW_ID,
         };
 
         for (long id: ids) {
             VtnFlowId vfId = new VtnFlowId(BigInteger.valueOf(id));
             FlowCookie expected = new FlowCookie(
-                BigInteger.valueOf(id | VTN_FLOW_COOKIE));
+                BigInteger.valueOf(id | COOKIE_BITS_VTN));
             assertEquals(expected, FlowUtils.createCookie(vfId));
         }
     }
@@ -499,21 +616,23 @@ public class FlowUtilsTest extends TestBase {
         assertEquals(null, FlowUtils.getVtnFlowId((FlowCookie)null));
 
         long[] ids = {
-            1L,
-            2L,
+            MIN_FLOW_ID,
+            MIN_FLOW_ID + 1L,
             1234567L,
             0xffffffffL,
             0x100000000L,
             0x123456789abcL,
-            0xffffffffffffL,
+            MAX_FLOW_ID - 1L,
+            MAX_FLOW_ID,
         };
         long[] invalidMasks = {
             0L,
             0xffff000000000000L,
             0x0111000000000000L,
+            0x7f57000000000000L,
             0xff56000000000000L,
-            VTN_FLOW_COOKIE + 0x1000000000000L,
-            VTN_FLOW_COOKIE - 0x1000000000000L,
+            COOKIE_BITS_VTN + 0x1000000000000L,
+            COOKIE_BITS_VTN - 0x1000000000000L,
         };
 
         for (long id: ids) {
@@ -526,7 +645,7 @@ public class FlowUtilsTest extends TestBase {
                 assertEquals(null, FlowUtils.getVtnFlowId(cookie));
             }
 
-            long c = id | VTN_FLOW_COOKIE;
+            long c = id | COOKIE_BITS_VTN;
             cookie = new FlowCookie(BigInteger.valueOf(c));
             VtnFlowId expected = new VtnFlowId(bid);
             assertEquals(expected, FlowUtils.getVtnFlowId(cookie));
@@ -572,8 +691,8 @@ public class FlowUtilsTest extends TestBase {
         String[] tenants = {"vtn1", "vtn2", "tenant_3"};
         VtnFlowId[] flowIds = {
             new VtnFlowId(BigInteger.valueOf(1L)),
-            new VtnFlowId(BigInteger.valueOf(VTN_FLOW_COOKIE | 12345L)),
-            new VtnFlowId(BigInteger.valueOf(VTN_FLOW_COOKIE | 0xfffffffffL)),
+            new VtnFlowId(BigInteger.valueOf(COOKIE_BITS_VTN | 12345L)),
+            new VtnFlowId(BigInteger.valueOf(COOKIE_BITS_VTN | 0xfffffffffL)),
         };
         for (String tname: tenants) {
             VtnFlowTableKey key = new VtnFlowTableKey(tname);
@@ -596,8 +715,8 @@ public class FlowUtilsTest extends TestBase {
         String[] tenants = {"vtn1", "vtn2", "tenant_3"};
         VtnFlowId[] flowIds = {
             new VtnFlowId(BigInteger.valueOf(1L)),
-            new VtnFlowId(BigInteger.valueOf(VTN_FLOW_COOKIE | 12345L)),
-            new VtnFlowId(BigInteger.valueOf(VTN_FLOW_COOKIE | 0xfffffffffL)),
+            new VtnFlowId(BigInteger.valueOf(COOKIE_BITS_VTN | 12345L)),
+            new VtnFlowId(BigInteger.valueOf(COOKIE_BITS_VTN | 0xfffffffffL)),
         };
         for (String tname: tenants) {
             VtnFlowTableKey key = new VtnFlowTableKey(tname);
@@ -764,77 +883,25 @@ public class FlowUtilsTest extends TestBase {
     }
 
     /**
-     * Test case for {@link FlowUtils#getTenantName(InstanceIdentifier)}.
-     *
-     * @throws Exception  An error occurred.
-     */
-    @Test
-    public void testGetTenantName() throws Exception {
-        String[] tenants = {"vtn1", "vtn2", "tenant_3"};
-        VtnFlowId flowId =
-            new VtnFlowId(BigInteger.valueOf(VTN_FLOW_COOKIE | 12345L));
-        NodeId node = new NodeId("openflow:2");
-        NodeConnectorId port = new NodeConnectorId("openflow:1:2");
-        SourceHostFlowsKey src = new MacVlan(0xaabbccddeeffL, (short)1).
-            getSourceHostFlowsKey();
-        MatchFlowsKey match = new MatchFlowsKey("match-key-1");
-
-        List<InstanceIdentifier<?>> badList = new ArrayList<>();
-        SalNode snode = new SalNode(123L);
-        SalPort sport = new SalPort(456L, 789L);
-        Collections.addAll(
-            badList,
-            snode.getNodeIdentifier(),
-            snode.getFlowNodeIdentifier(),
-            snode.getVtnNodeIdentifier(),
-            sport.getNodeConnectorIdentifier(),
-            sport.getVtnPortIdentifier());
-
-        for (String tname: tenants) {
-            List<InstanceIdentifier<?>> paths = new ArrayList<>();
-            Collections.addAll(
-                paths,
-                FlowUtils.getIdentifier(tname),
-                FlowUtils.getIdentifier(tname, flowId),
-                FlowUtils.getIdentifier(tname, node),
-                FlowUtils.getIdentifier(tname, port),
-                FlowUtils.getIdentifier(tname, src),
-                FlowUtils.getIdentifier(tname, match));
-            for (InstanceIdentifier<?> path: paths) {
-                assertEquals(tname, FlowUtils.getTenantName(path));
-            }
-
-            paths.clear();
-            Collections.addAll(
-                paths,
-                VTenantIdentifier.create(tname, true).getIdentifier(),
-                PathMapUtils.getIdentifier(tname, 1));
-            paths.addAll(badList);
-            for (InstanceIdentifier<?> path: paths) {
-                assertEquals(null, FlowUtils.getTenantName(path));
-            }
-        }
-    }
-
-    /**
      * Test case for {@link FlowUtils#createTxUri(VtnFlowEntry, String)}.
      */
     @Test
     public void testCreateTxUri() {
         long[] ids = {
-            1L,
-            2L,
+            MIN_FLOW_ID,
+            MIN_FLOW_ID + 1L,
             1234567L,
             0xffffffffL,
             0x100000000L,
             0x123456789abcL,
-            0xffffffffffffL,
+            MAX_FLOW_ID - 1L,
+            MAX_FLOW_ID,
         };
         Integer[] orders = {0, 1, 3, 5, 1000};
         String[] prefixes = {"add-flow:", "add-flow-1:", "mod-flow:"};
 
         for (long id: ids) {
-            long c = id | VTN_FLOW_COOKIE;
+            long c = id | COOKIE_BITS_VTN;
             FlowCookie cookie = new FlowCookie(NumberUtils.getUnsigned(c));
             for (Integer order: orders) {
                 for (String prefix: prefixes) {
@@ -862,7 +929,7 @@ public class FlowUtilsTest extends TestBase {
         SalPort ingress = new SalPort(123L, 45L);
         Short table = 0;
         VtnFlowEntry vfent = createVtnFlowEntry(flowId, order, ingress);
-        long c = flowId | VTN_FLOW_COOKIE;
+        long c = flowId | COOKIE_BITS_VTN;
         FlowCookie cookie = new FlowCookie(NumberUtils.getUnsigned(c));
 
         AddFlowInput input = FlowUtils.createAddFlowInput(vfent);
@@ -884,6 +951,7 @@ public class FlowUtilsTest extends TestBase {
         assertEquals(null, input.getContainerName());
         assertEquals(null, input.getFlowName());
         assertEquals(null, input.isInstallHw());
+        assertEquals(null, input.getFlowRef());
 
         FlowTableRef tref =
             new FlowTableRef(ingress.getFlowTableIdentifier(table));
@@ -891,6 +959,92 @@ public class FlowUtilsTest extends TestBase {
 
         Uri uri = new Uri(String.format("add-flow:%x-%s", c, order));
         assertEquals(uri, input.getTransactionUri());
+    }
+
+    /**
+     * Test case for {@link FlowUtils#createTableMissFlowId(SalNode)}.
+     */
+    @Test
+    public void testCreateTableMissFlowId() {
+        SalNode[] nodes = {
+            new SalNode(1L),
+            new SalNode(12345L),
+            new SalNode(-1L),
+        };
+
+        for (SalNode snode: nodes) {
+            String expected = "vtn:table-miss:" + snode;
+            assertEquals(expected, FlowUtils.createTableMissFlowId(snode));
+        }
+    }
+
+    /**
+     * Test case for {@link FlowUtils#createTableMissInput(SalNode)}.
+     */
+    @Test
+    public void testCreateTableMissInput() {
+        SalNode[] nodes = {
+            new SalNode(1L),
+            new SalNode(12345L),
+            new SalNode(-1L),
+        };
+        Integer zero = 0;
+        Short table = 0;
+        FlowCookie cookie =
+            new FlowCookie(NumberUtils.getUnsigned(COOKIE_VALUE_MISS));
+        Match match = new MatchBuilder().build();
+        FlowModFlags flags =
+            new FlowModFlags(false, false, false, false, true);
+        String txUri = "table-miss:" + table;
+
+        Uri port = new Uri(OutputPortValues.CONTROLLER.toString());
+        OutputAction out = new OutputActionBuilder().
+            setOutputNodeConnector(port).
+            setMaxLength(0xffff).
+            build();
+        OutputActionCase ac = new OutputActionCaseBuilder().
+            setOutputAction(out).
+            build();
+        List<Action> actions = Collections.singletonList(
+            new ActionBuilder().setOrder(zero).setAction(ac).build());
+
+        ApplyActionsCase apply = new ApplyActionsCaseBuilder().
+            setApplyActions(new ApplyActionsBuilder().
+                            setAction(actions).build()).
+            build();
+        Instruction inst = new InstructionBuilder().
+            setOrder(zero).setInstruction(apply).build();
+        Instructions insts = new InstructionsBuilder().
+            setInstruction(Collections.singletonList(inst)).build();
+
+        for (SalNode snode: nodes) {
+            FlowTableRef tref =
+                new FlowTableRef(snode.getFlowTableIdentifier(table));
+            FlowId fid = new FlowId("vtn:table-miss:" + snode);
+            FlowRef fref = new FlowRef(snode.getFlowIdentifier(table, fid));
+            AddFlowInput input = FlowUtils.createTableMissInput(snode);
+            assertEquals(snode.getNodeRef(), input.getNode());
+            assertEquals(zero, input.getPriority());
+            assertEquals(table, input.getTableId());
+            assertEquals(zero, input.getIdleTimeout());
+            assertEquals(zero, input.getHardTimeout());
+            assertEquals(cookie, input.getCookie());
+            assertEquals(tref, input.getFlowTable());
+            assertEquals(fref, input.getFlowRef());
+            assertEquals(null, input.getCookieMask());
+            assertEquals(match, input.getMatch());
+            assertEquals(flags, input.getFlags());
+            assertEquals(null, input.isStrict());
+            assertEquals(Boolean.TRUE, input.isBarrier());
+            assertEquals(null, input.getOutPort());
+            assertEquals(null, input.getOutGroup());
+            assertEquals(null, input.getBufferId());
+            assertEquals(null, input.getContainerName());
+            assertEquals(null, input.getFlowName());
+            assertEquals(null, input.isInstallHw());
+            assertEquals(txUri, input.getTransactionUri().getValue());
+            assertEquals(insts, input.getInstructions());
+        }
     }
 
     /**
@@ -903,12 +1057,13 @@ public class FlowUtilsTest extends TestBase {
             new SalNode(12345L),
             new SalNode(-1L),
         };
+        Match match = new MatchBuilder().build();
         Short table = 0;
         Uri uri = new Uri("remove-flow:all");
         FlowCookie cookie =
-            new FlowCookie(NumberUtils.getUnsigned(VTN_FLOW_COOKIE));
+            new FlowCookie(NumberUtils.getUnsigned(COOKIE_BITS_VTN));
         FlowCookie cookieMask =
-            new FlowCookie(NumberUtils.getUnsigned(0xffff000000000000L));
+            new FlowCookie(NumberUtils.getUnsigned(COOKIE_MASKVAL_VTN));
 
         for (SalNode snode: nodes) {
             FlowTableRef tref =
@@ -921,6 +1076,7 @@ public class FlowUtilsTest extends TestBase {
             assertEquals(uri, builder.getTransactionUri());
             assertEquals(cookie, builder.getCookie());
             assertEquals(cookieMask, builder.getCookieMask());
+            assertEquals(match, builder.getMatch());
             assertEquals(Boolean.FALSE, builder.isStrict());
             assertEquals(null, builder.isBarrier());
             assertEquals(null, builder.getOutPort());
@@ -929,6 +1085,7 @@ public class FlowUtilsTest extends TestBase {
             assertEquals(null, builder.getContainerName());
             assertEquals(null, builder.getFlowName());
             assertEquals(null, builder.isInstallHw());
+            assertEquals(null, builder.getFlowRef());
         }
     }
 
@@ -940,7 +1097,7 @@ public class FlowUtilsTest extends TestBase {
      */
     @Test
     public void testCreateRemoveFlowInputBuilder2() throws Exception {
-        long flowId = 0xffffffffffffL;
+        long flowId = MAX_FLOW_ID;
         int order = 12345;
         SalPort ingress = new SalPort(-1L, 0xfffff000L);
         Short table = 0;
@@ -956,7 +1113,7 @@ public class FlowUtilsTest extends TestBase {
                                                             reader));
 
         // In case where the target node is present.
-        long c = flowId | VTN_FLOW_COOKIE;
+        long c = flowId | COOKIE_BITS_VTN;
         FlowCookie cookie = new FlowCookie(NumberUtils.getUnsigned(c));
         FlowCookie cookieMask = new FlowCookie(NumberUtils.getUnsigned(-1L));
         VtnNode vnode = new VtnNodeBuilder().setId(snode.getNodeId()).build();
@@ -982,6 +1139,7 @@ public class FlowUtilsTest extends TestBase {
         assertEquals(null, builder.getContainerName());
         assertEquals(null, builder.getFlowName());
         assertEquals(null, builder.isInstallHw());
+        assertEquals(null, builder.getFlowRef());
 
         FlowTableRef tref =
             new FlowTableRef(ingress.getFlowTableIdentifier(table));
@@ -1007,7 +1165,7 @@ public class FlowUtilsTest extends TestBase {
         SalNode snode = ingress.getSalNode();
         Short table = 0;
         VtnFlowEntry vfent = createVtnFlowEntry(flowId, order, ingress);
-        long c = flowId | VTN_FLOW_COOKIE;
+        long c = flowId | COOKIE_BITS_VTN;
         FlowCookie cookie = new FlowCookie(NumberUtils.getUnsigned(c));
         FlowCookie cookieMask = new FlowCookie(NumberUtils.getUnsigned(-1L));
 
@@ -1031,6 +1189,7 @@ public class FlowUtilsTest extends TestBase {
         assertEquals(null, builder.getContainerName());
         assertEquals(null, builder.getFlowName());
         assertEquals(null, builder.isInstallHw());
+        assertEquals(null, builder.getFlowRef());
 
         FlowTableRef tref =
             new FlowTableRef(ingress.getFlowTableIdentifier(table));
@@ -1074,6 +1233,7 @@ public class FlowUtilsTest extends TestBase {
         assertEquals(null, builder.getContainerName());
         assertEquals(null, builder.getFlowName());
         assertEquals(null, builder.isInstallHw());
+        assertEquals(null, builder.getFlowRef());
 
         FlowTableRef tref =
             new FlowTableRef(snode.getFlowTableIdentifier(table));
@@ -1089,6 +1249,7 @@ public class FlowUtilsTest extends TestBase {
 
         // The second element should remove flows that transmit packets to the
         // specified port.
+        match = new MatchBuilder().build();
         builder = list.get(1);
         assertEquals(snode.getNodeRef(), builder.getNode());
         assertEquals(null, builder.getPriority());
@@ -1097,7 +1258,7 @@ public class FlowUtilsTest extends TestBase {
         assertEquals(null, builder.getHardTimeout());
         assertEquals(null, builder.getCookie());
         assertEquals(null, builder.getCookieMask());
-        assertEquals(null, builder.getMatch());
+        assertEquals(match, builder.getMatch());
         assertEquals(null, builder.getFlags());
         assertEquals(null, builder.getInstructions());
         assertEquals(Boolean.FALSE, builder.isStrict());
@@ -1108,6 +1269,7 @@ public class FlowUtilsTest extends TestBase {
         assertEquals(null, builder.getContainerName());
         assertEquals(null, builder.getFlowName());
         assertEquals(null, builder.isInstallHw());
+        assertEquals(null, builder.getFlowRef());
 
         uri = new Uri(String.format("remove-flow:OUT_PORT=%s", sport));
         assertEquals(uri, builder.getTransactionUri());
@@ -1131,7 +1293,7 @@ public class FlowUtilsTest extends TestBase {
         Short table = 0;
         VtnFlowEntry vfent = createVtnFlowEntry(flowId, order, ingress);
         Flow flow = new FlowBuilder(vfent).build();
-        long c = flowId | VTN_FLOW_COOKIE;
+        long c = flowId | COOKIE_BITS_VTN;
         FlowCookie cookie = new FlowCookie(NumberUtils.getUnsigned(c));
         FlowCookie cookieMask = new FlowCookie(NumberUtils.getUnsigned(-1L));
         Uri uri = new Uri("remove-flow-input-5:" + flowId);
@@ -1156,6 +1318,7 @@ public class FlowUtilsTest extends TestBase {
         assertEquals(null, builder.getContainerName());
         assertEquals(null, builder.getFlowName());
         assertEquals(null, builder.isInstallHw());
+        assertEquals(null, builder.getFlowRef());
         assertEquals(uri, builder.getTransactionUri());
 
         FlowTableRef tref =
@@ -1855,11 +2018,11 @@ public class FlowUtilsTest extends TestBase {
             flowId += 127L;
         }
 
-        List<RemoveFlowRpc> result =
+        RemoveFlowRpcList result =
             FlowUtils.removeFlowEntries(watcher, sfs, flows, reader);
         verifyZeroInteractions(rtx);
 
-        for (RemoveFlowRpc rpc: result) {
+        for (RemoveFlowRpc rpc: result.getRpcs()) {
             assertEquals(true, inputs.remove(rpc.getInput()));
             assertEquals(true, futures.remove(rpc.getFuture()));
         }
@@ -1958,11 +2121,11 @@ public class FlowUtilsTest extends TestBase {
             flowId += 127L;
         }
 
-        List<RemoveFlowRpc> result =
+        RemoveFlowRpcList result =
             FlowUtils.removeFlowEntries(watcher, sfs, flows, target, reader);
         verifyZeroInteractions(rtx);
 
-        for (RemoveFlowRpc rpc: result) {
+        for (RemoveFlowRpc rpc: result.getRpcs()) {
             assertEquals(true, inputs.remove(rpc.getInput()));
             assertEquals(true, futures.remove(rpc.getFuture()));
         }
@@ -2013,7 +2176,7 @@ public class FlowUtilsTest extends TestBase {
                                              reader);
         verifyZeroInteractions(rtx);
 
-        for (RemoveFlowRpc rpc: result) {
+        for (RemoveFlowRpc rpc: result.getRpcs()) {
             assertEquals(true, inputs.remove(rpc.getInput()));
             assertEquals(true, futures.remove(rpc.getFuture()));
         }
@@ -2152,7 +2315,7 @@ public class FlowUtilsTest extends TestBase {
             addAll(vactions).
             addOutputAction(egress);
         Instructions insts = actList.toInstructions();
-        long flowId = VTN_FLOW_COOKIE | id;
+        long flowId = COOKIE_BITS_VTN | id;
         FlowCookie cookie = new FlowCookie(NumberUtils.getUnsigned(flowId));
 
         return new VtnFlowEntryBuilder().

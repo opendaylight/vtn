@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,13 +8,13 @@
 
 package org.opendaylight.vtn.manager.internal.inventory;
 
-import java.util.Collections;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,9 +65,16 @@ public final class NodeListener
     /**
      * Required event types.
      */
-    private static final Set<VtnUpdateType>  REQUIRED_EVENTS =
-        Collections.unmodifiableSet(
-            EnumSet.of(VtnUpdateType.CREATED, VtnUpdateType.REMOVED));
+    private static final Set<VtnUpdateType>  REQUIRED_EVENTS;
+
+    /**
+     * Initialize static fields.
+     */
+    static {
+        Set<VtnUpdateType> set = EnumSet.of(
+            VtnUpdateType.CREATED, VtnUpdateType.REMOVED);
+        REQUIRED_EVENTS = ImmutableSet.copyOf(set);
+    }
 
     /**
      * MD-SAL transaction task that initializes the VTN node tree.

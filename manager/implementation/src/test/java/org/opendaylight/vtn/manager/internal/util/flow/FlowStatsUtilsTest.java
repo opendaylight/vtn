@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -13,7 +13,8 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import static org.opendaylight.vtn.manager.internal.util.flow.FlowUtilsTest.VTN_FLOW_COOKIE;
+import static org.opendaylight.vtn.manager.internal.util.flow.FlowUtilsTest.COOKIE_BITS_VTN;
+import static org.opendaylight.vtn.manager.internal.util.flow.FlowUtilsTest.COOKIE_MASKVAL_VTN;
 import static org.opendaylight.vtn.manager.internal.util.flow.FlowUtilsTest.createDuration;
 import static org.opendaylight.vtn.manager.internal.util.flow.FlowUtilsTest.createVtnFlowEntry;
 
@@ -189,9 +190,9 @@ public class FlowStatsUtilsTest extends TestBase {
         };
 
         FlowCookie cookie =
-            new FlowCookie(NumberUtils.getUnsigned(VTN_FLOW_COOKIE));
+            new FlowCookie(NumberUtils.getUnsigned(COOKIE_BITS_VTN));
         FlowCookie cookieMask =
-            new FlowCookie(NumberUtils.getUnsigned(0xffff000000000000L));
+            new FlowCookie(NumberUtils.getUnsigned(COOKIE_MASKVAL_VTN));
         Short table = 0;
 
         for (SalNode snode: nodes) {

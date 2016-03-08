@@ -30,6 +30,7 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
+import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
@@ -952,10 +953,11 @@ public class InventoryUtilsTest extends TestBase {
     }
 
     /**
-     * Test case for {@link InventoryUtils#getOpenflowVersion(FlowCapableNodeConnector)}.
+     * Test case for
+     * {@link InventoryUtils#getOpenflowVersion(FlowCapableNodeConnector)}.
      */
     @Test
-    public void testGetOpenflowVersion() {
+    public void testGetOpenflowVersion1() {
         for (long dpid = 1L; dpid <= 10L; dpid++) {
             for (long port = 1L; port <= 10L; port++) {
                 String pid = "openflow:" + dpid + ":" + port;
@@ -973,6 +975,74 @@ public class InventoryUtilsTest extends TestBase {
                 assertEquals(VtnOpenflowVersion.OF13,
                              InventoryUtils.getOpenflowVersion(fcnc));
             }
+        }
+    }
+
+    /**
+     * Test case for
+     * {@link InventoryUtils#getOpenflowVersion(ReadTransaction, SalNode)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testGetOpenflowVersion2() throws Exception {
+        SalNode snode = new SalNode(1122334455L);
+        NodeId nodeId = snode.getNodeId();
+        InstanceIdentifier<VtnNode> vpath = InstanceIdentifier.
+            builder(VtnNodes.class).
+            child(VtnNode.class, snode.getVtnNodeKey()).
+            build();
+        InstanceIdentifier<Node> path = InstanceIdentifier.
+            builder(Nodes.class).
+            child(Node.class, snode.getNodeKey()).
+            build();
+        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        VtnOpenflowVersion[] versions = {
+            null,
+            VtnOpenflowVersion.OF10,
+            VtnOpenflowVersion.OF13,
+        };
+
+        for (VtnOpenflowVersion ver: versions) {
+            // In case of successful completion.
+            ReadTransaction rtx = mock(ReadTransaction.class);
+            VtnNode vnode = new VtnNodeBuilder().
+                setId(nodeId).
+                setOpenflowVersion(ver).
+                build();
+            Node node = new NodeBuilder().
+                setId(nodeId).
+                build();
+            when(rtx.read(oper, vpath)).thenReturn(getReadResult(vnode));
+            when(rtx.read(oper, path)).thenReturn(getReadResult(node));
+            assertEquals(ver, InventoryUtils.getOpenflowVersion(rtx, snode));
+            verify(rtx).read(oper, vpath);
+            verify(rtx).read(oper, path);
+            verifyNoMoreInteractions(rtx);
+
+            // node is not present in opendaylight-inventory.
+            rtx = mock(ReadTransaction.class);
+            when(rtx.read(oper, vpath)).thenReturn(getReadResult(vnode));
+            when(rtx.read(oper, path)).thenReturn(getReadResult((Node)null));
+            assertEquals(null, InventoryUtils.getOpenflowVersion(rtx, snode));
+            verify(rtx).read(oper, vpath);
+            verify(rtx).read(oper, path);
+            verifyNoMoreInteractions(rtx);
+        }
+
+        // vtn-node is not present in vtn-inventory.
+        VtnNode vnode = null;
+        Node[] nodes = {
+            null,
+            new NodeBuilder().setId(nodeId).build(),
+        };
+        for (Node node: nodes) {
+            ReadTransaction rtx = mock(ReadTransaction.class);
+            when(rtx.read(oper, vpath)).thenReturn(getReadResult(vnode));
+            when(rtx.read(oper, path)).thenReturn(getReadResult(node));
+            assertEquals(null, InventoryUtils.getOpenflowVersion(rtx, snode));
+            verify(rtx).read(oper, vpath);
+            verifyNoMoreInteractions(rtx);
         }
     }
 

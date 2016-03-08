@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -414,12 +414,10 @@ public final class VBridgeManager
     @Override
     public Future<RpcResult<GetVlanMapOutput>> getVlanMap(
         GetVlanMapInput input) {
-        TxContext ctx = vtnProvider.newTxContext();
-        try {
+        try (TxContext ctx = vtnProvider.newTxContext()) {
             GetVlanMapFuture f = new GetVlanMapFuture(ctx, input);
             return new RpcFuture<VlanMap, GetVlanMapOutput>(f, f);
         } catch (RpcException | RuntimeException e) {
-            ctx.cancelTransaction();
             return RpcUtils.getErrorBuilder(GetVlanMapOutput.class, e).
                 buildFuture();
         }
@@ -479,13 +477,11 @@ public final class VBridgeManager
     @Override
     public Future<RpcResult<GetMacMappedHostOutput>> getMacMappedHost(
         GetMacMappedHostInput input) {
-        TxContext ctx = vtnProvider.newTxContext();
-        try {
+        try (TxContext ctx = vtnProvider.newTxContext()) {
             GetMacMappedHostFuture f = new GetMacMappedHostFuture(ctx, input);
             return new RpcFuture<List<MacMappedHost>, GetMacMappedHostOutput>(
                 f, f);
         } catch (RpcException | RuntimeException e) {
-            ctx.cancelTransaction();
             return RpcUtils.getErrorBuilder(GetMacMappedHostOutput.class, e).
                 buildFuture();
         }

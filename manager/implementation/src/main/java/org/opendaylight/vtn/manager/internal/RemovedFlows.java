@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,11 +8,9 @@
 
 package org.opendaylight.vtn.manager.internal;
 
-import java.util.List;
-
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpc;
+import org.opendaylight.vtn.manager.internal.util.flow.RemoveFlowRpcList;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 
@@ -25,10 +23,10 @@ public interface RemovedFlows {
      *
      * @param ctx    A runtime context for read-only transaction task.
      * @param sfs    MD-SAL flow service.
-     * @return  A list of remove-flow RPC invocations.
+     * @return  A {@link RemoveFlowRpcList} instance.
      * @throws VTNException  An error occurred.
      */
-    List<RemoveFlowRpc> removeFlowEntries(TxContext ctx, SalFlowService sfs)
+    RemoveFlowRpcList removeFlowEntries(TxContext ctx, SalFlowService sfs)
         throws VTNException;
 
     /**

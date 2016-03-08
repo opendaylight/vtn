@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -291,21 +291,20 @@ public final class OfPort {
     /**
      * Set the link state of this port.
      *
-     * @param provider  The ofmock provider service.
-     * @param state     New link state.
+     * @param node   The node that contains this port.
+     * @param state  New link state.
      * @return  {@code true} if the port state has been changed.
      *          {@code false} not changed.
      */
-    public boolean setPortState(final OfMockProvider provider,
-                                final boolean state) {
+    public boolean setPortState(OfNode node, final boolean state) {
         boolean changed = (linkUp != state);
 
         if (changed) {
             linkUp = state;
-            ListenableFuture<Void> future = publish(provider);
-
+            ListenableFuture<Void> future = publish(node);
             final String peer = peerIdentifier;
             if (peer != null) {
+                final OfMockProvider provider = node.getOfMockProvider();
                 Futures.addCallback(future, new FutureCallback<Void>() {
                     @Override
                     public void onSuccess(Void result) {
@@ -317,7 +316,7 @@ public final class OfPort {
                     }
 
                     @Override
-                    public void onFailure(Throwable calse) {
+                    public void onFailure(Throwable cause) {
                     }
                 });
             }
@@ -387,28 +386,29 @@ public final class OfPort {
     /**
      * Publish notification that notifies this switch port.
      *
-     * @param provider  The ofmock provider service.
+     * @param node  The node that contains this port.
      * @return  A future associated with the task that put the port information
      *          into the MD-SAL datastore.
      */
-    public ListenableFuture<Void> publish(OfMockProvider provider) {
+    public ListenableFuture<Void> publish(OfNode node) {
         NodeConnector nc = createNodeConnector();
         UpdateDataTask<NodeConnector> task = new UpdateDataTask<>(
-            provider.getDataBroker(), portPath, nc);
-        provider.getInventoryExecutor().execute(task);
+            node.getOfMockProvider().getDataBroker(), portPath, nc);
+        node.getExecutor().execute(task);
         return task.getFuture();
     }
 
     /**
      * Publish notification that notifies removal of this switch port.
      *
-     * @param provider  The ofmock provider service.
+     * @param node  The node that contains this port.
      */
-    public void publishRemoval(OfMockProvider provider) {
+    public void publishRemoval(OfNode node) {
+        OfMockProvider provider = node.getOfMockProvider();
         DataBroker broker = provider.getDataBroker();
         DeleteDataTask<NodeConnector> task =
             new DeleteDataTask<>(broker, portPath);
-        provider.getInventoryExecutor().execute(task);
+        node.getExecutor().execute(task);
 
         DeleteTerminationPointTask tpTask =
             new DeleteTerminationPointTask(broker, this);

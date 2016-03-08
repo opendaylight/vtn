@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,10 @@
  */
 
 package org.opendaylight.vtn.manager.internal.flow.add;
+
+import static org.opendaylight.vtn.manager.internal.flow.add.FlowAddContext.LOG;
+import static org.opendaylight.vtn.manager.internal.util.flow.FlowUtils.MAX_FLOW_ID;
+import static org.opendaylight.vtn.manager.internal.util.flow.FlowUtils.MIN_FLOW_ID;
 
 import java.math.BigInteger;
 import java.util.concurrent.CancellationException;
@@ -24,6 +28,7 @@ import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.VTNFlowBuilder;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
+import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 import org.opendaylight.vtn.manager.internal.util.vnode.VTenantIdentifier;
 
@@ -61,6 +66,12 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn
  */
 public final class PutFlowTxTask extends AbstractTxTask<VtnDataFlow> {
     /**
+     * Path to the next-flow-id container.
+     */
+    private static final InstanceIdentifier<NextFlowId>  NEXT_FLOW_ID_PATH =
+        InstanceIdentifier.create(NextFlowId.class);
+
+    /**
      * The number of times for retrying transaction.
      */
     private static final int  MAX_FLOW_RETRY = 10;
@@ -82,6 +93,11 @@ public final class PutFlowTxTask extends AbstractTxTask<VtnDataFlow> {
     private final TxQueue  txQueue;
 
     /**
+     * Path to the VTN data flow in the operational DS.
+     */
+    private InstanceIdentifier<VtnDataFlow>  flowPath;
+
+    /**
      * Construct a new instance.
      *
      * @param ctx     A {@link FlowAddContext} instance.
@@ -94,6 +110,66 @@ public final class PutFlowTxTask extends AbstractTxTask<VtnDataFlow> {
         context = ctx;
         flowThread = thread;
         txQueue = txq;
+    }
+
+    /**
+     * Allocate a new VTN flow ID.
+     *
+     * <p>
+     *   This method sets the path to the new VTN data flow to
+     *   {@link #flowPath} on successful completion.
+     * </p>
+     *
+     * @param ctx    MD-SAL datastore transaction context.
+     * @param tx     A read-write MD-SAL datastore transaction.
+     * @param tname  The name of the target VTN.
+     * @return  A new flow ID on success.
+     *          {@code null} on failure.
+     * @throws VTNException  An error occurred.
+     */
+    private VtnFlowId allocateFlowId(TxContext ctx, ReadWriteTransaction tx,
+                                     String tname) throws VTNException {
+        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        Optional<NextFlowId> opt =
+            DataStoreUtils.read(tx, oper, NEXT_FLOW_ID_PATH);
+        VtnFlowId flowId = null;
+        if (opt.isPresent()) {
+            flowId = opt.get().getNextId();
+        }
+        if (flowId == null) {
+            // This should never happen.
+            ctx.log(LOG, VTNLogLevel.WARN, "Use initial flow ID.");
+            flowId = FlowUtils.getInitialFlowId();
+        }
+
+        // Ensure that the flow ID is not used.
+        long id = flowId.getValue().longValue();
+        long start = id;
+        do {
+            InstanceIdentifier<VtnDataFlow> path =
+                FlowUtils.getIdentifier(tname, flowId);
+            Optional<VtnDataFlow> fopt = DataStoreUtils.read(tx, oper, path);
+
+            id++;
+            if (id > MAX_FLOW_ID) {
+                // Rewind to the minimum value.
+                id = MIN_FLOW_ID;
+            }
+
+            if (!fopt.isPresent()) {
+                // Update the next-flow-id for the next allocation.
+                VtnFlowId nextId = new VtnFlowId(BigInteger.valueOf(id));
+                NextFlowId nfid = new NextFlowIdBuilder().
+                    setNextId(nextId).build();
+                tx.put(oper, NEXT_FLOW_ID_PATH, nfid, true);
+                flowPath = path;
+                return flowId;
+            }
+
+        } while (id != start);
+
+        flowPath = null;
+        return null;
     }
 
     // AbstractTxTask
@@ -139,24 +215,12 @@ public final class PutFlowTxTask extends AbstractTxTask<VtnDataFlow> {
         }
 
         // Determine VTN flow ID.
-        InstanceIdentifier<NextFlowId> ipath =
-            InstanceIdentifier.create(NextFlowId.class);
-        Optional<NextFlowId> iopt = DataStoreUtils.read(tx, oper, ipath);
-        VtnFlowId flowId = null;
-        if (iopt.isPresent()) {
-            flowId = iopt.get().getNextId();
-        }
+        VtnFlowId flowId = allocateFlowId(ctx, tx, tname);
         if (flowId == null) {
-            // This should never happen.
-            FlowAddContext.LOG.warn("Use initial flow ID.");
-            flowId = FlowUtils.getInitialFlowId();
+            ctx.log(LOG, VTNLogLevel.WARN, "No flow ID is available: VTN={}",
+                    tname);
+            return null;
         }
-
-        // Update the flow ID for the next allocation.
-        BigInteger bi = flowId.getValue();
-        VtnFlowId nextId = new VtnFlowId(bi.add(BigInteger.ONE));
-        NextFlowId nfid = new NextFlowIdBuilder().setNextId(nextId).build();
-        tx.put(oper, ipath, nfid, true);
 
         // Update the match index.
         MatchFlows mindex = new MatchFlowsBuilder().
@@ -196,9 +260,7 @@ public final class PutFlowTxTask extends AbstractTxTask<VtnDataFlow> {
 
         // Install the VTN data flow into the DS.
         VtnDataFlow vdf = builder.createVtnDataFlow(flowId);
-        InstanceIdentifier<VtnDataFlow> path =
-            FlowUtils.getIdentifier(tname, flowId);
-        tx.put(oper, path, vdf, true);
+        tx.put(oper, flowPath, vdf, true);
 
         return vdf;
     }
@@ -216,8 +278,8 @@ public final class PutFlowTxTask extends AbstractTxTask<VtnDataFlow> {
         VTNFlowBuilder builder = context.getFlowBuilder();
         if (result == null) {
             // No flow entry was installed.
-            FlowAddContext.LOG.trace("Already installed: match={}",
-                                     builder.getIngressMatchKey());
+            LOG.trace("Already installed: match={}",
+                      builder.getIngressMatchKey());
             context.setResult(null);
         } else {
             // Install flow entries.
@@ -226,8 +288,7 @@ public final class PutFlowTxTask extends AbstractTxTask<VtnDataFlow> {
                 // In this case DS queue is also closed.
                 // So there is no way to clean up the DS.
                 String msg = "Flow thread is already closed";
-                FlowAddContext.LOG.
-                    warn("{}: match={}", msg, builder.getIngressMatchKey());
+                LOG.warn("{}: match={}", msg, builder.getIngressMatchKey());
                 context.setFailure(new CancellationException(msg));
             }
         }
@@ -244,7 +305,7 @@ public final class PutFlowTxTask extends AbstractTxTask<VtnDataFlow> {
         VTNFlowBuilder builder = context.getFlowBuilder();
         String msg = "Failed to add data flow into DS: match=" +
             builder.getIngressMatchKey();
-        FlowAddContext.LOG.error(msg, t);
+        LOG.error(msg, t);
         context.setFailure(t);
     }
 }

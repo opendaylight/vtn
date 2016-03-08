@@ -881,6 +881,18 @@ public abstract class TestBase extends Assert {
     }
 
     /**
+     * Create a future that indicates successful completion of the RPC.
+     *
+     * @param output  The output of the RPC.
+     * @return  A future that contains the specified RPC output.
+     */
+    public static <T> ListenableFuture<RpcResult<T>> getRpcResult(
+        T output) {
+        RpcResult<T> result = RpcResultBuilder.success(output).build();
+        return Futures.immediateFuture(result);
+    }
+
+    /**
      * Ensure that the tiven two collecitons are identical.
      *
      * <p>

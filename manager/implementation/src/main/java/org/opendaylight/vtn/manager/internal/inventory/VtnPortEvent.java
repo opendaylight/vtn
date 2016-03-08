@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -55,9 +55,8 @@ public final class VtnPortEvent extends TxEvent {
     private final VtnUpdateType  updateType;
 
     /**
-     * Construct a new instance.
+     * Construct a new instance without specifying an inventory listener.
      *
-     * @param l      A {@link VTNInventoryListener} instance.
      * @param vport  A {@link VtnPort} instance.
      * @param state  A {@link Boolean} instance which describes the change of
      *               running state of the given port.
@@ -69,9 +68,9 @@ public final class VtnPortEvent extends TxEvent {
      *               {@link VtnUpdateType#REMOVED}.
      * @param type   A {@link VtnUpdateType} instance.
      */
-    VtnPortEvent(VTNInventoryListener l, VtnPort vport, Boolean state,
-                 Boolean isl, VtnUpdateType type) {
-        listener = l;
+    VtnPortEvent(VtnPort vport, Boolean state, Boolean isl,
+                 VtnUpdateType type) {
+        listener = null;
         vtnPort = vport;
         if (type == VtnUpdateType.REMOVED) {
             stateChange = null;

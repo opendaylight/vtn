@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -42,14 +42,13 @@ public final class VtnNodeEvent extends TxEvent {
     private final VtnUpdateType  updateType;
 
     /**
-     * Construct a new instance.
+     * Construct a new instance without specifying an inventory listener.
      *
-     * @param l      A {@link VTNInventoryListener} instance.
      * @param vnode  A {@link VtnNode} instance.
      * @param type   A {@link VtnUpdateType} instance.
      */
-    VtnNodeEvent(VTNInventoryListener l, VtnNode vnode, VtnUpdateType type) {
-        listener = l;
+    VtnNodeEvent(VtnNode vnode, VtnUpdateType type) {
+        listener = null;
         vtnNode = vnode;
         updateType = type;
         salNode = SalNode.create(vnode.getId());
@@ -94,6 +93,11 @@ public final class VtnNodeEvent extends TxEvent {
      *   <ul>
      *     <li>
      *       {@link VtnUpdateType#CREATED} if a VTN node has been added.
+     *     </li>
+     *     <li>
+     *       {@link VtnUpdateType#CHANGED} if a VTN node has been changed.
+     *       This type is returned only if the OpenFlow protocol version used
+     *       by the target switch has been determined.
      *     </li>
      *     <li>
      *       {@link VtnUpdateType#REMOVED} if a VTN node has been removed.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -29,10 +29,33 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.acti
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.ActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
+
 /**
  * JUnit test for {@link VTNOutputAction}.
  */
 public class VTNOutputActionTest extends TestBase {
+    /**
+     * Test case for {@link VTNOutputAction#newOutputActionCase(Uri)}.
+     */
+    @Test
+    public void testNewOutputActionCase() {
+        Uri[] uris = {
+            new Uri("CONTROLLER"),
+            new Uri("FLOOD"),
+            new NodeConnectorId("openflow:1:2"),
+            new NodeConnectorId("openflow:3:4"),
+        };
+        Integer len = 0xffff;
+        for (Uri uri: uris) {
+            OutputActionCase ac = VTNOutputAction.newOutputActionCase(uri);
+            assertNotNull(ac);
+            OutputAction out = ac.getOutputAction();
+            assertEquals(len, out.getMaxLength());
+            assertEquals(uri, out.getOutputNodeConnector());
+        }
+    }
+
     /**
      * Test case for constructors and instance methods.
      *

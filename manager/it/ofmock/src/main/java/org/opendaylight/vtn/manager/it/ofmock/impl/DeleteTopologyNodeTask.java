@@ -24,7 +24,7 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
  * {@code DeleteTopologyNodeTask} describes a task that deletes a topology node
  * from the MD-SAL datastore.
  */
-public final class DeleteTopologyNodeTask extends TxTask
+public final class DeleteTopologyNodeTask extends TxTask<Void>
     implements FutureCallback<Void> {
     /**
      * Logger instance.

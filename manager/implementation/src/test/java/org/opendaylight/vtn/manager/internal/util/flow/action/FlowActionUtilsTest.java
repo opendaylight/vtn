@@ -87,6 +87,8 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanPcp;
 
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
+
 /**
  * JUnit test for {@link FlowActionUtils} and {@link FlowActionConverter}.
  */
@@ -145,10 +147,23 @@ public class FlowActionUtilsTest extends TestBase {
      * @return  A MD-SAL OUTPUT action.
      */
     public static Action createOutputAction(Integer order, String port) {
+        NodeConnectorId ncId = (port == null)
+            ? null : new NodeConnectorId(port);
+        return createOutputAction(order, ncId);
+    }
+
+    /**
+     * Create a MD-SAL OUTPUT action.
+     *
+     * @param order  Action order in the action list.
+     * @param port   An URI that specifies the port.
+     * @return  A MD-SAL OUTPUT action.
+     */
+    public static Action createOutputAction(Integer order, Uri port) {
         OutputActionBuilder ab = new OutputActionBuilder().
             setMaxLength(0xffff);
         if (port != null) {
-            ab.setOutputNodeConnector(new NodeConnectorId(port));
+            ab.setOutputNodeConnector(port);
         }
 
         return new ActionBuilder().
