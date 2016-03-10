@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -29,8 +29,6 @@ import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxTask;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.VTNSubSystem;
-import org.opendaylight.vtn.manager.internal.flow.remove.FlowRemoverQueue;
-import org.opendaylight.vtn.manager.internal.flow.remove.PortFlowRemover;
 import org.opendaylight.vtn.manager.internal.inventory.VTNInventoryListener;
 import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
 import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
@@ -1405,11 +1403,6 @@ public final class VTenantManager
             ctx.log(LOG, VTNLogLevel.DEBUG,
                     "Ignore packet from internal node connector: {}",
                     ingress);
-
-            // This PACKET_IN may be caused by an obsolete flow entry.
-            // So all flow entries related to this port should be removed.
-            ctx.getSpecific(FlowRemoverQueue.class).
-                enqueue(new PortFlowRemover(ingress));
             return;
         }
 
