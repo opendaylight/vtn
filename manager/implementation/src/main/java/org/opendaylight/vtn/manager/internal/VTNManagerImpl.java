@@ -79,7 +79,6 @@ import org.opendaylight.vtn.manager.util.NumberUtils;
 import org.opendaylight.vtn.manager.util.VTNIdentifiableComparator;
 
 import org.opendaylight.vtn.manager.internal.config.VTNConfigImpl;
-import org.opendaylight.vtn.manager.internal.flow.remove.PortFlowRemover;
 import org.opendaylight.vtn.manager.internal.inventory.VTNInventoryListener;
 import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
 import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
@@ -5593,10 +5592,6 @@ public class VTNManagerImpl
             if (InventoryUtils.hasPortLink(vport)) {
                 LOG.debug("{}: Ignore packet from internal node connector: {}",
                           containerName, ingress);
-                // This PACKET_IN may be caused by an obsolete flow entry.
-                // So all flow entries related to this port should be removed.
-                PortFlowRemover remover = new PortFlowRemover(ingress);
-                ev.getTxContext().getProvider().removeFlows(remover);
                 return;
             }
 
