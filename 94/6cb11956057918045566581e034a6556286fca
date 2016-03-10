@@ -1,0 +1,7 @@
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+2: Hideyuki Tai <Hideyuki.Tai@necam.com>
+Submitted-by: Hideyuki Tai <Hideyuki.Tai@necam.com>
+Submitted-at: Thu, 10 Mar 2016 18:38:55 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/36039
+Project: vtn
+Branch: refs/heads/stable/beryllium
