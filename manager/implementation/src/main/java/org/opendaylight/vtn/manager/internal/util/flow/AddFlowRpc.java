@@ -24,12 +24,33 @@ public final class AddFlowRpc
     /**
      * Issue an add-flow RPC request.
      *
+     * <p>
+     *   A barrier request will be sent in background after issueing add-flow
+     *   RPC request.
+     * </p>
+     *
+     * @param w    The flow RPC watcher.
+     * @param sfs  MD-SAL flow service.
+     * @param in   The RPC input.
+     * @return  An {@link AddFlowRpc} instance associated with an add-flow
+     *          RPC invocation.
+     */
+    public static AddFlowRpc create(FlowRpcWatcher w, SalFlowService sfs,
+                                    AddFlowInput in) {
+        AddFlowRpc rpc = new AddFlowRpc(w, sfs, in);
+        w.asyncBarrier(in.getNode());
+        return rpc;
+    }
+
+    /**
+     * Issue an add-flow RPC request.
+     *
      * @param w    The node RPC watcher.
      * @param sfs  MD-SAL flow service.
      * @param in   The RPC input.
      */
     public AddFlowRpc(NodeRpcWatcher w, SalFlowService sfs, AddFlowInput in) {
-        super(w, in, sfs.addFlow(in));
+        super(w, in, in.getNode(), sfs.addFlow(in));
     }
 
     // RpcRequest

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -33,12 +33,13 @@ public abstract class AbstractVTNFuture<T> implements VTNFuture<T> {
     private final ExecutionList  executionList = new ExecutionList();
 
     /**
-     * Return a {@link VTNException} which represents the cause of failure.
+     * Return a throwable that indicates the actual cause of failure.
      *
      * @param t  A {@link Throwable}.
-     * @return  A {@link VTNException} which represents the given throwable.
+     * @return  A {@link Throwable} instance that indicates the actual cause
+     *          of failure.
      */
-    public static final VTNException getException(Throwable t) {
+    public static final Throwable getCause(Throwable t) {
         Throwable cause = t;
         while (cause instanceof ExecutionException) {
             Throwable c = cause.getCause();
@@ -48,6 +49,17 @@ public abstract class AbstractVTNFuture<T> implements VTNFuture<T> {
             cause = c;
         }
 
+        return cause;
+    }
+
+    /**
+     * Return a {@link VTNException} which represents the cause of failure.
+     *
+     * @param t  A {@link Throwable}.
+     * @return  A {@link VTNException} which represents the given throwable.
+     */
+    public static final VTNException getException(Throwable t) {
+        Throwable cause = getCause(t);
         VTNException converted;
         if (cause instanceof VTNException) {
             converted = (VTNException)cause;

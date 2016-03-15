@@ -49,7 +49,7 @@ public final class RemoveFlowRpc
      */
     public RemoveFlowRpc(NodeRpcWatcher w, SalFlowService sfs,
                          RemoveFlowInput in) {
-        super(w, in, sfs.removeFlow(in));
+        super(w, in, in.getNode(), sfs.removeFlow(in));
     }
 
     // RpcInvocation

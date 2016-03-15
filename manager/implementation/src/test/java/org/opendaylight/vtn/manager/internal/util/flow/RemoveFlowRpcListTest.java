@@ -38,7 +38,6 @@ import org.mockito.ArgumentCaptor;
 
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcWatcher;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
@@ -63,7 +62,7 @@ public class RemoveFlowRpcListTest extends TestBase {
      */
     @Test
     public void testGetFlowService() {
-        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+        FlowRpcWatcher watcher = mock(FlowRpcWatcher.class);
         SalFlowService sfs = mock(SalFlowService.class);
         RemoveFlowRpcList rpcList = new RemoveFlowRpcList(watcher, sfs);
         assertEquals(sfs, rpcList.getFlowService());
@@ -84,7 +83,7 @@ public class RemoveFlowRpcListTest extends TestBase {
      */
     @Test
     public void testSuccess() throws Exception {
-        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+        FlowRpcWatcher watcher = mock(FlowRpcWatcher.class);
         SalFlowService sfs = mock(SalFlowService.class);
         RemoveFlowRpcList rpcList = new RemoveFlowRpcList(watcher, sfs);
         assertEquals(Collections.<RemoveFlowRpc>emptyList(),
@@ -95,29 +94,38 @@ public class RemoveFlowRpcListTest extends TestBase {
         rpcList.verify(logger, 1L, TimeUnit.SECONDS);
         verifyZeroInteractions(watcher, sfs, logger);
 
-        List<RemoveFlowInput> inputs = new ArrayList<>();
-        SalNode snode = new SalNode(12345L);
         long ninputs = 10L;
+        List<RemoveFlowInput> inputs = new ArrayList<>();
+        long nnodes = (ninputs / 2) + 2;
+        long dpid = 12345L;
+        List<SalNode> snodes = new ArrayList<>();
+        for (int i = 0; i < nnodes; i++) {
+            snodes.add(new SalNode(dpid));
+            dpid++;
+        }
+        Iterator<SalNode> nit = snodes.iterator();
         for (long l = 1L; l <= ninputs; l++) {
+            if (!nit.hasNext()) {
+                nit = snodes.iterator();
+            }
+            SalNode snode = nit.next();
             FlowCookie fc = new FlowCookie(BigInteger.valueOf(l));
-            boolean barrier = (l == ninputs);
-            RemoveFlowInput input = new RemoveFlowInputBuilder().
-                setCookie(fc).
-                setNode(snode.getNodeRef()).
-                setBarrier(barrier).
-                build();
             RemoveFlowInputBuilder builder = new RemoveFlowInputBuilder().
                 setCookie(fc).
                 setNode(snode.getNodeRef());
+            RemoveFlowInput input = builder.build();
             RemoveFlowOutput output = new RemoveFlowOutputBuilder().build();
             Future<RpcResult<RemoveFlowOutput>> future = getRpcResult(output);
             when(sfs.removeFlow(input)).thenReturn(future);
             rpcList.invoke(builder);
+            verify(sfs).removeFlow(input);
             inputs.add(input);
         }
+        verifyNoMoreInteractions(watcher, sfs, logger);
+
         rpcList.flush();
-        for (RemoveFlowInput input: inputs) {
-            verify(sfs).removeFlow(input);
+        for (SalNode snode: snodes) {
+            verify(watcher).asyncBarrier(snode.getNodeRef());
         }
         verifyNoMoreInteractions(watcher, sfs, logger);
 
@@ -156,7 +164,7 @@ public class RemoveFlowRpcListTest extends TestBase {
      */
     @Test
     public void testFailure() throws Exception {
-        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+        FlowRpcWatcher watcher = mock(FlowRpcWatcher.class);
         SalFlowService sfs = mock(SalFlowService.class);
         RemoveFlowRpcList rpcList = new RemoveFlowRpcList(watcher, sfs);
         Logger logger = mock(Logger.class);
@@ -164,21 +172,26 @@ public class RemoveFlowRpcListTest extends TestBase {
         VTNException second = new VTNException("second error");
         Map<RemoveFlowInput, VTNException> errors = new HashMap<>();
 
-        List<RemoveFlowInput> inputs = new ArrayList<>();
-        SalNode snode = new SalNode(12345L);
         long ninputs = 10L;
+        List<RemoveFlowInput> inputs = new ArrayList<>();
+        long nnodes = ninputs / 3;
+        long dpid = -12345L;
+        List<SalNode> snodes = new ArrayList<>();
+        for (int i = 0; i < nnodes; i++) {
+            snodes.add(new SalNode(dpid));
+            dpid++;
+        }
+        Iterator<SalNode> nit = snodes.iterator();
         for (long l = 1L; l <= ninputs; l++) {
+            if (!nit.hasNext()) {
+                nit = snodes.iterator();
+            }
+            SalNode snode = nit.next();
             FlowCookie fc = new FlowCookie(BigInteger.valueOf(l));
-            boolean barrier = (l == ninputs);
-            RemoveFlowInput input = new RemoveFlowInputBuilder().
-                setNode(snode.getNodeRef()).
-                setCookie(fc).
-                setNode(snode.getNodeRef()).
-                setBarrier(barrier).
-                build();
             RemoveFlowInputBuilder builder = new RemoveFlowInputBuilder().
                 setCookie(fc).
                 setNode(snode.getNodeRef());
+            RemoveFlowInput input = builder.build();
             VTNException e;
             if (l == 3L) {
                 e = first;
@@ -200,11 +213,14 @@ public class RemoveFlowRpcListTest extends TestBase {
             }
             when(sfs.removeFlow(input)).thenReturn(future);
             rpcList.invoke(builder);
+            verify(sfs).removeFlow(input);
             inputs.add(input);
         }
+        verifyNoMoreInteractions(watcher, sfs, logger);
+
         rpcList.flush();
-        for (RemoveFlowInput input: inputs) {
-            verify(sfs).removeFlow(input);
+        for (SalNode snode: snodes) {
+            verify(watcher).asyncBarrier(snode.getNodeRef());
         }
         verifyNoMoreInteractions(watcher, sfs, logger);
 
@@ -263,26 +279,32 @@ public class RemoveFlowRpcListTest extends TestBase {
      */
     @Test
     public void testTimeout() throws Exception {
-        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+        FlowRpcWatcher watcher = mock(FlowRpcWatcher.class);
         SalFlowService sfs = mock(SalFlowService.class);
         RemoveFlowRpcList rpcList = new RemoveFlowRpcList(watcher, sfs);
         Logger logger = mock(Logger.class);
         RemoveFlowInput badInput = null;
 
-        List<RemoveFlowInput> inputs = new ArrayList<>();
-        SalNode snode = new SalNode(12345L);
         long ninputs = 10L;
+        List<RemoveFlowInput> inputs = new ArrayList<>();
+        long nnodes = 4L;
+        long dpid = 0xaabbccddeeffL;
+        List<SalNode> snodes = new ArrayList<>();
+        for (int i = 0; i < nnodes; i++) {
+            snodes.add(new SalNode(dpid));
+            dpid++;
+        }
+        Iterator<SalNode> nit = snodes.iterator();
         for (long l = 1L; l <= ninputs; l++) {
+            if (!nit.hasNext()) {
+                nit = snodes.iterator();
+            }
+            SalNode snode = nit.next();
             FlowCookie fc = new FlowCookie(BigInteger.valueOf(l));
-            boolean barrier = (l == ninputs);
-            RemoveFlowInput input = new RemoveFlowInputBuilder().
-                setCookie(fc).
-                setNode(snode.getNodeRef()).
-                setBarrier(barrier).
-                build();
             RemoveFlowInputBuilder builder = new RemoveFlowInputBuilder().
                 setCookie(fc).
                 setNode(snode.getNodeRef());
+            RemoveFlowInput input = builder.build();
             Future<RpcResult<RemoveFlowOutput>> future;
             if (l == 6L) {
                 future = SettableFuture.<RpcResult<RemoveFlowOutput>>create();
@@ -294,11 +316,14 @@ public class RemoveFlowRpcListTest extends TestBase {
             }
             when(sfs.removeFlow(input)).thenReturn(future);
             rpcList.invoke(builder);
+            verify(sfs).removeFlow(input);
             inputs.add(input);
         }
+        verifyNoMoreInteractions(watcher, sfs, logger);
+
         rpcList.flush();
-        for (RemoveFlowInput input: inputs) {
-            verify(sfs).removeFlow(input);
+        for (SalNode snode: snodes) {
+            verify(watcher).asyncBarrier(snode.getNodeRef());
         }
         verifyNoMoreInteractions(watcher, sfs, logger);
 

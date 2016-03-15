@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFutureTask;
 
 import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
 
@@ -46,6 +47,17 @@ import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnOpenflowVersion;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetFlowStatisticsInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetFlowStatisticsOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetGroupStatisticsInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetGroupStatisticsOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetMeterStatisticsInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetMeterStatisticsOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetNodeConnectorStatisticsInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetNodeConnectorStatisticsOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetQueueStatisticsInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetQueueStatisticsOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.OpendaylightDirectStatisticsService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FeatureCapability;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeBuilder;
@@ -61,24 +73,10 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalF
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.UpdateFlowInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.UpdateFlowOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.UpdateFlowOutputBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.FlowsStatisticsUpdateBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetAggregateFlowStatisticsFromFlowTableForAllFlowsInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetAggregateFlowStatisticsFromFlowTableForAllFlowsOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetAggregateFlowStatisticsFromFlowTableForGivenMatchInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetAggregateFlowStatisticsFromFlowTableForGivenMatchOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetAllFlowStatisticsFromFlowTableInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetAllFlowStatisticsFromFlowTableOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetAllFlowsStatisticsFromAllFlowTablesInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetAllFlowsStatisticsFromAllFlowTablesOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetFlowStatisticsFromFlowTableInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetFlowStatisticsFromFlowTableOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetFlowStatisticsFromFlowTableOutputBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.OpendaylightFlowStatisticsService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.flow.and.statistics.map.list.FlowAndStatisticsMapList;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.flow.and.statistics.map.list.FlowAndStatisticsMapListBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.table.statistics.rev131215.GetFlowTablesStatisticsInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.table.statistics.rev131215.GetFlowTablesStatisticsOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.table.statistics.rev131215.OpendaylightFlowTableStatisticsService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.transaction.rev150304.FlowCapableTransactionService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.transaction.rev150304.SendBarrierInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.transaction.rev150304.TransactionId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match;
@@ -89,15 +87,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.group.service.rev130918.Rem
 import org.opendaylight.yang.gen.v1.urn.opendaylight.group.service.rev130918.SalGroupService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.group.service.rev130918.UpdateGroupInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.group.service.rev130918.UpdateGroupOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.group.statistics.rev131111.GetAllGroupStatisticsInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.group.statistics.rev131111.GetAllGroupStatisticsOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.group.statistics.rev131111.GetGroupDescriptionInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.group.statistics.rev131111.GetGroupDescriptionOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.group.statistics.rev131111.GetGroupFeaturesInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.group.statistics.rev131111.GetGroupFeaturesOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.group.statistics.rev131111.GetGroupStatisticsInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.group.statistics.rev131111.GetGroupStatisticsOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.group.statistics.rev131111.OpendaylightGroupStatisticsService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeContext;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
@@ -112,15 +101,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.meter.service.rev130918.Rem
 import org.opendaylight.yang.gen.v1.urn.opendaylight.meter.service.rev130918.SalMeterService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.meter.service.rev130918.UpdateMeterInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.meter.service.rev130918.UpdateMeterOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.meter.statistics.rev131111.GetAllMeterConfigStatisticsInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.meter.statistics.rev131111.GetAllMeterConfigStatisticsOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.meter.statistics.rev131111.GetAllMeterStatisticsInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.meter.statistics.rev131111.GetAllMeterStatisticsOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.meter.statistics.rev131111.GetMeterFeaturesInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.meter.statistics.rev131111.GetMeterFeaturesOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.meter.statistics.rev131111.GetMeterStatisticsInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.meter.statistics.rev131111.GetMeterStatisticsOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.meter.statistics.rev131111.OpendaylightMeterStatisticsService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.statistics.types.rev130925.duration.Duration;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.statistics.types.rev130925.duration.DurationBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.module.config.rev141015.NodeConfigService;
@@ -133,18 +113,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.port.service.rev131107.SalP
 import org.opendaylight.yang.gen.v1.urn.opendaylight.port.service.rev131107.UpdatePortInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.port.service.rev131107.UpdatePortOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.port.service.rev131107.UpdatePortOutputBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.port.statistics.rev131214.GetAllNodeConnectorsStatisticsInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.port.statistics.rev131214.GetAllNodeConnectorsStatisticsOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.port.statistics.rev131214.GetNodeConnectorStatisticsInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.port.statistics.rev131214.GetNodeConnectorStatisticsOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.port.statistics.rev131214.OpendaylightPortStatisticsService;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.queue.statistics.rev131216.GetAllQueuesStatisticsFromAllPortsInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.queue.statistics.rev131216.GetAllQueuesStatisticsFromAllPortsOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.queue.statistics.rev131216.GetAllQueuesStatisticsFromGivenPortInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.queue.statistics.rev131216.GetAllQueuesStatisticsFromGivenPortOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.queue.statistics.rev131216.GetQueueStatisticsFromGivenPortInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.queue.statistics.rev131216.GetQueueStatisticsFromGivenPortOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.queue.statistics.rev131216.OpendaylightQueueStatisticsService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.table.service.rev131026.SalTableService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.table.service.rev131026.UpdateTableInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.table.service.rev131026.UpdateTableOutput;
@@ -160,12 +128,8 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.
 public final class OfNode
     implements AutoCloseable, SalFlowService, SalGroupService, SalMeterService,
                SalTableService, SalPortService, PacketProcessingService,
-               NodeConfigService, OpendaylightGroupStatisticsService,
-               OpendaylightMeterStatisticsService,
-               OpendaylightFlowStatisticsService,
-               OpendaylightPortStatisticsService,
-               OpendaylightFlowTableStatisticsService,
-               OpendaylightQueueStatisticsService {
+               NodeConfigService, FlowCapableTransactionService,
+               OpendaylightDirectStatisticsService {
     /**
      * Logger instance.
      */
@@ -300,10 +264,12 @@ public final class OfNode
     public OfNode(OfMockProvider provider, VtnOpenflowVersion ver,
                   String prefix, BigInteger dpid) {
         ofMockProvider = provider;
-            // Don't set OpenFlow version if an invalid prefix is specified.
+
+        // Don't set OpenFlow version if an invalid prefix is specified.
         ofVersion = (ID_OPENFLOW.equals(prefix))
             ? Preconditions.checkNotNull(ver)
             : null;
+
         datapathId = dpid;
         nodeIdentifier = prefix + dpid;
         nodePath = InstanceIdentifier.builder(Nodes.class).
@@ -395,11 +361,9 @@ public final class OfNode
         register(rpcReg, SalGroupService.class, this);
         register(rpcReg, SalTableService.class, this);
         register(rpcReg, PacketProcessingService.class, this);
-        register(rpcReg, OpendaylightFlowStatisticsService.class, this);
-        register(rpcReg, OpendaylightGroupStatisticsService.class, this);
-        register(rpcReg, OpendaylightMeterStatisticsService.class, this);
-        register(rpcReg, OpendaylightPortStatisticsService.class, this);
-        register(rpcReg, OpendaylightFlowTableStatisticsService.class, this);
+        register(rpcReg, NodeConfigService.class, this);
+        register(rpcReg, FlowCapableTransactionService.class, this);
+        register(rpcReg, OpendaylightDirectStatisticsService.class, this);
 
         LOG.debug("Node has been created: {}", nodeIdentifier);
         publish();
@@ -652,25 +616,6 @@ public final class OfNode
     public TransactionId createTransactionId() {
         long id = nextTransactionId.incrementAndGet();
         return new TransactionId(BigInteger.valueOf(id));
-    }
-
-    /**
-     * Publish a flows-statistics-update notification.
-     *
-     * @param xid    The transaction ID associated with the flow statistics
-     *               request.
-     * @param stats  A list of flow statistics.
-     */
-    public void publishFlowStatsUpdate(TransactionId xid,
-                                       List<FlowAndStatisticsMapList> stats) {
-        FlowsStatisticsUpdateBuilder builder =
-            new FlowsStatisticsUpdateBuilder().
-            setId(new NodeId(nodeIdentifier)).
-            setMoreReplies(false).
-            setTransactionId(xid).
-            setFlowAndStatisticsMapList(stats);
-
-        ofMockProvider.publish(builder.build());
     }
 
     /**
@@ -1104,96 +1049,78 @@ public final class OfNode
         return createRpcResult(builder.build());
     }
 
-    // OpendaylightGroupStatisticsService
+    // FlowCapableTransactionService
 
     /**
-     * Return statistics information about all groups.
+     * Send a BARRIER_REQUEST message to this node.
      *
      * @param input  An input of this RPC.
      * @return  A {@link Future} instance associated with the RPC task.
      */
     @Override
-    public Future<RpcResult<GetAllGroupStatisticsOutput>> getAllGroupStatistics(
-        GetAllGroupStatisticsInput input) {
-        return createUnsupported(GetAllGroupStatisticsOutput.class);
+    public Future<RpcResult<Void>> sendBarrier(SendBarrierInput input) {
+        if (ofVersion == null) {
+            return createUnsupported(Void.class);
+        }
+
+        try {
+            ListenableFutureTask<RpcResult<Void>> task = Barrier.create();
+            inventoryExecutor.execute(task);
+            return task;
+        } catch (RuntimeException e) {
+            LOG.error("Failed to start send-barrier task: input=" + input, e);
+            return createRpcError(Void.class, e);
+        }
     }
 
+    // OpendaylightDirectStatisticsService
+
     /**
-     * Return the description about the given group.
+     * Get statistics for the given queues from the given port of the node.
      *
      * @param input  An input of this RPC.
      * @return  A {@link Future} instance associated with the RPC task.
      */
     @Override
-    public Future<RpcResult<GetGroupDescriptionOutput>> getGroupDescription(
-        GetGroupDescriptionInput input) {
-        return createUnsupported(GetGroupDescriptionOutput.class);
+    public Future<RpcResult<GetQueueStatisticsOutput>> getQueueStatistics(
+        GetQueueStatisticsInput input) {
+        return createUnsupported(GetQueueStatisticsOutput.class);
     }
 
     /**
-     * Return features of the given group.
+     * Get statistics for the given flow.
      *
      * @param input  An input of this RPC.
      * @return  A {@link Future} instance associated with the RPC task.
      */
     @Override
-    public Future<RpcResult<GetGroupFeaturesOutput>> getGroupFeatures(
-        GetGroupFeaturesInput input) {
-        return createUnsupported(GetGroupFeaturesOutput.class);
+    public Future<RpcResult<GetFlowStatisticsOutput>> getFlowStatistics(
+        GetFlowStatisticsInput input) {
+        Short table = input.getTableId();
+        if (table == null) {
+            return createIllegalArgument(
+                GetFlowStatisticsOutput.class, "Table ID cannot be null.");
+        } else if (!table.equals(flowTable.getTableId())) {
+            return createIllegalArgument(
+                GetFlowStatisticsOutput.class, "Invalid table ID: " + table);
+        }
+
+        try {
+            // Start flow statistics read transaction.
+            FlowMatcher matcher = new FlowMatcher(this, input);
+            ListenableFutureTask<RpcResult<GetFlowStatisticsOutput>> task =
+                GetFlowStatsTask.create(this, matcher);
+            inventoryExecutor.execute(task);
+            return task;
+        } catch (RuntimeException e) {
+            LOG.error("Failed to start get-flow-statistics task: input=" +
+                      input, e);
+            return createRpcError(GetFlowStatisticsOutput.class, e);
+        }
     }
 
     /**
-     * Return statistics information about the given group.
-     *
-     * @param input  An input of this RPC.
-     * @return  A {@link Future} instance associated with the RPC task.
-     */
-    @Override
-    public Future<RpcResult<GetGroupStatisticsOutput>> getGroupStatistics(
-        GetGroupStatisticsInput input) {
-        return createUnsupported(GetGroupStatisticsOutput.class);
-    }
-
-    // OpendaylightMeterStatisticsService
-
-    /**
-     * Return statistics information about all meter configurations.
-     *
-     * @param input  An input of this RPC.
-     * @return  A {@link Future} instance associated with the RPC task.
-     */
-    @Override
-    public Future<RpcResult<GetAllMeterConfigStatisticsOutput>> getAllMeterConfigStatistics(
-        GetAllMeterConfigStatisticsInput input) {
-        return createUnsupported(GetAllMeterConfigStatisticsOutput.class);
-    }
-
-    /**
-     * Return statistics information about all meters.
-     *
-     * @param input  An input of this RPC.
-     * @return  A {@link Future} instance associated with the RPC task.
-     */
-    @Override
-    public Future<RpcResult<GetAllMeterStatisticsOutput>> getAllMeterStatistics(
-        GetAllMeterStatisticsInput input) {
-        return createUnsupported(GetAllMeterStatisticsOutput.class);
-    }
-
-    /**
-     * Return features of the given meter.
-     *
-     * @param input  An input of this RPC.
-     * @return  A {@link Future} instance associated with the RPC task.
-     */
-    @Override
-    public Future<RpcResult<GetMeterFeaturesOutput>> getMeterFeatures(
-        GetMeterFeaturesInput input) {
-        return createUnsupported(GetMeterFeaturesOutput.class);
-    }
-
-    /**
-     * Return statistics information about the given meter.
+     * Get statistics for the given meter.
      *
      * @param input  An input of this RPC.
      * @return  A {@link Future} instance associated with the RPC task.
@@ -1204,112 +1131,20 @@ public final class OfNode
         return createUnsupported(GetMeterStatisticsOutput.class);
     }
 
-    // OpendaylightFlowStatisticsService
-
     /**
-     * Return aggregate statistics for all flow entries.
+     * Get statistics for the given group.
      *
      * @param input  An input of this RPC.
      * @return  A {@link Future} instance associated with the RPC task.
      */
     @Override
-    public Future<RpcResult<GetAggregateFlowStatisticsFromFlowTableForAllFlowsOutput>> getAggregateFlowStatisticsFromFlowTableForAllFlows(
-        GetAggregateFlowStatisticsFromFlowTableForAllFlowsInput input) {
-        return createUnsupported(
-            GetAggregateFlowStatisticsFromFlowTableForAllFlowsOutput.class);
+    public Future<RpcResult<GetGroupStatisticsOutput>> getGroupStatistics(
+        GetGroupStatisticsInput input) {
+        return createUnsupported(GetGroupStatisticsOutput.class);
     }
 
     /**
-     * Return aggregate statistics for flow entries that match to the given
-     * match.
-     *
-     * @param input  An input of this RPC.
-     * @return  A {@link Future} instance associated with the RPC task.
-     */
-    @Override
-    public Future<RpcResult<GetAggregateFlowStatisticsFromFlowTableForGivenMatchOutput>> getAggregateFlowStatisticsFromFlowTableForGivenMatch(
-        GetAggregateFlowStatisticsFromFlowTableForGivenMatchInput input) {
-        return createUnsupported(
-            GetAggregateFlowStatisticsFromFlowTableForGivenMatchOutput.class);
-    }
-
-    /**
-     * Return statistics information about all flow entries in the given table.
-     *
-     * @param input  An input of this RPC.
-     * @return  A {@link Future} instance associated with the RPC task.
-     */
-    @Override
-    public Future<RpcResult<GetAllFlowStatisticsFromFlowTableOutput>> getAllFlowStatisticsFromFlowTable(
-        GetAllFlowStatisticsFromFlowTableInput input) {
-        return createUnsupported(
-            GetAllFlowStatisticsFromFlowTableOutput.class);
-    }
-
-    /**
-     * Return statistics information about all flow entries in all flow tables.
-     *
-     * @param input  An input of this RPC.
-     * @return  A {@link Future} instance associated with the RPC task.
-     */
-    @Override
-    public Future<RpcResult<GetAllFlowsStatisticsFromAllFlowTablesOutput>> getAllFlowsStatisticsFromAllFlowTables(
-        GetAllFlowsStatisticsFromAllFlowTablesInput input) {
-        return createUnsupported(
-            GetAllFlowsStatisticsFromAllFlowTablesOutput.class);
-    }
-
-    /**
-     * Return statistics information about the given flow entry in the flow
-     * table.
-     *
-     * @param input  An input of this RPC.
-     * @return  A {@link Future} instance associated with the RPC task.
-     */
-    @Override
-    public Future<RpcResult<GetFlowStatisticsFromFlowTableOutput>> getFlowStatisticsFromFlowTable(
-        GetFlowStatisticsFromFlowTableInput input) {
-        Short table = input.getTableId();
-        if (table == null) {
-            return createIllegalArgument(
-                GetFlowStatisticsFromFlowTableOutput.class,
-                "Table ID cannot be null.");
-        } else if (!table.equals(flowTable.getTableId())) {
-            return createIllegalArgument(
-                GetFlowStatisticsFromFlowTableOutput.class,
-                "Invalid table ID: " + table);
-        }
-
-        // Start flow statistics read transaction.
-        TransactionId xid = createTransactionId();
-        FlowMatcher matcher = new FlowMatcher(this, input);
-        FlowStatsNotifier notifier = new FlowStatsNotifier(this, matcher, xid);
-        inventoryExecutor.execute(notifier);
-
-        // Return the transaction ID only.
-        GetFlowStatisticsFromFlowTableOutputBuilder builder =
-            new GetFlowStatisticsFromFlowTableOutputBuilder();
-        builder.setTransactionId(xid);
-        return createRpcResult(builder.build());
-    }
-
-    // OpendaylightPortStatisticsService
-
-    /**
-     * Return statistics information about all node connectors in the given
-     * node.
-     *
-     * @param input  An input of this RPC.
-     * @return  A {@link Future} instance associated with the RPC task.
-     */
-    @Override
-    public Future<RpcResult<GetAllNodeConnectorsStatisticsOutput>> getAllNodeConnectorsStatistics(
-        GetAllNodeConnectorsStatisticsInput input) {
-        return createUnsupported(GetAllNodeConnectorsStatisticsOutput.class);
-    }
-
-    /**
-     * Return statistics information abotu the given node connector.
+     * Get statistics for the given node connector from the node.
      *
      * @param input  An input of this RPC.
      * @return  A {@link Future} instance associated with the RPC task.
@@ -1318,61 +1153,5 @@ public final class OfNode
     public Future<RpcResult<GetNodeConnectorStatisticsOutput>> getNodeConnectorStatistics(
         GetNodeConnectorStatisticsInput input) {
         return createUnsupported(GetNodeConnectorStatisticsOutput.class);
-    }
-
-    // OpendaylightFlowTableStatisticsService
-
-    /**
-     * Return statistics information about all flow tables in the given node.
-     *
-     * @param input  An input of this RPC.
-     * @return  A {@link Future} instance associated with the RPC task.
-     */
-    @Override
-    public Future<RpcResult<GetFlowTablesStatisticsOutput>> getFlowTablesStatistics(
-        GetFlowTablesStatisticsInput input) {
-        return createUnsupported(GetFlowTablesStatisticsOutput.class);
-    }
-
-    // OpendaylightQueueStatisticsService
-
-    /**
-     * Return statistics information abou all queues attached to all ports
-     * in the given node.
-     *
-     * @param input  An input of this RPC.
-     * @return  A {@link Future} instance associated with the RPC task.
-     */
-    @Override
-    public Future<RpcResult<GetAllQueuesStatisticsFromAllPortsOutput>> getAllQueuesStatisticsFromAllPorts(
-        GetAllQueuesStatisticsFromAllPortsInput input) {
-        return createUnsupported(
-            GetAllQueuesStatisticsFromAllPortsOutput.class);
-    }
-
-    /**
-     * Return statistics information about all queues for the given port.
-     *
-     * @param input  An input of this RPC.
-     * @return  A {@link Future} instance associated with the RPC task.
-     */
-    @Override
-    public Future<RpcResult<GetAllQueuesStatisticsFromGivenPortOutput>> getAllQueuesStatisticsFromGivenPort(
-        GetAllQueuesStatisticsFromGivenPortInput input) {
-        return createUnsupported(
-            GetAllQueuesStatisticsFromGivenPortOutput.class);
-    }
-
-    /**
-     * Return statistics information about the given queue.
-     *
-     * @param input  An input of this RPC.
-     * @return  A {@link Future} instance associated with the RPC task.
-     */
-    @Override
-    public Future<RpcResult<GetQueueStatisticsFromGivenPortOutput>> getQueueStatisticsFromGivenPort(
-        GetQueueStatisticsFromGivenPortInput input) {
-        return createUnsupported(
-            GetQueueStatisticsFromGivenPortOutput.class);
     }
 }

@@ -11,11 +11,14 @@ package org.opendaylight.vtn.manager.internal.flow.add;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
-import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
+import org.opendaylight.vtn.manager.internal.TxQueue;
+import org.opendaylight.vtn.manager.internal.flow.common.FlowModContext;
+import org.opendaylight.vtn.manager.internal.flow.common.FlowModContextFactory;
+import org.opendaylight.vtn.manager.internal.util.concurrent.VTNThreadPool;
 import org.opendaylight.vtn.manager.internal.util.flow.VTNFlowBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnFlowId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.VtnDataFlow;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 
@@ -23,7 +26,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalF
  * {@code FlowAddContext} describes a runtime information for adding a
  * new VTN data flow.
  */
-public final class FlowAddContext {
+public final class FlowAddContext
+    extends FlowModContext<VtnFlowId, VtnDataFlow> {
     /**
      * Logger instance used for logging of flow installation.
      */
@@ -36,25 +40,52 @@ public final class FlowAddContext {
     private final VTNFlowBuilder  flowBuilder;
 
     /**
-     * A future associated with the task for adding a new data flow.
+     * Factory class for instantiating {@link FlowAddContext}.
      */
-    private final SettableVTNFuture<VtnFlowId>  contextFuture =
-        new SettableVTNFuture<>();
+    public static final class Factory
+        implements FlowModContextFactory<VtnFlowId, VtnDataFlow> {
+        /**
+         * A VTN data flow builder which contains a data flow to be added.
+         */
+        private final VTNFlowBuilder  builder;
 
-    /**
-     * A MD-SAL flow service.
-     */
-    private final SalFlowService  flowService;
+        /**
+         * Construct a new instance.
+         *
+         * @param b  A {@link VTNFlowBuilder} instance.
+         */
+        public Factory(VTNFlowBuilder b) {
+            builder = b;
+        }
+
+        // FlowModContextFactory
+
+        /**
+         * Construct a new context for adding VTN data flows.
+         *
+         * @param sfs     The MD-SAL flow service.
+         * @param thread  A thread pool to run tasks that add flow entries.
+         * @return  A new context for adding VTN data flows.
+         */
+        @Override
+        public FlowAddContext newContext(SalFlowService sfs,
+                                         VTNThreadPool thread) {
+            return new FlowAddContext(sfs, thread, builder);
+        }
+    }
 
     /**
      * Construct a new instance.
      *
      * @param sfs      A {@link SalFlowService} instance.
+     * @param thread   A {@link VTNThreadPool} instance used to run tasks.
      * @param builder  A {@link VTNFlowBuilder} instance.
+     * @see Factory
      */
-    public FlowAddContext(SalFlowService sfs, VTNFlowBuilder builder) {
+    private FlowAddContext(SalFlowService sfs, VTNThreadPool thread,
+                           VTNFlowBuilder builder) {
+        super(sfs, thread);
         flowBuilder = builder;
-        flowService = sfs;
     }
 
     /**
@@ -66,44 +97,16 @@ public final class FlowAddContext {
         return flowBuilder;
     }
 
-    /**
-     * Return the MD-SAL flow service.
-     *
-     * @return  A {@link SalFlowService} instance.
-     */
-    public SalFlowService getFlowService() {
-        return flowService;
-    }
+    // FlowModContext
 
     /**
-     * Return the future associated with the task for adding a new data flow.
+     * Create a new MD-SAL DS task that adds VTN data flows.
      *
-     * @return  A {@link VTNFuture} instance which returns the identifier for
-     *          a new data flow.
-     *          Note that the future will return {@code null} if the data flow
-     *          configured in this instance is already installed.
+     * @param txq  A MD-SAL DS transaction queue.
+     * @return  A MD-SAL DS transaction task that adds VTN data flows.
      */
-    public VTNFuture<VtnFlowId> getContextFuture() {
-        return contextFuture;
-    }
-
-    /**
-     * Set the result of the flow installation.
-     *
-     * @param result  A VTN flow ID for a new data flow.
-     *                {@code null} indicates that the data flow is already
-     *                installed.
-     */
-    void setResult(VtnFlowId result) {
-        contextFuture.set(result);
-    }
-
-    /**
-     * Set the cause of the failure of flow installation.
-     *
-     * @param cause  A {@link Throwable} which indicates the cause of failure.
-     */
-    void setFailure(Throwable cause) {
-        contextFuture.setException(cause);
+    @Override
+    public PutFlowTxTask newDatastoreTask(TxQueue txq) {
+        return new PutFlowTxTask(this, getFlowThread(), txq);
     }
 }
