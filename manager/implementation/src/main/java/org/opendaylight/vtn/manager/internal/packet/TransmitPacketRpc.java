@@ -33,7 +33,7 @@ public final class TransmitPacketRpc
      */
     public TransmitPacketRpc(NodeRpcWatcher w, PacketProcessingService pps,
                              TransmitPacketInput in) {
-        super(w, in, pps.transmitPacket(in));
+        super(w, in, in.getNode(), pps.transmitPacket(in));
     }
 
     // RpcRequest

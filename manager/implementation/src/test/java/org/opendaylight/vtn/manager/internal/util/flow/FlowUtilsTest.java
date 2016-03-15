@@ -56,7 +56,6 @@ import org.opendaylight.vtn.manager.internal.util.flow.match.VTNPortRange;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNUdpMatch;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.MacVlan;
-import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcWatcher;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
@@ -1030,47 +1029,86 @@ public class FlowUtilsTest extends TestBase {
     }
 
     /**
-     * Test case for {@link FlowUtils#createAddFlowInput(VtnFlowEntry)}.
+     * Test case for
+     * {@link FlowUtils#createAddFlowInput(VtnFlowId, VtnFlowEntry)}.
      *
      * @throws Exception  An error occurred.
      */
     @Test
     public void testCreateAddFlowInput() throws Exception {
-        long flowId = 12345L;
-        int order = 3;
-        SalPort ingress = new SalPort(123L, 45L);
+        SalNode[] nodes = {
+            new SalNode(1L),
+            new SalNode(12345L),
+            new SalNode(-1L),
+        };
+        long[] flowIds = {1L, 12345L, MAX_FLOW_ID};
+        Integer[] orders = {1, 2, 99999};
+
         Short table = 0;
-        VtnFlowEntry vfent = createVtnFlowEntry(flowId, order, ingress);
-        long c = flowId | COOKIE_BITS_VTN;
-        FlowCookie cookie = new FlowCookie(NumberUtils.getUnsigned(c));
+        for (SalNode snode: nodes) {
+            SalPort ingress = new SalPort(snode.getNodeNumber(), 45L);
+            FlowTableRef tref =
+                new FlowTableRef(ingress.getFlowTableIdentifier(table));
+            for (long flowId: flowIds) {
+                long c = flowId | COOKIE_BITS_VTN;
+                FlowCookie cookie = new FlowCookie(NumberUtils.getUnsigned(c));
+                VtnFlowId vfId = new VtnFlowId(BigInteger.valueOf(flowId));
+                for (Integer order: orders) {
+                    VtnFlowEntry vfent =
+                        createVtnFlowEntry(flowId, order, ingress);
 
-        AddFlowInput input = FlowUtils.createAddFlowInput(vfent);
-        assertEquals(ingress.getNodeRef(), input.getNode());
-        assertEquals(vfent.getPriority(), input.getPriority());
-        assertEquals(table, input.getTableId());
-        assertEquals(vfent.getIdleTimeout(), input.getIdleTimeout());
-        assertEquals(vfent.getHardTimeout(), input.getHardTimeout());
-        assertEquals(cookie, input.getCookie());
-        assertEquals(null, input.getCookieMask());
-        assertEquals(vfent.getMatch(), input.getMatch());
-        assertEquals(vfent.getFlags(), input.getFlags());
-        assertEquals(vfent.getInstructions(), input.getInstructions());
-        assertEquals(Boolean.TRUE, input.isStrict());
-        assertEquals(Boolean.TRUE, input.isBarrier());
-        assertEquals(null, input.getOutPort());
-        assertEquals(null, input.getOutGroup());
-        assertEquals(null, input.getBufferId());
-        assertEquals(null, input.getContainerName());
-        assertEquals(null, input.getFlowName());
-        assertEquals(null, input.isInstallHw());
-        assertEquals(null, input.getFlowRef());
+                    FlowId fid = new FlowId("vtn:" + flowId + "-" + order);
+                    FlowRef fref =
+                        new FlowRef(snode.getFlowIdentifier(table, fid));
 
-        FlowTableRef tref =
-            new FlowTableRef(ingress.getFlowTableIdentifier(table));
-        assertEquals(tref, input.getFlowTable());
+                    Uri uri = new Uri(
+                        String.format("add-flow:%x-%s", c, order));
 
-        Uri uri = new Uri(String.format("add-flow:%x-%s", c, order));
-        assertEquals(uri, input.getTransactionUri());
+                    AddFlowInput input =
+                        FlowUtils.createAddFlowInput(vfId, vfent);
+                    assertEquals(ingress.getNodeRef(), input.getNode());
+                    assertEquals(vfent.getPriority(), input.getPriority());
+                    assertEquals(table, input.getTableId());
+                    assertEquals(vfent.getIdleTimeout(),
+                                 input.getIdleTimeout());
+                    assertEquals(vfent.getHardTimeout(),
+                                 input.getHardTimeout());
+                    assertEquals(cookie, input.getCookie());
+                    assertEquals(null, input.getCookieMask());
+                    assertEquals(fref, input.getFlowRef());
+                    assertEquals(tref, input.getFlowTable());
+                    assertEquals(vfent.getMatch(), input.getMatch());
+                    assertEquals(vfent.getFlags(), input.getFlags());
+                    assertEquals(vfent.getInstructions(),
+                                 input.getInstructions());
+                    assertEquals(Boolean.TRUE, input.isStrict());
+                    assertEquals(null, input.isBarrier());
+                    assertEquals(null, input.getOutPort());
+                    assertEquals(null, input.getOutGroup());
+                    assertEquals(null, input.getBufferId());
+                    assertEquals(null, input.getContainerName());
+                    assertEquals(null, input.getFlowName());
+                    assertEquals(null, input.isInstallHw());
+                    assertEquals(uri, input.getTransactionUri());
+                }
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link FlowUtils#createMdFlowId(BigInteger, Integer)}.
+     */
+    @Test
+    public void testCreateMdFlowId() {
+        long[] flowIds = {1L, 2L, 9999999L, MAX_FLOW_ID};
+        Integer[] orders = {0, 1, 2, 99999};
+        for (long flowId: flowIds) {
+            BigInteger id = BigInteger.valueOf(flowId);
+            for (Integer order: orders) {
+                FlowId fid = new FlowId("vtn:" + flowId + "-" + order);
+                assertEquals(fid, FlowUtils.createMdFlowId(id, order));
+            }
+        }
     }
 
     /**
@@ -1087,6 +1125,34 @@ public class FlowUtilsTest extends TestBase {
         for (SalNode snode: nodes) {
             String expected = "vtn:table-miss:" + snode;
             assertEquals(expected, FlowUtils.createTableMissFlowId(snode));
+        }
+    }
+
+    /**
+     * Test case for {@link FlowUtils#isTableMissFlowId(SalNode, FlowId)}.
+     */
+    @Test
+    public void testIsTableMissFlowId() {
+        SalNode[] nodes = {
+            new SalNode(1L),
+            new SalNode(12345L),
+            new SalNode(999999999999L),
+            new SalNode(-1L),
+        };
+        for (SalNode snode: nodes) {
+            FlowId missId = new FlowId(FlowUtils.createTableMissFlowId(snode));
+            assertEquals(true, FlowUtils.isTableMissFlowId(snode, missId));
+
+            FlowId[] badIds = {
+                null,
+                new FlowId("flow-1"),
+                new FlowId("table-miss:" + snode),
+                new FlowId("unknown-flow"),
+                new FlowId("vtn:table-miss:openflow:7777"),
+            };
+            for (FlowId fid: badIds) {
+                assertEquals(false, FlowUtils.isTableMissFlowId(snode, fid));
+            }
         }
     }
 
@@ -1147,7 +1213,7 @@ public class FlowUtilsTest extends TestBase {
             assertEquals(match, input.getMatch());
             assertEquals(flags, input.getFlags());
             assertEquals(null, input.isStrict());
-            assertEquals(Boolean.TRUE, input.isBarrier());
+            assertEquals(null, input.isBarrier());
             assertEquals(null, input.getOutPort());
             assertEquals(null, input.getOutGroup());
             assertEquals(null, input.getBufferId());
@@ -2066,7 +2132,7 @@ public class FlowUtilsTest extends TestBase {
 
     /**
      * Test case for
-     * {@link FlowUtils#removeFlowEntries(NodeRpcWatcher,SalFlowService,List,InventoryReader)}.
+     * {@link FlowUtils#removeFlowEntries(FlowRpcWatcher,SalFlowService,List,InventoryReader)}.
      *
      * @throws Exception  An error occurred.
      */
@@ -2077,7 +2143,7 @@ public class FlowUtilsTest extends TestBase {
         ReadTransaction rtx = mock(ReadTransaction.class);
         InventoryReader reader = new InventoryReader(rtx);
         SalFlowService sfs = mock(SalFlowService.class);
-        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+        FlowRpcWatcher watcher = mock(FlowRpcWatcher.class);
         assertEquals(0, FlowUtils.removeFlowEntries(watcher, sfs, flows,
                                                     reader).size());
         verifyZeroInteractions(watcher, sfs, rtx);
@@ -2101,8 +2167,6 @@ public class FlowUtilsTest extends TestBase {
         while (flows.size() < 4) {
             int order = 0;
             List<VtnFlowEntry> entries = new ArrayList<>();
-            Boolean barrier = (flows.size() == 3)
-                ? Boolean.TRUE : Boolean.FALSE;
             for (long nodeId: nodeIds) {
                 SalPort ingress = new SalPort(nodeId, portId);
                 VtnFlowEntry vfent =
@@ -2112,7 +2176,6 @@ public class FlowUtilsTest extends TestBase {
                     SalNode snode = new SalNode(nodeId);
                     RemoveFlowInput input =
                         FlowUtils.createRemoveFlowInputBuilder(snode, vfent).
-                        setBarrier(barrier).
                         build();
                     Future<RpcResult<RemoveFlowOutput>> f =
                         new SettableVTNFuture<>();
@@ -2146,7 +2209,7 @@ public class FlowUtilsTest extends TestBase {
 
     /**
      * Test case for
-     * {@link FlowUtils#removeFlowEntries(NodeRpcWatcher,SalFlowService,List,SalPort,InventoryReader)}.
+     * {@link FlowUtils#removeFlowEntries(FlowRpcWatcher,SalFlowService,List,SalPort,InventoryReader)}.
      *
      * @throws Exception  An error occurred.
      */
@@ -2157,7 +2220,7 @@ public class FlowUtilsTest extends TestBase {
         ReadTransaction rtx = mock(ReadTransaction.class);
         InventoryReader reader = new InventoryReader(rtx);
         SalFlowService sfs = mock(SalFlowService.class);
-        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+        FlowRpcWatcher watcher = mock(FlowRpcWatcher.class);
         long targetNode = 12345L;
         long targetPort = 99999999L;
         SalPort target = new SalPort(targetNode, targetPort);
@@ -2185,8 +2248,6 @@ public class FlowUtilsTest extends TestBase {
         while (flows.size() < 4) {
             int order = 0;
             List<VtnFlowEntry> entries = new ArrayList<>();
-            Boolean barrier = (flows.size() == 3)
-                ? Boolean.TRUE : Boolean.FALSE;
             for (long nodeId: nodeIds) {
                 SalPort ingress = new SalPort(nodeId, portId);
                 VtnFlowEntry vfent =
@@ -2200,9 +2261,7 @@ public class FlowUtilsTest extends TestBase {
                         Iterator<RemoveFlowInputBuilder> it = rfi.iterator();
                         while (it.hasNext()) {
                             RemoveFlowInputBuilder builder = it.next();
-                            Boolean b = !it.hasNext();
-                            RemoveFlowInput input = builder.setBarrier(b).
-                                build();
+                            RemoveFlowInput input = builder.build();
                             Future<RpcResult<RemoveFlowOutput>> f =
                                 new SettableVTNFuture<>();
                             when(sfs.removeFlow(input)).thenReturn(f);
@@ -2215,7 +2274,6 @@ public class FlowUtilsTest extends TestBase {
                     SalNode snode = new SalNode(nodeId);
                     RemoveFlowInput input = FlowUtils.
                         createRemoveFlowInputBuilder(snode, vfent).
-                        setBarrier(barrier).
                         build();
                     Future<RpcResult<RemoveFlowOutput>> f =
                         new SettableVTNFuture<>();
@@ -2275,9 +2333,7 @@ public class FlowUtilsTest extends TestBase {
 
         Set<RemoveFlowInput> lastSet = new HashSet<>(lastInputs.values());
         for (RemoveFlowInput input: inputList) {
-            Boolean barrier = lastSet.contains(input);
             RemoveFlowInput in = new RemoveFlowInputBuilder(input).
-                setBarrier(barrier).
                 build();
             Future<RpcResult<RemoveFlowOutput>> f =
                 new SettableVTNFuture<>();

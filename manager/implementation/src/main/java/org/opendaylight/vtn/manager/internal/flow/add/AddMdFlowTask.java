@@ -94,7 +94,7 @@ public final class AddMdFlowTask extends RunnableVTNFuture<Void> {
         try {
             VTNConfig vcfg = vtnProvider.getVTNConfig();
             long timeout = (long)vcfg.getFlowModTimeout();
-            AddFlowRpc rpc = new AddFlowRpc(vtnProvider, flowService, input);
+            AddFlowRpc rpc = AddFlowRpc.create(vtnProvider, flowService, input);
             rpcInvocation.set(rpc);
             rpc.getResult(timeout, TimeUnit.MILLISECONDS, LOG);
             set(null);

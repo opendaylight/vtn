@@ -30,7 +30,6 @@ import org.opendaylight.vtn.manager.util.NumberUtils;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
-import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcWatcher;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
@@ -172,6 +171,22 @@ public final class FlowUtils {
     private static final String  DESC_HARD_TIMEOUT = "hard-timeout";
 
     /**
+     * A prefix for a MD-SAL flow ID.
+     */
+    private static final String  ID_PREFIX = "vtn:";
+
+    /**
+     * A prefix for a MD-SAL flow ID to be associated with a table miss flow
+     * entry.
+     */
+    private static final String  ID_PREFIX_MISS = ID_PREFIX + "table-miss:";
+
+    /**
+     * A separator between VTN flow ID and flow index.
+     */
+    private static final char  ID_SEPARATOR = '-';
+
+    /**
      * A short tag that indicates the idle-timeout value.
      */
     private static final String  TAG_IDLE = "idle=";
@@ -180,12 +195,6 @@ public final class FlowUtils {
      * A short tag that indicates the hard-timeout value.
      */
     private static final String  TAG_HARD = "hard=";
-
-    /**
-     * A prefix for a MD-SAL flow ID to be associated with a table miss flow
-     * entry.
-     */
-    private static final String  ID_PREFIX_MISS = "vtn:table-miss:";
 
     /**
      * Private constructor that protects this class from instantiating.
@@ -551,22 +560,52 @@ public final class FlowUtils {
     /**
      * Construct an RPC input to install the specified flow entry.
      *
-     * @param vfent  A {@link VtnFlowEntry} instance.
+     * @param flowId  A VTN flow ID.
+     * @param vfent   A {@link VtnFlowEntry} instance.
      * @return  A {@link AddFlowInput} instance.
      */
-    public static AddFlowInput createAddFlowInput(VtnFlowEntry vfent) {
+    public static AddFlowInput createAddFlowInput(VtnFlowId flowId,
+                                                  VtnFlowEntry vfent) {
         SalNode snode = SalNode.create(vfent.getNode());
         Short table = vfent.getTableId();
         FlowTableRef tref =
             new FlowTableRef(snode.getFlowTableIdentifier(table));
 
+        // Associate a unique MD-SAL flow ID.
+        FlowId fid = createMdFlowId(flowId.getValue(), vfent.getOrder());
+        FlowRef fref = new FlowRef(snode.getFlowIdentifier(table, fid));
+
         return new AddFlowInputBuilder((Flow)vfent).
             setNode(snode.getNodeRef()).
+            setFlowRef(fref).
             setFlowTable(tref).
             setTransactionUri(createTxUri(vfent, "add-flow:")).
             setStrict(true).
-            setBarrier(true).
             build();
+    }
+
+    /**
+     * Create a MD-SAL flow ID to be associated with the ingress flow entry
+     * in a VTN data flow.
+     *
+     * @param id     A VTN flow ID.
+     * @return  A MD-SAL flow ID.
+     */
+    public static FlowId createMdFlowId(BigInteger id) {
+        return createMdFlowId(id, MiscUtils.ORDER_MIN);
+    }
+
+    /**
+     * Create a MD-SAL flow ID to be associated with a flow entry in a
+     * VTN data flow.
+     *
+     * @param id     A VTN flow ID.
+     * @param index  An index value that specifies a flow entry in a VTN
+     *               data flow.
+     * @return  A MD-SAL flow ID.
+     */
+    public static FlowId createMdFlowId(BigInteger id, Integer index) {
+        return new FlowId(ID_PREFIX + id + ID_SEPARATOR + index);
     }
 
     /**
@@ -578,6 +617,22 @@ public final class FlowUtils {
      */
     public static String createTableMissFlowId(SalNode snode) {
         return ID_PREFIX_MISS + snode;
+    }
+
+    /**
+     * Determine whether the given MD-SAL flow ID is associated with a
+     * table miss flow entry or not.
+     *
+     * @param snode   A {@link SalNode} instance that specifies the target
+     *                switch.
+     * @param flowId  A MD-SAL flow ID to be tested.
+     * @return  {@code true} if the specified MD-SAL flow ID is associated with
+     *          a table miss flow entry. {@code false} otherwise.
+     */
+    public static boolean isTableMissFlowId(SalNode snode, FlowId flowId) {
+        return (flowId == null)
+            ? false
+            : createTableMissFlowId(snode).equals(flowId.getValue());
     }
 
     /**
@@ -618,7 +673,6 @@ public final class FlowUtils {
             setMatch(EMPTY_MATCH).
             setFlags(FLOW_MOD_FLAGS).
             setInstructions(inst).
-            setBarrier(true).
             build();
     }
 
@@ -948,7 +1002,7 @@ public final class FlowUtils {
     /**
      * Remove all flow entries in the given VTN data flows.
      *
-     * @param watcher  The node-routed RPC watcher.
+     * @param watcher  The flow RPC watcher.
      * @param sfs      MD-SAL flow service.
      * @param flows    A list of {@link FlowCache} instances.
      * @param reader   A {@link InventoryReader} instance.
@@ -956,7 +1010,7 @@ public final class FlowUtils {
      * @throws VTNException  An error occurred.
      */
     public static RemoveFlowRpcList removeFlowEntries(
-        NodeRpcWatcher watcher, SalFlowService sfs, List<FlowCache> flows,
+        FlowRpcWatcher watcher, SalFlowService sfs, List<FlowCache> flows,
         InventoryReader reader) throws VTNException {
         RemoveFlowRpcList rpcs = new RemoveFlowRpcList(watcher, sfs);
         for (FlowCache fc: flows) {
@@ -991,7 +1045,7 @@ public final class FlowUtils {
      * @throws VTNException  An error occurred.
      */
     public static RemoveFlowRpcList removeFlowEntries(
-        NodeRpcWatcher watcher, SalFlowService sfs, List<FlowCache> flows,
+        FlowRpcWatcher watcher, SalFlowService sfs, List<FlowCache> flows,
         SalPort sport, InventoryReader reader) throws VTNException {
         RemoveFlowRpcList rpcs = new RemoveFlowRpcList(watcher, sfs);
         long dpid = sport.getNodeNumber();

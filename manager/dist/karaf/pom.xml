@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2014-2015 NEC Corporation
+# Copyright (c) 2014-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -63,7 +63,10 @@
           <bootFeatures>
             <feature>standard</feature>
             <feature>odl-vtn-manager-rest</feature>
-            <feature>odl-vtn-manager-neutron</feature>
+
+            <!-- FIXME: Neutron support will be enabled again when ovsdb is
+                 migrated to openflowplugin-li. -->
+            <!-- <feature>odl-vtn-manager-neutron</feature> -->
           </bootFeatures>
           <!-- no installedFeatures -->
         </configuration>

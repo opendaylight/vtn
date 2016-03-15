@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFutureTask;
 
 import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
 
@@ -79,6 +80,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.f
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.table.statistics.rev131215.GetFlowTablesStatisticsInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.table.statistics.rev131215.GetFlowTablesStatisticsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.table.statistics.rev131215.OpendaylightFlowTableStatisticsService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.transaction.rev150304.FlowCapableTransactionService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.transaction.rev150304.SendBarrierInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.transaction.rev150304.TransactionId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match;
@@ -160,7 +163,8 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.
 public final class OfNode
     implements AutoCloseable, SalFlowService, SalGroupService, SalMeterService,
                SalTableService, SalPortService, PacketProcessingService,
-               NodeConfigService, OpendaylightGroupStatisticsService,
+               NodeConfigService, FlowCapableTransactionService,
+               OpendaylightGroupStatisticsService,
                OpendaylightMeterStatisticsService,
                OpendaylightFlowStatisticsService,
                OpendaylightPortStatisticsService,
@@ -300,10 +304,12 @@ public final class OfNode
     public OfNode(OfMockProvider provider, VtnOpenflowVersion ver,
                   String prefix, BigInteger dpid) {
         ofMockProvider = provider;
-            // Don't set OpenFlow version if an invalid prefix is specified.
+
+        // Don't set OpenFlow version if an invalid prefix is specified.
         ofVersion = (ID_OPENFLOW.equals(prefix))
             ? Preconditions.checkNotNull(ver)
             : null;
+
         datapathId = dpid;
         nodeIdentifier = prefix + dpid;
         nodePath = InstanceIdentifier.builder(Nodes.class).
@@ -395,6 +401,8 @@ public final class OfNode
         register(rpcReg, SalGroupService.class, this);
         register(rpcReg, SalTableService.class, this);
         register(rpcReg, PacketProcessingService.class, this);
+        register(rpcReg, NodeConfigService.class, this);
+        register(rpcReg, FlowCapableTransactionService.class, this);
         register(rpcReg, OpendaylightFlowStatisticsService.class, this);
         register(rpcReg, OpendaylightGroupStatisticsService.class, this);
         register(rpcReg, OpendaylightMeterStatisticsService.class, this);
@@ -1102,6 +1110,30 @@ public final class OfNode
         SetConfigOutputBuilder builder = new SetConfigOutputBuilder().
             setTransactionId(txid);
         return createRpcResult(builder.build());
+    }
+
+    // FlowCapableTransactionService
+
+    /**
+     * Send a BARRIER_REQUEST message to this node.
+     *
+     * @param input  An input of this RPC.
+     * @return  A {@link Future} instance associated with the RPC task.
+     */
+    @Override
+    public Future<RpcResult<Void>> sendBarrier(SendBarrierInput input) {
+        if (ofVersion == null) {
+            return createUnsupported(Void.class);
+        }
+
+        try {
+            ListenableFutureTask<RpcResult<Void>> task = Barrier.create();
+            inventoryExecutor.execute(task);
+            return task;
+        } catch (RuntimeException e) {
+            LOG.error("Failed to start send-barrier task: input=" + input, e);
+            return createRpcError(Void.class, e);
+        }
     }
 
     // OpendaylightGroupStatisticsService

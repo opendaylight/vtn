@@ -54,109 +54,98 @@ import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.transaction.rev150304.FlowCapableTransactionService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.transaction.rev150304.SendBarrierInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.transaction.rev150304.SendBarrierInputBuilder;
+
 /**
- * JUnit test for {@link AddFlowRpc}.
+ * JUnit test for {@link SendBarrierRpc}.
  */
-public class AddFlowRpcTest extends TestBase {
+public class SendBarrierRpcTest extends TestBase {
     /**
-     * The name of the add-flow RPC.
+     * The name of the send-barrier RPC.
      */
-    private static final String  RPC_NAME = "add-flow";
+    private static final String  RPC_NAME = "send-barrier";
 
     /**
-     * Test case for
-     * {@link AddFlowRpc#create(FlowRpcWatcher,SalFlowService,AddFlowInput)}.
+     * Test case for the following methods.
+     *
+     * <ul>
+     *   <li>{@link SendBarrierRpc#create(NodeRpcWatcher,FlowCapableTransactionService,NodeRef)}</li>
+     *   <li>{@link SendBarrierRpc#getInput()}</li>
+     *   <li>{@link SendBarrierRpc#getInputForLog()}</li>
+     * </ul>
      */
     @Test
-    public void testCreate() {
-        long[] dpids = {1L, 99L, 5555666677778888L, -1L};
+    public void testGetInput() {
+        long[] dpids = {1L, 12345L, 6666777788889999L, -1L};
         for (long dpid: dpids) {
             SalNode snode = new SalNode(dpid);
             NodeRef nref = snode.getNodeRef();
-            AddFlowInput input = mock(AddFlowInput.class);
-            when(input.getNode()).thenReturn(nref);
-            FlowRpcWatcher watcher = mock(FlowRpcWatcher.class);
-            SalFlowService sfs = mock(SalFlowService.class);
-            AddFlowRpc rpc = AddFlowRpc.create(watcher, sfs, input);
-            assertSame(input, rpc.getInput());
-            assertSame(input, rpc.getInputForLog());
-            assertSame(watcher, rpc.getNodeRpcWatcher());
-            assertEquals(snode.toString(), rpc.getNode());
-            verify(sfs).addFlow(input);
-            verify(watcher).asyncBarrier(nref);
-            verifyNoMoreInteractions(sfs, watcher);
+            SendBarrierInput input = new SendBarrierInputBuilder().
+                setNode(nref).build();
+            NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+            FlowCapableTransactionService fcts =
+                mock(FlowCapableTransactionService.class);
+            SendBarrierRpc rpc = SendBarrierRpc.create(watcher, fcts, nref);
+            assertEquals(input, rpc.getInput());
+            assertEquals(input, rpc.getInputForLog());
         }
     }
 
     /**
-     * Test case for {@link AddFlowRpc#getInput()} and
-     * {@link AddFlowRpc#getInputForLog()}.
-     */
-    @Test
-    public void testGetInput() {
-        SalNode snode = new SalNode(1L);
-        AddFlowInput input = mock(AddFlowInput.class);
-        when(input.getNode()).thenReturn(snode.getNodeRef());
-        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        SalFlowService sfs = mock(SalFlowService.class);
-        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
-        assertSame(input, rpc.getInput());
-        assertSame(input, rpc.getInputForLog());
-    }
-
-    /**
-     * Test case for {@link AddFlowRpc#getName()}.
+     * Test case for {@link SendBarrierRpc#getName()}.
      */
     @Test
     public void testGetName() {
         SalNode snode = new SalNode(1L);
-        AddFlowInput input = mock(AddFlowInput.class);
+        SendBarrierInput input = mock(SendBarrierInput.class);
         when(input.getNode()).thenReturn(snode.getNodeRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        SalFlowService sfs = mock(SalFlowService.class);
-        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
+        FlowCapableTransactionService fcts =
+            mock(FlowCapableTransactionService.class);
+        SendBarrierRpc rpc = new SendBarrierRpc(watcher, fcts, input);
         assertEquals(RPC_NAME, rpc.getName());
     }
 
     /**
-     * Test case for {@link AddFlowRpc#getFuture()}.
+     * Test case for {@link SendBarrierRpc#getFuture()}.
      */
     @Test
     public void testGetFuture() {
         SalNode snode = new SalNode(1L);
-        AddFlowInput input = mock(AddFlowInput.class);
+        SendBarrierInput input = mock(SendBarrierInput.class);
         when(input.getNode()).thenReturn(snode.getNodeRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        SalFlowService sfs = mock(SalFlowService.class);
-        Future<RpcResult<AddFlowOutput>> future =
-            SettableFuture.<RpcResult<AddFlowOutput>>create();
-        when(sfs.addFlow(input)).thenReturn(future);
-        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
+        FlowCapableTransactionService fcts =
+            mock(FlowCapableTransactionService.class);
+        Future<RpcResult<Void>> future =
+            SettableFuture.<RpcResult<Void>>create();
+        when(fcts.sendBarrier(input)).thenReturn(future);
+        SendBarrierRpc rpc = new SendBarrierRpc(watcher, fcts, input);
         assertSame(future, rpc.getFuture());
-        verify(sfs).addFlow(input);
+        verify(fcts).sendBarrier(input);
         verify(input).getNode();
-        verifyNoMoreInteractions(watcher, sfs, input);
+        verifyNoMoreInteractions(watcher, fcts, input);
     }
 
     /**
-     * Test case for {@link AddFlowRpc#needErrorLog(Throwable)}.
+     * Test case for {@link SendBarrierRpc#needErrorLog(Throwable)}.
      */
     @Test
     public void testNeedErrorLog1() {
         SalNode snode = new SalNode(1L);
-        AddFlowInput input = mock(AddFlowInput.class);
+        SendBarrierInput input = mock(SendBarrierInput.class);
         when(input.getNode()).thenReturn(snode.getNodeRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        SalFlowService sfs = mock(SalFlowService.class);
-        Future<RpcResult<AddFlowOutput>> future =
-            SettableFuture.<RpcResult<AddFlowOutput>>create();
-        when(sfs.addFlow(input)).thenReturn(future);
-        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
+        FlowCapableTransactionService fcts =
+            mock(FlowCapableTransactionService.class);
+        Future<RpcResult<Void>> future =
+            SettableFuture.<RpcResult<Void>>create();
+        when(fcts.sendBarrier(input)).thenReturn(future);
+        SendBarrierRpc rpc = new SendBarrierRpc(watcher, fcts, input);
 
         Map<Throwable, Boolean> cases = new HashMap<>();
         assertNull(cases.put(new Throwable(), true));
@@ -196,19 +185,20 @@ public class AddFlowRpcTest extends TestBase {
     }
 
     /**
-     * Test case for {@link AddFlowRpc#needErrorLog(Collection)}.
+     * Test case for {@link SendBarrierRpc#needErrorLog(Collection)}.
      */
     @Test
     public void testNeedErrorLog2() {
         SalNode snode = new SalNode(1L);
-        AddFlowInput input = mock(AddFlowInput.class);
+        SendBarrierInput input = mock(SendBarrierInput.class);
         when(input.getNode()).thenReturn(snode.getNodeRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        SalFlowService sfs = mock(SalFlowService.class);
-        Future<RpcResult<AddFlowOutput>> future =
-            SettableFuture.<RpcResult<AddFlowOutput>>create();
-        when(sfs.addFlow(input)).thenReturn(future);
-        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
+        FlowCapableTransactionService fcts =
+            mock(FlowCapableTransactionService.class);
+        Future<RpcResult<Void>> future =
+            SettableFuture.<RpcResult<Void>>create();
+        when(fcts.sendBarrier(input)).thenReturn(future);
+        SendBarrierRpc rpc = new SendBarrierRpc(watcher, fcts, input);
 
         Map<String, Boolean> cases = new HashMap<>();
         assertNull(cases.put(null, true));
@@ -231,7 +221,7 @@ public class AddFlowRpcTest extends TestBase {
     }
 
     /**
-     * Test case for {@link AddFlowRpc#getResult(long,TimeUnit,Logger)}.
+     * Test case for {@link SendBarrierRpc#getResult(long,TimeUnit,Logger)}.
      *
      * <ul>
      *   <li>RPC completed successfully.</li>
@@ -242,17 +232,18 @@ public class AddFlowRpcTest extends TestBase {
     @Test
     public void testGetResult() throws Exception {
         SalNode snode = new SalNode(1L);
-        AddFlowInput input = mock(AddFlowInput.class);
+        SendBarrierInput input = mock(SendBarrierInput.class);
         when(input.getNode()).thenReturn(snode.getNodeRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        SalFlowService sfs = mock(SalFlowService.class);
-        AddFlowOutput output = mock(AddFlowOutput.class);
-        final SettableFuture<RpcResult<AddFlowOutput>> future =
-            SettableFuture.<RpcResult<AddFlowOutput>>create();
-        when(sfs.addFlow(input)).thenReturn(future);
-        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
+        FlowCapableTransactionService fcts =
+            mock(FlowCapableTransactionService.class);
+        Void output = null;
+        final SettableFuture<RpcResult<Void>> future =
+            SettableFuture.<RpcResult<Void>>create();
+        when(fcts.sendBarrier(input)).thenReturn(future);
+        SendBarrierRpc rpc = new SendBarrierRpc(watcher, fcts, input);
 
-        final RpcResult<AddFlowOutput> result = RpcResultBuilder.
+        final RpcResult<Void> result = RpcResultBuilder.
             success(output).build();
         Logger logger = mock(Logger.class);
 
@@ -276,7 +267,7 @@ public class AddFlowRpcTest extends TestBase {
     }
 
     /**
-     * Test case for {@link AddFlowRpc#getResult(long,TimeUnit,Logger)}.
+     * Test case for {@link SendBarrierRpc#getResult(long,TimeUnit,Logger)}.
      *
      * <ul>
      *   <li>RPC timed out.</li>
@@ -287,14 +278,15 @@ public class AddFlowRpcTest extends TestBase {
     @Test
     public void testGetResultTimeout() throws Exception {
         SalNode snode = new SalNode(1L);
-        AddFlowInput input = mock(AddFlowInput.class);
+        SendBarrierInput input = mock(SendBarrierInput.class);
         when(input.getNode()).thenReturn(snode.getNodeRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        SalFlowService sfs = mock(SalFlowService.class);
-        Future<RpcResult<AddFlowOutput>> future =
-            SettableFuture.<RpcResult<AddFlowOutput>>create();
-        when(sfs.addFlow(input)).thenReturn(future);
-        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
+        FlowCapableTransactionService fcts =
+            mock(FlowCapableTransactionService.class);
+        Future<RpcResult<Void>> future =
+            SettableFuture.<RpcResult<Void>>create();
+        when(fcts.sendBarrier(input)).thenReturn(future);
+        SendBarrierRpc rpc = new SendBarrierRpc(watcher, fcts, input);
         Logger logger = mock(Logger.class);
 
         Throwable cause = null;
@@ -316,7 +308,7 @@ public class AddFlowRpcTest extends TestBase {
     }
 
     /**
-     * Test case for {@link AddFlowRpc#getResult(long,TimeUnit,Logger)}.
+     * Test case for {@link SendBarrierRpc#getResult(long,TimeUnit,Logger)}.
      *
      * <ul>
      *   <li>RPC was canceled.</li>
@@ -327,14 +319,15 @@ public class AddFlowRpcTest extends TestBase {
     @Test
     public void testGetResultCancel() throws Exception {
         SalNode snode = new SalNode(1L);
-        AddFlowInput input = mock(AddFlowInput.class);
+        SendBarrierInput input = mock(SendBarrierInput.class);
         when(input.getNode()).thenReturn(snode.getNodeRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        SalFlowService sfs = mock(SalFlowService.class);
-        SettableFuture<RpcResult<AddFlowOutput>> future =
-            SettableFuture.<RpcResult<AddFlowOutput>>create();
-        when(sfs.addFlow(input)).thenReturn(future);
-        final AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
+        FlowCapableTransactionService fcts =
+            mock(FlowCapableTransactionService.class);
+        SettableFuture<RpcResult<Void>> future =
+            SettableFuture.<RpcResult<Void>>create();
+        when(fcts.sendBarrier(input)).thenReturn(future);
+        final SendBarrierRpc rpc = new SendBarrierRpc(watcher, fcts, input);
 
         Logger logger = mock(Logger.class);
 
@@ -369,7 +362,7 @@ public class AddFlowRpcTest extends TestBase {
     }
 
     /**
-     * Test case for {@link AddFlowRpc#getResult(long,TimeUnit,Logger)}.
+     * Test case for {@link SendBarrierRpc#getResult(long,TimeUnit,Logger)}.
      *
      * <ul>
      *   <li>No RPC implementation.</li>
@@ -380,16 +373,17 @@ public class AddFlowRpcTest extends TestBase {
     @Test
     public void testGetResultNoRpc() throws Exception {
         SalNode snode = new SalNode(1L);
-        AddFlowInput input = mock(AddFlowInput.class);
+        SendBarrierInput input = mock(SendBarrierInput.class);
         when(input.getNode()).thenReturn(snode.getNodeRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        SalFlowService sfs = mock(SalFlowService.class);
+        FlowCapableTransactionService fcts =
+            mock(FlowCapableTransactionService.class);
         final DOMRpcImplementationNotAvailableException cause =
             new DOMRpcImplementationNotAvailableException("No implementation");
-        final SettableFuture<RpcResult<AddFlowOutput>> future =
-            SettableFuture.<RpcResult<AddFlowOutput>>create();
-        when(sfs.addFlow(input)).thenReturn(future);
-        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
+        final SettableFuture<RpcResult<Void>> future =
+            SettableFuture.<RpcResult<Void>>create();
+        when(fcts.sendBarrier(input)).thenReturn(future);
+        SendBarrierRpc rpc = new SendBarrierRpc(watcher, fcts, input);
         Logger logger = mock(Logger.class);
 
         Thread t = new Thread() {
@@ -429,7 +423,7 @@ public class AddFlowRpcTest extends TestBase {
     }
 
     /**
-     * Test case for {@link AddFlowRpc#getResult(long,TimeUnit,Logger)}.
+     * Test case for {@link SendBarrierRpc#getResult(long,TimeUnit,Logger)}.
      *
      * <ul>
      *   <li>RPC failed.</li>
@@ -451,19 +445,20 @@ public class AddFlowRpcTest extends TestBase {
 
         SalNode snode = new SalNode(1L);
         for (String emsg: msgs) {
-            AddFlowInput input = mock(AddFlowInput.class);
+            SendBarrierInput input = mock(SendBarrierInput.class);
             when(input.getNode()).thenReturn(snode.getNodeRef());
             NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-            SalFlowService sfs = mock(SalFlowService.class);
-            final SettableFuture<RpcResult<AddFlowOutput>> future =
-                SettableFuture.<RpcResult<AddFlowOutput>>create();
-            when(sfs.addFlow(input)).thenReturn(future);
-            final RpcResult<AddFlowOutput> result =
-                RpcResultBuilder.<AddFlowOutput>failed().
+            FlowCapableTransactionService fcts =
+                mock(FlowCapableTransactionService.class);
+            final SettableFuture<RpcResult<Void>> future =
+                SettableFuture.<RpcResult<Void>>create();
+            when(fcts.sendBarrier(input)).thenReturn(future);
+            final RpcResult<Void> result =
+                RpcResultBuilder.<Void>failed().
                 withError(PROTOCOL, "Protocol error").
                 withError(APPLICATION, emsg).
                 build();
-            AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
+            SendBarrierRpc rpc = new SendBarrierRpc(watcher, fcts, input);
             Logger logger = mock(Logger.class);
 
             Thread t = new Thread() {
@@ -494,7 +489,7 @@ public class AddFlowRpcTest extends TestBase {
     }
 
     /**
-     * Test case for {@link AddFlowRpc#getResult(long,TimeUnit,Logger)}.
+     * Test case for {@link SendBarrierRpc#getResult(long,TimeUnit,Logger)}.
      *
      * <ul>
      *   <li>RPC failed.</li>
@@ -517,19 +512,20 @@ public class AddFlowRpcTest extends TestBase {
 
         SalNode snode = new SalNode(1L);
         for (String emsg: msgs) {
-            AddFlowInput input = mock(AddFlowInput.class);
+            SendBarrierInput input = mock(SendBarrierInput.class);
             when(input.getNode()).thenReturn(snode.getNodeRef());
             NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-            SalFlowService sfs = mock(SalFlowService.class);
-            final SettableFuture<RpcResult<AddFlowOutput>> future =
-                SettableFuture.<RpcResult<AddFlowOutput>>create();
-            when(sfs.addFlow(input)).thenReturn(future);
-            final RpcResult<AddFlowOutput> result =
-                RpcResultBuilder.<AddFlowOutput>failed().
+            FlowCapableTransactionService fcts =
+                mock(FlowCapableTransactionService.class);
+            final SettableFuture<RpcResult<Void>> future =
+                SettableFuture.<RpcResult<Void>>create();
+            when(fcts.sendBarrier(input)).thenReturn(future);
+            final RpcResult<Void> result =
+                RpcResultBuilder.<Void>failed().
                 withError(PROTOCOL, "Protocol error").
                 withError(APPLICATION, emsg, ise).
                 build();
-            AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
+            SendBarrierRpc rpc = new SendBarrierRpc(watcher, fcts, input);
             Logger logger = mock(Logger.class);
 
             Thread t = new Thread() {
