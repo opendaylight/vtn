@@ -10,16 +10,24 @@ package org.opendaylight.vtn.manager.it.ofmock.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 
+import com.google.common.util.concurrent.ListenableFutureTask;
+
+import org.opendaylight.yangtools.yang.common.RpcResult;
+import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetFlowStatisticsOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetFlowStatisticsOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.flow.and.statistics.map.list.FlowAndStatisticsMapList;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.transaction.rev150304.TransactionId;
 
 /**
- * {@code FlowStatsNotifier} is used to publish MD-SAL notification that
- * indicates the result of get-flow-statistics-from-table RPC.
+ * {@code GetFlowStatsTask} describes a task that implements
+ * get-flow-statistics RPC.
  */
-public final class FlowStatsNotifier implements Runnable {
+public final class GetFlowStatsTask
+    implements Callable<RpcResult<GetFlowStatisticsOutput>> {
     /**
      * The target switch.
      */
@@ -31,32 +39,37 @@ public final class FlowStatsNotifier implements Runnable {
     private final FlowMatcher  matcher;
 
     /**
-     * The transaction ID associated with the flow statistics request.
+     * Create a new future task associated with the get-flow-statistics
+     * RPC task.
+     *
+     * @param node   The target switch.
+     * @param match  The flow matcher to select flow entries.
+     * @return  The future task associated with the get-flow-statistics RPC
+     *          task.
      */
-    private final TransactionId  txId;
+    public static ListenableFutureTask<RpcResult<GetFlowStatisticsOutput>> create(
+        OfNode node, FlowMatcher match) {
+        return ListenableFutureTask.create(new GetFlowStatsTask(node, match));
+    }
 
     /**
      * Construct a new instance.
      *
      * @param node   The target switch.
      * @param match  The flow matcher to select flow entries.
-     * @param xid    The transaction ID associated with the flow statistics
-     *               request.
      */
-    public FlowStatsNotifier(OfNode node, FlowMatcher match,
-                             TransactionId xid) {
+    private GetFlowStatsTask(OfNode node, FlowMatcher match) {
         targetNode = node;
         matcher = match;
-        txId = xid;
     }
 
-    // Runnable
+    // Callable
 
     /**
      * Collect flow statistics for the target flow table.
      */
     @Override
-    public void run() {
+    public RpcResult<GetFlowStatisticsOutput> call() {
         List<OfMockFlowEntry> flows = targetNode.getFlowTable().getFlows();
         List<FlowAndStatisticsMapList> stats = new ArrayList<>();
         for (OfMockFlowEntry ofent: flows) {
@@ -66,7 +79,9 @@ public final class FlowStatsNotifier implements Runnable {
             }
         }
 
-        // Publish a flows-statistics-update notification.
-        targetNode.publishFlowStatsUpdate(txId, stats);
+        GetFlowStatisticsOutput output = new GetFlowStatisticsOutputBuilder().
+            setFlowAndStatisticsMapList(stats).
+            build();
+        return RpcResultBuilder.success(output).build();
     }
 }

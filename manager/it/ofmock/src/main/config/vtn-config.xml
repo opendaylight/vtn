@@ -67,7 +67,7 @@
       urn:opendaylight:flow:service?module=sal-flow&amp;revision=2013-08-19
     </capability>
     <capability>
-      urn:opendaylight:flow:statistics?module=opendaylight-flow-statistics&amp;revision=2013-08-19
+      urn:opendaylight:direct:statistics?module=opendaylight-direct-statistics&amp;revision=2016-05-11
     </capability>
     <capability>
       urn:opendaylight:packet:service?module=packet-processing&amp;revision=2013-07-09

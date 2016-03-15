@@ -22,7 +22,7 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcInvocation;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeContextRef;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.NodeKey;
 
@@ -33,8 +33,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.N
  * @param <I>  The type of the RPC input.
  * @param <O>  The type of the RPC output.
  */
-public abstract class NodeRpcInvocation<I extends NodeContextRef, O>
-    extends RpcInvocation<I, O> {
+public abstract class NodeRpcInvocation<I, O> extends RpcInvocation<I, O> {
     /**
      * The RPC watcher.
      */
@@ -53,15 +52,18 @@ public abstract class NodeRpcInvocation<I extends NodeContextRef, O>
     /**
      * Construct a new instance.
      *
-     * @param w   The node RPC watcher.
-     * @param in  The RPC input.
-     * @param f   The future associated with the RPC execution with {@code in}.
+     * @param w     The node RPC watcher.
+     * @param in    The RPC input.
+     * @param nref  Reference to the target node.
+     * @param f     The future associated with the RPC execution with
+     *              {@code in}.
      */
-    public NodeRpcInvocation(NodeRpcWatcher w, I in, Future<RpcResult<O>> f) {
+    public NodeRpcInvocation(NodeRpcWatcher w, I in, NodeRef nref,
+                             Future<RpcResult<O>> f) {
         super(in, f);
         rpcWatcher = w;
 
-        InstanceIdentifier<?> path = getInput().getNode().getValue();
+        InstanceIdentifier<?> path = nref.getValue();
         NodeKey key = path.firstKeyOf(Node.class);
         nodeId = key.getId().getValue();
     }

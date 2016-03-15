@@ -183,27 +183,6 @@ public final class MiscUtils {
     }
 
     /**
-     * Ensure that the given value is not null.
-     *
-     * @param obj   A reference to the object.
-     * @param log   A {@link Logger} instance used to record error message.
-     * @param msg   A error message.
-     * @param <T>   Type of {@code obj}.
-     * @return  {@code obj} is returned if it is not {@code null}.
-     * @throws IllegalStateException
-     *    {@code obj} is {@code null}.
-     */
-    public static <T> T checkNotNull(T obj, Logger log, String msg) {
-        if (obj != null) {
-            return obj;
-        }
-
-        IllegalStateException e = new IllegalStateException(msg);
-        log.error(msg, e);
-        throw e;
-    }
-
-    /**
      * Stringify the given objects, and join them with inserting ": " as a
      * separator.
      *

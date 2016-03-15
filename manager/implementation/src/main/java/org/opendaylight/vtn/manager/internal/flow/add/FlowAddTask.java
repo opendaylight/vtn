@@ -34,6 +34,7 @@ import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnFlowId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.VtnDataFlow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.VtnFlowEntry;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowInput;
@@ -61,6 +62,11 @@ public final class FlowAddTask implements Runnable {
      * installed.
      */
     private final FlowAddContext  context;
+
+    /**
+     * A VTN flow ID.
+     */
+    private final VtnFlowId  flowId;
 
     /**
      * The ingress flow entry.
@@ -93,8 +99,10 @@ public final class FlowAddTask implements Runnable {
         context = ctx;
 
         VTNFlowBuilder builder = ctx.getFlowBuilder();
+        VtnDataFlow vdf = builder.getDataFlow();
+        flowId = vdf.getFlowId();
         VtnFlowEntry ingress = null;
-        List<VtnFlowEntry> entries = builder.getDataFlow().getVtnFlowEntry();
+        List<VtnFlowEntry> entries = vdf.getVtnFlowEntry();
         List<VtnFlowEntry> list = new ArrayList<>(entries.size() - 1);
         Integer order = Integer.valueOf(MiscUtils.ORDER_MIN);
         for (VtnFlowEntry vfent: entries) {
@@ -145,8 +153,8 @@ public final class FlowAddTask implements Runnable {
 
         List<AddFlowRpc> rpcs = new ArrayList<>(size);
         for (VtnFlowEntry vfent: flowEntries) {
-            AddFlowInput input = FlowUtils.createAddFlowInput(vfent);
-            rpcs.add(new AddFlowRpc(vtnProvider, sfs, input));
+            AddFlowInput input = FlowUtils.createAddFlowInput(flowId, vfent);
+            rpcs.add(AddFlowRpc.create(vtnProvider, sfs, input));
         }
 
         TimeUnit nano = TimeUnit.NANOSECONDS;
@@ -190,8 +198,8 @@ public final class FlowAddTask implements Runnable {
      * @throws VTNException  Failed to install the ingress flow.
      */
     private void installIngressFlow(SalFlowService sfs) throws VTNException {
-        AddFlowInput input = FlowUtils.createAddFlowInput(ingressFlow);
-        AddFlowRpc rpc = new AddFlowRpc(vtnProvider, sfs, input);
+        AddFlowInput input = FlowUtils.createAddFlowInput(flowId, ingressFlow);
+        AddFlowRpc rpc = AddFlowRpc.create(vtnProvider, sfs, input);
         long timeout = (long)vtnConfig.getFlowModTimeout();
         rpc.getResult(timeout, TimeUnit.MILLISECONDS, LOG);
         traceLog(ingressFlow);
@@ -263,8 +271,7 @@ public final class FlowAddTask implements Runnable {
             // There is no way to rollback because the DS queue is already
             // closed.
             LOG.warn("{}: Flow DS queue is already closed: match={}",
-                     builder.getDataFlow().getFlowId().getValue(),
-                     builder.getIngressMatchKey());
+                     flowId.getValue(), builder.getIngressMatchKey());
         }
     }
 
@@ -291,7 +298,6 @@ public final class FlowAddTask implements Runnable {
             ctx.cancelTransaction();
         }
 
-        VtnFlowId flowId = builder.getDataFlow().getFlowId();
         if (LOG.isDebugEnabled()) {
             LOG.debug("Data flow has been installed: id={}",
                       flowId.getValue());

@@ -19,7 +19,6 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.opendaylight.yangtools.yang.common.RpcError.ErrorType.APPLICATION;
 import static org.opendaylight.yangtools.yang.common.RpcError.ErrorType.PROTOCOL;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -56,10 +55,9 @@ import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetFlowStatisticsFromFlowTableInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetFlowStatisticsFromFlowTableOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.OpendaylightFlowStatisticsService;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.transaction.rev150304.TransactionId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetFlowStatisticsInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetFlowStatisticsOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.OpendaylightDirectStatisticsService;
 
 /**
  * JUnit test for {@link GetFlowStatsRpc}.
@@ -77,13 +75,13 @@ public class GetFlowStatsRpcTest extends TestBase {
     @Test
     public void testGetInput() {
         SalNode snode = new SalNode(1L);
-        GetFlowStatisticsFromFlowTableInput input =
-            mock(GetFlowStatisticsFromFlowTableInput.class);
+        GetFlowStatisticsInput input =
+            mock(GetFlowStatisticsInput.class);
         when(input.getNode()).thenReturn(snode.getNodeRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        OpendaylightFlowStatisticsService fss =
-            mock(OpendaylightFlowStatisticsService.class);
-        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, fss, input);
+        OpendaylightDirectStatisticsService dss =
+            mock(OpendaylightDirectStatisticsService.class);
+        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, dss, input);
         assertSame(input, rpc.getInput());
         assertSame(input, rpc.getInputForLog());
     }
@@ -94,13 +92,13 @@ public class GetFlowStatsRpcTest extends TestBase {
     @Test
     public void testGetName() {
         SalNode snode = new SalNode(1L);
-        GetFlowStatisticsFromFlowTableInput input =
-            mock(GetFlowStatisticsFromFlowTableInput.class);
+        GetFlowStatisticsInput input =
+            mock(GetFlowStatisticsInput.class);
         when(input.getNode()).thenReturn(snode.getNodeRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        OpendaylightFlowStatisticsService fss =
-            mock(OpendaylightFlowStatisticsService.class);
-        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, fss, input);
+        OpendaylightDirectStatisticsService dss =
+            mock(OpendaylightDirectStatisticsService.class);
+        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, dss, input);
         assertEquals(RPC_NAME, rpc.getName());
     }
 
@@ -110,21 +108,21 @@ public class GetFlowStatsRpcTest extends TestBase {
     @Test
     public void testGetFuture() {
         SalNode snode = new SalNode(1L);
-        GetFlowStatisticsFromFlowTableInput input =
-            mock(GetFlowStatisticsFromFlowTableInput.class);
+        GetFlowStatisticsInput input =
+            mock(GetFlowStatisticsInput.class);
         when(input.getNode()).thenReturn(snode.getNodeRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        OpendaylightFlowStatisticsService fss =
-            mock(OpendaylightFlowStatisticsService.class);
-        Future<RpcResult<GetFlowStatisticsFromFlowTableOutput>> future =
-            SettableFuture.<RpcResult<GetFlowStatisticsFromFlowTableOutput>>
+        OpendaylightDirectStatisticsService dss =
+            mock(OpendaylightDirectStatisticsService.class);
+        Future<RpcResult<GetFlowStatisticsOutput>> future =
+            SettableFuture.<RpcResult<GetFlowStatisticsOutput>>
             create();
-        when(fss.getFlowStatisticsFromFlowTable(input)).thenReturn(future);
-        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, fss, input);
+        when(dss.getFlowStatistics(input)).thenReturn(future);
+        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, dss, input);
         assertSame(future, rpc.getFuture());
-        verify(fss).getFlowStatisticsFromFlowTable(input);
+        verify(dss).getFlowStatistics(input);
         verify(input).getNode();
-        verifyNoMoreInteractions(watcher, fss, input);
+        verifyNoMoreInteractions(watcher, dss, input);
     }
 
     /**
@@ -133,17 +131,17 @@ public class GetFlowStatsRpcTest extends TestBase {
     @Test
     public void testNeedErrorLog1() {
         SalNode snode = new SalNode(1L);
-        GetFlowStatisticsFromFlowTableInput input =
-            mock(GetFlowStatisticsFromFlowTableInput.class);
+        GetFlowStatisticsInput input =
+            mock(GetFlowStatisticsInput.class);
         when(input.getNode()).thenReturn(snode.getNodeRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        OpendaylightFlowStatisticsService fss =
-            mock(OpendaylightFlowStatisticsService.class);
-        Future<RpcResult<GetFlowStatisticsFromFlowTableOutput>> future =
-            SettableFuture.<RpcResult<GetFlowStatisticsFromFlowTableOutput>>
+        OpendaylightDirectStatisticsService dss =
+            mock(OpendaylightDirectStatisticsService.class);
+        Future<RpcResult<GetFlowStatisticsOutput>> future =
+            SettableFuture.<RpcResult<GetFlowStatisticsOutput>>
             create();
-        when(fss.getFlowStatisticsFromFlowTable(input)).thenReturn(future);
-        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, fss, input);
+        when(dss.getFlowStatistics(input)).thenReturn(future);
+        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, dss, input);
 
         Map<Throwable, Boolean> cases = new HashMap<>();
         assertNull(cases.put(new Throwable(), true));
@@ -187,17 +185,17 @@ public class GetFlowStatsRpcTest extends TestBase {
     @Test
     public void testNeedErrorLog2() {
         SalNode snode = new SalNode(1L);
-        GetFlowStatisticsFromFlowTableInput input =
-            mock(GetFlowStatisticsFromFlowTableInput.class);
+        GetFlowStatisticsInput input =
+            mock(GetFlowStatisticsInput.class);
         when(input.getNode()).thenReturn(snode.getNodeRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        OpendaylightFlowStatisticsService fss =
-            mock(OpendaylightFlowStatisticsService.class);
-        Future<RpcResult<GetFlowStatisticsFromFlowTableOutput>> future =
-            SettableFuture.<RpcResult<GetFlowStatisticsFromFlowTableOutput>>
+        OpendaylightDirectStatisticsService dss =
+            mock(OpendaylightDirectStatisticsService.class);
+        Future<RpcResult<GetFlowStatisticsOutput>> future =
+            SettableFuture.<RpcResult<GetFlowStatisticsOutput>>
             create();
-        when(fss.getFlowStatisticsFromFlowTable(input)).thenReturn(future);
-        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, fss, input);
+        when(dss.getFlowStatistics(input)).thenReturn(future);
+        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, dss, input);
 
         Map<String, Boolean> cases = new HashMap<>();
         assertNull(cases.put(null, true));
@@ -231,23 +229,23 @@ public class GetFlowStatsRpcTest extends TestBase {
     @Test
     public void testGetResult() throws Exception {
         SalNode snode = new SalNode(1L);
-        GetFlowStatisticsFromFlowTableInput input =
-            mock(GetFlowStatisticsFromFlowTableInput.class);
+        GetFlowStatisticsInput input =
+            mock(GetFlowStatisticsInput.class);
         when(input.getNode()).thenReturn(snode.getNodeRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        OpendaylightFlowStatisticsService fss =
-            mock(OpendaylightFlowStatisticsService.class);
-        GetFlowStatisticsFromFlowTableOutput output =
-            mock(GetFlowStatisticsFromFlowTableOutput.class);
-        RpcResult<GetFlowStatisticsFromFlowTableOutput> result =
+        OpendaylightDirectStatisticsService dss =
+            mock(OpendaylightDirectStatisticsService.class);
+        GetFlowStatisticsOutput output =
+            mock(GetFlowStatisticsOutput.class);
+        RpcResult<GetFlowStatisticsOutput> result =
             RpcResultBuilder.success(output).build();
-        Future<RpcResult<GetFlowStatisticsFromFlowTableOutput>> future =
-            Futures.<RpcResult<GetFlowStatisticsFromFlowTableOutput>>
+        Future<RpcResult<GetFlowStatisticsOutput>> future =
+            Futures.<RpcResult<GetFlowStatisticsOutput>>
             immediateFuture(result);
-        when(fss.getFlowStatisticsFromFlowTable(input)).thenReturn(future);
+        when(dss.getFlowStatistics(input)).thenReturn(future);
         Logger logger = mock(Logger.class);
 
-        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, fss, input);
+        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, dss, input);
         assertSame(output, rpc.getResult(1L, TimeUnit.SECONDS, logger));
 
         verify(watcher).registerRpc(rpc);
@@ -267,17 +265,17 @@ public class GetFlowStatsRpcTest extends TestBase {
     @Test
     public void testGetResultTimeout() throws Exception {
         SalNode snode = new SalNode(1L);
-        GetFlowStatisticsFromFlowTableInput input =
-            mock(GetFlowStatisticsFromFlowTableInput.class);
+        GetFlowStatisticsInput input =
+            mock(GetFlowStatisticsInput.class);
         when(input.getNode()).thenReturn(snode.getNodeRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        OpendaylightFlowStatisticsService fss =
-            mock(OpendaylightFlowStatisticsService.class);
-        Future<RpcResult<GetFlowStatisticsFromFlowTableOutput>> future =
-            SettableFuture.<RpcResult<GetFlowStatisticsFromFlowTableOutput>>
+        OpendaylightDirectStatisticsService dss =
+            mock(OpendaylightDirectStatisticsService.class);
+        Future<RpcResult<GetFlowStatisticsOutput>> future =
+            SettableFuture.<RpcResult<GetFlowStatisticsOutput>>
             create();
-        when(fss.getFlowStatisticsFromFlowTable(input)).thenReturn(future);
-        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, fss, input);
+        when(dss.getFlowStatistics(input)).thenReturn(future);
+        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, dss, input);
         Logger logger = mock(Logger.class);
 
         Throwable cause = null;
@@ -310,17 +308,17 @@ public class GetFlowStatsRpcTest extends TestBase {
     @Test
     public void testGetResultCancel() throws Exception {
         SalNode snode = new SalNode(1L);
-        GetFlowStatisticsFromFlowTableInput input =
-            mock(GetFlowStatisticsFromFlowTableInput.class);
+        GetFlowStatisticsInput input =
+            mock(GetFlowStatisticsInput.class);
         when(input.getNode()).thenReturn(snode.getNodeRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        OpendaylightFlowStatisticsService fss =
-            mock(OpendaylightFlowStatisticsService.class);
-        SettableFuture<RpcResult<GetFlowStatisticsFromFlowTableOutput>> future =
-            SettableFuture.<RpcResult<GetFlowStatisticsFromFlowTableOutput>>
+        OpendaylightDirectStatisticsService dss =
+            mock(OpendaylightDirectStatisticsService.class);
+        SettableFuture<RpcResult<GetFlowStatisticsOutput>> future =
+            SettableFuture.<RpcResult<GetFlowStatisticsOutput>>
             create();
-        when(fss.getFlowStatisticsFromFlowTable(input)).thenReturn(future);
-        final GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, fss, input);
+        when(dss.getFlowStatistics(input)).thenReturn(future);
+        final GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, dss, input);
 
         Logger logger = mock(Logger.class);
 
@@ -366,21 +364,70 @@ public class GetFlowStatsRpcTest extends TestBase {
     @Test
     public void testGetResultNoRpc() throws Exception {
         SalNode snode = new SalNode(1L);
-        GetFlowStatisticsFromFlowTableInput input =
-            mock(GetFlowStatisticsFromFlowTableInput.class);
+        GetFlowStatisticsInput input =
+            mock(GetFlowStatisticsInput.class);
         when(input.getNode()).thenReturn(snode.getNodeRef());
         NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        OpendaylightFlowStatisticsService fss =
-            mock(OpendaylightFlowStatisticsService.class);
+        OpendaylightDirectStatisticsService dss =
+            mock(OpendaylightDirectStatisticsService.class);
         DOMRpcImplementationNotAvailableException cause =
             new DOMRpcImplementationNotAvailableException("No implementation");
-        Future<RpcResult<GetFlowStatisticsFromFlowTableOutput>> future =
-            Futures.<RpcResult<GetFlowStatisticsFromFlowTableOutput>>
+        Future<RpcResult<GetFlowStatisticsOutput>> future =
+            Futures.<RpcResult<GetFlowStatisticsOutput>>
             immediateFailedFuture(cause);
-        when(fss.getFlowStatisticsFromFlowTable(input)).thenReturn(future);
+        when(dss.getFlowStatistics(input)).thenReturn(future);
         Logger logger = mock(Logger.class);
 
-        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, fss, input);
+        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, dss, input);
+        try {
+            rpc.getResult(1L, TimeUnit.SECONDS, logger);
+            unexpected();
+        } catch (VTNException e) {
+            assertEquals(VtnErrorTag.INTERNALERROR, e.getVtnErrorTag());
+            assertEquals(cause.getMessage(), e.getMessage());
+            assertEquals(cause, e.getCause());
+        }
+
+        String msg = RPC_NAME + ": Caught an exception: canceled=false, " +
+            "input=" + input;
+        ArgumentCaptor<Throwable> captor =
+            ArgumentCaptor.forClass(Throwable.class);
+        verify(logger).error(eq(msg), captor.capture());
+        List<Throwable> causes = captor.getAllValues();
+        assertEquals(1, causes.size());
+        Throwable c = causes.get(0);
+        assertThat(c, instanceOf(ExecutionException.class));
+        assertEquals(cause, c.getCause());
+        verify(watcher).registerRpc(rpc);
+        verify(watcher).unregisterRpc(rpc);
+        verifyNoMoreInteractions(watcher, logger);
+    }
+
+    /**
+     * Test case for {@link GetFlowStatsRpc#getResult(long,TimeUnit,Logger)}.
+     *
+     * <ul>
+     *   <li>
+     *     RPC implementation throws an {@link IllegalArgumentException}.
+     *   </li>
+     * </ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testGetResultException() throws Exception {
+        SalNode snode = new SalNode(1L);
+        GetFlowStatisticsInput input = mock(GetFlowStatisticsInput.class);
+        when(input.getNode()).thenReturn(snode.getNodeRef());
+        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+        OpendaylightDirectStatisticsService dss =
+            mock(OpendaylightDirectStatisticsService.class);
+        IllegalArgumentException cause =
+            new IllegalArgumentException("Invalid argument");
+        when(dss.getFlowStatistics(input)).thenThrow(cause);
+        Logger logger = mock(Logger.class);
+
+        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, dss, input);
         try {
             rpc.getResult(1L, TimeUnit.SECONDS, logger);
             unexpected();
@@ -428,24 +475,24 @@ public class GetFlowStatsRpcTest extends TestBase {
 
         SalNode snode = new SalNode(1L);
         for (String emsg: msgs) {
-            GetFlowStatisticsFromFlowTableInput input =
-                mock(GetFlowStatisticsFromFlowTableInput.class);
+            GetFlowStatisticsInput input =
+                mock(GetFlowStatisticsInput.class);
             when(input.getNode()).thenReturn(snode.getNodeRef());
             NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-            OpendaylightFlowStatisticsService fss =
-                mock(OpendaylightFlowStatisticsService.class);
-            RpcResult<GetFlowStatisticsFromFlowTableOutput> result =
-                RpcResultBuilder.<GetFlowStatisticsFromFlowTableOutput>failed().
+            OpendaylightDirectStatisticsService dss =
+                mock(OpendaylightDirectStatisticsService.class);
+            RpcResult<GetFlowStatisticsOutput> result =
+                RpcResultBuilder.<GetFlowStatisticsOutput>failed().
                 withError(PROTOCOL, "Protocol error").
                 withError(APPLICATION, emsg).
                 build();
-            Future<RpcResult<GetFlowStatisticsFromFlowTableOutput>> future =
-                Futures.<RpcResult<GetFlowStatisticsFromFlowTableOutput>>
+            Future<RpcResult<GetFlowStatisticsOutput>> future =
+                Futures.<RpcResult<GetFlowStatisticsOutput>>
                 immediateFuture(result);
-            when(fss.getFlowStatisticsFromFlowTable(input)).thenReturn(future);
+            when(dss.getFlowStatistics(input)).thenReturn(future);
             Logger logger = mock(Logger.class);
 
-            GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, fss, input);
+            GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, dss, input);
             String msg = "RPC returned error";
             try {
                 rpc.getResult(10L, TimeUnit.SECONDS, logger);
@@ -489,24 +536,24 @@ public class GetFlowStatsRpcTest extends TestBase {
 
         SalNode snode = new SalNode(1L);
         for (String emsg: msgs) {
-            GetFlowStatisticsFromFlowTableInput input =
-                mock(GetFlowStatisticsFromFlowTableInput.class);
+            GetFlowStatisticsInput input =
+                mock(GetFlowStatisticsInput.class);
             when(input.getNode()).thenReturn(snode.getNodeRef());
             NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-            OpendaylightFlowStatisticsService fss =
-                mock(OpendaylightFlowStatisticsService.class);
-            RpcResult<GetFlowStatisticsFromFlowTableOutput> result =
-                RpcResultBuilder.<GetFlowStatisticsFromFlowTableOutput>failed().
+            OpendaylightDirectStatisticsService dss =
+                mock(OpendaylightDirectStatisticsService.class);
+            RpcResult<GetFlowStatisticsOutput> result =
+                RpcResultBuilder.<GetFlowStatisticsOutput>failed().
                 withError(PROTOCOL, "Protocol error").
                 withError(APPLICATION, emsg, ise).
                 build();
-            Future<RpcResult<GetFlowStatisticsFromFlowTableOutput>> future =
-                Futures.<RpcResult<GetFlowStatisticsFromFlowTableOutput>>
+            Future<RpcResult<GetFlowStatisticsOutput>> future =
+                Futures.<RpcResult<GetFlowStatisticsOutput>>
                 immediateFuture(result);
-            when(fss.getFlowStatisticsFromFlowTable(input)).thenReturn(future);
+            when(dss.getFlowStatistics(input)).thenReturn(future);
             Logger logger = mock(Logger.class);
 
-            GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, fss, input);
+            GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, dss, input);
             String msg = "RPC returned error";
             try {
                 rpc.getResult(1L, TimeUnit.SECONDS, logger);
@@ -524,174 +571,5 @@ public class GetFlowStatsRpcTest extends TestBase {
             verify(watcher).unregisterRpc(rpc);
             verifyNoMoreInteractions(watcher, logger);
         }
-    }
-
-    /**
-     * Test case for
-     * {@link GetFlowStatsRpc#getTransactionId(long,TimeUnit,Logger)}.
-     *
-     * <ul>
-     *   <li>RPC completed successfully.</li>
-     * </ul>
-     *
-     * @throws Exception  An error occurred.
-     */
-    @Test
-    public void testGetTransactionId() throws Exception {
-        SalNode snode = new SalNode(1L);
-        GetFlowStatisticsFromFlowTableInput input =
-            mock(GetFlowStatisticsFromFlowTableInput.class);
-        when(input.getNode()).thenReturn(snode.getNodeRef());
-        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        OpendaylightFlowStatisticsService fss =
-            mock(OpendaylightFlowStatisticsService.class);
-        GetFlowStatisticsFromFlowTableOutput output =
-            mock(GetFlowStatisticsFromFlowTableOutput.class);
-        BigInteger xid = BigInteger.valueOf(System.currentTimeMillis());
-        TransactionId txId = new TransactionId(xid);
-        when(output.getTransactionId()).thenReturn(txId);
-        final SettableFuture<RpcResult<GetFlowStatisticsFromFlowTableOutput>> future =
-            SettableFuture.<RpcResult<GetFlowStatisticsFromFlowTableOutput>>
-            create();
-        when(fss.getFlowStatisticsFromFlowTable(input)).thenReturn(future);
-        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, fss, input);
-
-        final RpcResult<GetFlowStatisticsFromFlowTableOutput> result =
-            RpcResultBuilder.success(output).build();
-        Logger logger = mock(Logger.class);
-
-        Thread t = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException e) {
-                }
-                future.set(result);
-            }
-        };
-        t.start();
-
-        assertEquals(xid, rpc.getTransactionId(10L, TimeUnit.SECONDS, logger));
-        verify(watcher).registerRpc(rpc);
-        verify(watcher).unregisterRpc(rpc);
-        verifyNoMoreInteractions(watcher, logger);
-    }
-
-    /**
-     * Test case for
-     * {@link GetFlowStatsRpc#getTransactionId(long,TimeUnit,Logger)}.
-     *
-     * <ul>
-     *   <li>RPC returned {@code null}.</li>
-     * </ul>
-     *
-     * @throws Exception  An error occurred.
-     */
-    @Test
-    public void testGetTransactionNoOutput() throws Exception {
-        SalNode snode = new SalNode(1L);
-        GetFlowStatisticsFromFlowTableInput input =
-            mock(GetFlowStatisticsFromFlowTableInput.class);
-        when(input.getNode()).thenReturn(snode.getNodeRef());
-        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        OpendaylightFlowStatisticsService fss =
-            mock(OpendaylightFlowStatisticsService.class);
-        GetFlowStatisticsFromFlowTableOutput output = null;
-        final SettableFuture<RpcResult<GetFlowStatisticsFromFlowTableOutput>> future =
-            SettableFuture.<RpcResult<GetFlowStatisticsFromFlowTableOutput>>
-            create();
-        when(fss.getFlowStatisticsFromFlowTable(input)).thenReturn(future);
-        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, fss, input);
-
-        final RpcResult<GetFlowStatisticsFromFlowTableOutput> result =
-            RpcResultBuilder.success(output).build();
-        Logger logger = mock(Logger.class);
-
-        Thread t = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException e) {
-                }
-                future.set(result);
-            }
-        };
-        t.start();
-
-        String msg = "Flow stats RPC did not return the result";
-        try {
-            rpc.getTransactionId(10L, TimeUnit.SECONDS, logger);
-            unexpected();
-        } catch (VTNException e) {
-            assertEquals(VtnErrorTag.INTERNALERROR, e.getVtnErrorTag());
-            assertEquals(msg, e.getMessage());
-            assertEquals(null, e.getCause());
-        }
-
-        verify(logger).error("{}: {}", RPC_NAME, msg);
-        verify(watcher).registerRpc(rpc);
-        verify(watcher).unregisterRpc(rpc);
-        verifyNoMoreInteractions(watcher, logger);
-    }
-
-    /**
-     * Test case for
-     * {@link GetFlowStatsRpc#getTransactionId(long,TimeUnit,Logger)}.
-     *
-     * <ul>
-     *   <li>No transaction ID in RPC output.</li>
-     * </ul>
-     *
-     * @throws Exception  An error occurred.
-     */
-    @Test
-    public void testGetTransactionNoXid() throws Exception {
-        SalNode snode = new SalNode(1L);
-        GetFlowStatisticsFromFlowTableInput input =
-            mock(GetFlowStatisticsFromFlowTableInput.class);
-        when(input.getNode()).thenReturn(snode.getNodeRef());
-        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        OpendaylightFlowStatisticsService fss =
-            mock(OpendaylightFlowStatisticsService.class);
-        GetFlowStatisticsFromFlowTableOutput output =
-            mock(GetFlowStatisticsFromFlowTableOutput.class);
-        final SettableFuture<RpcResult<GetFlowStatisticsFromFlowTableOutput>> future =
-            SettableFuture.<RpcResult<GetFlowStatisticsFromFlowTableOutput>>
-            create();
-        when(fss.getFlowStatisticsFromFlowTable(input)).thenReturn(future);
-        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, fss, input);
-
-        final RpcResult<GetFlowStatisticsFromFlowTableOutput> result =
-            RpcResultBuilder.success(output).build();
-        Logger logger = mock(Logger.class);
-
-        Thread t = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException e) {
-                }
-                future.set(result);
-            }
-        };
-        t.start();
-
-        String msg = "Flow stats RPC did not return XID";
-        try {
-            rpc.getTransactionId(10L, TimeUnit.SECONDS, logger);
-            unexpected();
-        } catch (VTNException e) {
-            assertEquals(VtnErrorTag.INTERNALERROR, e.getVtnErrorTag());
-            assertEquals(msg, e.getMessage());
-            assertEquals(null, e.getCause());
-        }
-
-        verify(logger).error("{}: {}: {}", RPC_NAME, msg, output);
-        verify(watcher).registerRpc(rpc);
-        verify(watcher).unregisterRpc(rpc);
-        verifyNoMoreInteractions(watcher, logger);
     }
 }

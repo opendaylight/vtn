@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -37,6 +37,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.flow.stats.history.FlowStatsRecord;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.flow.stats.history.FlowStatsRecordBuilder;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetFlowStatisticsInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetFlowStatisticsInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.Table;
@@ -44,8 +46,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.ta
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.FlowStatisticsData;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetFlowStatisticsFromFlowTableInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetFlowStatisticsFromFlowTableInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.flow.statistics.FlowStatistics;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
@@ -114,16 +114,15 @@ public final class FlowStatsUtils {
      * VTN flow entry.
      *
      * @param vfent  The target VTN flow entry.
-     * @return  A {@link GetFlowStatisticsFromFlowTableInput} instance.
+     * @return  A {@link GetFlowStatisticsInput} instance.
      */
-    public static GetFlowStatisticsFromFlowTableInput createGetFlowStatsInput(
+    public static GetFlowStatisticsInput createGetFlowStatsInput(
         VtnFlowEntry vfent) {
-        GetFlowStatisticsFromFlowTableInputBuilder builder =
-            new GetFlowStatisticsFromFlowTableInputBuilder(vfent);
-
         SalNode snode = SalNode.create(vfent.getNode());
-        return builder.setNode(snode.getNodeRef()).
+        return new GetFlowStatisticsInputBuilder(vfent).
+            setNode(snode.getNodeRef()).
             setCookieMask(COOKIE_MASK_ALL).
+            setStoreStats(false).
             build();
     }
 
@@ -139,15 +138,16 @@ public final class FlowStatsUtils {
      *
      * @param snode  A {@link SalNode} instance which specifies the target
      *               switch.
-     * @return  A {@link GetFlowStatisticsFromFlowTableInput} instance.
+     * @return  A {@link GetFlowStatisticsInput} instance.
      */
-    public static GetFlowStatisticsFromFlowTableInput createGetFlowStatsInput(
+    public static GetFlowStatisticsInput createGetFlowStatsInput(
         SalNode snode) {
-        return new GetFlowStatisticsFromFlowTableInputBuilder().
+        return new GetFlowStatisticsInputBuilder().
             setNode(snode.getNodeRef()).
             setCookie(COOKIE_VTN).
             setCookieMask(COOKIE_MASK_VTN).
             setTableId(TABLE_ID).
+            setStoreStats(false).
             build();
     }
 

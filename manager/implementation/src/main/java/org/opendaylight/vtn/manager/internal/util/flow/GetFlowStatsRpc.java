@@ -8,73 +8,56 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow;
 
-import java.math.BigInteger;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Future;
 
-import org.slf4j.Logger;
-
-import org.opendaylight.vtn.manager.VTNException;
+import com.google.common.util.concurrent.Futures;
 
 import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcInvocation;
 import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcWatcher;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetFlowStatisticsFromFlowTableInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetFlowStatisticsFromFlowTableOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.OpendaylightFlowStatisticsService;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.transaction.rev150304.TransactionId;
+import org.opendaylight.yangtools.yang.common.RpcResult;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetFlowStatisticsInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetFlowStatisticsOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.OpendaylightDirectStatisticsService;
 
 /**
  * {@code GetFlowStatsRpc} describes an invocation of
- * get-flow-statistics-from-flow-table RPC provided by the MD-SAL flow
- * statistics service.
+ * get-flow-statistics RPC provided by the MD-SAL direct statistics service.
  */
 public final class GetFlowStatsRpc
-    extends NodeRpcInvocation<GetFlowStatisticsFromFlowTableInput,
-                              GetFlowStatisticsFromFlowTableOutput> {
+    extends NodeRpcInvocation<GetFlowStatisticsInput, GetFlowStatisticsOutput> {
+     /**
+      * Issue a get-flow-statistics RPC request.
+      *
+      * @param dss  MD-SAL direct statistics service.
+      * @param in   The RPC input.
+      * @return  A future associated with the RPC.
+      */
+    private static Future<RpcResult<GetFlowStatisticsOutput>> invoke(
+        OpendaylightDirectStatisticsService dss, GetFlowStatisticsInput in) {
+        try {
+            return dss.getFlowStatistics(in);
+        } catch (RuntimeException e) {
+            return Futures.<RpcResult<GetFlowStatisticsOutput>>
+                immediateFailedFuture(e);
+        }
+    }
+
     /**
-     * Issue a get-flow-statistics-from-flow-table RPC request.
+     * Issue a get-flow-statistics RPC request.
      *
      * @param w    The node RPC watcher.
-     * @param fss  MD-SAL flow statistics service.
+     * @param dss  MD-SAL direct statistics service.
      * @param in   The RPC input.
      */
     public GetFlowStatsRpc(NodeRpcWatcher w,
-                           OpendaylightFlowStatisticsService fss,
-                           GetFlowStatisticsFromFlowTableInput in) {
-        super(w, in, fss.getFlowStatisticsFromFlowTable(in));
+                           OpendaylightDirectStatisticsService dss,
+                           GetFlowStatisticsInput in) {
+        super(w, in, in.getNode(), invoke(dss, in));
     }
 
-    /**
-     * Wait for the RPC execution to complete, and return the transaction ID
-     * returned by the RPC.
-     *
-     * @param timeout  The maximum time to wait.
-     * @param unit     The time unit of the {@code timeout} argument.
-     * @param logger   A {@link Logger} instance.
-     * @return  The transaction ID associated with the read transaction.
-     * @throws VTNException  An error occurred.
-     */
-    public BigInteger getTransactionId(long timeout, TimeUnit unit,
-                                       Logger logger) throws VTNException {
-        GetFlowStatisticsFromFlowTableOutput result =
-            getResult(timeout, unit, logger);
-        if (result == null) {
-            String msg = "Flow stats RPC did not return the result";
-            logger.error("{}: {}", getName(), msg);
-            throw new VTNException(msg);
-        }
-
-        TransactionId txId = result.getTransactionId();
-        if (txId == null) {
-            String msg = "Flow stats RPC did not return XID";
-            logger.error("{}: {}: {}", getName(), msg, result);
-            throw new VTNException(msg);
-        }
-
-        return txId.getValue();
-    }
-
-    // RpcInvocation
+    // RpcRequest
 
     /**
      * Return the name of the RPC.

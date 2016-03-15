@@ -9,7 +9,6 @@
 package org.opendaylight.vtn.manager.internal.provider;
 
 import java.util.List;
-import java.util.Timer;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -90,6 +89,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.GetMa
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.VtnVersionService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.get.manager.version.output.BundleVersion;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.get.manager.version.output.BundleVersionBuilder;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
 
 /**
  * MD-SAL service provider of the VTN Manager.
@@ -267,7 +268,7 @@ public final class VTNManagerProviderImpl
         VTenantManager tnm;
         VTNRoutingManager rtm;
         try {
-            vfm = new VTNFlowManager(this, nsv);
+            vfm = new VTNFlowManager(this);
             subSystems.add(vfm).
                 add(vim.newStaticTopologyManager());
             tnm = new VTenantManager(this);
@@ -473,7 +474,7 @@ public final class VTNManagerProviderImpl
      * {@inheritDoc}
      */
     @Override
-    public Timer getTimer() {
+    public VTNTimer getTimer() {
         return globalTimer;
     }
 
@@ -497,6 +498,7 @@ public final class VTNManagerProviderImpl
             Futures.addCallback(lf, cb);
         } else {
             // Wait for the future using global thread pool.
+            LOG.warn("Use FutureCallbackTask: future={}, cb={}", future, cb);
             FutureCallbackTask<T> task =
                 new FutureCallbackTask<T>(future, cb, globalTimer);
             globalExecutor.executeTask(task);
@@ -736,6 +738,21 @@ public final class VTNManagerProviderImpl
             rpc.onNodeRemoved();
         } else {
             vim.getVtnNodeManager().unregisterRpc(rpc);
+        }
+    }
+
+    // BarrierSender
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void asyncBarrier(NodeRef nref) {
+        VTNFlowManager vfm = subSystems.get(VTNFlowManager.class);
+        if (vfm == null) {
+            LOG.trace("Ignore send-barrier request: nref={}", nref);
+        } else {
+            vfm.asyncBarrier(nref);
         }
     }
 

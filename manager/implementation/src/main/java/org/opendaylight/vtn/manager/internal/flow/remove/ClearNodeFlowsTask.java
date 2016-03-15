@@ -35,7 +35,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.Remo
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.FlowAndStatisticsMap;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
 
@@ -179,14 +178,12 @@ public final class ClearNodeFlowsTask extends RunnableVTNFuture<Void>
      * {@inheritDoc}
      */
     @Override
-    public void flowStatsReceived(NodeId node, FlowAndStatisticsMap fstats) {
-        assert node.equals(targetNode.getNodeId());
-
+    public void flowStatsReceived(FlowAndStatisticsMap fstats) {
         FlowCookie cookie = fstats.getCookie();
         VtnFlowId fid = FlowUtils.getVtnFlowId(cookie);
         if (fid != null) {
             LOG.trace("Remove VTN flow entry: node={}, flow={}",
-                      node.getValue(), fstats);
+                      targetNode, fstats);
             Uri uri = new Uri("clear-node-flows:" + fid.getValue());
             RemoveFlowInputBuilder builder = FlowUtils.
                 createRemoveFlowInputBuilder(targetNode, fstats, uri);

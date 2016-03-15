@@ -30,11 +30,7 @@ import java.util.TreeMap;
 
 import com.google.common.collect.ImmutableList;
 
-import org.slf4j.Logger;
-
 import org.junit.Test;
-
-import org.mockito.Mockito;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.EtherAddress;
@@ -204,28 +200,6 @@ public class MiscUtilsTest extends TestBase {
         } catch (RpcException e) {
             checkException(e, msg);
             assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
-        }
-    }
-
-    /**
-     * Test case for {@link MiscUtils#checkNotNull(Object, Logger, String)}.
-     */
-    @Test
-    public void testCheckNotNull() {
-        Random r = new Random();
-        Logger logger = Mockito.mock(Logger.class);
-        String msg = "Error message";
-        assertSame(r, MiscUtils.checkNotNull(r, logger, msg));
-        Mockito.verify(logger, Mockito.never()).
-            error(Mockito.anyString(), Mockito.any(Throwable.class));
-
-        r = null;
-        try {
-            MiscUtils.checkNotNull(r, logger, msg);
-            unexpected();
-        } catch (IllegalStateException e) {
-            assertEquals(msg, e.getMessage());
-            Mockito.verify(logger, Mockito.times(1)).error(msg, e);
         }
     }
 
