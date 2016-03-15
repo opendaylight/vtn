@@ -9,14 +9,19 @@
 package org.opendaylight.vtn.manager.internal.util.flow;
 
 import java.math.BigInteger;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
+
+import com.google.common.util.concurrent.Futures;
 
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcInvocation;
 import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcWatcher;
+
+import org.opendaylight.yangtools.yang.common.RpcResult;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetFlowStatisticsFromFlowTableInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetFlowStatisticsFromFlowTableOutput;
@@ -34,6 +39,24 @@ public final class GetFlowStatsRpc
     /**
      * Issue a get-flow-statistics-from-flow-table RPC request.
      *
+     * @param fss  MD-SAL flow statistics service.
+     * @param in   The RPC input.
+     * @return  A future associated with the RPC.
+     */
+    private static Future<RpcResult<GetFlowStatisticsFromFlowTableOutput>> invoke(
+        OpendaylightFlowStatisticsService fss,
+        GetFlowStatisticsFromFlowTableInput in) {
+        try {
+            return fss.getFlowStatisticsFromFlowTable(in);
+        } catch (IllegalAccessError | RuntimeException e) {
+            return Futures.<RpcResult<GetFlowStatisticsFromFlowTableOutput>>
+                immediateFailedFuture(e);
+        }
+    }
+
+    /**
+     * Issue a get-flow-statistics-from-flow-table RPC request.
+     *
      * @param w    The node RPC watcher.
      * @param fss  MD-SAL flow statistics service.
      * @param in   The RPC input.
@@ -41,7 +64,7 @@ public final class GetFlowStatsRpc
     public GetFlowStatsRpc(NodeRpcWatcher w,
                            OpendaylightFlowStatisticsService fss,
                            GetFlowStatisticsFromFlowTableInput in) {
-        super(w, in, fss.getFlowStatisticsFromFlowTable(in));
+        super(w, in, invoke(fss, in));
     }
 
     /**

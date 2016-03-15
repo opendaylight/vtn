@@ -409,6 +409,56 @@ public class GetFlowStatsRpcTest extends TestBase {
      * Test case for {@link GetFlowStatsRpc#getResult(long,TimeUnit,Logger)}.
      *
      * <ul>
+     *   <li>
+     *     RPC implementation throws an {@link IllegalArgumentException}.
+     *   </li>
+     * </ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testGetResultException() throws Exception {
+        SalNode snode = new SalNode(1L);
+        GetFlowStatisticsFromFlowTableInput input =
+            mock(GetFlowStatisticsFromFlowTableInput.class);
+        when(input.getNode()).thenReturn(snode.getNodeRef());
+        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+        OpendaylightFlowStatisticsService fss =
+            mock(OpendaylightFlowStatisticsService.class);
+        IllegalArgumentException cause =
+            new IllegalArgumentException("Invalid argument");
+        when(fss.getFlowStatisticsFromFlowTable(input)).thenThrow(cause);
+        Logger logger = mock(Logger.class);
+
+        GetFlowStatsRpc rpc = new GetFlowStatsRpc(watcher, fss, input);
+        try {
+            rpc.getResult(1L, TimeUnit.SECONDS, logger);
+            unexpected();
+        } catch (VTNException e) {
+            assertEquals(VtnErrorTag.INTERNALERROR, e.getVtnErrorTag());
+            assertEquals(cause.getMessage(), e.getMessage());
+            assertEquals(cause, e.getCause());
+        }
+
+        String msg = RPC_NAME + ": Caught an exception: canceled=false, " +
+            "input=" + input;
+        ArgumentCaptor<Throwable> captor =
+            ArgumentCaptor.forClass(Throwable.class);
+        verify(logger).error(eq(msg), captor.capture());
+        List<Throwable> causes = captor.getAllValues();
+        assertEquals(1, causes.size());
+        Throwable c = causes.get(0);
+        assertThat(c, instanceOf(ExecutionException.class));
+        assertEquals(cause, c.getCause());
+        verify(watcher).registerRpc(rpc);
+        verify(watcher).unregisterRpc(rpc);
+        verifyNoMoreInteractions(watcher, logger);
+    }
+
+    /**
+     * Test case for {@link GetFlowStatsRpc#getResult(long,TimeUnit,Logger)}.
+     *
+     * <ul>
      *   <li>RPC failed.</li>
      *   <li>The result does not contain any {@link Throwable}.</li>
      *   <li>The result should be logged.</li>

@@ -1294,6 +1294,7 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
         try {
             return node.awaitFlow(target, installed, TASK_TIMEOUT);
         } catch (TimeoutException e) {
+            LOG.error("awaitFlow: Timed out", e);
             return node.getFlow(target);
         }
     }
