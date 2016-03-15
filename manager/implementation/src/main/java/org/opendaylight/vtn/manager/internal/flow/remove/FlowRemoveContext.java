@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -13,8 +13,9 @@ import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.internal.FlowRemover;
 import org.opendaylight.vtn.manager.internal.RemovedFlows;
-import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
-import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
+import org.opendaylight.vtn.manager.internal.TxQueue;
+import org.opendaylight.vtn.manager.internal.flow.common.FlowModContext;
+import org.opendaylight.vtn.manager.internal.flow.common.FlowModContextFactory;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNThreadPool;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
@@ -23,23 +24,13 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalF
  * {@code FlowRemoveContext} describes a runtime context for removing
  * VTN data flows.
  */
-public final class FlowRemoveContext {
+public final class FlowRemoveContext
+    extends FlowModContext<Void, RemovedFlows> {
     /**
      * Logger instance used for logging of flow uninstallation.
      */
     public static final Logger  LOG =
         LoggerFactory.getLogger(FlowRemoveContext.class);
-
-    /**
-     * A future associated with the task for removing data flows.
-     */
-    private final SettableVTNFuture<Void>  contextFuture =
-        new SettableVTNFuture<>();
-
-    /**
-     * A thread on which flow entries are uninstalled.
-     */
-    private final VTNThreadPool  flowThread;
 
     /**
      * Removed flow entries.
@@ -52,9 +43,39 @@ public final class FlowRemoveContext {
     private final FlowRemover  flowRemover;
 
     /**
-     * A MD-SAL flow service.
+     * Factory class for instantiating {@link FlowRemoveContext}.
      */
-    private SalFlowService  flowService;
+    public static final class Factory
+        implements FlowModContextFactory<Void, RemovedFlows> {
+        /**
+         * Flow remover which determines VTN data flows to be removed.
+         */
+        private final FlowRemover  remover;
+
+        /**
+         * Construct a new instance.
+         *
+         * @param r  A {@link FlowRemover} instance.
+         */
+        public Factory(FlowRemover r) {
+            remover = r;
+        }
+
+        // FlowModContextFactory
+
+        /**
+         * Construct a new context for removing VTN data flows.
+         *
+         * @param sfs     The MD-SAL flow service.
+         * @param thread  A thread pool to run tasks that remove flow entries.
+         * @return  A new context for removing VTN data flows.
+         */
+        @Override
+        public FlowRemoveContext newContext(SalFlowService sfs,
+                                            VTNThreadPool thread) {
+            return new FlowRemoveContext(sfs, thread, remover);
+        }
+    }
 
     /**
      * Construct a new instance.
@@ -63,30 +84,12 @@ public final class FlowRemoveContext {
      * @param thread   A {@link VTNThreadPool} instance used to uninstall flow
      *                 entries.
      * @param remover  A {@link FlowRemover} instance.
+     * @see Factory
      */
-    public FlowRemoveContext(SalFlowService sfs, VTNThreadPool thread,
-                             FlowRemover remover) {
-        flowService = sfs;
-        flowThread = thread;
+    private FlowRemoveContext(SalFlowService sfs, VTNThreadPool thread,
+                              FlowRemover remover) {
+        super(sfs, thread);
         flowRemover = remover;
-    }
-
-    /**
-     * Return the MD-SAL flow service.
-     *
-     * @return  A {@link SalFlowService} instance.
-     */
-    public SalFlowService getFlowService() {
-        return flowService;
-    }
-
-    /**
-     * Return the thread used to uninstall flow entries.
-     *
-     * @return  A {@link VTNThreadPool} instance.
-     */
-    public VTNThreadPool getFlowThread() {
-        return flowThread;
     }
 
     /**
@@ -127,29 +130,16 @@ public final class FlowRemoveContext {
         return removedFlows;
     }
 
-    /**
-     * Return the future associated with the task for removing data flows.
-     *
-     * @return  A {@link VTNFuture} instance associated with the
-     *          task for removing data flows.
-     */
-    public VTNFuture<Void> getContextFuture() {
-        return contextFuture;
-    }
+    // FlowModContext
 
     /**
-     * Complete the flow uninstallation successfully.
-     */
-    void setSuccess() {
-        contextFuture.set(null);
-    }
-
-    /**
-     * Set the cause of the failure of flow uninstallation.
+     * Create a new MD-SAL DS task that deletes VTN data flows.
      *
-     * @param cause  A {@link Throwable} which indicates the cause of failure.
+     * @param txq  A MD-SAL DS transaction queue.
+     * @return  A MD-SAL DS transaction task that delets VTN data flows.
      */
-    void setFailure(Throwable cause) {
-        contextFuture.setException(cause);
+    @Override
+    public DeleteFlowTxTask newDatastoreTask(TxQueue txq) {
+        return new DeleteFlowTxTask(this);
     }
 }
