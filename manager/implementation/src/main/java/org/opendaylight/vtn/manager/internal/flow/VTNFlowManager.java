@@ -9,8 +9,12 @@
 package org.opendaylight.vtn.manager.internal.flow;
 
 import static org.opendaylight.vtn.manager.internal.util.flow.FlowUtils.COOKIE_MISS;
+import static org.opendaylight.vtn.manager.internal.util.flow.FlowUtils.TABLE_ID;
+import static org.opendaylight.vtn.manager.internal.util.flow.FlowUtils.isTableMissFlowId;
 
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 
@@ -36,24 +41,27 @@ import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.VTNSubSystem;
 import org.opendaylight.vtn.manager.internal.flow.add.AddMdFlowTask;
 import org.opendaylight.vtn.manager.internal.flow.add.FlowAddContext;
-import org.opendaylight.vtn.manager.internal.flow.add.PutFlowTxTask;
+import org.opendaylight.vtn.manager.internal.flow.common.FlowModContext;
+import org.opendaylight.vtn.manager.internal.flow.common.FlowModContextFactory;
 import org.opendaylight.vtn.manager.internal.flow.reader.FlowCountFuture;
 import org.opendaylight.vtn.manager.internal.flow.reader.ReadFlowFuture;
 import org.opendaylight.vtn.manager.internal.flow.remove.ClearNodeFlowsTask;
-import org.opendaylight.vtn.manager.internal.flow.remove.DeleteFlowTxTask;
 import org.opendaylight.vtn.manager.internal.flow.remove.FlowRemoveContext;
 import org.opendaylight.vtn.manager.internal.flow.remove.NodeFlowRemover;
 import org.opendaylight.vtn.manager.internal.flow.remove.PortFlowRemover;
 import org.opendaylight.vtn.manager.internal.flow.remove.RemovedFlowRemover;
-import org.opendaylight.vtn.manager.internal.flow.stats.SalFlowIdResolver;
+import org.opendaylight.vtn.manager.internal.flow.stats.AddedFlowStats;
 import org.opendaylight.vtn.manager.internal.flow.stats.StatsReaderService;
 import org.opendaylight.vtn.manager.internal.flow.stats.StatsTimerTask;
 import org.opendaylight.vtn.manager.internal.inventory.VTNInventoryListener;
 import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
 import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
+import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
+import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
-import org.opendaylight.vtn.manager.internal.util.SalNotificationListener;
+import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
 import org.opendaylight.vtn.manager.internal.util.concurrent.RunnableVTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.TimeoutCounter;
@@ -76,9 +84,12 @@ import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipChange;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListener;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListenerRegistration;
+import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
+import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 
+import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 
@@ -96,27 +107,35 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.Vtn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnOpenflowVersion;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowAdded;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowRemoved;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowUpdated;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.NodeErrorNotification;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.NodeExperimenterErrorNotification;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowListener;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.Table;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.TableKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SwitchFlowRemoved;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 
 /**
  * Flow entry manager.
  */
-public final class VTNFlowManager extends SalNotificationListener
+public final class VTNFlowManager
+    extends DataStoreListener<Flow, AddedFlowStats>
     implements VTNSubSystem, VTNInventoryListener, VtnFlowService,
-               SalFlowListener, EntityOwnershipListener {
+               EntityOwnershipListener {
     /**
      * Logger instance.
      */
     private static final Logger  LOG =
         LoggerFactory.getLogger(VTNFlowManager.class);
+
+    /**
+     * Required event types.
+     */
+    private static final Set<VtnUpdateType>  REQUIRED_EVENTS =
+        ImmutableSet.copyOf(
+            EnumSet.of(VtnUpdateType.CREATED, VtnUpdateType.REMOVED));
 
     /**
      * The timeout in seconds for the flow service shutdown.
@@ -155,8 +174,7 @@ public final class VTNFlowManager extends SalNotificationListener
     private int  txCount;
 
     /**
-     * A map that keeps flow cookies notified by switch-flow-removed
-     * notification.
+     * A map that keeps flow cookies for removed flow entries.
      */
     private final ConcurrentMap<FlowCookie, VtnFlowId>  removedCookies =
         new ConcurrentHashMap<>();
@@ -179,7 +197,7 @@ public final class VTNFlowManager extends SalNotificationListener
         new AtomicReference<>();
 
     /**
-     * Describes an interface for a factory class that create flow task.
+     * Describes an interface for a factory class that creates flow task.
      */
     private interface FlowTaskFactory {
         /**
@@ -420,7 +438,12 @@ public final class VTNFlowManager extends SalNotificationListener
     /**
      * Timer task that expires flow cookie for removed flow entry.
      */
-    private final class CookieExpireTask extends TimerTask {
+    private static final class CookieExpireTask extends TimerTask {
+        /**
+         * A map that keeps flow cookies for removed flow entries.
+         */
+        private final ConcurrentMap<FlowCookie, VtnFlowId>  cookieMap;
+
         /**
          * The flow cookie to be removed.
          */
@@ -429,9 +452,12 @@ public final class VTNFlowManager extends SalNotificationListener
         /**
          * Construct a new instance.
          *
-         * @param c  A flow cookie.
+         * @param map  A map that keeps flow cookies for removed flow entries.
+         * @param c    A flow cookie.
          */
-        private CookieExpireTask(FlowCookie c) {
+        private CookieExpireTask(ConcurrentMap<FlowCookie, VtnFlowId> map,
+                                 FlowCookie c) {
+            cookieMap = map;
             cookie = c;
         }
 
@@ -442,7 +468,7 @@ public final class VTNFlowManager extends SalNotificationListener
          */
         @Override
         public void run() {
-            removedCookies.remove(cookie);
+            cookieMap.remove(cookie);
         }
     }
 
@@ -454,6 +480,7 @@ public final class VTNFlowManager extends SalNotificationListener
      */
     public VTNFlowManager(VTNManagerProvider provider,
                           NotificationService nsv) {
+        super(Flow.class);
         vtnProvider = provider;
         txQueue = new TxQueueImpl("VTN Flow DS", provider);
         addCloseable(txQueue);
@@ -461,14 +488,13 @@ public final class VTNFlowManager extends SalNotificationListener
         addCloseable(flowThread);
 
         try {
-            // Get MD-SAL RPC services.
+            // Get MD-SAL RPC service.
             flowService = provider.getRpcService(SalFlowService.class);
 
-            // Register MD-SAL notification listener.
-            registerListener(nsv);
-
-            // Register MD-SAL flow ID resolver.
-            addCloseable(new SalFlowIdResolver(provider, txQueue));
+            // Register MD-SAL flow listener.
+            registerListener(provider.getDataBroker(),
+                             LogicalDatastoreType.OPERATIONAL,
+                             DataChangeScope.BASE, false);
 
             // Start flow statistics reader service.
             statsReader = new StatsReaderService(provider, nsv);
@@ -509,19 +535,9 @@ public final class VTNFlowManager extends SalNotificationListener
      *                 data flow to be installed.
      * @return  A future associated with the task which adds a VTN data flow.
      */
-    public synchronized VTNFuture<VtnFlowId> addFlow(VTNFlowBuilder builder) {
-        FlowAddContext ctx = new FlowAddContext(flowService, builder);
-        VTNFuture<VtnFlowId> future = ctx.getContextFuture();
-        if (flowService == null) {
-            // The flow service is already closed.
-            future.cancel(false);
-        } else {
-            // Start add-flow transaction task.
-            PutFlowTxTask task = new PutFlowTxTask(ctx, flowThread, txQueue);
-            startTransaction(future, task);
-        }
-
-        return future;
+    public VTNFuture<VtnFlowId> addFlow(VTNFlowBuilder builder) {
+        // Start add-flow transaction task.
+        return startTransaction(new FlowAddContext.Factory(builder));
     }
 
     /**
@@ -531,19 +547,9 @@ public final class VTNFlowManager extends SalNotificationListener
      *                 flows to be removed.
      * @return  A future associated with the task which removes VTN data flows.
      */
-    public synchronized VTNFuture<Void> removeFlows(FlowRemover remover) {
-        FlowRemoveContext ctx =
-            new FlowRemoveContext(flowService, flowThread, remover);
-        VTNFuture<Void> future = ctx.getContextFuture();
-        if (flowService == null) {
-            // The flow service is already closed.
-            future.cancel(false);
-        } else {
-            // Start remove-flow transaction task.
-            startTransaction(future, new DeleteFlowTxTask(ctx));
-        }
-
-        return future;
+    public VTNFuture<Void> removeFlows(FlowRemover remover) {
+        // Start remove-flow transaction task.
+        return startTransaction(new FlowRemoveContext.Factory(remover));
     }
 
     /**
@@ -575,30 +581,41 @@ public final class VTNFlowManager extends SalNotificationListener
     /**
      * Start the flow transaction.
      *
-     * @param future  A future associated with the whole flow transaction.
-     * @param task    A MD-SAL DS transaction task to be executed.
+     * @param factory  A factory for flow modification context.
      * @param <T>     The type of the value to be returned by the flow
      *                transaction.
      * @param <D>     The type of the value to be returned by {@code task}.
+     * @return  A future associated with the flow transaction.
      */
-    private synchronized <T, D> void startTransaction(VTNFuture<T> future,
-                                                      TxTask<D> task) {
-        // Increment the transaction counter.
-        assert txCount >= 0;
-        txCount++;
-
-        // Add callback which will decrement the transaction counter when
-        // the future completes.
-        TxCounterCallback<T> cb = new TxCounterCallback<>(this);
-        Futures.addCallback(future, cb);
-
-        // Start the task.
-        VTNFuture<D> txf = txQueue.post(task);
-        if (txf.isCancelled()) {
-            // This should never happen.
-            LOG.warn("Flow DS queue is already closed unexpectedly.");
+    private synchronized <T, D> VTNFuture<T> startTransaction(
+        FlowModContextFactory<T, D> factory) {
+        // Instantiate a new flow modification context with holding the lock.
+        FlowModContext<T, D> fctx =
+            factory.newContext(flowService, flowThread);
+        VTNFuture<T> future = fctx.getContextFuture();
+        if (flowService == null) {
+            // The flow service is already closed.
             future.cancel(false);
+        } else {
+            // Increment the transaction counter.
+            assert txCount >= 0;
+            txCount++;
+
+            // Add callback which will decrement the transaction counter when
+            // the future completes.
+            TxCounterCallback<T> cb = new TxCounterCallback<>(this);
+            Futures.addCallback(future, cb);
+
+            // Start the task.
+            VTNFuture<D> txf = txQueue.post(fctx.newDatastoreTask(txQueue));
+            if (txf.isCancelled()) {
+                // This should never happen.
+                LOG.warn("Flow DS queue is already closed unexpectedly.");
+                future.cancel(false);
+            }
         }
+
+        return future;
     }
 
     /**
@@ -708,15 +725,15 @@ public final class VTNFlowManager extends SalNotificationListener
      * Record a log message that indicates the given removed flow entry is
      * ignored.
      *
-     * @param level    The logging level.
-     * @param msg      A log message.
-     * @param snode    The node identifier that specifies the switch.
-     * @param removed  The FLOW_REMOVED notification.
+     * @param level  The logging level.
+     * @param msg    A log message.
+     * @param snode  The node identifier that specifies the switch.
+     * @param flow   The removed flow entry.
      */
     private void ignoreFlowRemoved(VTNLogLevel level, String msg,
-                                   SalNode snode, SwitchFlowRemoved removed) {
+                                   SalNode snode, Flow flow) {
         level.log(LOG, "Ignore FLOW_REMOVED: {}: node={}, flow={}",
-                  msg, snode, removed);
+                  msg, snode, flow);
     }
 
     /**
@@ -878,100 +895,109 @@ public final class VTNFlowManager extends SalNotificationListener
         }
     }
 
-    // SalFlowListener
+    // DataStoreListener
 
     /**
-     * Invoked when a flow entry has been added.
-     *
-     * @param notification  A {@link FlowAdded} instance.
+     * {@inheritDoc}
      */
     @Override
-    public void onFlowAdded(FlowAdded notification) {
-        // Nothing to do.
+    protected AddedFlowStats enterEvent(
+        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
+        return new AddedFlowStats();
     }
 
     /**
-     * Invoked when a flow entry has been removed.
-     *
-     * @param notification  A {@link FlowRemoved} notification.
+     * {@inheritDoc}
      */
     @Override
-    public void onFlowRemoved(FlowRemoved notification) {
-        // Nothing to do.
+    protected void exitEvent(AddedFlowStats ectx) {
+        ectx.apply(txQueue);
     }
 
     /**
-     * Invoked when a flow entry has been updated.
-     *
-     * @param notification  A {@link FlowUpdated} notification.
+     * {@inheritDoc}
      */
     @Override
-    public void onFlowUpdated(FlowUpdated notification) {
-        // Nothing to do.
+    protected void onCreated(AddedFlowStats ectx, IdentifiedData<Flow> data) {
+        ectx.add(data);
     }
 
     /**
-     * Invoked when an error has been detected.
-     *
-     * @param notification  A {@link NodeErrorNotification} notification.
+     * {@inheritDoc}
      */
     @Override
-    public void onNodeErrorNotification(NodeErrorNotification notification) {
-        // Nothing to do.
+    protected void onUpdated(AddedFlowStats ectx, ChangedData<Flow> data) {
+        throw MiscUtils.unexpected();
     }
 
     /**
-     * Invoked when an experimental error has been detected.
-     *
-     * @param notification  A {@link NodeExperimenterErrorNotification}
-     *                      notification.
+     * {@inheritDoc}
      */
     @Override
-    public void onNodeExperimenterErrorNotification(
-        NodeExperimenterErrorNotification notification) {
-        // Nothing to do.
-    }
-
-    /**
-     * Invoked when a flow entry has been removed from the switch.
-     *
-     * @param notification  A {@link SwitchFlowRemoved} notification.
-     */
-    @Override
-    public void onSwitchFlowRemoved(SwitchFlowRemoved notification) {
-        if (notification == null) {
-            LOG.warn("Null switch-flow-removed notification.");
-            return;
-        }
-
-        SalNode snode = SalNode.create(notification.getNode());
+    protected void onRemoved(AddedFlowStats ectx, IdentifiedData<Flow> data) {
+        InstanceIdentifier<Flow> path = data.getIdentifier();
+        SalNode snode = SalNode.create(path.firstKeyOf(Node.class));
         if (snode == null) {
-            LOG.debug("Ignore FLOW_REMOVED: Invalid node: {}", notification);
+            LOG.debug("Ignore FLOW_REMOVED: Invalid flow path: {}", path);
             return;
         }
 
-        FlowCookie cookie = notification.getCookie();
+        Flow flow = data.getValue();
+        FlowCookie cookie = flow.getCookie();
         if (!COOKIE_MISS.equals(cookie)) {
             VtnFlowId flowId = FlowUtils.getVtnFlowId(cookie);
             if (flowId == null) {
                 ignoreFlowRemoved(VTNLogLevel.DEBUG, "Unexpected cookie",
-                                  snode, notification);
+                                  snode, flow);
             } else if (removedCookies.putIfAbsent(cookie, flowId) != null) {
                 ignoreFlowRemoved(VTNLogLevel.TRACE, "Already removed",
-                                  snode, notification);
+                                  snode, flow);
             } else {
                 Timer timer = vtnProvider.getTimer();
-                CookieExpireTask task = new CookieExpireTask(cookie);
+                CookieExpireTask task =
+                    new CookieExpireTask(removedCookies, cookie);
                 timer.schedule(task, REMOVED_COOKIE_EXPIRE);
 
                 // Remove VTN data flow that contains removed flow entry.
                 removeFlows(new RemovedFlowRemover(flowId, snode));
             }
         } else if (needTableMissFlow(snode)) {
-            // Install table miss flow entry again.
-            LOG.warn("Table miss flow entry has been removed: node={}", snode);
-            addTableMissFlow(snode);
+            FlowId flowId = flow.getId();
+            if (isTableMissFlowId(snode, flowId)) {
+                // Install table miss flow entry again.
+                LOG.warn("Table miss flow entry has been removed: node={}",
+                         snode);
+                addTableMissFlow(snode);
+            } else {
+                ignoreFlowRemoved(VTNLogLevel.TRACE,
+                                  "Obsolete table miss flow entry",
+                                  snode, flow);
+            }
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected InstanceIdentifier<Flow> getWildcardPath() {
+        return InstanceIdentifier.builder(Nodes.class).
+            child(Node.class).
+            augmentation(FlowCapableNode.class).
+            child(Table.class, new TableKey(TABLE_ID)).
+            child(Flow.class).
+            build();
+    }
+
+    /**
+     * Return a set of {@link VtnUpdateType} instances that specifies
+     * event types to be listened.
+     *
+     * @return  A set of {@link VtnUpdateType} instances.
+     */
+    @Override
+    protected Set<VtnUpdateType> getRequiredEvents() {
+        return REQUIRED_EVENTS;
     }
 
     // EntityOwnershipListener

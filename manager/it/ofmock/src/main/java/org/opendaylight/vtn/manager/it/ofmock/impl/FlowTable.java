@@ -330,15 +330,20 @@ public final class FlowTable {
         }
 
         FlowRef fref = input.getFlowRef();
-        BigInteger cookie = ofent.getCookie();
         String id;
-        if (cookie.longValue() == MISS_COOKIE) {
-            // The specified flow entry must be a table miss flow entry.
-            verifyTableMissFlowEntry(input);
+        if (fref != null) {
+            // Use MD-SAL flow ID specified by flow-ref.
             id = getFlowId(fref);
-            verify(missFlowId, id, "Invalid flow-id");
+            if (ofent.getCookie().longValue() == MISS_COOKIE) {
+                // The specified flow entry must be a table miss flow entry.
+                verifyTableMissFlowEntry(input);
+                verify(missFlowId, id, "Invalid flow-id");
+            } else if (id.equals(missFlowId)) {
+                throw new IllegalArgumentException(
+                    "Reject table-miss flow ID: " + id);
+            }
+            putFlow(ofent, id);
         } else {
-            verify(null, fref, "flow-ref must be null");
             id = newFlowId(ofent);
         }
         ofent.setFlowId(id);
@@ -571,9 +576,10 @@ public final class FlowTable {
                     return;
                 }
                 msec = deadline - System.currentTimeMillis();
-            } while (timeout > 0);
+            } while (msec > 0);
 
-            throw new TimeoutException(cond.getTimeoutError());
+            throw new TimeoutException(cond.getTimeoutError() + ": table=" +
+                                       idMap);
         }
     }
 
@@ -641,14 +647,41 @@ public final class FlowTable {
     private synchronized String newFlowId(OfMockFlowEntry ofent) {
         int fid = ++nextFlowId;
         String id = FLOW_ID_PREFIX + ofent.getTableId() + "-" + fid;
+        putFlowImpl(ofent, id);
+        return id;
+    }
+
+    /**
+     * Associate the specified flow ID with the specified flow entry.
+     *
+     * @param ofent  The flow entry.
+     * @param id     The MD-SAL flow ID.
+     * @throws IllegalStateException
+     *    The specified flow entry is invalid.
+     */
+    private synchronized void putFlow(OfMockFlowEntry ofent, String id) {
+        if (idMap.get(id) != null) {
+            throw new IllegalArgumentException(
+                "Duplicate MD-SAL flow ID: " + id);
+        }
+        putFlowImpl(ofent, id);
+    }
+
+    /**
+     * Associate the specified flow ID with the specified flow entry.
+     *
+     * @param ofent  The flow entry.
+     * @param id     The MD-SAL flow ID.
+     * @throws IllegalStateException
+     *    The specified flow entry is invalid.
+     */
+    private synchronized void putFlowImpl(OfMockFlowEntry ofent, String id) {
         String current = flowMap.put(ofent, id);
         if (current != null) {
             flowMap.put(ofent, current);
             throw new IllegalArgumentException(
                 "Overlapping flow entry is not supported: " + ofent);
         }
-
-        return id;
     }
 
     /**
