@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -18,7 +18,6 @@ import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.FlowAndStatisticsMap;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.statistics.types.rev130925.GenericStatistics;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.VtnFlowEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.flow.stats.history.FlowStatsRecord;
@@ -182,9 +181,7 @@ public final class NodeFlowStatsReader implements StatsReaderCallback {
      * {@inheritDoc}
      */
     @Override
-    public void flowStatsReceived(NodeId node, FlowAndStatisticsMap fstats) {
-        assert node.equals(targetNode.getNodeId());
-
+    public void flowStatsReceived(FlowAndStatisticsMap fstats) {
         FlowCookie cookie = fstats.getCookie();
         if (cookie != null) {
             Long time = System.currentTimeMillis();

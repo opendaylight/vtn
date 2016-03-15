@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,12 +8,14 @@
 
 package org.opendaylight.vtn.manager.internal.flow.stats;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map.Entry;
+import java.util.Map;
 import java.util.Objects;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.VTNException;
 
@@ -27,7 +29,7 @@ import org.opendaylight.vtn.manager.internal.util.flow.FlowFinder;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowStatsUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchUtils;
-import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 
@@ -45,13 +47,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.flow.stats.history.FlowStatsRecordBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.Table;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.TableKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.FlowStatisticsData;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.statistics.types.rev130925.GenericStatistics;
 
 /**
@@ -60,24 +60,21 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.model.statistics.types.rev1
  */
 public final class AddedFlowStats extends AbstractTxTask<Void> {
     /**
-     * A log message that indicates the flow statistics is ignored.
+     * Logger instance.
      */
-    private static final String  IGNORE_STATS = "Ignore flow statistics";
+    private static final Logger  LOG =
+        LoggerFactory.getLogger(AddedFlowStats.class);
 
     /**
-     * A list of flow information added by the MD-SAL statistics manager.
+     * A map that keeps newly added flow information.
      */
-    private final List<IdentifiedData<Flow>>  addedFlows = new ArrayList<>();
-
-    /**
-     * A logger instance.
-     */
-    private final Logger  logger;
+    private final Map<VtnFlowId, Map<SalNode, Flow>>  addedFlows =
+        new HashMap<>();
 
     /**
      * The system time when the flow statistics are collected.
      */
-    private final Long  systemTime;
+    private final Long  systemTime = System.currentTimeMillis();
 
     /**
      * A {@link FlowFinder} instance used to determine the VTN data flow
@@ -86,23 +83,33 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
     private FlowFinder  finder;
 
     /**
-     * Construct a new instance.
-     *
-     * @param log  A {@link Logger} instance.
-     */
-    public AddedFlowStats(Logger log) {
-        logger = log;
-        systemTime = System.currentTimeMillis();
-    }
-
-    /**
      * Add the given flow information into this instance.
      *
      * @param data  An {@link IdentifiedData} instance which contains
      *              flow statistics.
      */
     public void add(IdentifiedData<Flow> data) {
-        addedFlows.add(data);
+        Flow flow = data.getValue();
+        FlowCookie cookie = flow.getCookie();
+        VtnFlowId vtnId = FlowUtils.getVtnFlowId(cookie);
+        if (vtnId == null) {
+            LOG.debug("{}: Unwanted flow cookie: {}",
+                      flow.getId().getValue(), cookie);
+        } else {
+            InstanceIdentifier<Flow> path = data.getIdentifier();
+            SalNode snode = SalNode.create(path.firstKeyOf(Node.class));
+            if (snode == null) {
+                LOG.debug("{}: Invalid flow path: {}",
+                          flow.getId().getValue(), path);
+            } else {
+                Map<SalNode, Flow> flowMap = addedFlows.get(vtnId);
+                if (flowMap == null) {
+                    flowMap = new HashMap<>();
+                    addedFlows.put(vtnId, flowMap);
+                }
+                flowMap.put(snode, flow);
+            }
+        }
     }
 
     /**
@@ -117,104 +124,79 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
     }
 
     /**
-     * Return the node ID associated with the specified MD-SAL flow.
+     * Search the specified MD-SAL flow map for the ingress flow entry of the
+     * specified VTN data flow.
      *
-     * @param ctx   MD-SAL datastore transaction context.
-     * @param data  An {@link IdentifiedData} instance which contains
-     *              flow statistics.
-     * @return  A {@link NodeId} on success. {@code null} on failure.
+     * @param ctx      MD-SAL datastore transaction context.
+     * @param vdf      The VTN data flow.
+     * @param flowMap  A map that contains MD-SAL flows associated with the
+     *                 specified VTN data flow.
+     * @return  A MD-SAL flow entry associated with the ingress flow entry
+     *          if found. {@code null} if not found.
+     * @throws VTNException  An error occurred.
      */
-    private NodeId getNodeId(TxContext ctx, IdentifiedData<Flow> data) {
-        InstanceIdentifier<Flow> path = data.getIdentifier();
-        NodeId node = InventoryUtils.getNodeId(path);
-        if (node == null) {
-            ctx.log(logger, VTNLogLevel.WARN,
-                    "Node ID is not present in flow path: {}", path);
-            return null;
+    private Flow getIngressFlow(TxContext ctx, VtnDataFlow vdf,
+                                Map<SalNode, Flow> flowMap)
+        throws VTNException {
+        FlowCache fc = new FlowCache(vdf);
+        VtnFlowEntry vfent = fc.getIngressFlow();
+        Flow flow;
+        if (vfent == null) {
+            ctx.log(LOG, VTNLogLevel.WARN, "{}: No ingress flow entry.",
+                    vdf.getFlowId().getValue());
+            flow = null;
+        } else {
+            SalNode ingressNode = SalNode.create(vfent.getNode());
+            flow = flowMap.get(ingressNode);
+            if (flow == null) {
+                ctx.log(LOG, VTNLogLevel.TRACE,
+                        "{}: No ingress flow in added flow entries.",
+                        vdf.getFlowId().getValue());
+            } else {
+                // Verify the ingress flow entry.
+                flow = verifyIngressFlow(ctx, vdf, vfent, flow);
+            }
         }
 
-        // Verify the table ID.
-        TableKey key = path.firstKeyOf(Table.class);
-        Short tid = (key == null) ? null : key.getId();
-        if (tid == null) {
-            ctx.log(logger, VTNLogLevel.WARN,
-                    "Table ID is not present in flow path: {}", path);
-            return null;
-        }
-
-        if (tid.intValue() != FlowUtils.TABLE_ID) {
-            ctx.log(logger, VTNLogLevel.WARN,
-                    "Unexpected table ID in flow path: {}", path);
-            return null;
-        }
-
-        return node;
+        return flow;
     }
 
     /**
-     * Determine whether the given MD-SAL flow entry is the ingress flow entry
-     * of the given VTN data flow.
+     * Verify the ingress flow entry of the VTN data flow.
      *
-     * <p>
-     *   This method compares the following attributes.
-     * </p>
-     * <ul>
-     *   <li>Target node</li>
-     *   <li>Ingress switch port in flow match (IN_PORT)</li>
-     *   <li>Flow priority</li>
-     * </ul>
-     *
-     * @param ctx   MD-SAL datastore transaction context.
-     * @param vdf   The {@link VtnDataFlow} instance to be tested.
-     * @param flow  The MD-SAL flow entry to be tested.
-     * @param node  The node where the {@code flow} is installed.
-     * @return  {@code true} only if the MD-SAL flow specified by {@code flow}
-     *          is the ingress flow entry of {@code vdf}.
+     * @param ctx    MD-SAL datastore transaction context.
+     * @param vdf    The VTN data flow.
+     * @param vfent  The ingress flow entry of the VTN data flow.
+     * @param flow   The MD-SAL flow entry associated with the ingress flow
+     *               entry.
+     * @return  {@code flow} on success. {@code null} on failure.
      */
-    private boolean isIngressFlow(TxContext ctx, VtnDataFlow vdf, Flow flow,
-                                  NodeId node) {
-        // Determine the ingress flow entry of the target data flow.
-        FlowCache fc = new FlowCache(vdf);
-        VtnFlowEntry vfent = fc.getIngressFlow();
-        if (vfent == null) {
-            ctx.log(logger, VTNLogLevel.WARN,
-                    "{}: {}: Ingress flow not found.",
-                    IGNORE_STATS, vdf.getFlowId().getValue());
-            return false;
-        }
-
-        // Compare the target node.
-        NodeId vnode = vfent.getNode();
-        if (!node.equals(vnode)) {
-            ctx.log(logger, VTNLogLevel.TRACE,
-                    "{}: {}: Node ID does not match: {}, {}",
-                    IGNORE_STATS, vdf.getFlowId().getValue(), vnode, node);
-            return false;
-        }
-
-        // One VTN data flow should never installs more than one flow entry
-        // into the same node.
+    private Flow verifyIngressFlow(TxContext ctx, VtnDataFlow vdf,
+                                   VtnFlowEntry vfent, Flow flow) {
+        // One VTN data flow should never installs more than one flow
+        // entry into the same node.
         NodeConnectorId vport =
             FlowMatchUtils.getIngressPort(vfent.getMatch());
-        NodeConnectorId port =
-            FlowMatchUtils.getIngressPort(flow.getMatch());
-        if (!MiscUtils.equalsUri(vport, port)) {
-            ctx.log(logger, VTNLogLevel.WARN,
-                    "{}: {}: IN_PORT does not match: {}, {}",
-                    IGNORE_STATS, vdf.getFlowId().getValue(), vport, port);
-            return false;
+        NodeConnectorId port = FlowMatchUtils.getIngressPort(flow.getMatch());
+        Flow result = null;
+        if (MiscUtils.equalsUri(vport, port)) {
+            // Verify flow priority.
+            Integer vpri = vfent.getPriority();
+            Integer pri = flow.getPriority();
+            if (Objects.equals(vpri, pri)) {
+                result = flow;
+            } else {
+                ctx.log(LOG, VTNLogLevel.WARN,
+                        "{}: Priority does not match: pri={}, expected={}",
+                        vdf.getFlowId().getValue(), pri, vpri);
+            }
+        } else {
+            ctx.log(LOG, VTNLogLevel.WARN,
+                    "{}: IN_PORT does not match: port={}, expected={}",
+                    vdf.getFlowId().getValue(), port, vport);
         }
 
-        Integer vpri = vfent.getPriority();
-        Integer pri = flow.getPriority();
-        boolean ret = Objects.equals(vpri, pri);
-        if (!ret) {
-            ctx.log(logger, VTNLogLevel.WARN,
-                    "{}: {}: Priority does not match: {}, {}",
-                    IGNORE_STATS, vdf.getFlowId().getValue(), vpri, pri);
-        }
-
-        return ret;
+        return result;
     }
 
     /**
@@ -226,75 +208,81 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
      */
     private void setStatistics(TxContext ctx, VtnDataFlowBuilder builder,
                                Flow flow) {
-        FlowStatisticsData data =
-            flow.getAugmentation(FlowStatisticsData.class);
-        GenericStatistics fstats = (data == null)
-            ? null
-            : data.getFlowStatistics();
-
-        String err = FlowStatsUtils.check(fstats);
-        if (err == null) {
-            FlowStatsRecord fsr = new FlowStatsRecordBuilder(fstats).
-                setTime(systemTime).build();
-            FlowStatsHistoryBuilder sb = new FlowStatsHistoryBuilder().
-                setFlowStatsRecord(Collections.singletonList(fsr));
-            builder.setFlowStatsHistory(sb.build());
-        } else {
-            ctx.log(logger, VTNLogLevel.WARN,
-                    "{}: {}: No flow statistics: {}",
-                    builder.getFlowId().getValue(),
-                    builder.getSalFlowId().getValue(), err);
+        // Do nothing if the given data flow already has a flow statistics.
+        if (builder.getFlowStatsHistory() == null) {
+            FlowStatisticsData data =
+                flow.getAugmentation(FlowStatisticsData.class);
+            if (data != null) {
+                GenericStatistics fstats = data.getFlowStatistics();
+                String err = FlowStatsUtils.check(fstats);
+                if (err == null) {
+                    FlowStatsRecord fsr = new FlowStatsRecordBuilder(fstats).
+                        setTime(systemTime).build();
+                    FlowStatsHistoryBuilder sb = new FlowStatsHistoryBuilder().
+                        setFlowStatsRecord(Collections.singletonList(fsr));
+                    builder.setFlowStatsHistory(sb.build());
+                } else {
+                    ctx.log(LOG, VTNLogLevel.WARN,
+                            "{}: {}: No flow statistics: {}",
+                            builder.getFlowId().getValue(),
+                            flow.getId().getValue(), err);
+                }
+            }
         }
     }
 
     /**
-     * Try to associate the given MD-SAL flow with the VTN data flow.
+     * Try to resolve MD-SAL flow ID to be associated with the specified
+     * VTN data flow.
      *
-     * @param ctx    MD-SAL datastore transaction context.
-     * @param node   A MD-SAL node identifier.
-     * @param flow   A MD-SAL flow entry.
-     * @param vtnId  Identifier of the VTN data flow.
+     * @param ctx      MD-SAL datastore transaction context.
+     * @param vtnId    Identifier of the VTN data flow.
+     * @param flowMap  A map that contains MD-SAL flows associated with the
+     *                 specified VTN data flow.
      * @throws VTNException  An error occurred.
      */
-    private void resolve(TxContext ctx, NodeId node, Flow flow,
-                         VtnFlowId vtnId) throws VTNException {
+    private void resolve(TxContext ctx, VtnFlowId vtnId,
+                         Map<SalNode, Flow> flowMap) throws VTNException {
         IdentifiedData<VtnDataFlow> vdata = finder.find(vtnId);
         if (vdata == null) {
-            ctx.log(logger, VTNLogLevel.WARN, "{}: {}: Data flow not found.",
-                    IGNORE_STATS, vtnId.getValue());
+            ctx.log(LOG, VTNLogLevel.WARN, "{}: Data flow not found.",
+                    vtnId.getValue());
             return;
         }
 
+        // Determine the ingress flow entry of the target data flow.
         VtnDataFlow vdf = vdata.getValue();
-        FlowId id = vdf.getSalFlowId();
-        FlowId mdId = flow.getId();
-        if (mdId.equals(id)) {
-            ctx.log(logger, VTNLogLevel.TRACE,
-                    "{}: {}: Already resolved: {}",
-                    IGNORE_STATS, vtnId.getValue(), id.getValue());
-            return;
-        }
-
-        if (isIngressFlow(ctx, vdf, flow, node)) {
-            // The given flow is the ingress flow of the target data flow.
-            // Copy statistics if available.
-            VtnDataFlowBuilder builder = new VtnDataFlowBuilder().
-                setFlowId(vtnId).setSalFlowId(mdId);
-            setStatistics(ctx, builder, flow);
-
-            // Associate the VTN data flow with this MD-SAL flow ID.
-            InstanceIdentifier<VtnDataFlow> path = vdata.getIdentifier();
-            LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
-            ReadWriteTransaction tx = ctx.getReadWriteTransaction();
-            tx.merge(oper, path, builder.build(), false);
-            if (id == null) {
-                ctx.log(logger, VTNLogLevel.DEBUG,
-                        "{}: Associated with MD-SAL flow ID: {}",
-                        vtnId.getValue(), mdId.getValue());
+        Flow flow = getIngressFlow(ctx, vdf, flowMap);
+        if (flow != null) {
+            FlowId id = vdf.getSalFlowId();
+            FlowId mdId = flow.getId();
+            if (mdId.equals(id)) {
+                ctx.log(LOG, VTNLogLevel.TRACE,
+                        "{}: MD-SAL flow ID is already resolved: {}",
+                        vtnId.getValue(), id.getValue());
             } else {
-                ctx.log(logger, VTNLogLevel.DEBUG,
-                        "{}: MD-SAL flow ID has been changed: {} -> {}",
-                        vtnId.getValue(), id.getValue(), mdId.getValue());
+                // Associate this MD-SAL flow ID with the VTN data flow.
+                if (id == null) {
+                    ctx.log(LOG, VTNLogLevel.DEBUG,
+                            "{}: Associated with MD-SAL flow ID: {}",
+                            vtnId.getValue(), mdId.getValue());
+                } else {
+                    ctx.log(LOG, VTNLogLevel.INFO,
+                            "{}: MD-SAL flow ID has been changed: {} -> {}",
+                            vtnId.getValue(), id.getValue(), mdId.getValue());
+                }
+
+                VtnDataFlowBuilder builder = new VtnDataFlowBuilder(vdf).
+                    setSalFlowId(mdId);
+
+                // Update flow statistics.
+                setStatistics(ctx, builder, flow);
+
+                // Update the VTN data flow.
+                InstanceIdentifier<VtnDataFlow> path = vdata.getIdentifier();
+                LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+                ReadWriteTransaction tx = ctx.getReadWriteTransaction();
+                tx.put(oper, path, builder.build(), false);
             }
         }
     }
@@ -306,31 +294,10 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
      */
     @Override
     public Void execute(TxContext ctx) throws VTNException {
-        ReadWriteTransaction tx = ctx.getReadWriteTransaction();
-        finder = new FlowFinder(tx);
-
-        for (IdentifiedData<Flow> data: addedFlows) {
-            // Verify the node and the table ID.
-            NodeId node = getNodeId(ctx, data);
-            if (node == null) {
-                continue;
-            }
-
-            Flow flow = data.getValue();
-            FlowCookie cookie = flow.getCookie();
-            if (flow.getId() == null) {
-                ctx.log(logger, VTNLogLevel.WARN,
-                        "No MD-SAL flow ID is assigned: {}", cookie);
-                continue;
-            }
-
-            VtnFlowId vtnId = FlowUtils.getVtnFlowId(cookie);
-            if (vtnId == null) {
-                ctx.log(logger, VTNLogLevel.TRACE, "{}: Unexpected cookie: {}",
-                        IGNORE_STATS, cookie);
-            } else {
-                resolve(ctx, node, flow, vtnId);
-            }
+        finder = new FlowFinder(ctx.getReadWriteTransaction());
+        for (Entry<VtnFlowId, Map<SalNode, Flow>> entry:
+                 addedFlows.entrySet()) {
+            resolve(ctx, entry.getKey(), entry.getValue());
         }
 
         return null;
@@ -346,6 +313,6 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
      */
     @Override
     public void onFailure(VTNManagerProvider provider, Throwable t) {
-        logger.error("Failed to resolve MD-SAL flow ID.", t);
+        LOG.error("Failed to resolve MD-SAL flow ID.", t);
     }
 }

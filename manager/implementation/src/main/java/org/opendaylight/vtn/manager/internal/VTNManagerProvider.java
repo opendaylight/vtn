@@ -9,7 +9,6 @@
 package org.opendaylight.vtn.manager.internal;
 
 import java.util.List;
-import java.util.Timer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
@@ -22,9 +21,10 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.packet.Packet;
 
 import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
+import org.opendaylight.vtn.manager.internal.util.VTNTimer;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
+import org.opendaylight.vtn.manager.internal.util.flow.FlowRpcWatcher;
 import org.opendaylight.vtn.manager.internal.util.flow.VTNFlowBuilder;
-import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcWatcher;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
@@ -45,7 +45,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnFlowI
  * VTN Manager services used by AD-SAL interface.
  */
 public interface VTNManagerProvider
-    extends AutoCloseable, Executor, TxQueue, NodeRpcWatcher {
+    extends AutoCloseable, Executor, TxQueue, FlowRpcWatcher {
     /**
      * Return a {@link VTNConfig} instance that contains current configuration.
      *
@@ -65,7 +65,7 @@ public interface VTNManagerProvider
      *
      * @return  The global timer.
      */
-    Timer getTimer();
+    VTNTimer getTimer();
 
     /**
      * Execute the specified task asynchronously.

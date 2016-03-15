@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -116,6 +116,27 @@ public final class VTNTimer extends Timer {
 
         future.checkedGet(timeout, unit);
         return true;
+    }
+
+    /**
+     * Schedule the given task to be executed after the given delay.
+     *
+     * @param task   A task to be executed.
+     * @param delay  The number of milliseconds in delay before execution.
+     * @return  {@code true} on success.
+     *          {@code false} if this timer is unavailable.
+     */
+    public boolean checkedSchedule(TimerTask task, long delay) {
+        boolean ret = available.get();
+        if (ret) {
+            try {
+                super.schedule(task, delay);
+            } catch (IllegalStateException e) {
+                ret = false;
+            }
+        }
+
+        return ret;
     }
 
     // Timer

@@ -91,6 +91,6 @@ public final class FlowRemoveTask implements Runnable {
 
         LOG.debug("Flow entries have been removed: remover={}",
                   context.getRemoverDescription());
-        context.setSuccess();
+        context.setResult(null);
     }
 }

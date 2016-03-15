@@ -63,7 +63,7 @@ public class NodeRpcInvocationTest extends TestBase {
          */
         private TestNodeRpc(NodeRpcWatcher w, UpdatePortInput in,
                             Future<RpcResult<UpdatePortOutput>> f) {
-            super(w, in, f);
+            super(w, in, in.getNode(), f);
         }
 
 

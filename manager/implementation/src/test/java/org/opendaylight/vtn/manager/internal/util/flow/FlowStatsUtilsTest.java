@@ -53,6 +53,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.flows.VtnFlowTable;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.flows.VtnFlowTableKey;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetFlowStatisticsInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.Table;
@@ -60,7 +61,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.ta
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.FlowStatisticsData;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetFlowStatisticsFromFlowTableInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.flow.statistics.FlowStatistics;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.flow.statistics.FlowStatisticsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
@@ -156,7 +156,7 @@ public class FlowStatsUtilsTest extends TestBase {
         VtnFlowEntry vfent = createVtnFlowEntry(flowId, order, ingress);
         FlowCookie cookieMask = new FlowCookie(NumberUtils.getUnsigned(-1L));
 
-        GetFlowStatisticsFromFlowTableInput input =
+        GetFlowStatisticsInput input =
             FlowStatsUtils.createGetFlowStatsInput(vfent);
         assertEquals(ingress.getNodeRef(), input.getNode());
         assertEquals(vfent.getPriority(), input.getPriority());
@@ -176,6 +176,7 @@ public class FlowStatsUtilsTest extends TestBase {
         assertEquals(null, input.getContainerName());
         assertEquals(null, input.getFlowName());
         assertEquals(null, input.isInstallHw());
+        assertEquals(Boolean.FALSE, input.isStoreStats());
     }
 
     /**
@@ -198,7 +199,7 @@ public class FlowStatsUtilsTest extends TestBase {
         Short table = 0;
 
         for (SalNode snode: nodes) {
-            GetFlowStatisticsFromFlowTableInput input =
+            GetFlowStatisticsInput input =
                 FlowStatsUtils.createGetFlowStatsInput(snode);
             assertEquals(snode.getNodeRef(), input.getNode());
             assertEquals(null, input.getPriority());
@@ -218,6 +219,7 @@ public class FlowStatsUtilsTest extends TestBase {
             assertEquals(null, input.getContainerName());
             assertEquals(null, input.getFlowName());
             assertEquals(null, input.isInstallHw());
+            assertEquals(Boolean.FALSE, input.isStoreStats());
         }
     }
 

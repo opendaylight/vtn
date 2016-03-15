@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -26,6 +26,8 @@ import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowStatsUtils;
+import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
+import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
@@ -76,18 +78,20 @@ public final class StatsTimerTask extends TimerTask {
         /**
          * Update flow statistics in the specified VTN.
          *
+         * @param ctx    A MD-SAL transaction context.
          * @param tx     A {@link ReadWriteTransaction} instance.
          * @param table  A flow table that contains all the flow entries in
          *               the VTN.
          * @throws VTNException  An error occurred.
          */
-        private void update(ReadWriteTransaction tx, VtnFlowTable table)
+        private void update(TxContext ctx, ReadWriteTransaction tx,
+                            VtnFlowTable table)
             throws VTNException {
             List<VtnDataFlow> dataFlows = table.getVtnDataFlow();
             if (dataFlows != null) {
                 String tname = table.getTenantName();
                 for (VtnDataFlow vdf: dataFlows) {
-                    update(tx, tname, vdf);
+                    update(ctx, tx, tname, vdf);
                 }
             }
         }
@@ -95,20 +99,17 @@ public final class StatsTimerTask extends TimerTask {
         /**
          * Update statistics information for the given flow entry.
          *
+         * @param ctx    A MD-SAL transaction context.
          * @param tx     A {@link ReadWriteTransaction} instance.
          * @param tname  The name of the VTN.
          * @param vdf    A {@link VtnDataFlow} instance.
          * @throws VTNException  An error occurred.
          */
-        private void update(ReadWriteTransaction tx, String tname,
-                            VtnDataFlow vdf) throws VTNException {
+        private void update(TxContext ctx, ReadWriteTransaction tx,
+                            String tname, VtnDataFlow vdf) throws VTNException {
             VtnDataFlowKey key = vdf.getKey();
             BigInteger id = key.getFlowId().getValue();
-            FlowId fid = vdf.getSalFlowId();
-            if (fid == null) {
-                LOG.trace("Skip flow entry: {}: No MD-SAL flow ID.", id);
-                return;
-            }
+            FlowId fid = FlowUtils.createMdFlowId(id);
 
             // Read flow statistics collected by the MD-SAL statistics manager.
             FlowCache fc = new FlowCache(vdf);
@@ -117,7 +118,8 @@ public final class StatsTimerTask extends TimerTask {
                 FlowStatsUtils.read(tx, vfent.getNode(), fid);
             String err = FlowStatsUtils.check(fstats);
             if (err != null) {
-                LOG.trace("Skip flow entry: {}: {}", id, err);
+                ctx.log(LOG, VTNLogLevel.TRACE, "Skip flow entry: {}: {}",
+                        id, err);
                 return;
             }
 
@@ -128,8 +130,9 @@ public final class StatsTimerTask extends TimerTask {
                 FlowStatsUtils.getIdentifier(tname, key);
             LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
             tx.put(oper, path, history, false);
-            LOG.trace("Flow statistics has been updated: {}, {}",
-                      id, fid.getValue());
+            ctx.log(LOG, VTNLogLevel.TRACE,
+                    "Flow statistics has been updated: {}, {}",
+                    id, fid.getValue());
         }
 
         // AbstractTxTask
@@ -152,7 +155,7 @@ public final class StatsTimerTask extends TimerTask {
                 if (tables != null) {
                     for (VtnFlowTable table: tables) {
                         // Update flow statistics for this VTN.
-                        update(tx, table);
+                        update(ctx, tx, table);
                     }
                 }
             }

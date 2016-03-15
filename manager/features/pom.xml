@@ -202,7 +202,7 @@
     <!-- OpenDaylight openflowplugin -->
     <dependency>
       <groupId>org.opendaylight.openflowplugin</groupId>
-      <artifactId>features-openflowplugin</artifactId>
+      <artifactId>features-openflowplugin-li</artifactId>
       <classifier>features</classifier>
       <type>xml</type>
     </dependency>

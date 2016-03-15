@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2014-2015 NEC Corporation
+# Copyright (c) 2014-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -20,7 +20,7 @@
   <repository>mvn:org.opendaylight.netconf/features-restconf/${odl.netconf.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.neutron/features-neutron/${odl.neutron.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.ovsdb/southbound-features/${odl.ovsdb.version}/xml/features</repository>
-  <repository>mvn:org.opendaylight.openflowplugin/features-openflowplugin/${odl.openflowplugin.version}/xml/features</repository>
+  <repository>mvn:org.opendaylight.openflowplugin/features-openflowplugin-li/${odl.openflowplugin.version}/xml/features</repository>
 
   <feature
       name='odl-vtn-manager'
@@ -28,8 +28,8 @@
       version='${project.version}'>
     <feature version="${odl.mdsal.model.version}">odl-mdsal-models</feature>
     <feature version="${odl.controller.mdsal.version}">odl-mdsal-broker</feature>
-    <feature version="${odl.openflowplugin.version}">odl-openflowplugin-flow-services</feature>
-    <feature version="${odl.openflowplugin.version}">odl-openflowplugin-nsf-model</feature>
+    <feature version="${odl.openflowplugin.version}">odl-openflowplugin-flow-services-li</feature>
+    <feature version="${odl.openflowplugin.version}">odl-openflowplugin-nsf-model-li</feature>
     <bundle>mvn:org.opendaylight.vtn/manager/${project.version}</bundle>
     <bundle>mvn:org.opendaylight.vtn/manager.model/${project.version}</bundle>
     <bundle>mvn:org.opendaylight.vtn/manager.implementation/${project.version}</bundle>

@@ -10,10 +10,10 @@ package org.opendaylight.vtn.manager.internal.util.flow;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
@@ -21,8 +21,6 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 
 import org.opendaylight.vtn.manager.VTNException;
-
-import org.opendaylight.vtn.manager.internal.util.inventory.NodeRpcWatcher;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInputBuilder;
@@ -32,12 +30,16 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef
 /**
  * {@code RemoveFlowRpcList} describes a list of RPC calls that remove flow
  * entries in a single transaction.
+ *
+ * <p>
+ *   This class is not synchronized.
+ * </p>
  */
 public final class RemoveFlowRpcList {
     /**
-     * The node-routed RPC watcher.
+     * The flow RPC watcher.
      */
-    private final NodeRpcWatcher  rpcWatcher;
+    private final FlowRpcWatcher  rpcWatcher;
 
     /**
      * MD-SAL flow service.
@@ -50,18 +52,17 @@ public final class RemoveFlowRpcList {
     private final List<RemoveFlowRpc>  rpcList = new ArrayList<>();
 
     /**
-     * RPC input builders to be configured barrier request.
+     * A set of target nodes.
      */
-    private final Map<NodeRef, RemoveFlowInputBuilder>  lastRequests =
-        new HashMap<>();
+    private final Set<NodeRef>  targetNodes = new HashSet<>();
 
     /**
      * Construct a new instance.
      *
-     * @param watcher  The node-routed RPC watcher.
+     * @param watcher  The flow RPC watcher.
      * @param sfs      MD-SAL flow service.
      */
-    public RemoveFlowRpcList(NodeRpcWatcher watcher, SalFlowService sfs) {
+    public RemoveFlowRpcList(FlowRpcWatcher watcher, SalFlowService sfs) {
         rpcWatcher = watcher;
         flowService = sfs;
     }
@@ -99,25 +100,19 @@ public final class RemoveFlowRpcList {
      * @param builder  A {@link RemoveFlowInputBuilder} instance.
      */
     public void invoke(@Nonnull RemoveFlowInputBuilder builder) {
-        NodeRef nref = builder.getNode();
-        RemoveFlowInputBuilder old = lastRequests.put(nref, builder);
-        if (old != null) {
-            RemoveFlowInput input = old.setBarrier(false).build();
-            rpcList.add(new RemoveFlowRpc(rpcWatcher, flowService, input));
-        }
+        RemoveFlowInput input = builder.build();
+        rpcList.add(new RemoveFlowRpc(rpcWatcher, flowService, input));
+        targetNodes.add(input.getNode());
     }
 
     /**
-     * Flush remove-flow RPC requests queued in this instance.
+     * Flush ongoing remove-flow RPC requests.
      *
      * @return  This instance.
      */
     public RemoveFlowRpcList flush() {
-        for (Iterator<RemoveFlowInputBuilder> it =
-                 lastRequests.values().iterator(); it.hasNext();) {
-            // Set barrier flag only into the last request.
-            RemoveFlowInput input = it.next().setBarrier(true).build();
-            rpcList.add(new RemoveFlowRpc(rpcWatcher, flowService, input));
+        for (Iterator<NodeRef> it = targetNodes.iterator(); it.hasNext();) {
+            rpcWatcher.asyncBarrier(it.next());
             it.remove();
         }
         return this;
