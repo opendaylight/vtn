@@ -73,7 +73,7 @@ use constant	UG_NAMELEN_MAX		=> 31;
 $DEBUG_BUILD = 1;
 
 # Required JDK version.
-use constant	JDK_VERSION		=> '1.7';
+use constant	JDK_VERSION		=> '1.8';
 
 # Required ODBC version.
 use constant	ODBC_VERSION		=> 3;
