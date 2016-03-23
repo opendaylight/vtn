@@ -19,7 +19,7 @@
 
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>manager.checkstyle</artifactId>
-  <version>0.4.1-SNAPSHOT</version>
+  <version>0.4.1-Beryllium-SR1</version>
   <packaging>jar</packaging>
 
   <scm>

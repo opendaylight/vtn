@@ -16,7 +16,7 @@
   <parent>
     <groupId>org.opendaylight.vtn</groupId>
     <artifactId>common</artifactId>
-    <version>0.4.1-SNAPSHOT</version>
+    <version>0.4.1-Beryllium-SR1</version>
     <relativePath>../../common</relativePath>
   </parent>
 
@@ -29,7 +29,7 @@
 
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>distribution.vtn-coordinator</artifactId>
-  <version>6.2.1-SNAPSHOT</version>
+  <version>6.2.1-Beryllium-SR1</version>
   <packaging>pom</packaging>
 
   <profiles>

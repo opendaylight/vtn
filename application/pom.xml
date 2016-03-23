@@ -17,13 +17,13 @@
   <parent>
     <groupId>org.opendaylight.vtn</groupId>
     <artifactId>common</artifactId>
-    <version>0.4.1-SNAPSHOT</version>
+    <version>0.4.1-Beryllium-SR1</version>
     <relativePath>../common</relativePath>
   </parent>
 
   <groupId>org.opendaylight.vtn.application</groupId>
   <artifactId>dist</artifactId>
-  <version>1.1.1-SNAPSHOT</version>
+  <version>1.1.1-Beryllium-SR1</version>
   <packaging>pom</packaging>
   <name>application</name>
 
