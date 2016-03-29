@@ -230,7 +230,7 @@ public final class VTNFlowManager extends SalNotificationListener
             LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
             Optional<NextFlowId> opt = DataStoreUtils.read(tx, oper, path);
             boolean created =
-                (!opt.isPresent() || opt.get().getNextId() != null);
+                (!opt.isPresent() || opt.get().getNextId() == null);
             if (created) {
                 // Create the next-flow-id container with initial flow ID.
                 NextFlowId root = new NextFlowIdBuilder().
