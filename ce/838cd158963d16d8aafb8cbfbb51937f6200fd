@@ -1,0 +1,7 @@
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+2: Shigeru Yasuda <s-yasuda@da.jp.nec.com>
+Submitted-by: Shigeru Yasuda <s-yasuda@da.jp.nec.com>
+Submitted-at: Wed, 30 Mar 2016 08:50:14 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/36862
+Project: vtn
+Branch: refs/heads/stable/beryllium
