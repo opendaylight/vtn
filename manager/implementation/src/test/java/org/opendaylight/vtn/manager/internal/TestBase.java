@@ -459,6 +459,7 @@ public abstract class TestBase extends Assert {
      * @param separator  A separator string.
      * @param args       An array of objects. Note that {@code null} in this
      *                   array is always ignored.
+     * @return  A string created by joining the given strings.
      */
     protected static String joinStrings(String prefix, String suffix,
             String separator, Object... args) {
@@ -884,6 +885,7 @@ public abstract class TestBase extends Assert {
      * Create a future that indicates successful completion of the RPC.
      *
      * @param output  The output of the RPC.
+     * @param <T>     The type of the RPC output.
      * @return  A future that contains the specified RPC output.
      */
     public static <T> ListenableFuture<RpcResult<T>> getRpcResult(
@@ -901,6 +903,7 @@ public abstract class TestBase extends Assert {
      *
      * @param expected  An expected collection.
      * @param c         An collection to be tested.
+     * @param <T>       The type of the parameter of the collection.
      */
     public static <T> void assertEqualsAsSet(Collection<T> expected,
                                              Collection<T> c) {
@@ -1094,6 +1097,7 @@ public abstract class TestBase extends Assert {
      * edge port.
      *
      * @param sport    A {@link SalPort} instance.
+     * @return  A {@link VtnPortBuilder} instance.
      */
     protected static VtnPortBuilder createVtnPortBuilder(SalPort sport) {
         return createVtnPortBuilder(sport, Boolean.TRUE, true);
@@ -1105,6 +1109,7 @@ public abstract class TestBase extends Assert {
      * @param sport    A {@link SalPort} instance.
      * @param enabled  The state of the port.
      * @param edge     Determine edge port or not.
+     * @return  A {@link VtnPortBuilder} instance.
      */
     protected static VtnPortBuilder createVtnPortBuilder(
         SalPort sport, Boolean enabled, boolean edge) {
@@ -1120,6 +1125,7 @@ public abstract class TestBase extends Assert {
      * @param name     The name of the port.
      * @param enabled  The state of the port.
      * @param edge     Determine edge port or not.
+     * @return  A {@link VtnPortBuilder} instance.
      */
     protected static VtnPortBuilder createVtnPortBuilder(
         SalPort sport, String name, Boolean enabled, boolean edge) {

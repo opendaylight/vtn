@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -156,7 +156,6 @@ public final class VTNMacMap extends VirtualElement<MacMap, MacMapIdentifier>
      * @param retain  {@code true} means that the parent vBridge will be
      *                retained. {@code false} means that the parent vBridge
      *                is being destroyed.
-     * @throws VTNException  An error occurred.
      */
     public void destroy(TxContext ctx, boolean retain) {
         VTNMacMapConfig cfg = getConfig();
@@ -406,7 +405,6 @@ public final class VTNMacMap extends VirtualElement<MacMap, MacMapIdentifier>
      * @param filter  A {@link PortFilter} instance which selects switch ports.
      * @return  A {@link VnodeState} instance that indicates the MAC mapping
      *          state.
-     * @throws VTNException  Anerror occurred.
      */
     private VnodeState inactivate(TxContext ctx, PortFilter filter) {
         MacMapIdentifier mapId = getIdentifier();

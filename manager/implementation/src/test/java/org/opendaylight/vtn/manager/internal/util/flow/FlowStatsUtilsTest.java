@@ -180,6 +180,8 @@ public class FlowStatsUtilsTest extends TestBase {
 
     /**
      * Test case for {@link FlowStatsUtils#createGetFlowStatsInput(SalNode)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testCreateGetFlowStatsInput2() throws Exception {
@@ -515,6 +517,7 @@ public class FlowStatsUtilsTest extends TestBase {
      * @param bytes    The number of transmitted bytes.
      * @param sec      Duration in seconds.
      * @param nsec     Duration in milliseconds.
+     * @return  A {@link FlowStatistics} instance.
      */
     private static FlowStatistics createStatistics(long packets, long bytes,
                                                    long sec, long nsec) {

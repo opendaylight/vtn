@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -444,6 +444,7 @@ public class XmlStaticEdgePortsTest extends TestBase {
      * Create a new {@link StaticEdgePort} instance.
      *
      * @param edge  The switch port to be treated as edge port.
+     * @return  A {@link StaticEdgePort} instance.
      */
     private StaticEdgePort newStaticEdgePort(String edge) {
         return new StaticEdgePortBuilder().

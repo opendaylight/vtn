@@ -1611,7 +1611,6 @@ public final class VTenantManager
      * Invoked when a packet has been received.
      *
      * @param ev  A {@link PacketInEvent} instance.
-     * @throws VTNException  An error occurred.
      */
     @Override
     public void notifyPacket(PacketInEvent ev) {

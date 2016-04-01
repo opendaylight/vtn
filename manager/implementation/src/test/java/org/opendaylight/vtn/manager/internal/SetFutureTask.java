@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -31,6 +31,8 @@ public final class SetFutureTask<T> extends DelayedTask {
      *
      * @param future  The target future.
      * @param res     The result to be set.
+     * @param msec    The number of milliseconds to be inserted before the
+     *                execution.
      */
     public SetFutureTask(SettableVTNFuture<T> future, T res, long msec) {
         super(msec);

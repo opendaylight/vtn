@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -205,12 +205,6 @@ public final class VTerminal extends VirtualBridge<Vterminal> {
      * @param pctx   A runtime context for a received packet.
      * @param vnode  A {@link VirtualMapNode} instance that maps the given
      *               packet.
-     * @throws DropFlowException
-     *    The given packet was discarded by a flow filter.
-     * @throws RedirectFlowException
-     *    The given packet was redirected by a flow filter.
-     * @throws VTNException
-     *    An error occurred.
      */
     @Override
     protected void forward(PacketContext pctx, VirtualMapNode vnode) {

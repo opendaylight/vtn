@@ -1955,6 +1955,8 @@ public class FlowUtilsTest extends TestBase {
     /**
      * Test case for
      * {@link FlowUtils#removeFlowEntries(NodeRpcWatcher,SalFlowService,List,InventoryReader)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testRemoveFlowEntries1() throws Exception {
@@ -2265,6 +2267,7 @@ public class FlowUtilsTest extends TestBase {
      * @param order    The order of the flow entry.
      * @param ingress  A {@link SalPort} instance which indicates the ingress
      *                 switch port.
+     * @return  A {@link VtnFlowEntry} instance.
      * @throws Exception  An error occurred.
      */
     public static VtnFlowEntry createVtnFlowEntry(
@@ -2337,6 +2340,7 @@ public class FlowUtilsTest extends TestBase {
      *
      * @param sec   The number of seconds.
      * @param nsec  The number of nanoseconds.
+     * @return  A {@link Duration} instance.
      */
     public static Duration createDuration(Long sec, Long nsec) {
         DurationBuilder builder = new DurationBuilder();

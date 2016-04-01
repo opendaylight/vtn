@@ -93,6 +93,7 @@ public class SalPortTest extends TestBase {
      *   <li>{@link SalPort#getNodeNumber()}</li>
      *   <li>{@link SalPort#getPortNumber()}</li>
      *   <li>{@link SalPort#isLogicalPort(NodeConnectorId)}</li>
+     * </ul>
      */
     @Test
     public void testCreateString() {

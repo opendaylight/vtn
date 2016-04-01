@@ -78,6 +78,7 @@ public class RemoveFlowRpcListTest extends TestBase {
      *   <li>{@link RemoveFlowRpcList#size()}</li>
      *   <li>{@link RemoveFlowRpcList#flush()}</li>
      *   <li>{@link RemoveFlowRpcList#verify(Logger, long, TimeUnit)}</li>
+     * </ul>
      *
      * @throws Exception  An error occurred.
      */
@@ -149,6 +150,7 @@ public class RemoveFlowRpcListTest extends TestBase {
      *   <li>{@link RemoveFlowRpcList#size()}</li>
      *   <li>{@link RemoveFlowRpcList#flush()}</li>
      *   <li>{@link RemoveFlowRpcList#verify(Logger, long, TimeUnit)}</li>
+     * </ul>
      *
      * @throws Exception  An error occurred.
      */
@@ -255,6 +257,7 @@ public class RemoveFlowRpcListTest extends TestBase {
      *   <li>{@link RemoveFlowRpcList#size()}</li>
      *   <li>{@link RemoveFlowRpcList#flush()}</li>
      *   <li>{@link RemoveFlowRpcList#verify(Logger, long, TimeUnit)}</li>
+     * </ul>
      *
      * @throws Exception  An error occurred.
      */

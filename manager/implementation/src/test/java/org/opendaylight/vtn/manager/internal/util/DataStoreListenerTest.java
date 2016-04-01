@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -1267,6 +1267,7 @@ public class DataStoreListenerTest extends TestBase {
      * @param created  A list of created objects.
      * @param updated  A list of updated objects.
      * @param removed  A list of removed objects.
+     * @return  A new async data change event.
      */
     private AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> createEvent(
         List<NotifiedEvent> created, List<NotifiedEvent> updated,

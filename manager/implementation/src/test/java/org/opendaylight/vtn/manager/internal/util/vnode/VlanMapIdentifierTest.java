@@ -60,6 +60,8 @@ public class VlanMapIdentifierTest extends TestBase {
     /**
      * Test case for
      * {@link VlanMapIdentifier#create(String, String, String)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testCreate() throws Exception {

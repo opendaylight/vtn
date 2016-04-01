@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -33,9 +33,10 @@ import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
  * Unit Test for ReadTxContext.
  */
 public class ReadTxContextTest extends TestBase {
-
     /**
      * Creates ReadTxContext with VTNManager object and ReadOnlyTransaction.
+     *
+     * @return  A {@link ReadTxContext} instance.
      */
     private ReadTxContext getReadTxContext() {
         VTNManagerProvider vtnProvider = mock(VTNManagerProvider.class);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation.  All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -38,16 +38,15 @@ public class TxQueueImplTest extends TestBase {
 
     /**
      * To test post method in {@link TxQueueImpl}.
-     * @param <T>
      */
     @Test
-    public <T> void testPost() {
+    public void testPost() {
         try {
             // Set up mock-up of VTNManagerProvider
             VTNManagerProvider provider = Mockito.mock(VTNManagerProvider.class);
             TxQueueImpl impl = new TxQueueImpl("VTN Main" , provider);
             @SuppressWarnings("unchecked")
-            TxTask<T> task = Mockito.mock(TxTask.class);
+            TxTask<TxTask> task = Mockito.mock(TxTask.class);
             impl.post(task);
             impl.close();
 
@@ -62,16 +61,15 @@ public class TxQueueImplTest extends TestBase {
 
     /**
      * To test postFirst method in {@link TxQueueImpl}.
-     * @param <T>
      */
     @Test
-    public <T> void testPostFirst() {
+    public void testPostFirst() {
         try {
             // Set up mock-up of VTNManagerProvider
             VTNManagerProvider provider = Mockito.mock(VTNManagerProvider.class);
             TxQueueImpl impl = new TxQueueImpl("VTN Main" , provider);
             @SuppressWarnings("unchecked")
-            TxTask<T> task = Mockito.mock(TxTask.class);
+            TxTask<TxTask> task = Mockito.mock(TxTask.class);
             impl.postFirst(task);
             impl.close();
 

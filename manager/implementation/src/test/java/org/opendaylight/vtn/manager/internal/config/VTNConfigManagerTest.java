@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -756,6 +756,7 @@ public class VTNConfigManagerTest extends TestBase {
      * @param was  The previous ownership status.
      * @param is   The current ownership status.
      * @param has  A boolean value where the VTN configuration has owner.
+     * @return  An {@link EntityOwnershipChange} instance.
      */
     private EntityOwnershipChange newOwnerChange(boolean was, boolean is,
                                                  boolean has) {

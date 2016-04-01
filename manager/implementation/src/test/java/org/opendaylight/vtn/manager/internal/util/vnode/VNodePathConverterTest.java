@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -89,7 +89,7 @@ public class VNodePathConverterTest extends TestBase {
      *   <li>
      *     {@link VNodePathConverter#getIdentifier(Class)}
      *   </li>
-     * <ul>
+     * </ul>
      */
     @Test
     public void testVTenantIdentifier() {
@@ -136,7 +136,7 @@ public class VNodePathConverterTest extends TestBase {
      *   <li>
      *     {@link VNodePathConverter#getIdentifier(Class)}
      *   </li>
-     * <ul>
+     * </ul>
      */
     @Test
     public void testVBridgeIdentifier() {
@@ -184,7 +184,7 @@ public class VNodePathConverterTest extends TestBase {
      *   <li>
      *     {@link VNodePathConverter#getIdentifier(Class)}
      *   </li>
-     * <ul>
+     * </ul>
      */
     @Test
     public void testVTerminalIdentifier() {
@@ -223,7 +223,7 @@ public class VNodePathConverterTest extends TestBase {
      *   <li>
      *     {@link VNodePathConverter#getIdentifier(Class)}
      *   </li>
-     * <ul>
+     * </ul>
      */
     @Test
     public void testVBridgeIfIdentifier() {
@@ -276,7 +276,7 @@ public class VNodePathConverterTest extends TestBase {
      *   <li>
      *     {@link VNodePathConverter#getIdentifier(Class)}
      *   </li>
-     * <ul>
+     * </ul>
      */
     @Test
     public void testVTerminalIfIdentifier() {
@@ -329,7 +329,7 @@ public class VNodePathConverterTest extends TestBase {
      *   <li>
      *     {@link VNodePathConverter#getIdentifier(Class)}
      *   </li>
-     * <ul>
+     * </ul>
      */
     @Test
     public void testVlanMapIdentifier() {
@@ -374,7 +374,7 @@ public class VNodePathConverterTest extends TestBase {
      *   <li>
      *     {@link VNodePathConverter#getIdentifier(Class)}
      *   </li>
-     * <ul>
+     * </ul>
      */
     @Test
     public void testMacMapIdentifier() {
@@ -427,7 +427,7 @@ public class VNodePathConverterTest extends TestBase {
      *   <li>
      *     {@link VNodePathConverter#getIdentifier(Class)}
      *   </li>
-     * <ul>
+     * </ul>
      */
     @Test
     public void testMacMapHostIdentifier() {
