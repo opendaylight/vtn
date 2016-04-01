@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,9 @@
  */
 
 package org.opendaylight.vtn.manager.internal.util;
+
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.startsWith;
 
 import static org.opendaylight.vtn.manager.internal.util.flow.action.FlowActionUtilsTest.createVtnDropActionBuilder;
 import static org.opendaylight.vtn.manager.internal.util.flow.action.FlowActionUtilsTest.createVtnPopVlanActionBuilder;
@@ -48,6 +51,12 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev15020
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNodeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.port.info.PortLink;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.port.info.PortLinkBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.RemoveVlanMapInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.RemoveVlanMapInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.RemoveVlanMapOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.RemoveVlanMapOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.remove.vlan.map.output.RemoveVlanMapResult;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.remove.vlan.map.output.RemoveVlanMapResultBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.VtnPathPolicies;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.VtnPathPoliciesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicy;
@@ -56,6 +65,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vt
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policy.config.VtnPathCostBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
@@ -68,9 +78,13 @@ public class DataObjectIdentityTest extends TestBase {
     /**
      * Test case for {@link DataObjectIdentity#equals(Object)} and
      * {@link DataObjectIdentity#hashCode()}.
+     *
+     * <ul>
+     *   <li>Test case for keyed list fields.</li>
+     * </ul>
      */
     @Test
-    public void testEquals() {
+    public void testEqualsKeyedList() {
         HashSet<Object> set = new HashSet<Object>();
 
         // Create PortLink instances.
@@ -78,71 +92,72 @@ public class DataObjectIdentityTest extends TestBase {
         LinkId[] linkIds = {
             null,
             new LinkId("openflow:1:2"),
+            new LinkId("openflow:1:3"),
             new LinkId("openflow:3:4"),
+            new LinkId("openflow:3:5"),
         };
-        NodeConnectorId[] peers = {
-            null,
-            new NodeConnectorId("openflow:1:3"),
-            new NodeConnectorId("openflow:3:3"),
-        };
+
+        int index = 0;
         for (LinkId lid: linkIds) {
-            PortLinkBuilder builder = new PortLinkBuilder().setLinkId(lid);
-            for (NodeConnectorId peer: peers) {
-                builder.setPeer(peer);
-                doTest(set, portLinks, builder);
-            }
+            NodeConnectorId peer = (index == 1)
+                ? null
+                : new NodeConnectorId("openflow:100:200");
+            PortLinkBuilder builder = new PortLinkBuilder().
+                setLinkId(lid).
+                setPeer(peer);
+            doTest(set, portLinks, builder);
+            index++;
         }
 
         // Create VtnPort instances.
         List<VtnPort> vtnPorts = new ArrayList<>();
         NodeConnectorId[] portIds = {
             null,
+            new NodeConnectorId("openflow:2:3"),
             new NodeConnectorId("openflow:2:4"),
-            new NodeConnectorId("openflow:1:3"),
+            new NodeConnectorId("openflow:1:1"),
+            new NodeConnectorId("openflow:1:2"),
+            new NodeConnectorId("openflow:1:5"),
+            new NodeConnectorId("openflow:100:200"),
+            new NodeConnectorId("openflow:101:200"),
         };
-        String[] portNames = {
-            null,
-            "port-1",
-            "port-2",
-        };
-        Boolean[] portStates = {
-            null,
-            Boolean.TRUE,
-            Boolean.FALSE,
-        };
-        Long[] linkCosts = {
-            null,
-            Long.valueOf(100L),
-            Long.valueOf(10000L),
-        };
+
+        index = 0;
         for (NodeConnectorId id: portIds) {
-            VtnPortBuilder builder = new VtnPortBuilder().setId(id);
-            for (String name: portNames) {
-                builder.setName(name);
-                for (Boolean en: portStates) {
-                    builder.setEnabled(en);
-                    for (Long cost: linkCosts) {
-                        builder.setCost(cost);
-
-                        List<PortLink> links = null;
-                        builder.setPortLink(links);
-                        doTest(set, vtnPorts, builder);
-
-                        links = new ArrayList<PortLink>();
-                        builder.setPortLink(links);
-                        doTest(set, vtnPorts, builder);
-
-                        links = new ArrayList<PortLink>();
-                        links.add(portLinks.get(0));
-                        builder.setPortLink(links);
-                        doTest(set, vtnPorts, builder);
-
-                        links = new ArrayList<PortLink>(portLinks);
-                        builder.setPortLink(links);
-                        doTest(set, vtnPorts, builder);
-                    }
-                }
+            String name;
+            Boolean state;
+            Long cost;
+            if (index == 3) {
+                name = null;
+                state = null;
+                cost = null;
+            } else {
+                name = "port";
+                state = true;
+                cost = 10000L;
             }
+
+            List<PortLink> links;
+            int idx = index % 4;
+            if (idx == 0) {
+                links = null;
+            } else if (idx == 1) {
+                links = Collections.<PortLink>emptyList();
+            } else if (idx == 2) {
+                links = Collections.singletonList(portLinks.get(1));
+            } else {
+                links = new ArrayList<PortLink>(portLinks);
+            }
+
+            VtnPortBuilder builder = new VtnPortBuilder().
+                setId(id).
+                setName(name).
+                setEnabled(state).
+                setCost(cost).
+                setPortLink(links);
+            doTest(set, vtnPorts, builder);
+
+            index++;
         }
 
         // Create VtnNode instances.
@@ -150,36 +165,38 @@ public class DataObjectIdentityTest extends TestBase {
         NodeId[] nodeIds = {
             null,
             new NodeId("openflow:1"),
+            new NodeId("openflow:2"),
+            new NodeId("openflow:3"),
             new NodeId("openflow:10"),
-        };
-        VtnOpenflowVersion[] protocols = {
-            null,
-            VtnOpenflowVersion.OF10,
-            VtnOpenflowVersion.OF13,
+            new NodeId("openflow:20"),
+            new NodeId("openflow:21"),
+            new NodeId("openflow:22"),
         };
 
+        index = 0;
         for (NodeId id: nodeIds) {
-            VtnNodeBuilder builder = new VtnNodeBuilder().setId(id);
-            for (VtnOpenflowVersion proto: protocols) {
-                builder.setOpenflowVersion(proto);
-
-                List<VtnPort> ports = null;
-                builder.setVtnPort(ports);
-                doTest(set, vtnNodes, builder);
-
-                ports = new ArrayList<VtnPort>();
-                builder.setVtnPort(ports);
-                doTest(set, vtnNodes, builder);
-
-                ports = new ArrayList<VtnPort>();
-                ports.add(vtnPorts.get(0));
-                builder.setVtnPort(ports);
-                doTest(set, vtnNodes, builder);
-
-                ports = new ArrayList<VtnPort>(vtnPorts);
-                builder.setVtnPort(ports);
-                doTest(set, vtnNodes, builder);
+            VtnOpenflowVersion ver = (index == 4)
+                ? null
+                : VtnOpenflowVersion.OF13;
+            List<VtnPort> ports;
+            int idx = index % 4;
+            if (idx == 0) {
+                ports = null;
+            } else if (idx == 1) {
+                ports = Collections.<VtnPort>emptyList();
+            } else if (idx == 2) {
+                ports = Collections.singletonList(vtnPorts.get(2));
+            } else {
+                ports = new ArrayList<>(vtnPorts);
             }
+
+            VtnNodeBuilder builder = new VtnNodeBuilder().
+                setId(id).
+                setOpenflowVersion(ver).
+                setVtnPort(ports);
+            doTest(set, vtnNodes, builder);
+
+            index++;
         }
 
         // Create VtnNodes instances.
@@ -206,47 +223,55 @@ public class DataObjectIdentityTest extends TestBase {
             null,
             new VtnPortDesc("openflow:1,,"),
             new VtnPortDesc("openflow:1,2,"),
+            new VtnPortDesc("openflow:1,3,"),
             new VtnPortDesc("openflow:1,2,eth2"),
+            new VtnPortDesc("openflow:999,,port-10"),
+            new VtnPortDesc("openflow:999,33,port-33"),
+            new VtnPortDesc("openflow:12345,67,port-890"),
         };
+
+        index = 0;
         for (VtnPortDesc vdesc: portDescs) {
+            Long cost = (index == 2)
+                ? null
+                : 10000L;
             VtnPathCostBuilder builder = new VtnPathCostBuilder().
-                setPortDesc(vdesc);
-            for (Long cost: linkCosts) {
-                builder.setCost(cost);
-                doTest(set, pathCosts, builder);
-            }
+                setPortDesc(vdesc).
+                setCost(cost);
+            doTest(set, pathCosts, builder);
+            index++;
         }
 
         // Create VtnPathPolicy instances.
         List<VtnPathPolicy> pathPolicies = new ArrayList<>();
         Integer[] policyIds = {
-            null,
-            Integer.valueOf(1),
-            Integer.valueOf(3),
+            null, 1, 2, 3,
         };
+
+        index = 0;
         for (Integer id: policyIds) {
-            VtnPathPolicyBuilder builder = new VtnPathPolicyBuilder().
-                setId(id);
-            for (Long cost: linkCosts) {
-                builder.setDefaultCost(cost);
-
-                List<VtnPathCost> vpcosts = null;
-                builder.setVtnPathCost(vpcosts);
-                doTest(set, pathPolicies, builder);
-
-                vpcosts = new ArrayList<VtnPathCost>();
-                builder.setVtnPathCost(vpcosts);
-                doTest(set, pathPolicies, builder);
-
-                vpcosts = new ArrayList<VtnPathCost>();
-                vpcosts.add(pathCosts.get(0));
-                builder.setVtnPathCost(vpcosts);
-                doTest(set, pathPolicies, builder);
-
-                vpcosts = new ArrayList<VtnPathCost>(pathCosts);
-                builder.setVtnPathCost(vpcosts);
-                doTest(set, pathPolicies, builder);
+            Long cost = (index == 1)
+                ? null
+                : 8000L;
+            List<VtnPathCost> vpcosts;
+            int idx = index % 4;
+            if (id == null) {
+                vpcosts = null;
+            } else if (idx == 1) {
+                vpcosts = Collections.<VtnPathCost>emptyList();
+            } else if (idx == 2) {
+                vpcosts = Collections.singletonList(pathCosts.get(3));
+            } else {
+                vpcosts = new ArrayList<>(pathCosts);
             }
+
+            VtnPathPolicyBuilder builder = new VtnPathPolicyBuilder().
+                setId(id).
+                setDefaultCost(cost).
+                setVtnPathCost(vpcosts);
+            doTest(set, pathPolicies, builder);
+
+            index++;
         }
 
         // Create VtnPathPolicies instances.
@@ -275,16 +300,16 @@ public class DataObjectIdentityTest extends TestBase {
         actBuilder = createVtnDropActionBuilder(2);
         doTest(set, actions, actBuilder);
 
-        actBuilder = createVtnPopVlanActionBuilder(1);
+        actBuilder = createVtnPopVlanActionBuilder(3);
         doTest(set, actions, actBuilder);
 
-        actBuilder = createVtnSetPortSrcActionBuilder(1, 12345);
+        actBuilder = createVtnSetPortSrcActionBuilder(4, 12345);
         doTest(set, actions, actBuilder);
 
-        actBuilder = createVtnSetPortDstActionBuilder(1, 12345);
+        actBuilder = createVtnSetPortDstActionBuilder(5, 12345);
         doTest(set, actions, actBuilder);
 
-        actBuilder = createVtnSetPortDstActionBuilder(1, 12346);
+        actBuilder = createVtnSetPortDstActionBuilder(6, 12346);
         doTest(set, actions, actBuilder);
 
         // Create flow filters.
@@ -310,13 +335,19 @@ public class DataObjectIdentityTest extends TestBase {
         doTest(set, filters, filterBuilder);
 
         filterBuilder = new VtnFlowFilterBuilder().
-            setIndex(1).
+            setIndex(3).
             setCondition(vcond2).
             setVtnFlowFilterType(drop);
         doTest(set, filters, filterBuilder);
 
         filterBuilder = new VtnFlowFilterBuilder().
-            setIndex(1).
+            setIndex(4).
+            setCondition(vcond1).
+            setVtnFlowFilterType(pass);
+        doTest(set, filters, filterBuilder);
+
+        filterBuilder = new VtnFlowFilterBuilder().
+            setIndex(5).
             setCondition(vcond1).
             setVtnFlowFilterType(pass);
         doTest(set, filters, filterBuilder);
@@ -324,11 +355,11 @@ public class DataObjectIdentityTest extends TestBase {
         List<VtnFlowAction> filterActions = new ArrayList<>();
         Collections.addAll(
             filterActions,
-            createVtnSetPortSrcAction(1, 9999),
-            createVtnSetPortDstAction(2, 9999));
+            createVtnSetPortSrcAction(100, 9999),
+            createVtnSetPortDstAction(200, 9999));
 
         filterBuilder = new VtnFlowFilterBuilder().
-            setIndex(1).
+            setIndex(100).
             setCondition(vcond1).
             setVtnFlowFilterType(pass).
             setVtnFlowAction(filterActions);
@@ -337,11 +368,11 @@ public class DataObjectIdentityTest extends TestBase {
         filterActions = new ArrayList<>();
         Collections.addAll(
             filterActions,
-            createVtnSetPortSrcAction(2, 9999),
-            createVtnSetPortDstAction(1, 9999));
+            createVtnSetPortSrcAction(101, 9999),
+            createVtnSetPortDstAction(201, 9999));
 
         filterBuilder = new VtnFlowFilterBuilder().
-            setIndex(1).
+            setIndex(101).
             setCondition(vcond1).
             setVtnFlowFilterType(pass).
             setVtnFlowAction(filterActions);
@@ -354,21 +385,190 @@ public class DataObjectIdentityTest extends TestBase {
 
         // Ensure that the order of elements in a list does not affect object
         // identity.
-        for (Object o: set) {
-            assertTrue(set.contains(o));
-            if (o instanceof VtnNodes) {
-                assertTrue(set.contains(reorder((VtnNodes)o)));
-            } else if (o instanceof VtnNode) {
-                assertTrue(set.contains(reorder((VtnNode)o)));
-            } else if (o instanceof VtnPort) {
-                assertTrue(set.contains(reorder((VtnPort)o)));
-            } else if (o instanceof VtnPathPolicies) {
-                assertTrue(set.contains(reorder((VtnPathPolicies)o)));
-            } else if (o instanceof VtnPathPolicy) {
-                assertTrue(set.contains(reorder((VtnPathPolicy)o)));
-            } else if (o instanceof VtnFlowFilter) {
-                assertTrue(set.contains(reorder((VtnFlowFilter)o)));
+        for (VtnPort vport: vtnPorts) {
+            DataObjectIdentity doi = new DataObjectIdentity(reorder(vport));
+            assertEquals(true, set.contains(doi));
+        }
+        for (VtnNode vnode: vtnNodes) {
+            DataObjectIdentity doi = new DataObjectIdentity(reorder(vnode));
+            assertEquals(true, set.contains(doi));
+        }
+        for (VtnNodes vnodes: nodeContainers) {
+            DataObjectIdentity doi = new DataObjectIdentity(reorder(vnodes));
+            assertEquals(true, set.contains(doi));
+        }
+        for (VtnPathPolicy vpp: pathPolicies) {
+            DataObjectIdentity doi = new DataObjectIdentity(reorder(vpp));
+            assertEquals(true, set.contains(doi));
+        }
+        for (VtnPathPolicies vpps: policyContainers) {
+            DataObjectIdentity doi = new DataObjectIdentity(reorder(vpps));
+            assertEquals(true, set.contains(doi));
+        }
+        for (VtnFlowFilter vff: filters) {
+            DataObjectIdentity doi = new DataObjectIdentity(reorder(vff));
+            assertEquals(true, set.contains(doi));
+        }
+
+        // Duplicate key is not allowed.
+        List<PortLink> badLinks = new ArrayList<>();
+        PortLink plink1 = new PortLinkBuilder().
+            setLinkId(linkIds[3]).
+            setPeer(new NodeConnectorId("openflow:1:10")).
+            build();
+        PortLink plink2 = new PortLinkBuilder().
+            setLinkId(linkIds[2]).
+            setPeer(new NodeConnectorId("openflow:1:11")).
+            build();
+        PortLink plink3 = new PortLinkBuilder().
+            setLinkId(linkIds[3]).
+            setPeer(new NodeConnectorId("openflow:1:12")).
+            build();
+        Collections.addAll(badLinks, plink1, plink2, plink3);
+        VtnPort badPort = new VtnPortBuilder().
+            setId(portIds[2]).
+            setPortLink(badLinks).
+            build();
+        try {
+            new DataObjectIdentity(badPort);
+            unexpected();
+        } catch (IllegalArgumentException e) {
+            String msg = "Keyed list in DataObject should have no duplicate:";
+            assertThat(e.getMessage(), startsWith(msg));
+        }
+    }
+
+    /**
+     * Test case for {@link DataObjectIdentity#equals(Object)} and
+     * {@link DataObjectIdentity#hashCode()}.
+     *
+     * <ul>
+     *   <li>Test case for non-keyed list fields.</li>
+     * </ul>
+     */
+    @Test
+    public void testEqualsList() {
+        HashSet<Object> set = new HashSet<Object>();
+
+        // Create a list of remove-vlan-map-result.
+        List<RemoveVlanMapResult> vmapResults = new ArrayList<>();
+        vmapResults.add(null);
+        String[] mapIds = {
+            null,
+            "ANY.0",
+            "ANY.1",
+            "ANY.4095",
+            "openflow:1.0",
+            "openflow:1.1",
+            "openflow:2.1",
+            "openflow:2.2",
+        };
+        VtnUpdateType[] types = {
+            null,
+            VtnUpdateType.CREATED,
+            VtnUpdateType.REMOVED,
+            VtnUpdateType.CHANGED,
+        };
+
+        for (String mapId: mapIds) {
+            RemoveVlanMapResultBuilder builder =
+                new RemoveVlanMapResultBuilder().
+                setMapId(mapId);
+            for (VtnUpdateType type: types) {
+                builder.setStatus(type);
+                doTest(set, vmapResults, builder);
             }
+        }
+
+        List<RemoveVlanMapOutput> outputs = new ArrayList<>();
+        RemoveVlanMapOutputBuilder builder = new RemoveVlanMapOutputBuilder();
+        doTest(set, outputs, builder);
+
+        List<RemoveVlanMapResult> results = new ArrayList<>();
+        builder.setRemoveVlanMapResult(results);
+        doTest(set, outputs, builder);
+
+        for (int i = 0; i < 10; i++) {
+            results = Collections.singletonList(vmapResults.get(i));
+            builder.setRemoveVlanMapResult(results);
+            doTest(set, outputs, builder);
+        }
+
+        results = new ArrayList<>(vmapResults);
+        builder.setRemoveVlanMapResult(results);
+        doTest(set, outputs, builder);
+
+        // Duplicate elements are allowed.
+        results = new ArrayList<>(vmapResults);
+        for (int i = 0; i < vmapResults.size() / 2; i++) {
+            RemoveVlanMapResult org = vmapResults.get(i);
+            RemoveVlanMapResult res = (org == null)
+                ? null
+                : new RemoveVlanMapResultBuilder(org).build();
+            results.add(res);
+        }
+        builder.setRemoveVlanMapResult(results);
+        doTest(set, outputs, builder);
+
+        // Ensure that the order of elements in a list does not affect object
+        // identity.
+        for (RemoveVlanMapOutput out: outputs) {
+            DataObjectIdentity doi = new DataObjectIdentity(reorder(out));
+            assertEquals(true, set.contains(doi));
+        }
+    }
+
+    /**
+     * Test case for {@link DataObjectIdentity#equals(Object)} and
+     * {@link DataObjectIdentity#hashCode()}.
+     *
+     * <ul>
+     *   <li>Test case for leaf-list fields.</li>
+     * </ul>
+     */
+    @Test
+    public void testEqualsLeafList() {
+        HashSet<Object> set = new HashSet<Object>();
+
+        // Create a list of VLAN mappings IDs.
+        List<RemoveVlanMapInput> inputs = new ArrayList<>();
+        List<String> vmapIds = new ArrayList<>();
+        String[] mapIds = {
+            null,
+            "ANY.0",
+            "ANY.1",
+            "ANY.4095",
+            "openflow:1.0",
+            "openflow:1.1",
+            "openflow:2.1",
+            "openflow:2.2",
+        };
+
+        for (String mapId: mapIds) {
+            vmapIds.add(mapId);
+            List<String> ids = new ArrayList<>(vmapIds);
+            RemoveVlanMapInputBuilder builder =
+                new RemoveVlanMapInputBuilder().setMapIds(ids);
+            doTest(set, inputs, builder);
+        }
+
+        // Duplicate elements are allowed.
+        int size = vmapIds.size();
+        for (int i = 0; i < size; i++) {
+            if ((i & 1) == 0) {
+                vmapIds.add(vmapIds.get(i));
+                List<String> ids = new ArrayList<>(vmapIds);
+                RemoveVlanMapInputBuilder builder =
+                    new RemoveVlanMapInputBuilder().setMapIds(ids);
+                doTest(set, inputs, builder);
+            }
+        }
+
+        // Ensure that the order of elements in a list does not affect object
+        // identity.
+        for (RemoveVlanMapInput in: inputs) {
+            DataObjectIdentity doi = new DataObjectIdentity(reorder(in));
+            assertEquals(true, set.contains(doi));
         }
     }
 
@@ -380,17 +580,23 @@ public class DataObjectIdentityTest extends TestBase {
      */
     private VtnPort reorder(VtnPort port) {
         List<PortLink> plinks = port.getPortLink();
-        if (plinks != null && !plinks.isEmpty()) {
+        int size = (plinks == null) ? 0 : plinks.size();
+        boolean reversed = (size > 1);
+        if (reversed) {
             List<PortLink> l = new ArrayList<>();
-            for (ListIterator<PortLink> it = plinks.listIterator(plinks.size());
+            for (ListIterator<PortLink> it = plinks.listIterator(size);
                  it.hasPrevious();) {
-                l.add(it.previous());
+                l.add(new PortLinkBuilder(it.previous()).build());
             }
-            assertFalse(l.equals(plinks));
-            return new VtnPortBuilder(port).setPortLink(l).build();
+            assertThat(l, not(plinks));
+            plinks = l;
         }
 
-        return port;
+        VtnPort ret = new VtnPortBuilder(port).setPortLink(plinks).build();
+        if (reversed) {
+            assertThat(ret, not(port));
+        }
+        return ret;
     }
 
     /**
@@ -401,18 +607,23 @@ public class DataObjectIdentityTest extends TestBase {
      */
     private VtnNode reorder(VtnNode node) {
         List<VtnPort> ports = node.getVtnPort();
-        if (ports != null && !ports.isEmpty()) {
+        int size = (ports == null) ? 0 : ports.size();
+        boolean reversed = (size > 1);
+        if (reversed) {
             List<VtnPort> l = new ArrayList<>();
-            for (ListIterator<VtnPort> it = ports.listIterator(ports.size());
+            for (ListIterator<VtnPort> it = ports.listIterator(size);
                  it.hasPrevious();) {
-                VtnPort port = reorder(it.previous());
-                l.add(port);
+                l.add(reorder(it.previous()));
             }
-            assertFalse(l.equals(ports));
-            return new VtnNodeBuilder(node).setVtnPort(l).build();
+            assertThat(l, not(ports));
+            ports = l;
         }
 
-        return node;
+        VtnNode ret = new VtnNodeBuilder(node).setVtnPort(ports).build();
+        if (reversed) {
+            assertThat(ret, not(node));
+        }
+        return ret;
     }
 
     /**
@@ -423,18 +634,23 @@ public class DataObjectIdentityTest extends TestBase {
      */
     private VtnNodes reorder(VtnNodes container) {
         List<VtnNode> nodes = container.getVtnNode();
-        if (nodes != null && !nodes.isEmpty()) {
+        int size = (nodes == null) ? 0 : nodes.size();
+        boolean reversed = (size > 1);
+        if (reversed) {
             List<VtnNode> l = new ArrayList<>();
-            for (ListIterator<VtnNode> it = nodes.listIterator(nodes.size());
+            for (ListIterator<VtnNode> it = nodes.listIterator(size);
                  it.hasPrevious();) {
-                VtnNode node = reorder(it.previous());
-                l.add(node);
+                l.add(reorder(it.previous()));
             }
-            assertFalse(l.equals(nodes));
-            return new VtnNodesBuilder().setVtnNode(l).build();
+            assertThat(l, not(nodes));
+            nodes = l;
         }
 
-        return container;
+        VtnNodes ret = new VtnNodesBuilder().setVtnNode(nodes).build();
+        if (reversed) {
+            assertThat(ret, not(container));
+        }
+        return ret;
     }
 
     /**
@@ -445,17 +661,25 @@ public class DataObjectIdentityTest extends TestBase {
      */
     private VtnPathPolicy reorder(VtnPathPolicy vpp) {
         List<VtnPathCost> vpcosts = vpp.getVtnPathCost();
-        if (vpcosts != null && !vpcosts.isEmpty()) {
+        int size = (vpcosts == null) ? 0 : vpcosts.size();
+        boolean reversed = (size > 1);
+        if (reversed) {
             List<VtnPathCost> l = new ArrayList<>();
-            for (ListIterator<VtnPathCost> it =
-                     vpcosts.listIterator(vpcosts.size()); it.hasPrevious();) {
-                l.add(it.previous());
+            for (ListIterator<VtnPathCost> it = vpcosts.listIterator(size);
+                 it.hasPrevious();) {
+                l.add(new VtnPathCostBuilder(it.previous()).build());
             }
-            assertFalse(l.equals(vpcosts));
-            return new VtnPathPolicyBuilder(vpp).setVtnPathCost(l).build();
+            assertThat(l, not(vpcosts));
+            vpcosts = l;
         }
 
-        return vpp;
+        VtnPathPolicy ret = new VtnPathPolicyBuilder(vpp).
+            setVtnPathCost(vpcosts).
+            build();
+        if (reversed) {
+            assertThat(ret, not(vpp));
+        }
+        return ret;
     }
 
     /**
@@ -466,19 +690,25 @@ public class DataObjectIdentityTest extends TestBase {
      */
     private VtnPathPolicies reorder(VtnPathPolicies container) {
         List<VtnPathPolicy> policies = container.getVtnPathPolicy();
-        if (policies != null && !policies.isEmpty()) {
+        int size = (policies == null) ? 0 : policies.size();
+        boolean reversed = (size > 1);
+        if (reversed) {
             List<VtnPathPolicy> l = new ArrayList<>();
-            for (ListIterator<VtnPathPolicy> it =
-                     policies.listIterator(policies.size());
+            for (ListIterator<VtnPathPolicy> it = policies.listIterator(size);
                  it.hasPrevious();) {
-                VtnPathPolicy vpp = reorder(it.previous());
-                l.add(vpp);
+                l.add(reorder(it.previous()));
             }
-            assertFalse(l.equals(policies));
-            return new VtnPathPoliciesBuilder().setVtnPathPolicy(l).build();
+            assertThat(l, not(policies));
+            policies = l;
         }
 
-        return container;
+        VtnPathPolicies ret = new VtnPathPoliciesBuilder().
+            setVtnPathPolicy(policies).
+            build();
+        if (reversed) {
+            assertThat(ret, not(container));
+        }
+        return ret;
     }
 
     /**
@@ -490,19 +720,93 @@ public class DataObjectIdentityTest extends TestBase {
      */
     private VtnFlowFilter reorder(VtnFlowFilter filter) {
         List<VtnFlowAction> factions = filter.getVtnFlowAction();
-        if (factions != null && !factions.isEmpty()) {
-            int size = factions.size();
+        int size = (factions == null) ? 0 : factions.size();
+        boolean reversed = (size > 1);
+        if (reversed) {
             List<VtnFlowAction> l = new ArrayList<>();
             for (ListIterator<VtnFlowAction> it = factions.listIterator(size);
                  it.hasPrevious();) {
-                l.add(it.previous());
+                l.add(new VtnFlowActionBuilder(it.previous()).build());
             }
-            assertFalse(l.equals(factions));
-            return new VtnFlowFilterBuilder(filter).
-                setVtnFlowAction(l).build();
+            assertThat(l, not(factions));
+            factions = l;
         }
 
-        return filter;
+        VtnFlowFilter ret = new VtnFlowFilterBuilder(filter).
+            setVtnFlowAction(factions).
+            build();
+        if (reversed) {
+            assertThat(ret, not(filter));
+        }
+        return ret;
+    }
+
+    /**
+     * Reorder remove-vlan-map-result list in the given remove-vlan-map-output.
+     *
+     * @param out  A {@link RemoveVlanMapOutput} instance.
+     * @return  A {@link RemoveVlanMapOutput} instance with reordering
+     *          remove-vlan-map-result list.
+     */
+    private RemoveVlanMapOutput reorder(RemoveVlanMapOutput out) {
+        List<RemoveVlanMapResult> results = out.getRemoveVlanMapResult();
+        int size = (results == null) ? 0 : results.size();
+        boolean reversed = (size > 1);
+        if (reversed) {
+            List<RemoveVlanMapResult> l = new ArrayList<>();
+            for (ListIterator<RemoveVlanMapResult> it =
+                     results.listIterator(size); it.hasPrevious();) {
+                RemoveVlanMapResult res = it.previous();
+                if (res != null) {
+                    res = new RemoveVlanMapResultBuilder(res).build();
+                }
+                l.add(res);
+            }
+            assertThat(l, not(results));
+            results = l;
+        }
+
+        RemoveVlanMapOutput ret = new RemoveVlanMapOutputBuilder(out).
+            setRemoveVlanMapResult(results).
+            build();
+        if (reversed) {
+            assertThat(ret, not(out));
+        }
+        return ret;
+    }
+
+    /**
+     * Reorder map-ids list in the given remove-vlan-map-input.
+     *
+     * @param in  A {@link RemoveVlanMapInput} instance.
+     * @return  A {@link RemoveVlanMapInput} instance with reordering map-ids
+     *          list.
+     */
+    private RemoveVlanMapInput reorder(RemoveVlanMapInput in) {
+        List<String> mapIds = in.getMapIds();
+        int size = (mapIds == null) ? 0 : mapIds.size();
+        boolean reversed = (size > 1);
+        if (reversed) {
+            List<String> l = new ArrayList<>();
+            for (ListIterator<String> it = mapIds.listIterator(size);
+                 it.hasPrevious();) {
+                String id = it.previous();
+                if (id != null) {
+                    id = new String(id);
+                }
+                l.add(id);
+            }
+            assertThat(l, not(mapIds));
+            mapIds = l;
+        }
+
+        RemoveVlanMapInput ret = new RemoveVlanMapInputBuilder(in).
+            setMapIds(mapIds).
+            build();
+        if (reversed) {
+            assertThat(ret, not(in));
+        }
+        return ret;
     }
 
     /**

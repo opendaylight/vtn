@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2013, 2016 NEC Corporation.  All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -16,12 +16,14 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+
+import javax.annotation.Nonnull;
 
 import org.opendaylight.yangtools.yang.binding.DataObject;
+import org.opendaylight.yangtools.yang.binding.Identifiable;
+import org.opendaylight.yangtools.yang.binding.Identifier;
 
 /**
  * {@code DataObjectIdentity} describes identify of {@link DataObject}
@@ -164,8 +166,7 @@ public final class DataObjectIdentity {
         // Determine return type.
         Type retType = m.getGenericReturnType();
         if (retType instanceof ParameterizedType) {
-            // This shold be a list of DataObject.
-            return fetchDataObjectList((ParameterizedType)retType, m, value);
+            return fetchList((ParameterizedType)retType, m, value);
         }
 
         if (retType instanceof Class) {
@@ -181,57 +182,90 @@ public final class DataObjectIdentity {
     }
 
     /**
-     * Fetch a list of {@link DataObject} instance.
+     * Fetch a field value as a list.
      *
      * @param pt     A {@link ParameterizedType} instance which indicates the
-     *               type of a {@link DataObject} list.
+     *               type of the list.
      * @param m      A {@link Method} associated with a getter method.
      * @param value  A value returned by the getter method specified by
      *               {@code m}.
-     * @return  An object that contains fetched {@link DataObject} instances.
+     * @return  An object that contains fetched list elements.
      */
-    private Object fetchDataObjectList(ParameterizedType pt, Method m,
-                                       Object value) {
-        // We need to fetch DataObject instances as a set because a list of
-        // DataObject instances may be reorder by the MD-SAL.
-        List<?> list = checkDataObjectList(pt, m, value);
-        Set<Object> set = new HashSet<>();
-        for (Object o: list) {
-            Object elem = o;
-            if (o instanceof DataObject) {
-                elem = new DataObjectIdentity((DataObject)o);
-            }
-
-            if (!set.add(elem)) {
-                String msg = String.format(
-                    "List in DataObject should have no duplicate: type=%s, " +
-                    "method=%s, duplicate=%s", dataType, m.getName(), o);
-                throw new IllegalArgumentException(msg);
-            }
-        }
-
-        return set;
-    }
-
-    /**
-     * Ensure that the given object is a list of {@link DataObject} instances.
-     *
-     * @param pt     A {@link ParameterizedType} instance which indicates the
-     *               type of a {@link DataObject} list.
-     * @param m      A {@link Method} associated with a getter method.
-     * @param value  A value returned by the getter method specified by
-     *               {@code m}.
-     * @return  {@code value} casted as a list.
-     */
-    private List<?> checkDataObjectList(ParameterizedType pt, Method m,
-                                        Object value) {
+    private Object fetchList(ParameterizedType pt, Method m,
+                             @Nonnull Object value) {
+        // We need to fetch list elements as a map because the order of the
+        // elements in the list defined by YANG is unspecified.
+        // So elements in the list may be reorderd by the MD-SAL.
         if (!(value instanceof List)) {
             String msg = String.format(
                 "Unexpected return type: type=%s, method=%s, type=%s, value=%s",
                 dataType, m.getName(), pt, value);
             throw new IllegalArgumentException(msg);
         }
+        List<?> list = (List<?>)value;
+        Class<?> type = getListParameterType(pt, m);
+        Object ret;
+        if (Identifiable.class.isAssignableFrom(type)) {
+            // Fetch all the elements in the keyed list.
+            @SuppressWarnings("unchecked")
+            List<Identifiable<?>> keyed = (List<Identifiable<?>>)list;
+            ret = fetchKeyedDataObjectList(m, keyed);
+        } else {
+            // The given list may have duplicate element.
+            Map<Object, Integer> map = new HashMap<>();
+            for (Object o: list) {
+                Object elem = o;
+                if (o instanceof DataObject) {
+                    elem = new DataObjectIdentity((DataObject)o);
+                }
 
+                Integer oldCount = map.put(elem, 1);
+                if (oldCount != null) {
+                    map.put(elem, oldCount.intValue() + 1);
+                }
+            }
+            ret = map;
+        }
+
+        return ret;
+    }
+
+    /**
+     * Fetch a keyed list of {@link DataObject} instances.
+     *
+     * @param m     A {@link Method} associated with a getter method.
+     * @param list  A list of keyed {@link DataObject} instances.
+     * @return  An object that contains fetched {@link DataObject} instances.
+     */
+    private Object fetchKeyedDataObjectList(
+        Method m, @Nonnull List<Identifiable<?>> list) {
+        Map<Object, Object> map = new HashMap<>();
+        for (Identifiable<?> elem: list) {
+            // An element in a keyed list must be a DataObject.
+            @SuppressWarnings("unchecked")
+            DataObject data = (DataObject)elem;
+            Identifier<?> key = elem.getKey();
+            if (map.put(key, new DataObjectIdentity(data)) != null) {
+                String msg = String.format(
+                    "Keyed list in DataObject should have no duplicate: " +
+                    "type=%s, method=%s, key=%s, value=%s", dataType,
+                    m.getName(), key, elem);
+                throw new IllegalArgumentException(msg);
+            }
+        }
+
+        return map;
+    }
+
+    /**
+     * Return a class that indicates the type of list parameter.
+     *
+     * @param pt     A {@link ParameterizedType} instance that indicates the
+     *               type of a {@link DataObject} list.
+     * @param m      A {@link Method} associated with a getter method.
+     * @return  A class that indicates the type of list parameter.
+     */
+    private Class<?> getListParameterType(ParameterizedType pt, Method m) {
         Type[] actual = pt.getActualTypeArguments();
         if (actual.length != 1) {
             String msg = String.format(
@@ -248,7 +282,7 @@ public final class DataObjectIdentity {
             throw new IllegalArgumentException(msg);
         }
 
-        return (List<?>)value;
+        return (Class<?>)t;
     }
 
     /**
