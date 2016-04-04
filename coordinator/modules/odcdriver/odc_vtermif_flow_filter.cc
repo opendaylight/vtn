@@ -218,28 +218,27 @@ using namespace unc::restjson;
 
         //For Every action, check if dscp or vlanpcp
 
-        if ( action_iter->vtermif_dscp_.valid == true) {
-          if ( action_iter->vtermif_dscp_.dscp_value != -1 ) {
+        if (( action_iter->vtermif_dscp_.valid == true) &&
+           ( action_iter->vtermif_dscp_.dscp_value != -1 )) {
             val_entry.dscp=action_iter->vtermif_dscp_.dscp_value;
             val_entry.valid[UPLL_IDX_DSCP_FFE]=UNC_VF_VALID;
-          }
-        } else if ( action_iter->vtermif_vlanpcp_.valid == true) {
-          if ( action_iter->vtermif_vlanpcp_.vlan_pcp != -1 ) {
+        }
+        if (( action_iter->vtermif_vlanpcp_.valid == true) &&
+           ( action_iter->vtermif_vlanpcp_.vlan_pcp != -1 )) {
             val_entry.priority=action_iter->vtermif_vlanpcp_.vlan_pcp;
             val_entry.valid[UPLL_IDX_PRIORITY_FFE]=UNC_VF_VALID;
-          }
-        } else if ( action_iter->vtermif_dlsrc_.valid == true) {
-          if ( action_iter->vtermif_dlsrc_.dlsrc_address != "" ) {
+        }
+        if (( action_iter->vtermif_dlsrc_.valid == true) &&
+           ( action_iter->vtermif_dlsrc_.dlsrc_address != "" )) {
             util.convert_macstring_to_uint8(action_iter->vtermif_dlsrc_.dlsrc_address,
                                             &val_entry.modify_srcmac[0]);
             val_entry.valid[UPLL_IDX_MODIFY_SRC_MAC_FFE] = UNC_VF_VALID;
-          }
-        } else if ( action_iter->vtermif_dldst_.valid == true) {
-          if ( action_iter->vtermif_dldst_.dldst_address != "" ) {
+        }
+        if (( action_iter->vtermif_dldst_.valid == true) &&
+           ( action_iter->vtermif_dldst_.dldst_address != "" )) {
             util.convert_macstring_to_uint8(action_iter->vtermif_dldst_.dldst_address,
                                             &val_entry.modify_dstmac[0]);
             val_entry.valid[UPLL_IDX_MODIFY_DST_MAC_FFE] = UNC_VF_VALID;
-          }
         }
         action_iter++;
       }
@@ -404,6 +403,10 @@ void OdcVTermIfFlowFilterEntryCmd::delete_request_body(
     reinterpret_cast<char*>(key.flowfilter_key.if_key.vterm_key.vterminal_name);
   ip_vterm_if_flowfilter_st.input_vtermif_flow_filter_.interface_name =
                    reinterpret_cast<char*>(key.flowfilter_key.if_key.if_name);
+
+  vtermin_flow_filter match_index_;
+  match_index_.index = key.sequence_num;
+  ip_vterm_if_flowfilter_st.input_vtermif_flow_filter_.vtermin_flow_filter_.push_back(match_index_);
 }
 
    void OdcVTermIfFlowFilterEntryCmd::copy(

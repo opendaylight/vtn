@@ -40,9 +40,9 @@ UncRespCode OdcVtnFlowFilterCmd::fetch_config(
     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
 
     key_vtn_t* parent_vtn = reinterpret_cast<key_vtn_t*> (parent_key);
-    std::string vtn_name = reinterpret_cast<char*>(parent_vtn->vtn_name);
+    parent_vtn_name_ = reinterpret_cast<char*>(parent_vtn->vtn_name);
     vtnflowfilter_request *req_obj = new vtnflowfilter_request(ctr_ptr,
-                                                           vtn_name);
+                                                           parent_vtn_name_);
     std::string url = req_obj->get_url();
     pfc_log_info("URL:%s",url.c_str());
     vtnflowfilter_parser *parser_obj = new vtnflowfilter_parser();
@@ -129,16 +129,15 @@ OdcVtnFlowFilterCmd::r_copy(std::list<par_flow_filter> &flow_detail,
 
         //For Every action, check if dscp or vlanpcp
 
-        if ( action_iter->par_dscp_.valid == true) {
-          if ( action_iter->par_dscp_.dscp_value != -1 ) {
+        if (( action_iter->par_dscp_.valid == true) &&
+           ( action_iter->par_dscp_.dscp_value != -1 )) {
             val_entry.dscp=action_iter->par_dscp_.dscp_value;
             val_entry.valid[UPLL_IDX_DSCP_VFFE]=UNC_VF_VALID;
-          }
-        } else if ( action_iter->par_vlanpcp_.valid == true) {
-          if ( action_iter->par_vlanpcp_.vlan_pcp != -1 ) {
+        }
+        if (( action_iter->par_vlanpcp_.valid == true) &&
+           ( action_iter->par_vlanpcp_.vlan_pcp != -1 )) {
             val_entry.priority=action_iter->par_vlanpcp_.vlan_pcp;
             val_entry.valid[UPLL_IDX_PRIORITY_VFFE]=UNC_VF_VALID;
-          }
         }
         action_iter++;
       }
@@ -251,6 +250,11 @@ void OdcVtnFlowFilterEntryCmd::delete_request_body(
   ip_vtn_flowfilter_st.input_vtn_flowfilter_.valid = true;
   ip_vtn_flowfilter_st.input_vtn_flowfilter_.tenant_name =
               (reinterpret_cast<char*>(key.flowfilter_key.vtn_key.vtn_name));
+
+  vt_flow_filter match_index_;
+  match_index_.index = key.sequence_num;
+  ip_vtn_flowfilter_st.input_vtn_flowfilter_.vt_flow_filter_.push_back(match_index_);
+
 }
 void OdcVtnFlowFilterEntryCmd::
   copy(ip_vtn_flowfilter& ip_vtn_flowfilter_st, key_vtn_flowfilter_entry &key_in,
