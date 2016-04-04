@@ -244,7 +244,7 @@ type=int
 key="vlan-pcp"
 is_child=yes
 struct_name=vbr_vlanpcp
-mandatory=yes
+mandatory=no
 build_support=no
 parse_support=yes
 
@@ -263,7 +263,7 @@ type=string
 key="address"
 is_child=yes
 struct_name=vbr_dldst
-mandatory=yes
+mandatory=no
 build_support=no
 parse_support=yes
 
@@ -320,7 +320,7 @@ type=int
 key="dscp"
 is_child=yes
 struct_name=vbr_dscp
-mandatory=yes
+mandatory=no
 build_support=no
 parse_support=yes
 
@@ -414,11 +414,11 @@ parse_support=yes
 [flow_filter]
 type=array
 key="vtn-flow-filter"
-is_child=yes
+is_child=no
 struct_name=flow_filter
-mandatory=yes
+mandatory=no
 members=condition,index,vbr_pass_filter,vbr_drop_filter,vbr_redirect_filter,flow_action,valid
-check_bool_set=yes
+check_bool_set=no
 build_support=no
 parse_support=yes
 
@@ -426,11 +426,11 @@ parse_support=yes
 type=struct
 key="vbridge-input-filter"
 is_child=no
-check_bool_set=no
+check_bool_set=yes
 struct_name=flow_filter
 members=flow_filter,valid
 build_support=no
-mandatory=yes
+mandatory=no
 parse_support=yes
 
 [vbridge_filter]

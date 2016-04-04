@@ -27,21 +27,21 @@ using namespace unc::restjson;
     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
 
     key_vbr_if_t *parent_vbr = reinterpret_cast<key_vbr_if_t *> (parent_key);
-    std::string vtn_name = reinterpret_cast<char *>(
+    parent_vtn_name_ = reinterpret_cast<char *>(
                                   parent_vbr->vbr_key.vtn_key.vtn_name);
-    std::string vbr_name = reinterpret_cast<char *>(
+    parent_vbr_name_ = reinterpret_cast<char *>(
                                        parent_vbr->vbr_key.vbridge_name);
-    std::string if_name = reinterpret_cast<char *>(parent_vbr->if_name);
+    parent_vbrif_name_ = reinterpret_cast<char *>(parent_vbr->if_name);
 
-    UncRespCode ret_val = portmap_chcek(ctr_ptr,vtn_name,vbr_name,
-                                                   if_name,cfgnode_vector);
+    UncRespCode ret_val = portmap_chcek(ctr_ptr,parent_vtn_name_,parent_vbr_name_,
+                                                   parent_vbrif_name_,cfgnode_vector);
     if (ret_val != UNC_RC_SUCCESS ){
       pfc_log_error("Cannot fetch flowfilter without portmapping");
       return ret_val;
     }
 
    vbrif_flowfilter_class *req_obj = new vbrif_flowfilter_class(ctr_ptr,
-                                                 vtn_name,vbr_name,if_name);
+                         parent_vtn_name_,parent_vbr_name_,parent_vbrif_name_);
    std::string url = req_obj->get_url();
    pfc_log_info("URL:%s",url.c_str());
    vbrif_flowfilter_parser *parser_obj = new vbrif_flowfilter_parser();
@@ -222,28 +222,27 @@ OdcVbrIfFlowFilterCmd::r_copy(std::list<vbrif_flow_filter>  &filter_detail,
 
         //For Every action, check if dscp or vlanpcp
 
-        if ( action_iter->vbrif_dscp_.valid == true) {
-          if ( action_iter->vbrif_dscp_.dscp_value != -1 ) {
+        if (( action_iter->vbrif_dscp_.valid == true) &&
+           ( action_iter->vbrif_dscp_.dscp_value != -1 )) {
             val_entry.val_ff_entry.dscp=action_iter->vbrif_dscp_.dscp_value;
             val_entry.val_ff_entry.valid[UPLL_IDX_DSCP_FFE]=UNC_VF_VALID;
-          }
-        } else if ( action_iter->vbrif_vlanpcp_.valid == true) {
-          if ( action_iter->vbrif_vlanpcp_.vlan_pcp != -1 ) {
+        }
+        if (( action_iter->vbrif_vlanpcp_.valid == true) &&
+           ( action_iter->vbrif_vlanpcp_.vlan_pcp != -1 )) {
             val_entry.val_ff_entry.priority = action_iter->vbrif_vlanpcp_.vlan_pcp;
             val_entry.val_ff_entry.valid[UPLL_IDX_PRIORITY_FFE]=UNC_VF_VALID;
-          }
-        } else if ( action_iter->vbrif_dlsrc_.valid == true) {
-          if ( action_iter->vbrif_dlsrc_.dlsrc_address != "" ) {
+        }
+        if (( action_iter->vbrif_dlsrc_.valid == true) &&
+           ( action_iter->vbrif_dlsrc_.dlsrc_address != "" )) {
             util.convert_macstring_to_uint8(action_iter->vbrif_dlsrc_.dlsrc_address,
                                             &val_entry.val_ff_entry.modify_srcmac[0]);
             val_entry.val_ff_entry.valid[UPLL_IDX_MODIFY_SRC_MAC_FFE] = UNC_VF_VALID;
-          }
-        } else if ( action_iter->vbrif_dldst_.valid == true) {
-          if ( action_iter->vbrif_dldst_.dldst_address != "" ) {
+        }
+        if (( action_iter->vbrif_dldst_.valid == true) &&
+           ( action_iter->vbrif_dldst_.dldst_address != "" )) {
             util.convert_macstring_to_uint8(action_iter->vbrif_dldst_.dldst_address,
                                             &val_entry.val_ff_entry.modify_dstmac[0]);
             val_entry.val_ff_entry.valid[UPLL_IDX_MODIFY_DST_MAC_FFE] = UNC_VF_VALID;
-          }
         }
         action_iter++;
       }
@@ -410,6 +409,10 @@ void OdcVbrIfFlowFilterEntryCmd::delete_request_body(
                         key.flowfilter_key.if_key.vbr_key.vbridge_name);
    ip_vbr_if_flowfilter_st.input_vbrif_flow_filter_.interface_name =
                    reinterpret_cast<char*>(key.flowfilter_key.if_key.if_name);
+
+   vbrin_flow_filter match_index_;
+   match_index_.index = key.sequence_num;
+   ip_vbr_if_flowfilter_st.input_vbrif_flow_filter_.vbrin_flow_filter_.push_back(match_index_);
 
 }
 

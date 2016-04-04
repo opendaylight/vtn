@@ -79,7 +79,8 @@ public:
             std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
    UncRespCode r_copy(std::list<vtermif_flow_filter> &filter_detail,
-                      std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
+                      std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector,
+            std::string vtn_name, std::string vterm_name, std::string vtermif_name);
 };
 
 class OdcVTermIfFlowFilterEntryCmd : public unc::driver::vtn_driver_command
