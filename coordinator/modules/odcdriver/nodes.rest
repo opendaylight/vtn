@@ -134,6 +134,7 @@ parse_support=yes
 type=array
 key="vtn-node"
 struct_name=vtn_node
+is_child=yes
 mandatory = no
 check_bool_set=no
 members=id

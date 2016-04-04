@@ -63,7 +63,8 @@ using namespace unc::restjson;
      return UNC_DRV_RC_ERR_GENERIC;
     }
 
-    ret_val = r_copy(parser_obj->vtermif_flow_filter_, cfgnode_vector);
+    ret_val = r_copy(parser_obj->vtermif_flow_filter_, cfgnode_vector,
+                     vtn_name, vterm_name, vtermif_name);
     if (UNC_RC_SUCCESS != ret_val) {
       pfc_log_error("Error occured while parsing");
       delete req_obj;
@@ -120,7 +121,9 @@ using namespace unc::restjson;
 
   UncRespCode
   OdcVTermIfFlowFilterCmd::r_copy(std::list<vtermif_flow_filter> &filter_detail,
-                     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
+                     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector,
+                      std::string vtn_name, std::string vterm_name,
+                                         std::string vtermif_name) {
     ODC_FUNC_TRACE;
 
     key_vterm_if_flowfilter key_filter;
@@ -128,13 +131,13 @@ using namespace unc::restjson;
     memset ( &key_filter, 0, sizeof(key_vterm_if_flowfilter));
     memset ( &val_filter, 0, sizeof(val_flowfilter));
     strncpy(reinterpret_cast<char*> (key_filter.if_key.if_name),
-        parent_vtermif_name_.c_str(), sizeof(key_filter.if_key.if_name) - 1);
+        vtermif_name.c_str(), sizeof(key_filter.if_key.if_name) - 1);
     strncpy(reinterpret_cast<char*> (key_filter.if_key.vterm_key.vterminal_name),
-                        parent_vterm_name_.c_str(),
+                        vterm_name.c_str(),
                 sizeof(key_filter.if_key.vterm_key.vterminal_name) - 1);
     strncpy(reinterpret_cast<char*> (
                            key_filter.if_key.vterm_key.vtn_key.vtn_name),
-                         parent_vtn_name_.c_str(), sizeof(
+                         vtn_name.c_str(), sizeof(
                      key_filter.if_key.vterm_key.vtn_key.vtn_name) - 1);
     key_filter.direction=UPLL_FLOWFILTER_DIR_IN;
 
@@ -218,28 +221,27 @@ using namespace unc::restjson;
 
         //For Every action, check if dscp or vlanpcp
 
-        if ( action_iter->vtermif_dscp_.valid == true) {
-          if ( action_iter->vtermif_dscp_.dscp_value != -1 ) {
+        if (( action_iter->vtermif_dscp_.valid == true) &&
+           ( action_iter->vtermif_dscp_.dscp_value != -1 )) {
             val_entry.dscp=action_iter->vtermif_dscp_.dscp_value;
             val_entry.valid[UPLL_IDX_DSCP_FFE]=UNC_VF_VALID;
-          }
-        } else if ( action_iter->vtermif_vlanpcp_.valid == true) {
-          if ( action_iter->vtermif_vlanpcp_.vlan_pcp != -1 ) {
+        }
+        if (( action_iter->vtermif_vlanpcp_.valid == true) &&
+           ( action_iter->vtermif_vlanpcp_.vlan_pcp != -1 )) {
             val_entry.priority=action_iter->vtermif_vlanpcp_.vlan_pcp;
             val_entry.valid[UPLL_IDX_PRIORITY_FFE]=UNC_VF_VALID;
-          }
-        } else if ( action_iter->vtermif_dlsrc_.valid == true) {
-          if ( action_iter->vtermif_dlsrc_.dlsrc_address != "" ) {
+        }
+        if (( action_iter->vtermif_dlsrc_.valid == true) &&
+           ( action_iter->vtermif_dlsrc_.dlsrc_address != "" )) {
             util.convert_macstring_to_uint8(action_iter->vtermif_dlsrc_.dlsrc_address,
                                             &val_entry.modify_srcmac[0]);
             val_entry.valid[UPLL_IDX_MODIFY_SRC_MAC_FFE] = UNC_VF_VALID;
-          }
-        } else if ( action_iter->vtermif_dldst_.valid == true) {
-          if ( action_iter->vtermif_dldst_.dldst_address != "" ) {
+        }
+        if (( action_iter->vtermif_dldst_.valid == true) &&
+           ( action_iter->vtermif_dldst_.dldst_address != "" )) {
             util.convert_macstring_to_uint8(action_iter->vtermif_dldst_.dldst_address,
                                             &val_entry.modify_dstmac[0]);
             val_entry.valid[UPLL_IDX_MODIFY_DST_MAC_FFE] = UNC_VF_VALID;
-          }
         }
         action_iter++;
       }
@@ -404,6 +406,10 @@ void OdcVTermIfFlowFilterEntryCmd::delete_request_body(
     reinterpret_cast<char*>(key.flowfilter_key.if_key.vterm_key.vterminal_name);
   ip_vterm_if_flowfilter_st.input_vtermif_flow_filter_.interface_name =
                    reinterpret_cast<char*>(key.flowfilter_key.if_key.if_name);
+
+  vtermin_flow_filter match_index_;
+  match_index_.index = key.sequence_num;
+  ip_vterm_if_flowfilter_st.input_vtermif_flow_filter_.vtermin_flow_filter_.push_back(match_index_);
 }
 
    void OdcVTermIfFlowFilterEntryCmd::copy(
