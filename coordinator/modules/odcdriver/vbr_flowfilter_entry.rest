@@ -127,6 +127,7 @@ parse_support=no
 [index]
 type=int
 key="index"
+del_key="indices"
 is_child=yes
 mandatory=yes
 struct_name=vtn_flow_filter
