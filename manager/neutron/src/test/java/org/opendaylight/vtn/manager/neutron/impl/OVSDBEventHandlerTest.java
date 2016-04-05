@@ -234,14 +234,14 @@ public final class OVSDBEventHandlerTest {
                           mockNode, "port1");
         PowerMockito.doReturn(true).
                      when(handler, "addTerminationPoint",
-                          mockNode, "bridge1", "port1");
+                          mockNode, "port1");
         output = Whitebox.
                     invokeMethod(handler , "addPortToBridge" , mockNode,
                                  "bridge1" , "port1");
         Assert.assertTrue(output);
         PowerMockito.doReturn(false).
                        when(handler, "addTerminationPoint",
-                            mockNode, "bridge1", "port1");
+                            mockNode, "port1");
         output = Whitebox.
                      invokeMethod(handler, "addPortToBridge",
                                   mockNode, "bridge1", "port1");
@@ -281,7 +281,7 @@ public final class OVSDBEventHandlerTest {
     /**
      * Test case for
      * {@link OVSDBEventHandler
-     *  #addTerminationPoint(Node, bridgeName, portName)}.
+     *  #addTerminationPoint(Node, portName)}.
      */
     @Test
     public void testAddTerminationPoint() throws Exception {
@@ -294,7 +294,7 @@ public final class OVSDBEventHandlerTest {
         boolean output =
                 Whitebox.invokeMethod(handler,
                                      "addTerminationPoint", mockNode,
-                                     "bridge1", "port1");
+                                     "port1");
         Assert.assertFalse(output);
     }
     /**
@@ -412,11 +412,11 @@ public final class OVSDBEventHandlerTest {
         output = Whitebox.invokeMethod(handler,
                                        "getVTNIdentifiers",
                                        port, new String[3]);
-        Assert.assertEquals(output, HTTP_BAD_REQUEST);
+        Assert.assertEquals(output, HTTP_OK);
         output = Whitebox.invokeMethod(handler,
                                        "getVTNIdentifiers", port,
                                        new String[3]);
-        Assert.assertEquals(output, HTTP_OK);
+        Assert.assertEquals(output, HTTP_BAD_REQUEST);
     }
     /**
      * Test case for
