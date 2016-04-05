@@ -41,10 +41,10 @@ public class VTNNeutronModule extends AbstractVTNNeutronModule {
 
     @Override
     public java.lang.AutoCloseable createInstance() {
-        OVSDBEventHandler.ovsdbPortName = getPortName();
-        OVSDBEventHandler.ovsdbBridgeName = getBridgeName();
-        OVSDBEventHandler.ovsdbProtocol = getProtocol();
-        OVSDBEventHandler.ovsdbFailMode = getFailMode();
+        OVSDBEventHandler.setOvsdbPortName(getPortName());
+        OVSDBEventHandler.setOvsdbBridgeName(getBridgeName());
+        OVSDBEventHandler.setOvsdbProtocol(getProtocol());
+        OVSDBEventHandler.setOvsdbFailMode(getFailMode());
         NeutronProvider provider = new NeutronProvider();
         getBrokerDependency().registerProvider(provider);
 
