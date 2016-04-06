@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3a4c51b2_fa85ecad",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/impl/OVSDBEventHandler.java",
+        "patchSetId": 2
+      },
+      "lineNbr": 246,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2016-04-06T23:36:39Z",
+      "side": 1,
+      "message": "Kindly modify the code comment here?",
+      "revId": "bf533adf175a40b8989e41d6bbead5b61f803e72",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3a4c51b2_5a9340fa",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/impl/OVSDBEventHandler.java",
+        "patchSetId": 2
+      },
+      "lineNbr": 621,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2016-04-06T23:36:39Z",
+      "side": 1,
+      "message": "The Code comment is wrong?, this builds the protocol part of the message",
+      "revId": "bf533adf175a40b8989e41d6bbead5b61f803e72",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
