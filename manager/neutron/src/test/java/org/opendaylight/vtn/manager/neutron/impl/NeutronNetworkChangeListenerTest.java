@@ -24,31 +24,37 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
 import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.runners.MockitoJUnitRunner;
+
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.controller.sal.binding.api.RpcConsumerRegistry;
+
 import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.networks.rev150712.networks.attributes.Networks;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.networks.rev150712.networks.attributes.networks.Network;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.networks.rev150712.networks.attributes.networks.NetworkKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.rev150712.Neutron;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.port.rev150907.VtnPortMapService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.VtnService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.VtnVbridgeService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.VtnVinterfaceService;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.powermock.modules.junit4.PowerMockRunner;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.api.mockito.PowerMockito;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 
 /**
  * JUnit test for {@link NeutronNetworkChangeListener}.
  */
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({ NeutronNetworkChangeListener.class, VTNManagerService.class, MdsalUtils.class, InstanceIdentifier.class, OfNode.class})
+@RunWith(MockitoJUnitRunner.class)
 public class NeutronNetworkChangeListenerTest extends TestBase {
     /**
-     * Mock-up of {@link DataBroker}.
+     * DataBroker instance for test.
      */
     @Mock
     private DataBroker  dataBroker;
@@ -62,19 +68,48 @@ public class NeutronNetworkChangeListenerTest extends TestBase {
      */
     private NeutronNetworkChangeListener  neutronNetworkListener;
     /**
-     * VTNManagerService instance.
+     * VTNManagerService instance for test.
      */
-    private VTNManagerService  vtnManagerService;
+    private VTNManagerService  vtnManager;
+    /**
+     * MdsalUtils instance for test.
+     */
+    private MdsalUtils mdSal;
+    /**
+     * RPC consumer registry.
+     */
+    @Mock
+    private RpcConsumerRegistry  rpcRegistry;
+    /**
+     * RPC service for VTN management.
+     */
+    @Mock
+    private VtnService  vtnService;
+    /**
+     * RPC service for vBridge management.
+     */
+    @Mock
+    private VtnVbridgeService  vbridgeService;
+    /**
+     * RPC service for virtual interface management.
+     */
+    @Mock
+    private VtnVinterfaceService  vinterfaceService;
+    /**
+     * RPC service for port mapping management.
+     */
+    @Mock
+    private VtnPortMapService  portMapService;
     /**
      * AsyncDataChangeEvent object reference for unit testing.
      */
-    private AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> asyncDataChangeEventMockObj;
+    private AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> asyncDataChangeEvent;
     /**
-     * Collection of InstanceIdentifier and Intent.
+     * Collection of InstanceIdentifier.
      */
     private Map<InstanceIdentifier<?>, DataObject> networkMap;
     /**
-     * Intent object reference for unit testing.
+     * Network object reference for unit testing.
      */
     private Network network;
     /**
@@ -91,24 +126,37 @@ public class NeutronNetworkChangeListenerTest extends TestBase {
     @Before
     public void setUp() throws Exception {
         initMocks(this);
-        vtnManagerService = PowerMockito.mock(VTNManagerService.class);
-        neutronNetworkListener = PowerMockito.spy(new NeutronNetworkChangeListener(dataBroker, vtnManagerService));
-        asyncDataChangeEventMockObj = mock(AsyncDataChangeEvent.class);
+        mdSal = new MdsalUtils(dataBroker);
+
+        Mockito.when(rpcRegistry.getRpcService(VtnService.class)).
+            thenReturn(vtnService);
+        Mockito.when(rpcRegistry.getRpcService(VtnVbridgeService.class)).
+            thenReturn(vbridgeService);
+        Mockito.when(rpcRegistry.getRpcService(VtnVinterfaceService.class)).
+            thenReturn(vinterfaceService);
+        Mockito.when(rpcRegistry.getRpcService(VtnPortMapService.class)).
+            thenReturn(portMapService);
+
+        vtnManager = new VTNManagerService(mdSal, rpcRegistry);
+
+        asyncDataChangeEvent = Mockito.mock(AsyncDataChangeEvent.class);
+        neutronNetworkListener =
+                   new NeutronNetworkChangeListener(dataBroker, vtnManager);
+
         networkMap = new HashMap<InstanceIdentifier<?>,  DataObject>();
-        when(asyncDataChangeEventMockObj.getCreatedData())
+        when(asyncDataChangeEvent.getCreatedData())
                 .thenReturn(networkMap);
-        when(asyncDataChangeEventMockObj.getUpdatedData())
+        when(asyncDataChangeEvent.getUpdatedData())
                 .thenReturn(networkMap);
         networkKey = mock(NetworkKey.class);
         network = mock(Network.class);
         when(network.getKey()).thenReturn(networkKey);
         instanceIdentifier = mock(InstanceIdentifier.class);
-        //networkMap.put(instanceIdentifier, network);
         when(dataBroker.registerDataChangeListener(
                   any(LogicalDatastoreType.class), any(InstanceIdentifier.class),
                   isA(NeutronNetworkChangeListener.class), any(DataChangeScope.class))).
              thenReturn(listenerReg);
-        neutronNetworkListener = new NeutronNetworkChangeListener(dataBroker , vtnManagerService);
+        neutronNetworkListener = new NeutronNetworkChangeListener(dataBroker , vtnManager);
     }
     /**
      * Test case for
@@ -116,27 +164,28 @@ public class NeutronNetworkChangeListenerTest extends TestBase {
      */
     @Test
     public void testConstructor() {
-        initMocks(this);
         LogicalDatastoreType oper = LogicalDatastoreType.CONFIGURATION;
         DataChangeScope scope = DataChangeScope.SUBTREE;
         // Ensure that NeutronNetworkChangeListener has been registered as data change
         // listener.
-        verify(dataBroker, times(0)).registerDataChangeListener(
-            eq(oper), eq(getPath()), eq(neutronNetworkListener), eq(scope));
+        verify(dataBroker, times(0)).
+                    registerDataChangeListener(eq(oper),
+                                               eq(getPath()),
+                                               eq(neutronNetworkListener),
+                                               eq(scope));
         verifyZeroInteractions(listenerReg);
     }
     /**
-     * Return a wildcard path to the MD-SAL data model to listen.
-     *
-     * @return  A wildcard path to the MD-SAL data model to listen.
+     * Return a path to the MD-SAL data model to listen.
+     * @return  A path to the MD-SAL data model to listen.
      */
     private InstanceIdentifier<Network> getPath() {
         return InstanceIdentifier.create(Neutron.class).
                 child(Networks.class).
                 child(Network.class);
 
-
     }
+
     /**
      * Test case for {@link neutronNetworkListener#close()}.
      */
@@ -155,12 +204,12 @@ public class NeutronNetworkChangeListenerTest extends TestBase {
      */
     @Test
     public void testonDataChanged() {
-        neutronNetworkListener.onDataChanged(asyncDataChangeEventMockObj);
+        neutronNetworkListener.onDataChanged(asyncDataChangeEvent);
         /**
          * Verifying asyncDataChangeEventMockObj object invoking both
          * getCreatedData and getUpdatedData methods.
          */
-        verify(asyncDataChangeEventMockObj, times(1)).getCreatedData();
-        verify(asyncDataChangeEventMockObj, times(1)).getUpdatedData();
+        verify(asyncDataChangeEvent, times(1)).getCreatedData();
+        verify(asyncDataChangeEvent, times(1)).getUpdatedData();
     }
 }
