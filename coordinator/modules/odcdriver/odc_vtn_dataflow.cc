@@ -190,59 +190,57 @@ UncRespCode OdcVtnDataFlowCommand::parse_flow_response_values(
   //ingress_vbridge
 
     std::string in_vbridge = "";
+    std::string in_vterm = "";
+    std::string in_vinterface = "";
     if (it->data_ingress_node_.valid == true){
       if (!it->data_ingress_node_.ig_bridge.empty()){
         in_vbridge = it->data_ingress_node_.ig_bridge;
-      } else {
-        pfc_log_error("vbridge is empty");
-        //return UNC_DRV_RC_ERR_GENERIC;
-      }
-      pfc_log_trace("ingress_vbridge %s", in_vbridge.c_str());
-      if(df_cmn->df_segment->vtn_df_common == NULL) {
-         pfc_log_trace("df_cmn->df_segment->vtn_df_common is NULL");
-       }
-       strncpy(reinterpret_cast<char*>(df_cmn->df_segment->vtn_df_common->ingress_vnode),
+        pfc_log_trace("ingress_vbridge %s", in_vbridge.c_str());
+        if(df_cmn->df_segment->vtn_df_common == NULL) {
+          pfc_log_trace("df_cmn->df_segment->vtn_df_common is NULL");
+        }
+        strncpy(reinterpret_cast<char*>(df_cmn->df_segment->vtn_df_common->ingress_vnode),
             in_vbridge.c_str(),
             strlen(in_vbridge.c_str()));
-       df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_INGRESS_VNODE_VVDC] = UNC_VF_VALID;
+        df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_INGRESS_VNODE_VVDC] =
+          UNC_VF_VALID;
        pfc_log_trace("ingress_vbridge %s",
                              df_cmn->df_segment->vtn_df_common->ingress_vnode);
-    }
+      } else {
+        pfc_log_error("vbridge is empty");
+      }
 
-    std::string in_vterm = "";
-    if (it->data_ingress_node_.valid == true){
       if (!it->data_ingress_node_.ig_term_name.empty()){
         in_vterm = it->data_ingress_node_.ig_term_name;
-      } else {
-        pfc_log_error("vterminal is empty");
-        //return UNC_DRV_RC_ERR_GENERIC;
-      }
-      pfc_log_trace("ingress_terminal %s", in_vterm.c_str());
-      if(df_cmn->df_segment->vtn_df_common == NULL) {
-        pfc_log_trace("df_cmn->df_segment->vtn_df_common is NULL");
-      }
-      strncpy(reinterpret_cast<char*>(df_cmn->df_segment->vtn_df_common->ingress_vnode),
+        if(df_cmn->df_segment->vtn_df_common == NULL) {
+        pfc_log_trace("ingress_terminal %s", in_vterm.c_str());
+          pfc_log_trace("df_cmn->df_segment->vtn_df_common is NULL");
+        }
+        strncpy(reinterpret_cast<char*>(df_cmn->df_segment->vtn_df_common->ingress_vnode),
             in_vterm.c_str(),
             strlen(in_vterm.c_str()));
-      df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_INGRESS_VNODE_VVDC] = UNC_VF_VALID;
-      pfc_log_trace("ingress_terminal %s", df_cmn->df_segment->vtn_df_common->ingress_vnode);
+        df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_INGRESS_VNODE_VVDC] = UNC_VF_VALID;
+        pfc_log_trace("ingress_terminal %s", df_cmn->df_segment->vtn_df_common->ingress_vnode);
+      } else {
+        pfc_log_error("vterminal is empty");
+      }
+      //ingress_vinterface
+      if (!it->data_ingress_node_.ig_if_name.empty()){
+        in_vinterface = it->data_ingress_node_.ig_if_name;
+      } else {
+        pfc_log_error("vinterface is empty");
+      }
+      if (!in_vinterface.empty()) {
+        strncpy(reinterpret_cast<char*>(df_cmn->df_segment->vtn_df_common->ingress_vinterface),
+            in_vinterface.c_str(),
+            strlen(in_vinterface.c_str()));
+        df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_INGRESS_VINTERFACE_VVDC] = UNC_VF_VALID;
+      } else {
+        df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_INGRESS_VINTERFACE_VVDC] = UNC_VF_INVALID;
+      }
+      pfc_log_trace("ingress_vinterface %s", df_cmn->df_segment->vtn_df_common->ingress_vinterface);
+
     }
- //ingress_vinterface
-    std::string in_vinterface = "";
-    if (!it->data_ingress_node_.ig_if_name.empty()){
-      in_vinterface = it->data_ingress_node_.ig_if_name;
-    } else {
-      pfc_log_error("vinterface is empty");
-    }
-    if (!in_vinterface.empty()) {
-      strncpy(reinterpret_cast<char*>(df_cmn->df_segment->vtn_df_common->ingress_vinterface),
-          in_vinterface.c_str(),
-          strlen(in_vinterface.c_str()));
-      df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_INGRESS_VINTERFACE_VVDC] = UNC_VF_VALID;
-    } else {
-      df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_INGRESS_VINTERFACE_VVDC] = UNC_VF_INVALID;
-    }
-    pfc_log_trace("ingress_vinterface %s", df_cmn->df_segment->vtn_df_common->ingress_vinterface);
 
 
  //egress_vbridge
@@ -253,62 +251,54 @@ UncRespCode OdcVtnDataFlowCommand::parse_flow_response_values(
     if (it->data_egress_node_.valid == true){
       if (!it->data_egress_node_.eg_bridge.empty()){
         out_vbridge = it->data_egress_node_.eg_bridge;
+        if(!out_vbridge.empty()) {
+          strncpy(reinterpret_cast<char*>(df_cmn->df_segment->vtn_df_common->egress_vnode),
+            out_vbridge.c_str(),
+            strlen(out_vbridge.c_str()));
+          df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_EGRESS_VNODE_VVDC] = UNC_VF_VALID;
+        } else {
+          df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_EGRESS_VNODE_VVDC] = UNC_VF_INVALID;
+        }
+        pfc_log_trace("egress_vnode %s", df_cmn->df_segment->vtn_df_common->egress_vnode);
       } else {
         pfc_log_error("vbridge is empty");
       }
-    }
-    if(!out_vbridge.empty()) {
-      strncpy(reinterpret_cast<char*>(df_cmn->df_segment->vtn_df_common->egress_vnode),
-           out_vbridge.c_str(),
-          strlen(out_vbridge.c_str()));
-      df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_EGRESS_VNODE_VVDC] = UNC_VF_VALID;
-    } else {
-      df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_EGRESS_VNODE_VVDC] = UNC_VF_INVALID;
-    }
-    pfc_log_trace("egress_vnode %s", df_cmn->df_segment->vtn_df_common->egress_vnode);
 
-
-    if (it->data_egress_node_.valid == true){
       if (!it->data_egress_node_.eg_terminal.empty()){
         out_vterm = it->data_egress_node_.eg_terminal;
+        if (out_vterm.empty()) {
+          pfc_log_error("Error occured while parsing egress_terminal");
+        } else {
+          pfc_log_trace("ingress_terminal %s", out_vterm.c_str());
+          if(df_cmn->df_segment->vtn_df_common == NULL) {
+            pfc_log_trace("df_cmn->df_segment->vtn_df_common is NULL");
+          }
+          strncpy(reinterpret_cast<char*>(df_cmn->df_segment->vtn_df_common->egress_vnode),
+              out_vterm.c_str(),
+              strlen(out_vterm.c_str()));
+          df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_EGRESS_VNODE_VVDC] = UNC_VF_VALID;
+          pfc_log_trace("ingress_terminal %s", df_cmn->df_segment->vtn_df_common->egress_vnode);
+        }
       } else {
         pfc_log_error("vterminal is empty");
       }
-    }
-
-    if (out_vterm.empty()) {
-      pfc_log_error("Error occured while parsing egress_terminal");
-    } else {
-      pfc_log_trace("ingress_terminal %s", out_vterm.c_str());
-      if(df_cmn->df_segment->vtn_df_common == NULL) {
-        pfc_log_trace("df_cmn->df_segment->vtn_df_common is NULL");
-      }
-      strncpy(reinterpret_cast<char*>(df_cmn->df_segment->vtn_df_common->egress_vnode),
-              out_vterm.c_str(),
-              strlen(out_vterm.c_str()));
-      df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_EGRESS_VNODE_VVDC] = UNC_VF_VALID;
-      pfc_log_trace("ingress_terminal %s", df_cmn->df_segment->vtn_df_common->egress_vnode);
-    }
 
  //egress_vinterface
-    if (it->data_egress_node_.valid == true){
       if (!it->data_egress_node_.eg_if.empty()){
         out_vinterface = it->data_egress_node_.eg_if;
-      } else {
-        pfc_log_error("vinterface is empty");
-        return UNC_DRV_RC_ERR_GENERIC;
-      }
-      if(!out_vinterface.empty()) {
-        strncpy(reinterpret_cast<char*>(df_cmn->df_segment->vtn_df_common->egress_vinterface),
+        if(!out_vinterface.empty()) {
+          strncpy(reinterpret_cast<char*>(df_cmn->df_segment->vtn_df_common->egress_vinterface),
             out_vinterface.c_str(),
             strlen(out_vinterface.c_str()));
-        df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_EGRESS_VINTERFACE_VVDC] = UNC_VF_VALID;
+          df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_EGRESS_VINTERFACE_VVDC] = UNC_VF_VALID;
+        } else {
+          df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_EGRESS_VINTERFACE_VVDC] = UNC_VF_INVALID;
+        }
+        pfc_log_trace("egress_vinterface %s", df_cmn->df_segment->vtn_df_common->egress_vinterface);
       } else {
-        df_cmn->df_segment->vtn_df_common->valid[UPLL_IDX_EGRESS_VINTERFACE_VVDC] = UNC_VF_INVALID;
+        pfc_log_error("vinterface is empty");
       }
-      pfc_log_trace("egress_vinterface %s", df_cmn->df_segment->vtn_df_common->egress_vinterface);
     }
-
  //ingressport
 
     std::string switch_id = "";
