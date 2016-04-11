@@ -40,11 +40,11 @@ OdcVbrFlowFilterCmd::fetch_config(
     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
 
    key_vbr_t* parent_vbr = reinterpret_cast<key_vbr_t*> (parent_key);
-   std::string vtn_name = reinterpret_cast<char*>(parent_vbr->vtn_key.vtn_name);
-   std::string vbr_name = reinterpret_cast<char*>(parent_vbr->vbridge_name);
+   parent_vtn_name_ = reinterpret_cast<char*>(parent_vbr->vtn_key.vtn_name);
+   parent_vbr_name_ = reinterpret_cast<char*>(parent_vbr->vbridge_name);
 
    vbrflowfilter_class *req_obj = new vbrflowfilter_class(
-                                           ctr_ptr, vtn_name, vbr_name);
+                                           ctr_ptr, parent_vtn_name_, parent_vbr_name_);
    std::string url = req_obj->get_url();
    pfc_log_info("URL:%s",url.c_str());
    vbrflowfilter_parser *parser_obj = new vbrflowfilter_parser();
@@ -179,29 +179,29 @@ OdcVbrFlowFilterCmd::r_copy(std::list<flow_filter> &filter_detail,
 
         //For Every action, check if dscp or vlanpcp
 
-        if ( action_iter->vbr_dscp_.valid == true) {
-          if (action_iter->vbr_dscp_.dscp_value != -1 ) {
+        if (( action_iter->vbr_dscp_.valid == true)  &&
+              (action_iter->vbr_dscp_.dscp_value != -1 )){
             val_entry.dscp=action_iter->vbr_dscp_.dscp_value;
             val_entry.valid[UPLL_IDX_DSCP_FFE]=UNC_VF_VALID;
-          }
-        } else if ( action_iter->vbr_vlanpcp_.valid == true) {
-          if ( action_iter->vbr_vlanpcp_.vlan_pcp != -1 ) {
+        }
+        if (( action_iter->vbr_vlanpcp_.valid == true) &&
+           ( action_iter->vbr_vlanpcp_.vlan_pcp != -1 )) {
             val_entry.priority=action_iter->vbr_vlanpcp_.vlan_pcp;
             val_entry.valid[UPLL_IDX_PRIORITY_FFE]=UNC_VF_VALID;
-          }
-        } else if ( action_iter->vbr_dlsrc_.valid == true) {
-          if ( action_iter->vbr_dlsrc_.dlsrc_address != "" ) {
+        }
+        if (( action_iter->vbr_dlsrc_.valid == true) &&
+           ( action_iter->vbr_dlsrc_.dlsrc_address != "" )) {
             util.convert_macstring_to_uint8(action_iter->vbr_dlsrc_.dlsrc_address,
                                             &val_entry.modify_srcmac[0]);
             val_entry.valid[UPLL_IDX_MODIFY_SRC_MAC_FFE] = UNC_VF_VALID;
-          }
-        } else if ( action_iter->vbr_dldst_.valid == true) {
-          if ( !action_iter->vbr_dldst_.dlsdt_address.empty() ) {
+        }
+        if ((action_iter->vbr_dldst_.valid == true) &&
+           ( !action_iter->vbr_dldst_.dlsdt_address.empty() )) {
             util.convert_macstring_to_uint8(action_iter->vbr_dldst_.dlsdt_address,
                                             &val_entry.modify_dstmac[0]);
             val_entry.valid[UPLL_IDX_MODIFY_DST_MAC_FFE] = UNC_VF_VALID;
-          }
         }
+
         action_iter++;
       }
       unc::vtndrvcache::ConfigNode *entry_cfgptr=
@@ -348,6 +348,10 @@ void OdcVbrFlowFilterEntryCmd::delete_request_body(
         (reinterpret_cast<char*>(key.flowfilter_key.vbr_key.vtn_key.vtn_name));
     ip_vbr_flowfilter_st.input_flow_filter_.bridge_name =
           (reinterpret_cast<char*>(key.flowfilter_key.vbr_key.vbridge_name));
+
+   vtn_flow_filter match_index_;
+   match_index_.index = key.sequence_num;
+   ip_vbr_flowfilter_st.input_flow_filter_.vtn_flow_filter_.push_back(match_index_);
 }
 
 

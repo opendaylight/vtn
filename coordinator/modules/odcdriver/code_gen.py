@@ -146,6 +146,7 @@ def fill_config(item, req_mem, file_desc, output_file_name, d):
     child_reqmem = parser.ReadValues(item, req_mem)['members']
     req_key = parser.ReadValues(item, req_mem)['key']
     check_mem = parser.ReadValues(item,req_mem)['is_child']
+    check_parse = parser.ReadValues(item,req_mem).has_key('build_support')
     response = parser.ReadValues(item,req_mem).has_key('is_audit')
     fill_method = 'UncRespCode set_%s('%(struct_name) +'json_object* json_parser) {' + '\n'
     fill_method = fill_method + 'int ret_val = restjson::REST_OP_FAILURE;' + '\n'
@@ -189,14 +190,14 @@ def fill_config(item, req_mem, file_desc, output_file_name, d):
         obj_in = 'obj_' + req_mem
     if child_type == 'array':
         #print "obj_in-------->1", obj_in
-        ar_obj = parse_array_object(item, child, obj_in, output_file_name, d)
+        ar_obj = parse_array_object(item, child, obj_in, req_mem, output_file_name, d)
         #print "json object to parse member:", ar_obj
     elif child_type != 'array' and (check_mem == 'no'):
         child_struct = parser.ReadValues(item,child)['struct_name']
         array_index = "arr_idx"
         parse_member(item, child_struct, obj_in, child, array_index, output_file_name, d)
     elif child_type != 'array' and (check_mem == 'yes'):
-        #print 'SWE ENTERING FIRST IF FOR check_mem'
+        #print 'ENTERING FIRST IF FOR check_mem'
         child_key = parser.ReadValues(item, child)['key']
         parse_supp = parser.ReadValues(item,child)['parse_support']
         if parse_supp == 'yes':
@@ -235,8 +236,13 @@ def fill_config(item, req_mem, file_desc, output_file_name, d):
           file = open(output_file_name, "a")
           file.write(d['fill'])
           file.close()
-    func_end = 'if (restjson::REST_OP_SUCCESS != ret_val)' + '\n'
-    func_end = func_end + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' + '\n'
+    func_end = ''
+    # Excluding the error statement for flowfilter keytypes
+    if str(check_parse) == 'True':
+      parse_val_check = parser.ReadValues(item,req_mem)['build_support']
+      if parse_val_check == 'no' and check_mem == 'yes':
+        func_end = func_end + 'if (restjson::REST_OP_SUCCESS != ret_val)' + '\n'
+        func_end = func_end + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' + '\n'
     func_end = func_end + 'return UNC_RC_SUCCESS;' + '\n'
     func_end = func_end + '}' + '\n'
     d['func_end'] = func_end
@@ -773,17 +779,24 @@ def parse_struct_object(item, struct_name, st_member, obj_in, array_index, outpu
     req_key = parser.ReadValues(item, st_member)['key']
     sub_members = parser.ReadValues(item, st_member)['members']
     check_key = parser.ReadValues(item,st_member)['is_child']
+    check_mand = parser.ReadValues(item,st_member)['mandatory']
+    resp = parser.ReadValues(item, st_member).has_key('check_bool_set')
     #print 'sub_members', sub_members
     parse_st =  'json_object *jobj_'+st_member + '= NULL;' +'\n'
-    if check_key == 'no':
+    if check_key == 'no' and str(resp) == 'False' :
         parse_st = parse_st + 'ret_val = unc::restjson::JsonBuildParse::parse(%s,%s,-1,jobj_%s);'%(obj_in, req_key, st_member) + '\n'
-    elif check_key == 'yes':
+    elif check_key == 'no' and str(resp) == 'True':
+        check_bool = parser.ReadValues(item, st_member)['check_bool_set']
+        if check_bool == 'yes':
+           parse_st = parse_st + 'ret_val = unc::restjson::JsonBuildParse::parse(%s,%s,0,jobj_%s);'%(obj_in, req_key, st_member) + '\n'
+    elif check_key == 'yes' :
         parse_st = parse_st + 'ret_val = unc::restjson::JsonBuildParse::parse(%s,%s,%s,jobj_%s);'%(obj_in, req_key, array_index,st_member) + '\n'
         parse_st = parse_st + 'st_%s.%s_.valid = true;' %(struct_name,st_member)+ '\n'
     parse_st = parse_st + 'if (restjson::REST_OP_SUCCESS != ret_val) {' + '\n'
     parse_st = parse_st + '\t' + 'pfc_log_debug("%s is null");' %(st_member) + '\n'
     parse_st = parse_st + '\t' + 'json_object_put(%s);' %(obj_in) + '\n'
-    parse_st = parse_st + '\t' +'return UNC_DRV_RC_ERR_GENERIC;' + '\n'
+    if check_mand == 'yes':
+      parse_st = parse_st + '\t' +'return UNC_DRV_RC_ERR_GENERIC;' + '\n'
     parse_st = parse_st + '}' +'\n'
     d['parse_st'] = parse_st
     file = open(output_file_name, "a")
@@ -800,53 +813,59 @@ def parse_struct_object(item, struct_name, st_member, obj_in, array_index, outpu
             parent_obj = 'jobj_' + st_member
             parse_member(item, st_name, parent_obj, member, array_index, output_file_name, d)
         elif sub_mem_type == 'array':
-            parse_array_object(item, member, obj_in, output_file_name, d)
+            parse_array_object(item, member, obj_in, st_member, output_file_name, d)
 
 # This method will generate parse methods for array-type structure  members
-def parse_array_object(item, member, obj_in, output_file_name, d):
+def parse_array_object(item, member, obj_in, st_member, output_file_name, d):
     class_name = parser.ReadValues(item, 'ROOT')['parse_class']
     req_key = parser.ReadValues(item, member)['key']
     st_name = parser.ReadValues(item, member)['struct_name']
     check_bool = parser.ReadValues(item, member)['check_bool_set']
+    resp_mand = parser.ReadValues(item, member).has_key('mandatory')
+    check_child = parser.ReadValues(item, member)['is_child']
     response1 = parser.ReadValues(item, member).has_key('is_audit')
     key_s = req_key.replace('"', '')
     object = 'uint32_t array_length = 0;' + '\n'
     object = object +'json_object *obj_%s = NULL;'%(member) +'\n'
     if check_bool == 'yes':
-        object = object +'ret_val = restjson::JsonBuildParse::parse(%s,%s'%(obj_in, req_key) +',0,obj_%s);'%(member) + '\n'
-    elif check_bool == 'no':
-        object = object +'ret_val = restjson::JsonBuildParse::parse(%s,%s'%(obj_in, req_key) +',-1,obj_%s);'%(member) + '\n'
+        object = object + 'ret_val = restjson::JsonBuildParse::parse(%s,%s'%(obj_in, req_key) +',0,obj_%s);'%(member) + '\n'
+    elif check_bool == 'no' and check_child == 'no':
+        object = object + 'ret_val = restjson::JsonBuildParse::parse(jobj_%s,%s'%(st_member, req_key) +',-1,obj_%s);'%(member) + '\n'
+    elif check_bool == 'no' and check_child == 'yes':
+        object = object + 'ret_val = restjson::JsonBuildParse::parse(%s,%s'%(obj_in, req_key) +',-1,obj_%s);'%(member) + '\n'
     check_mem = parser.ReadValues(item,class_name).has_key('build_request_members')
     if str(check_mem) == 'False':
        object = object + 'if ((restjson::REST_OP_SUCCESS != ret_val) || (json_object_is_type(obj_%s, json_type_null))) {'%(member) + '\n'
        object = object + '\t' + 'json_object_put(json_parser);' + '\n'
-       object = object + '\t' + 'pfc_log_error(" Error while parsing %s");'%(key_s) + '\n'
-       object = object + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' + '\n'
+       object = object + '\t' + 'pfc_log_trace(" Error while parsing %s");'%(key_s) + '\n'
+       if str(resp_mand) == 'True':
+         check_mand = parser.ReadValues(item, member)['mandatory']
+         if check_mand == 'yes':
+           object = object + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' + '\n'
        object = object + '}' + '\n'
     elif str(check_mem) == 'True':
        object = object + 'if (restjson::REST_OP_SUCCESS != ret_val) {' + '\n'
        object = object + '\t' + 'json_object_put(json_parser);' + '\n'
-       object = object + '\t' + 'pfc_log_error(" Error while parsing %s");'%(key_s) + '\n'
-       object = object + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' + '\n'
+       object = object + '\t' + 'pfc_log_trace(" Error while parsing %s");'%(key_s) + '\n'
+       if str(resp_mand) == 'True':
+         check_mand = parser.ReadValues(item, member)['mandatory']
+         if check_mand == 'yes':
+           object = object + '\t' + 'return UNC_DRV_RC_ERR_GENERIC;' + '\n'
        object = object + '}' + '\n'
        if str(response1) == 'True':
            object = object + 'if (json_object_is_type(obj_%s, json_type_null)) {'%(member) + '\n'
            object = object + '\t' + 'json_object_put(json_parser);' + '\n'
-           object = object + '\t' + 'pfc_log_error(" No %s present");'%(key_s) + '\n'
+           object = object + '\t' + 'pfc_log_trace(" No %s present");'%(key_s) + '\n'
            object = object + '\t' + 'return UNC_RC_NO_SUCH_INSTANCE;' + '\n'
            object = object + '}' + '\n'
        elif str(response1) == 'False':
            object = object + 'if (json_object_is_type(obj_%s, json_type_null)) {'%(member) + '\n'
            object = object + '\t' + 'json_object_put(json_parser);' + '\n'
-           object = object + '\t' + 'pfc_log_error(" No %s present");'%(key_s) + '\n'
+           object = object + '\t' + 'pfc_log_trace(" No %s present");'%(key_s) + '\n'
            object = object + '\t' + 'return UNC_RC_SUCCESS;' + '\n'
            object = object + '}' + '\n'
     object = object + 'if (json_object_is_type(obj_%s, json_type_array)) {'%(member) + '\n'
-    check_key = parser.ReadValues(item, member).has_key('s_array')
-    if str(check_key) == 'True':
-        object = object + '\t' + 'array_length = restjson::JsonBuildParse::get_array_length(obj_%s);'%(member) + '\n'
-    else:
-        object = object + '\t' + 'array_length = restjson::JsonBuildParse::get_array_length(obj_%s);'%(member) + '\n'
+    object = object + '\t' + 'array_length = restjson::JsonBuildParse::get_array_length(obj_%s);'%(member) + '\n'
     object = object +  '}' + '\n'
     object = object + 'if (0 == array_length) {' + '\n'
     object = object + '\t' +'pfc_log_debug("No %s present");'%(member) +'\n'
