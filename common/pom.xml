@@ -37,7 +37,6 @@
   </scm>
 
   <properties>
-    <nexusproxy>http://nexus.opendaylight.org/content</nexusproxy>
     <sitedeploy>
       dav:http://nexus.opendaylight.org/content/sites/site
     </sitedeploy>
