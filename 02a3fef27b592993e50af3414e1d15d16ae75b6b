@@ -16,6 +16,24 @@
       "revId": "02a3fef27b592993e50af3414e1d15d16ae75b6b",
       "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a494da4_70bbd672",
+        "filename": "manager/features/pom.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 220,
+      "author": {
+        "id": 2759
+      },
+      "writtenOn": "2016-04-12T14:51:56Z",
+      "side": 0,
+      "message": "I only see one line for:\n\n\u003crepository\u003emvn:org.opendaylight.ovsdb/southbound-features/${odl.ovsdb.version}/xml/features\u003c/repository\u003e\n\nWhich I think they need for the southboand-features below.",
+      "parentUuid": "1a494da4_f0e1a69b",
+      "revId": "02a3fef27b592993e50af3414e1d15d16ae75b6b",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
     }
   ]
 }
