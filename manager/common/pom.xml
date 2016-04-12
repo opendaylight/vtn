@@ -646,14 +646,6 @@
         <version>${odl.ovsdb.version}</version>
       </dependency>
 
-      <dependency>
-        <groupId>org.opendaylight.ovsdb</groupId>
-        <artifactId>features-ovsdb</artifactId>
-        <version>${odl.ovsdb.version}</version>
-        <classifier>features</classifier>
-        <type>xml</type>
-      </dependency>
-
       <!-- Karaf features -->
       <dependency>
         <groupId>org.apache.karaf.features</groupId>
