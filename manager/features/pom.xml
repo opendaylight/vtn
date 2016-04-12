@@ -217,8 +217,8 @@
 
     <!-- OpenDaylight ovsdb -->
     <dependency>
-      <groupId>org.opendaylight.ovsdb</groupId>
-      <artifactId>features-ovsdb</artifactId>
+      <groupId>org.opendaylight.netvirt</groupId>
+      <artifactId>features-netvirt</artifactId>
       <classifier>features</classifier>
       <type>xml</type>
     </dependency>

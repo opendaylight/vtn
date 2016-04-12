@@ -86,6 +86,7 @@
     <odl.openflowplugin.version>0.3.0-SNAPSHOT</odl.openflowplugin.version>
     <odl.neutron.version>0.7.0-SNAPSHOT</odl.neutron.version>
     <odl.ovsdb.version>1.3.0-SNAPSHOT</odl.ovsdb.version>
+    <odl.netvirt.version>1.3.0-SNAPSHOT</odl.netvirt.version>
     <odl.thirdparty.jung2.version>2.0.1</odl.thirdparty.jung2.version>
   </properties>
 
@@ -647,9 +648,9 @@
       </dependency>
 
       <dependency>
-        <groupId>org.opendaylight.ovsdb</groupId>
-        <artifactId>features-ovsdb</artifactId>
-        <version>${odl.ovsdb.version}</version>
+        <groupId>org.opendaylight.netvirt</groupId>
+        <artifactId>features-netvirt</artifactId>
+        <version>${odl.netvirt.version}</version>
         <classifier>features</classifier>
         <type>xml</type>
       </dependency>
