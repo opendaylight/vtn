@@ -1114,7 +1114,7 @@ public final class VTenantManager
             if (logger.isInfoEnabled()) {
                 VbridgeConfig old = cdata.getOldValue();
                 logger.info("{}: vBridge has been changed: old={{}}, new={{}}",
-                            ident, toString(vbrc), toString(old));
+                            ident, toString(old), toString(vbrc));
             }
 
             // Update the entity of the vBridge.
