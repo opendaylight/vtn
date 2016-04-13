@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1a494da4_fd197a7a",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/impl/OVSDBEventHandler.java",
+        "patchSetId": 3
+      },
+      "lineNbr": 723,
+      "author": {
+        "id": 5805
+      },
+      "writtenOn": "2016-04-13T12:33:28Z",
+      "side": 1,
+      "message": "Method name and comments for method do not match.\nPlease take appropriate action.",
+      "range": {
+        "startLine": 716,
+        "startChar": 3,
+        "endLine": 723,
+        "endChar": 5
+      },
+      "revId": "fbbfdd0a669f492951447bfbd9c4b3adb4820c63",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
