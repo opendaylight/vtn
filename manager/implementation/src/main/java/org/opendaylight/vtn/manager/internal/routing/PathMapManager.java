@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -251,19 +251,26 @@ public final class PathMapManager
      *                 object.
      * @param created  {@code true} means that the given path map has been
      *                 newly created.
+     * @return  {@code true} on success. {@code false} on failure.
      */
-    private void onUpdated(GlobalPathMapChange ectx,
-                           IdentifiedData<VtnPathMap> data, boolean created) {
+    private boolean onUpdated(GlobalPathMapChange ectx,
+                              IdentifiedData<VtnPathMap> data,
+                              boolean created) {
         VtnPathMap vpm = data.getValue();
+        boolean result;
         try {
             XmlPathMap xpm = new XmlPathMap(vpm);
             ectx.addUpdated(xpm.getIndex(), xpm, created);
+            result = true;
         } catch (Exception e) {
             FixedLogger logger = new FixedLogger(LOG, VTNLogLevel.WARN);
             logger.log(e, "Ignore broken %s event: path=%s, value=%s",
                        (created) ? "creation" : "update",
                        data.getIdentifier(), vpm);
+            result = false;
         }
+
+        return result;
     }
 
     // DataStoreListener
@@ -291,7 +298,9 @@ public final class PathMapManager
     @Override
     protected void onCreated(GlobalPathMapChange ectx,
                              IdentifiedData<VtnPathMap> data) {
-        onUpdated(ectx, data, true);
+        if (onUpdated(ectx, data, true)) {
+            PathMapUtils.log(LOG, data, VtnUpdateType.CREATED);
+        }
     }
 
     /**
@@ -300,7 +309,9 @@ public final class PathMapManager
     @Override
     protected void onUpdated(GlobalPathMapChange ectx,
                              ChangedData<VtnPathMap> data) {
-        onUpdated(ectx, data, false);
+        if (onUpdated(ectx, data, false)) {
+            PathMapUtils.log(LOG, data);
+        }
     }
 
     /**
@@ -316,6 +327,7 @@ public final class PathMapManager
                      path, data.getValue());
         } else {
             ectx.addRemoved(index);
+            PathMapUtils.log(LOG, data, VtnUpdateType.REMOVED);
         }
     }
 

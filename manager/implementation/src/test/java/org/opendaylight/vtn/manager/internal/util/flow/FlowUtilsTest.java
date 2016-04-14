@@ -531,6 +531,118 @@ public class FlowUtilsTest extends TestBase {
     }
 
     /**
+     * Test case for
+     * {@link FlowUtils#equalsFlowTimeoutConfig(VtnFlowTimeoutConfig,VtnFlowTimeoutConfig)}.
+     */
+    @Test
+    public void testEqualsFlowTimeoutConfig() {
+        TimeoutConfig t1 = new TimeoutConfig();
+        TimeoutConfig t2 = new TimeoutConfig();
+        Integer[] timeouts = {
+            null, 0, 1, 10, 123, 345, 1000, 5555, 34567, 60000, 65535,
+        };
+        Integer[] notEquals = {
+            2, 9, 124, 346, 1001, 60001, 65534,
+        };
+
+        for (Integer idle: timeouts) {
+            t1.setIdleTimeout(idle);
+            t2.setIdleTimeout(idle);
+            for (Integer hard: timeouts) {
+                t1.setHardTimeout(hard);
+                t2.setHardTimeout(hard);
+                assertEquals(true, FlowUtils.equalsFlowTimeoutConfig(t1, t2));
+                assertEquals(true, FlowUtils.equalsFlowTimeoutConfig(t2, t1));
+                for (Integer t: notEquals) {
+                    t2.setHardTimeout(t);
+                    assertEquals(false,
+                                 FlowUtils.equalsFlowTimeoutConfig(t1, t2));
+                    assertEquals(false,
+                                 FlowUtils.equalsFlowTimeoutConfig(t2, t1));
+                }
+                if (hard != null) {
+                    t2.setHardTimeout(null);
+                    assertEquals(false,
+                                 FlowUtils.equalsFlowTimeoutConfig(t1, t2));
+                    assertEquals(false,
+                                 FlowUtils.equalsFlowTimeoutConfig(t2, t1));
+                }
+
+                t2.setHardTimeout(hard);
+                for (Integer t: notEquals) {
+                    t2.setIdleTimeout(t);
+                    assertEquals(false,
+                                 FlowUtils.equalsFlowTimeoutConfig(t1, t2));
+                    assertEquals(false,
+                                 FlowUtils.equalsFlowTimeoutConfig(t2, t1));
+                }
+                if (idle != null) {
+                    t2.setIdleTimeout(null);
+                    assertEquals(false,
+                                 FlowUtils.equalsFlowTimeoutConfig(t1, t2));
+                    assertEquals(false,
+                                 FlowUtils.equalsFlowTimeoutConfig(t2, t1));
+                }
+
+                t2.setIdleTimeout(idle);
+            }
+        }
+    }
+
+    /**
+     * Test case for
+     * {@link FlowUtils#setDescription(StringBuilder,VtnFlowTimeoutConfig,String)}.
+     */
+    @Test
+    public void testSetDescription() {
+        String[] separators = {", ", ": "};
+        for (String sep: separators) {
+            TimeoutConfig tc = new TimeoutConfig();
+            StringBuilder sb = new StringBuilder();
+            FlowUtils.setDescription(sb, tc, sep);
+            assertEquals("", sb.toString());
+
+            Integer idle = 10;
+            String expected = "idle=" + idle;
+            tc.setIdleTimeout(idle);
+            sb = new StringBuilder();
+            FlowUtils.setDescription(sb, tc, sep);
+            assertEquals(expected, sb.toString());
+
+            String prefix = "a";
+            expected = prefix + sep + expected;
+            sb = new StringBuilder(prefix);
+            FlowUtils.setDescription(sb, tc, sep);
+            assertEquals(expected, sb.toString());
+
+            Integer hard = 65535;
+            idle = null;
+            expected = "hard=" + hard;
+            tc.setIdleTimeout(idle).setHardTimeout(hard);
+            sb = new StringBuilder();
+            FlowUtils.setDescription(sb, tc, sep);
+            assertEquals(expected, sb.toString());
+
+            expected = prefix + sep + expected;
+            sb = new StringBuilder(prefix);
+            FlowUtils.setDescription(sb, tc, sep);
+            assertEquals(expected, sb.toString());
+
+            idle = 12345;
+            expected = "idle=" + idle + sep + "hard=" + hard;
+            tc.setIdleTimeout(idle);
+            sb = new StringBuilder();
+            FlowUtils.setDescription(sb, tc, sep);
+            assertEquals(expected, sb.toString());
+
+            expected = prefix + sep + expected;
+            sb = new StringBuilder(prefix);
+            FlowUtils.setDescription(sb, tc, sep);
+            assertEquals(expected, sb.toString());
+        }
+    }
+
+    /**
      * Test case for {@link FlowUtils#getInitialFlowId()}.
      */
     @Test

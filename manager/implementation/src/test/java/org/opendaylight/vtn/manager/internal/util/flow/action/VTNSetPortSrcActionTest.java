@@ -94,6 +94,7 @@ public class VTNSetPortSrcActionTest extends TestBase {
      *   <li>{@link VTNSetPortSrcAction#toFlowFilterAction(VtnAction,Integer)}</li>
      *   <li>{@link VTNSetPortSrcAction#toVtnAction(Action)}</li>
      *   <li>{@link VTNSetPortSrcAction#getDescription(Action)}</li>
+     *   <li>{@link VTNSetPortSrcAction#getDescription(VtnAction)}</li>
      *   <li>{@link VTNPortAction#getPort()}</li>
      *   <li>{@link VTNPortAction#getPortNumber()}</li>
      *   <li>{@link VTNPortAction#verifyImpl()}</li>
@@ -253,13 +254,18 @@ public class VTNSetPortSrcActionTest extends TestBase {
             // toVtnAction() should never affect instance variables.
             assertEquals(0, va.getPort());
 
-            // getDescription() test.
+            // getDescription(VtnAction) test.
+            // It should never affect instance variables.
+            String desc = "set-port-src(" + port + ")";
+            assertEquals(desc, va.getDescription(vaction));
+            assertEquals(0, va.getPort());
+
+            // getDescription(Action) test.
+            // It should never affect instance variables.
             action = new SetTpSrcActionCaseBuilder().
                 setSetTpSrcAction(ma).build();
-            String desc = "SET_TP_SRC(port=" + port + ")";
+            desc = "SET_TP_SRC(port=" + port + ")";
             assertEquals(desc, va.getDescription(action));
-
-            // getDescription() should never affect instance variables.
             assertEquals(0, va.getPort());
         }
 

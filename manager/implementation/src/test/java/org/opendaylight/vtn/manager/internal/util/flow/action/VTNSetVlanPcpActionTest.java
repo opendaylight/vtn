@@ -93,6 +93,7 @@ public class VTNSetVlanPcpActionTest extends TestBase {
      *   <li>{@link VTNSetVlanPcpAction#toFlowFilterAction(VtnAction,Integer)}</li>
      *   <li>{@link VTNSetVlanPcpAction#toVtnAction(Action)}</li>
      *   <li>{@link VTNSetVlanPcpAction#getDescription(Action)}</li>
+     *   <li>{@link VTNSetVlanPcpAction#getDescription(VtnAction)}</li>
      *   <li>{@link FlowFilterAction#verify()}</li>
      *   <li>{@link FlowFilterAction#getIdentifier()}</li>
      *   <li>{@link FlowFilterAction#toVtnFlowAction()}</li>
@@ -245,13 +246,19 @@ public class VTNSetVlanPcpActionTest extends TestBase {
             // toVtnAction() should never affect instance variables.
             assertEquals(0, va.getPriority());
 
-            // getDescription() test.
+            // getDescription(VtnAction) test.
+            // It should never affect instance variables.
+            VtnAction vaction = vac;
+            String desc = "set-vlan-pcp(" + pcp + ")";
+            assertEquals(desc, va.getDescription(vaction));
+            assertEquals(0, va.getPriority());
+
+            // getDescription(Action) test.
+            // It should never affect instance variables.
             action = new SetVlanPcpActionCaseBuilder().
                 setSetVlanPcpAction(ma).build();
-            String desc = "SET_VLAN_PCP(pcp=" + pcp + ")";
+            desc = "SET_VLAN_PCP(pcp=" + pcp + ")";
             assertEquals(desc, va.getDescription(action));
-
-            // getDescription() should never affect instance variables.
             assertEquals(0, va.getPriority());
         }
 

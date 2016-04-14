@@ -44,9 +44,13 @@
           level="ERROR"/>
   <logger name="org.opendaylight.vtn.manager.internal.util.XmlConfigFile"
           level="OFF"/>
+  <logger name="org.opendaylight.vtn.manager.internal.util.flow.action.FlowActionConverter"
+          level="OFF"/>
   <logger name="org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondReader"
           level="ERROR"/>
   <logger name="org.opendaylight.vtn.manager.internal.util.flow.cond.VTNFlowCondition"
+          level="OFF"/>
+  <logger name="org.opendaylight.vtn.manager.internal.util.flow.filter.VTNRedirectFilter"
           level="OFF"/>
   <logger name="org.opendaylight.vtn.manager.internal.util.tx.TxSyncFuture"
           level="ERROR"/>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -11,6 +11,7 @@ package org.opendaylight.vtn.manager.internal.routing;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -23,9 +24,11 @@ import org.opendaylight.vtn.manager.internal.TxTask;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.routing.xml.XmlPathPolicy;
 import org.opendaylight.vtn.manager.internal.util.ChangedData;
-import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
+import org.opendaylight.vtn.manager.internal.util.IdentifierTargetComparator;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.MultiDataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
@@ -45,12 +48,14 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.Vt
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.VtnPathPoliciesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicy;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicyKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policy.config.VtnPathCost;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
  * A data change listener that listens change of path policy configuration.
  */
 final class PathPolicyListener
-    extends DataStoreListener<VtnPathPolicy, PathPolicyChange> {
+    extends MultiDataStoreListener<VtnPathPolicy, PathPolicyChange> {
     /**
      * Logger instance.
      */
@@ -58,9 +63,24 @@ final class PathPolicyListener
         LoggerFactory.getLogger(PathPolicyListener.class);
 
     /**
+     * Comparator for the target type of instance identifier that specifies
+     * the order of data change event processing.
+     */
+    private static final IdentifierTargetComparator  PATH_COMPARATOR;
+
+    /**
      * A graph that keeps network topology.
      */
     private final TopologyGraph  topology;
+
+    /**
+     * Initialize static fields.
+     */
+    static {
+        PATH_COMPARATOR = new IdentifierTargetComparator().
+            setOrder(VtnPathCost.class, 1).
+            setOrder(VtnPathPolicy.class, 2);
+    }
 
     /**
      * MD-SAL transaction task to load path policy configuration.
@@ -267,12 +287,148 @@ final class PathPolicyListener
      * @return  An {@link Integer} instance which represents the path policy
      *          identifier. {@code null} on failure.
      */
-    private Integer getIdentifier(InstanceIdentifier<VtnPathPolicy> path) {
+    private Integer getIdentifier(InstanceIdentifier<?> path) {
         VtnPathPolicyKey key = path.firstKeyOf(VtnPathPolicy.class);
         return (key == null) ? null : key.getId();
     }
 
-    // DataStoreListener
+    /**
+     * Handle creation or removal event for a path cost.
+     *
+     * @param data  An {@link IdentifiedData} instance that contains a path
+     *              cost.
+     * @param type  {@link VtnUpdateType#CREATED} on added,
+     *              {@link VtnUpdateType#REMOVED} on removed.
+     */
+    private void onPathCostChanged(IdentifiedData<?> data,
+                                   VtnUpdateType type) {
+        IdentifiedData<VtnPathCost> cdata = data.checkType(VtnPathCost.class);
+        if (cdata != null) {
+            VtnPathCost vpc = cdata.getValue();
+            LOG.info("{}: Path cost has been {}: desc=\"{}\", cost={}",
+                     getIdentifier(cdata.getIdentifier()),
+                     MiscUtils.toLowerCase(type), vpc.getPortDesc().getValue(),
+                     vpc.getCost());
+        } else {
+            // This should never happen.
+            data.unexpected(LOG, type);
+        }
+    }
+
+    /**
+     * Handle update event for a path cost.
+     *
+     * @param data  A {@link ChangedData} instance that contains a path cost.
+     */
+    private void onPathCostChanged(ChangedData<?> data) {
+        ChangedData<VtnPathCost> cdata = data.checkType(VtnPathCost.class);
+        if (cdata != null) {
+            VtnPathCost vpc = cdata.getValue();
+            VtnPathCost old = cdata.getOldValue();
+            LOG.info("{}: Path cost has been changed: desc=\"{}\", " +
+                     "cost={{} -> {}}", getIdentifier(cdata.getIdentifier()),
+                     vpc.getPortDesc().getValue(), old.getCost(),
+                     vpc.getCost());
+        } else {
+            // This should never happen.
+            data.unexpected(LOG, VtnUpdateType.CHANGED);
+        }
+    }
+
+    // MultiDataStoreListener
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected IdentifierTargetComparator getComparator() {
+        return PATH_COMPARATOR;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected boolean getOrder(VtnUpdateType type) {
+        // Creation events should be processed from outer to inner.
+        // Other events should be processed from inner to outer.
+        return (type != VtnUpdateType.CREATED);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void onCreated(PathPolicyChange ectx, IdentifiedData<?> data) {
+        IdentifiedData<VtnPathPolicy> pdata =
+            data.checkType(VtnPathPolicy.class);
+        if (pdata != null) {
+            VtnPathPolicy vpp = pdata.getValue();
+            Integer id = vpp.getId();
+            if (id == null) {
+                LOG.warn("Ignore broken creation event: path={}, value={}",
+                         pdata.getIdentifier(), vpp);
+            } else {
+                ectx.addUpdated(id, new XmlPathPolicy(vpp));
+                LOG.info("Path policy has been created: id={}, default={}",
+                         id, vpp.getDefaultCost());
+            }
+        } else {
+            onPathCostChanged(data, VtnUpdateType.CREATED);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void onUpdated(PathPolicyChange ectx, ChangedData<?> data) {
+        ChangedData<VtnPathPolicy> pdata = data.checkType(VtnPathPolicy.class);
+        if (pdata != null) {
+            VtnPathPolicy vpp = pdata.getValue();
+            VtnPathPolicy old = pdata.getOldValue();
+            Integer id = vpp.getId();
+            if (id == null) {
+                LOG.warn("Ignore broken update event: path={}, old={}, new={}",
+                         pdata.getIdentifier(), old, vpp);
+            } else {
+                ectx.addUpdated(id, new XmlPathPolicy(vpp));
+                Long def = vpp.getDefaultCost();
+                Long odef = old.getDefaultCost();
+                if (!Objects.equals(def, odef)) {
+                    LOG.info("Default cost for path policy has been changed:" +
+                             " id={}, default={{} -> {}}", id, odef, def);
+                }
+            }
+        } else {
+            onPathCostChanged(data);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void onRemoved(PathPolicyChange ectx, IdentifiedData<?> data) {
+        IdentifiedData<VtnPathPolicy> pdata =
+            data.checkType(VtnPathPolicy.class);
+        if (pdata != null) {
+            VtnPathPolicy vpp = pdata.getValue();
+            Integer id = vpp.getId();
+            if (id == null) {
+                LOG.warn("Ignore broken removal event: path={}, value={}",
+                         pdata.getIdentifier(), vpp);
+            } else {
+                ectx.addRemoved(id);
+                LOG.info("Path policy has been removed: id={}, default={}",
+                         id, vpp.getDefaultCost());
+            }
+        } else {
+            onPathCostChanged(data, VtnUpdateType.REMOVED);
+        }
+    }
+
+    // AbstractDataChangeListener
 
     /**
      * {@inheritDoc}
@@ -289,55 +445,6 @@ final class PathPolicyListener
     @Override
     protected void exitEvent(PathPolicyChange ectx) {
         ectx.apply(LOG);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void onCreated(PathPolicyChange ectx,
-                             IdentifiedData<VtnPathPolicy> data) {
-        InstanceIdentifier<VtnPathPolicy> path = data.getIdentifier();
-        Integer id = getIdentifier(path);
-        if (id == null) {
-            LOG.warn("Ignore broken creation event: path={}, value={}",
-                     path, data.getValue());
-        } else {
-            ectx.addUpdated(id, new XmlPathPolicy(data.getValue()));
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void onUpdated(PathPolicyChange ectx,
-                             ChangedData<VtnPathPolicy> data) {
-        InstanceIdentifier<VtnPathPolicy> path = data.getIdentifier();
-        VtnPathPolicy vpp = data.getValue();
-        Integer id = getIdentifier(path);
-        if (id == null) {
-            LOG.warn("Ignore broken update event: path={}, old={}, new={}",
-                     path, vpp, data.getOldValue());
-        } else {
-            ectx.addUpdated(id, new XmlPathPolicy(vpp));
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void onRemoved(PathPolicyChange ectx,
-                             IdentifiedData<VtnPathPolicy> data) {
-        InstanceIdentifier<VtnPathPolicy> path = data.getIdentifier();
-        Integer id = getIdentifier(path);
-        if (id == null) {
-            LOG.warn("Ignore broken removal event: path={}, value={}",
-                     path, data.getValue());
-        } else {
-            ectx.addRemoved(id);
-        }
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -215,6 +215,16 @@ public final class VTNSetVlanPcpAction extends FlowFilterAction {
         ether.setVlanPriority(priority);
         ctx.addFilterAction(this);
         return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getDescription(VtnAction vact) throws RpcException {
+        VtnSetVlanPcpActionCase ac = cast(VtnSetVlanPcpActionCase.class, vact);
+        return "set-vlan-pcp(" + getVlanPriority(ac.getVtnSetVlanPcpAction()) +
+            ")";
     }
 
     /**

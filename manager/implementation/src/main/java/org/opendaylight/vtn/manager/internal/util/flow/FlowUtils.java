@@ -172,6 +172,16 @@ public final class FlowUtils {
     private static final String  DESC_HARD_TIMEOUT = "hard-timeout";
 
     /**
+     * A short tag that indicates the idle-timeout value.
+     */
+    private static final String  TAG_IDLE = "idle=";
+
+    /**
+     * A short tag that indicates the hard-timeout value.
+     */
+    private static final String  TAG_HARD = "hard=";
+
+    /**
      * A prefix for a MD-SAL flow ID to be associated with a table miss flow
      * entry.
      */
@@ -280,15 +290,38 @@ public final class FlowUtils {
         VtnFlowTimeoutConfig vftc1, VtnFlowTimeoutConfig vftc2) {
         Integer idle1 = vftc1.getIdleTimeout();
         Integer idle2 = vftc2.getIdleTimeout();
-        boolean ret;
-        if (Objects.equals(idle1, idle2)) {
+        boolean ret = Objects.equals(idle1, idle2);
+        if (ret) {
             ret = Objects.equals(vftc1.getHardTimeout(),
                                  vftc2.getHardTimeout());
-        } else {
-            ret = false;
         }
 
         return ret;
+    }
+
+    /**
+     * Append strings that describes the specified flow timeout configuration
+     * into the specified string builder.
+     *
+     * @param builder    A string builder.
+     * @param vftc       The flow timeout configuration.
+     * @param separator  A string to be used for field separator.
+     */
+    public static void setDescription(StringBuilder builder,
+                                      VtnFlowTimeoutConfig vftc,
+                                      String separator) {
+        String sep = (builder.length() == 0) ? "" : separator;
+
+        Integer idle = vftc.getIdleTimeout();
+        if (idle != null) {
+            builder.append(sep).append(TAG_IDLE).append(idle);
+            sep = separator;
+        }
+
+        Integer hard = vftc.getHardTimeout();
+        if (hard != null) {
+            builder.append(sep).append(TAG_HARD).append(hard);
+        }
     }
 
     /**

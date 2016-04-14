@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,8 +7,6 @@
  */
 
 package org.opendaylight.vtn.manager.internal.vnode;
-
-import org.slf4j.Logger;
 
 import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
@@ -97,33 +95,27 @@ abstract class VNodeChangeListener<T extends DataObject> {
     /**
      * Invoked when a virtual node has been created.
      *
-     * @param ectx    A {@link VTenantChange} instance.
-     * @param logger  A logger instance.
-     * @param data    An {@link IdentifiedData} instance which contains the
-     *                created data.
+     * @param ectx  A {@link VTenantChange} instance.
+     * @param data  An {@link IdentifiedData} instance which contains the
+     *              created data.
      */
-    abstract void onCreated(VTenantChange ectx, Logger logger,
-                            IdentifiedData<?> data);
+    abstract void onCreated(VTenantChange ectx, IdentifiedData<?> data);
 
     /**
      * Invoked when a virtual node has been updated.
      *
-     * @param ectx    A {@link VTenantChange} instance.
-     * @param logger  A logger instance.
-     * @param data    A {@link ChangedData} instance which contains the
-     *                changed data.
+     * @param ectx  A {@link VTenantChange} instance.
+     * @param data  A {@link ChangedData} instance which contains the
+     *              changed data.
      */
-    abstract void onUpdated(VTenantChange ectx, Logger logger,
-                            ChangedData<?> data);
+    abstract void onUpdated(VTenantChange ectx, ChangedData<?> data);
 
     /**
      * Invoked when a virtual node has been removed.
      *
-     * @param ectx    A {@link VTenantChange} instance.
-     * @param logger  A logger instance.
-     * @param data    An {@link IdentifiedData} instance which contains the
-     *                removed data.
+     * @param ectx  A {@link VTenantChange} instance.
+     * @param data  An {@link IdentifiedData} instance which contains the
+     *              removed data.
      */
-    abstract void onRemoved(VTenantChange ectx, Logger logger,
-                            IdentifiedData<?> data);
+    abstract void onRemoved(VTenantChange ectx, IdentifiedData<?> data);
 }

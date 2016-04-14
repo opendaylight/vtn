@@ -99,6 +99,7 @@ public class VTNSetInetSrcActionTest extends TestBase {
      *   <li>{@link VTNSetInetSrcAction#toFlowFilterAction(VtnAction,Integer)}</li>
      *   <li>{@link VTNSetInetSrcAction#toVtnAction(Action)}</li>
      *   <li>{@link VTNSetInetSrcAction#getDescription(Action)}</li>
+     *   <li>{@link VTNSetInetSrcAction#getDescription(VtnAction)}</li>
      *   <li>{@link VTNInetAddrAction#getAddress()}</li>
      *   <li>{@link VTNInetAddrAction#getMdAddress()}</li>
      *   <li>{@link VTNInetAddrAction#verifyImpl()}</li>
@@ -245,18 +246,46 @@ public class VTNSetInetSrcActionTest extends TestBase {
             // toVtnAction() should never affect instance variables.
             assertEquals(null, va.getAddress());
 
-            // getDescription() test.
+            // getDescription(VtnAction) test.
+            // It should never affect instance variables.
+            String desc = "set-inet-src(ipv4=" + iaddr.getCidrText() + ")";
+            assertEquals(desc, va.getDescription(vaction));
+            assertEquals(null, va.getAddress());
+
+            VtnSetInetSrcAction vact1 = new VtnSetInetSrcActionBuilder().
+                build();
+            VtnAction vaction1 = new VtnSetInetSrcActionCaseBuilder().
+                setVtnSetInetSrcAction(vact1).
+                build();
+            desc = "set-inet-src(null)";
+            assertEquals(desc, va.getDescription(vaction1));
+            assertEquals(null, va.getAddress());
+
+            String ipv6 = "2001:8b91:abcd::/48";
+            Address maddr = new Ipv6Builder().
+                setIpv6Address(new Ipv6Prefix(ipv6)).
+                build();
+            vact1 = new VtnSetInetSrcActionBuilder().
+                setAddress(maddr).
+                build();
+            vaction1 = new VtnSetInetSrcActionCaseBuilder().
+                setVtnSetInetSrcAction(vact1).
+                build();
+            desc = "set-inet-src(ipv6=" + ipv6 + ")";
+            assertEquals(desc, va.getDescription(vaction1));
+            assertEquals(null, va.getAddress());
+
+            // getDescription(Action) test.
+            // It should never affect instance variables.
             action = new SetNwSrcActionCaseBuilder().
                 setSetNwSrcAction(ma).build();
-            String desc = "SET_NW_SRC(ipv4=" + iaddr.getCidrText() + ")";
+            desc = "SET_NW_SRC(ipv4=" + iaddr.getCidrText() + ")";
             assertEquals(desc, va.getDescription(action));
-
-            // getDescription() should never affect instance variables.
             assertEquals(null, va.getAddress());
         }
 
         Action action = new SetNwSrcActionCaseBuilder().build();
-        String desc = "SET_NW_SRC()";
+        String desc = "SET_NW_SRC(null)";
         assertEquals(desc, va.getDescription(action));
         assertEquals(null, va.getAddress());
 

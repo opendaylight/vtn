@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -145,6 +145,18 @@ public abstract class VTNPortAction extends FlowFilterAction {
         Integer num = (port == null) ? null : port.getValue();
         return new StringBuilder(name).append("(port=").
             append(num).append(')').toString();
+    }
+
+    /**
+     * Return a description about the specified VTN action.
+     *
+     * @param name  The name of the flow action.
+     * @param act   A {@link VtnPortActionFields} instance.
+     * @return  A description about the specified VTN action.
+     */
+    protected final String getDescription(String name,
+                                          VtnPortActionFields act) {
+        return name + "(" + getPortNumber(act) + ")";
     }
 
     // FlowFilterAction
