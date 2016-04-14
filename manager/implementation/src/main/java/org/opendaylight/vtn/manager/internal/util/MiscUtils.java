@@ -58,6 +58,11 @@ public final class MiscUtils {
         LoggerFactory.getLogger("ODL-VTN-Manager-verbose");
 
     /**
+     * A string to be used as a field separator in a log message.
+     */
+    public static final String  LOG_SEPARATOR = ", ";
+
+    /**
      * A map that keeps lower-cased name of {@link VtnUpdateType}.
      */
     private static final Map<VtnUpdateType, String>  UPDATE_TYPE_MAP;

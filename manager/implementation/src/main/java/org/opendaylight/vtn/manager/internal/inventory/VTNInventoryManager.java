@@ -197,8 +197,7 @@ public final class VTNInventoryManager
         }
 
         // This should never happen.
-        LOG.warn("{}: Unexpected event: path={}, data={}",
-                 type, data.getIdentifier(), data.getValue());
+        data.unexpected(LOG, type);
     }
 
     /**
@@ -418,9 +417,7 @@ public final class VTNInventoryManager
             }
 
             // This should never happen.
-            LOG.warn("CHANGED: Unexpected event: path={}, old={}, new={}",
-                     data.getIdentifier(), data.getOldValue(),
-                     data.getValue());
+            data.unexpected(LOG, VtnUpdateType.CHANGED);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -127,6 +127,20 @@ public abstract class VTNDlAddrAction extends FlowFilterAction {
         String addr = (mac == null) ? null : mac.getValue();
         return new StringBuilder(name).append("(address=").
             append(addr).append(')').toString();
+    }
+
+    /**
+     * Return a description about the specified VTN action.
+     *
+     * @param name  The name of the flow action.
+     * @param act   A {@link VtnDladdrActionFields} instance.
+     * @return  A description about the specified VTN action.
+     */
+    protected final String getDescription(String name,
+                                          VtnDladdrActionFields act) {
+        MacAddress mac = act.getAddress();
+        String addr = (mac == null) ? null : mac.getValue();
+        return name + "(" + addr + ")";
     }
 
     // FlowFilterAction

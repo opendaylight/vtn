@@ -10,6 +10,9 @@ package org.opendaylight.vtn.manager.internal.util.flow.action;
 
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.ImmutableMap;
 
 import org.opendaylight.vtn.manager.util.InetProtocols;
@@ -252,8 +255,9 @@ public final class FlowActionConverter {
             if (conv != null) {
                 try {
                     return conv.getDescription(act);
-                } catch (RpcException e) {
+                } catch (RpcException | RuntimeException e) {
                     // Ignore any error.
+                    unexpected(e);
                 }
             }
 
@@ -261,6 +265,31 @@ public final class FlowActionConverter {
         }
 
         return "Action(null)";
+    }
+
+    /**
+     * Return a brief description about the given VTN action.
+     *
+     * @param vact  A VTN action.
+     *              Note that a VTN action supported by flow filter needs to
+     *              be specified.
+     * @return  A string which describes the given VTN action.
+     */
+    public String getDescription(VtnAction vact) {
+        if (vact != null) {
+            Class<?> type = vact.getImplementedInterface();
+            FlowFilterAction conv = filterConverters.get(type);
+            if (conv != null) {
+                try {
+                    return conv.getDescription(vact);
+                } catch (RpcException | RuntimeException e) {
+                    // Ignore any error.
+                    unexpected(e);
+                }
+            }
+        }
+
+        return "vtn-action(" + vact + ")";
     }
 
     /**
@@ -298,5 +327,15 @@ public final class FlowActionConverter {
         }
 
         return conv;
+    }
+
+    /**
+     * Record an error log.
+     *
+     * @param cause  An exception that indicates the cause of error.
+     */
+    private void unexpected(Exception cause) {
+        Logger logger = LoggerFactory.getLogger(FlowActionConverter.class);
+        logger.error("Unexpected exception was caught.", cause);
     }
 }

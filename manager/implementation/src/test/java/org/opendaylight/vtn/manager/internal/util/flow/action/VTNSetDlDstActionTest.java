@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -93,6 +93,7 @@ public class VTNSetDlDstActionTest extends TestBase {
      *   <li>{@link VTNSetDlDstAction#toFlowFilterAction(VtnAction,Integer)}</li>
      *   <li>{@link VTNSetDlDstAction#toVtnAction(Action)}</li>
      *   <li>{@link VTNSetDlDstAction#getDescription(Action)}</li>
+     *   <li>{@link VTNSetDlDstAction#getDescription(VtnAction)}</li>
      *   <li>{@link VTNDlAddrAction#getAddress()}</li>
      *   <li>{@link VTNDlAddrAction#getMacAddress()}</li>
      *   <li>{@link VTNDlAddrAction#verifyImpl()}</li>
@@ -235,13 +236,25 @@ public class VTNSetDlDstActionTest extends TestBase {
             // toVtnAction() should never affect instance variables.
             assertEquals(null, va.getAddress());
 
-            // getDescription() test.
+            // getDescription(VtnAction) test.
+            // It should never affect instance variables.
+            String desc = "set-dl-dst(" + eaddr.getText() + ")";
+            assertEquals(desc, va.getDescription(vaction));
+            assertEquals(null, va.getAddress());
+            VtnSetDlDstAction vact1 = new VtnSetDlDstActionBuilder().
+                build();
+            VtnAction vaction1 = new VtnSetDlDstActionCaseBuilder().
+                setVtnSetDlDstAction(vact1).build();
+            desc = "set-dl-dst(null)";
+            assertEquals(desc, va.getDescription(vaction1));
+            assertEquals(null, va.getAddress());
+
+            // getDescription(Action) test.
+            // It should never affect instance variables.
             action = new SetDlDstActionCaseBuilder().
                 setSetDlDstAction(ma).build();
-            String desc = "SET_DL_DST(address=" + eaddr.getText() + ")";
+            desc = "SET_DL_DST(address=" + eaddr.getText() + ")";
             assertEquals(desc, va.getDescription(action));
-
-            // getDescription() should never affect instance variables.
             assertEquals(null, va.getAddress());
         }
 

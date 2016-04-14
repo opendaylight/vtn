@@ -8,11 +8,13 @@
 
 package org.opendaylight.vtn.manager.internal.vnode;
 
+import static org.opendaylight.vtn.manager.internal.util.MiscUtils.LOG_SEPARATOR;
 import static org.opendaylight.vtn.manager.internal.vnode.MappingRegistry.getMapping;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Future;
 
@@ -45,12 +47,14 @@ import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.MultiDataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
+import org.opendaylight.vtn.manager.internal.util.flow.action.FlowActionConverter;
 import org.opendaylight.vtn.manager.internal.util.flow.filter.VTNFlowFilter;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
+import org.opendaylight.vtn.manager.internal.util.pathmap.PathMapUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcFuture;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcUtils;
@@ -76,12 +80,14 @@ import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.RemoveFlowFilterInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.RemoveFlowFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.SetFlowFilterInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.SetFlowFilterOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.VtnFlowFilterService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.list.VtnFlowFilter;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.list.VtnFlowFilterKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.result.FlowFilterResult;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.mapping.rev151001.VtnMappings;
@@ -130,8 +136,7 @@ public final class VTenantManager
     /**
      * Logger instance.
      */
-    private static final Logger  LOG =
-        LoggerFactory.getLogger(VTenantManager.class);
+    static final Logger  LOG = LoggerFactory.getLogger(VTenantManager.class);
 
     /**
      * Comparator for the target type of instance identifier that specifies
@@ -143,11 +148,6 @@ public final class VTenantManager
      * Data change listeners for each data model in the VTN tree.
      */
     private static final Map<Class<?>, VNodeChangeListener<?>>  LISTENERS;
-
-    /**
-     * A separator for log message.
-     */
-    private static final String  LOG_SEPARATOR = ", ";
 
     /**
      * A tag that indicates the description.
@@ -217,6 +217,7 @@ public final class VTenantManager
         // Create a path comparator that assigns higher priority to inner data.
         int order = 0;
         PATH_COMPARATOR = new IdentifierTargetComparator().
+            setOrder(VtnFlowAction.class, ++order).
             setOrder(VtnFlowFilter.class, ++order).
             setOrder(VinterfaceStatus.class, ++order).
             setOrder(PortMapConfig.class, ++order).
@@ -236,6 +237,7 @@ public final class VTenantManager
 
         // Create data change listeners.
         LISTENERS = ImmutableMap.<Class<?>, VNodeChangeListener<?>>builder().
+            put(VtnFlowAction.class, new VtnFlowActionListener()).
             put(VtnFlowFilter.class, new VtnFlowFilterListener()).
             put(VinterfaceStatus.class, new VinterfaceStatusListener()).
             put(PortMapConfig.class, new PortMapConfigListener()).
@@ -388,10 +390,47 @@ public final class VTenantManager
     }
 
     /**
+     * Data change listener for vtn-flow-action in vtn-flow-filter.
+     */
+    private static final class VtnFlowActionListener
+        extends VNodeLogListener<VtnFlowAction> {
+        /**
+         * Construct a new instance.
+         */
+        private VtnFlowActionListener() {
+            super(VtnFlowAction.class, true);
+        }
+
+        // VNodeLogListener
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        String getDescription(InstanceIdentifier<VtnFlowAction> path) {
+            String direction = (VTNFlowFilter.isOutput(path))
+                ? "out" : "in";
+            VtnFlowFilterKey key = path.firstKeyOf(VtnFlowFilter.class);
+            Integer index = (key == null) ? null : key.getIndex();
+            return direction + "." + index + ": Flow filter action";
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        String toString(VtnFlowAction value) {
+            FlowActionConverter conv = FlowActionConverter.getInstance();
+            return "order=" + value.getOrder() +
+                ", action=" + conv.getDescription(value.getVtnAction());
+        }
+    }
+
+    /**
      * Data change listener for vtn-flow-filter.
      */
     private static final class VtnFlowFilterListener
-        extends VNodeLogListener.Simple<VtnFlowFilter> {
+        extends VNodeLogListener<VtnFlowFilter> {
         /**
          * Construct a new instance.
          */
@@ -418,6 +457,17 @@ public final class VTenantManager
             return TAG_INDEX + value.getIndex() + LOG_SEPARATOR +
                 TAG_COND + value.getCondition().getValue() +
                 ", type=" + VTNFlowFilter.getTypeDescription(value);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        protected boolean isChanged(VtnFlowFilter old, VtnFlowFilter value) {
+            return !(Objects.equals(old.getCondition(),
+                                    value.getCondition()) &&
+                     Objects.equals(old.getVtnFlowFilterType(),
+                                    value.getVtnFlowFilterType()));
         }
     }
 
@@ -555,11 +605,10 @@ public final class VTenantManager
         /**
          * Log the given status of VLAN mapping.
          *
-         * @param logger  A {@link Logger} instance.
-         * @param data    A {@link IdentifiedData} instance.
+         * @param data  A {@link IdentifiedData} instance.
          */
-        private void onChanged(Logger logger, IdentifiedData<?> data) {
-            if (logger.isInfoEnabled()) {
+        private void onChanged(IdentifiedData<?> data) {
+            if (LOG.isInfoEnabled()) {
                 IdentifiedData<VlanMapStatus> cdata = cast(data);
                 InstanceIdentifier<VlanMapStatus> path = cdata.getIdentifier();
                 VlanMapKey key = path.firstKeyOf(VlanMap.class);
@@ -567,8 +616,8 @@ public final class VTenantManager
                 Boolean active = status.isActive();
                 String desc = (Boolean.TRUE.equals(active))
                     ? "activated" : "inactivated";
-                logger.info("{}: VLAN mapping has been {}: map-id={}",
-                            getVNodeIdentifier(path), desc, key.getMapId());
+                LOG.info("{}: VLAN mapping has been {}: map-id={}",
+                         getVNodeIdentifier(path), desc, key.getMapId());
             }
         }
 
@@ -578,26 +627,23 @@ public final class VTenantManager
          * {@inheritDoc}
          */
         @Override
-        void onCreated(VTenantChange ectx, Logger logger,
-                       IdentifiedData<?> data) {
-            onChanged(logger, data);
+        void onCreated(VTenantChange ectx, IdentifiedData<?> data) {
+            onChanged(data);
         }
 
         /**
          * {@inheritDoc}
          */
         @Override
-        void onUpdated(VTenantChange ectx, Logger logger,
-                       ChangedData<?> data) {
-            onChanged(logger, data);
+        void onUpdated(VTenantChange ectx, ChangedData<?> data) {
+            onChanged(data);
         }
 
         /**
          * {@inheritDoc}
          */
         @Override
-        void onRemoved(VTenantChange ectx, Logger logger,
-                       IdentifiedData<?> data) {
+        void onRemoved(VTenantChange ectx, IdentifiedData<?> data) {
             // Nothing to do.
         }
     }
@@ -656,22 +702,20 @@ public final class VTenantManager
         /**
          * Log the given host information mapped by MAC mapping.
          *
-         * @param logger  A {@link Logger} instance.
-         * @param data    A {@link IdentifiedData} instance.
-         * @param msg     A message to be logged.
+         * @param data  A {@link IdentifiedData} instance.
+         * @param msg   A message to be logged.
          */
-        private void onChanged(Logger logger, IdentifiedData<?> data,
-                               String msg) {
-            if (logger.isInfoEnabled()) {
+        private void onChanged(IdentifiedData<?> data, String msg) {
+            if (LOG.isInfoEnabled()) {
                 IdentifiedData<MappedHost> cdata = cast(data);
                 MappedHost host = cdata.getValue();
                 VNodeIdentifier<?> ident =
                     getVNodeIdentifier(cdata.getIdentifier());
-                logger.info("{}: A host has been {} MAC mapping: addr={}, " +
-                            "vlan-id={}, port={}", ident, msg,
-                            host.getMacAddress().getValue(),
-                            host.getVlanId().getValue(),
-                            MiscUtils.getValue(host.getPortId()));
+                LOG.info("{}: A host has been {} MAC mapping: addr={}, " +
+                         "vlan-id={}, port={}", ident, msg,
+                         host.getMacAddress().getValue(),
+                         host.getVlanId().getValue(),
+                         MiscUtils.getValue(host.getPortId()));
             }
         }
 
@@ -681,18 +725,16 @@ public final class VTenantManager
          * {@inheritDoc}
          */
         @Override
-        void onCreated(VTenantChange ectx, Logger logger,
-                       IdentifiedData<?> data) {
-            onChanged(logger, data, "registered to");
+        void onCreated(VTenantChange ectx, IdentifiedData<?> data) {
+            onChanged(data, "registered to");
         }
 
         /**
          * {@inheritDoc}
          */
         @Override
-        void onUpdated(VTenantChange ectx, Logger logger,
-                       ChangedData<?> data) {
-            if (logger.isInfoEnabled()) {
+        void onUpdated(VTenantChange ectx, ChangedData<?> data) {
+            if (LOG.isInfoEnabled()) {
                 ChangedData<MappedHost> cdata = cast(data);
                 VNodeIdentifier<?> ident =
                     getVNodeIdentifier(cdata.getIdentifier());
@@ -703,9 +745,9 @@ public final class VTenantManager
                 String portMsg = getChangedMessage(
                     MiscUtils.getValue(old.getPortId()),
                     MiscUtils.getValue(host.getPortId()));
-                logger.info("{}: A MAC mapped host has been changed: " +
-                            "addr={}, vlan-id={}, port={}", ident,
-                            host.getMacAddress().getValue(), vidMsg, portMsg);
+                LOG.info("{}: A MAC mapped host has been changed: " +
+                         "addr={}, vlan-id={}, port={}", ident,
+                         host.getMacAddress().getValue(), vidMsg, portMsg);
             }
         }
 
@@ -713,9 +755,8 @@ public final class VTenantManager
          * {@inheritDoc}
          */
         @Override
-        void onRemoved(VTenantChange ectx, Logger logger,
-                       IdentifiedData<?> data) {
-            onChanged(logger, data, "unregistered from");
+        void onRemoved(VTenantChange ectx, IdentifiedData<?> data) {
+            onChanged(data, "unregistered from");
         }
     }
 
@@ -735,13 +776,11 @@ public final class VTenantManager
          * Invoked when a host informatiion has been added to or removed from
          * the access control list in the MAC mapping configuration.
          *
-         * @param logger  A logger instance.
-         * @param data    An {@link IdentifiedData} instance which contains
-         *                added or removed data.
-         * @param msg     A string used to construct a log message.
+         * @param data  An {@link IdentifiedData} instance which contains
+         *              added or removed data.
+         * @param msg   A string used to construct a log message.
          */
-        private void onChanged(Logger logger, IdentifiedData<?> data,
-                               String msg) {
+        private void onChanged(IdentifiedData<?> data, String msg) {
             // Determine the name of the access control list.
             IdentifiedData<VlanHostDescList> cdata = cast(data);
             InstanceIdentifier<VlanHostDescList> path = cdata.getIdentifier();
@@ -749,9 +788,9 @@ public final class VTenantManager
                 path.firstIdentifierOf(AllowedHosts.class);
             String acl = (cpath == null) ? "denied-hosts" : "allowed-hosts";
 
-            logger.info("{}: A host has been {} {}: {}",
-                        getVNodeIdentifier(path), msg, acl,
-                        cdata.getValue().getHost().getValue());
+            LOG.info("{}: A host has been {} {}: {}",
+                     getVNodeIdentifier(path), msg, acl,
+                     cdata.getValue().getHost().getValue());
         }
 
         // VNodeChangeListener
@@ -760,10 +799,9 @@ public final class VTenantManager
          * {@inheritDoc}
          */
         @Override
-        void onCreated(VTenantChange ectx, Logger logger,
-                       IdentifiedData<?> data) {
-            if (logger.isInfoEnabled()) {
-                onChanged(logger, data, "added to");
+        void onCreated(VTenantChange ectx, IdentifiedData<?> data) {
+            if (LOG.isInfoEnabled()) {
+                onChanged(data, "added to");
             }
         }
 
@@ -771,8 +809,7 @@ public final class VTenantManager
          * {@inheritDoc}
          */
         @Override
-        void onUpdated(VTenantChange ectx, Logger logger,
-                       ChangedData<?> data) {
+        void onUpdated(VTenantChange ectx, ChangedData<?> data) {
             // Nothing to do.
             // The contents of vlan-host-desc-list should never be changed.
         }
@@ -781,10 +818,9 @@ public final class VTenantManager
          * {@inheritDoc}
          */
         @Override
-        void onRemoved(VTenantChange ectx, Logger logger,
-                       IdentifiedData<?> data) {
-            if (logger.isInfoEnabled()) {
-                onChanged(logger, data, "removed from");
+        void onRemoved(VTenantChange ectx, IdentifiedData<?> data) {
+            if (LOG.isInfoEnabled()) {
+                onChanged(data, "removed from");
             }
         }
     }
@@ -804,18 +840,16 @@ public final class VTenantManager
         /**
          * Invoked when the MAC mapping has been created or removed.
          *
-         * @param logger  A logger instance.
-         * @param data    An {@link IdentifiedData} instance which contains
-         *                added or removed data.
-         * @param type    {@link VtnUpdateType#CREATED} on added,
-         *                {@link VtnUpdateType#REMOVED} on removed.
+         * @param data  An {@link IdentifiedData} instance which contains
+         *              added or removed data.
+         * @param type  {@link VtnUpdateType#CREATED} on added,
+         *              {@link VtnUpdateType#REMOVED} on removed.
          */
-        private void onChanged(Logger logger, IdentifiedData<?> data,
-                               VtnUpdateType type) {
+        private void onChanged(IdentifiedData<?> data, VtnUpdateType type) {
             IdentifiedData<MacMapConfig> cdata = cast(data);
             InstanceIdentifier<MacMapConfig> path = cdata.getIdentifier();
-            logger.info("{}: MAC mapping has been {}.",
-                        getVNodeIdentifier(path), MiscUtils.toLowerCase(type));
+            LOG.info("{}: MAC mapping has been {}.",
+                     getVNodeIdentifier(path), MiscUtils.toLowerCase(type));
         }
 
         // VNodeChangeListener
@@ -824,10 +858,9 @@ public final class VTenantManager
          * {@inheritDoc}
          */
         @Override
-        void onCreated(VTenantChange ectx, Logger logger,
-                       IdentifiedData<?> data) {
-            if (logger.isInfoEnabled()) {
-                onChanged(logger, data, VtnUpdateType.CREATED);
+        void onCreated(VTenantChange ectx, IdentifiedData<?> data) {
+            if (LOG.isInfoEnabled()) {
+                onChanged(data, VtnUpdateType.CREATED);
             }
         }
 
@@ -835,8 +868,7 @@ public final class VTenantManager
          * {@inheritDoc}
          */
         @Override
-        void onUpdated(VTenantChange ectx, Logger logger,
-                       ChangedData<?> data) {
+        void onUpdated(VTenantChange ectx, ChangedData<?> data) {
             // Nothing to do.
         }
 
@@ -844,10 +876,9 @@ public final class VTenantManager
          * {@inheritDoc}
          */
         @Override
-        void onRemoved(VTenantChange ectx, Logger logger,
-                       IdentifiedData<?> data) {
-            if (logger.isInfoEnabled()) {
-                onChanged(logger, data, VtnUpdateType.REMOVED);
+        void onRemoved(VTenantChange ectx, IdentifiedData<?> data) {
+            if (LOG.isInfoEnabled()) {
+                onChanged(data, VtnUpdateType.REMOVED);
             }
         }
     }
@@ -870,23 +901,21 @@ public final class VTenantManager
          * {@inheritDoc}
          */
         @Override
-        void onCreated(VTenantChange ectx, Logger logger,
-                       IdentifiedData<?> data) {
+        void onCreated(VTenantChange ectx, IdentifiedData<?> data) {
             IdentifiedData<FaultedPaths> cdata = cast(data);
             VNodeIdentifier<?> ident =
                 getVNodeIdentifier(cdata.getIdentifier());
             FaultedPaths value = cdata.getValue();
-            logger.warn("{}: Path fault: {} -> {}", ident,
-                        MiscUtils.getValue(value.getSource()),
-                        MiscUtils.getValue(value.getDestination()));
+            LOG.warn("{}: Path fault: {} -> {}", ident,
+                     MiscUtils.getValue(value.getSource()),
+                     MiscUtils.getValue(value.getDestination()));
         }
 
         /**
          * {@inheritDoc}
          */
         @Override
-        void onUpdated(VTenantChange ectx, Logger logger,
-                       ChangedData<?> data) {
+        void onUpdated(VTenantChange ectx, ChangedData<?> data) {
             // Nothing to do.
             // The contents of faulted-paths should never be changed.
         }
@@ -895,8 +924,7 @@ public final class VTenantManager
          * {@inheritDoc}
          */
         @Override
-        void onRemoved(VTenantChange ectx, Logger logger,
-                       IdentifiedData<?> data) {
+        void onRemoved(VTenantChange ectx, IdentifiedData<?> data) {
             // Record the given path fault into VTenantChange.
             // It will be logged unless the vBridge was removed.
             IdentifiedData<FaultedPaths> cdata = cast(data);
@@ -936,16 +964,15 @@ public final class VTenantManager
          * {@inheritDoc}
          */
         @Override
-        void onCreated(VTenantChange ectx, Logger logger,
-                       IdentifiedData<?> data) {
-            if (logger.isInfoEnabled()) {
+        void onCreated(VTenantChange ectx, IdentifiedData<?> data) {
+            if (LOG.isInfoEnabled()) {
                 IdentifiedData<BridgeStatus> cdata = cast(data);
                 VNodeIdentifier<?> ident =
                     getVNodeIdentifier(cdata.getIdentifier());
                 VNodeType type = ident.getType();
                 BridgeStatus value = cdata.getValue();
-                logger.info("{}: Initial {} status: {}",
-                            ident, type.toString(), toString(value));
+                LOG.info("{}: Initial {} status: {}",
+                         ident, type.toString(), toString(value));
             }
         }
 
@@ -953,26 +980,25 @@ public final class VTenantManager
          * {@inheritDoc}
          */
         @Override
-        void onUpdated(VTenantChange ectx, Logger logger,
-                       ChangedData<?> data) {
-            if (logger.isInfoEnabled()) {
+        void onUpdated(VTenantChange ectx, ChangedData<?> data) {
+            if (LOG.isInfoEnabled()) {
                 ChangedData<BridgeStatus> cdata = cast(data);
                 VNodeIdentifier<?> ident =
                     getVNodeIdentifier(cdata.getIdentifier());
 
                 // Log resolved path faults.
                 for (FaultedPaths fp: ectx.getResolvedPathFaults(ident)) {
-                    logger.info("{}: Path fault has been resolved: {} -> {}",
-                                ident, MiscUtils.getValue(fp.getSource()),
-                                MiscUtils.getValue(fp.getDestination()));
+                    LOG.info("{}: Path fault has been resolved: {} -> {}",
+                             ident, MiscUtils.getValue(fp.getSource()),
+                             MiscUtils.getValue(fp.getDestination()));
                 }
 
                 VNodeType type = ident.getType();
                 BridgeStatus value = cdata.getValue();
                 BridgeStatus old = cdata.getOldValue();
-                logger.info("{}: {} status has been changed: old={{}}, " +
-                            "new={{}}", ident, type.toString(),
-                            toString(old), toString(value));
+                LOG.info("{}: {} status has been changed: old={{}}, new={{}}",
+                         ident, type.toString(),
+                         toString(old), toString(value));
             }
         }
 
@@ -980,8 +1006,7 @@ public final class VTenantManager
          * {@inheritDoc}
          */
         @Override
-        void onRemoved(VTenantChange ectx, Logger logger,
-                       IdentifiedData<?> data) {
+        void onRemoved(VTenantChange ectx, IdentifiedData<?> data) {
             // Nothing to do.
         }
     }
@@ -1068,18 +1093,17 @@ public final class VTenantManager
         /**
          * Record a log message for the given vBridge configuration.
          *
-         * @param logger  A logger instance.
-         * @param ident   The identifier for the vBridge.
-         * @param vbrc    The vBridge configuration.
-         * @param type  {@link VtnUpdateType#CREATED} on added,
-         *              {@link VtnUpdateType#REMOVED} on removed.
+         * @param ident  The identifier for the vBridge.
+         * @param vbrc   The vBridge configuration.
+         * @param type   {@link VtnUpdateType#CREATED} on added,
+         *               {@link VtnUpdateType#REMOVED} on removed.
          */
-        protected void log(Logger logger, VBridgeIdentifier ident,
-                           VbridgeConfig vbrc, VtnUpdateType type) {
-            if (logger.isInfoEnabled()) {
-                logger.info("{}: vBridge has been {}: config={{}}",
-                            ident, MiscUtils.toLowerCase(type),
-                            toString(vbrc));
+        protected void log(VBridgeIdentifier ident, VbridgeConfig vbrc,
+                           VtnUpdateType type) {
+            if (LOG.isInfoEnabled()) {
+                LOG.info("{}: vBridge has been {}: config={{}}",
+                         ident, MiscUtils.toLowerCase(type),
+                         toString(vbrc));
             }
         }
 
@@ -1089,13 +1113,12 @@ public final class VTenantManager
          * {@inheritDoc}
          */
         @Override
-        void onCreated(VTenantChange ectx, Logger logger,
-                       IdentifiedData<?> data) {
+        void onCreated(VTenantChange ectx, IdentifiedData<?> data) {
             // Record a log message.
             IdentifiedData<VbridgeConfig> cdata = cast(data);
             VBridgeIdentifier ident = getVBridgeIdentifier(cdata);
             VbridgeConfig vbrc = cdata.getValue();
-            log(logger, ident, vbrc, VtnUpdateType.CREATED);
+            log(ident, vbrc, VtnUpdateType.CREATED);
 
             // Create the entity of the vBridge.
             ectx.updateBridge(ident, vbrc);
@@ -1105,16 +1128,15 @@ public final class VTenantManager
          * {@inheritDoc}
          */
         @Override
-        void onUpdated(VTenantChange ectx, Logger logger,
-                       ChangedData<?> data) {
+        void onUpdated(VTenantChange ectx, ChangedData<?> data) {
             // Record a log message.
             ChangedData<VbridgeConfig> cdata = cast(data);
             VBridgeIdentifier ident = getVBridgeIdentifier(cdata);
             VbridgeConfig vbrc = cdata.getValue();
-            if (logger.isInfoEnabled()) {
+            if (LOG.isInfoEnabled()) {
                 VbridgeConfig old = cdata.getOldValue();
-                logger.info("{}: vBridge has been changed: old={{}}, new={{}}",
-                            ident, toString(old), toString(vbrc));
+                LOG.info("{}: vBridge has been changed: old={{}}, new={{}}",
+                         ident, toString(old), toString(vbrc));
             }
 
             // Update the entity of the vBridge.
@@ -1125,13 +1147,12 @@ public final class VTenantManager
          * {@inheritDoc}
          */
         @Override
-        void onRemoved(VTenantChange ectx, Logger logger,
-                       IdentifiedData<?> data) {
+        void onRemoved(VTenantChange ectx, IdentifiedData<?> data) {
             // Record a log message.
             IdentifiedData<VbridgeConfig> cdata = cast(data);
             VBridgeIdentifier ident = getVBridgeIdentifier(cdata);
             VbridgeConfig vbrc = cdata.getValue();
-            log(logger, ident, vbrc, VtnUpdateType.REMOVED);
+            log(ident, vbrc, VtnUpdateType.REMOVED);
 
             // Remove the entity of the vBridge.
             ectx.removeBridge(ident);
@@ -1142,7 +1163,7 @@ public final class VTenantManager
      * Data change listener for vtn-path-map.
      */
     private static final class VtnPathMapListener
-        extends VNodeLogListener<VtnPathMap> {
+        extends VNodeChangeListener<VtnPathMap> {
         /**
          * Construct a new instance.
          */
@@ -1150,37 +1171,30 @@ public final class VTenantManager
             super(VtnPathMap.class, true);
         }
 
-        // VNodeLogListener
+        // VNodeChangeListener
 
         /**
          * {@inheritDoc}
          */
         @Override
-        String getDescription(InstanceIdentifier<VtnPathMap> path) {
-            return "VTN path map";
+        void onCreated(VTenantChange ectx, IdentifiedData<?> data) {
+            PathMapUtils.log(LOG, data, VtnUpdateType.CREATED);
         }
 
         /**
          * {@inheritDoc}
          */
         @Override
-        String toString(VtnPathMap value) {
-            StringBuilder builder = new StringBuilder(TAG_INDEX).
-                append(value.getIndex()).append(LOG_SEPARATOR).
-                append(TAG_COND).append(value.getCondition().getValue()).
-                append(", policy=").append(value.getPolicy());
+        void onUpdated(VTenantChange ectx, ChangedData<?> data) {
+            PathMapUtils.log(LOG, data);
+        }
 
-            Integer idle = value.getIdleTimeout();
-            if (idle != null) {
-                builder.append(LOG_SEPARATOR).append(TAG_IDLE).append(idle);
-            }
-
-            Integer hard = value.getHardTimeout();
-            if (hard != null) {
-                builder.append(LOG_SEPARATOR).append(TAG_HARD).append(hard);
-            }
-
-            return builder.toString();
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        void onRemoved(VTenantChange ectx, IdentifiedData<?> data) {
+            PathMapUtils.log(LOG, data, VtnUpdateType.REMOVED);
         }
     }
 
@@ -1270,8 +1284,7 @@ public final class VTenantManager
          * {@inheritDoc}
          */
         @Override
-        void onCreated(VTenantChange ectx, Logger logger,
-                       IdentifiedData<?> data) {
+        void onCreated(VTenantChange ectx, IdentifiedData<?> data) {
             onChanged(ectx, data, true);
         }
 
@@ -1279,8 +1292,7 @@ public final class VTenantManager
          * {@inheritDoc}
          */
         @Override
-        void onUpdated(VTenantChange ectx, Logger logger,
-                       ChangedData<?> data) {
+        void onUpdated(VTenantChange ectx, ChangedData<?> data) {
             onChanged(ectx, data, false);
         }
 
@@ -1288,8 +1300,7 @@ public final class VTenantManager
          * {@inheritDoc}
          */
         @Override
-        void onRemoved(VTenantChange ectx, Logger logger,
-                       IdentifiedData<?> data) {
+        void onRemoved(VTenantChange ectx, IdentifiedData<?> data) {
             IdentifiedData<Vtn> cdata = cast(data);
             Vtn vtn = cdata.getValue();
             String name = vtn.getName().getValue();
@@ -1493,7 +1504,7 @@ public final class VTenantManager
     @Override
     protected void onCreated(VTenantChange ectx, IdentifiedData<?> data) {
         VNodeChangeListener<?> listener = getChangeListener(ectx, data);
-        listener.onCreated(ectx, LOG, data);
+        listener.onCreated(ectx, data);
     }
 
     /**
@@ -1502,7 +1513,7 @@ public final class VTenantManager
     @Override
     protected void onUpdated(VTenantChange ectx, ChangedData<?> data) {
         VNodeChangeListener<?> listener = getChangeListener(ectx, data);
-        listener.onUpdated(ectx, LOG, data);
+        listener.onUpdated(ectx, data);
     }
 
     /**
@@ -1511,7 +1522,7 @@ public final class VTenantManager
     @Override
     protected void onRemoved(VTenantChange ectx, IdentifiedData<?> data) {
         VNodeChangeListener<?> listener = getChangeListener(ectx, data);
-        listener.onRemoved(ectx, LOG, data);
+        listener.onRemoved(ectx, data);
     }
 
     // AbstractDataChangeListener

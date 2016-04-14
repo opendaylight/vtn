@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,15 +8,21 @@
 
 package org.opendaylight.vtn.manager.internal.util.pathmap;
 
+import static org.opendaylight.vtn.manager.internal.util.MiscUtils.LOG_SEPARATOR;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 import com.google.common.base.Optional;
 
+import org.slf4j.Logger;
+
 import org.opendaylight.vtn.manager.VTNException;
 
+import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
+import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.VtnIndexComparator;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
@@ -37,8 +43,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.vtn.p
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.vtn.path.map.list.VtnPathMapBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.vtn.path.map.list.VtnPathMapKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtn.info.VtnPathMaps;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.Vtn;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.VtnKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnFlowTimeoutConfig;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
  * {@code PathMapUtils} class is a collection of utility class methods
@@ -327,6 +336,64 @@ public final class PathMapUtils {
     }
 
     /**
+     * Return a string that describes the specified path map.
+     *
+     * @param vpm  The path map.
+     *             Note that this method expects that the specified path map
+     *             is valid.
+     * @return  A string that describes the specified path map.
+     */
+    public static String toString(VtnPathMap vpm) {
+        StringBuilder builder = new StringBuilder("index=").
+            append(vpm.getIndex()).append(LOG_SEPARATOR).
+            append("cond=").append(vpm.getCondition().getValue()).
+            append(LOG_SEPARATOR).
+            append("policy=").append(vpm.getPolicy());
+        FlowUtils.setDescription(builder, vpm, LOG_SEPARATOR);
+
+        return builder.toString();
+    }
+
+    /**
+     * Record an informational log message that indicates a path map has been
+     * created or removed.
+     *
+     * @param logger  A logger instance.
+     * @param data    An {@link IdentifiedData} instance that contains a
+     *                path map.
+     * @param type    {@link VtnUpdateType#CREATED} on added,
+     *                {@link VtnUpdateType#REMOVED} on removed.
+     */
+    public static void log(Logger logger, IdentifiedData<?> data,
+                           VtnUpdateType type) {
+        if (logger.isInfoEnabled()) {
+            IdentifiedData<VtnPathMap> cdata =
+                data.checkType(VtnPathMap.class);
+            logger.info("{} path map has been {}: value={{}}",
+                        getDescription(cdata.getIdentifier()),
+                        MiscUtils.toLowerCase(type),
+                        toString(cdata.getValue()));
+        }
+    }
+
+    /**
+     * Record an informational log message that indicates a path map has been
+     * changed.
+     *
+     * @param logger  A logger instance.
+     * @param data    An {@link ChangedData} instance that contains a path map.
+     */
+    public static void log(Logger logger, ChangedData<?> data) {
+        if (logger.isInfoEnabled()) {
+            ChangedData<VtnPathMap> cdata = data.checkType(VtnPathMap.class);
+            logger.info("{} path map has been changed: old={{}}, new={{}}",
+                        getDescription(cdata.getIdentifier()),
+                        toString(cdata.getOldValue()),
+                        toString(cdata.getValue()));
+        }
+    }
+
+    /**
      * Set the map index into the given {@link VtnPathMapBuilder} instance.
      *
      * @param builder  A {@link VtnPathMapBuilder} instance.
@@ -376,5 +443,25 @@ public final class PathMapUtils {
         } catch (RuntimeException e) {
             throw PathPolicyUtils.getInvalidPolicyIdException(policy, e);
         }
+    }
+
+    /**
+     * Create a brief description about the path map specified by the given
+     * instance identifier.
+     *
+     * @param path   The path to the path map.
+     * @return  A brief description about the specified path map.
+     */
+    private static String getDescription(InstanceIdentifier<VtnPathMap> path) {
+        VtnKey key = path.firstKeyOf(Vtn.class);
+        String desc;
+        if (key == null) {
+            desc = "Global";
+        } else {
+            VTenantIdentifier vtnId = new VTenantIdentifier(key.getName());
+            desc = vtnId.toString() + ": VTN";
+        }
+
+        return desc;
     }
 }
