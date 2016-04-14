@@ -33,6 +33,10 @@ import org.opendaylight.yangtools.yang.binding.Augmentation;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.VtnOrderedFlowAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlDstActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlSrcActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDstActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetSrcActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VlanType;
@@ -1484,5 +1488,93 @@ public class FlowActionUtilsTest extends TestBase {
             }
         };
         assertEquals(outCase.toString(), converter.getDescription(outCase));
+    }
+
+    /**
+     * Test case for {@link FlowActionConverter#getDescription(VtnAction)}.
+     */
+    @Test
+    public void testGetDescriptionVtnAction() {
+        FlowActionConverter converter = FlowActionConverter.getInstance();
+        VtnAction vact = null;
+        assertEquals("vtn-action(null)", converter.getDescription(vact));
+
+        // Unsupported actions.
+        List<VtnFlowAction> actions = new ArrayList<>();
+        Collections.addAll(
+            actions,
+            createVtnDropAction(1),
+            createVtnPopVlanAction(1),
+            createVtnPushVlanAction(1),
+            createVtnSetVlanIdAction(1, 1));
+
+        for (VtnFlowAction vfa: actions) {
+            vact = vfa.getVtnAction();
+            assertEquals("vtn-action(" + vact + ")",
+                         converter.getDescription(vact));
+        }
+
+        // Broken actions.
+        VtnAction[] broken = {
+            new VtnSetDlSrcActionCaseBuilder().build(),
+            new VtnSetDlDstActionCaseBuilder().build(),
+            new VtnSetInetSrcActionCaseBuilder().build(),
+            new VtnSetInetDstActionCaseBuilder().build(),
+        };
+        for (VtnAction vaction: broken) {
+            assertEquals("vtn-action(" + vaction + ")",
+                         converter.getDescription(vaction));
+        }
+
+        EtherAddress dlSrc = new EtherAddress(0x123456789L);
+        EtherAddress dlDst = new EtherAddress(0xaabbccddee11L);
+        Ip4Network nwSrc = new Ip4Network("192.168.100.200");
+        Ip4Network nwDst = new Ip4Network("127.0.0.1");
+        short dscp = 45;
+        int portSrc = 1;
+        int portDst = 60000;
+        short icmpType = 35;
+        short icmpCode = 7;
+        short vlanPcp = 4;
+        VtnOrderedFlowAction vaction =
+            createVtnSetDlSrcAction(1, dlSrc.getMacAddress());
+        assertEquals("set-dl-src(" + dlSrc.getText() + ")",
+                     converter.getDescription(vaction.getVtnAction()));
+
+        vaction = createVtnSetDlDstAction(1, dlDst.getMacAddress());
+        assertEquals("set-dl-dst(" + dlDst.getText() + ")",
+                     converter.getDescription(vaction.getVtnAction()));
+
+        vaction = createVtnSetInetSrcAction(1, nwSrc.getMdAddress());
+        assertEquals("set-inet-src(ipv4=" + nwSrc.getCidrText() + ")",
+                     converter.getDescription(vaction.getVtnAction()));
+
+        vaction = createVtnSetInetDstAction(1, nwDst.getMdAddress());
+        assertEquals("set-inet-dst(ipv4=" + nwDst.getCidrText() + ")",
+                     converter.getDescription(vaction.getVtnAction()));
+
+        vaction = createVtnSetInetDscpAction(1, dscp);
+        assertEquals("set-inet-dscp(" + dscp + ")",
+                     converter.getDescription(vaction.getVtnAction()));
+
+        vaction = createVtnSetPortSrcAction(1, portSrc);
+        assertEquals("set-port-src(" + portSrc + ")",
+                     converter.getDescription(vaction.getVtnAction()));
+
+        vaction = createVtnSetPortDstAction(1, portDst);
+        assertEquals("set-port-dst(" + portDst + ")",
+                     converter.getDescription(vaction.getVtnAction()));
+
+        vaction = createVtnSetIcmpTypeAction(1, icmpType);
+        assertEquals("set-icmp-type(" + icmpType + ")",
+                     converter.getDescription(vaction.getVtnAction()));
+
+        vaction = createVtnSetIcmpCodeAction(1, icmpCode);
+        assertEquals("set-icmp-code(" + icmpCode + ")",
+                     converter.getDescription(vaction.getVtnAction()));
+
+        vaction = createVtnSetVlanPcpAction(1, vlanPcp);
+        assertEquals("set-vlan-pcp(" + vlanPcp + ")",
+                     converter.getDescription(vaction.getVtnAction()));
     }
 }

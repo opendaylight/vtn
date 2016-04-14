@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -128,12 +128,11 @@ public abstract class VTNFlowFilter implements VTNIdentifiable<Integer> {
      * Determine whether the flow filter list specified by the given instance
      * identifier is output filter or not.
      *
-     * @param path  Path to the flow filter list.
+     * @param path  Path to the virtual node in the flow filter list.
      * @return  {@code true} only if the specified flow filter list is output
      *          filter.
      */
-    public static final boolean isOutput(
-        InstanceIdentifier<VtnFlowFilter> path) {
+    public static final boolean isOutput(InstanceIdentifier<?> path) {
         for (PathArgument arg: path.getPathArguments()) {
             if (OUTPUT_FILTERS.contains(arg.getType())) {
                 return true;
@@ -158,7 +157,8 @@ public abstract class VTNFlowFilter implements VTNIdentifiable<Integer> {
         } else if (vftype instanceof VtnDropFilterCase) {
             desc = "DROP";
         } else if (vftype instanceof VtnRedirectFilterCase) {
-            desc = "REDIRECT";
+            VtnRedirectFilterCase vrfc = (VtnRedirectFilterCase)vftype;
+            desc = VTNRedirectFilter.getDescription(vrfc);
         } else {
             // This should never happen.
             desc = "UNKNOWN";

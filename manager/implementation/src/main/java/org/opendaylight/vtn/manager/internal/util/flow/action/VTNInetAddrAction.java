@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -143,9 +143,24 @@ public abstract class VTNInetAddrAction extends FlowFilterAction {
             Ipv6Prefix ipv6 = v6.getIpv6Address();
             String txt = (ipv6 == null) ? null : ipv6.getValue();
             builder.append("ipv6=").append(txt);
+        } else {
+            // This should never happen.
+            builder.append(addr);
         }
 
         return builder.append(')').toString();
+    }
+
+    /**
+     * Return a description about the specified VTN action.
+     *
+     * @param name  The name of the flow action.
+     * @param act   A {@link VtnIpaddrActionFields} instance.
+     * @return  A description about the specified VTN action.
+     */
+    protected final String getDescription(String name,
+                                          VtnIpaddrActionFields act) {
+        return getDescription(name, act.getAddress());
     }
 
     // FlowFilterAction

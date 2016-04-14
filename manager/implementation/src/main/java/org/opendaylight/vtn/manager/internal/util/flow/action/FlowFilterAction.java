@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -107,6 +107,19 @@ public abstract class FlowFilterAction extends VTNFlowAction
      *          {@code false} if this flow action has been ignored.
      */
     public abstract boolean apply(FlowActionContext ctx);
+
+    /**
+     * Return a brief description about the specified VTN action.
+     *
+     * <p>
+     *   Note that this method must not affect instance variables.
+     * </p>
+     *
+     * @param vact  A {@link VtnAction} instance.
+     * @return  A brief description about the given VTN action.
+     * @throws RpcException  An error occurred.
+     */
+    public abstract String getDescription(VtnAction vact) throws RpcException;
 
     /**
      * Convert the given {@link VtnAction} instance into a

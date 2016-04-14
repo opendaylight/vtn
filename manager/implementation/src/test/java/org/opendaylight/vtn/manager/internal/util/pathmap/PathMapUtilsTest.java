@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,7 +8,13 @@
 
 package org.opendaylight.vtn.manager.internal.util.pathmap;
 
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -21,10 +27,12 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import org.slf4j.Logger;
+
 import org.junit.Test;
 
-import org.mockito.Mockito;
-
+import org.opendaylight.vtn.manager.internal.util.ChangedData;
+import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.vnode.VTenantIdentifier;
@@ -56,6 +64,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.VtnBuild
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.VtnKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
  * JUnit test for {@link PathMapUtils}.
@@ -600,7 +609,7 @@ public class PathMapUtilsTest extends TestBase {
     @Test
     public void testReadGlobalPathMaps() throws Exception {
         // Set up mock-up of MD-SAL read transaction.
-        ReadTransaction rtx = Mockito.mock(ReadTransaction.class);
+        ReadTransaction rtx = mock(ReadTransaction.class);
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
         InstanceIdentifier<GlobalPathMaps> path = InstanceIdentifier.
             create(GlobalPathMaps.class);
@@ -608,33 +617,33 @@ public class PathMapUtilsTest extends TestBase {
         // Root container is not present.
         GlobalPathMaps root = null;
         List<VtnPathMap> vlist = new ArrayList<>();
-        Mockito.when(rtx.read(oper, path)).thenReturn(getReadResult(root));
+        when(rtx.read(oper, path)).thenReturn(getReadResult(root));
         assertEquals(vlist, PathMapUtils.readPathMaps(rtx));
-        Mockito.verify(rtx).read(oper, path);
-        Mockito.reset(rtx);
+        verify(rtx).read(oper, path);
+        reset(rtx);
 
         // Global path map list is null.
         root = new GlobalPathMapsBuilder().build();
-        Mockito.when(rtx.read(oper, path)).thenReturn(getReadResult(root));
+        when(rtx.read(oper, path)).thenReturn(getReadResult(root));
         assertEquals(vlist, PathMapUtils.readPathMaps(rtx));
-        Mockito.verify(rtx).read(oper, path);
-        Mockito.reset(rtx);
+        verify(rtx).read(oper, path);
+        reset(rtx);
 
         // Global path map list is empty.
         root = new GlobalPathMapsBuilder().
             setVtnPathMap(Collections.<VtnPathMap>emptyList()).build();
-        Mockito.when(rtx.read(oper, path)).thenReturn(getReadResult(root));
+        when(rtx.read(oper, path)).thenReturn(getReadResult(root));
         assertEquals(vlist, PathMapUtils.readPathMaps(rtx));
-        Mockito.verify(rtx).read(oper, path);
-        Mockito.reset(rtx);
+        verify(rtx).read(oper, path);
+        reset(rtx);
 
         // Global path maps are present.
         Map<Integer, VtnPathMap> maps = new HashMap<>();
         List<VtnPathMap> vpmList = createVtnPathMaps(100, maps);
         root = new GlobalPathMapsBuilder().setVtnPathMap(vpmList).build();
-        Mockito.when(rtx.read(oper, path)).thenReturn(getReadResult(root));
+        when(rtx.read(oper, path)).thenReturn(getReadResult(root));
         vlist = PathMapUtils.readPathMaps(rtx);
-        Mockito.verify(rtx).read(oper, path);
+        verify(rtx).read(oper, path);
         assertEquals(maps.size(), vlist.size());
 
         // Path maps should be sorted by index in ascending order.
@@ -657,7 +666,7 @@ public class PathMapUtilsTest extends TestBase {
     @Test
     public void testReadGlobalPathMap() throws Exception {
         // Set up mock-up of MD-SAL read transaction.
-        ReadTransaction rtx = Mockito.mock(ReadTransaction.class);
+        ReadTransaction rtx = mock(ReadTransaction.class);
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
 
         // Map index is null.
@@ -670,9 +679,9 @@ public class PathMapUtilsTest extends TestBase {
             assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
             assertEquals("Path map index cannot be null", e.getMessage());
         }
-        Mockito.verify(rtx, Mockito.never()).
-            read(Mockito.any(LogicalDatastoreType.class),
-                 (InstanceIdentifier<?>)Mockito.any(InstanceIdentifier.class));
+        verify(rtx, never()).
+            read(any(LogicalDatastoreType.class),
+                 (InstanceIdentifier<?>)any(InstanceIdentifier.class));
 
         // Create test data.
         Map<Integer, VtnPathMap> maps = new HashMap<>();
@@ -704,7 +713,7 @@ public class PathMapUtilsTest extends TestBase {
                     build();
             }
             maps.put(idx, vpm);
-            Mockito.when(rtx.read(oper, path)).thenReturn(getReadResult(vpm));
+            when(rtx.read(oper, path)).thenReturn(getReadResult(vpm));
         } while (maps.size() < 100);
 
         // Run tests.
@@ -713,7 +722,7 @@ public class PathMapUtilsTest extends TestBase {
             assertEquals(expected, PathMapUtils.readPathMap(rtx, index));
         }
         for (InstanceIdentifier<VtnPathMap> path: pathList) {
-            Mockito.verify(rtx).read(oper, path);
+            verify(rtx).read(oper, path);
         }
     }
 
@@ -726,7 +735,7 @@ public class PathMapUtilsTest extends TestBase {
     @Test
     public void testReadVtnPathMaps() throws Exception {
         // Set up mock-up of MD-SAL read transaction.
-        ReadTransaction rtx = Mockito.mock(ReadTransaction.class);
+        ReadTransaction rtx = mock(ReadTransaction.class);
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
 
         // VTN is not present.
@@ -740,8 +749,8 @@ public class PathMapUtilsTest extends TestBase {
             child(VtnPathMaps.class).build();
         VtnPathMaps root = null;
         Vtn vtn = null;
-        Mockito.when(rtx.read(oper, path)).thenReturn(getReadResult(root));
-        Mockito.when(rtx.read(oper, vtnPath)).thenReturn(getReadResult(vtn));
+        when(rtx.read(oper, path)).thenReturn(getReadResult(root));
+        when(rtx.read(oper, vtnPath)).thenReturn(getReadResult(vtn));
         RpcErrorTag etag = RpcErrorTag.DATA_MISSING;
         VtnErrorTag vtag = VtnErrorTag.NOTFOUND;
         String msg = ident + ": VTN does not exist.";
@@ -754,50 +763,50 @@ public class PathMapUtilsTest extends TestBase {
             assertEquals(vtag, e.getVtnErrorTag());
             assertEquals(msg, e.getMessage());
         }
-        Mockito.verify(rtx).read(oper, path);
-        Mockito.verify(rtx).read(oper, vtnPath);
-        Mockito.reset(rtx);
+        verify(rtx).read(oper, path);
+        verify(rtx).read(oper, vtnPath);
+        reset(rtx);
 
         // VTN path map container is not present.
         vtn = new VtnBuilder().build();
-        Mockito.when(rtx.read(oper, path)).thenReturn(getReadResult(root));
-        Mockito.when(rtx.read(oper, vtnPath)).thenReturn(getReadResult(vtn));
+        when(rtx.read(oper, path)).thenReturn(getReadResult(root));
+        when(rtx.read(oper, vtnPath)).thenReturn(getReadResult(vtn));
         assertEquals(Collections.<VtnPathMap>emptyList(),
                      PathMapUtils.readPathMaps(rtx, ident));
-        Mockito.verify(rtx).read(oper, path);
-        Mockito.verify(rtx).read(oper, vtnPath);
-        Mockito.reset(rtx);
+        verify(rtx).read(oper, path);
+        verify(rtx).read(oper, vtnPath);
+        reset(rtx);
 
         // VTN path map list is null.
         root = new VtnPathMapsBuilder().build();
-        Mockito.when(rtx.read(oper, path)).thenReturn(getReadResult(root));
-        Mockito.when(rtx.read(oper, vtnPath)).thenReturn(getReadResult(vtn));
+        when(rtx.read(oper, path)).thenReturn(getReadResult(root));
+        when(rtx.read(oper, vtnPath)).thenReturn(getReadResult(vtn));
         assertEquals(Collections.<VtnPathMap>emptyList(),
                      PathMapUtils.readPathMaps(rtx, ident));
-        Mockito.verify(rtx).read(oper, path);
-        Mockito.verify(rtx, Mockito.never()).read(oper, vtnPath);
-        Mockito.reset(rtx);
+        verify(rtx).read(oper, path);
+        verify(rtx, never()).read(oper, vtnPath);
+        reset(rtx);
 
         // VTN path map list is empty.
         List<VtnPathMap> vlist = new ArrayList<>();
         root = new VtnPathMapsBuilder().setVtnPathMap(vlist).build();
-        Mockito.when(rtx.read(oper, path)).thenReturn(getReadResult(root));
-        Mockito.when(rtx.read(oper, vtnPath)).thenReturn(getReadResult(vtn));
+        when(rtx.read(oper, path)).thenReturn(getReadResult(root));
+        when(rtx.read(oper, vtnPath)).thenReturn(getReadResult(vtn));
         assertEquals(Collections.<VtnPathMap>emptyList(),
                      PathMapUtils.readPathMaps(rtx, ident));
-        Mockito.verify(rtx).read(oper, path);
-        Mockito.verify(rtx, Mockito.never()).read(oper, vtnPath);
-        Mockito.reset(rtx);
+        verify(rtx).read(oper, path);
+        verify(rtx, never()).read(oper, vtnPath);
+        reset(rtx);
 
         // VTN path maps are present.
         Map<Integer, VtnPathMap> maps = new HashMap<>();
         List<VtnPathMap> vpmList = createVtnPathMaps(100, maps);
         root = new VtnPathMapsBuilder().setVtnPathMap(vpmList).build();
-        Mockito.when(rtx.read(oper, path)).thenReturn(getReadResult(root));
-        Mockito.when(rtx.read(oper, vtnPath)).thenReturn(getReadResult(vtn));
+        when(rtx.read(oper, path)).thenReturn(getReadResult(root));
+        when(rtx.read(oper, vtnPath)).thenReturn(getReadResult(vtn));
         vlist = PathMapUtils.readPathMaps(rtx, ident);
-        Mockito.verify(rtx).read(oper, path);
-        Mockito.verify(rtx, Mockito.never()).read(oper, vtnPath);
+        verify(rtx).read(oper, path);
+        verify(rtx, never()).read(oper, vtnPath);
         assertEquals(maps.size(), vlist.size());
 
         // Path maps should be sorted by index in ascending order.
@@ -821,7 +830,7 @@ public class PathMapUtilsTest extends TestBase {
     @Test
     public void testReadVtnPathMap() throws Exception {
         // Set up mock-up of MD-SAL read transaction.
-        ReadTransaction rtx = Mockito.mock(ReadTransaction.class);
+        ReadTransaction rtx = mock(ReadTransaction.class);
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
 
         // Map index is null.
@@ -836,9 +845,9 @@ public class PathMapUtilsTest extends TestBase {
             assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
             assertEquals("Path map index cannot be null", e.getMessage());
         }
-        Mockito.verify(rtx, Mockito.never()).
-            read(Mockito.any(LogicalDatastoreType.class),
-                 (InstanceIdentifier<?>)Mockito.any(InstanceIdentifier.class));
+        verify(rtx, never()).
+            read(any(LogicalDatastoreType.class),
+                 (InstanceIdentifier<?>)any(InstanceIdentifier.class));
 
         // Create test data.
         Map<Integer, VtnPathMap> maps = new HashMap<>();
@@ -855,9 +864,9 @@ public class PathMapUtilsTest extends TestBase {
             builder(Vtns.class).child(Vtn.class, vkey1).build();
         InstanceIdentifier<Vtn> vtnPath2 = InstanceIdentifier.
             builder(Vtns.class).child(Vtn.class, vkey2).build();
-        Mockito.when(rtx.read(oper, vtnPath1)).
+        when(rtx.read(oper, vtnPath1)).
             thenReturn(getReadResult(new VtnBuilder().build()));
-        Mockito.when(rtx.read(oper, vtnPath2)).
+        when(rtx.read(oper, vtnPath2)).
             thenReturn(getReadResult((Vtn)null));
         do {
             int index = random.nextInt(65536);
@@ -889,13 +898,13 @@ public class PathMapUtilsTest extends TestBase {
                     build();
             }
             maps.put(idx, vpm);
-            Mockito.when(rtx.read(oper, path)).thenReturn(getReadResult(vpm));
+            when(rtx.read(oper, path)).thenReturn(getReadResult(vpm));
 
             path = InstanceIdentifier.builder(Vtns.class).
                 child(Vtn.class, vkey2).child(VtnPathMaps.class).
                 child(VtnPathMap.class, mapKey).build();
             pathList2.add(path);
-            Mockito.when(rtx.read(oper, path)).
+            when(rtx.read(oper, path)).
                 thenReturn(getReadResult((VtnPathMap)null));
         } while (maps.size() < 100);
 
@@ -920,16 +929,525 @@ public class PathMapUtilsTest extends TestBase {
             }
         }
         for (InstanceIdentifier<VtnPathMap> path: pathList1) {
-            Mockito.verify(rtx).read(oper, path);
+            verify(rtx).read(oper, path);
         }
         for (InstanceIdentifier<VtnPathMap> path: pathList2) {
-            Mockito.verify(rtx).read(oper, path);
+            verify(rtx).read(oper, path);
         }
 
-        Mockito.verify(rtx, Mockito.times(notPresent.size())).
+        verify(rtx, times(notPresent.size())).
             read(oper, vtnPath1);
-        Mockito.verify(rtx, Mockito.times(maps.size())).
+        verify(rtx, times(maps.size())).
             read(oper, vtnPath2);
+    }
+
+    /**
+     * Test case for {@link PathMapUtils#toString(VtnPathMap)}.
+     */
+    @Test
+    public void testToString() {
+        Integer[] indices = {1, 2, 9999};
+        String[] conditions = {"cond_1", "cond_2", "condition"};
+        Integer[] policies = {0, 1, 2, 3};
+
+        String sep = ", ";
+        for (Integer index: indices) {
+            VtnPathMapBuilder builder = new VtnPathMapBuilder().
+                setIndex(index);
+            for (String cond: conditions) {
+                builder.setCondition(new VnodeName(cond));
+                for (Integer policy: policies) {
+                    String vpmStr = "index=" + index + sep +
+                        "cond=" + cond + sep +
+                        "policy=" + policy;
+                    VtnPathMap vpm = builder.setPolicy(policy).build();
+                    assertEquals(vpmStr, PathMapUtils.toString(vpm));
+
+                    Integer idle = 12345;
+                    vpm = builder.setIdleTimeout(idle).build();
+                    String str = vpmStr + sep + "idle=" + idle;
+                    assertEquals(str, PathMapUtils.toString(vpm));
+
+                    idle = null;
+                    Integer hard = 60000;
+                    vpm = builder.setIdleTimeout(idle).
+                        setHardTimeout(hard).build();
+                    str = vpmStr + sep + "hard=" + hard;
+                    assertEquals(str, PathMapUtils.toString(vpm));
+
+                    idle = 3333;
+                    hard = 45678;
+                    vpm = builder.setIdleTimeout(idle).
+                        setHardTimeout(hard).build();
+                    str = vpmStr + sep + "idle=" + idle + sep + "hard=" + hard;
+                    assertEquals(str, PathMapUtils.toString(vpm));
+
+                    builder.setIdleTimeout(null).setHardTimeout(null);
+                }
+            }
+        }
+    }
+
+    /**
+     * Test case for
+     * {@link PathMapUtils#log(Logger,IdentifiedData,VtnUpdateType)}.
+     *
+     * <ul>
+     *   <li>Global path map has been created.</li>
+     * </ul>
+     */
+    @Test
+    public void testLogGlobalCreated() {
+        Logger logger = mock(Logger.class);
+        when(logger.isInfoEnabled()).thenReturn(true);
+
+        // No flow timeout
+        Integer index = 123;
+        String cond = "cond_1";
+        Integer policy = 0;
+        VtnPathMap vpm = new VtnPathMapBuilder().
+            setIndex(index).
+            setCondition(new VnodeName(cond)).
+            setPolicy(policy).
+            build();
+        VtnPathMapKey vpmKey = new VtnPathMapKey(index);
+        InstanceIdentifier<VtnPathMap> path = InstanceIdentifier.
+            builder(GlobalPathMaps.class).
+            child(VtnPathMap.class, vpmKey).
+            build();
+        IdentifiedData<?> data = new IdentifiedData<VtnPathMap>(path, vpm);
+        String desc = "Global";
+        String value = "index=" + index + ", cond=" + cond +
+            ", policy=" + policy;
+        VtnUpdateType type = VtnUpdateType.CREATED;
+        PathMapUtils.log(logger, data, type);
+        verify(logger).isInfoEnabled();
+        verify(logger).info("{} path map has been {}: value={{}}",
+                            desc, "created", value);
+        verifyNoMoreInteractions(logger);
+
+        logger = mock(Logger.class);
+        when(logger.isInfoEnabled()).thenReturn(false);
+        PathMapUtils.log(logger, data, type);
+        verify(logger).isInfoEnabled();
+        verifyNoMoreInteractions(logger);
+
+        // With flow timeout
+        logger = mock(Logger.class);
+        when(logger.isInfoEnabled()).thenReturn(true);
+        index = 333;
+        cond = "cond_2";
+        policy = 3;
+        Integer idle = 5000;
+        Integer hard = 34567;
+        vpm = new VtnPathMapBuilder().
+            setIndex(index).
+            setCondition(new VnodeName(cond)).
+            setPolicy(policy).
+            setIdleTimeout(idle).
+            setHardTimeout(hard).
+            build();
+        vpmKey = new VtnPathMapKey(index);
+        path = InstanceIdentifier.
+            builder(GlobalPathMaps.class).
+            child(VtnPathMap.class, vpmKey).
+            build();
+        data = new IdentifiedData<VtnPathMap>(path, vpm);
+        value = "index=" + index + ", cond=" + cond +
+            ", policy=" + policy + ", idle=" + idle + ", hard=" + hard;
+        PathMapUtils.log(logger, data, type);
+        verify(logger).isInfoEnabled();
+        verify(logger).info("{} path map has been {}: value={{}}",
+                            desc, "created", value);
+        verifyNoMoreInteractions(logger);
+
+        logger = mock(Logger.class);
+        when(logger.isInfoEnabled()).thenReturn(false);
+        PathMapUtils.log(logger, data, type);
+        verify(logger).isInfoEnabled();
+        verifyNoMoreInteractions(logger);
+    }
+
+    /**
+     * Test case for
+     * {@link PathMapUtils#log(Logger,IdentifiedData,VtnUpdateType)}.
+     *
+     * <ul>
+     *   <li>Global path map has been removed.</li>
+     * </ul>
+     */
+    @Test
+    public void testLogGlobalRemoved() {
+        Logger logger = mock(Logger.class);
+        when(logger.isInfoEnabled()).thenReturn(true);
+
+        // No flow timeout
+        Integer index = 9999;
+        String cond = "cond_3";
+        Integer policy = 3;
+        VtnPathMap vpm = new VtnPathMapBuilder().
+            setIndex(index).
+            setCondition(new VnodeName(cond)).
+            setPolicy(policy).
+            build();
+        VtnPathMapKey vpmKey = new VtnPathMapKey(index);
+        InstanceIdentifier<VtnPathMap> path = InstanceIdentifier.
+            builder(GlobalPathMaps.class).
+            child(VtnPathMap.class, vpmKey).
+            build();
+        IdentifiedData<?> data = new IdentifiedData<VtnPathMap>(path, vpm);
+        String desc = "Global";
+        String value = "index=" + index + ", cond=" + cond +
+            ", policy=" + policy;
+        VtnUpdateType type = VtnUpdateType.REMOVED;
+        PathMapUtils.log(logger, data, type);
+        verify(logger).isInfoEnabled();
+        verify(logger).info("{} path map has been {}: value={{}}",
+                            desc, "removed", value);
+        verifyNoMoreInteractions(logger);
+
+        logger = mock(Logger.class);
+        when(logger.isInfoEnabled()).thenReturn(false);
+        PathMapUtils.log(logger, data, type);
+        verify(logger).isInfoEnabled();
+        verifyNoMoreInteractions(logger);
+
+        // With flow timeout
+        logger = mock(Logger.class);
+        when(logger.isInfoEnabled()).thenReturn(true);
+        index = 890;
+        cond = "cond_4";
+        policy = 2;
+        Integer idle = 0;
+        Integer hard = 0;
+        vpm = new VtnPathMapBuilder().
+            setIndex(index).
+            setCondition(new VnodeName(cond)).
+            setPolicy(policy).
+            setIdleTimeout(idle).
+            setHardTimeout(hard).
+            build();
+        vpmKey = new VtnPathMapKey(index);
+        path = InstanceIdentifier.
+            builder(GlobalPathMaps.class).
+            child(VtnPathMap.class, vpmKey).
+            build();
+        data = new IdentifiedData<VtnPathMap>(path, vpm);
+        value = "index=" + index + ", cond=" + cond +
+            ", policy=" + policy + ", idle=" + idle + ", hard=" + hard;
+        PathMapUtils.log(logger, data, type);
+        verify(logger).isInfoEnabled();
+        verify(logger).info("{} path map has been {}: value={{}}",
+                            desc, "removed", value);
+        verifyNoMoreInteractions(logger);
+
+        logger = mock(Logger.class);
+        when(logger.isInfoEnabled()).thenReturn(false);
+        PathMapUtils.log(logger, data, type);
+        verify(logger).isInfoEnabled();
+        verifyNoMoreInteractions(logger);
+    }
+
+    /**
+     * Test case for
+     * {@link PathMapUtils#log(Logger,IdentifiedData,VtnUpdateType)}.
+     *
+     * <ul>
+     *   <li>VTN path map has been created.</li>
+     * </ul>
+     */
+    @Test
+    public void testLogVtnCreated() {
+        Logger logger = mock(Logger.class);
+        when(logger.isInfoEnabled()).thenReturn(true);
+
+        // No flow timeout
+        String tname = "vtn_1";
+        VtnKey vtnKey = new VtnKey(new VnodeName(tname));
+        VTenantIdentifier vtnId = new VTenantIdentifier(vtnKey.getName());
+        Integer index = 1230;
+        String cond = "cond_10";
+        Integer policy = 1;
+        VtnPathMap vpm = new VtnPathMapBuilder().
+            setIndex(index).
+            setCondition(new VnodeName(cond)).
+            setPolicy(policy).
+            build();
+        VtnPathMapKey vpmKey = new VtnPathMapKey(index);
+        InstanceIdentifier<VtnPathMap> path = InstanceIdentifier.
+            builder(Vtns.class).
+            child(Vtn.class, vtnKey).
+            child(VtnPathMaps.class).
+            child(VtnPathMap.class, vpmKey).
+            build();
+        IdentifiedData<?> data = new IdentifiedData<VtnPathMap>(path, vpm);
+        String desc = vtnId.toString() + ": VTN";
+        String value = "index=" + index + ", cond=" + cond +
+            ", policy=" + policy;
+        VtnUpdateType type = VtnUpdateType.CREATED;
+        PathMapUtils.log(logger, data, type);
+        verify(logger).isInfoEnabled();
+        verify(logger).info("{} path map has been {}: value={{}}",
+                            desc, "created", value);
+        verifyNoMoreInteractions(logger);
+
+        logger = mock(Logger.class);
+        when(logger.isInfoEnabled()).thenReturn(false);
+        PathMapUtils.log(logger, data, type);
+        verify(logger).isInfoEnabled();
+        verifyNoMoreInteractions(logger);
+
+        // With flow timeout
+        logger = mock(Logger.class);
+        when(logger.isInfoEnabled()).thenReturn(true);
+        tname = "vtn_2";
+        vtnKey = new VtnKey(new VnodeName(tname));
+        vtnId = new VTenantIdentifier(vtnKey.getName());
+        index = 10203;
+        cond = "cond_20";
+        policy = 0;
+        Integer idle = 65534;
+        Integer hard = 65535;
+        vpm = new VtnPathMapBuilder().
+            setIndex(index).
+            setCondition(new VnodeName(cond)).
+            setPolicy(policy).
+            setIdleTimeout(idle).
+            setHardTimeout(hard).
+            build();
+        vpmKey = new VtnPathMapKey(index);
+        path = InstanceIdentifier.
+            builder(Vtns.class).
+            child(Vtn.class, vtnKey).
+            child(VtnPathMaps.class).
+            child(VtnPathMap.class, vpmKey).
+            build();
+        data = new IdentifiedData<VtnPathMap>(path, vpm);
+        desc = vtnId.toString() + ": VTN";
+        value = "index=" + index + ", cond=" + cond +
+            ", policy=" + policy + ", idle=" + idle + ", hard=" + hard;
+        PathMapUtils.log(logger, data, type);
+        verify(logger).isInfoEnabled();
+        verify(logger).info("{} path map has been {}: value={{}}",
+                            desc, "created", value);
+        verifyNoMoreInteractions(logger);
+
+        logger = mock(Logger.class);
+        when(logger.isInfoEnabled()).thenReturn(false);
+        PathMapUtils.log(logger, data, type);
+        verify(logger).isInfoEnabled();
+        verifyNoMoreInteractions(logger);
+    }
+
+
+    /**
+     * Test case for
+     * {@link PathMapUtils#log(Logger,IdentifiedData,VtnUpdateType)}.
+     *
+     * <ul>
+     *   <li>VTN path map has been removed.</li>
+     * </ul>
+     */
+    @Test
+    public void testLogVtnRemoved() {
+        Logger logger = mock(Logger.class);
+        when(logger.isInfoEnabled()).thenReturn(true);
+
+        // No flow timeout
+        String tname = "vtn_3";
+        VtnKey vtnKey = new VtnKey(new VnodeName(tname));
+        VTenantIdentifier vtnId = new VTenantIdentifier(vtnKey.getName());
+        Integer index = 65535;
+        String cond = "cond_333";
+        Integer policy = 2;
+        VtnPathMap vpm = new VtnPathMapBuilder().
+            setIndex(index).
+            setCondition(new VnodeName(cond)).
+            setPolicy(policy).
+            build();
+        VtnPathMapKey vpmKey = new VtnPathMapKey(index);
+        InstanceIdentifier<VtnPathMap> path = InstanceIdentifier.
+            builder(Vtns.class).
+            child(Vtn.class, vtnKey).
+            child(VtnPathMaps.class).
+            child(VtnPathMap.class, vpmKey).
+            build();
+        IdentifiedData<?> data = new IdentifiedData<VtnPathMap>(path, vpm);
+        String desc = vtnId.toString() + ": VTN";
+        String value = "index=" + index + ", cond=" + cond +
+            ", policy=" + policy;
+        VtnUpdateType type = VtnUpdateType.REMOVED;
+        PathMapUtils.log(logger, data, type);
+        verify(logger).isInfoEnabled();
+        verify(logger).info("{} path map has been {}: value={{}}",
+                            desc, "removed", value);
+        verifyNoMoreInteractions(logger);
+
+        logger = mock(Logger.class);
+        when(logger.isInfoEnabled()).thenReturn(false);
+        PathMapUtils.log(logger, data, type);
+        verify(logger).isInfoEnabled();
+        verifyNoMoreInteractions(logger);
+
+        // With flow timeout
+        logger = mock(Logger.class);
+        when(logger.isInfoEnabled()).thenReturn(true);
+        tname = "vtn_4";
+        vtnKey = new VtnKey(new VnodeName(tname));
+        vtnId = new VTenantIdentifier(vtnKey.getName());
+        index = 6633;
+        cond = "cond_4000";
+        policy = 1;
+        Integer idle = 1234;
+        Integer hard = 5678;
+        vpm = new VtnPathMapBuilder().
+            setIndex(index).
+            setCondition(new VnodeName(cond)).
+            setPolicy(policy).
+            setIdleTimeout(idle).
+            setHardTimeout(hard).
+            build();
+        vpmKey = new VtnPathMapKey(index);
+        path = InstanceIdentifier.
+            builder(Vtns.class).
+            child(Vtn.class, vtnKey).
+            child(VtnPathMaps.class).
+            child(VtnPathMap.class, vpmKey).
+            build();
+        data = new IdentifiedData<VtnPathMap>(path, vpm);
+        desc = vtnId.toString() + ": VTN";
+        value = "index=" + index + ", cond=" + cond +
+            ", policy=" + policy + ", idle=" + idle + ", hard=" + hard;
+        PathMapUtils.log(logger, data, type);
+        verify(logger).isInfoEnabled();
+        verify(logger).info("{} path map has been {}: value={{}}",
+                            desc, "removed", value);
+        verifyNoMoreInteractions(logger);
+
+        logger = mock(Logger.class);
+        when(logger.isInfoEnabled()).thenReturn(false);
+        PathMapUtils.log(logger, data, type);
+        verify(logger).isInfoEnabled();
+        verifyNoMoreInteractions(logger);
+    }
+
+    /**
+     * Test case for {@link PathMapUtils#log(Logger,ChangedData)}.
+     *
+     * <ul>
+     *   <li>Global path map has been changed.</li>
+     * </ul>
+     */
+    @Test
+    public void testLogGlobalChanged() {
+        Logger logger = mock(Logger.class);
+        when(logger.isInfoEnabled()).thenReturn(true);
+
+        Integer index = 9999;
+        String ocond = "cond_1";
+        Integer opolicy = 1;
+        VtnPathMap old = new VtnPathMapBuilder().
+            setIndex(index).
+            setCondition(new VnodeName(ocond)).
+            setPolicy(opolicy).
+            build();
+
+        String cond = "cond_11";
+        Integer policy = 0;
+        Integer idle = 7788;
+        Integer hard = 12345;
+        VtnPathMap vpm = new VtnPathMapBuilder().
+            setIndex(index).
+            setCondition(new VnodeName(cond)).
+            setPolicy(policy).
+            setIdleTimeout(idle).
+            setHardTimeout(hard).
+            build();
+
+        VtnPathMapKey vpmKey = new VtnPathMapKey(index);
+        InstanceIdentifier<VtnPathMap> path = InstanceIdentifier.
+            builder(GlobalPathMaps.class).
+            child(VtnPathMap.class, vpmKey).
+            build();
+        ChangedData<?> data = new ChangedData<>(path, vpm, old);
+        String desc = "Global";
+        String oldValue = "index=" + index + ", cond=" + ocond +
+            ", policy=" + opolicy;
+        String value = "index=" + index + ", cond=" + cond +
+            ", policy=" + policy + ", idle=" + idle + ", hard=" + hard;
+        PathMapUtils.log(logger, data);
+        verify(logger).isInfoEnabled();
+        verify(logger).info("{} path map has been changed: old={{}}, new={{}}",
+                            desc, oldValue, value);
+        verifyNoMoreInteractions(logger);
+
+        logger = mock(Logger.class);
+        when(logger.isInfoEnabled()).thenReturn(false);
+        PathMapUtils.log(logger, data);
+        verify(logger).isInfoEnabled();
+        verifyNoMoreInteractions(logger);
+    }
+
+    /**
+     * Test case for {@link PathMapUtils#log(Logger,ChangedData)}.
+     *
+     * <ul>
+     *   <li>VTN path map has been changed.</li>
+     * </ul>
+     */
+    @Test
+    public void testLogVtnChanged() {
+        Logger logger = mock(Logger.class);
+        when(logger.isInfoEnabled()).thenReturn(true);
+
+        Integer index = 9999;
+        String tname = "vtn_1";
+        VtnKey vtnKey = new VtnKey(new VnodeName(tname));
+        VTenantIdentifier vtnId = new VTenantIdentifier(vtnKey.getName());
+        String ocond = "cond_123";
+        Integer opolicy = 2;
+        Integer idle = 5544;
+        Integer hard = 8765;
+        VtnPathMap old = new VtnPathMapBuilder().
+            setIndex(index).
+            setCondition(new VnodeName(ocond)).
+            setPolicy(opolicy).
+            setIdleTimeout(idle).
+            setHardTimeout(hard).
+            build();
+
+        String cond = "cond_456";
+        Integer policy = 1;
+        VtnPathMap vpm = new VtnPathMapBuilder().
+            setIndex(index).
+            setCondition(new VnodeName(cond)).
+            setPolicy(policy).
+            build();
+
+        VtnPathMapKey vpmKey = new VtnPathMapKey(index);
+        InstanceIdentifier<VtnPathMap> path = InstanceIdentifier.
+            builder(Vtns.class).
+            child(Vtn.class, vtnKey).
+            child(VtnPathMaps.class).
+            child(VtnPathMap.class, vpmKey).
+            build();
+        ChangedData<?> data = new ChangedData<>(path, vpm, old);
+        String desc = vtnId.toString() + ": VTN";
+        String oldValue = "index=" + index + ", cond=" + ocond +
+            ", policy=" + opolicy + ", idle=" + idle + ", hard=" + hard;
+        String value = "index=" + index + ", cond=" + cond +
+            ", policy=" + policy;
+        PathMapUtils.log(logger, data);
+        verify(logger).isInfoEnabled();
+        verify(logger).info("{} path map has been changed: old={{}}, new={{}}",
+                            desc, oldValue, value);
+        verifyNoMoreInteractions(logger);
+
+        logger = mock(Logger.class);
+        when(logger.isInfoEnabled()).thenReturn(false);
+        PathMapUtils.log(logger, data);
+        verify(logger).isInfoEnabled();
+        verifyNoMoreInteractions(logger);
     }
 
     /**

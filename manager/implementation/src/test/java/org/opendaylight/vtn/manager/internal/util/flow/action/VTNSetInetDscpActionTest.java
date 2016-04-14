@@ -35,6 +35,7 @@ import org.opendaylight.vtn.manager.internal.XmlDataType;
 import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlValueType;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDscpActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDscpActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.inet.dscp.action._case.VtnSetInetDscpAction;
@@ -92,6 +93,8 @@ public class VTNSetInetDscpActionTest extends TestBase {
      *   <li>{@link VTNSetInetDscpAction#verifyImpl()}</li>
      *   <li>{@link VTNSetInetDscpAction#toFlowFilterAction(VtnAction,Integer)}</li>
      *   <li>{@link VTNSetInetDscpAction#toVtnAction(Action)}</li>
+     *   <li>{@link VTNSetInetDscpAction#getDescription(Action)}</li>
+     *   <li>{@link VTNSetInetDscpAction#getDescription(VtnAction)}</li>
      *   <li>{@link FlowFilterAction#verify()}</li>
      *   <li>{@link FlowFilterAction#getIdentifier()}</li>
      *   <li>{@link FlowFilterAction#toVtnFlowAction()}</li>
@@ -248,14 +251,20 @@ public class VTNSetInetDscpActionTest extends TestBase {
             // toVtnAction() should never affect instance variables.
             assertEquals(0, va.getDscp());
 
-            // getDescription() test.
+            // getDescription(VtnAction) test.
+            // It should never affect instance variables.
+            VtnAction vaction = vac;
+            String desc = "set-inet-dscp(" + dscp + ")";
+            assertEquals(desc, va.getDescription(vaction));
+            assertEquals(0, va.getDscp());
+
+            // getDescription(Action) test.
+            // It should never affect instance variables.
             action = new SetNwTosActionCaseBuilder().
                 setSetNwTosAction(ma).build();
-            String desc = "SET_NW_TOS(tos=0x" +
+            desc = "SET_NW_TOS(tos=0x" +
                 Integer.toHexString(tos.intValue()) + ")";
             assertEquals(desc, va.getDescription(action));
-
-            // getDescription() should never affect instance variables.
             assertEquals(0, va.getDscp());
         }
 

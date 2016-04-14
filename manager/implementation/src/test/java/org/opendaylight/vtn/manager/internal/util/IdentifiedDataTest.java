@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,12 @@
  */
 
 package org.opendaylight.vtn.manager.internal.util;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+import org.slf4j.Logger;
 
 import org.junit.Test;
 
@@ -21,6 +27,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev15020
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPortBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNodeBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
  * JUnit test for {@link IdentifiedData}.
@@ -126,6 +133,33 @@ public class IdentifiedDataTest extends TestBase {
             IdentifiedData.create((InstanceIdentifier<VtnNode>)null, vnode);
             unexpected();
         } catch (IllegalArgumentException e) {
+        }
+    }
+
+    /**
+     * Test case for {@link IdentifiedData#unexpected(Logger, VtnUpdateType)}.
+     */
+    @Test
+    public void testUnexpected() {
+        SalPort[] ports = {
+            new SalPort(1L, 1L),
+            new SalPort(1L, 2L),
+            new SalPort(2L, 2L),
+        };
+        VtnUpdateType[] types = VtnUpdateType.values();
+        for (SalPort sport: ports) {
+            InstanceIdentifier<VtnPort> path = sport.getVtnPortIdentifier();
+            for (VtnUpdateType type: types) {
+                VtnPort vport = new VtnPortBuilder().build();
+                IdentifiedData<VtnPort> data =
+                    new IdentifiedData<>(path, vport);
+                Logger logger = mock(Logger.class);
+                data.unexpected(logger, type);
+                verify(logger).
+                    warn("Unexpected data: type={}, path={}, value={}",
+                         type, path, vport);
+                verifyNoMoreInteractions(logger);
+            }
         }
     }
 }

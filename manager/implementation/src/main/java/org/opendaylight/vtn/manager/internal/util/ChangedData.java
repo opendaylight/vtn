@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,8 +8,12 @@
 
 package org.opendaylight.vtn.manager.internal.util;
 
+import org.slf4j.Logger;
+
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
  * {@code ChangedData} describes a change of a data object in the MD-SAL
@@ -114,5 +118,20 @@ public final class ChangedData<T extends DataObject>
         }
 
         return null;
+    }
+
+
+    /**
+     * Record a warning log message that indicates unexpected data was
+     * notified.
+     *
+     * @param logger  A logger instance.
+     * @param type    A {@link VtnUpdateType} instance that indicates the type
+     *                of event.
+     */
+    @Override
+    public void unexpected(Logger logger, VtnUpdateType type) {
+        logger.warn("Unexpected data: type={}, path={}, old={}, new={}",
+                    type, getIdentifier(), oldValue, getValue());
     }
 }

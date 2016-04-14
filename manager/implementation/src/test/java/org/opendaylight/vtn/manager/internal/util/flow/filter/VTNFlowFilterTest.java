@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -49,6 +49,7 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier.InstanceIdentifierBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.VtnFlowFilterConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.list.VtnFlowFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.list.VtnFlowFilterBuilder;
@@ -139,6 +140,7 @@ public class VTNFlowFilterTest extends TestBase {
         VterminalKey vtmKey = new VterminalKey(new VnodeName("vterm_1"));
         VinterfaceKey vifKey = new VinterfaceKey(new VnodeName("if_1"));
         VtnFlowFilterKey key = new VtnFlowFilterKey(123);
+        VtnFlowActionKey actKey = new VtnFlowActionKey(456);
 
         InstanceIdentifierBuilder<Vtn> vtn = InstanceIdentifier.
             builder(Vtns.class).
@@ -163,6 +165,9 @@ public class VTNFlowFilterTest extends TestBase {
             vtmIf.child(VinterfaceInputFilter.class).child(type, key).build());
         for (InstanceIdentifier<VtnFlowFilter> path: paths) {
             assertEquals(false, VTNFlowFilter.isOutput(path));
+            InstanceIdentifier<VtnFlowAction> apath = path.
+                child(VtnFlowAction.class, actKey);
+            assertEquals(false, VTNFlowFilter.isOutput(apath));
         }
 
         // Output filters.
@@ -174,6 +179,9 @@ public class VTNFlowFilterTest extends TestBase {
             vtmIf.child(VinterfaceOutputFilter.class).child(type, key).build());
         for (InstanceIdentifier<VtnFlowFilter> path: paths) {
             assertEquals(true, VTNFlowFilter.isOutput(path));
+            InstanceIdentifier<VtnFlowAction> apath = path.
+                child(VtnFlowAction.class, actKey);
+            assertEquals(true, VTNFlowFilter.isOutput(apath));
         }
     }
 
@@ -203,12 +211,95 @@ public class VTNFlowFilterTest extends TestBase {
         assertEquals("DROP", VTNFlowFilter.getTypeDescription(vff));
 
         VtnRedirectFilterCase redirect = new VtnRedirectFilterCaseBuilder().
-            setVtnRedirectFilter(new VtnRedirectFilterBuilder().build()).
             build();
         vff = new VtnFlowFilterBuilder().
             setVtnFlowFilterType(redirect).
             build();
         assertEquals("REDIRECT", VTNFlowFilter.getTypeDescription(vff));
+
+        VtnRedirectFilter vrf = new VtnRedirectFilterBuilder().build();
+        redirect = new VtnRedirectFilterCaseBuilder().
+            setVtnRedirectFilter(vrf).
+            build();
+        vff = new VtnFlowFilterBuilder().
+            setVtnFlowFilterType(redirect).
+            build();
+        assertEquals("REDIRECT()",
+                     VTNFlowFilter.getTypeDescription(vff));
+
+        vrf = new VtnRedirectFilterBuilder().
+            setOutput(true).
+            build();
+        redirect = new VtnRedirectFilterCaseBuilder().
+            setVtnRedirectFilter(vrf).
+            build();
+        vff = new VtnFlowFilterBuilder().
+            setVtnFlowFilterType(redirect).
+            build();
+        assertEquals("REDIRECT(output=true)",
+                     VTNFlowFilter.getTypeDescription(vff));
+
+        String bname = "bridge_1";
+        String iname = "if_1";
+        VnodeName vbname = new VnodeName(bname);
+        VnodeName viname = new VnodeName(iname);
+        RedirectDestination rd = new RedirectDestinationBuilder().
+            setBridgeName(bname).
+            setInterfaceName(iname).
+            build();
+        vrf = new VtnRedirectFilterBuilder().
+            setRedirectDestination(rd).
+            build();
+        redirect = new VtnRedirectFilterCaseBuilder().
+            setVtnRedirectFilter(vrf).
+            build();
+        vff = new VtnFlowFilterBuilder().
+            setVtnFlowFilterType(redirect).
+            build();
+        VBridgeIfIdentifier bif =
+            new VBridgeIfIdentifier(null, vbname, viname);
+        String expected = "REDIRECT(destination=" + bif + ")";
+        assertEquals(expected, VTNFlowFilter.getTypeDescription(vff));
+
+        bname = "term_2";
+        iname = "if_99";
+        vbname = new VnodeName(bname);
+        viname = new VnodeName(iname);
+        rd = new RedirectDestinationBuilder().
+            setTerminalName(bname).
+            setInterfaceName(iname).
+            build();
+        vrf = new VtnRedirectFilterBuilder().
+            setRedirectDestination(rd).
+            setOutput(true).
+            build();
+        redirect = new VtnRedirectFilterCaseBuilder().
+            setVtnRedirectFilter(vrf).
+            build();
+        vff = new VtnFlowFilterBuilder().
+            setVtnFlowFilterType(redirect).
+            build();
+        VTerminalIfIdentifier tif =
+            new VTerminalIfIdentifier(null, vbname, viname);
+        expected = "REDIRECT(destination=" + tif + ", output=true)";
+        assertEquals(expected, VTNFlowFilter.getTypeDescription(vff));
+
+        // Invalid destination
+        rd = new RedirectDestinationBuilder().
+            setTerminalName(bname).
+            build();
+        vrf = new VtnRedirectFilterBuilder().
+            setRedirectDestination(rd).
+            setOutput(true).
+            build();
+        redirect = new VtnRedirectFilterCaseBuilder().
+            setVtnRedirectFilter(vrf).
+            build();
+        vff = new VtnFlowFilterBuilder().
+            setVtnFlowFilterType(redirect).
+            build();
+        expected = "REDIRECT(" + vrf + ")";
+        assertEquals(expected, VTNFlowFilter.getTypeDescription(vff));
     }
 
     /**

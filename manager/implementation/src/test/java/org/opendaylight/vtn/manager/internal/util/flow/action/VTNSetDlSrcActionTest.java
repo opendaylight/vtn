@@ -94,6 +94,8 @@ public class VTNSetDlSrcActionTest extends TestBase {
      *   <li>{@link VTNSetDlSrcAction#set(ActionBuilder)}</li>
      *   <li>{@link VTNSetDlSrcAction#toFlowFilterAction(VtnAction,Integer)}</li>
      *   <li>{@link VTNSetDlSrcAction#toVtnAction(Action)}</li>
+     *   <li>{@link VTNSetDlSrcAction#getDescription(Action)}</li>
+     *   <li>{@link VTNSetDlSrcAction#getDescription(VtnAction)}</li>
      *   <li>{@link VTNDlAddrAction#getAddress()}</li>
      *   <li>{@link VTNDlAddrAction#getMacAddress()}</li>
      *   <li>{@link VTNDlAddrAction#verifyImpl()}</li>
@@ -236,13 +238,25 @@ public class VTNSetDlSrcActionTest extends TestBase {
             // toVtnAction() should never affect instance variables.
             assertEquals(null, va.getAddress());
 
-            // getDescription() test.
+            // getDescription(VtnAction) test.
+            // It should never affect instance variables.
+            String desc = "set-dl-src(" + eaddr.getText() + ")";
+            assertEquals(desc, va.getDescription(vaction));
+            assertEquals(null, va.getAddress());
+            VtnSetDlSrcAction vact1 = new VtnSetDlSrcActionBuilder().
+                build();
+            VtnAction vaction1 = new VtnSetDlSrcActionCaseBuilder().
+                setVtnSetDlSrcAction(vact1).build();
+            desc = "set-dl-src(null)";
+            assertEquals(desc, va.getDescription(vaction1));
+            assertEquals(null, va.getAddress());
+
+            // getDescription(Action) test.
+            // It should never affect instance variables.
             action = new SetDlSrcActionCaseBuilder().
                 setSetDlSrcAction(ma).build();
-            String desc = "SET_DL_SRC(address=" + eaddr.getText() + ")";
+            desc = "SET_DL_SRC(address=" + eaddr.getText() + ")";
             assertEquals(desc, va.getDescription(action));
-
-            // getDescription() should never affect instance variables.
             assertEquals(null, va.getAddress());
         }
 

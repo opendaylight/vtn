@@ -92,6 +92,7 @@ public class VTNSetPortDstActionTest extends TestBase {
      *   <li>{@link VTNSetPortDstAction#toFlowFilterAction(VtnAction,Integer)}</li>
      *   <li>{@link VTNSetPortDstAction#toVtnAction(Action)}</li>
      *   <li>{@link VTNSetPortDstAction#getDescription(Action)}</li>
+     *   <li>{@link VTNSetPortDstAction#getDescription(VtnAction)}</li>
      *   <li>{@link VTNPortAction#getPort()}</li>
      *   <li>{@link VTNPortAction#getPortNumber()}</li>
      *   <li>{@link VTNPortAction#verifyImpl()}</li>
@@ -251,13 +252,18 @@ public class VTNSetPortDstActionTest extends TestBase {
             // toVtnAction() should never affect instance variables.
             assertEquals(0, va.getPort());
 
-            // getDescription() test.
+            // getDescription(VtnAction) test.
+            // It should never affect instance variables.
+            String desc = "set-port-dst(" + port + ")";
+            assertEquals(desc, va.getDescription(vaction));
+            assertEquals(0, va.getPort());
+
+            // getDescription(Action) test.
+            // It should never affect instance variables.
             action = new SetTpDstActionCaseBuilder().
                 setSetTpDstAction(ma).build();
-            String desc = "SET_TP_DST(port=" + port + ")";
+            desc = "SET_TP_DST(port=" + port + ")";
             assertEquals(desc, va.getDescription(action));
-
-            // getDescription() should never affect instance variables.
             assertEquals(0, va.getPort());
         }
 

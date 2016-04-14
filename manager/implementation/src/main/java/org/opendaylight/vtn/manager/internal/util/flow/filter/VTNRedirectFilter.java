@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -9,6 +9,8 @@
 package org.opendaylight.vtn.manager.internal.util.flow.filter;
 
 import static org.opendaylight.vtn.manager.util.NumberUtils.HASH_PRIME;
+
+import static org.opendaylight.vtn.manager.internal.util.MiscUtils.LOG_SEPARATOR;
 
 import java.util.Objects;
 
@@ -35,6 +37,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.v
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.type.fields.vtn.flow.filter.type.VtnRedirectFilterCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.type.fields.vtn.flow.filter.type.vtn.redirect.filter._case.VtnRedirectFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.flow.filter.type.fields.vtn.flow.filter.type.vtn.redirect.filter._case.VtnRedirectFilterBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.vtn.redirect.filter.config.RedirectDestination;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 
 /**
@@ -70,6 +73,40 @@ public final class VTNRedirectFilter extends VTNFlowFilter {
      * Private constructor only for JAXB.
      */
     private VTNRedirectFilter() {
+    }
+
+    /**
+     * Return a string that describes the specified redirect flow filter.
+     *
+     * @param vrfc  A {@link VtnRedirectFilterCase} instance.
+     * @return  A string that describes the specified redirect flow filter.
+     */
+    static String getDescription(VtnRedirectFilterCase vrfc) {
+        VtnRedirectFilter vrf = vrfc.getVtnRedirectFilter();
+        StringBuilder builder = new StringBuilder("REDIRECT");
+        if (vrf != null) {
+            builder.append('(');
+            try {
+                String sep = "";
+                RedirectDestination rd = vrf.getRedirectDestination();
+                if (rd != null) {
+                    VInterfaceIdentifier<?> dest =
+                        VInterfaceIdentifier.create(rd);
+                    builder.append("destination=").append(dest);
+                    sep = LOG_SEPARATOR;
+                }
+                Boolean out = vrf.isOutput();
+                if (out != null) {
+                    builder.append(sep).append("output=").append(out);
+                }
+            } catch (RpcException | RuntimeException e) {
+                LOG.error("Invalid redirect flow filter: " + vrfc, e);
+                builder.append(vrf);
+            }
+            builder.append(')');
+        }
+
+        return builder.toString();
     }
 
     /**

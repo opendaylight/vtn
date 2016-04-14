@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -97,6 +97,7 @@ public class VTNSetInetDstActionTest extends TestBase {
      *   <li>{@link VTNSetInetDstAction#toFlowFilterAction(VtnAction,Integer)}</li>
      *   <li>{@link VTNSetInetDstAction#toVtnAction(Action)}</li>
      *   <li>{@link VTNSetInetDstAction#getDescription(Action)}</li>
+     *   <li>{@link VTNSetInetDstAction#getDescription(VtnAction)}</li>
      *   <li>{@link VTNInetAddrAction#getAddress()}</li>
      *   <li>{@link VTNInetAddrAction#getMdAddress()}</li>
      *   <li>{@link VTNInetAddrAction#verifyImpl()}</li>
@@ -243,18 +244,46 @@ public class VTNSetInetDstActionTest extends TestBase {
             // toVtnAction() should never affect instance variables.
             assertEquals(null, va.getAddress());
 
-            // getDescription() test.
+            // getDescription(VtnAction) test.
+            // It should never affect instance variables.
+            String desc = "set-inet-dst(ipv4=" + iaddr.getCidrText() + ")";
+            assertEquals(desc, va.getDescription(vaction));
+            assertEquals(null, va.getAddress());
+
+            VtnSetInetDstAction vact1 = new VtnSetInetDstActionBuilder().
+                build();
+            VtnAction vaction1 = new VtnSetInetDstActionCaseBuilder().
+                setVtnSetInetDstAction(vact1).
+                build();
+            desc = "set-inet-dst(null)";
+            assertEquals(desc, va.getDescription(vaction1));
+            assertEquals(null, va.getAddress());
+
+            String ipv6 = "abcd:ffee::/32";
+            Address maddr = new Ipv6Builder().
+                setIpv6Address(new Ipv6Prefix(ipv6)).
+                build();
+            vact1 = new VtnSetInetDstActionBuilder().
+                setAddress(maddr).
+                build();
+            vaction1 = new VtnSetInetDstActionCaseBuilder().
+                setVtnSetInetDstAction(vact1).
+                build();
+            desc = "set-inet-dst(ipv6=" + ipv6 + ")";
+            assertEquals(desc, va.getDescription(vaction1));
+            assertEquals(null, va.getAddress());
+
+            // getDescription(Action) test.
+            // It should never affect instance variables.
             action = new SetNwDstActionCaseBuilder().
                 setSetNwDstAction(ma).build();
-            String desc = "SET_NW_DST(ipv4=" + iaddr.getCidrText() + ")";
+            desc = "SET_NW_DST(ipv4=" + iaddr.getCidrText() + ")";
             assertEquals(desc, va.getDescription(action));
-
-            // getDescription() should never affect instance variables.
             assertEquals(null, va.getAddress());
         }
 
         Action action = new SetNwDstActionCaseBuilder().build();
-        String desc = "SET_NW_DST()";
+        String desc = "SET_NW_DST(null)";
         assertEquals(desc, va.getDescription(action));
         assertEquals(null, va.getAddress());
 

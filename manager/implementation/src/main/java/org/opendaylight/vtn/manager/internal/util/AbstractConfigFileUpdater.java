@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -111,10 +111,9 @@ public abstract class AbstractConfigFileUpdater<K, V> {
         for (Map.Entry<K, V> entry: updatedData.entrySet()) {
             K key = entry.getKey();
             V value = entry.getValue();
-            boolean created = onUpdated(key, value);
+            onUpdated(key, value);
             String strKey = String.valueOf(key);
 
-            logUpdated(logger, strKey, created);
             if (!XmlConfigFile.save(fileType, strKey, value)) {
                 logger.warn("{}: {} could not be saved.", strKey, description);
             } else if (logger.isTraceEnabled()) {
@@ -127,7 +126,6 @@ public abstract class AbstractConfigFileUpdater<K, V> {
             onRemoved(key);
             String strKey = String.valueOf(key);
 
-            logRemoved(logger, strKey);
             if (!XmlConfigFile.delete(fileType, strKey)) {
                 logger.warn("{}: {} configuration could not be deleted.",
                             strKey, description);
@@ -149,30 +147,6 @@ public abstract class AbstractConfigFileUpdater<K, V> {
      * @param logger  A {@link Logger} instance.
      */
     protected void fixUp(Logger logger) {
-    }
-
-    /**
-     * Log a created or updated data.
-     *
-     * @param logger   A {@link Logger} instance.
-     * @param key      A string which specifies the given data.
-     * @param created  {@code true} means that the given data has been created.
-     *                 {@code false} means that the given data has been
-     *                 updated.
-     */
-    protected void logUpdated(Logger logger, String key, boolean created) {
-        logger.info("{}: {} has been {}.", key, description,
-                    (created) ? "created" : "updated");
-    }
-
-    /**
-     * Log a removed data.
-     *
-     * @param logger  A {@link Logger} instance.
-     * @param key     A string which specifies the given data.
-     */
-    protected void logRemoved(Logger logger, String key) {
-        logger.info("{}: {} has been removed.", key, description);
     }
 
     /**
