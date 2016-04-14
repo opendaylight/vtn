@@ -1,0 +1,8 @@
+Code-Review+1: Stephen Kitt <skitt@redhat.com>
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+2: Hideyuki Tai <Hideyuki.Tai@necam.com>
+Submitted-by: Hideyuki Tai <Hideyuki.Tai@necam.com>
+Submitted-at: Thu, 14 Apr 2016 20:08:43 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/37552
+Project: vtn
+Branch: refs/heads/master
