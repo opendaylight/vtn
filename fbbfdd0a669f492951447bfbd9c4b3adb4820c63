@@ -22,6 +22,30 @@
       "revId": "fbbfdd0a669f492951447bfbd9c4b3adb4820c63",
       "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a494da4_b3255ead",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/impl/OVSDBEventHandler.java",
+        "patchSetId": 3
+      },
+      "lineNbr": 723,
+      "author": {
+        "id": 1575
+      },
+      "writtenOn": "2016-04-15T09:57:17Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "1a494da4_fd197a7a",
+      "range": {
+        "startLine": 716,
+        "startChar": 3,
+        "endLine": 723,
+        "endChar": 5
+      },
+      "revId": "fbbfdd0a669f492951447bfbd9c4b3adb4820c63",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
     }
   ]
 }
