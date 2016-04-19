@@ -166,6 +166,19 @@ public final class RpcUtils {
             return result.getResult();
         }
 
+        throw getCause(rpc, result, logger);
+    }
+
+    /**
+     * Create an exception that indicates the cause of RPC failure.
+     *
+     * @param rpc     An {@link RpcRequest} instance.
+     * @param result  An {@link RpcResult} instance.
+     * @param logger  A {@link Logger} instance.
+     * @return  A {@link VTNException} instance.
+     */
+    private static VTNException getCause(RpcRequest rpc, RpcResult<?> result,
+                                         Logger logger) {
         // Determine the cause of failure.
         Collection<RpcError> errors = result.getErrors();
         Throwable cause = null;
@@ -195,6 +208,6 @@ public final class RpcUtils {
             }
         }
 
-        throw new VTNException(msg);
+        return new VTNException(msg);
     }
 }
