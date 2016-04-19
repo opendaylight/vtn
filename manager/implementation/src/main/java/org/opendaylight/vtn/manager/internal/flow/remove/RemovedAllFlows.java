@@ -88,12 +88,10 @@ public final class RemovedAllFlows implements RemovedFlows {
     public RemoveFlowRpcList removeFlowEntries(TxContext ctx,
                                                SalFlowService sfs)
         throws VTNException {
-        if (removedFlows != null) {
-            if (LOG.isDebugEnabled()) {
-                String desc = AllFlowRemover.DESCRIPTION;
-                for (FlowCache fc: removedFlows) {
-                    FlowUtils.removedLog(LOG, desc, fc);
-                }
+        if (removedFlows != null && LOG.isDebugEnabled()) {
+            String desc = AllFlowRemover.DESCRIPTION;
+            for (FlowCache fc: removedFlows) {
+                FlowUtils.removedLog(LOG, desc, fc);
             }
         }
 
