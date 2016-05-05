@@ -31,9 +31,7 @@
 
   <properties>
     <nexusproxy>https://nexus.opendaylight.org/content</nexusproxy>
-    <sitedeploy>
-      dav:http://nexus.opendaylight.org/content/sites/site
-    </sitedeploy>
+    <sitedeploy>dav:https://nexus.opendaylight.org/content/sites/site</sitedeploy>
   </properties>
 
   <distributionManagement>
