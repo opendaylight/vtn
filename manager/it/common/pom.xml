@@ -43,6 +43,44 @@
     <failsafe.timeout>1200</failsafe.timeout>
   </properties>
 
+  <dependencyManagement>
+    <dependencies>
+      <!-- VTN Manager bundles only for IT -->
+      <dependency>
+        <groupId>org.opendaylight.vtn</groupId>
+        <artifactId>manager.it.ofmock</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.opendaylight.vtn</groupId>
+        <artifactId>manager.it.ofmock</artifactId>
+        <version>${project.version}</version>
+        <classifier>config</classifier>
+        <type>xml</type>
+      </dependency>
+      <dependency>
+        <groupId>org.opendaylight.vtn</groupId>
+        <artifactId>manager.it.ofmock</artifactId>
+        <version>${project.version}</version>
+        <classifier>vtnconfig</classifier>
+        <type>xml</type>
+      </dependency>
+
+      <dependency>
+        <groupId>org.opendaylight.vtn</groupId>
+        <artifactId>manager.it.util</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.opendaylight.vtn</groupId>
+        <artifactId>manager.it.dist</artifactId>
+        <version>${project.version}</version>
+        <type>zip</type>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
     <!-- VTN Manager bundles -->
     <dependency>
@@ -51,39 +89,21 @@
     </dependency>
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
-      <artifactId>manager.implementation</artifactId>
+      <artifactId>manager.model</artifactId>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
-      <artifactId>manager.neutron</artifactId>
+      <artifactId>manager.implementation</artifactId>
     </dependency>
 
     <!-- VTN Manager bundles only for IT -->
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
       <artifactId>manager.it.ofmock</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.vtn</groupId>
-      <artifactId>manager.it.ownermock</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.vtn</groupId>
-      <artifactId>manager.it.option</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
       <artifactId>manager.it.util</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <!-- OSGi framework -->
-    <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>org.osgi.core</artifactId>
     </dependency>
 
     <!-- OpenDaylight controller (MD-SAL) -->
@@ -94,12 +114,6 @@
     <dependency>
       <groupId>org.opendaylight.controller.model</groupId>
       <artifactId>model-topology</artifactId>
-    </dependency>
-
-    <!-- OpenDaylight third-party modules -->
-    <dependency>
-      <groupId>org.opendaylight.controller.thirdparty</groupId>
-      <artifactId>net.sf.jung2</artifactId>
     </dependency>
 
     <!-- OpenDaylight MD-SAL -->
@@ -130,115 +144,5 @@
       <groupId>org.opendaylight.openflowplugin.model</groupId>
       <artifactId>model-flow-statistics</artifactId>
     </dependency>
-
-    <!-- Pax Exam -->
-    <dependency>
-      <groupId>org.ops4j.pax.exam</groupId>
-      <artifactId>pax-exam-junit4</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.ops4j.pax.url</groupId>
-      <artifactId>pax-url-aether</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- SLF4J -->
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-
-    <!-- Logback -->
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-    </dependency>
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <skipTests>true</skipTests>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <argLine>${vtn.vm.argLine} ${jacoco.agent.it.arg}</argLine>
-          <systemPropertyVariables>
-            <java.io.tmpdir>${vtn.it.tmpdir}</java.io.tmpdir>
-            <vtn.it.tmpdir>${vtn.it.tmpdir}</vtn.it.tmpdir>
-          </systemPropertyVariables>
-          <properties>
-            <property>
-              <name>listener</name>
-              <value>org.sonar.java.jacoco.JUnitListener</value>
-            </property>
-          </properties>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <!-- Create temporary directory for integration test. -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>pre-integration-test</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <target>
-                <mkdir dir="${vtn.it.tmpdir}" />
-              </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.ops4j.pax.exam</groupId>
-        <artifactId>maven-paxexam-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-config</id>
-            <goals>
-              <goal>generate-depends-file</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-clean-plugin</artifactId>
-        <configuration>
-          <filesets>
-            <fileset>
-              <directory>configuration</directory>
-            </fileset>
-          </filesets>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 </project>

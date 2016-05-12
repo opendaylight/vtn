@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+#
+# Copyright (c) 2016 NEC Corporation
+# All rights reserved.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+-->
+
+<!-- Configuration for VTN Manager with openflowplugin mock-up. -->
+<snapshot>
+  <configuration>
+    <data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+      <modules xmlns="urn:opendaylight:params:xml:ns:yang:controller:config">
+        <module>
+          <type xmlns:vtn="urn:opendaylight:vtn:impl:provider">
+            vtn:vtn-provider
+          </type>
+          <name>vtn-provider</name>
+
+          <rpc-registry>
+            <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">
+              binding:binding-rpc-registry
+            </type>
+            <name>binding-rpc-broker</name>
+          </rpc-registry>
+
+          <notification-service>
+            <type xmlns:broker="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding:impl">
+              broker:binding-new-notification-service
+            </type>
+            <name>binding-notification-adapter</name>
+          </notification-service>
+
+          <notification-publish-service>
+            <type xmlns:broker="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding:impl">
+              broker:binding-new-notification-publish-service
+            </type>
+            <name>binding-notification-publish-adapter</name>
+          </notification-publish-service>
+
+          <data-broker>
+            <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">
+              binding:binding-async-data-broker
+            </type>
+            <name>binding-data-broker</name>
+          </data-broker>
+
+          <entity-ownership-service>
+            <type xmlns:ownership="urn:opendaylight:params:xml:ns:yang:controller:md:sal:core:spi:entity-ownership-service">
+              ownership:entity-ownership-service
+            </type>
+            <name>entity-ownership-service</name>
+          </entity-ownership-service>
+        </module>
+      </modules>
+    </data>
+  </configuration>
+
+  <required-capabilities>
+    <!-- Required YANG models: openflowplugin -->
+    <capability>
+      urn:opendaylight:flow:service?module=sal-flow&amp;revision=2013-08-19
+    </capability>
+    <capability>
+      urn:opendaylight:flow:statistics?module=opendaylight-flow-statistics&amp;revision=2013-08-19
+    </capability>
+    <capability>
+      urn:opendaylight:packet:service?module=packet-processing&amp;revision=2013-07-09
+    </capability>
+
+    <!-- Required YANG models: VTN -->
+    <capability>
+      urn:opendaylight:vtn?module=vtn&amp;revision=2015-03-28
+    </capability>
+    <capability>
+      urn:opendaylight:vtn:config?module=vtn-config&amp;revision=2015-02-09
+    </capability>
+    <capability>
+      urn:opendaylight:vtn:pathmap?module=vtn-path-map&amp;revision=2015-03-28
+    </capability>
+    <capability>
+      urn:opendaylight:vtn:pathpolicy?module=vtn-path-policy&amp;revision=2015-02-09
+    </capability>
+    <capability>
+      urn:opendaylight:vtn:topology:static?module=vtn-static-topology&amp;revision=2015-08-01
+    </capability>
+    <capability>
+      urn:opendaylight:vtn:version?module=vtn-version&amp;revision=2015-09-01
+    </capability>
+    <capability>
+      urn:opendaylight:vtn:impl:flow?module=vtn-flow-impl&amp;revision=2015-03-13
+    </capability>
+    <capability>
+      urn:opendaylight:vtn:impl:inventory?module=vtn-inventory&amp;revision=2015-02-09
+    </capability>
+    <capability>
+      urn:opendaylight:vtn:impl:topology?module=vtn-topology&amp;revision=2015-02-09
+    </capability>
+    <capability>
+      urn:opendaylight:vtn:impl:mapping?module=vtn-mapping&amp;revision=2015-10-01
+    </capability>
+
+    <!-- VTN Manager -->
+    <capability>
+      urn:opendaylight:vtn:impl:provider?module=vtn-provider&amp;revision=2015-02-09
+    </capability>
+  </required-capabilities>
+</snapshot>

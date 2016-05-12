@@ -543,6 +543,12 @@
         <scope>import</scope>
       </dependency>
 
+      <dependency>
+        <groupId>org.opendaylight.controller</groupId>
+        <artifactId>mdsal-it-base</artifactId>
+        <version>${odl.controller.mdsal.version}</version>
+      </dependency>
+
       <!-- OpenDaylight config subsystem -->
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
@@ -694,6 +700,21 @@
         <type>zip</type>
         <scope>test</scope>
       </dependency>
+
+      <!-- JaCoCo -->
+      <dependency>
+        <groupId>org.jacoco</groupId>
+        <artifactId>org.jacoco.agent</artifactId>
+        <version>${jacoco.version}</version>
+        <classifier>runtime</classifier>
+      </dependency>
+
+      <!-- Sonar -->
+      <dependency>
+        <groupId>org.codehaus.sonar-plugins.java</groupId>
+        <artifactId>sonar-jacoco-listeners</artifactId>
+        <version>${sonar-jacoco-listeners.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -744,7 +765,6 @@
     <dependency>
       <groupId>org.codehaus.sonar-plugins.java</groupId>
       <artifactId>sonar-jacoco-listeners</artifactId>
-      <version>${sonar-jacoco-listeners.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
