@@ -8,10 +8,16 @@
 
 package org.opendaylight.vtn.manager.it.core;
 
-import static org.ops4j.pax.exam.CoreOptions.options;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
-import static org.opendaylight.vtn.manager.it.util.pathmap.PathMapSet.clearPathMap;
-import static org.opendaylight.vtn.manager.it.util.vnode.VTenantConfig.removeVtn;
+import static org.ops4j.pax.exam.CoreOptions.maven;
+
+import static org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase.getRpcOutput;
+import static org.opendaylight.vtn.manager.it.util.TestBase.OSGI_TIMEOUT;
+import static org.opendaylight.vtn.manager.it.util.TestBase.getManagerBundle;
 
 import java.math.BigInteger;
 
@@ -22,9 +28,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import org.ops4j.pax.exam.Configuration;
-import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
+import org.ops4j.pax.exam.options.MavenUrlReference;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
 import org.ops4j.pax.exam.util.Filter;
@@ -36,58 +41,59 @@ import org.osgi.framework.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.opendaylight.vtn.manager.it.base.KarafTestBase;
 import org.opendaylight.vtn.manager.it.ofmock.DataStoreUtils;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockService;
-import org.opendaylight.vtn.manager.it.option.TestOption;
-import org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase;
-import org.opendaylight.vtn.manager.it.util.VTNServices;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
-import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfig;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnFlowConditionService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnFlowConditions;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.filter.rev150907.VtnFlowFilterService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.NextFlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.VtnFlows;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnNodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.mapping.rev151001.VtnMappings;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.IgnoredLinks;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.VtnTopology;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.VtnMacMapService;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.port.rev150907.VtnPortMapService;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.VtnVlanMapService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.GlobalPathMaps;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.VtnPathMapService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.VtnPathPolicies;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.VtnPathPolicyService;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.VtnService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.Vtns;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.Vtn;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.MacTables;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.VtnMacTableService;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.VtnVbridgeService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.GetManagerVersionOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.VtnVersionService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.get.manager.version.output.BundleVersion;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vinterface.rev150907.VtnVinterfaceService;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vterminal.rev150907.VtnVterminalService;
 
 /**
  * Integration test for the VTN Manager using openflowplugin mock-up.
  */
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
-public final class VTNManagerIT extends ModelDrivenTestBase
-    implements VTNServices {
+public final class VTNManagerIT extends KarafTestBase {
     /**
      * Logger instance.
      */
     static final Logger  LOG = LoggerFactory.getLogger(VTNManagerIT.class);
+
+    /**
+     * The name of the VTN Manager provider module.
+     *
+     * <p>
+     *   This is also the name of the VTN Manager instance.
+     * </p>
+     */
+    private static final String  VTN_PROVIDER_NAME = "vtn-provider";
+
+    /**
+     * The artifact ID of the feature repository.
+     */
+    private static final String  VTN_FEATURE_ARTIFACT = "manager.it.features";
+
+    /**
+     * The name of the Karaf feature to be installed.
+     */
+    private static final String  VTN_FEATURE_NAME = "odl-vtn-manager-it";
 
     /**
      * Set true only if the first run.
@@ -113,156 +119,6 @@ public final class VTNManagerIT extends ModelDrivenTestBase
     private Bundle  implBundle;
 
     /**
-     * vtn RPC service.
-     */
-    private VtnService  vtnService;
-
-    /**
-     * vtn-vbridge RPC service.
-     */
-    private VtnVbridgeService  vbridgeService;
-
-    /**
-     * vtn-vterminal RPC service.
-     */
-    private VtnVterminalService  vterminalService;
-
-    /**
-     * vtn-vinterface RPC service.
-     */
-    private VtnVinterfaceService  vinterfaceService;
-
-    /**
-     * vtn-mac-table RPC service.
-     */
-    private VtnMacTableService  macTableService;
-
-    /**
-     * vtn-vlan-map RPC service.
-     */
-    private VtnVlanMapService  vlanMapService;
-
-    /**
-     * vtn-mac-map RPC service.
-     */
-    private VtnMacMapService  macMapService;
-
-    /**
-     * vtn-port-map RPC service.
-     */
-    private VtnPortMapService  portMapService;
-
-    /**
-     * vtn-flow-filter RPC service.
-     */
-    private VtnFlowFilterService  flowFilterService;
-
-    /**
-     * vtn-flow-condition RPC service.
-     */
-    private VtnFlowConditionService  flowCondService;
-
-    /**
-     * vtn-path-policy RPC service.
-     */
-    private VtnPathPolicyService  pathPolicyService;
-
-    /**
-     * vtn-path-map RPC service.
-     */
-    private VtnPathMapService  pathMapService;
-
-    /**
-     * vtn-version RPC service.
-     */
-    private VtnVersionService  versionService;
-
-    /**
-     * Configure the OSGi container.
-     *
-     * @return  An array of test options.
-     */
-    @Configuration
-    public Option[] config() {
-        return options(TestOption.vtnManagerCommonBundles());
-    }
-
-    /**
-     * Verify the test environment.
-     *
-     * @throws Exception  An error occurred.
-     */
-    @Before
-    public void areWeReady() throws Exception {
-        assertNotNull(bundleContext);
-        assertNotNull(ofMockService);
-
-        // Determine manager.implementation bundle.
-        implBundle = getManagerBundle(bundleContext);
-        assertNotNull(implBundle);
-        assertEquals(Bundle.ACTIVE, implBundle.getState());
-
-        // Initialize the openflowplugin mock-up.
-        ofMockService.initialize();
-
-        // Get VTN RPC services.
-        vtnService = ofMockService.getRpcService(VtnService.class);
-        vbridgeService = ofMockService.getRpcService(VtnVbridgeService.class);
-        vterminalService =
-            ofMockService.getRpcService(VtnVterminalService.class);
-        vinterfaceService =
-            ofMockService.getRpcService(VtnVinterfaceService.class);
-        macTableService =
-            ofMockService.getRpcService(VtnMacTableService.class);
-        vlanMapService = ofMockService.getRpcService(VtnVlanMapService.class);
-        macMapService = ofMockService.getRpcService(VtnMacMapService.class);
-        portMapService = ofMockService.getRpcService(VtnPortMapService.class);
-        flowFilterService =
-            ofMockService.getRpcService(VtnFlowFilterService.class);
-        flowCondService =
-            ofMockService.getRpcService(VtnFlowConditionService.class);
-        pathPolicyService =
-            ofMockService.getRpcService(VtnPathPolicyService.class);
-        pathMapService = ofMockService.getRpcService(VtnPathMapService.class);
-        versionService = ofMockService.getRpcService(VtnVersionService.class);
-
-        if (firstRun) {
-            // Verify initial state.
-            try (ReadOnlyTransaction rtx = newReadOnlyTransaction()) {
-                checkContainers(rtx);
-            }
-            firstRun = false;
-        }
-    }
-
-    /**
-     * Called when a test suite quits.
-     *
-     * @throws Exception  An error occurred.
-     */
-    @After
-    public void tearDown() throws Exception {
-        if (versionService != null) {
-            // Remove all global path maps.
-            clearPathMap(pathMapService, null);
-
-            // Remove all flow conditions.
-            getRpcOutput(flowCondService.clearFlowCondition());
-
-            // Remove all path policies.
-            getRpcOutput(pathPolicyService.clearPathPolicy());
-
-            // Remove all VTNs.
-            for (Vtn vtn: getVtns(this)) {
-                removeVtn(vtnService, vtn.getName().getValue());
-            }
-
-            // Reset the inventory configuration.
-            ofMockService.reset();
-        }
-    }
-
-    /**
      * Test case for {@link VtnVersionService}.
      *
      * @throws Exception  An error occurred.
@@ -272,7 +128,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase
         LOG.info("Running testVtnVersionService().");
 
         GetManagerVersionOutput output =
-            getRpcOutput(versionService.getManagerVersion());
+            getRpcOutput(getVersionService().getManagerVersion());
         Long api = output.getApiVersion();
         assertNotNull(api);
         assertTrue("API version = " + api, api.longValue() > 0L);
@@ -640,125 +496,92 @@ public final class VTNManagerIT extends ModelDrivenTestBase
         assertEquals(null, ignored.getIgnoredLink());
     }
 
-    // VTNServices
+    // KarafTestBase
 
     /**
      * {@inheritDoc}
      */
+    @Before
     @Override
-    public VtnService getVtnService() {
-        return vtnService;
+    public void setup() throws Exception {
+        super.setup();
+
+        assertNotNull(bundleContext);
+        assertNotNull(ofMockService);
+
+        // Determine manager.implementation bundle.
+        implBundle = getManagerBundle(bundleContext);
+        assertNotNull(implBundle);
+        assertEquals(Bundle.ACTIVE, implBundle.getState());
+
+        // Initialize the openflowplugin mock-up.
+        ofMockService.initialize();
+
+        if (firstRun) {
+            // Verify initial state.
+            try (ReadOnlyTransaction rtx = newReadOnlyTransaction()) {
+                checkContainers(rtx);
+            }
+            firstRun = false;
+        }
     }
 
     /**
      * {@inheritDoc}
      */
+    @After
     @Override
-    public VtnVbridgeService getVbridgeService() {
-        return vbridgeService;
+    public void tearDown() throws Exception {
+        super.tearDown();
+
+        // Reset the inventory configuration.
+        ofMockService.reset();
+    }
+
+    // AbstractConfigTestBase
+
+    /**
+     * Return the name of the module to be loaded.
+     *
+     * @return  The name of the module.
+     */
+    @Override
+    public String getModuleName() {
+        return VTN_PROVIDER_NAME;
     }
 
     /**
-     * {@inheritDoc}
+     * Return the name of the instance to be created.
+     *
+     * @return  The name of the instance.
      */
     @Override
-    public VtnVterminalService getVterminalService() {
-        return vterminalService;
+    public String getInstanceName() {
+        return VTN_PROVIDER_NAME;
     }
 
     /**
-     * {@inheritDoc}
+     * Return the reference to the feature repository.
+     *
+     * @return  The reference to the feature repository.
      */
     @Override
-    public VtnVinterfaceService getVinterfaceService() {
-        return vinterfaceService;
+    public MavenUrlReference getFeatureRepo() {
+        return maven().
+            groupId(VTN).
+            artifactId(VTN_FEATURE_ARTIFACT).
+            classifier(FEATURE_CLASSIFIER).
+            type(FEATURE_TYPE).
+            versionAsInProject();
     }
 
     /**
-     * {@inheritDoc}
+     * Return the name of the Karaf feature to be installed.
+     *
+     * @return  The name of the Karaf feature to be installed.
      */
     @Override
-    public VtnMacTableService getMacTableService() {
-        return macTableService;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public VtnVlanMapService getVlanMapService() {
-        return vlanMapService;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public VtnMacMapService getMacMapService() {
-        return macMapService;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public VtnPortMapService getPortMapService() {
-        return portMapService;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public VtnFlowFilterService getFlowFilterService() {
-        return flowFilterService;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public VtnFlowConditionService getFlowConditionService() {
-        return flowCondService;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public VtnPathPolicyService getPathPolicyService() {
-        return pathPolicyService;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public VtnPathMapService getPathMapService() {
-        return pathMapService;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public VtnVersionService getVersionService() {
-        return versionService;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public ReadOnlyTransaction newReadOnlyTransaction() {
-        return ofMockService.newReadOnlyTransaction();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public ReadWriteTransaction newReadWriteTransaction() {
-        return ofMockService.newReadWriteTransaction();
+    public String getFeatureName() {
+        return VTN_FEATURE_NAME;
     }
 }

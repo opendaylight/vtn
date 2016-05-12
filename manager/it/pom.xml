@@ -37,10 +37,11 @@
 
   <modules>
     <module>ofmock</module>
-    <module>ownermock</module>
-    <module>option</module>
     <module>util</module>
     <module>common</module>
-    <!-- <module>core</module> -->
+    <module>features</module>
+    <module>dist</module>
+    <module>base</module>
+    <module>core</module>
   </modules>
 </project>

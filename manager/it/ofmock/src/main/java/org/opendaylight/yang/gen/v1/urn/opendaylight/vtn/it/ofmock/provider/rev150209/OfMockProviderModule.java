@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -78,8 +78,10 @@ public class OfMockProviderModule extends AbstractOfMockProviderModule {
      */
     @Override
     public AutoCloseable createInstance() {
-        OfMockProvider provider = createProvider();
-        registerService(getBundle(), provider);
+        Bundle bundle = getBundle();
+        BundleContext bc = bundle.getBundleContext();
+        OfMockProvider provider = createProvider(bc);
+        registerService(bc, provider);
         return provider;
     }
 
@@ -105,6 +107,7 @@ public class OfMockProviderModule extends AbstractOfMockProviderModule {
             return old;
         }
 
+        BundleContext bc = b.getBundleContext();
         OfMockProvider oldProvider = (OfMockProvider)old;
         OfMockProvider provider;
         if (oldProvider.canReuse()) {
@@ -112,23 +115,24 @@ public class OfMockProviderModule extends AbstractOfMockProviderModule {
             provider = oldProvider;
         } else {
             oldProvider.close();
-            provider = createProvider();
+            provider = createProvider(bc);
             LOG.trace("Create new provider: this={}, old={}, new={}",
                       this, oldProvider, provider);
         }
 
-        registerService(b, provider);
+        registerService(bc, provider);
         return provider;
     }
 
     /**
      * Create a new openflowplugin mock-up provider.
      *
+     * @param bc  A {@link BundleContext} instance.
      * @return  An {@link OfMockProvider} instance.
      */
-    private OfMockProvider createProvider() {
+    private OfMockProvider createProvider(BundleContext bc) {
         return new OfMockProvider(
-            getDataBrokerDependency(), getRpcRegistryDependency(),
+            bc, getDataBrokerDependency(), getRpcRegistryDependency(),
             getNotificationServiceDependency(),
             getNotificationPublishServiceDependency());
     }
@@ -137,11 +141,10 @@ public class OfMockProviderModule extends AbstractOfMockProviderModule {
      * Retister the openflowplugin mock-up provider to the OSGi service
      * registry.
      *
-     * @param bundle    A {@link Bundle} instance.
+     * @param bc        A {@link BundleContext} instance.
      * @param provider  An {@link OfMockProvider} instance.
      */
-    private void registerService(Bundle bundle, OfMockProvider provider) {
-        BundleContext bc = bundle.getBundleContext();
+    private void registerService(BundleContext bc, OfMockProvider provider) {
         if (isOsgiServiceRequired(bc, provider)) {
             try {
                 osgiRegistration =

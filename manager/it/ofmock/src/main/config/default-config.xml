@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+#
+# Copyright (c) 2016 NEC Corporation
+# All rights reserved.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+-->
+
+<!-- Configuration for openflowplugin mock-up. -->
+<snapshot>
+  <configuration>
+    <data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+      <modules xmlns="urn:opendaylight:params:xml:ns:yang:controller:config">
+        <module>
+          <type xmlns:ofmock="urn:opendaylight:vtn:it:ofmock:provider">
+            ofmock:ofmock-provider
+          </type>
+          <name>ofmock-provider</name>
+
+          <rpc-registry>
+            <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">
+              binding:binding-rpc-registry
+            </type>
+            <name>binding-rpc-broker</name>
+          </rpc-registry>
+
+          <notification-service>
+            <type xmlns:broker="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding:impl">
+              broker:binding-new-notification-service
+            </type>
+            <name>binding-notification-adapter</name>
+          </notification-service>
+
+          <notification-publish-service>
+            <type xmlns:broker="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding:impl">
+              broker:binding-new-notification-publish-service
+            </type>
+            <name>binding-notification-publish-adapter</name>
+          </notification-publish-service>
+
+          <data-broker>
+            <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">
+              binding:binding-async-data-broker
+            </type>
+            <name>binding-data-broker</name>
+          </data-broker>
+        </module>
+      </modules>
+    </data>
+  </configuration>
+
+  <required-capabilities>
+    <!-- Required YANG models: MD-SAL -->
+    <capability>
+      urn:TBD:params:xml:ns:yang:network-topology?module=network-topology&amp;revision=2013-10-21
+    </capability>
+
+    <!-- Required YANG models: controller -->
+    <capability>
+      urn:opendaylight:inventory?module=opendaylight-inventory&amp;revision=2013-08-19
+    </capability>
+
+    <!-- Required YANG models: VTN -->
+    <capability>
+      urn:opendaylight:vtn:impl:inventory?module=vtn-inventory&amp;revision=2015-02-09
+    </capability>
+    <capability>
+      urn:opendaylight:vtn:impl:topology?module=vtn-topology&amp;revision=2015-02-09
+    </capability>
+
+    <!-- ofmock -->
+    <capability>
+      urn:opendaylight:vtn:it:ofmock:provider?module=ofmock-provider&amp;revision=2015-02-09
+    </capability>
+  </required-capabilities>
+</snapshot>

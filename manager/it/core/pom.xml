@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2013-2015 NEC Corporation
+# Copyright (c) 2013-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -32,19 +32,205 @@
 
   <properties>
     <vtn.manager.dir>../..</vtn.manager.dir>
+
+    <!--
+        Use own temporary directory to prevent from creating temporary files
+        in /tmp.
+    -->
+    <vtn.it.tmpdir>${project.build.directory}/it-tmp</vtn.it.tmpdir>
+
+    <!-- Kill test VM after 20 minutes. -->
+    <failsafe.timeout>1200</failsafe.timeout>
   </properties>
 
   <dependencies>
+    <!-- VTN Manager -->
+    <dependency>
+      <groupId>org.opendaylight.vtn</groupId>
+      <artifactId>manager.it.dist</artifactId>
+      <type>zip</type>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opendaylight.vtn</groupId>
+      <artifactId>manager.it.base</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- Apache Karaf -->
+    <dependency>
+      <groupId>org.apache.karaf.features</groupId>
+      <artifactId>org.apache.karaf.features.core</artifactId>
+      <version>${karaf.version}</version>
+    </dependency>
+
     <!-- Pax Exam -->
     <dependency>
       <groupId>org.ops4j.pax.exam</groupId>
-      <artifactId>pax-exam-container-native</artifactId>
+      <artifactId>pax-exam</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.ops4j.pax.exam</groupId>
-      <artifactId>pax-exam-link-mvn</artifactId>
+      <artifactId>pax-exam-container-karaf</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.ops4j.pax.exam</groupId>
+      <artifactId>pax-exam-junit4</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.ops4j.pax.url</groupId>
+      <artifactId>pax-url-aether</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- OSGi framework -->
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.core</artifactId>
+    </dependency>
+
+    <!-- SLF4J -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <!-- JaCoCo -->
+    <dependency>
+      <groupId>org.jacoco</groupId>
+      <artifactId>org.jacoco.agent</artifactId>
+      <classifier>runtime</classifier>
+    </dependency>
+
+    <!-- Sonar -->
+    <dependency>
+      <groupId>org.codehaus.sonar-plugins.java</groupId>
+      <artifactId>sonar-jacoco-listeners</artifactId>
+    </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+
+      <!-- Copy test utility classes into test-classes. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unpack-it-utils</id>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <phase>process-test-resources</phase>
+            <configuration>
+              <outputDirectory>
+                ${project.build.testOutputDirectory}
+              </outputDirectory>
+              <includeGroupIds>
+                org.opendaylight.controller,org.opendaylight.vtn,org.jacoco,org.codehaus.sonar-plugins.java
+              </includeGroupIds>
+              <includeArtifactIds>
+                config-it-base,mdsal-it-base,manager.it.base,org.jacoco.agent,sonar-jacoco-listeners
+              </includeArtifactIds>
+              <excludes>META-INF\/**</excludes>
+              <ignorePermissions>false</ignorePermissions>
+            </configuration>
+          </execution>
+
+          <!-- Copy JaCoCo agent runtime. -->
+          <execution>
+            <id>unpack-jacoco-agent</id>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <phase>process-test-resources</phase>
+            <configuration>
+              <outputDirectory>
+                ${project.build.testOutputDirectory}
+              </outputDirectory>
+              <includeGroupIds>org.jacoco</includeGroupIds>
+              <includeArtifactIds>org.jacoco.agent</includeArtifactIds>
+              <includeClassifiers>runtime</includeClassifiers>
+              <excludes>META-INF\/**</excludes>
+              <ignorePermissions>false</ignorePermissions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <java.io.tmpdir>${vtn.it.tmpdir}</java.io.tmpdir>
+            <vtn.it.tmpdir>${vtn.it.tmpdir}</vtn.it.tmpdir>
+
+            <!-- Specify the VTN Manager local karaf distribution -->
+            <karaf.distro.groupId>${project.groupId}</karaf.distro.groupId>
+            <karaf.distro.artifactId>manager.it.dist</karaf.distro.artifactId>
+            <karaf.distro.version>${project.version}</karaf.distro.version>
+            <karaf.distro.type>zip</karaf.distro.type>
+            <karaf.keep.unpack>false</karaf.keep.unpack>
+
+            <!-- Specify VM options -->
+            <vtn.vm.maxHeap>${vtn.vm.maxHeap}</vtn.vm.maxHeap>
+            <vtn.vm.agent>${jacoco.agent.it.arg}</vtn.vm.agent>
+          </systemPropertyVariables>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Create temporary directory for integration test. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <mkdir dir="${vtn.it.tmpdir}" />
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Required for versionAsInProject() -->
+      <plugin>
+        <groupId>org.apache.servicemix.tooling</groupId>
+        <artifactId>depends-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>generate-depends-file</id>
+            <goals>
+              <goal>generate-depends-file</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

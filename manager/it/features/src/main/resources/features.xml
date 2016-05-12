@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+#
+# Copyright (c) 2016 NEC Corporation
+# All rights reserved.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+-->
+
+<!-- Karaf features for VTN Manager IT. -->
+<features name="vtn-manager-it-${project.version}"
+          xmlns="http://karaf.apache.org/xmlns/features/v1.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.2.0 http://karaf.apache.org/xmlns/features/v1.2.0">
+
+  <repository>mvn:org.opendaylight.controller/features-mdsal/${odl.controller.mdsal.version}/xml/features</repository>
+  <repository>mvn:org.opendaylight.mdsal.model/features-mdsal-model/${odl.mdsal.model.version}/xml/features</repository>
+  <repository>mvn:org.opendaylight.openflowplugin/features-openflowplugin/${odl.openflowplugin.version}/xml/features</repository>
+
+  <feature
+      name='odl-vtn-manager-it'
+      description="OpenDaylight :: VTN Manager :: IT"
+      version='${project.version}'>
+    <!-- MD-SAL -->
+    <feature version="${odl.mdsal.model.version}">odl-mdsal-models</feature>
+    <feature version="${odl.controller.mdsal.version}">odl-mdsal-broker</feature>
+    <!-- openflowplugin -->
+    <feature version="${odl.openflowplugin.version}">odl-openflowplugin-nsf-model</feature>
+
+    <!-- openflowplugin mock up -->
+    <bundle>mvn:org.opendaylight.vtn/manager.it.ofmock/${project.version}</bundle>
+    <configfile finalname="etc/opendaylight/karaf/60-ofmock.xml">mvn:org.opendaylight.vtn/manager.it.ofmock/${project.version}/xml/config</configfile>
+
+    <!-- IT utility -->
+    <bundle>mvn:org.opendaylight.vtn/manager.it.util/${project.version}</bundle>
+
+    <!-- VTN Manager -->
+    <!-- Note that manager.neutron cannot be installed with ofmock because  -->
+    <!-- it depends on ovsdb that requires openflowplugin.                  -->
+    <bundle>mvn:org.opendaylight.vtn/manager/${project.version}</bundle>
+    <bundle>mvn:org.opendaylight.vtn/manager.model/${project.version}</bundle>
+    <bundle>mvn:org.opendaylight.vtn/manager.implementation/${project.version}</bundle>
+    <bundle>mvn:org.opendaylight.controller.thirdparty/net.sf.jung2/${odl.thirdparty.jung2.version}</bundle>
+
+    <!-- Use special configuration for IT -->
+    <configfile finalname="etc/opendaylight/karaf/80-vtn.xml">mvn:org.opendaylight.vtn/manager.it.ofmock/${project.version}/xml/vtnconfig</configfile>
+  </feature>
+</features>

@@ -30,6 +30,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
+import org.osgi.framework.SynchronousBundleListener;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +80,8 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.
 /**
  * MD-SAL service provider of the mock-up of openflowplugin.
  */
-public class OfMockProvider implements AutoCloseable, OfMockService {
+public class OfMockProvider
+    implements AutoCloseable, OfMockService, SynchronousBundleListener {
     /**
      * Logger instance.
      */
@@ -101,6 +107,11 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
      * The number of milliseconds to wait for asynchronous task.
      */
     static final long  TASK_TIMEOUT = 10000L;
+
+    /**
+     * The OSGi bundle associated with the ofmock bundle.
+     */
+    private final Bundle  mockBundle;
 
     /**
      * Data broker service.
@@ -194,14 +205,17 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
     /**
      * Construct a new instance.
      *
+     * @param bctx    A {@link BundleContext} instance associated with the
+     *                bundle that contains this class.
      * @param broker  A {@link DataBroker} service instance.
      * @param rpcReg  A {@link RpcProviderRegistry} service instance.
      * @param nsv     A {@link NotificationService} service instance.
      * @param npsv    A {@link NotificationPublishService} service instance.
      */
-    public OfMockProvider(DataBroker broker, RpcProviderRegistry rpcReg,
-                          NotificationService nsv,
+    public OfMockProvider(BundleContext bctx, DataBroker broker,
+                          RpcProviderRegistry rpcReg, NotificationService nsv,
                           NotificationPublishService npsv) {
+        mockBundle = bctx.getBundle();
         dataBroker = broker;
         rpcRegistry = rpcReg;
         publishService = npsv;
@@ -219,6 +233,9 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
             LOG.error(msg, e);
             throw new IllegalStateException(msg, e);
         }
+
+        // Register bundle listener to detect start of shutdown sequence.
+        bctx.addBundleListener(this);
 
         LOG.debug("openflowplugin mock-up has been created: {}", this);
     }
@@ -649,6 +666,11 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
      */
     @Override
     public void close() {
+        BundleContext bctx = mockBundle.getBundleContext();
+        if (bctx != null) {
+            bctx.removeBundleListener(this);
+        }
+
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
@@ -1385,5 +1407,24 @@ public class OfMockProvider implements AutoCloseable, OfMockService {
     @Override
     public <T extends RpcService> T getRpcService(Class<T> type) {
         return rpcRegistry.getRpcService(type);
+    }
+
+    // SynchronousBundleListener
+
+    /**
+     * Invoked when the manager.implementation bundle has a lifecycle change.
+     *
+     * @param ev  A {@link BundleEvent} instance.
+     */
+    @Override
+    public void bundleChanged(BundleEvent ev) {
+        if (ev.getType() == BundleEvent.STOPPING) {
+            Bundle b = ev.getBundle();
+            String name = b.getSymbolicName();
+            if (name != null && name.startsWith("PAXEXAM")) {
+                LOG.debug("Test container is being destroyed.");
+                close();
+            }
+        }
     }
 }
