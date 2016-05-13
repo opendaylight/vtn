@@ -148,7 +148,12 @@ def fill_config(item, req_mem, file_desc, output_file_name, d):
     check_mem = parser.ReadValues(item,req_mem)['is_child']
     check_parse = parser.ReadValues(item,req_mem).has_key('build_support')
     response = parser.ReadValues(item,req_mem).has_key('is_audit')
-    fill_method = 'UncRespCode set_%s('%(struct_name) +'json_object* json_parser) {' + '\n'
+    child_reqmem_dir = parser.ReadValues(item,child_reqmem).has_key('out_key')
+    fill_method = ''
+    #Adding a global variable for the flowfilter keytypes
+    if str(child_reqmem_dir) == 'True' :
+       fill_method = fill_method + 'bool flow_dir;' + '\n'
+    fill_method = fill_method + 'UncRespCode set_%s('%(struct_name) +'json_object* json_parser) {' + '\n'
     fill_method = fill_method + 'int ret_val = restjson::REST_OP_FAILURE;' + '\n'
     fill_method = fill_method +'json_object* obj_%s'%(req_mem) + '= NULL;' + '\n'
     if check_bool == 'no':
@@ -367,9 +372,11 @@ def del_build_config(item, req_mem, file_desc, output_file_name, d):
                   build_type = parser.ReadValues(item, child_input)['build_support']
                   if build_type != 'no':
                      child_type = parser.ReadValues(item, child_input)['type']
+                     child_mand = parser.ReadValues(item, child_input)['mandatory']
+                     child_check = parser.ReadValues(item, child_input).has_key('check_bool_set')
                      key_name = parser.ReadValues(item, child_input)['key']
                      key_s = key_name.replace('"', '')
-                     if ((child_input.endswith('name')) or (child_type == 'array')) :
+                     if ((child_input.endswith('name')) or (child_type == 'array') or (child_type == 'bool')) :
                         #print "child_mem", child_input
                         #print "struct---", key_name
                         st_name = struct_name +'_st.'+ child +'_'
@@ -395,23 +402,25 @@ def del_build_config(item, req_mem, file_desc, output_file_name, d):
                                     key_delete = key_del.replace('"', '')
                                     #print "Checking the delete key", key_del,child_arr_mem
                                     del_write_build(item, key_name, write_st_name, child_input, key_delete, child_type, child, output_file_name, d)
-                              else :
-                                del_write_build(item, key_name, write_st_name, child_input, key_s, child_type, child, output_file_name, d)
+                              elif child_type == 'bool' and str(child_check) == 'True':
+                                    child_checkbool = parser.ReadValues(item,child_input)['check_bool_set']
+                                    if child_mand == 'yes' and child_checkbool == 'yes':
+                                      #print "Checking the OUTPUT key", child_type
+                                      del_write_build(item, key_name, write_st_name, child_input, key_s, child_type, child, output_file_name, d)
+                              elif child_input.endswith('name'):
+                                      del_write_build(item, key_name, write_st_name, child_input, key_s, child_type, child, output_file_name, d)
                               if j == 0 :
                                  if child_type == 'string':
                                     build_st_end = build_st_end + 'if((!%s.%s.empty())'%(st_name, child_input)
-                                 elif child_type == 'bool':
-                                    build_st_end = build_st_end + 'if(%s.%s != PFC_FALSE '%(st_name, child_input)
+                                    j = j+1
                                  elif child_type== 'int':
                                     build_st_end = build_st_end + 'if(%s.%s != -1 '%(st_name, child_input)
-                                 j = j+1
+                                    j = j +1
                               else :
                                  #print "inside else",i
                                  if child_type == 'string':
                                    build_st_end = build_st_end + ' && (!%s.%s.empty())'%(st_name, child_input)
-                                   #print "PRintingG 2", st_name, child_input
-                                 elif child_type == 'bool':
-                                   build_st_end = build_st_end + ' && (%s.%s != PFC_FALSE '%(st_name, child_input)
+                                   #print "printing the second child input in the loop", st_name, child_input
                                  elif child_type == 'int':
                                    build_st_end = build_st_end + ' && (%s.%s != -1 '%(st_name, child_input)
                #print "i value after loop end",i
@@ -510,14 +519,14 @@ def del_write_build(item, key_name, struct_name, child, key, child_type, child_i
             build_member = build_member + 'if(!%s_.%s.empty()){'%(struct_name, child) + '\n'
         elif child_type == 'int':
             build_member = build_member + 'if (%s_st.%s != -1){'%(struct_name, child) + '\n'
-        elif child_type == 'bool':
-            build_member = build_member + 'if (%s_st.%s != false){'%(struct_name, child) + '\n'
         build_member = build_member + '\t' + 'ret_val = unc::restjson::JsonBuildParse::build(%s,%s_.%s,%s_obj);'%(key_name, struct_name, child,child_input) + '\n'
         build_member = build_member + 'if (restjson::REST_OP_SUCCESS != ret_val) {' + '\n'
         build_member = build_member + '\t' + 'pfc_log_error("Error in building request body %s");'%(key) + '\n'
         build_member = build_member + '\t' + 'json_object_put(jobj);' + '\n'
         build_member = build_member + '\t' + 'return NULL;' + '\n'
-        build_member = build_member + '\t' + '}' + '\n' + '}' + '\n'
+        build_member = build_member + '\t' + '}' + '\n'
+        if child_type == 'string' or child_type == 'int' :
+          build_member = build_member + '\t' + '}' + '\n'
         d['build_member'] = build_member
         file = open(output_file_name, "a")
         file.write(d['build_member'])
@@ -781,6 +790,8 @@ def parse_struct_object(item, struct_name, st_member, obj_in, array_index, outpu
     check_key = parser.ReadValues(item,st_member)['is_child']
     check_mand = parser.ReadValues(item,st_member)['mandatory']
     resp = parser.ReadValues(item, st_member).has_key('check_bool_set')
+    #Adding a key value for out flowfilter
+    out_check = parser.ReadValues(item, st_member).has_key('out_key')
     #print 'sub_members', sub_members
     parse_st =  'json_object *jobj_'+st_member + '= NULL;' +'\n'
     if check_key == 'no' and str(resp) == 'False' :
@@ -788,16 +799,38 @@ def parse_struct_object(item, struct_name, st_member, obj_in, array_index, outpu
     elif check_key == 'no' and str(resp) == 'True':
         check_bool = parser.ReadValues(item, st_member)['check_bool_set']
         if check_bool == 'yes':
-           parse_st = parse_st + 'ret_val = unc::restjson::JsonBuildParse::parse(%s,%s,0,jobj_%s);'%(obj_in, req_key, st_member) + '\n'
+           if str(out_check) == "True" :
+             out_key = parser.ReadValues(item,st_member)['out_key']
+             # Getting the key values for the input and output flowfitlers
+             parse_st = parse_st + 'std::string flw_filter = unc::restjson::JsonBuildParse::get_json_string(%s);' %(obj_in) + '\n'
+             parse_st = parse_st + 'std::string flw_input = %s;' %(req_key) + '\n'
+             parse_st = parse_st + 'std::string flw_output = %s;' %(out_key) + '\n'
+             parse_st = parse_st + 'if((flw_filter.find(flw_input)) != std::string::npos ) {' + '\n'
+           parse_st = parse_st + '\t' + 'ret_val = unc::restjson::JsonBuildParse::parse(%s,%s,0,jobj_%s);'%(obj_in, req_key, st_member) + '\n'
+           if str(out_check) == "True" :
+             parse_st = parse_st + 'flow_dir = false;' + '\n'
     elif check_key == 'yes' :
         parse_st = parse_st + 'ret_val = unc::restjson::JsonBuildParse::parse(%s,%s,%s,jobj_%s);'%(obj_in, req_key, array_index,st_member) + '\n'
         parse_st = parse_st + 'st_%s.%s_.valid = true;' %(struct_name,st_member)+ '\n'
-    parse_st = parse_st + 'if (restjson::REST_OP_SUCCESS != ret_val) {' + '\n'
+    parse_st = parse_st + '\t' + 'if (restjson::REST_OP_SUCCESS != ret_val) {' + '\n'
     parse_st = parse_st + '\t' + 'pfc_log_debug("%s is null");' %(st_member) + '\n'
     parse_st = parse_st + '\t' + 'json_object_put(%s);' %(obj_in) + '\n'
     if check_mand == 'yes':
       parse_st = parse_st + '\t' +'return UNC_DRV_RC_ERR_GENERIC;' + '\n'
     parse_st = parse_st + '}' +'\n'
+    if str(out_check) == "True" :
+       out_key = parser.ReadValues(item,st_member)['out_key']
+       # Parsing for the out flowfilter
+       parse_st = parse_st +  '} else if ((flw_filter.find(flw_output)) != std::string::npos ){' + '\n'
+       parse_st = parse_st + '\t' +'ret_val = unc::restjson::JsonBuildParse::parse(%s,%s,0,jobj_%s);'%(obj_in, out_key, st_member) + '\n'
+       parse_st = parse_st + 'flow_dir = true;' + '\n'
+       parse_st = parse_st + '\t' + 'if (restjson::REST_OP_SUCCESS != ret_val) {' + '\n'
+       parse_st = parse_st + '\t\t' + 'pfc_log_debug("%s is null");' %(st_member) + '\n'
+       parse_st = parse_st + '\t\t' + 'json_object_put(%s);' %(obj_in) + '\n'
+       parse_st = parse_st + '}' +'\n'
+       parse_st = parse_st + '} else {' +'\n'
+       parse_st = parse_st + 'pfc_log_debug("No %s is present" );' %(st_member) +'\n'
+       parse_st = parse_st + '}' +'\n'
     d['parse_st'] = parse_st
     file = open(output_file_name, "a")
     file.write(d['parse_st'])
