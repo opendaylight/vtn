@@ -571,7 +571,7 @@ public final class FlowTable {
                     return;
                 }
                 msec = deadline - System.currentTimeMillis();
-            } while (timeout > 0);
+            } while (msec > 0);
 
             throw new TimeoutException(cond.getTimeoutError());
         }
