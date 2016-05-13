@@ -106,6 +106,16 @@ public final class OVSDBEventHandler {
     private String portname;
 
     /**
+     * A string that indicates secure fail mode.
+     */
+    private static final String  FAILMODE_SECURE = "secure";
+
+    /**
+     * A string that indicates OpenFlow 1.3.
+     */
+    private static final String  OFP13 = "OpenFlow13";
+
+    /**
      * Default integration bridge name.
      */
     private static final String DEFAULT_INTEGRATION_BRIDGENAME = "br-int";
@@ -113,12 +123,12 @@ public final class OVSDBEventHandler {
     /**
      * identifier for Default failmode.
      */
-    private static final String DEFAULT_FAILMODE = "secure";
+    private static final String DEFAULT_FAILMODE = FAILMODE_SECURE;
 
     /**
      * identifier for Default protocol.
      */
-    private static final String DEFAULT_PROTOCOLS = "OpenFlow13";
+    private static final String DEFAULT_PROTOCOLS = OFP13;
 
     /**
      * identifier for Default portname.
@@ -368,7 +378,7 @@ public final class OVSDBEventHandler {
             ovsdbBridgeAugmentationBuilder.
                 setProtocolEntry(createMdsalProtocols());
             ovsdbBridgeAugmentationBuilder.setFailMode(
-                OVSDB_FAIL_MODE_MAP.inverse().get("secure"));
+                OVSDB_FAIL_MODE_MAP.inverse().get(FAILMODE_SECURE));
             this.setManagedByForBridge(ovsdbBridgeAugmentationBuilder,
                                        ovsdbNode.getKey());
             bridgeNodeBuilder.
@@ -583,7 +593,7 @@ public final class OVSDBEventHandler {
         ImmutableBiMap<String, Class<? extends OvsdbBridgeProtocolBase>> mapper =
                 OVSDB_PROTOCOL_MAP.inverse();
         protocolList.add(new ProtocolEntryBuilder().
-                setProtocol((Class<? extends OvsdbBridgeProtocolBase>)mapper.get("OpenFlow13")).build());
+                setProtocol((Class<? extends OvsdbBridgeProtocolBase>)mapper.get(OFP13)).build());
         return protocolList;
     }
 
@@ -593,7 +603,7 @@ public final class OVSDBEventHandler {
     private static final ImmutableBiMap<Class<? extends OvsdbFailModeBase>, String> OVSDB_FAIL_MODE_MAP
             = new ImmutableBiMap.Builder<Class<? extends OvsdbFailModeBase>, String>()
             .put(OvsdbFailModeStandalone.class, "standalone")
-            .put(OvsdbFailModeSecure.class, "secure")
+            .put(OvsdbFailModeSecure.class, FAILMODE_SECURE)
             .build();
 
     /**
@@ -602,7 +612,7 @@ public final class OVSDBEventHandler {
 
     private static final ImmutableBiMap<Class<? extends OvsdbBridgeProtocolBase>, String> OVSDB_PROTOCOL_MAP
             = new ImmutableBiMap.Builder<Class<? extends OvsdbBridgeProtocolBase>, String>()
-            .put(OvsdbBridgeProtocolOpenflow13.class, "OpenFlow13")
+            .put(OvsdbBridgeProtocolOpenflow13.class, OFP13)
             .build();
 
     /**

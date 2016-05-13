@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2013, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -86,12 +86,11 @@ public final class VTNNeutronUtils {
         if (id == null) {
             return key;
         }
-        LOG.trace("id - {}, length - {}", id, id.length());
-        /**
-         * VTN ID must be less than 32 bytes,
-         * Shorten UUID string length from 36 to 31 as follows:
-         * delete UUID Version and hyphen (see RFC4122) field in the UUID
-         */
+
+        // VTN ID must be less than 32 bytes,
+        // Shorten UUID string length from 36 to 31 as follows:
+        // delete UUID Version and hyphen (see RFC4122) field in the UUID
+        traceId("convertUUIDToKey", id);
         try {
             StringBuilder tKey = new StringBuilder();
             // remove all the '-'
@@ -102,7 +101,7 @@ public final class VTNNeutronUtils {
             tKey.deleteCharAt(UUID_VERSION_POS);
             key = tKey.toString();
         } catch (IllegalArgumentException ile) {
-            LOG.error("Invalid UUID - {}", id);
+            LOG.error("Invalid UUID - "+ id, ile);
             key = null;
         }
         return key;
@@ -136,7 +135,7 @@ public final class VTNNeutronUtils {
         return key;
     }
 
-     /**
+    /**
      * Verify the validity of neutron object identifiers.
      *
      * @param id neutron object id.
@@ -147,21 +146,20 @@ public final class VTNNeutronUtils {
         if (id == null) {
             return false;
         }
+
+        // check the string length
+        // if length is 36 its a uuid do uuid validation
+        // if length is 32 it can be tenant id form keystone
+        // if its less than 32  can be valid VTN ID
         boolean isValid = false;
-        LOG.trace("id - {}, length - {}", id, id.length());
-        /**
-         * check the string length
-         * if length is 36 its a uuid do uuid validation
-         * if length is 32 it can be tenant id form keystone
-         * if its less than 32  can be valid VTN ID
-         */
+        traceId("isValidNeutronID", id);
         if (id.length() == UUID_LEN) {
             try {
                 UUID fromUUID = UUID.fromString(id);
                 String toUUID = fromUUID.toString();
                 isValid = toUUID.equalsIgnoreCase(id);
             } catch (IllegalArgumentException e) {
-                LOG.error("IllegalArgumentExecption for id - {}", id);
+                LOG.error("IllegalArgumentExecption for id - " + id, e);
                 isValid = false;
             }
         } else if ((id.length() > 0) && (id.length() <= KEYSTONE_ID_LEN)) {
@@ -184,13 +182,10 @@ public final class VTNNeutronUtils {
             return key;
         }
 
-        /**
-         * tenant ID if given from openstack keystone does not follow the
-         * generic UUID syntax, convert the ID to UUID format for validation
-         * and reconvert it to VTN key
-         */
-
-        LOG.trace("id - {}, length - {}", id, id.length());
+        // tenant ID if given from openstack keystone does not follow the
+        // generic UUID syntax, convert the ID to UUID format for validation
+        // and reconvert it to VTN key
+        traceId("convertKeystoneIDToVTNKey", id);
         try {
             StringBuilder tKey = new StringBuilder();
             String tmpStr = id.substring(0, UUID_TIME_LOW);
@@ -219,13 +214,22 @@ public final class VTNNeutronUtils {
                 key = convertUUIDToKey(tmpStr);
             }
         } catch (IndexOutOfBoundsException ibe) {
-            LOG.error("Execption! Invalid UUID - {}", id);
+            LOG.error("Execption! Invalid UUID - " + id, ibe);
             key = null;
         } catch (IllegalArgumentException iae) {
-            LOG.error("Execption! Invalid object ID - {}", id);
+            LOG.error("Execption! Invalid object ID - " + id, iae);
             key = null;
         }
         return key;
     }
 
+    /**
+     * Record the specified ID as a trace log.
+     *
+     * @param label  A string to be embedded in a trace log.
+     * @param id     An ID to be logged.
+     */
+    private static void traceId(String label, String id) {
+        LOG.trace("{}: id - {}, length - {}", label, id, id.length());
+    }
 }

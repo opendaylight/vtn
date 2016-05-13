@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation and others. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation and others. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -47,14 +47,12 @@ public final class NetworkHandler {
      * @param network  An instance of new Network object.
      */
     public void neutronNetworkCreated(Network network) {
-        boolean tenantCreated = false;
         String tenantIdentity = network.getTenantId().getValue();
         String tenantID = convertUUIDToKey(tenantIdentity);
         int result = vtnManager.updateTenant(tenantID, VnodeUpdateMode.UPDATE);
         if (result != HTTP_OK) {
             LOG.error("failed to create network, result - {}", result);
         } else {
-            tenantCreated = true;
             String networkDesc = network.getName();
             String bridgeID = convertUUIDToKey(network.getUuid().getValue());
             result = vtnManager.updateBridge(tenantID, bridgeID, networkDesc,
