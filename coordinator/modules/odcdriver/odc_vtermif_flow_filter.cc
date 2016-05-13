@@ -63,7 +63,7 @@ using namespace unc::restjson;
      return UNC_DRV_RC_ERR_GENERIC;
     }
 
-    ret_val = r_copy(parser_obj->vtermif_flow_filter_, cfgnode_vector);
+    ret_val = r_copy(parser_obj->vtermif_flow_filter_, parser_obj->flow_dir,cfgnode_vector);
     if (UNC_RC_SUCCESS != ret_val) {
       pfc_log_error("Error occured while parsing");
       delete req_obj;
@@ -120,6 +120,7 @@ using namespace unc::restjson;
 
   UncRespCode
   OdcVTermIfFlowFilterCmd::r_copy(std::list<vtermif_flow_filter> &filter_detail,
+                          bool ff_dir,
                      std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
     ODC_FUNC_TRACE;
 
@@ -136,7 +137,10 @@ using namespace unc::restjson;
                            key_filter.if_key.vterm_key.vtn_key.vtn_name),
                          parent_vtn_name_.c_str(), sizeof(
                      key_filter.if_key.vterm_key.vtn_key.vtn_name) - 1);
-    key_filter.direction=UPLL_FLOWFILTER_DIR_IN;
+    if (ff_dir == false)
+      key_filter.direction=UPLL_FLOWFILTER_DIR_IN;
+    else if ( ff_dir == true)
+      key_filter.direction=UPLL_FLOWFILTER_DIR_OUT;
 
     //Add to Cache
     unc::vtndrvcache::ConfigNode *filter_cfgptr =
@@ -403,6 +407,8 @@ void OdcVTermIfFlowFilterEntryCmd::delete_request_body(
     reinterpret_cast<char*>(key.flowfilter_key.if_key.vterm_key.vterminal_name);
   ip_vterm_if_flowfilter_st.input_vtermif_flow_filter_.interface_name =
                    reinterpret_cast<char*>(key.flowfilter_key.if_key.if_name);
+  ip_vterm_if_flowfilter_st.input_vtermif_flow_filter_.output =
+                                            key.flowfilter_key.direction;
 
   vtermin_flow_filter match_index_;
   match_index_.index = key.sequence_num;
