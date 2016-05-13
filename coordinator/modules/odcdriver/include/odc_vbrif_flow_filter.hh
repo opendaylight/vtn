@@ -79,6 +79,7 @@ UncRespCode portmap_chcek( unc::driver::controller* ctr,
 
 
   UncRespCode r_copy(std::list<vbrif_flow_filter> &filter_detail,
+                     bool ff_dir,
                      std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
 
