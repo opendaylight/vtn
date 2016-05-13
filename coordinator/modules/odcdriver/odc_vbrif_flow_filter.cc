@@ -60,7 +60,7 @@ using namespace unc::restjson;
       delete parser_obj;
       return UNC_DRV_RC_ERR_GENERIC;
     }
-   ret_val = r_copy(parser_obj->vbrif_flow_filter_, cfgnode_vector);
+   ret_val = r_copy(parser_obj->vbrif_flow_filter_, parser_obj->flow_dir,cfgnode_vector);
    if (UNC_RC_SUCCESS != ret_val) {
       pfc_log_error("Error occured while parsing");
       delete req_obj;
@@ -117,6 +117,7 @@ OdcVbrIfFlowFilterCmd::portmap_chcek( unc::driver::controller* ctr,
 
 UncRespCode
 OdcVbrIfFlowFilterCmd::r_copy(std::list<vbrif_flow_filter>  &filter_detail,
+                     bool ff_dir,
                      std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
 
     ODC_FUNC_TRACE;
@@ -135,7 +136,10 @@ OdcVbrIfFlowFilterCmd::r_copy(std::list<vbrif_flow_filter>  &filter_detail,
     strncpy(reinterpret_cast<char*> (key_filter.if_key.if_name),
             parent_vbrif_name_.c_str(), sizeof(key_filter.if_key.if_name) - 1);
 
-    key_filter.direction=UPLL_FLOWFILTER_DIR_IN;
+    if (ff_dir == false)
+      key_filter.direction=UPLL_FLOWFILTER_DIR_IN;
+    else if (ff_dir == true)
+      key_filter.direction=UPLL_FLOWFILTER_DIR_OUT;
 
     //Add to Cache
     unc::vtndrvcache::ConfigNode *filter_cfgptr =
@@ -409,6 +413,8 @@ void OdcVbrIfFlowFilterEntryCmd::delete_request_body(
                         key.flowfilter_key.if_key.vbr_key.vbridge_name);
    ip_vbr_if_flowfilter_st.input_vbrif_flow_filter_.interface_name =
                    reinterpret_cast<char*>(key.flowfilter_key.if_key.if_name);
+   ip_vbr_if_flowfilter_st.input_vbrif_flow_filter_.output =
+                   reinterpret_cast<char*>(key.flowfilter_key.direction);
 
    vbrin_flow_filter match_index_;
    match_index_.index = key.sequence_num;
