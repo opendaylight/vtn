@@ -16,6 +16,12 @@ import static org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase.getVtns;
 import static org.opendaylight.vtn.manager.it.util.pathmap.PathMapSet.clearPathMap;
 import static org.opendaylight.vtn.manager.it.util.vnode.VTenantConfig.removeVtn;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.Properties;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -25,7 +31,6 @@ import org.junit.runner.Description;
 import org.sonar.java.jacoco.JUnitListener;
 
 import org.ops4j.pax.exam.Option;
-import org.ops4j.pax.exam.karaf.options.LogLevelOption.LogLevel;
 import org.ops4j.pax.exam.options.BootDelegationOption;
 import org.ops4j.pax.exam.options.DefaultCompositeOption;
 import org.ops4j.pax.exam.options.extra.VMOption;
@@ -83,6 +88,17 @@ public abstract class KarafTestBase extends AbstractMdsalTestBase
      * Prefix for the logging property in the logging configuration file.
      */
     private static final String  LOG_PROP_PREFIX = "log4j.logger.";
+
+    /**
+     * The name of the resource that contains logging configuration.
+     */
+    private static final String  RES_LOG_CONFIG = "/log.properties";
+
+    /**
+     * The name of the property associated with the root logger's level in the
+     * logging configuration.
+     */
+    private static final String  LOG_CFG_ROOT = "root";
 
     /**
      * JUnit rule to watch tests.
@@ -254,6 +270,55 @@ public abstract class KarafTestBase extends AbstractMdsalTestBase
     }
 
     /**
+     * Load the specified resource as {@link Properties}.
+     *
+     * @param name  The name of the resource.
+     * @return  A {@link Properties} loaded from the specified resource.
+     *          An empty {@link Properties} if the specified resource is not
+     *          available.
+     */
+    private Properties loadProperties(String name) {
+        Properties props = new Properties();
+        try (InputStream in = getClass().getResourceAsStream(RES_LOG_CONFIG)) {
+            if (in != null) {
+                props.load(in);
+            }
+        } catch (IOException e) {
+            // Ignore any error.
+        }
+
+        return props;
+    }
+
+    /**
+     * Append the logging level options to the given Pax Exam option.
+     *
+     * @param opts  A {@link DefaultCompositeOption} instance.
+     */
+    private void addLogLevelOptions(DefaultCompositeOption opts) {
+        Properties props = loadProperties(RES_LOG_CONFIG);
+
+        // Configure level for the root logger.
+        String root = props.getProperty(LOG_CFG_ROOT);
+        if (root != null) {
+            props.remove(LOG_CFG_ROOT);
+            opts.add(editConfigurationFilePut(
+                         ORG_OPS4J_PAX_LOGGING_CFG, "log4j.rootLogger",
+                         root + ", stdout"));
+        }
+
+        // Configure level for specific logger.
+        for (Iterator<Entry<Object, Object>> it = props.entrySet().iterator();
+             it.hasNext();) {
+            Entry<Object, Object> entry = it.next();
+            String key = getLogPropertyName(entry.getKey().toString());
+            Object value = entry.getValue();
+            opts.add(editConfigurationFilePut(
+                         ORG_OPS4J_PAX_LOGGING_CFG, key, value.toString()));
+        }
+    }
+
+    /**
      * Initialize the vtn-config container.
      */
     private void initVtnConfig() {
@@ -282,23 +347,6 @@ public abstract class KarafTestBase extends AbstractMdsalTestBase
     // AbstractConfigTestBase
 
     /**
-     * Return the Pax Exam option that indicates the logging configuration.
-     *
-     * @return  An {@link Option} instance.
-     */
-    @Override
-    public final Option getLoggingOption() {
-        return new DefaultCompositeOption(
-            super.getLoggingOption(),
-
-            // Change the logging level for IT classes to INFO.
-            editConfigurationFilePut(
-                ORG_OPS4J_PAX_LOGGING_CFG,
-                getLogPropertyName(VTN + ".manager.it"),
-                LogLevel.INFO.name()));
-    }
-
-    /**
      * Return extra Pax Exam options.
      *
      * @return  An array of additional Pax Exam options.
@@ -307,17 +355,14 @@ public abstract class KarafTestBase extends AbstractMdsalTestBase
     protected final Option[] getAdditionalOptions() {
         DefaultCompositeOption opts = new DefaultCompositeOption(
             // Share JaCoCo agent classes with the boot class loader.
-            new BootDelegationOption("org.jacoco.agent.*"),
-
-            // Override the root logger to change the default logging level
-            // to ERROR.
-            editConfigurationFilePut(
-                ORG_OPS4J_PAX_LOGGING_CFG, "log4j.rootLogger",
-                LogLevel.ERROR.name() + ", stdout"));
+            new BootDelegationOption("org.jacoco.agent.*"));
 
         // Add Java VM options.
         addVmOption(opts, "vtn.vm.maxHeap");
         addVmOption(opts, "vtn.vm.agent");
+
+        // Add logging level options.
+        addLogLevelOptions(opts);
 
         return options(opts);
     }
