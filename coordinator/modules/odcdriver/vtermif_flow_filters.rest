@@ -434,6 +434,7 @@ parse_support=yes
 [vinterface_flow_filter]
 type=struct
 key="vinterface-input-filter"
+out_key = "vinterface-output-filter"
 is_child=no
 check_bool_set=yes
 struct_name=vtermif_flow_filter

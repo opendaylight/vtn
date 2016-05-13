@@ -79,6 +79,7 @@ public:
             std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
    UncRespCode r_copy(std::list<vtermif_flow_filter> &filter_detail,
+                      bool ff_dir,
                       std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 };
 
