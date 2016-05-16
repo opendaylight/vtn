@@ -14,6 +14,8 @@ import java.util.Objects;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnOpenflowVersion;
+
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.ActionList;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.OutputActionCase;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.output.action._case.OutputAction;
@@ -343,5 +345,17 @@ public final class OfMockUtils {
                 ", actual=" + value;
             throw new IllegalArgumentException(emsg);
         }
+    }
+
+    /**
+     * Determine whether the given OpenFlow protocol version indicates 1.3+
+     * or not.
+     *
+     * @param ver  A {@link VtnOpenflowVersion} instance.
+     * @return  {@code true} if {@code ver} indicates OF1.3+.
+     *          {@code false} otherwise.
+     */
+    public static boolean isOpenflow13(VtnOpenflowVersion ver) {
+        return (ver != null && ver != VtnOpenflowVersion.OF10);
     }
 }

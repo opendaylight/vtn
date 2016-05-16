@@ -8,6 +8,8 @@
 
 package org.opendaylight.vtn.manager.it.ofmock.impl;
 
+import static org.opendaylight.vtn.manager.it.ofmock.OfMockService.ID_OPENFLOW;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,6 +27,7 @@ import java.util.concurrent.locks.Lock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 
@@ -297,7 +300,10 @@ public final class OfNode
     public OfNode(OfMockProvider provider, VtnOpenflowVersion ver,
                   String prefix, BigInteger dpid) {
         ofMockProvider = provider;
-        ofVersion = ver;
+            // Don't set OpenFlow version if an invalid prefix is specified.
+        ofVersion = (ID_OPENFLOW.equals(prefix))
+            ? Preconditions.checkNotNull(ver)
+            : null;
         datapathId = dpid;
         nodeIdentifier = prefix + dpid;
         nodePath = InstanceIdentifier.builder(Nodes.class).
@@ -361,7 +367,8 @@ public final class OfNode
     /**
      * Return the OpenFlow version.
      *
-     * @return  A {@link VtnOpenflowVersion} instance.
+     * @return  A {@link VtnOpenflowVersion} instance if this instance
+     *          represents an OpenFlow switch. Otherwise {@code null}.
      */
     public VtnOpenflowVersion getOfVersion() {
         return ofVersion;
