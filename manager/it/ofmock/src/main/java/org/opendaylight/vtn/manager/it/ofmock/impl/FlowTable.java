@@ -8,6 +8,7 @@
 
 package org.opendaylight.vtn.manager.it.ofmock.impl;
 
+import static org.opendaylight.vtn.manager.it.ofmock.OfMockUtils.isOpenflow13;
 import static org.opendaylight.vtn.manager.it.ofmock.OfMockUtils.isOutput;
 import static org.opendaylight.vtn.manager.it.ofmock.OfMockUtils.verify;
 import static org.opendaylight.vtn.manager.it.ofmock.impl.FlowMatcher.EMPTY_MATCH;
@@ -472,9 +473,9 @@ public final class FlowTable {
      *          {@code false} otherwise.
      */
     public synchronized boolean isEmpty() {
-        return (ofVersion == VtnOpenflowVersion.OF10)
-            ? idMap.isEmpty()
-            : (idMap.size() == 1 && idMap.containsKey(missFlowId));
+        return (isOpenflow13(ofVersion))
+            ? (idMap.size() == 1 && idMap.containsKey(missFlowId))
+            : idMap.isEmpty();
     }
 
     /**
@@ -490,8 +491,7 @@ public final class FlowTable {
      */
     public synchronized int size() {
         int size = idMap.size();
-        if (ofVersion != VtnOpenflowVersion.OF10 &&
-            idMap.containsKey(missFlowId)) {
+        if (isOpenflow13(ofVersion) && idMap.containsKey(missFlowId)) {
             size--;
         }
 
@@ -612,9 +612,10 @@ public final class FlowTable {
      *    The specified table miss flow entry is invalid.
      */
     private void verifyTableMissFlowEntry(AddFlowInput input) {
-        if (ofVersion == VtnOpenflowVersion.OF10) {
+        if (!isOpenflow13(ofVersion)) {
+            String bad = (ofVersion == null) ? "unknown" : "OF 1.0";
             throw new IllegalArgumentException(
-                "No table miss flow entry is needed for OF 1.0 switch.");
+                "No table miss flow entry is needed for " + bad + " switch.");
         }
 
         verify(MISS_TIMEOUT, input.getIdleTimeout(), "Invalid idle-timeout");

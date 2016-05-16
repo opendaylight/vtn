@@ -8,6 +8,8 @@
 
 package org.opendaylight.vtn.manager.it.ofmock.impl;
 
+import static org.opendaylight.vtn.manager.it.ofmock.OfMockUtils.isOpenflow13;
+
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Objects;
@@ -228,7 +230,7 @@ public final class OfPort {
             setCurrentFeature(FEATURES_CURRENT).setConfiguration(PORT_CONFIG).
             setPortNumber(new PortNumberUni(Long.valueOf(portNumber)));
 
-        if (ofVersion != VtnOpenflowVersion.OF10) {
+        if (isOpenflow13(ofVersion)) {
             fcBuilder.setCurrentSpeed(SPEED_KBPS).
                 setMaximumSpeed(SPEED_KBPS);
         }
