@@ -8,66 +8,20 @@
 
 package org.opendaylight.vtn.manager.neutron.impl;
 
-import java.util.UUID;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.attrs.rev150712.BaseAttributes;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.networks.rev150712.networks.attributes.networks.Network;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.ports.rev150712.ports.attributes.ports.Port;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.Uuid;
 
 /**
  * Base utility functions used by neutron handlers.
  */
 public final class VTNNeutronUtils {
     /**
-     * Logger instance.
-     */
-    private static final Logger LOG =
-        LoggerFactory.getLogger(VTNNeutronUtils.class);
-
-    /**
      * UUID version number position.
      */
     private static final int UUID_VERSION_POS = 12;
-
-    /**
-     * UUID time-low field byte length in hex.
-     */
-    private static final int UUID_TIME_LOW = 8;
-
-    /**
-     * UUID time-mid field byte length in hex.
-     */
-    private static final int UUID_TIME_MID = 4;
-
-    /**
-     * UUID time-high and version field byte length in hex.
-     */
-    private static final int UUID_TIME_HIGH_VERSION = 4;
-
-    /**
-     * UUID clock sequence field byte length in hex.
-     */
-    private static final int UUID_CLOCK_SEQ = 4;
-
-    /**
-     * UUID node field byte length in hex.
-     */
-    private static final int UUID_NODE = 12;
-
-    /**
-     * UUID time field byte length in hex.
-     */
-    private static final int UUID_TIME_LEN = (UUID_TIME_LOW +
-            UUID_TIME_MID + UUID_TIME_HIGH_VERSION);
-
-    /**
-     * Neutron UUID identifier length.
-     */
-    private static final int UUID_LEN = 36;
-
-    /**
-     * Tenant id length when keystone identifier is used in neutron.
-     */
-    private static final int KEYSTONE_ID_LEN = 32;
 
     /**
      * Private constructor that protects this class from instantiating.
@@ -77,159 +31,79 @@ public final class VTNNeutronUtils {
     /**
      * Convert UUID to VTN key syntax.
      *
-     * @param id neutron object UUID.
-     * @return key in compliance to VTN object key.
+     * @param uuid  An {@link Uuid} instance.
+     * @return  The converted key string.
+     *          {@code null} if the given UUID is invalid.
      */
-    public static String convertUUIDToKey(String id) {
-
+    public static String convertUUIDToKey(Uuid uuid) {
         String key = null;
-        if (id == null) {
-            return key;
+        if (uuid != null) {
+            String id = uuid.getValue();
+            if (id != null) {
+                // Delete UUID Version and hyphen (see RFC4122) field in
+                // the UUID.
+                int len = id.length();
+                int pos = 0;
+                StringBuilder builder = new StringBuilder();
+                for (int i = 0; i < len; i++) {
+                    char c = id.charAt(i);
+                    // Remove all the hyphens.
+                    if (c != '-') {
+                        // Remove the version byte.
+                        if (pos != UUID_VERSION_POS) {
+                            builder.append(c);
+                        }
+                        pos++;
+                    }
+                }
+                key = builder.toString();
+            }
         }
 
-        // VTN ID must be less than 32 bytes,
-        // Shorten UUID string length from 36 to 31 as follows:
-        // delete UUID Version and hyphen (see RFC4122) field in the UUID
-        traceId("convertUUIDToKey", id);
-        try {
-            StringBuilder tKey = new StringBuilder();
-            // remove all the '-'
-            for (String retkey: id.split("-")) {
-                tKey.append(retkey);
-            }
-            // remove the version byte
-            tKey.deleteCharAt(UUID_VERSION_POS);
-            key = tKey.toString();
-        } catch (IllegalArgumentException ile) {
-            LOG.error("Invalid UUID - " + id, ile);
-            key = null;
-        }
         return key;
     }
 
     /**
-     * Convert neutron object id to VTN key syntax.
+     * Return the virtual tenant ID configured in the specified by the
+     * neutron object.
      *
-     * @param neutronID neutron object id.
-     * @return key in compliance to VTN object key.
+     * @param obj  A {@link BaseAttributes} instance.
+     * @return  The virtual tenant ID or {@code null}.
      */
-    public static String convertNeutronIDToVTNKey(String neutronID) {
-        String key = null;
-        if (neutronID == null) {
-            return key;
-        }
-
-        LOG.trace("neutronID - {}, length - {}",
-                  neutronID, neutronID.length());
-        if (!isValidNeutronID(neutronID)) {
-            return key;
-        }
-
-        if (neutronID.length() == UUID_LEN) {
-            key = convertUUIDToKey(neutronID);
-        } else if (neutronID.length() == KEYSTONE_ID_LEN) {
-            key = convertKeystoneIDToVTNKey(neutronID);
-        } else {
-            key = neutronID;
-        }
-        return key;
+    public static String getTenantId(BaseAttributes obj) {
+        return convertUUIDToKey(obj.getTenantId());
     }
 
     /**
-     * Verify the validity of neutron object identifiers.
+     * Return the virtual bridge ID configured in the specified by the
+     * neutron network.
      *
-     * @param id neutron object id.
-     * @return {@code true} neutron identifier is valid.
-     *         {@code false} neutron identifier is invalid.
+     * @param nw  A neutron network instance.
+     * @return  The virtual bridge ID.
      */
-    public static boolean isValidNeutronID(String id) {
-        if (id == null) {
-            return false;
-        }
-
-        // check the string length
-        // if length is 36 its a uuid do uuid validation
-        // if length is 32 it can be tenant id form keystone
-        // if its less than 32  can be valid VTN ID
-        boolean isValid = false;
-        traceId("isValidNeutronID", id);
-        if (id.length() == UUID_LEN) {
-            try {
-                UUID fromUUID = UUID.fromString(id);
-                String toUUID = fromUUID.toString();
-                isValid = toUUID.equalsIgnoreCase(id);
-            } catch (IllegalArgumentException e) {
-                LOG.error("IllegalArgumentExecption for id - " + id, e);
-                isValid = false;
-            }
-        } else if ((id.length() > 0) && (id.length() <= KEYSTONE_ID_LEN)) {
-            isValid = true;
-        } else {
-            isValid = false;
-        }
-        return isValid;
+    public static String getBridgeId(Network nw) {
+        return convertUUIDToKey(nw.getUuid());
     }
 
     /**
-     * Convert string id to VTN key syntax.
+     * Return the virtual bridge ID configured in the specified by the
+     * neutron port.
      *
-     * @param id neutron object id.
-     * @return key in compliance to VTN object key.
+     * @param port  A neutron port instance.
+     * @return  The virtual bridge ID.
      */
-    private static String convertKeystoneIDToVTNKey(String id) {
-        String key = null;
-        if (id == null) {
-            return key;
-        }
-
-        // tenant ID if given from openstack keystone does not follow the
-        // generic UUID syntax, convert the ID to UUID format for validation
-        // and reconvert it to VTN key
-        traceId("convertKeystoneIDToVTNKey", id);
-        try {
-            StringBuilder tKey = new StringBuilder();
-            String tmpStr = id.substring(0, UUID_TIME_LOW);
-            tKey.append(tmpStr);
-            tKey.append("-");
-            tmpStr = id.substring(UUID_TIME_LOW,
-                    (UUID_TIME_LOW + UUID_TIME_MID));
-            tKey.append(tmpStr);
-            tKey.append("-");
-            tmpStr = id.substring((UUID_TIME_LOW + UUID_TIME_MID),
-                    UUID_TIME_LEN);
-            tKey.append(tmpStr);
-            tKey.append("-");
-            tmpStr = id.substring(UUID_TIME_LEN,
-                    (UUID_TIME_LEN + UUID_CLOCK_SEQ));
-            tKey.append(tmpStr);
-            tKey.append("-");
-            tmpStr = id.substring((UUID_TIME_LEN + UUID_CLOCK_SEQ),
-                    (UUID_TIME_LEN + UUID_CLOCK_SEQ + UUID_NODE));
-            tKey.append(tmpStr);
-
-            tmpStr = tKey.toString();
-            UUID fromUUID = UUID.fromString(tmpStr);
-            String toUUID = fromUUID.toString();
-            if (toUUID.equalsIgnoreCase(tmpStr)) {
-                key = convertUUIDToKey(tmpStr);
-            }
-        } catch (IndexOutOfBoundsException ibe) {
-            LOG.error("Execption! Invalid UUID - " + id, ibe);
-            key = null;
-        } catch (IllegalArgumentException iae) {
-            LOG.error("Execption! Invalid object ID - " + id, iae);
-            key = null;
-        }
-        return key;
+    public static String getBridgeId(Port port) {
+        return convertUUIDToKey(port.getNetworkId());
     }
 
     /**
-     * Record the specified ID as a trace log.
+     * Return the virtual interface ID configured in the specified by the
+     * neutron port.
      *
-     * @param label  A string to be embedded in a trace log.
-     * @param id     An ID to be logged.
+     * @param port  A neutron port instance.
+     * @return  The virtual interface ID.
      */
-    private static void traceId(String label, String id) {
-        LOG.trace("{}: id - {}, length - {}", label, id, id.length());
+    public static String getInterfaceId(Port port) {
+        return convertUUIDToKey(port.getUuid());
     }
 }

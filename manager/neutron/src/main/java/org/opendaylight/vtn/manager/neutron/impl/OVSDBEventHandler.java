@@ -8,14 +8,17 @@
 
 package org.opendaylight.vtn.manager.neutron.impl;
 
-import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.net.HttpURLConnection.HTTP_OK;
 
-import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.convertUUIDToKey;
+import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getBridgeId;
+import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getInterfaceId;
+import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getTenantId;
 
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +30,6 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.port.rev150907.SetPortMapInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.port.rev150907.SetPortMapInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.port.rev150907.RemovePortMapInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.port.rev150907.RemovePortMapInputBuilder;
@@ -706,103 +708,34 @@ public final class OVSDBEventHandler {
      * @param ofPort       A long value that indicates the physical switch port
      *                     number.
      * @param portName     The name of the switch port.
-     * @return  A HTTP status code that indicates the result.
-     *          {@link java.net.HttpURLConnection#HTTP_OK} indicates
-     *          successful completion.
      */
-    private int setPortMapForInterface(
-        Port neutronPort, OfNode ofNode, Long ofPort, String portName) {
-        String[] vtnIDs = new String[VTN_IDENTIFIERS_IN_PORT];
-        int result = getVTNIdentifiers(neutronPort, vtnIDs);
-        if (result != HTTP_OK) {
-            LOG.error("processRowUpdated getVTNIdentifiers failed, result - {}",
-                      result);
+    private void setPortMapForInterface(
+        @Nonnull Port neutronPort, @Nonnull OfNode ofNode, Long ofPort,
+        String portName) {
+        // Map the untagged network on the specified port.
+        VlanId vlanId = new VlanId(0);
+        SetPortMapInputBuilder builder = new SetPortMapInputBuilder().
+            setTenantName(getTenantId(neutronPort)).
+            setBridgeName(getBridgeId(neutronPort)).
+            setInterfaceName(getInterfaceId(neutronPort)).
+            setNode(ofNode.getNodeId()).
+            setVlanId(vlanId);
+        if (ofPort != null) {
+            builder.setPortId(ofPort.toString());
+        } else if (portName != null) {
+            builder.setPortName(portName);
         } else {
-            // Map the untagged network on the specified port.
-            VlanId vlanId = new VlanId(0);
-            String tenantID = vtnIDs[0];
-            String bridgeID = vtnIDs[1];
-            String portID = vtnIDs[2];
-            if (ofPort != null) {
-                SetPortMapInput input = new SetPortMapInputBuilder().
-                        setTenantName(tenantID).
-                        setBridgeName(bridgeID).
-                        setInterfaceName(portID).
-                        setNode(ofNode.getNodeId()).
-                        setPortId(ofPort.toString()).
-                        setVlanId(vlanId).
-                        build();
-                result = vtnManager.setPortMap(input);
-            } else {
-                if (portName != null) {
-                    SetPortMapInput input = new SetPortMapInputBuilder().
-                            setTenantName(tenantID).
-                            setBridgeName(bridgeID).
-                            setInterfaceName(portID).
-                            setNode(ofNode.getNodeId()).
-                            setPortName(portName).
-                            setVlanId(vlanId).
-                            build();
-                    result = vtnManager.setPortMap(input);
-                }
-            }
+            LOG.error("No physical port is specified: port={}, node={}",
+                      neutronPort, ofNode);
+            return;
         }
 
-        return result;
-    }
-
-    /**
-     * Validate and Return VTN identifiers for the given NeutronPort object.
-     *
-     * @param port
-     *            An instance of Port object.
-     * @param vtnIDs
-     *            VTN identifiers.
-     * @return A HTTP status code to the validation request.
-     */
-    private int getVTNIdentifiers(Port port, String[] vtnIDs) {
-        int result = HTTP_BAD_REQUEST;
-        /**
-         * To basic validation of the request
-         */
-        if (port == null) {
-            LOG.error("port object not specified");
-            return result;
+        int result = vtnManager.setPortMap(builder.build());
+        if (result != HTTP_OK) {
+            LOG.error("Failed to map physical port: port={}, node={}, " +
+                      "id={}, name={}", neutronPort, ofNode, ofPort,
+                      portName);
         }
-
-        String tenantUUID = port.getTenantId().getValue();
-        String bridgeUUID = port.getNetworkId().getValue();
-        String portUUID = port.getUuid().getValue();
-
-
-        if ((tenantUUID == null) || (bridgeUUID == null) || portUUID == null) {
-            LOG.error("neutron identifiers not specified");
-            return result;
-        }
-
-        String tenantID = convertUUIDToKey(tenantUUID);
-        if (tenantID == null) {
-            LOG.error("Invalid tenant identifier");
-            return result;
-        }
-
-        String bridgeID = convertUUIDToKey(bridgeUUID);
-        if (bridgeID == null) {
-            LOG.error("Invalid bridge identifier");
-            return result;
-        }
-
-        String portID = convertUUIDToKey(portUUID);
-        if (portID == null) {
-            LOG.error("Invalid port identifier");
-            return result;
-        }
-
-        vtnIDs[0] = tenantID;
-        vtnIDs[1] = bridgeID;
-        vtnIDs[2] = portID;
-
-        return HTTP_OK;
     }
 
     /**
@@ -810,27 +743,17 @@ public final class OVSDBEventHandler {
      *
      * @param neutronPort
      *            An instance of NeutronPort object.
-     * @return A HTTP status code for delete PortMap request.
      */
-    private int deletePortMapForInterface(Port neutronPort) {
-        String[] vtnIDs = new String[VTN_IDENTIFIERS_IN_PORT];
-        int result = getVTNIdentifiers(neutronPort, vtnIDs);
+    private void deletePortMapForInterface(@Nonnull Port neutronPort) {
+        RemovePortMapInput input = new RemovePortMapInputBuilder().
+            setTenantName(getTenantId(neutronPort)).
+            setBridgeName(getBridgeId(neutronPort)).
+            setInterfaceName(getInterfaceId(neutronPort)).
+            build();
+        int result = vtnManager.removePortMap(input);
         if (result != HTTP_OK) {
-            LOG.error("processRowUpdated getVTNIdentifiers failed, result - {}",
-                      result);
-        } else {
-            String tenantID = vtnIDs[0];
-            String bridgeID = vtnIDs[1];
-            String portID = vtnIDs[2];
-            RemovePortMapInput input = new RemovePortMapInputBuilder().
-                setTenantName(tenantID).
-                setBridgeName(bridgeID).
-                setInterfaceName(portID).
-                build();
-            result = vtnManager.removePortMap(input);
+            LOG.error("Failed to unmap physical port: port={}", neutronPort);
         }
-
-        return result;
     }
 
     /**

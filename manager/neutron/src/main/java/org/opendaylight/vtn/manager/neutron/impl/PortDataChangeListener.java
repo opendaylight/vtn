@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,11 +8,11 @@
 
 package org.opendaylight.vtn.manager.neutron.impl;
 
-import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.net.HttpURLConnection.HTTP_OK;
 
-import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.convertNeutronIDToVTNKey;
-import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.convertUUIDToKey;
+import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getBridgeId;
+import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getInterfaceId;
+import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getTenantId;
 
 import java.util.Map.Entry;
 import java.util.Set;
@@ -96,7 +96,7 @@ public final class PortDataChangeListener
         for (Entry<InstanceIdentifier<?>, DataObject> newNetwork : changes.getCreatedData().entrySet()) {
             if (newNetwork.getValue() instanceof Port) {
                 Port port = (Port)newNetwork.getValue();
-                portCreation(port);
+                createPort(port);
             }
         }
     }
@@ -105,64 +105,24 @@ public final class PortDataChangeListener
      * Create a new vBridge interface associated with the given port.
      *
      * @param port  A {@link Port} instance.
-     * @return  A HTTP status code that indicates the result.
-     *          {@link java.net.HttpURLConnection#HTTP_OK} indicates
-     *          successful completion.
      */
-    private int portCreation(Port port) {
-        UpdateVinterfaceInputBuilder builder =
-            toUpdateVinterfaceInputBuilder(port);
-        int result;
-        if (builder == null) {
-            result = HTTP_BAD_REQUEST;
+    private void createPort(Port port) {
+        if (port == null) {
+            LOG.warn("Unable to create null port.");
         } else {
-            UpdateVinterfaceInput input = builder.
+            UpdateVinterfaceInput input = new UpdateVinterfaceInputBuilder().
+                setTenantName(getTenantId(port)).
+                setBridgeName(getBridgeId(port)).
+                setInterfaceName(getInterfaceId(port)).
                 setDescription(port.getName()).
                 setEnabled(port.isAdminStateUp()).
                 setUpdateMode(VnodeUpdateMode.CREATE).
                 build();
-            result = vtnManager.updateInterface(input);
-        }
-
-        return result;
-    }
-
-    /**
-     * Create a update-vinterface input builder that specifies the virtual
-     * interface associated with the given port.
-     *
-     * @param port  A {@link Port} instance.
-     * @return  An {@link UpdateVinterfaceInputBuilder} instance on success.
-     *          {@code null} on failure.
-     */
-    private UpdateVinterfaceInputBuilder toUpdateVinterfaceInputBuilder(
-        Port port) {
-        UpdateVinterfaceInputBuilder builder = null;
-        if (port == null) {
-            LOG.error("port object not specified");
-        } else {
-            String tenantUUID = port.getTenantId().getValue();
-            String bridgeUUID = port.getNetworkId().getValue();
-            String portUUID = port.getUuid().getValue();
-
-            String tenantID = convertUUIDToKey(tenantUUID);
-            String bridgeID = convertUUIDToKey(bridgeUUID);
-            String portID = convertUUIDToKey(portUUID);
-            if (tenantID == null) {
-                LOG.error("Invalid tenant identifier: {}", tenantUUID);
-            } else if (bridgeID == null) {
-                LOG.error("Invalid bridge identifier: {}", bridgeUUID);
-            } else if (portID == null) {
-                LOG.error("Invalid port identifier: {}", portUUID);
-            } else {
-                builder = new UpdateVinterfaceInputBuilder().
-                    setTenantName(tenantID).
-                    setBridgeName(bridgeID).
-                    setInterfaceName(portID);
+            int result = vtnManager.updateInterface(input);
+            if (result != HTTP_OK) {
+                LOG.error("Failed to create vBridge interface: port={}", port);
             }
         }
-
-        return builder;
     }
 
     /**
@@ -177,7 +137,7 @@ public final class PortDataChangeListener
             try {
                 if (originalDataObject.get(instanceIdentifier) instanceof Port) {
                     Port port = (Port)originalDataObject.get(instanceIdentifier);
-                    neutronPortDeleted(port);
+                    deletePort(port);
                 }
             } catch (Exception e) {
                 LOG.error("Could not delete VTN Renderer :{} ", e);
@@ -186,27 +146,23 @@ public final class PortDataChangeListener
     }
 
     /**
-     * Invoked to take action after a port has been deleted.
+     * Delete the vBridge interface associated with the given port.
      *
      * @param port  An instance of deleted Neutron Port object.
      */
-    public void neutronPortDeleted(Port port) {
-        String tenantID =
-            convertNeutronIDToVTNKey(port.getTenantId().getValue());
-        String bridgeID =
-            convertNeutronIDToVTNKey(port.getNetworkId().getValue());
-        String portID = convertNeutronIDToVTNKey(port.getUuid().getValue());
-
-        RemoveVinterfaceInput input = new RemoveVinterfaceInputBuilder().
-            setTenantName(tenantID).
-            setBridgeName(bridgeID).
-            setInterfaceName(portID).
-            build();
-        int result = vtnManager.removeInterface(input);
-        if (result != HTTP_OK) {
-            LOG.error("removeInterface failed for tenant-id - {}, " +
-                      "bridge-id - {}, port-id - {}, result - {}",
-                      tenantID, bridgeID, portID, result);
+    private void deletePort(Port port) {
+        if (port == null) {
+            LOG.warn("Unable to delete null port.");
+        } else {
+            RemoveVinterfaceInput input = new RemoveVinterfaceInputBuilder().
+                setTenantName(getTenantId(port)).
+                setBridgeName(getBridgeId(port)).
+                setInterfaceName(getInterfaceId(port)).
+                build();
+            int result = vtnManager.removeInterface(input);
+            if (result != HTTP_OK) {
+                LOG.error("Failed to delete vBridge interface: port={}", port);
+            }
         }
     }
 }

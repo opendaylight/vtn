@@ -11,42 +11,62 @@ package org.opendaylight.vtn.manager.neutron.impl;
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.net.HttpURLConnection.HTTP_OK;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.security.InvalidParameterException;
 
-import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.Uuid;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.ports.rev150712.ports.attributes.ports.Port;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbBridgeAugmentation;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbBridgeAugmentationBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbBridgeName;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbNodeRef;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbTerminationPointAugmentation;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.node.attributes.ConnectionInfo;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.node.TerminationPoint;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbNodeAugmentation;
-import org.opendaylight.yangtools.yang.binding.DataObject;
-import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.junit.Assert;
+import com.google.common.base.Optional;
+
 import org.junit.Before;
-import org.junit.runner.RunWith;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import org.mockito.Matchers;
 import org.mockito.Mockito;
+
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
+
+import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+
+import org.opendaylight.yangtools.yang.binding.DataObject;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.port.rev150907.SetPortMapInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.port.rev150907.SetPortMapInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.port.rev150907.RemovePortMapInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.port.rev150907.RemovePortMapInputBuilder;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.ports.rev150712.ports.attributes.ports.Port;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.ports.rev150712.ports.attributes.ports.PortBuilder;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbBridgeAugmentation;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbBridgeAugmentationBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbBridgeName;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbNodeAugmentation;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbNodeRef;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.OvsdbTerminationPointAugmentation;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.bridge.attributes.ControllerEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.bridge.attributes.ProtocolEntry;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.node.attributes.ConnectionInfo;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.node.attributes.ManagedNodeEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.ovsdb.rev150105.ovsdb.port._interface.attributes.InterfaceExternalIds;
-import java.security.InvalidParameterException;
-import com.google.common.base.Optional;
+
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.Uuid;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanId;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NodeId;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Node;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.NodeKey;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.node.TerminationPoint;
 
 /**
  * JUnit test for {@link OVSDBEventHandler}.
@@ -55,41 +75,43 @@ import com.google.common.base.Optional;
 @PrepareForTest({ OVSDBEventHandler.class, VTNManagerService.class,
                   MdsalUtils.class, InstanceIdentifier.class,
                   VTNNeutronUtils.class, Port.class, OfNode.class})
-public final class OVSDBEventHandlerTest {
+public final class OVSDBEventHandlerTest extends TestBase {
     /**
      * Mock-up of {@link DataBroker}.
      */
     private DataBroker dataBroker;
+
     /**
-     * Mock-up of {@link DataBroker}.
+     * Mock-up of {@link MdsalUtils}.
      */
     private MdsalUtils utils;
+
     /**
      * VTNManagerService instance.
      */
     private VTNManagerService service;
+
     /**
      * An {@link OVSDBEventHandler} instance for test.
      */
     private OVSDBEventHandler handler;
+
     /**
      * Set up test environment.
      */
-    /**
-     * An {@link OVSDBEventHandler} instance for test.
-     */
-    private LogicalDatastoreType oper;
     @Before
-    public void setUp() throws Exception {
-        dataBroker = Mockito.mock(DataBroker.class);
+    public void setUp() {
+        dataBroker = mock(DataBroker.class);
         utils = Mockito.spy(new MdsalUtils(dataBroker));
         service = PowerMockito.mock(VTNManagerService.class);
         handler = PowerMockito.spy(new OVSDBEventHandler(utils, service));
-        oper = LogicalDatastoreType.CONFIGURATION;
     }
+
     /**
      * Test case for
      * {@link OVSDBEventHandler#nodeAdded(Node,DataObject)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testNodeAdded() throws Exception {
@@ -107,9 +129,12 @@ public final class OVSDBEventHandlerTest {
                                    invoke("createInternalNetworkForNeutron",
                                    mockNode);
     }
+
     /**
      * Test case for
      * {@link OVSDBEventHandler#nodeRemoved(Node)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testNodeRemoved() throws Exception {
@@ -123,9 +148,11 @@ public final class OVSDBEventHandlerTest {
                                    mockNode, null);
 
     }
+
     /**
-     * Test case for
-     * {@link OVSDBEventHandler#DeleteBridge()}.
+     * Test case for {@link OVSDBEventHandler#deleteBridge(Node,String)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testDeleteBridge() throws Exception {
@@ -139,12 +166,14 @@ public final class OVSDBEventHandlerTest {
             when(handler , "createInstanceIdentifier" , null, "br-int");
         boolean output = Whitebox.invokeMethod(handler,
                                   "deleteBridge" , mockNode , "br-int");
-        Assert.assertTrue(output);
+        assertTrue(output);
     }
+
     /**
      * Test case for
-     * {@link OVSDBEventHandler
-     *        #extractTerminationPointAugmentation(Node,portName)}.
+     * {@link OVSDBEventHandler#extractTerminationPointAugmentation(Node,String)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testExtractTerminationPointAugmentation() throws Exception {
@@ -152,13 +181,13 @@ public final class OVSDBEventHandlerTest {
         Object output = Whitebox.invokeMethod(handler,
                                               "extractTerminationPointAugmentation",
                                                mockNode, "node1");
-        Assert.assertEquals(output, null);
+        assertEquals(output, null);
         Mockito.when(mockNode.getAugmentation(OvsdbBridgeAugmentation.class)).
                 thenReturn(PowerMockito.mock(OvsdbBridgeAugmentation.class));
         output = Whitebox.invokeMethod(handler,
                                        "extractTerminationPointAugmentation",
                                        mockNode, "node1");
-        Assert.assertEquals(output, null);
+        assertEquals(output, null);
         List<OvsdbTerminationPointAugmentation> mockList =
                            new ArrayList<OvsdbTerminationPointAugmentation>();
 
@@ -176,12 +205,15 @@ public final class OVSDBEventHandlerTest {
         output = Whitebox.invokeMethod(handler,
                                        "extractTerminationPointAugmentation",
                                        mockNode, "node1");
-        Assert.assertTrue(mockList.size() > 0);
+        assertTrue(mockList.size() > 0);
 
     }
+
     /**
      * Test case for
      * {@link OVSDBEventHandler#extractTerminationPointAugmentations(Node)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testExtractTerminationPointAugmentations() throws Exception {
@@ -200,15 +232,18 @@ public final class OVSDBEventHandlerTest {
                         invokeMethod(handler,
                                      "extractTerminationPointAugmentations",
                                      mockNode);
-        Assert.assertTrue(output instanceof List);
+        assertTrue(output instanceof List);
         output = Whitebox.invokeMethod(handler,
                                        "extractTerminationPointAugmentations",
                                        mockNode);
-        Assert.assertTrue(output instanceof List);
+        assertTrue(output instanceof List);
     }
+
     /**
      * Test case for
-     * {@link OVSDBEventHandler#addPortToBridge(Node,bridgeName,portName)}.
+     * {@link OVSDBEventHandler#addPortToBridge(Node,String,String)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testAddPortToBridge() throws Exception {
@@ -228,7 +263,7 @@ public final class OVSDBEventHandlerTest {
         boolean output = Whitebox.invokeMethod(handler,
                                                "addPortToBridge", mockNode,
                                                "bridge1", "port1");
-        Assert.assertTrue(output);
+        assertTrue(output);
         PowerMockito.doReturn(null).
                      when(handler, "extractTerminationPointAugmentation",
                           mockNode, "port1");
@@ -238,19 +273,21 @@ public final class OVSDBEventHandlerTest {
         output = Whitebox.
                     invokeMethod(handler , "addPortToBridge" , mockNode,
                                  "bridge1" , "port1");
-        Assert.assertTrue(output);
+        assertTrue(output);
         PowerMockito.doReturn(false).
                        when(handler, "addTerminationPoint",
                             mockNode, "bridge1", "port1");
         output = Whitebox.
                      invokeMethod(handler, "addPortToBridge",
                                   mockNode, "bridge1", "port1");
-        Assert.assertFalse(output);
+        assertFalse(output);
     }
+
     /**
      * Test case for
-     * {@link OVSDBEventHandler
-     *        #setManagedByForBridge(OvsdbBridgeAugmentationBuilder,NodeKey)}.
+     * {@link OVSDBEventHandler#setManagedByForBridge(OvsdbBridgeAugmentationBuilder,NodeKey)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testSetManagedByForBridge() throws Exception {
@@ -262,10 +299,12 @@ public final class OVSDBEventHandlerTest {
         Mockito.verify(mockBuilder, Mockito.times(1)).
                        setManagedBy(Matchers.any(OvsdbNodeRef.class));
     }
+
     /**
      * Test case for
-     * {@link OVSDBEventHandler
-     *  #createTerminationPointInstanceIdentifier(Node, portName)}.
+     * {@link OVSDBEventHandler#createTerminationPointInstanceIdentifier(Node, String)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testCreateTerminationPointInstanceIdentifier() throws Exception {
@@ -276,12 +315,14 @@ public final class OVSDBEventHandlerTest {
                 Whitebox.invokeMethod(handler,
                                       "createTerminationPointInstanceIdentifier",
                                       mockNode, "port1");
-        Assert.assertTrue(output instanceof InstanceIdentifier);
+        assertTrue(output instanceof InstanceIdentifier);
     }
+
     /**
      * Test case for
-     * {@link OVSDBEventHandler
-     *  #addTerminationPoint(Node, bridgeName, portName)}.
+     * {@link OVSDBEventHandler#addTerminationPoint(Node, String, String)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testAddTerminationPoint() throws Exception {
@@ -295,132 +336,239 @@ public final class OVSDBEventHandlerTest {
                 Whitebox.invokeMethod(handler,
                                      "addTerminationPoint", mockNode,
                                      "bridge1", "port1");
-        Assert.assertFalse(output);
+        assertFalse(output);
     }
+
     /**
      * Test case for
-     * {@link OVSDBEventHandler#createControllerEntries(targetString)}.
+     * {@link OVSDBEventHandler#createControllerEntries(String)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testCreateControllerEntries() throws Exception {
         Object output =
                 Whitebox.invokeMethod(handler,
                                       "createControllerEntries", "test uri1");
-        Assert.assertTrue(output instanceof ArrayList);
-        Assert.assertEquals(((List)output).size(), 1);
+        assertTrue(output instanceof ArrayList);
+        assertEquals(((List)output).size(), 1);
     }
+
     /**
      * Test case for
-     * {@link OVSDBEventHandler#CreateMdsalProtocols}.
+     * {@link OVSDBEventHandler#createMdsalProtocols()}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testCreateMdsalProtocols() throws Exception {
         Object output = Whitebox.invokeMethod(handler, "createMdsalProtocols");
-        Assert.assertTrue(output instanceof ArrayList);
-        Assert.assertEquals(((List)output).size(), 1);
+        assertTrue(output instanceof ArrayList);
+        assertEquals(((List)output).size(), 1);
     }
+
     /**
      * Test case for
-     * {@link OVSDBEventHandler
-     *  #setPortMapForInterface(Port, OfNode, ofPort, portName)}.
+     * {@link OVSDBEventHandler#setPortMapForInterface(Port,OfNode,Long,String)}.
+     *
+     * <ul>
+     *   <li>No physical port is specified.</li>
+     * </ul>
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void testSetPortMapForInterface() throws Exception {
-        PowerMockito.doReturn(HTTP_OK).
-                     when(handler, "getVTNIdentifiers",
-                          Matchers.any(Port.class),
-                          Matchers.eq(new String[3]));
-        Object output =
-                Whitebox.invokeMethod(handler, "setPortMapForInterface",
-                                      PowerMockito.mock(Port.class),
-                                      PowerMockito.mock(OfNode.class),
-                                      new Long(1000), "port1");
-        Assert.assertNotNull(output);
-        PowerMockito.doReturn(HTTP_BAD_REQUEST).
-                     when(handler, "getVTNIdentifiers",
-                          Matchers.any(Port.class),
-                          Matchers.eq(new String[3]));
-        output = Whitebox.invokeMethod(handler, "setPortMapForInterface",
-                                       PowerMockito.mock(Port.class),
-                                       PowerMockito.mock(OfNode.class),
-                                       new Long(1000), "port1");
-        Assert.assertNotNull(output);
-        Assert.assertEquals(output, HTTP_BAD_REQUEST);
+    public void testSetPortMapForInterface1() throws Exception {
+        Uuid tenantId = new Uuid("03e46195-f9de-4802-a573-a037635fa4aa");
+        Uuid networkId = new Uuid("0b998c41-6856-4720-94b2-ae727b6cb01b");
+        Uuid uuid = new Uuid("59079c03-1ddf-41ab-8b3b-a62bbf179404");
+        Port port = new PortBuilder().
+            setTenantId(tenantId).
+            setNetworkId(networkId).
+            setUuid(uuid).
+            build();
+        OfNode node = new OfNode(12345L);
+
+        Whitebox.invokeMethod(handler, "setPortMapForInterface",
+                              port, node, null, null);
+        verifyZeroInteractions(service);
     }
+
     /**
      * Test case for
-     * {@link OVSDBEventHandler#deletePortMapForInterface(Port) }.
+     * {@link OVSDBEventHandler#setPortMapForInterface(Port,OfNode,Long,String)}.
+     *
+     * <ul>
+     *   <li>Physical port ID is specified.</li>
+     * </ul>
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void testDeletePortMapForInterface() throws Exception {
-        PowerMockito.doReturn(HTTP_OK).when(handler, "getVTNIdentifiers",
-                                            Matchers.any(Port.class),
-                                            Matchers.eq(new String[3]));
-        int output = Whitebox.invokeMethod(handler,
-                                           "deletePortMapForInterface",
-                                           PowerMockito.mock(Port.class));
-        Assert.assertNotNull(output);
-        PowerMockito.doReturn(HTTP_BAD_REQUEST).
-                     when(handler , "getVTNIdentifiers" ,
-                          Matchers.any(Port.class) ,
-                          Matchers.eq(new String[3]));
-        output = Whitebox.invokeMethod(handler,
-                                       "deletePortMapForInterface",
-                                       PowerMockito.mock(Port.class));
-        Assert.assertNotNull(output);
-        Assert.assertEquals(output, HTTP_BAD_REQUEST);
+    public void testSetPortMapForInterface2() throws Exception {
+        Uuid tenantId = new Uuid("8f3bb555-c97f-4c6d-9f74-f07995605d42");
+        Uuid networkId = new Uuid("445208ae-96ae-459e-879b-0594ec05bf83");
+        Uuid uuid = new Uuid("5d58739b-e42e-4525-b34c-94104fa08d5a");
+        Port port = new PortBuilder().
+            setTenantId(tenantId).
+            setNetworkId(networkId).
+            setUuid(uuid).
+            build();
+        OfNode node = new OfNode(12345L);
+        Long portId = 15L;
+
+        String tname = "8f3bb555c97fc6d9f74f07995605d42";
+        String bname = "445208ae96ae59e879b0594ec05bf83";
+        String iname = "5d58739be42e525b34c94104fa08d5a";
+        SetPortMapInput input = new SetPortMapInputBuilder().
+            setTenantName(tname).
+            setBridgeName(bname).
+            setInterfaceName(iname).
+            setNode(node.getNodeId()).
+            setVlanId(new VlanId(0)).
+            setPortId(portId.toString()).
+            build();
+        when(service.setPortMap(input)).thenReturn(HTTP_OK);
+
+        Whitebox.invokeMethod(handler, "setPortMapForInterface",
+                              port, node, portId, null);
+        verify(service).setPortMap(input);
+        verifyNoMoreInteractions(service);
     }
+
     /**
      * Test case for
-     * {@link OVSDBEventHandler#getVTNIdentifiers(Port , String[] vtnIDs) }.
+     * {@link OVSDBEventHandler#setPortMapForInterface(Port,OfNode,Long,String)}.
+     *
+     * <ul>
+     *   <li>Physical port name is specified.</li>
+     * </ul>
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void testGetVTNIdentifiers() throws Exception {
-        Port port = null;
-        Object output = Whitebox.invokeMethod(handler,
-                                             "getVTNIdentifiers",
-                                             port, new String[3]);
-        Assert.assertEquals(output, HTTP_BAD_REQUEST);
-        port = Mockito.mock(Port.class);
-        Uuid mockUuid = Mockito.mock(Uuid.class);
-        Mockito.when(port.getTenantId()).thenReturn(mockUuid);
-        Mockito.when(port.getNetworkId()).thenReturn(mockUuid);
-        Mockito.when(port.getUuid()).thenReturn(mockUuid);
-        output = Whitebox.invokeMethod(handler,
-                                       "getVTNIdentifiers", port,
-                                       new String[3]);
-        Assert.assertEquals(output, HTTP_BAD_REQUEST);
-        Mockito.when(mockUuid.getValue()).
-               thenReturn("123e4567-e89b-12d3-a456-426655440000");
-        output = Whitebox.invokeMethod(handler,
-                                       "getVTNIdentifiers",
-                                       port, new String[3]);
-        Assert.assertEquals(output, HTTP_OK);
-        PowerMockito.mockStatic(VTNNeutronUtils.class);
-        PowerMockito.when(VTNNeutronUtils.
-                          convertUUIDToKey(Matchers.any(String.class))).
-                     thenReturn(null, "s1", null, "s1", "s2",
-                                null, "s1", "s2", "s3", null);
-        output = Whitebox.invokeMethod(handler,
-                                       "getVTNIdentifiers",
-                                       port, new String[3]);
-        Assert.assertEquals(output, HTTP_BAD_REQUEST);
-        output = Whitebox.invokeMethod(handler,
-                                       "getVTNIdentifiers", port,
-                                       new String[3]);
-        Assert.assertEquals(output, HTTP_BAD_REQUEST);
-        output = Whitebox.invokeMethod(handler,
-                                       "getVTNIdentifiers",
-                                       port, new String[3]);
-        Assert.assertEquals(output, HTTP_BAD_REQUEST);
-        output = Whitebox.invokeMethod(handler,
-                                       "getVTNIdentifiers", port,
-                                       new String[3]);
-        Assert.assertEquals(output, HTTP_OK);
+    public void testSetPortMapForInterface3() throws Exception {
+        Uuid tenantId = new Uuid("9697026a-47c0-4028-acd8-c873eacca310");
+        Uuid networkId = new Uuid("bf700718-4616-43c2-8062-b68659b795ea");
+        Uuid uuid = new Uuid("7c5ea917-019d-4c3c-a5db-16d57640f9ec");
+        Port port = new PortBuilder().
+            setTenantId(tenantId).
+            setNetworkId(networkId).
+            setUuid(uuid).
+            build();
+        OfNode node = new OfNode(333L);
+        String portName = "port-34";
+
+        String tname = "9697026a47c0028acd8c873eacca310";
+        String bname = "bf70071846163c28062b68659b795ea";
+        String iname = "7c5ea917019dc3ca5db16d57640f9ec";
+        SetPortMapInput input = new SetPortMapInputBuilder().
+            setTenantName(tname).
+            setBridgeName(bname).
+            setInterfaceName(iname).
+            setNode(node.getNodeId()).
+            setVlanId(new VlanId(0)).
+            setPortName(portName).
+            build();
+        when(service.setPortMap(input)).thenReturn(HTTP_OK);
+
+        Whitebox.invokeMethod(handler, "setPortMapForInterface",
+                              port, node, null, portName);
+        verify(service).setPortMap(input);
+        verifyNoMoreInteractions(service);
     }
+
     /**
      * Test case for
-     * {@link OVSDBEventHandler#readNeutronPort(String uuid) }.
+     * {@link OVSDBEventHandler#setPortMapForInterface(Port,OfNode,Long,String)}.
+     *
+     * <ul>
+     *   <li>Broken neutron port is specified.</li>
+     * </ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testSetPortMapForInterface4() throws Exception {
+        Port port = new PortBuilder().build();
+        OfNode node = new OfNode(99887766L);
+        Long portId = 33L;
+
+        SetPortMapInput input = new SetPortMapInputBuilder().
+            setNode(node.getNodeId()).
+            setVlanId(new VlanId(0)).
+            setPortId(portId.toString()).
+            build();
+        when(service.setPortMap(input)).thenReturn(HTTP_BAD_REQUEST);
+
+        Whitebox.invokeMethod(handler, "setPortMapForInterface",
+                              port, node, portId, null);
+        verify(service).setPortMap(input);
+        verifyNoMoreInteractions(service);
+    }
+
+    /**
+     * Test case for
+     * {@link OVSDBEventHandler#deletePortMapForInterface(Port)}.
+     *
+     * <ul>
+     *   <li>Valid neutron port is specified.</li>
+     * </ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testDeletePortMapForInterface1() throws Exception {
+        Uuid tenantId = new Uuid("fffe27e1-7f84-4972-b478-3489a8d92a27");
+        Uuid networkId = new Uuid("5e05ea14-b668-4e1c-b89b-63bfc8ae3575");
+        Uuid uuid = new Uuid("8b35fcb8-2710-4282-aaa3-7c0daf8564d4");
+        Port port = new PortBuilder().
+            setTenantId(tenantId).
+            setNetworkId(networkId).
+            setUuid(uuid).
+            build();
+
+        String tname = "fffe27e17f84972b4783489a8d92a27";
+        String bname = "5e05ea14b668e1cb89b63bfc8ae3575";
+        String iname = "8b35fcb82710282aaa37c0daf8564d4";
+        RemovePortMapInput input = new RemovePortMapInputBuilder().
+            setTenantName(tname).
+            setBridgeName(bname).
+            setInterfaceName(iname).
+            build();
+        when(service.removePortMap(input)).thenReturn(HTTP_OK);
+
+        Whitebox.invokeMethod(handler, "deletePortMapForInterface", port);
+        verify(service).removePortMap(input);
+        verifyNoMoreInteractions(service);
+    }
+
+    /**
+     * Test case for
+     * {@link OVSDBEventHandler#deletePortMapForInterface(Port)}.
+     *
+     * <ul>
+     *   <li>Broken neutron port is specified.</li>
+     * </ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testDeletePortMapForInterface2() throws Exception {
+        Port port = new PortBuilder().build();
+        RemovePortMapInput input = new RemovePortMapInputBuilder().build();
+        when(service.removePortMap(input)).thenReturn(HTTP_BAD_REQUEST);
+
+        Whitebox.invokeMethod(handler, "deletePortMapForInterface", port);
+        verify(service).removePortMap(input);
+        verifyNoMoreInteractions(service);
+    }
+
+    /**
+     * Test case for
+     * {@link OVSDBEventHandler#readNeutronPort(String)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testReadNeutronPort() throws Exception {
@@ -428,11 +576,14 @@ public final class OVSDBEventHandlerTest {
                 Whitebox.invokeMethod(handler,
                                       "readNeutronPort",
                                       "123e4567-e89b-12d3-a456-426655440000");
-        Assert.assertNull(output);
+        assertNull(output);
     }
+
     /**
      * Test case for
-     * {@link OVSDBEventHandler#extractBridgeAugmentation(Node) }.
+     * {@link OVSDBEventHandler#extractBridgeAugmentation(Node)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testExtractBridgeAugmentation() throws Exception {
@@ -440,18 +591,21 @@ public final class OVSDBEventHandlerTest {
         Object output = Whitebox.invokeMethod(handler,
                                               "extractBridgeAugmentation",
                                               null);
-        Assert.assertNull(output);
+        assertNull(output);
         OvsdbBridgeAugmentation  mockOvsdbBridgeAugmentation  =
                              PowerMockito.mock(OvsdbBridgeAugmentation .class);
         Mockito.when(mockNode.getAugmentation(OvsdbBridgeAugmentation.class)).
                 thenReturn(mockOvsdbBridgeAugmentation);
         output = Whitebox.invokeMethod(handler,
                                        "extractBridgeAugmentation", mockNode);
-        Assert.assertEquals(output, mockOvsdbBridgeAugmentation);
+        assertEquals(output, mockOvsdbBridgeAugmentation);
     }
+
     /**
      * Test case for
-     * {@link OVSDBEventHandler#getBridgeNode(Node, bridgeName) }.
+     * {@link OVSDBEventHandler#getBridgeNode(Node, String)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testGetBridgeNode() throws Exception {
@@ -459,7 +613,7 @@ public final class OVSDBEventHandlerTest {
         Object output =
                 Whitebox.invokeMethod(handler , "getBridgeNode",
                                       mockNode , "bridge1");
-        Assert.assertNull(output);
+        assertNull(output);
         OvsdbBridgeAugmentation  mockOvsdbBridgeAugmentation  =
                                  Mockito.mock(OvsdbBridgeAugmentation .class);
         OvsdbBridgeName mockBridgeName = Mockito.mock(OvsdbBridgeName.class);
@@ -471,11 +625,14 @@ public final class OVSDBEventHandlerTest {
                           Matchers.any(Node.class));
         output = Whitebox.invokeMethod(handler,
                                       "getBridgeNode", mockNode, "bridge1");
-        Assert.assertEquals(output, mockOvsdbBridgeAugmentation);
+        assertEquals(output, mockOvsdbBridgeAugmentation);
     }
+
     /**
      * Test case for
-     * {@link OVSDBEventHandler#createInstanceIdentifier(NodeId) }.
+     * {@link OVSDBEventHandler#createInstanceIdentifier(NodeId)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testCreateInstanceIdentifier() throws Exception {
@@ -485,11 +642,14 @@ public final class OVSDBEventHandlerTest {
         Object output =
                 Whitebox.invokeMethod(handler , "createInstanceIdentifier",
                                       mockKey , "bridge1");
-        Assert.assertTrue(output instanceof InstanceIdentifier);
+        assertTrue(output instanceof InstanceIdentifier);
     }
+
     /**
      * Test case for
-     * {@link OVSDBEventHandler#isBridgeOnOvsdbNode(Node , bridgeName) }.
+     * {@link OVSDBEventHandler#isBridgeOnOvsdbNode(Node,String)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testisBridgeOnOvsdbNode() throws Exception {
@@ -502,7 +662,7 @@ public final class OVSDBEventHandlerTest {
                                 invokeMethod(handler,
                                                   "isBridgeOnOvsdbNode",
                                                      mockovsNode, "bridge1");
-        Assert.assertFalse(output);
+        assertFalse(output);
         OvsdbNodeAugmentation  mockOvsdbNodeAugmentation  =
                                       Mockito.mock(OvsdbNodeAugmentation .class);
         PowerMockito.doReturn(mockOvsdbNodeAugmentation).
@@ -516,7 +676,7 @@ public final class OVSDBEventHandlerTest {
         output = Whitebox.invokeMethod(handler,
                                        "isBridgeOnOvsdbNode",
                                                 mockovsNode, "bridge1");
-        Assert.assertFalse(output);
+        assertFalse(output);
         ManagedNodeEntry mockTPOne = Mockito.mock(ManagedNodeEntry.class);
         ManagedNodeEntry mockTPTwo = Mockito.mock(ManagedNodeEntry.class);
         mockmgedList.add(mockTPOne);
@@ -527,7 +687,9 @@ public final class OVSDBEventHandlerTest {
 
     /**
      * Test case for
-     * {@link OVSDBEventHandler#addBridge(Node , bridgeName) }.
+     * {@link OVSDBEventHandler#addBridge(Node,String)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testaddBridge() throws Exception {
@@ -544,7 +706,7 @@ public final class OVSDBEventHandlerTest {
             boolean output = Whitebox.invokeMethod(handler,
                                   "addBridge" , mockovsNode , "bridge1");
         }  catch (Exception e) {
-            Assert.assertTrue(e instanceof InvalidParameterException);
+            assertTrue(e instanceof InvalidParameterException);
         }
         InstanceIdentifier<Node>   mockInstanceIdentifier  =
                                     PowerMockito.mock(InstanceIdentifier.class);
@@ -567,14 +729,19 @@ public final class OVSDBEventHandlerTest {
                        when(handler, "createMdsalProtocols");
 
         utils =  Mockito.mock(MdsalUtils.class);
-        Mockito.when(utils.put(oper , mockInstanceIdentifier , null)).
-                  thenReturn(true);
-        Mockito.when(utils.put(oper , mockInstanceIdentifier , null)).
-                  thenReturn(false);
+
+        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        Mockito.when(utils.put(oper, mockInstanceIdentifier, null)).
+            thenReturn(true);
+        Mockito.when(utils.put(oper, mockInstanceIdentifier, null)).
+            thenReturn(false);
     }
+
     /**
      * Test case for
-     * {@link OVSDBEventHandler#readOVSDBPorts(Node , action) }.
+     * {@link OVSDBEventHandler#readOVSDBPorts(Node,String)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testreadOVSDBPorts() throws Exception {

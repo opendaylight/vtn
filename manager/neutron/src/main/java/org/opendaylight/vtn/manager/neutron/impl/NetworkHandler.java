@@ -10,7 +10,10 @@ package org.opendaylight.vtn.manager.neutron.impl;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 
-import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.convertUUIDToKey;
+import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getBridgeId;
+import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getTenantId;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,21 +49,18 @@ public final class NetworkHandler {
      *
      * @param network  An instance of new Network object.
      */
-    public void neutronNetworkCreated(Network network) {
-        String tenantIdentity = network.getTenantId().getValue();
-        String tenantID = convertUUIDToKey(tenantIdentity);
+    public void neutronNetworkCreated(@Nonnull Network network) {
+        String tenantID = getTenantId(network);
         int result = vtnManager.updateTenant(tenantID, VnodeUpdateMode.UPDATE);
         if (result != HTTP_OK) {
-            LOG.error("failed to create network, result - {}", result);
+            LOG.error("Failed to create network: network={}", network);
         } else {
             String networkDesc = network.getName();
-            String bridgeID = convertUUIDToKey(network.getUuid().getValue());
+            String bridgeID = getBridgeId(network);
             result = vtnManager.updateBridge(tenantID, bridgeID, networkDesc,
                                              VnodeUpdateMode.CREATE);
             if (result != HTTP_OK) {
-                LOG.error("Unable to create vBridge: tenant-id={}, " +
-                          "bridge-id={}, result={}", tenantIdentity,
-                          network.getUuid().getValue(), result);
+                LOG.error("Failed to create vBridge: network={}", network);
             }
         }
     }
@@ -70,16 +70,13 @@ public final class NetworkHandler {
      *
      * @param network An instance of modified Network object.
      */
-    public void neutronNetworkUpdated(Network network) {
-        /**
-         * check if the object already exists in VTN manager
-         */
-        String tenantID = convertUUIDToKey(network.getTenantId().getValue());
-        String bridgeID = convertUUIDToKey(network.getUuid().getValue());
+    public void neutronNetworkUpdated(@Nonnull Network network) {
+        // Check to see if the object already exists in VTN manager.
+        String tenantID = getTenantId(network);
+        String bridgeID = getBridgeId(network);
         VbridgeConfig bconf = vtnManager.getBridgeConfig(tenantID, bridgeID);
         if (bconf == null) {
-            LOG.error("Tenant id - {} or  bridge id - {} does not exist",
-                      tenantID, bridgeID);
+            LOG.error("vBridge is not present: {}/{}", tenantID, bridgeID);
             return;
         }
         Boolean shared = network.isShared();
@@ -96,9 +93,7 @@ public final class NetworkHandler {
             int result = vtnManager.updateBridge(
                 tenantID, bridgeID, networkDesc, VnodeUpdateMode.MODIFY);
             if (result != HTTP_OK) {
-                LOG.error("Modifying bridge description failed for "
-                          + "bridge id - {} , tenant id - {}, result - {}",
-                          bridgeID, tenantID, result);
+                LOG.error("Failed to update vBridge: network={}", network);
             }
         }
     }
@@ -108,21 +103,17 @@ public final class NetworkHandler {
      *
      * @param network  An instance of deleted Network object.
      */
-    public void neutronNetworkDeleted(Network network) {
-        String tenantID = convertUUIDToKey(network.getTenantId().getValue());
-        String bridgeID = convertUUIDToKey(network.getUuid().getValue());
-
+    public void neutronNetworkDeleted(@Nonnull Network network) {
+        String tenantID = getTenantId(network);
+        String bridgeID = getBridgeId(network);
         int result = vtnManager.removeBridge(tenantID, bridgeID);
         if (result != HTTP_OK) {
-            LOG.error("removeBridge failed for tenant-id - {}, "
-                      + "Bridge-id - {}, result - {}", tenantID, bridgeID,
-                      result);
+            LOG.error("Failed to remove vBridge: network={}", network);
         }
         if (!vtnManager.hasBridge(tenantID)) {
             result = vtnManager.removeTenant(tenantID);
             if (result != HTTP_OK) {
-                LOG.error("removeTenant failed for tenant-id - {}, "
-                          + "result - {}", tenantID, result);
+                LOG.error("Failed to remove network: network={}", network);
             }
         }
     }

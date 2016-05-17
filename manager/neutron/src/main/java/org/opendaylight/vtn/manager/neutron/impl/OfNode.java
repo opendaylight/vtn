@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -49,6 +49,15 @@ public final class OfNode {
         // Eliminate octet separator.
         String hex = HEX_SEPARATOR_MATCHER.removeFrom(dpid.getValue());
         nodeNumber = new BigInteger(hex, HEX_RADIX);
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param value  A long value that indicates a datapath ID.
+     */
+    public OfNode(long value) {
+        nodeNumber = BigInteger.valueOf(value);
     }
 
     /**
