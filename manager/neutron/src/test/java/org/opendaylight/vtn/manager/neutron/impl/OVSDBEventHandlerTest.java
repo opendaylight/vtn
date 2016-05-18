@@ -157,15 +157,17 @@ public final class OVSDBEventHandlerTest extends TestBase {
     @Test
     public void testDeleteBridge() throws Exception {
         Node mockNode = PowerMockito.mock(Node.class);
-        InstanceIdentifier<Node> mockInstanceIdentifier  =
-                                    PowerMockito.mock(InstanceIdentifier.class);
-        utils = Mockito.mock(MdsalUtils.class);
-        Mockito.when(utils.delete(Matchers.eq(LogicalDatastoreType.CONFIGURATION), Matchers.eq(mockInstanceIdentifier))).thenReturn(true);
+        InstanceIdentifier<Node> mockInstanceIdentifier =
+            PowerMockito.mock(InstanceIdentifier.class);
+        utils = mock(MdsalUtils.class);
+        when(utils.delete(Matchers.eq(LogicalDatastoreType.CONFIGURATION),
+                          Matchers.eq(mockInstanceIdentifier))).
+            thenReturn(true);
         handler = PowerMockito.spy(new OVSDBEventHandler(utils, service));
         PowerMockito.doReturn(mockInstanceIdentifier).
-            when(handler , "createInstanceIdentifier" , null, "br-int");
-        boolean output = Whitebox.invokeMethod(handler,
-                                  "deleteBridge" , mockNode , "br-int");
+            when(handler, "createInstanceIdentifier", null, "br-int");
+        boolean output = Whitebox.invokeMethod(
+            handler, "deleteBridge", mockNode, "br-int");
         assertTrue(output);
     }
 
@@ -182,11 +184,10 @@ public final class OVSDBEventHandlerTest extends TestBase {
                                               "extractTerminationPointAugmentation",
                                                mockNode, "node1");
         assertEquals(output, null);
-        Mockito.when(mockNode.getAugmentation(OvsdbBridgeAugmentation.class)).
-                thenReturn(PowerMockito.mock(OvsdbBridgeAugmentation.class));
-        output = Whitebox.invokeMethod(handler,
-                                       "extractTerminationPointAugmentation",
-                                       mockNode, "node1");
+        when(mockNode.getAugmentation(OvsdbBridgeAugmentation.class)).
+            thenReturn(PowerMockito.mock(OvsdbBridgeAugmentation.class));
+        output = Whitebox.invokeMethod(
+            handler, "extractTerminationPointAugmentation", mockNode, "node1");
         assertEquals(output, null);
         List<OvsdbTerminationPointAugmentation> mockList =
                            new ArrayList<OvsdbTerminationPointAugmentation>();
@@ -195,18 +196,15 @@ public final class OVSDBEventHandlerTest extends TestBase {
                     PowerMockito.mock(OvsdbTerminationPointAugmentation.class);
         OvsdbTerminationPointAugmentation ovsdbTPATwo =
                     PowerMockito.mock(OvsdbTerminationPointAugmentation.class);
-        Mockito.when(ovsdbTPAOne.getName()).thenReturn("node1");
-        Mockito.when(ovsdbTPATwo.getName()).thenReturn("node2");
+        when(ovsdbTPAOne.getName()).thenReturn("node1");
+        when(ovsdbTPATwo.getName()).thenReturn("node2");
         mockList.add(ovsdbTPATwo);
         mockList.add(ovsdbTPAOne);
         PowerMockito.doReturn(mockList).
-                     when(handler, "extractTerminationPointAugmentations",
-                          mockNode);
-        output = Whitebox.invokeMethod(handler,
-                                       "extractTerminationPointAugmentation",
-                                       mockNode, "node1");
+            when(handler, "extractTerminationPointAugmentations", mockNode);
+        output = Whitebox.invokeMethod(
+            handler, "extractTerminationPointAugmentation", mockNode, "node1");
         assertTrue(mockList.size() > 0);
-
     }
 
     /**
@@ -221,21 +219,17 @@ public final class OVSDBEventHandlerTest extends TestBase {
         List<TerminationPoint> mockList = new ArrayList<TerminationPoint>();
         TerminationPoint mockTPOne = Mockito.mock(TerminationPoint.class);
         TerminationPoint mockTPTwo = Mockito.mock(TerminationPoint.class);
-        Mockito.when(mockTPTwo.
-                     getAugmentation(OvsdbTerminationPointAugmentation.class)).
-                     thenReturn(Mockito.mock(
-                                OvsdbTerminationPointAugmentation .class));
+        when(mockTPTwo.getAugmentation(
+                 OvsdbTerminationPointAugmentation.class)).
+            thenReturn(mock(OvsdbTerminationPointAugmentation .class));
         mockList.add(mockTPOne);
         mockList.add(mockTPTwo);
-        Mockito.when(mockNode.getTerminationPoint()).thenReturn(mockList , null);
-        Object output = Whitebox.
-                        invokeMethod(handler,
-                                     "extractTerminationPointAugmentations",
-                                     mockNode);
+        when(mockNode.getTerminationPoint()).thenReturn(mockList, null);
+        Object output = Whitebox.invokeMethod(
+            handler, "extractTerminationPointAugmentations", mockNode);
         assertTrue(output instanceof List);
-        output = Whitebox.invokeMethod(handler,
-                                       "extractTerminationPointAugmentations",
-                                       mockNode);
+        output = Whitebox.invokeMethod(
+            handler, "extractTerminationPointAugmentations", mockNode);
         assertTrue(output instanceof List);
     }
 
@@ -250,36 +244,27 @@ public final class OVSDBEventHandlerTest extends TestBase {
         Node mockNode = PowerMockito.mock(Node.class);
         InstanceIdentifier<Node> mockInstanceIdentifier  =
                                    PowerMockito.mock(InstanceIdentifier.class);
-        Mockito.when(mockNode.getNodeId()).
-                thenReturn(Mockito.mock(NodeId.class));
+        when(mockNode.getNodeId()).thenReturn(mock(NodeId.class));
         PowerMockito.doReturn(mockNode).
-                       when(handler , "getBridgeConfigNode" ,
-                            mockNode , "bridge1");
-        PowerMockito.
-                  doReturn(Mockito.
-                           mock(OvsdbTerminationPointAugmentation.class)).
-                          when(handler, "extractTerminationPointAugmentation",
-                               mockNode, "port1");
-        boolean output = Whitebox.invokeMethod(handler,
-                                               "addPortToBridge", mockNode,
-                                               "bridge1", "port1");
+            when(handler, "getBridgeConfigNode", mockNode, "bridge1");
+        PowerMockito.doReturn(mock(OvsdbTerminationPointAugmentation.class)).
+            when(handler, "extractTerminationPointAugmentation",
+                 mockNode, "port1");
+        boolean output = Whitebox.invokeMethod(
+            handler, "addPortToBridge", mockNode, "bridge1", "port1");
         assertTrue(output);
         PowerMockito.doReturn(null).
-                     when(handler, "extractTerminationPointAugmentation",
-                          mockNode, "port1");
+            when(handler, "extractTerminationPointAugmentation", mockNode,
+                 "port1");
         PowerMockito.doReturn(true).
-                     when(handler, "addTerminationPoint",
-                          mockNode, "bridge1", "port1");
-        output = Whitebox.
-                    invokeMethod(handler , "addPortToBridge" , mockNode,
-                                 "bridge1" , "port1");
+            when(handler, "addTerminationPoint", mockNode, "bridge1", "port1");
+        output = Whitebox.invokeMethod(
+            handler, "addPortToBridge", mockNode, "bridge1", "port1");
         assertTrue(output);
         PowerMockito.doReturn(false).
-                       when(handler, "addTerminationPoint",
-                            mockNode, "bridge1", "port1");
-        output = Whitebox.
-                     invokeMethod(handler, "addPortToBridge",
-                                  mockNode, "bridge1", "port1");
+            when(handler, "addTerminationPoint", mockNode, "bridge1", "port1");
+        output = Whitebox.invokeMethod(
+            handler, "addPortToBridge", mockNode, "bridge1", "port1");
         assertFalse(output);
     }
 
@@ -292,12 +277,12 @@ public final class OVSDBEventHandlerTest extends TestBase {
     @Test
     public void testSetManagedByForBridge() throws Exception {
         OvsdbBridgeAugmentationBuilder mockBuilder =
-                           Mockito.mock(OvsdbBridgeAugmentationBuilder.class);
+            mock(OvsdbBridgeAugmentationBuilder.class);
         Whitebox.invokeMethod(handler,
                               "setManagedByForBridge", mockBuilder,
-                              Mockito.mock(NodeKey.class));
-        Mockito.verify(mockBuilder, Mockito.times(1)).
-                       setManagedBy(Matchers.any(OvsdbNodeRef.class));
+                              mock(NodeKey.class));
+        verify(mockBuilder, Mockito.times(1)).
+            setManagedBy(Matchers.any(OvsdbNodeRef.class));
     }
 
     /**
@@ -309,12 +294,10 @@ public final class OVSDBEventHandlerTest extends TestBase {
     @Test
     public void testCreateTerminationPointInstanceIdentifier() throws Exception {
         Node mockNode = PowerMockito.mock(Node.class);
-        Mockito.when(mockNode.getKey()).
-                thenReturn(Mockito.mock(NodeKey.class));
-        Object output =
-                Whitebox.invokeMethod(handler,
-                                      "createTerminationPointInstanceIdentifier",
-                                      mockNode, "port1");
+        when(mockNode.getKey()).thenReturn(mock(NodeKey.class));
+        Object output = Whitebox.invokeMethod(
+            handler, "createTerminationPointInstanceIdentifier", mockNode,
+            "port1");
         assertTrue(output instanceof InstanceIdentifier);
     }
 
@@ -328,8 +311,8 @@ public final class OVSDBEventHandlerTest extends TestBase {
     public void testAddTerminationPoint() throws Exception {
         Node mockNode = PowerMockito.mock(Node.class);
         NodeKey key = PowerMockito.mock(NodeKey.class);
-        Mockito.when(mockNode.getKey()).thenReturn(key);
-        Mockito.when(key.getNodeId()).thenReturn(Mockito.mock(NodeId.class));
+        when(mockNode.getKey()).thenReturn(key);
+        when(key.getNodeId()).thenReturn(mock(NodeId.class));
         MdsalUtils utils2 = PowerMockito.mock(MdsalUtils.class);
         handler = new OVSDBEventHandler(utils2, service);
         boolean output =
@@ -593,9 +576,9 @@ public final class OVSDBEventHandlerTest extends TestBase {
                                               null);
         assertNull(output);
         OvsdbBridgeAugmentation  mockOvsdbBridgeAugmentation  =
-                             PowerMockito.mock(OvsdbBridgeAugmentation .class);
-        Mockito.when(mockNode.getAugmentation(OvsdbBridgeAugmentation.class)).
-                thenReturn(mockOvsdbBridgeAugmentation);
+            PowerMockito.mock(OvsdbBridgeAugmentation .class);
+        when(mockNode.getAugmentation(OvsdbBridgeAugmentation.class)).
+            thenReturn(mockOvsdbBridgeAugmentation);
         output = Whitebox.invokeMethod(handler,
                                        "extractBridgeAugmentation", mockNode);
         assertEquals(output, mockOvsdbBridgeAugmentation);
@@ -610,16 +593,15 @@ public final class OVSDBEventHandlerTest extends TestBase {
     @Test
     public void testGetBridgeNode() throws Exception {
         Node mockNode = PowerMockito.mock(Node.class);
-        Object output =
-                Whitebox.invokeMethod(handler , "getBridgeNode",
-                                      mockNode , "bridge1");
+        Object output = Whitebox.invokeMethod(
+            handler, "getBridgeNode", mockNode, "bridge1");
         assertNull(output);
         OvsdbBridgeAugmentation  mockOvsdbBridgeAugmentation  =
-                                 Mockito.mock(OvsdbBridgeAugmentation .class);
-        OvsdbBridgeName mockBridgeName = Mockito.mock(OvsdbBridgeName.class);
-        Mockito.when(mockBridgeName.getValue()).thenReturn("bridge1");
-        Mockito.when(mockOvsdbBridgeAugmentation.getBridgeName()).
-                thenReturn(mockBridgeName);
+            mock(OvsdbBridgeAugmentation .class);
+        OvsdbBridgeName mockBridgeName = mock(OvsdbBridgeName.class);
+        when(mockBridgeName.getValue()).thenReturn("bridge1");
+        when(mockOvsdbBridgeAugmentation.getBridgeName()).
+            thenReturn(mockBridgeName);
         PowerMockito.doReturn(mockOvsdbBridgeAugmentation).
                      when(handler, "extractBridgeAugmentation",
                           Matchers.any(Node.class));
@@ -636,12 +618,11 @@ public final class OVSDBEventHandlerTest extends TestBase {
      */
     @Test
     public void testCreateInstanceIdentifier() throws Exception {
-        NodeId mockId = Mockito.mock(NodeId.class);
-        NodeKey mockKey = Mockito.mock(NodeKey.class);
-        Mockito.when(mockKey.getNodeId()).thenReturn(mockId);
-        Object output =
-                Whitebox.invokeMethod(handler , "createInstanceIdentifier",
-                                      mockKey , "bridge1");
+        NodeId mockId = mock(NodeId.class);
+        NodeKey mockKey = mock(NodeKey.class);
+        when(mockKey.getNodeId()).thenReturn(mockId);
+        Object output = Whitebox.invokeMethod(
+            handler, "createInstanceIdentifier", mockKey, "bridge1");
         assertTrue(output instanceof InstanceIdentifier);
     }
 
@@ -664,25 +645,24 @@ public final class OVSDBEventHandlerTest extends TestBase {
                                                      mockovsNode, "bridge1");
         assertFalse(output);
         OvsdbNodeAugmentation  mockOvsdbNodeAugmentation  =
-                                      Mockito.mock(OvsdbNodeAugmentation .class);
+            mock(OvsdbNodeAugmentation .class);
         PowerMockito.doReturn(mockOvsdbNodeAugmentation).
-                       when(handler , "extractOvsdbNode" ,
-                               Matchers.any(Node.class));
+            when(handler, "extractOvsdbNode", Matchers.any(Node.class));
         //empty list shld ret null
         List<ManagedNodeEntry> mockmgedList =
                                   new ArrayList<ManagedNodeEntry>();
-        Mockito.when(mockOvsdbNodeAugmentation.getManagedNodeEntry()).
-                  thenReturn(mockmgedList);
+        when(mockOvsdbNodeAugmentation.getManagedNodeEntry()).
+            thenReturn(mockmgedList);
         output = Whitebox.invokeMethod(handler,
                                        "isBridgeOnOvsdbNode",
                                                 mockovsNode, "bridge1");
         assertFalse(output);
-        ManagedNodeEntry mockTPOne = Mockito.mock(ManagedNodeEntry.class);
-        ManagedNodeEntry mockTPTwo = Mockito.mock(ManagedNodeEntry.class);
+        ManagedNodeEntry mockTPOne = mock(ManagedNodeEntry.class);
+        ManagedNodeEntry mockTPTwo = mock(ManagedNodeEntry.class);
         mockmgedList.add(mockTPOne);
         mockmgedList.add(mockTPTwo);
-        Mockito.when(mockOvsdbNodeAugmentation.getManagedNodeEntry()).
-                  thenReturn(mockmgedList);
+        when(mockOvsdbNodeAugmentation.getManagedNodeEntry()).
+            thenReturn(mockmgedList);
     }
 
     /**
@@ -695,46 +675,40 @@ public final class OVSDBEventHandlerTest extends TestBase {
     public void testaddBridge() throws Exception {
         //Test case to return false
         Node mockovsNode = PowerMockito.mock(Node.class);
-        PowerMockito.doReturn("10.10.10.10").when(handler, "getControllerTarget",
-                                                  mockovsNode);
-        ConnectionInfo  mockConnectionInfo  =
-                                     Mockito.mock(ConnectionInfo.class);
+        PowerMockito.doReturn("10.10.10.10").
+            when(handler, "getControllerTarget", mockovsNode);
+        ConnectionInfo  mockConnectionInfo  = mock(ConnectionInfo.class);
         PowerMockito.doReturn(null).
-                       when(handler , "getConnectionInfo", mockovsNode);
+            when(handler, "getConnectionInfo", mockovsNode);
 
         try {
-            boolean output = Whitebox.invokeMethod(handler,
-                                  "addBridge" , mockovsNode , "bridge1");
+            boolean output = Whitebox.invokeMethod(
+                handler, "addBridge", mockovsNode, "bridge1");
         }  catch (Exception e) {
             assertTrue(e instanceof InvalidParameterException);
         }
         InstanceIdentifier<Node>   mockInstanceIdentifier  =
-                                    PowerMockito.mock(InstanceIdentifier.class);
+            PowerMockito.mock(InstanceIdentifier.class);
         PowerMockito.doReturn(mockInstanceIdentifier).
-                       when(handler , "createInstanceIdentifier" ,
-                            null , "bridge1");
-        NodeId mockNodeId  = Mockito.mock(NodeId.class);
+            when(handler, "createInstanceIdentifier", null, "bridge1");
+        NodeId mockNodeId  = mock(NodeId.class);
         PowerMockito.doReturn(mockNodeId).
                        when(handler, "createManagedNodeId",
                                Matchers.eq(mockInstanceIdentifier));
 
-        ControllerEntry mockControllerEntry  =
-                                 Mockito.mock(ControllerEntry.class);
+        ControllerEntry mockControllerEntry = mock(ControllerEntry.class);
         PowerMockito.doReturn(new ArrayList()).
                        when(handler, "createControllerEntries", "bridge1");
 
-        ProtocolEntry mockProtocolEntry  =
-                                 Mockito.mock(ProtocolEntry.class);
+        ProtocolEntry mockProtocolEntry = mock(ProtocolEntry.class);
         PowerMockito.doReturn(new ArrayList()).
                        when(handler, "createMdsalProtocols");
 
-        utils =  Mockito.mock(MdsalUtils.class);
+        utils =  mock(MdsalUtils.class);
 
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
-        Mockito.when(utils.put(oper, mockInstanceIdentifier, null)).
-            thenReturn(true);
-        Mockito.when(utils.put(oper, mockInstanceIdentifier, null)).
-            thenReturn(false);
+        when(utils.put(oper, mockInstanceIdentifier, null)).thenReturn(true);
+        when(utils.put(oper, mockInstanceIdentifier, null)).thenReturn(false);
     }
 
     /**
@@ -746,45 +720,40 @@ public final class OVSDBEventHandlerTest extends TestBase {
     @Test
     public void testreadOVSDBPorts() throws Exception {
         Node mockovsNode = PowerMockito.mock(Node.class);
-        Optional mockOptional = Mockito.mock(Optional.class);
+        Optional mockOptional = mock(Optional.class);
         utils =  Mockito.mock(MdsalUtils.class);
         InstanceIdentifier<Node> mockInstanceIdentifier  =
-                                   PowerMockito.mock(InstanceIdentifier.class);
-        Mockito.when(utils.read(Matchers.eq(LogicalDatastoreType.OPERATIONAL),
-                                  Matchers.any(InstanceIdentifier.class))).
-                   thenReturn(mockOptional);
+            PowerMockito.mock(InstanceIdentifier.class);
+        when(utils.read(Matchers.eq(LogicalDatastoreType.OPERATIONAL),
+                        Matchers.any(InstanceIdentifier.class))).
+            thenReturn(mockOptional);
         handler = PowerMockito.spy(new OVSDBEventHandler(utils, service));
-        NodeId mockNodeId = Mockito.mock(NodeId.class);
+        NodeId mockNodeId = mock(NodeId.class);
         mockNodeId = mockovsNode.getNodeId();
         PowerMockito.doReturn(mockInstanceIdentifier).
-                       when(handler,
-                               "createInstanceIdentifier", mockNodeId);
-        Mockito.when(mockOptional.orNull()).thenReturn(mockovsNode);
+            when(handler, "createInstanceIdentifier", mockNodeId);
+        when(mockOptional.orNull()).thenReturn(mockovsNode);
         OvsdbBridgeAugmentation mockOvsdbBridgeAugmentation =
-                                PowerMockito.mock(OvsdbBridgeAugmentation.class);
+            PowerMockito.mock(OvsdbBridgeAugmentation.class);
         PowerMockito.doReturn(mockOvsdbBridgeAugmentation).
-                       when(handler ,
-                               "getBridgeNode" , mockovsNode , null);
+            when(handler, "getBridgeNode", mockovsNode, null);
         List<InterfaceExternalIds> mockListForExtenralIds =
                                      new ArrayList<InterfaceExternalIds>();
         InterfaceExternalIds mockInterfaceExternalIds =
-                                     Mockito.mock(InterfaceExternalIds.class);
-        Mockito.when(mockInterfaceExternalIds.getExternalIdKey()).
-                   thenReturn("iface-id");
+            mock(InterfaceExternalIds.class);
+        when(mockInterfaceExternalIds.getExternalIdKey()).
+            thenReturn("iface-id");
         mockListForExtenralIds.add(mockInterfaceExternalIds);
 
         List<OvsdbTerminationPointAugmentation> mockList =
                               new ArrayList<OvsdbTerminationPointAugmentation>();
         OvsdbTerminationPointAugmentation mockTPOne =
-                           Mockito.mock(OvsdbTerminationPointAugmentation.class);
-        Mockito.when(mockTPOne.getInterfaceExternalIds()).
-                   thenReturn(mockListForExtenralIds);
+            mock(OvsdbTerminationPointAugmentation.class);
+        when(mockTPOne.getInterfaceExternalIds()).
+            thenReturn(mockListForExtenralIds);
         mockList.add(mockTPOne);
         PowerMockito.doReturn(mockList).
-                       when(handler ,
-                               "extractTerminationPointAugmentations" ,
-                                mockovsNode);
-        Whitebox.invokeMethod(handler, "readOVSDBPorts",
-                              mockovsNode, "update");
+            when(handler, "extractTerminationPointAugmentations", mockovsNode);
+        Whitebox.invokeMethod(handler, "readOVSDBPorts", mockovsNode, "update");
     }
 }

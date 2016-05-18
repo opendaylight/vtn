@@ -764,7 +764,11 @@ public final class OVSDBEventHandler {
     private Port readNeutronPort(String uuid) {
         try {
             Uuid uid = new Uuid(uuid);
-            InstanceIdentifier<Port> portpath = InstanceIdentifier.builder(Neutron.class).child(Ports.class).child(Port.class ,   new PortKey(uid)).build();
+            InstanceIdentifier<Port> portpath = InstanceIdentifier.
+                builder(Neutron.class).
+                child(Ports.class).
+                child(Port.class, new PortKey(uid)).
+                build();
             Port port = mdsalUtils.
                 read(LogicalDatastoreType.CONFIGURATION, portpath).orNull();
             return port;

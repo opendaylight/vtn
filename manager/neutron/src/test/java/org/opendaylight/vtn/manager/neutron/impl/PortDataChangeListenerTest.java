@@ -87,7 +87,8 @@ public class PortDataChangeListenerTest extends TestBase {
     public void setUp() throws Exception {
         initMocks(this);
         vtnManagerService = PowerMockito.mock(VTNManagerService.class);
-        portDataChangeListener = PowerMockito.spy(new PortDataChangeListener(dataBroker , vtnManagerService));
+        portDataChangeListener = PowerMockito.spy(
+            new PortDataChangeListener(dataBroker, vtnManagerService));
         asyncDataChangeEventMockObj = mock(AsyncDataChangeEvent.class);
         portMap = new HashMap<InstanceIdentifier<?>,  DataObject>();
         when(asyncDataChangeEventMockObj.getCreatedData())
@@ -97,10 +98,12 @@ public class PortDataChangeListenerTest extends TestBase {
         port = mock(Port.class);
         instanceIdentifier = mock(InstanceIdentifier.class);
         when(dataBroker.registerDataChangeListener(
-                  any(LogicalDatastoreType.class), any(InstanceIdentifier.class),
-                  isA(PortDataChangeListener.class), any(DataChangeScope.class))).
-             thenReturn(listenerReg);
-        portDataChangeListener = new PortDataChangeListener(dataBroker , vtnManagerService);
+                 any(LogicalDatastoreType.class), any(InstanceIdentifier.class),
+                 isA(PortDataChangeListener.class),
+                 any(DataChangeScope.class))).
+            thenReturn(listenerReg);
+        portDataChangeListener = new PortDataChangeListener(
+            dataBroker, vtnManagerService);
     }
     /**
      * Test case for
@@ -139,7 +142,7 @@ public class PortDataChangeListenerTest extends TestBase {
 
         // Listener registrations should never be closed twice.
         portDataChangeListener.close();
-        verify(listenerReg , times(2)).close();
+        verify(listenerReg, times(2)).close();
     }
 
     /**
@@ -154,6 +157,6 @@ public class PortDataChangeListenerTest extends TestBase {
          * Verifying asyncDataChangeEventMockObj object invoking both
          * getCreatedData and getUpdatedData methods.
          */
-        verify(asyncDataChangeEventMockObj , times(1)).getCreatedData();
+        verify(asyncDataChangeEventMockObj, times(1)).getCreatedData();
     }
 }

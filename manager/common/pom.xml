@@ -62,9 +62,6 @@
     <apiviz.version>1.3.2.GA</apiviz.version>
     <java-formatter.version>0.3.1</java-formatter.version>
 
-    <!-- Use checkstyle 6.5. -->
-    <checkstyle.engine.version>6.5</checkstyle.engine.version>
-
     <!-- Karaf properties -->
     <karaf.empty.version>1.7.0-SNAPSHOT</karaf.empty.version>
     <karaf.resources.version>1.7.0-SNAPSHOT</karaf.resources.version>
@@ -312,18 +309,6 @@
 
     <pluginManagement>
       <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-checkstyle-plugin</artifactId>
-          <dependencies>
-            <dependency>
-              <groupId>com.puppycrawl.tools</groupId>
-              <artifactId>checkstyle</artifactId>
-              <version>${checkstyle.engine.version}</version>
-            </dependency>
-          </dependencies>
-        </plugin>
-
         <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>

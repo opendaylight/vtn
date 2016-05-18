@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -111,7 +111,7 @@ public enum ConfigType {
      * @param elname  The name of the XML element.
      * @param def     The default value.
      */
-    private ConfigType(String name, String elname, Object def) {
+    ConfigType(String name, String elname, Object def) {
         this(name, elname, def, null, null);
     }
 
@@ -124,8 +124,7 @@ public enum ConfigType {
      * @param min     The minimum value.
      * @param max     The maximum value.
      */
-    private ConfigType(String name, String elname, Object def, Object min,
-                       Object max) {
+    ConfigType(String name, String elname, Object def, Object min, Object max) {
         methodName = name;
         defaultValue = def;
         elementName = elname;

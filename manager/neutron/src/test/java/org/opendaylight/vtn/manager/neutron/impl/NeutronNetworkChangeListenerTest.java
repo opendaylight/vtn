@@ -108,7 +108,8 @@ public class NeutronNetworkChangeListenerTest extends TestBase {
                   any(LogicalDatastoreType.class), any(InstanceIdentifier.class),
                   isA(NeutronNetworkChangeListener.class), any(DataChangeScope.class))).
              thenReturn(listenerReg);
-        neutronNetworkListener = new NeutronNetworkChangeListener(dataBroker , vtnManagerService);
+        neutronNetworkListener = new NeutronNetworkChangeListener(
+            dataBroker, vtnManagerService);
     }
     /**
      * Test case for

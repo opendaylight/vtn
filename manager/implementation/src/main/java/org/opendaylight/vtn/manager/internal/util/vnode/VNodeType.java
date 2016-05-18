@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -191,7 +191,7 @@ public enum VNodeType implements VNodeIdentifierFactory {
      * @param size  The number of path components.
      * @param bits  A bit mask which indicates the type of the virtual node.
      */
-    private VNodeType(String name, int size, int bits) {
+    VNodeType(String name, int size, int bits) {
         this(name, name, size, bits);
     }
 
@@ -204,7 +204,7 @@ public enum VNodeType implements VNodeIdentifierFactory {
      * @param size  The number of path components.
      * @param bits  A bit mask which indicates the type of the virtual node.
      */
-    private VNodeType(String name, String desc, int size, int bits) {
+    VNodeType(String name, String desc, int size, int bits) {
         typeName = name;
         description = desc;
         componentSize = size;

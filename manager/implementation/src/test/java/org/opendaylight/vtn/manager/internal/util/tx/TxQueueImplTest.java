@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,9 +8,11 @@
 
 package org.opendaylight.vtn.manager.internal.util.tx;
 
+import static org.mockito.Mockito.mock;
+
 import org.junit.Assert;
 import org.junit.Test;
-import org.mockito.Mockito;
+
 import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.vtn.manager.internal.TxTask;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
@@ -27,8 +29,8 @@ public class TxQueueImplTest extends TestBase {
     public void testStart() {
         try {
             // Set up mock-up of VTNManagerProvider
-            VTNManagerProvider provider = Mockito.mock(VTNManagerProvider.class);
-            TxQueueImpl impl = new TxQueueImpl("VTN Main" , provider);
+            VTNManagerProvider provider = mock(VTNManagerProvider.class);
+            TxQueueImpl impl = new TxQueueImpl("VTN Main", provider);
             impl.start();
             impl.close();
         } catch (Exception exception) {
@@ -43,10 +45,10 @@ public class TxQueueImplTest extends TestBase {
     public void testPost() {
         try {
             // Set up mock-up of VTNManagerProvider
-            VTNManagerProvider provider = Mockito.mock(VTNManagerProvider.class);
-            TxQueueImpl impl = new TxQueueImpl("VTN Main" , provider);
+            VTNManagerProvider provider = mock(VTNManagerProvider.class);
+            TxQueueImpl impl = new TxQueueImpl("VTN Main", provider);
             @SuppressWarnings("unchecked")
-            TxTask<TxTask> task = Mockito.mock(TxTask.class);
+            TxTask<TxTask> task = mock(TxTask.class);
             impl.post(task);
             impl.close();
 
@@ -66,10 +68,10 @@ public class TxQueueImplTest extends TestBase {
     public void testPostFirst() {
         try {
             // Set up mock-up of VTNManagerProvider
-            VTNManagerProvider provider = Mockito.mock(VTNManagerProvider.class);
-            TxQueueImpl impl = new TxQueueImpl("VTN Main" , provider);
+            VTNManagerProvider provider = mock(VTNManagerProvider.class);
+            TxQueueImpl impl = new TxQueueImpl("VTN Main", provider);
             @SuppressWarnings("unchecked")
-            TxTask<TxTask> task = Mockito.mock(TxTask.class);
+            TxTask<TxTask> task = mock(TxTask.class);
             impl.postFirst(task);
             impl.close();
 
