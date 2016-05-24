@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -31,12 +31,45 @@ import com.google.common.base.Optional;
 import com.google.common.util.concurrent.CheckedFuture;
 
 public class NeutronProvider implements BindingAwareProvider, AutoCloseable {
-
+    /**
+     * The logger instance.
+     */
     private static final Logger LOG = LoggerFactory.getLogger(NeutronProvider.class);
+
+    /**
+     * The data broker service.
+     */
     private DataBroker  dataBroker;
+
+    /**
+     * The data change listener that listens OVSDB topology changes.
+     */
     private OvsdbDataChangeListener ovsdbDataChangeListener;
+
+    /**
+     * The data change listener that listens neutron network changes.
+     */
     private NeutronNetworkChangeListener neutronNetworkChangeListener;
+
+    /**
+     * The data change listener that listens neutron port changes.
+     */
     private PortDataChangeListener portDataChangeListener;
+
+    /**
+     * The manager.neutron configuration.
+     */
+    private final NeutronConfig  bundleConfig;
+
+    /**
+     * Construct a new instance.
+     *
+     * @param cfg  The configuration for the manager.neutron bundle.
+     */
+    public NeutronProvider(NeutronConfig cfg) {
+        bundleConfig = cfg;
+        LOG.info("Bundle configuration: {}", cfg);
+    }
 
     /**
      * Method invoked when the open flow switch is Added.
@@ -51,7 +84,8 @@ public class NeutronProvider implements BindingAwareProvider, AutoCloseable {
         MdsalUtils md = new MdsalUtils(db);
         VTNManagerService vtn = new VTNManagerService(md, session);
 
-        ovsdbDataChangeListener = new OvsdbDataChangeListener(db, md, vtn);
+        OVSDBEventHandler ovh = new OVSDBEventHandler(bundleConfig, md, vtn);
+        ovsdbDataChangeListener = new OvsdbDataChangeListener(db, ovh);
         neutronNetworkChangeListener =
             new NeutronNetworkChangeListener(db, vtn);
         initializeOvsdbTopology(LogicalDatastoreType.OPERATIONAL);

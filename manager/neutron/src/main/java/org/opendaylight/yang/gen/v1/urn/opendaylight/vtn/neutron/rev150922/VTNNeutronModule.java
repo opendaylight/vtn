@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -12,8 +12,8 @@ package org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.neutron.rev150922;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.opendaylight.vtn.manager.neutron.impl.NeutronConfig;
 import org.opendaylight.vtn.manager.neutron.impl.NeutronProvider;
-import org.opendaylight.vtn.manager.neutron.impl.OVSDBEventHandler;
 
 import org.opendaylight.controller.config.api.DependencyResolver;
 import org.opendaylight.controller.config.api.ModuleIdentifier;
@@ -41,11 +41,9 @@ public class VTNNeutronModule extends AbstractVTNNeutronModule {
 
     @Override
     public java.lang.AutoCloseable createInstance() {
-        OVSDBEventHandler.ovsdbPortName = getPortName();
-        OVSDBEventHandler.ovsdbBridgeName = getBridgeName();
-        OVSDBEventHandler.ovsdbProtocol = getProtocol();
-        OVSDBEventHandler.ovsdbFailMode = getFailMode();
-        NeutronProvider provider = new NeutronProvider();
+        NeutronConfig cfg = new NeutronConfig(
+            getBridgeName(), getPortName(), getProtocol(), getFailMode());
+        NeutronProvider provider = new NeutronProvider(cfg);
         getBrokerDependency().registerProvider(provider);
 
         return provider;

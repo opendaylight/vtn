@@ -48,68 +48,67 @@ import org.opendaylight.yangtools.yang.binding.DataObject;
  * JUnit test for {@link OvsdbDataChangeListener}.
  */
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({ OvsdbDataChangeListener.class, VTNManagerService.class,
-                  MdsalUtils.class, InstanceIdentifier.class, OfNode.class,
-                  OVSDBEventHandler.class})
+@PrepareForTest({ OvsdbDataChangeListener.class, InstanceIdentifier.class,
+                  OfNode.class, OVSDBEventHandler.class})
 public class OvsdbDataChangeListenerTest {
     /**
      * Mock-up of {@link DataBroker}.
      */
     @Mock
     private DataBroker  dataBroker;
+
     /**
-     * Mock-up of {@link DataBroker}.
+     * OVSDB event handler.
      */
-    @Mock
-    private  MdsalUtils mdUtils;
-    /**
-     * VTNManagerService instance.
-     */
-    private VTNManagerService  vtnManagerService;
+    private OVSDBEventHandler  handler;
+
     /**
      * Registration to be associated with {@link OvsdbDataChangeListener}.
      */
     @Mock
     private ListenerRegistration<DataChangeListener>  listenerReg;
+
     /**
      * An {@link OvsdbDataChangeListener} instance for test.
      */
     private OvsdbDataChangeListener  ovsdbDataChangeListener;
-    private OVSDBEventHandler handler;
+
     /**
      * AsyncDataChangeEvent object reference for unit testing.
      */
     private AsyncDataChangeEvent asyncDataChangeEventMockObj;
+
     /**
      * Collection of InstanceIdentifier and Intent.
      */
     private Map<InstanceIdentifier<?>, DataObject> nodeMap;
+
     /**
      * NetworkKey object reference for unit testing.
      */
     private NodeKey nodeKey;
+
     /**
      * Intent object reference for unit testing.
      */
     private Node node;
+
     /**
      * InstanceIdentifier object reference for unit testing.
      */
     private InstanceIdentifier<?> instanceIdentifier;
+
     /**
      * Set up test environment.
      */
-
     @Before
     public void setUp() throws Exception {
         initMocks(this);
-        vtnManagerService = PowerMockito.mock(VTNManagerService.class);
-        ovsdbDataChangeListener = PowerMockito.
-                               spy(new OvsdbDataChangeListener(dataBroker,
-                                                                         mdUtils,
-                                                                                     vtnManagerService));
+        handler = PowerMockito.mock(OVSDBEventHandler.class);
+        ovsdbDataChangeListener = PowerMockito.spy(
+            new OvsdbDataChangeListener(dataBroker, handler));
         asyncDataChangeEventMockObj =
-                                     PowerMockito.mock(AsyncDataChangeEvent.class);
+            PowerMockito.mock(AsyncDataChangeEvent.class);
         nodeMap = new HashMap<InstanceIdentifier<?>,  DataObject>();
         when(asyncDataChangeEventMockObj.getCreatedData())
                 .thenReturn(nodeMap);
@@ -120,15 +119,14 @@ public class OvsdbDataChangeListenerTest {
         when(node.getKey()).thenReturn(nodeKey);
         instanceIdentifier = PowerMockito.mock(InstanceIdentifier.class);
         //nodeMap.put(instanceIdentifier, node);
-        handler = PowerMockito.
-                            spy(new OVSDBEventHandler(mdUtils, vtnManagerService));
         when(dataBroker.
-                   registerDataChangeListener(any(LogicalDatastoreType.class),
-                                                  any(InstanceIdentifier.class),
-                                          isA(OvsdbDataChangeListener.class),
-                                                              any(DataChangeScope.class))).
-             thenReturn(listenerReg);
+             registerDataChangeListener(any(LogicalDatastoreType.class),
+                                        any(InstanceIdentifier.class),
+                                        isA(OvsdbDataChangeListener.class),
+                                        any(DataChangeScope.class))).
+            thenReturn(listenerReg);
     }
+
     /**
      * Test case for
      * {@link OperationalListener#
@@ -138,18 +136,15 @@ public class OvsdbDataChangeListenerTest {
     public void testConstructor() {
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
         DataChangeScope scope = DataChangeScope.SUBTREE;
-        ovsdbDataChangeListener = new
-                       OvsdbDataChangeListener(dataBroker, mdUtils,
-                                                         vtnManagerService);
+        ovsdbDataChangeListener =
+            new OvsdbDataChangeListener(dataBroker, handler);
+
         // Ensure that NeutronNetworkChangeListener has been registered as data change
         // listener.
-        when(dataBroker.
-                        registerDataChangeListener(eq(oper),
-                                                         eq(getPath()),
-                                                                     eq(ovsdbDataChangeListener),
-                                                                     eq(scope))).
+        when(dataBroker.registerDataChangeListener(
+                 eq(oper), eq(getPath()), eq(ovsdbDataChangeListener),
+                 eq(scope))).
             thenReturn(listenerReg);
-        //handler = new OVSDBEventHandler(mdUtils, vtnManagerService);
         verifyZeroInteractions(listenerReg);
     }
     /**

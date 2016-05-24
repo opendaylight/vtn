@@ -13,6 +13,9 @@ import static java.net.HttpURLConnection.HTTP_OK;
 import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getBridgeId;
 import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getInterfaceId;
 import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getTenantId;
+import static org.opendaylight.vtn.manager.neutron.impl.NeutronConfig.FAILMODE_SECURE;
+import static org.opendaylight.vtn.manager.neutron.impl.NeutronConfig.FAILMODE_STANDALONE;
+import static org.opendaylight.vtn.manager.neutron.impl.NeutronConfig.PROTO_OF13;
 
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
@@ -87,56 +90,6 @@ public final class OVSDBEventHandler {
     private static final Logger LOG =
         LoggerFactory.getLogger(OVSDBEventHandler.class);
 
-     /**
-     * identifier for the integration bridge name.
-     */
-    private String integrationBridgeName;
-
-    /**
-     * identifier to define failmode of integration bridge.
-     */
-    private String failmode;
-
-    /**
-     * identifier to define protocol of integration bridge.
-     */
-    private String protocols;
-
-     /**
-     * identifier to define portname of the integration bridge.
-     */
-    private String portname;
-
-    /**
-     * A string that indicates secure fail mode.
-     */
-    private static final String  FAILMODE_SECURE = "secure";
-
-    /**
-     * A string that indicates OpenFlow 1.3.
-     */
-    private static final String  OFP13 = "OpenFlow13";
-
-    /**
-     * Default integration bridge name.
-     */
-    private static final String DEFAULT_INTEGRATION_BRIDGENAME = "br-int";
-
-    /**
-     * identifier for Default failmode.
-     */
-    private static final String DEFAULT_FAILMODE = FAILMODE_SECURE;
-
-    /**
-     * identifier for Default protocol.
-     */
-    private static final String DEFAULT_PROTOCOLS = OFP13;
-
-    /**
-     * identifier for Default portname.
-     */
-    private static final String DEFAULT_PORTNAME = "eth0";
-
     /**
      * identifier to read for integration name from config file.
      */
@@ -150,12 +103,34 @@ public final class OVSDBEventHandler {
     /**
      * identifier to read open flow protocol from config file.
      */
-    public static final String OPENFLOW_CONNECTION_PROTOCOL = "tcp";
+    private static final String OPENFLOW_CONNECTION_PROTOCOL = "tcp";
 
     /**
-     * identifier to get Action of OVSDB Ports
+     * identifier to get Action of OVSDB Ports.
      */
     private static final String ACTION_PORT = "delete";
+
+    /**
+     * Stores the Fail Mode Type.
+     */
+    private static final ImmutableBiMap<Class<? extends OvsdbFailModeBase>, String> OVSDB_FAIL_MODE_MAP
+            = new ImmutableBiMap.Builder<Class<? extends OvsdbFailModeBase>, String>()
+            .put(OvsdbFailModeStandalone.class, FAILMODE_STANDALONE)
+            .put(OvsdbFailModeSecure.class, FAILMODE_SECURE)
+            .build();
+
+    /**
+     * Stores the Supported Openflow Protocol Version.
+     */
+    private static final ImmutableBiMap<Class<? extends OvsdbBridgeProtocolBase>, String> OVSDB_PROTOCOL_MAP
+            = new ImmutableBiMap.Builder<Class<? extends OvsdbBridgeProtocolBase>, String>()
+            .put(OvsdbBridgeProtocolOpenflow13.class, PROTO_OF13)
+            .build();
+
+    /**
+     * The configuration of the manager.neutron bundle.
+     */
+    private final NeutronConfig  bundleConfig;
 
     /**
      * Instance of {@link MdsalUtils}.
@@ -171,31 +146,6 @@ public final class OVSDBEventHandler {
      * identifier to read BRIDGE_URI_PREFIX.
      */
     public static final String BRIDGE_URI_PREFIX = "bridge";
-
-    /**
-     * VTN identifiers in neutron port object.
-     */
-    private static final int VTN_IDENTIFIERS_IN_PORT = 3;
-
-    /**
-     * identifiers for OVSDB Port Name.
-     */
-    public static String ovsdbPortName;
-
-    /**
-     * identifiers for OVSDB Bridge Name.
-     */
-    public static String ovsdbBridgeName;
-
-    /**
-     * identifiers for OVSDB Protocol.
-     */
-    public static String ovsdbProtocol;
-
-    /**
-     * identifiers for OVSDB Failmode.
-     */
-    public static String ovsdbFailMode;
 
     /**
      * Convert the given DPID into an {@link OfNode} instance.
@@ -216,10 +166,13 @@ public final class OVSDBEventHandler {
     /**
      * Method invoked when the open flow switch is Added.
      *
+     * @param cfg  The configuration for the manager.neutron bundle.
      * @param md   A {@link MdsalUtils} instance.
      * @param vtn  A {@link VTNManagerService} instance.
      */
-    public OVSDBEventHandler(MdsalUtils md, VTNManagerService vtn) {
+    public OVSDBEventHandler(NeutronConfig cfg, MdsalUtils md,
+                             VTNManagerService vtn) {
+        bundleConfig = cfg;
         mdsalUtils = md;
         vtnManager = vtn;
     }
@@ -232,8 +185,8 @@ public final class OVSDBEventHandler {
     public void nodeAdded(Node node, DataObject resourceAugmentationData) {
         LOG.trace("nodeAdded() - {}", node.toString());
         try {
-            createInternalNetworkForNeutron(node);
-        } catch (Exception e) {
+            readSystemProperties(node);
+        } catch (RuntimeException e) {
             LOG.warn("Exception occurred while Bridge Creation", e);
         }
     }
@@ -244,64 +197,30 @@ public final class OVSDBEventHandler {
      */
     public void nodeRemoved(Node node) {
         LOG.trace("nodeRemoved() - {}", node.toString());
-        boolean result = deleteBridge(node, integrationBridgeName);
+        boolean result = deleteBridge(node, bundleConfig.getOvsdbBridgeName());
         if (!result) {
             LOG.error("Failure in delete the bridge node entry from Config Datastore");
         }
     }
 
     /**
-     * Create InternalNetwork if not already present.
-     *
-     * @param node Instance of Node object.
-     */
-    private void createInternalNetworkForNeutron(Node node) {
-        getSystemProperties(node);
-        LOG.trace("createInternalNetworkForNeutron() - node ={}, integration bridge ={}", node.toString());
-
-    }
-
-    /**
      * Read the parameters configured in configuration file(default.config).
+     *
      * @param node instance of Node
      */
-    private void getSystemProperties(Node node) {
-        LOG.trace("System properties from default config : {},{},{},{}:",
-                  ovsdbBridgeName, ovsdbPortName, ovsdbProtocol, ovsdbFailMode);
-        integrationBridgeName = ovsdbBridgeName;
-        if (integrationBridgeName == null) {
-            integrationBridgeName = DEFAULT_INTEGRATION_BRIDGENAME;
-        }
-        portname = ovsdbPortName;
-        if (portname == null) {
-            portname = DEFAULT_PORTNAME;
-        }
-        failmode = ovsdbFailMode;
-        if (failmode == null) {
-            failmode = DEFAULT_FAILMODE;
-        }
-        protocols = ovsdbProtocol;
-        if (protocols == null) {
-            protocols = DEFAULT_PROTOCOLS;
-        }
-        LOG.trace("System properties values : {},{},{},{}:",
-                  integrationBridgeName, failmode, protocols, portname);
-        if (null != integrationBridgeName) {
-            try {
-                if (!isBridgeOnOvsdbNode(node, integrationBridgeName)) {
-                    addBridge(node, integrationBridgeName);
-                    addPortToBridge(node, integrationBridgeName, portname);
-                } else {
-                    LOG.trace("Bridge Already exists in the given Node");
-                }
-            } catch (Exception e) {
-                LOG.warn("Exception occurred while Adding Bridge", e);
-            }
+    private void readSystemProperties(Node node) {
+        String bname = bundleConfig.getOvsdbBridgeName();
+        if (!isBridgeOnOvsdbNode(node, bname)) {
+            addBridge(node, bname);
+            addPortToBridge(node, bname, bundleConfig.getOvsdbPortName());
+        } else {
+            LOG.trace("Bridge Already exists in the given Node: {}", bname);
         }
     }
 
     /**
-     * Read Node from the OVSDB path
+     * Read Node from the OVSDB path.
+     *
      * @param ovsdbNodeKey  A {@link NodeKey} instance.
      * @param bridgeName    The name of the bridge.
      * @return The {@link InstanceIdentifier} for the manager node.
@@ -312,7 +231,8 @@ public final class OVSDBEventHandler {
     }
 
     /**
-     * Create instance identifier
+     * Create instance identifier.
+     *
      * @param nodeId is instance of NodeId
      * @return The {@link OvsdbBridgeAugmentation} for the manager node.
      */
@@ -325,7 +245,8 @@ public final class OVSDBEventHandler {
     }
 
     /**
-     * Get the manager node for this bridge node
+     * Get the manager node for this bridge node.
+     *
      * @param ovsdbNodeId  A {@link NodeId} instance.
      * @param bridgeName   The name of the bridge.
      * @return The {@link OvsdbBridgeAugmentation} for the manager node.
@@ -336,7 +257,8 @@ public final class OVSDBEventHandler {
     }
 
     /**
-     * Get the connection information of the Node
+     * Get the connection information of the Node.
+     *
      * @param ovsdbNode is instance of Node
      * @return connectionInfo.
      */
@@ -353,7 +275,8 @@ public final class OVSDBEventHandler {
     }
 
     /**
-     * Add Bridge to the given Node
+     * Add Bridge to the given Node.
+     *
      * @param ovsdbNode the node object of the OVS instance
      * @param bridgeName the bridgename of the bridge to be added
      * @return true if the bridge add is successful.
@@ -396,7 +319,8 @@ public final class OVSDBEventHandler {
     }
 
     /**
-     * Delete Bridge on the given Node
+     * Delete Bridge on the given Node.
+     *
      * @param ovsdbNode the node object of the OVS instance
      * @param bridgeName the bridgename of the bridge to be removed
      * @return true if the bridge deleted is successful.
@@ -409,8 +333,9 @@ public final class OVSDBEventHandler {
 
     /**
      * Returns controller details of the Node.
+     *
      * @param  node is instance of Node to be added
-     * returns Controller information.
+     * @return Controller information.
      */
     private String getControllerTarget(Node node) {
         String setControllerStr = null;
@@ -437,6 +362,7 @@ public final class OVSDBEventHandler {
 
     /**
      * Return the particular port detail of the given Node.
+     *
      * @param bridgeNode  A {@link Node} instance.
      * @param portName    The name of the port.
      * @return OvsdbTerminationPointAugmentation.
@@ -455,6 +381,7 @@ public final class OVSDBEventHandler {
 
     /**
      * Returns all port details of the given Node.
+     *
      * @param node  A {@link Node} instance.
      * @return A list of {@link OvsdbTerminationPointAugmentation} instances.
      */
@@ -474,7 +401,8 @@ public final class OVSDBEventHandler {
     }
 
     /**
-      * Get the bridge node for a particular bridge from config DS
+      * Get the bridge node for a particular bridge from config DS.
+      *
       * @param node  A {@link Node} instance.
       * @param bridgeName   The name of the bridge.
       * @return The {@link Node} for the manager node.
@@ -490,6 +418,7 @@ public final class OVSDBEventHandler {
 
     /**
      * Add a Port to the existing bridge.
+     *
      * @param parentNode        A {@link Node} instance.
      * @param bridgeName  The name of the bridge.
      * @param portName    The name of the port.
@@ -524,7 +453,8 @@ public final class OVSDBEventHandler {
     }
 
     /**
-     * Set the manager node for the node
+     * Set the manager node for the node.
+     *
      * @param ovsdbBridgeAugmentationBuilder
      *    A {@link OvsdbBridgeAugmentationBuilder} instance.
      * @param ovsdbNodeKey  A {@link NodeKey} instance.
@@ -537,10 +467,11 @@ public final class OVSDBEventHandler {
     }
 
     /**
-     * Add the port to the node, returns true on success
-     * @param bridgeNode
-     * @param bridgeName
-     * @param portName
+     * Add the port to the node, returns true on success.
+     *
+     * @param bridgeNode  The target bridge node.
+     * @param bridgeName  The name of the bridge.
+     * @param portName    The name of the porrt.
      * @return true on success.
      */
     private Boolean addTerminationPoint(Node bridgeNode, String bridgeName, String portName) {
@@ -556,6 +487,8 @@ public final class OVSDBEventHandler {
     }
 
     /**
+     * Create instance identifier for the specified termination point.
+     *
      * @param node      A {@link Node} instance.
      * @param portName  The name of the port.
      * @return InstanceIdentifier.
@@ -575,6 +508,8 @@ public final class OVSDBEventHandler {
     }
 
     /**
+     * Create a list of controller entries.
+     *
      * @param targetString is String value.
      * @return ControllerEntry ,the Controller details to be set .
      */
@@ -588,6 +523,7 @@ public final class OVSDBEventHandler {
 
     /**
      * Returns the supported OpenFlow Protocol Type.
+     *
      * @return ProtocolEntry.
      */
     private List<ProtocolEntry> createMdsalProtocols() {
@@ -595,39 +531,24 @@ public final class OVSDBEventHandler {
         ImmutableBiMap<String, Class<? extends OvsdbBridgeProtocolBase>> mapper =
                 OVSDB_PROTOCOL_MAP.inverse();
         protocolList.add(new ProtocolEntryBuilder().
-                setProtocol((Class<? extends OvsdbBridgeProtocolBase>)mapper.get(OFP13)).build());
+                setProtocol((Class<? extends OvsdbBridgeProtocolBase>)mapper.get(PROTO_OF13)).build());
         return protocolList;
     }
 
     /**
-     * Stores the Fail Mode Type.
-     */
-    private static final ImmutableBiMap<Class<? extends OvsdbFailModeBase>, String> OVSDB_FAIL_MODE_MAP
-            = new ImmutableBiMap.Builder<Class<? extends OvsdbFailModeBase>, String>()
-            .put(OvsdbFailModeStandalone.class, "standalone")
-            .put(OvsdbFailModeSecure.class, FAILMODE_SECURE)
-            .build();
-
-    /**
-     * Stores the Supported Openflow Protocol Version.
-     */
-
-    private static final ImmutableBiMap<Class<? extends OvsdbBridgeProtocolBase>, String> OVSDB_PROTOCOL_MAP
-            = new ImmutableBiMap.Builder<Class<? extends OvsdbBridgeProtocolBase>, String>()
-            .put(OvsdbBridgeProtocolOpenflow13.class, OFP13)
-            .build();
-
-    /**
      * Read the node details of the provided node.
      * @param node instance of Node.
+     * @return  An {@link OvsdbNodeAugmentation} instance.
      */
     private OvsdbNodeAugmentation extractOvsdbNode(Node node) {
         return node.getAugmentation(OvsdbNodeAugmentation.class);
     }
 
     /**
+     * Return the node ID in the specified instance identifier.
+     *
      * @param iid instance of InstanceIdentifier.
-     * Returns the NodeId of the Controller.
+     * @return  NodeId of the Controller.
      */
     private NodeId createManagedNodeId(InstanceIdentifier<Node> iid) {
         NodeKey nodeKey = iid.firstKeyOf(Node.class);
@@ -635,9 +556,11 @@ public final class OVSDBEventHandler {
     }
 
     /**
+     * Determine whether the specified bridge is present in the node.
+     *
      * @param ovsdbNode Node value
      * @param bridgeName String value
-     * Returns false if bridge does not exist on the give node.
+     * @return  false if bridge does not exist on the give node.
      */
     private boolean isBridgeOnOvsdbNode(Node ovsdbNode, String bridgeName) {
         boolean found = false;
@@ -659,6 +582,7 @@ public final class OVSDBEventHandler {
 
     /**
      * Get OVSDB Ports.
+     *
      * @param node the OVS node on which the ports are to be read
      * @param action denodes the type of action to read for
      */
@@ -670,8 +594,8 @@ public final class OVSDBEventHandler {
         String value = "";
         if (operNode != null) {
             List<OvsdbTerminationPointAugmentation> ports = extractTerminationPointAugmentations(operNode);
-            OvsdbBridgeAugmentation bridgeNode = getBridgeNode(node,
-                    integrationBridgeName);
+            OvsdbBridgeAugmentation bridgeNode =
+                getBridgeNode(node, bundleConfig.getOvsdbBridgeName());
             for (OvsdbTerminationPointAugmentation port : ports) {
                 List<InterfaceExternalIds> pairs = port.getInterfaceExternalIds();
                 String ovsPortName = port.getName();
@@ -758,7 +682,8 @@ public final class OVSDBEventHandler {
 
     /**
      * Read NeutronPort.
-     * @param uuid
+     *
+     * @param uuid  The UUID associated with the neutron port.
      * @return  Neutron Port.
      */
     private Port readNeutronPort(String uuid) {
@@ -780,10 +705,11 @@ public final class OVSDBEventHandler {
 
     /**
      * Get all BridgeDetails.
-     * @param node
+     *
+     * @param node  A {@link Node} instance.
      * @return OvsdbBridgeAugmentation.
      */
-    private  OvsdbBridgeAugmentation extractBridgeAugmentation(Node node) {
+    private OvsdbBridgeAugmentation extractBridgeAugmentation(Node node) {
         if (node == null) {
             return null;
         }
@@ -792,8 +718,9 @@ public final class OVSDBEventHandler {
 
     /**
      * Get the Bridge Details for specified bridgeName.
-     * @param node
-     * @param bridgeName
+     *
+     * @param node        A {@link Node} instance.
+     * @param bridgeName  The name of the bridge.
      * @return OvsdbBridgeAugmentation.
      */
     private  OvsdbBridgeAugmentation getBridgeNode(Node node, String bridgeName) {

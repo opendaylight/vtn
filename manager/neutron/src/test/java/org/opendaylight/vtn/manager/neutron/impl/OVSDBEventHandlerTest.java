@@ -17,6 +17,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
+import static org.opendaylight.vtn.manager.neutron.impl.NeutronConfigTest.DEFAULT_BRIDGE_NAME;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.security.InvalidParameterException;
@@ -104,7 +106,8 @@ public final class OVSDBEventHandlerTest extends TestBase {
         dataBroker = mock(DataBroker.class);
         utils = Mockito.spy(new MdsalUtils(dataBroker));
         service = PowerMockito.mock(VTNManagerService.class);
-        handler = PowerMockito.spy(new OVSDBEventHandler(utils, service));
+        NeutronConfig cfg = new NeutronConfig();
+        handler = PowerMockito.spy(new OVSDBEventHandler(cfg, utils, service));
     }
 
     /**
@@ -119,15 +122,12 @@ public final class OVSDBEventHandlerTest extends TestBase {
         DataObject mockDataObject = PowerMockito.mock(DataObject.class);
         handler.nodeAdded(mockNode, mockDataObject);
         PowerMockito.verifyPrivate(handler, Mockito.times(1)).
-                                   invoke("createInternalNetworkForNeutron",
-                                    mockNode);
+            invoke("readSystemProperties", mockNode);
         PowerMockito.doThrow(new RuntimeException("Exception for testing...")).
-                        when(handler, "createInternalNetworkForNeutron",
-                             mockNode);
+            when(handler, "readSystemProperties", mockNode);
         handler.nodeAdded(mockNode, mockDataObject);
         PowerMockito.verifyPrivate(handler, Mockito.times(2)).
-                                   invoke("createInternalNetworkForNeutron",
-                                   mockNode);
+            invoke("readSystemProperties", mockNode);
     }
 
     /**
@@ -140,13 +140,11 @@ public final class OVSDBEventHandlerTest extends TestBase {
     public void testNodeRemoved() throws Exception {
         Node mockNode = PowerMockito.mock(Node.class);
         PowerMockito.doReturn(true).
-                        when(handler, "deleteBridge",
-                             Matchers.eq(mockNode), Matchers.eq(null));
+            when(handler, "deleteBridge",
+                 Matchers.eq(mockNode), Matchers.eq(DEFAULT_BRIDGE_NAME));
         handler.nodeRemoved(mockNode);
         PowerMockito.verifyPrivate(handler, Mockito.times(1)).
-                                   invoke("deleteBridge",
-                                   mockNode, null);
-
+            invoke("deleteBridge", mockNode, DEFAULT_BRIDGE_NAME);
     }
 
     /**
@@ -163,7 +161,8 @@ public final class OVSDBEventHandlerTest extends TestBase {
         when(utils.delete(Matchers.eq(LogicalDatastoreType.CONFIGURATION),
                           Matchers.eq(mockInstanceIdentifier))).
             thenReturn(true);
-        handler = PowerMockito.spy(new OVSDBEventHandler(utils, service));
+        NeutronConfig cfg = new NeutronConfig();
+        handler = PowerMockito.spy(new OVSDBEventHandler(cfg, utils, service));
         PowerMockito.doReturn(mockInstanceIdentifier).
             when(handler, "createInstanceIdentifier", null, "br-int");
         boolean output = Whitebox.invokeMethod(
@@ -314,7 +313,8 @@ public final class OVSDBEventHandlerTest extends TestBase {
         when(mockNode.getKey()).thenReturn(key);
         when(key.getNodeId()).thenReturn(mock(NodeId.class));
         MdsalUtils utils2 = PowerMockito.mock(MdsalUtils.class);
-        handler = new OVSDBEventHandler(utils2, service);
+        NeutronConfig cfg = new NeutronConfig();
+        handler = new OVSDBEventHandler(cfg, utils2, service);
         boolean output =
                 Whitebox.invokeMethod(handler,
                                      "addTerminationPoint", mockNode,
@@ -727,16 +727,19 @@ public final class OVSDBEventHandlerTest extends TestBase {
         when(utils.read(Matchers.eq(LogicalDatastoreType.OPERATIONAL),
                         Matchers.any(InstanceIdentifier.class))).
             thenReturn(mockOptional);
-        handler = PowerMockito.spy(new OVSDBEventHandler(utils, service));
+        NeutronConfig cfg = new NeutronConfig();
+        handler = PowerMockito.spy(new OVSDBEventHandler(cfg, utils, service));
         NodeId mockNodeId = mock(NodeId.class);
         mockNodeId = mockovsNode.getNodeId();
         PowerMockito.doReturn(mockInstanceIdentifier).
             when(handler, "createInstanceIdentifier", mockNodeId);
         when(mockOptional.orNull()).thenReturn(mockovsNode);
-        OvsdbBridgeAugmentation mockOvsdbBridgeAugmentation =
-            PowerMockito.mock(OvsdbBridgeAugmentation.class);
-        PowerMockito.doReturn(mockOvsdbBridgeAugmentation).
-            when(handler, "getBridgeNode", mockovsNode, null);
+        OvsdbBridgeAugmentation ovbridge =
+            new OvsdbBridgeAugmentationBuilder().
+            setBridgeName(new OvsdbBridgeName(DEFAULT_BRIDGE_NAME)).
+            build();
+        PowerMockito.doReturn(ovbridge).
+            when(handler, "getBridgeNode", mockovsNode, DEFAULT_BRIDGE_NAME);
         List<InterfaceExternalIds> mockListForExtenralIds =
                                      new ArrayList<InterfaceExternalIds>();
         InterfaceExternalIds mockInterfaceExternalIds =

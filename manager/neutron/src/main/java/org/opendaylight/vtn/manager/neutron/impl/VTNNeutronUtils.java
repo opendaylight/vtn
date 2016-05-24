@@ -106,4 +106,17 @@ public final class VTNNeutronUtils {
     public static String getInterfaceId(Port port) {
         return convertUUIDToKey(port.getUuid());
     }
+
+    /**
+     * Ensure that the given value is not {@code null}.
+     *
+     * @param value  The value to be tested.
+     * @param def    The default value.
+     * @param <T>    The type of the value.
+     * @return  {@code value} is returned if it is not {@code null}.
+     *          {@code def} is returned if {@code value} is {@code null}.
+     */
+    public static <T> T getNonNullValue(T value, T def) {
+        return (value == null) ? def : value;
+    }
 }

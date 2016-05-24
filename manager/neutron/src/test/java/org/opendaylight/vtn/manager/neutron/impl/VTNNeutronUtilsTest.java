@@ -11,6 +11,7 @@ package org.opendaylight.vtn.manager.neutron.impl;
 import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.convertUUIDToKey;
 import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getBridgeId;
 import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getInterfaceId;
+import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getNonNullValue;
 import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getTenantId;
 
 import java.util.Map.Entry;
@@ -211,6 +212,19 @@ public final class VTNNeutronUtilsTest extends TestBase {
         Uuid[] uuids = {null, new TestUuid()};
         for (Uuid uuid: uuids) {
             assertEquals(null, getInterfaceId(pb.setUuid(uuid).build()));
+        }
+    }
+
+    /**
+     * Test case for {@link VTNNeutronUtils#getNonNullValue(Object,Object)}.
+     */
+    @Test
+    public void testGetNonNullValue() {
+        String def = "default-value";
+        String[] values = {null, "value-1", "value-2"};
+        for (String value: values) {
+            String expected = (value == null) ? def : value;
+            assertSame(expected, getNonNullValue(value, def));
         }
     }
 }

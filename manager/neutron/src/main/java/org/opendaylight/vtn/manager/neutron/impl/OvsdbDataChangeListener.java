@@ -55,11 +55,9 @@ public final class OvsdbDataChangeListener
      * Class constructor setting the data broker.
      *
      * @param db   A {@link DataBroker} instance.
-     * @param md   A {@link MdsalUtils} instance.
-     * @param vtn  A {@link VTNManagerService} instance.
+     * @param ovh  An {@link OVSDBEventHandler} instance.
      */
-    public OvsdbDataChangeListener(DataBroker db, MdsalUtils md,
-                                   VTNManagerService vtn) {
+    public OvsdbDataChangeListener(DataBroker db, OVSDBEventHandler ovh) {
         InstanceIdentifier<Node> path = InstanceIdentifier.
             builder(NetworkTopology.class).
             child(Topology.class,
@@ -69,7 +67,7 @@ public final class OvsdbDataChangeListener
         listenerRegistration = db.registerDataChangeListener(
             LogicalDatastoreType.OPERATIONAL, path, this,
             DataChangeScope.SUBTREE);
-        ovsdbeventHandler = new OVSDBEventHandler(md, vtn);
+        ovsdbeventHandler = ovh;
     }
 
     /**
