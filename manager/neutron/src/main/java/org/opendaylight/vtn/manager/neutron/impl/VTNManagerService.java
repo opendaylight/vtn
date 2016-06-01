@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -639,8 +639,13 @@ public final class VTNManagerService {
             getRpcResult(portMapService.removePortMap(input));
         int code = result.getStatusCode();
         if (code != HTTP_OK) {
-            LOG.error("Failed to remove port mapping: input={}, err={}",
-                      input, result.getErrorMessage());
+            if (code == HTTP_NOT_FOUND) {
+                LOG.debug("Failed to remove port mapping because the " +
+                          "target interface is not present: input={}", input);
+            } else {
+                LOG.error("Failed to remove port mapping: input={}, err={}",
+                          input, result.getErrorMessage());
+            }
         } else if (LOG.isDebugEnabled()) {
             VtnUpdateType utype = result.getOutput().getStatus();
             String msg;

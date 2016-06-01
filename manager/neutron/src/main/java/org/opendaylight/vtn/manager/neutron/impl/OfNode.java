@@ -10,6 +10,7 @@ package org.opendaylight.vtn.manager.neutron.impl;
 
 import static org.opendaylight.vtn.manager.util.ByteUtils.HEX_RADIX;
 import static org.opendaylight.vtn.manager.util.ByteUtils.HEX_SEPARATOR_MATCHER;
+import static org.opendaylight.vtn.manager.util.NumberUtils.getUnsigned;
 
 import java.math.BigInteger;
 
@@ -57,7 +58,7 @@ public final class OfNode {
      * @param value  A long value that indicates a datapath ID.
      */
     public OfNode(long value) {
-        nodeNumber = BigInteger.valueOf(value);
+        nodeNumber = getUnsigned(value);
     }
 
     /**

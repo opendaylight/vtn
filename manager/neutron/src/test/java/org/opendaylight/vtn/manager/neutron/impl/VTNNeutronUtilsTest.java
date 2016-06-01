@@ -8,16 +8,24 @@
 
 package org.opendaylight.vtn.manager.neutron.impl;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
 import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.convertUUIDToKey;
 import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getBridgeId;
 import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getInterfaceId;
 import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getNonNullValue;
 import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getTenantId;
+import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.recordLog;
 
 import java.util.Map.Entry;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
+
+import org.slf4j.Logger;
 
 import org.junit.Test;
 
@@ -226,5 +234,103 @@ public final class VTNNeutronUtilsTest extends TestBase {
             String expected = (value == null) ? def : value;
             assertSame(expected, getNonNullValue(value, def));
         }
+    }
+
+    /**
+     * Test case for {@link VTNNeutronUtils#getUuid(Uuid)}.
+     */
+    @Test
+    public void testGetUuid() {
+        assertNull(VTNNeutronUtils.getUuid(null));
+        String[] ids = {
+            "bb77d774-0a7a-3faa-ba26-02c98fbb9d23",
+            "4032456a-5946-3bdb-905d-8cbbd9ce50c4",
+            "ca88a42b-87fe-4188-a296-e924d6ada37b",
+            "d1157a3f-643b-46b1-b3df-89944b1a2f7a",
+        };
+        for (String id: ids) {
+            assertEquals(id, VTNNeutronUtils.getUuid(new Uuid(id)));
+        }
+    }
+
+    /**
+     * Test case for {@link VTNNeutronUtils#recordLog(Logger,String,BaseAttributes)}.
+     */
+    @Test
+    public void testRecordLog1() {
+        Logger logger = mock(Logger.class);
+        String msg = "A log message 1";
+        String id = "79b630da-21e8-3394-81fe-27f942a686be";
+        Uuid uuid = new Uuid(id);
+        Network nw = new NetworkBuilder().setUuid(uuid).build();
+        when(logger.isTraceEnabled()).thenReturn(true);
+        recordLog(logger, msg, nw);
+        verify(logger).isTraceEnabled();
+        verify(logger).trace("{}: {}", msg, nw);
+        verifyNoMoreInteractions(logger);
+
+        logger = mock(Logger.class);
+        when(logger.isTraceEnabled()).thenReturn(false);
+        recordLog(logger, msg, nw);
+        verify(logger).isTraceEnabled();
+        verify(logger).info("{}: {}", msg, id);
+        verifyNoMoreInteractions(logger);
+
+        Port port = new PortBuilder().setUuid(uuid).build();
+        logger = mock(Logger.class);
+        when(logger.isTraceEnabled()).thenReturn(true);
+        recordLog(logger, msg, port);
+        verify(logger).isTraceEnabled();
+        verify(logger).trace("{}: {}", msg, port);
+        verifyNoMoreInteractions(logger);
+
+        logger = mock(Logger.class);
+        when(logger.isTraceEnabled()).thenReturn(false);
+        recordLog(logger, msg, port);
+        verify(logger).isTraceEnabled();
+        verify(logger).info("{}: {}", msg, id);
+        verifyNoMoreInteractions(logger);
+    }
+
+    /**
+     * Test case for {@link VTNNeutronUtils#recordLog(Logger,String,BaseAttributes,BaseAttributes)}.
+     */
+    @Test
+    public void testRecordLog2() {
+        Logger logger = mock(Logger.class);
+        String msg = "A log message 2";
+        String id = "47f7b036-edd4-421e-9250-59a9133b6b7f";
+        Uuid uuid = new Uuid(id);
+        Network nw1 = new NetworkBuilder().setUuid(uuid).build();
+        Network nw2 = new NetworkBuilder().setUuid(uuid).
+            setName("network 2").build();
+        when(logger.isTraceEnabled()).thenReturn(true);
+        recordLog(logger, msg, nw1, nw2);
+        verify(logger).isTraceEnabled();
+        verify(logger).trace("{}: before={}, after={}", msg, nw1, nw2);
+        verifyNoMoreInteractions(logger);
+
+        logger = mock(Logger.class);
+        when(logger.isTraceEnabled()).thenReturn(false);
+        recordLog(logger, msg, nw1, nw2);
+        verify(logger).isTraceEnabled();
+        verify(logger).info("{}: {}", msg, id);
+        verifyNoMoreInteractions(logger);
+
+        Port port1 = new PortBuilder().setUuid(uuid).build();
+        Port port2 = new PortBuilder().setUuid(uuid).setName("port 2").build();
+        logger = mock(Logger.class);
+        when(logger.isTraceEnabled()).thenReturn(true);
+        recordLog(logger, msg, port1, port2);
+        verify(logger).isTraceEnabled();
+        verify(logger).trace("{}: before={}, after={}", msg, port1, port2);
+        verifyNoMoreInteractions(logger);
+
+        logger = mock(Logger.class);
+        when(logger.isTraceEnabled()).thenReturn(false);
+        recordLog(logger, msg, port1, port2);
+        verify(logger).isTraceEnabled();
+        verify(logger).info("{}: {}", msg, id);
+        verifyNoMoreInteractions(logger);
     }
 }

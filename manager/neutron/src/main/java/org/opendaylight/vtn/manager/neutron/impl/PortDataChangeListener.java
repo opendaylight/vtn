@@ -13,22 +13,24 @@ import static java.net.HttpURLConnection.HTTP_OK;
 import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getBridgeId;
 import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getInterfaceId;
 import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getTenantId;
+import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.recordLog;
 
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.Map;
+import java.util.Collection;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
+import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.ModificationType;
+import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
-import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeUpdateMode;
@@ -41,8 +43,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.ports.rev150712.por
 import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.ports.rev150712.ports.attributes.ports.Port;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.rev150712.Neutron;
 
+/**
+ * Data tree change listener that listens neutron port changes.
+ */
 public final class PortDataChangeListener
-    implements AutoCloseable, DataChangeListener {
+    implements AutoCloseable, DataTreeChangeListener<Port> {
     /**
      * Logger instance.
      */
@@ -57,7 +62,7 @@ public final class PortDataChangeListener
     /**
      * ListenerRegistration Object to perform registration.
      */
-    private ListenerRegistration<DataChangeListener> registration;
+    private ListenerRegistration<PortDataChangeListener> registration;
 
     /**
      * Construct a new instance.
@@ -67,38 +72,16 @@ public final class PortDataChangeListener
      */
     public PortDataChangeListener(DataBroker db, VTNManagerService vtn) {
         vtnManager = vtn;
+
         InstanceIdentifier<Port> path = InstanceIdentifier.
             builder(Neutron.class).
             child(Ports.class).
             child(Port.class).
             build();
-        registration = db.registerDataChangeListener(
-            LogicalDatastoreType.CONFIGURATION, path, this,
-            DataChangeScope.SUBTREE);
-    }
-
-    /**
-     * Close the neutron port change listener.
-     */
-    public void close() {
-        registration.close();
-    }
-
-    @Override
-    public void onDataChanged(
-            AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> changes) {
-        createPort(changes);
-        deletePort(changes);
-    }
-
-    private void createPort(
-            AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> changes) {
-        for (Entry<InstanceIdentifier<?>, DataObject> newNetwork : changes.getCreatedData().entrySet()) {
-            if (newNetwork.getValue() instanceof Port) {
-                Port port = (Port)newNetwork.getValue();
-                createPort(port);
-            }
-        }
+        DataTreeIdentifier<Port> ident = new DataTreeIdentifier<>(
+            LogicalDatastoreType.CONFIGURATION, path);
+        registration = db.registerDataTreeChangeListener(ident, this);
+        LOG.debug("Neutron port listener has been registered.");
     }
 
     /**
@@ -108,8 +91,9 @@ public final class PortDataChangeListener
      */
     private void createPort(Port port) {
         if (port == null) {
-            LOG.warn("Unable to create null port.");
+            LOG.warn("Null neutron port has been created.");
         } else {
+            recordLog(LOG, "Neutron port has been created", port);
             UpdateVinterfaceInput input = new UpdateVinterfaceInputBuilder().
                 setTenantName(getTenantId(port)).
                 setBridgeName(getBridgeId(port)).
@@ -126,34 +110,15 @@ public final class PortDataChangeListener
     }
 
     /**
-     * Method invoked when Port is deleted.
-     * @param changes
-     */
-    private void deletePort(
-            AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> changes) {
-        Map<InstanceIdentifier<?>, DataObject> originalDataObject = changes.getOriginalData();
-        Set<InstanceIdentifier<?>> iiD = changes.getRemovedPaths();
-        for (InstanceIdentifier instanceIdentifier : iiD) {
-            try {
-                if (originalDataObject.get(instanceIdentifier) instanceof Port) {
-                    Port port = (Port)originalDataObject.get(instanceIdentifier);
-                    deletePort(port);
-                }
-            } catch (Exception e) {
-                LOG.error("Could not delete VTN Renderer :{} ", e);
-            }
-        }
-    }
-
-    /**
      * Delete the vBridge interface associated with the given port.
      *
      * @param port  An instance of deleted Neutron Port object.
      */
     private void deletePort(Port port) {
         if (port == null) {
-            LOG.warn("Unable to delete null port.");
+            LOG.warn("Null neutron port has been deleted.");
         } else {
+            recordLog(LOG, "Neutron port has been deleted", port);
             RemoveVinterfaceInput input = new RemoveVinterfaceInputBuilder().
                 setTenantName(getTenantId(port)).
                 setBridgeName(getBridgeId(port)).
@@ -162,6 +127,39 @@ public final class PortDataChangeListener
             int result = vtnManager.removeInterface(input);
             if (result != HTTP_OK) {
                 LOG.error("Failed to delete vBridge interface: port={}", port);
+            }
+        }
+    }
+
+    // AutoCloseable
+
+    /**
+     * Close the neutron port change listener.
+     */
+    @Override
+    public void close() {
+        registration.close();
+        LOG.debug("Neutron port listener has been closed.");
+    }
+
+    // DataTreeChangeListener
+
+    /**
+     * Invoked when the specified data tree has been modified.
+     *
+     * @param changes  A collection of data tree modifications.
+     */
+    @Override
+    public void onDataTreeChanged(
+        @Nonnull Collection<DataTreeModification<Port>> changes) {
+        for (DataTreeModification<Port> change: changes) {
+            DataObjectModification<Port> mod = change.getRootNode();
+            ModificationType modType = mod.getModificationType();
+            Port before = mod.getDataBefore();
+            if (modType == ModificationType.DELETE) {
+                deletePort(before);
+            } else if (before == null) {
+                createPort(mod.getDataAfter());
             }
         }
     }

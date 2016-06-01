@@ -8,6 +8,8 @@
 
 package org.opendaylight.vtn.manager.neutron.impl;
 
+import org.slf4j.Logger;
+
 import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.attrs.rev150712.BaseAttributes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.networks.rev150712.networks.attributes.networks.Network;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.ports.rev150712.ports.attributes.ports.Port;
@@ -18,6 +20,11 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.
  * Base utility functions used by neutron handlers.
  */
 public final class VTNNeutronUtils {
+    /**
+     * A format string used to log a pair of message and argument.
+     */
+    static final String  FORMAT_MSG_ARG = "{}: {}";
+
     /**
      * UUID version number position.
      */
@@ -118,5 +125,50 @@ public final class VTNNeutronUtils {
      */
     public static <T> T getNonNullValue(T value, T def) {
         return (value == null) ? def : value;
+    }
+
+    /**
+     * Return an UUID string in the given instance.
+     *
+     * @param uuid  An {@link Uuid} instance.
+     * @return  An UUID string in the given instance.
+     */
+    public static String getUuid(Uuid uuid) {
+        return (uuid == null) ? null : uuid.getValue();
+    }
+
+    /**
+     * Record a log message about the given object.
+     *
+     * @param logger  A logger instance.
+     * @param msg     A log message.
+     * @param obj     A {@link BaseAttributes} instance to be logged.
+     */
+    public static void recordLog(Logger logger, String msg,
+                                 BaseAttributes obj) {
+        if (logger.isTraceEnabled()) {
+            logger.trace(FORMAT_MSG_ARG, msg, obj);
+        } else {
+            // Record UUID only.
+            logger.info(FORMAT_MSG_ARG, msg, obj.getUuid().getValue());
+        }
+    }
+
+    /**
+     * Record a log message that indicates the given object was changed.
+     *
+     * @param logger  A logger instance.
+     * @param msg     A log message.
+     * @param before  An object before modification.
+     * @param after   An object after modification.
+     */
+    public static void recordLog(Logger logger, String msg,
+                                 BaseAttributes before, BaseAttributes after) {
+        if (logger.isTraceEnabled()) {
+            logger.trace("{}: before={}, after={}", msg, before, after);
+        } else {
+            // Record UUID only.
+            logger.info(FORMAT_MSG_ARG, msg, after.getUuid().getValue());
+        }
     }
 }
