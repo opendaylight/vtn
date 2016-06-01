@@ -23,6 +23,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.vtn.v
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.neutron.networks.rev150712.networks.attributes.networks.Network;
 
+/**
+ * Handle events that notifies Neutron network changes.
+ */
 public final class NetworkHandler {
     /**
      * Logger instance.
@@ -84,9 +87,8 @@ public final class NetworkHandler {
             LOG.error("Shared option - {} not supported in vtn", shared);
             return;
         }
-        /**
-         * if vbridge description has changed update the description
-         */
+
+        // if vbridge description has changed update the description
         boolean modify = canModifyBridge(network, bconf);
         String networkDesc = network.getName();
         if (modify) {
