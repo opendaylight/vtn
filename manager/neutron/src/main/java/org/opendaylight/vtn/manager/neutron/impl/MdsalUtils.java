@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -19,6 +19,7 @@ import com.google.common.util.concurrent.CheckedFuture;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
+import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.binding.api.WriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
@@ -46,6 +47,82 @@ public final class MdsalUtils {
      * Data broker SAL service.
      */
     private final DataBroker  dataBroker;
+
+    /**
+     * Read the specified data in the MD-SAL datastore using the given
+     * transaction.
+     *
+     * @param rtx   Readable transaction for MD-SAL datastore.
+     * @param store {@link LogicalDatastoreType} to read
+     * @param path  {@link InstanceIdentifier} for path to read
+     * @param <D>   The data object type
+     * @return  An {@link Optional} instance that contains the result.
+     */
+    public static <D extends DataObject> Optional<D> read(
+        final ReadTransaction rtx, final LogicalDatastoreType store,
+        final InstanceIdentifier<D> path)  {
+        try {
+            return readImpl(rtx, store, path);
+        } catch (ReadFailedException e) {
+            readFailed(store, path, e);
+        } catch (TimeoutException e) {
+            readTimedOut(store, path, e);
+        }
+
+        return Optional.<D>absent();
+    }
+
+    /**
+     * Executes read as a blocking transaction.
+     *
+     * @param rtx   Readable transaction for MD-SAL datastore.
+     * @param store {@link LogicalDatastoreType} to read
+     * @param path  {@link InstanceIdentifier} for path to read
+     * @param <D>   The data object type
+     * @return  An {@link Optional} instance that contains the result.
+     * @throws ReadFailedException
+     *    Datastore read failed.
+     * @throws TimeoutException
+     *    Read operation timed out.
+     */
+    private static <D extends DataObject> Optional<D> readImpl(
+        final ReadTransaction rtx, final LogicalDatastoreType store,
+        final InstanceIdentifier<D> path)
+        throws ReadFailedException, TimeoutException {
+        CheckedFuture<Optional<D>, ReadFailedException> future =
+            rtx.read(store, path);
+        return future.checkedGet(READ_TIMEOUT, TimeUnit.SECONDS);
+    }
+
+    /**
+     * Record datastore read error.
+     *
+     * @param store  A {@link LogicalDatastoreType} instance.
+     * @param path   An {@link InstanceIdentifier} instance.
+     * @param e      A {@link ReadFailedException} instance that indicates
+     *               the cause of error.
+     */
+    private static void readFailed(final LogicalDatastoreType store,
+                                   final InstanceIdentifier<?> path,
+                                   final ReadFailedException e) {
+        String msg = "Failed to read data: store=" + store + ", path=" + path;
+        LOG.error(msg, e);
+    }
+
+    /**
+     * Record datastore read timeout.
+     *
+     * @param store  A {@link LogicalDatastoreType} instance.
+     * @param path   An {@link InstanceIdentifier} instance.
+     * @param e      A {@link TimeoutException} instance that indicates
+     *               the cause of error.
+     */
+    private static void readTimedOut(final LogicalDatastoreType store,
+                                     final InstanceIdentifier<?> path,
+                                     final TimeoutException e) {
+        String msg = "Read timed out: store=" + store + ", path=" + path;
+        LOG.error(msg, e);
+    }
 
     /**
      * Class constructor setting the data broker.
@@ -138,16 +215,11 @@ public final class MdsalUtils {
     public <D extends DataObject> Optional<D> read(
         final LogicalDatastoreType store, final InstanceIdentifier<D> path)  {
         try (ReadOnlyTransaction rtx = dataBroker.newReadOnlyTransaction()) {
-            CheckedFuture<Optional<D>, ReadFailedException> future =
-                rtx.read(store, path);
-            return future.checkedGet(READ_TIMEOUT, TimeUnit.SECONDS);
+            return readImpl(rtx, store, path);
         } catch (ReadFailedException e) {
-            String msg = "Failed to read data: store=" + store + ", path=" +
-                path;
-            LOG.error(msg, e);
+            readFailed(store, path, e);
         } catch (TimeoutException e) {
-            String msg = "Read timed out: store=" + store + ", path=" + path;
-            LOG.error(msg, e);
+            readTimedOut(store, path, e);
         }
 
         return Optional.<D>absent();

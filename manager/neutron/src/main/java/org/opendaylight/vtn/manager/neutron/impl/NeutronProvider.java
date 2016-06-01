@@ -30,6 +30,10 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.CheckedFuture;
 
+/**
+ * Implementation of vtn-neutron module that associates Neutron network with
+ * VTN.
+ */
 public class NeutronProvider implements BindingAwareProvider, AutoCloseable {
     /**
      * The logger instance.
@@ -87,26 +91,43 @@ public class NeutronProvider implements BindingAwareProvider, AutoCloseable {
         OVSDBEventHandler ovh = new OVSDBEventHandler(bundleConfig, md, vtn);
         ovsdbDataChangeListener = new OvsdbDataChangeListener(db, ovh);
         neutronNetworkChangeListener =
-            new NeutronNetworkChangeListener(db, vtn);
+            new NeutronNetworkChangeListener(db, new NetworkHandler(vtn));
         initializeOvsdbTopology(LogicalDatastoreType.OPERATIONAL);
         initializeOvsdbTopology(LogicalDatastoreType.CONFIGURATION);
         portDataChangeListener = new PortDataChangeListener(db, vtn);
     }
 
-     /**
+    /**
      * Method invoked when the open flow switch is Added.
      */
     @Override
-    public void close() throws Exception {
-        LOG.trace("Neutron provider Closed()");
-        ovsdbDataChangeListener.close();
-        neutronNetworkChangeListener.close();
-        portDataChangeListener.close();
+    public void close() {
+        OvsdbDataChangeListener ovsdbListener = ovsdbDataChangeListener;
+        if (ovsdbListener != null) {
+            ovsdbDataChangeListener = null;
+            ovsdbListener.close();
+        }
+
+        NeutronNetworkChangeListener neutronListener =
+            neutronNetworkChangeListener;
+        if (neutronListener != null) {
+            neutronNetworkChangeListener = null;
+            neutronListener.close();
+        }
+
+        PortDataChangeListener portListener = portDataChangeListener;
+        if (portListener != null) {
+            portDataChangeListener = null;
+            portListener.close();
+        }
+
+        LOG.info("Neutron provider has been closed.");
     }
 
-     /**
+    /**
      * Method invoked when the open flow switch is Added.
-     * @param type
+     *
+     * @param type  The type of the logical datastore.
      */
     private void initializeOvsdbTopology(LogicalDatastoreType type) {
         TopologyId topoId = new TopologyId(new Uri("ovsdb:1"));
@@ -131,10 +152,11 @@ public class NeutronProvider implements BindingAwareProvider, AutoCloseable {
         }
     }
 
-     /**
+    /**
      * Method invoked when the open flow switch is Added.
-     * @param transaction
-     * @param type
+     *
+     * @param transaction  Read-write transaction for MD-SAL datastore.
+     * @param type         The type of the logical datastore.
      */
     private void initializeTopology(ReadWriteTransaction transaction, LogicalDatastoreType type) {
         InstanceIdentifier<NetworkTopology> path = InstanceIdentifier.create(NetworkTopology.class);

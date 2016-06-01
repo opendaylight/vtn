@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -14,24 +14,42 @@ import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import org.junit.Assert;
 
+import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.ModificationType;
+import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
+import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
+import org.opendaylight.controller.md.sal.common.api.data.TransactionCommitFailedException;
 
 import org.opendaylight.yangtools.yang.binding.DataObject;
+import org.opendaylight.yangtools.yang.binding.Identifiable;
+import org.opendaylight.yangtools.yang.binding.Identifier;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier.IdentifiableItem;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier.Item;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier.PathArgument;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcError.ErrorType;
 import org.opendaylight.yangtools.yang.common.RpcError;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
+
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.Uuid;
 
 /**
  * Abstract base class for JUnit tests.
@@ -147,6 +165,34 @@ public abstract class TestBase extends Assert {
     }
 
     /**
+     * Create a future associated with successful completion of the MD-SAL
+     * datastore submit procedure.
+     *
+     * @return  A {@link CheckedFuture} instance.
+     */
+    protected static CheckedFuture<Void, TransactionCommitFailedException> getSubmitFuture() {
+        ListenableFuture<Void> f = Futures.immediateFuture(null);
+        DataStoreExceptionMapper mapper =
+            DataStoreExceptionMapper.getInstance();
+        return Futures.makeChecked(f, mapper);
+    }
+
+    /**
+     * Create a future associated with the MD-SAL datastore submit procedure
+     * with failure.
+     *
+     * @param cause  A throwable which indicates the cause of error.
+     * @return  A {@link CheckedFuture} instance.
+     */
+    protected static CheckedFuture<Void, TransactionCommitFailedException> getSubmitFuture(
+        Throwable cause) {
+        ListenableFuture<Void> f = Futures.immediateFailedFuture(cause);
+        DataStoreExceptionMapper mapper =
+            DataStoreExceptionMapper.getInstance();
+        return Futures.makeChecked(f, mapper);
+    }
+
+    /**
      * Return a future that contains RPC result that indicates successful
      * completion.
      *
@@ -157,5 +203,187 @@ public abstract class TestBase extends Assert {
     protected static <O> Future<RpcResult<O>> getRpcFuture(O output) {
         RpcResult<O> result = RpcResultBuilder.success(output).build();
         return Futures.immediateFuture(result);
+    }
+
+    /**
+     * Create a new data object modification for an unkeyed data tree node.
+     *
+     * <p>
+     *   Note that specifying {@code null} to both {@code before} and
+     *   {@code after} results in undefined behavior.
+     * </p>
+     *
+     * @param before    The data object before modification.
+     *                  If {@code null}, returned data object modification will
+     *                  indicate a node creation event.
+     * @param after     The data object after modification.
+     *                  If {@code null}, returned data object modification will
+     *                  indicate a node removal event.
+     * @param children  A collection of modified direct children.
+     *                  {@code null} is treated as an empty collection.
+     * @param <T>       The type of the data object.
+     * @return  A data object modification.
+     */
+    public static final <T extends DataObject> DataObjectModification<T> newItemModification(
+        T before, T after, Collection<DataObjectModification<?>> children) {
+        ModificationType modType;
+        T obj;
+        if (before == null) {
+            modType = ModificationType.WRITE;
+            obj = after;
+        } else if (after == null) {
+            modType = ModificationType.DELETE;
+            obj = before;
+        } else {
+            modType = ModificationType.SUBTREE_MODIFIED;
+            obj = before;
+        }
+
+        @SuppressWarnings("unchecked")
+        Class<T> type = (Class<T>)obj.getImplementedInterface();
+        return newItemModification(type, modType, before, after, children);
+    }
+
+    /**
+     * Create a new data object modification for an unkeyed data tree node.
+     *
+     * @param type      A class that specifies the type of data object.
+     * @param modType   The type of modification.
+     * @param before    The data object before modification.
+     * @param after     The data object after modification.
+     * @param children  A collection of modified direct children.
+     *                  {@code null} is treated as an empty collection.
+     * @param <T>       The type of the data object.
+     * @return  A data object modification.
+     */
+    public static final <T extends DataObject> DataObjectModification<T> newItemModification(
+        Class<T> type, ModificationType modType, T before, T after,
+        Collection<DataObjectModification<?>> children) {
+        Item<T> item = new Item<>(type);
+        return newDataModification(type, modType, item, before, after,
+                                   children);
+    }
+
+    /**
+     * Create a new data object modification for a keyed data tree node.
+     *
+     * <p>
+     *   Note that specifying {@code null} to both {@code before} and
+     *   {@code after} results in undefined behavior.
+     * </p>
+     *
+     * @param before    The data object before modification.
+     * @param after     The data object after modification.
+     * @param children  A collection of modified direct children.
+     *                  {@code null} is treated as an empty collection.
+     * @param <T>       The type of the data object.
+     * @param <K>       The type of the key.
+     * @return  A data object modification.
+     */
+    public static final <T extends DataObject & Identifiable<K>, K extends Identifier<T>> DataObjectModification<T> newKeyedModification(
+        T before, T after, Collection<DataObjectModification<?>> children) {
+        ModificationType modType;
+        T obj;
+        if (before == null) {
+            modType = ModificationType.WRITE;
+            obj = after;
+        } else if (after == null) {
+            modType = ModificationType.DELETE;
+            obj = before;
+        } else {
+            modType = ModificationType.SUBTREE_MODIFIED;
+            obj = before;
+        }
+
+        @SuppressWarnings("unchecked")
+        Class<T> type = (Class<T>)obj.getImplementedInterface();
+        K key = obj.getKey();
+        return newKeyedModification(type, modType, key, before, after,
+                                    children);
+    }
+
+    /**
+     * Create a new data object modification for a keyed data tree node.
+     *
+     * @param type      A class that specifies the type of data object.
+     * @param modType   The type of modification.
+     * @param key       The key of the data object.
+     * @param before    The data object before modification.
+     * @param after     The data object after modification.
+     * @param children  A collection of modified direct children.
+     *                  {@code null} is treated as an empty collection.
+     * @param <T>       The type of the data object.
+     * @param <K>       The type of the key.
+     * @return  A data object modification.
+     */
+    public static final <T extends DataObject & Identifiable<K>, K extends Identifier<T>> DataObjectModification<T> newKeyedModification(
+        Class<T> type, ModificationType modType, K key, T before, T after,
+        Collection<DataObjectModification<?>> children) {
+        IdentifiableItem<T, K> item = new IdentifiableItem<>(type, key);
+        return newDataModification(type, modType, item, before, after,
+                                   children);
+    }
+
+    /**
+     * Create a new data object modification for a data tree node.
+     *
+     * @param type      A class that specifies the type of data object.
+     * @param modType   The type of modification.
+     * @param ident     The identifier for the data object.
+     * @param before    The data object before modification.
+     * @param after     The data object after modification.
+     * @param children  A collection of modified direct children.
+     *                  {@code null} is treated as an empty collection.
+     * @param <T>       The type of the data object.
+     * @return  A data object modification.
+     */
+    public static final <T extends DataObject> DataObjectModification<T> newDataModification(
+        Class<T> type, ModificationType modType, PathArgument ident, T before,
+        T after, Collection<DataObjectModification<?>> children) {
+        @SuppressWarnings("unchecked")
+        DataObjectModification<T> mod = mock(DataObjectModification.class);
+        when(mod.getIdentifier()).thenReturn(ident);
+        when(mod.getDataType()).thenReturn(type);
+        when(mod.getModificationType()).thenReturn(modType);
+        when(mod.getDataBefore()).thenReturn(before);
+        when(mod.getDataAfter()).thenReturn(after);
+
+        Collection<DataObjectModification<?>> c = (children == null)
+            ? Collections.<DataObjectModification<?>>emptyList()
+            : ImmutableList.copyOf(children);
+        when(mod.getModifiedChildren()).thenReturn(c);
+
+        return mod;
+    }
+
+    /**
+     * Create a new data tree modification.
+     *
+     * @param path   The path to the root node.
+     * @param store  The type of the logical datastore.
+     * @param mod    The data object modification for the root node.
+     * @param <T>    The type of the root node.
+     * @return  A data tree modification.
+     */
+    public static final <T extends DataObject> DataTreeModification<T> newTreeModification(
+        InstanceIdentifier<T> path, LogicalDatastoreType store,
+        DataObjectModification<T> mod) {
+        @SuppressWarnings("unchecked")
+        DataTreeModification<T> change = mock(DataTreeModification.class);
+        DataTreeIdentifier<T> ident = new DataTreeIdentifier<>(store, path);
+        when(change.getRootPath()).thenReturn(ident);
+        when(change.getRootNode()).thenReturn(mod);
+        return change;
+    }
+
+    /**
+     * Construct a new UUID.
+     *
+     * @param id  A string representation of UUID.
+     * @return  An {@link Uuid} instance if {@code id} is not {@code null}.
+     *          {@code null} if {@code id} is {@code null}.
+     */
+    public static Uuid newUuid(String id) {
+        return (id == null) ? null : new Uuid(id);
     }
 }
