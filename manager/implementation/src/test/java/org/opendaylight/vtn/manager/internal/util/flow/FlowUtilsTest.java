@@ -120,6 +120,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowModFlags;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowRef;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.GenericFlowAttributes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.OutputPortValues;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Instructions;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.InstructionsBuilder;
@@ -2369,6 +2370,22 @@ public class FlowUtilsTest extends TestBase {
                 FlowUtils.removedLog(logger, desc, fc);
                 verify(logger).debug(format, desc, flowId);
             }
+        }
+    }
+
+    /**
+     * Test case for {@link FlowUtils#getTableId(GenericFlowAttributes)}.
+     */
+    @Test
+    public void testGetTableId() {
+        // Table ID should be zero if it is not present in flow.
+        GenericFlowAttributes flow = new FlowBuilder().build();
+        assertEquals((short)0, FlowUtils.getTableId(flow));
+
+        short[] tableIds = {0, 1, 34, 67, 145, 255};
+        for (short table: tableIds) {
+            flow = new FlowBuilder().setTableId(table).build();
+            assertEquals(table, FlowUtils.getTableId(flow));
         }
     }
 

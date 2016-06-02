@@ -682,6 +682,10 @@ public final class FlowTable {
                 setRemovedReason(REMOVED_REASON_DELETE).
                 setMatch(match).
                 setNode(nref);
+            if (ofVersion == VtnOpenflowVersion.OF10) {
+                // OF 1.0 has no table ID.
+                builder.setTableId(null);
+            }
             ofMockProvider.publish(builder.build());
         }
     }

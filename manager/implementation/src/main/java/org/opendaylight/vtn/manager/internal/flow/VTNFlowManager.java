@@ -9,6 +9,7 @@
 package org.opendaylight.vtn.manager.internal.flow;
 
 import static org.opendaylight.vtn.manager.internal.util.flow.FlowUtils.COOKIE_MISS;
+import static org.opendaylight.vtn.manager.internal.util.flow.FlowUtils.TABLE_ID;
 
 import java.util.List;
 import java.util.Timer;
@@ -740,6 +741,36 @@ public final class VTNFlowManager extends SalNotificationListener
         }
     }
 
+    /**
+     * Check whether the given FLOW_REMOVED notification is valid or not.
+     *
+     * @param removed  FLOW_REMOVED notification.
+     * @return  A {@link SalNode} instance that specifies the target switch
+     *          if the given FLOW_REMOVED notification is valid.
+     *          {@code null} otherwise.
+     */
+    private SalNode checkFlowRemoved(SwitchFlowRemoved removed) {
+        SalNode result = null;
+        if (removed != null) {
+            SalNode snode = SalNode.create(removed.getNode());
+            if (snode != null) {
+                short table = FlowUtils.getTableId(removed);
+                if (table == TABLE_ID) {
+                    result = snode;
+                } else {
+                    ignoreFlowRemoved(VTNLogLevel.DEBUG, "Unused flow table",
+                                      snode, removed);
+                }
+            } else {
+                LOG.debug("Ignore FLOW_REMOVED: Invalid node: {}", removed);
+            }
+        } else {
+            LOG.warn("Null switch-flow-removed notification.");
+        }
+
+        return result;
+    }
+
     // AutoCloseable
 
     /**
@@ -939,38 +970,31 @@ public final class VTNFlowManager extends SalNotificationListener
      */
     @Override
     public void onSwitchFlowRemoved(SwitchFlowRemoved notification) {
-        if (notification == null) {
-            LOG.warn("Null switch-flow-removed notification.");
-            return;
-        }
+        SalNode snode = checkFlowRemoved(notification);
+        if (snode != null) {
+            FlowCookie cookie = notification.getCookie();
+            if (!COOKIE_MISS.equals(cookie)) {
+                VtnFlowId flowId = FlowUtils.getVtnFlowId(cookie);
+                if (flowId == null) {
+                    ignoreFlowRemoved(VTNLogLevel.DEBUG, "Unexpected cookie",
+                                      snode, notification);
+                } else if (removedCookies.putIfAbsent(cookie, flowId) != null) {
+                    ignoreFlowRemoved(VTNLogLevel.TRACE, "Already removed",
+                                      snode, notification);
+                } else {
+                    Timer timer = vtnProvider.getTimer();
+                    CookieExpireTask task = new CookieExpireTask(cookie);
+                    timer.schedule(task, REMOVED_COOKIE_EXPIRE);
 
-        SalNode snode = SalNode.create(notification.getNode());
-        if (snode == null) {
-            LOG.debug("Ignore FLOW_REMOVED: Invalid node: {}", notification);
-            return;
-        }
-
-        FlowCookie cookie = notification.getCookie();
-        if (!COOKIE_MISS.equals(cookie)) {
-            VtnFlowId flowId = FlowUtils.getVtnFlowId(cookie);
-            if (flowId == null) {
-                ignoreFlowRemoved(VTNLogLevel.DEBUG, "Unexpected cookie",
-                                  snode, notification);
-            } else if (removedCookies.putIfAbsent(cookie, flowId) != null) {
-                ignoreFlowRemoved(VTNLogLevel.TRACE, "Already removed",
-                                  snode, notification);
-            } else {
-                Timer timer = vtnProvider.getTimer();
-                CookieExpireTask task = new CookieExpireTask(cookie);
-                timer.schedule(task, REMOVED_COOKIE_EXPIRE);
-
-                // Remove VTN data flow that contains removed flow entry.
-                removeFlows(new RemovedFlowRemover(flowId, snode));
+                    // Remove VTN data flow that contains removed flow entry.
+                    removeFlows(new RemovedFlowRemover(flowId, snode));
+                }
+            } else if (needTableMissFlow(snode)) {
+                // Install table miss flow entry again.
+                LOG.warn("Table miss flow entry has been removed: node={}",
+                         snode);
+                addTableMissFlow(snode);
             }
-        } else if (needTableMissFlow(snode)) {
-            // Install table miss flow entry again.
-            LOG.warn("Table miss flow entry has been removed: node={}", snode);
-            addTableMissFlow(snode);
         }
     }
 

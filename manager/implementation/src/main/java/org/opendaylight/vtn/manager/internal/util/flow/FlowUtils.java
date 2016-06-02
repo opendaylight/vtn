@@ -73,6 +73,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowModFlags;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowRef;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.GenericFlowAttributes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.OutputPortValues;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Instructions;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match;
@@ -1057,5 +1058,19 @@ public final class FlowUtils {
         BigInteger flowId = fc.getDataFlow().getFlowId().getValue();
         logger.debug("VTN data flow has been removed: remover={}, id={}",
                      desc, flowId);
+    }
+
+    /**
+     * Return the table ID configured in the given MD-SAL flow.
+     *
+     * @param flow  The MD-SAL flow.
+     * @return  The table ID in the given MD-SAL flow.
+     *          Note that this method returns zero if no table ID is present
+     *          in the given MD-SAL flow. This is because OF 1.0 flow does not
+     *          have table ID.
+     */
+    public static short getTableId(@Nonnull GenericFlowAttributes flow) {
+        Short id = flow.getTableId();
+        return (id == null) ? (short)0 : id.shortValue();
     }
 }
