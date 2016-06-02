@@ -29,57 +29,6 @@ public final class ChangedData<T extends DataObject>
     private final T  oldValue;
 
     /**
-     * Create a new {@link ChangedData} instance.
-     *
-     * @param type  A class which indicates the target data type.
-     * @param path  An instance identifier that specifies the data location in
-     *              the MD-SAL datastore.
-     * @param data  A data object that contains the current value.
-     * @param old   A data object prior to the change.
-     * @param <D>   The type of the target data.
-     * @return  A {@link ChangedData} instance on success.
-     *          {@code null} if the target data type of {@code path} does not
-     *          match the type specified by {@code type}.
-     * @throws DataTypeMismatchException
-     *    The type of {@code data} or {@code old} does not match the expected
-     *    target type.
-     */
-    public static <D extends DataObject> ChangedData<D> create(
-        Class<D> type, InstanceIdentifier<?> path, DataObject data,
-        DataObject old) throws DataTypeMismatchException {
-        InstanceIdentifier<D> id = DataStoreUtils.cast(type, path);
-        return (id == null) ? null : create(id, data, old);
-    }
-
-    /**
-     * Create a new {@link ChangedData} instance.
-     *
-     * @param path  An instance identifier that specifies the data location in
-     *              the MD-SAL datastore.
-     * @param data  A data object that contains the current value.
-     * @param old   A data object prior to the change.
-     * @param <D>   The type of the target data.
-     * @return  A {@link ChangedData} instance.
-     * @throws DataTypeMismatchException
-     *    The type of {@code data} or {@code old} does not match the expected
-     *    target type.
-     * @throws IllegalArgumentException
-     *    {@code path} is {@code null}.
-     */
-    public static <D extends DataObject> ChangedData<D> create(
-        InstanceIdentifier<D> path, DataObject data, DataObject old)
-        throws DataTypeMismatchException {
-        if (path == null) {
-            throw new IllegalArgumentException(
-                "Instance identifier cannot be null.");
-        }
-
-        D v = MiscUtils.checkedCast(path.getTargetType(), data);
-        D ov = MiscUtils.checkedCast(path.getTargetType(), old);
-        return new ChangedData<D>(path, v, ov);
-    }
-
-    /**
      * Construct a new instance.
      *
      * @param id    An instance identifier that specifies the data location in

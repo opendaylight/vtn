@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -13,7 +13,6 @@ import org.opendaylight.vtn.manager.internal.TxTask;
 import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
 import org.opendaylight.yangtools.yang.binding.DataObject;
@@ -39,15 +38,12 @@ public abstract class InventoryMaintainer<T extends DataObject, C>
      *                VTN inventory.
      * @param broker  A {@link DataBroker} service instance.
      * @param clz     A {@link Class} instance that represents the target type.
-     * @param scope   A {@link DataChangeScope} instance used to register
-     *                data change listener.
      */
     protected InventoryMaintainer(TxQueue queue, DataBroker broker,
-                                  Class<T> clz, DataChangeScope scope) {
+                                  Class<T> clz) {
         super(clz);
         txQueue = queue;
-        registerListener(broker, LogicalDatastoreType.OPERATIONAL, scope,
-                         false);
+        registerListener(broker, LogicalDatastoreType.OPERATIONAL, false);
     }
 
     /**

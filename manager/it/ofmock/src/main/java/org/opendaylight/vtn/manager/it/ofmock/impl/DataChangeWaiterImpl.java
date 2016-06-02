@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,17 +8,20 @@
 
 package org.opendaylight.vtn.manager.it.ofmock.impl;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.Collection;
+
+import javax.annotation.Nonnull;
 
 import org.opendaylight.vtn.manager.it.ofmock.DataChangeWaiter;
 import org.opendaylight.vtn.manager.it.ofmock.DataStoreUtils;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
+import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.ModificationType;
+import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
@@ -31,7 +34,7 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
  * @param <T>  Type of the target object.
  */
 public final class DataChangeWaiterImpl<T extends DataObject>
-    implements DataChangeWaiter<T>, DataChangeListener {
+    implements DataChangeWaiter<T>, DataTreeChangeListener<T> {
     /**
      * The ofmock provider service.
      */
@@ -45,7 +48,7 @@ public final class DataChangeWaiterImpl<T extends DataObject>
     /**
      * Registration of the data change listener.
      */
-    private final ListenerRegistration<DataChangeListener>  listener;
+    private final ListenerRegistration<?>  listener;
 
     /**
      * Revision number of the target data.
@@ -75,8 +78,8 @@ public final class DataChangeWaiterImpl<T extends DataObject>
         targetPath = path;
 
         DataBroker broker = ofmock.getDataBroker();
-        listener = broker.registerDataChangeListener(
-            store, path, this, DataChangeScope.SUBTREE);
+        DataTreeIdentifier<T> ident = new DataTreeIdentifier<>(store, path);
+        listener = broker.registerDataTreeChangeListener(ident, this);
 
         // Read the current data.
         try (ReadOnlyTransaction rtx = ofmock.newReadOnlyTransaction()) {
@@ -87,49 +90,6 @@ public final class DataChangeWaiterImpl<T extends DataObject>
                 }
             }
         }
-    }
-
-    /**
-     * Return the target data object if it has been created or updated.
-     *
-     * @param ev  An {@link AsyncDataChangeEvent} instance.
-     * @return  A data object if the specified data has been created or
-     *          updated. {@code null} otherwise.
-     */
-    private T getUpdatedData(
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
-        Class<T> type = targetPath.getTargetType();
-
-        Map<InstanceIdentifier<?>, DataObject> created = ev.getCreatedData();
-        if (created != null) {
-            DataObject data = created.get(targetPath);
-            if (type.isInstance(data)) {
-                return type.cast(data);
-            }
-        }
-
-        Map<InstanceIdentifier<?>, DataObject> updated = ev.getUpdatedData();
-        if (updated != null) {
-            DataObject data = updated.get(targetPath);
-            if (type.isInstance(data)) {
-                return type.cast(data);
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Determine whether the target data object has been removed or not.
-     *
-     * @param ev  An {@link AsyncDataChangeEvent} instance.
-     * @return  {@code true} if the target data object has been removed.
-     *          {@code false} otherwise.
-     */
-    private boolean isRemoved(
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
-        Set<InstanceIdentifier<?>> removed = ev.getRemovedPaths();
-        return (removed != null && removed.contains(targetPath));
     }
 
     /**
@@ -190,18 +150,21 @@ public final class DataChangeWaiterImpl<T extends DataObject>
         ofMock.remove(this);
     }
 
-    // DataChangeListener
+    // DataTreeChangeListener
 
     /**
-     * Invoked when at least an entry in the datastore has been changed.
+     * Invoked when the specified data tree has been modified.
      *
-     * @param ev  An {@link AsyncDataChangeEvent} instance.
+     * @param changes  A collection of data tree modifications.
      */
     @Override
-    public void onDataChanged(
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
-        T data = getUpdatedData(ev);
-        if (data != null || isRemoved(ev)) {
+    public void onDataTreeChanged(
+        @Nonnull Collection<DataTreeModification<T>> changes) {
+        for (DataTreeModification<T> change: changes) {
+            DataObjectModification<T> mod = change.getRootNode();
+            ModificationType modType = mod.getModificationType();
+            T data = (modType == ModificationType.DELETE)
+                ? null : mod.getDataAfter();
             setValue(data);
         }
     }

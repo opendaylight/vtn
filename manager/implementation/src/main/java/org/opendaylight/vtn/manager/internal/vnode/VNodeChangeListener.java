@@ -84,12 +84,71 @@ abstract class VNodeChangeListener<T extends DataObject> {
     /**
      * Cast the given data.
      *
-     * @param data    A {@link ChangedData} instance which contains the
-     *                changed data.
+     * @param data  A {@link ChangedData} instance which contains the
+     *              changed data.
      * @return  Casted data.
      */
     final ChangedData<T> cast(ChangedData<?> data) {
         return data.checkType(targetType);
+    }
+
+    /**
+     * Determine whether the specified virtual node was updated or not.
+     *
+     * <p>
+     *   By default this method always returns {@code false} so that
+     *   {@link #onUpdated(VTenantChange, ChangedData)} is never called.
+     *   Subclass needs to override this method if it takes interest in the
+     *   change of the target virtual node.
+     * </p>
+     *
+     * @param data  A {@link ChangedData} instance that contains values before
+     *              and after modification.
+     * @return  {@code true} if the target data was updated.
+     *          {@code false} otherwise.
+     */
+    boolean isUpdated(ChangedData<?> data) {
+        return false;
+    }
+
+    /**
+     * Determine whether the tatget virtual node should be treated as a
+     * leaf node or not.
+     *
+     * <p>
+     *   If this method returns {@code true}, modifications for children of
+     *   the specified data type are simply ignored.
+     * </p>
+     * <p>
+     *   By default this method always returns {@code true}.
+     *   Subclass may want to override this behavior.
+     * </p>
+     *
+     * @return  {@code true} if the target virtual node should be treated as a
+     *          leaf node. {@code false} otherwise.
+     */
+    boolean isLeafNode() {
+        return true;
+    }
+
+    /**
+     * Invoked when a virtual node has been updated.
+     *
+     * <p>
+     *   By default this method does nothing.
+     *   Subclass needs to override this method if it takes interest in the
+     *   change of the target virtual node.
+     * </p>
+     * <p>
+     *   Note that this method is never called unless
+     *   {@link #isUpdated(ChangedData)} is overridden.
+     * </p>
+     *
+     * @param ectx  A {@link VTenantChange} instance.
+     * @param data  A {@link ChangedData} instance which contains the changed
+     *              data.
+     */
+    void onUpdated(VTenantChange ectx, ChangedData<?> data) {
     }
 
     /**
@@ -100,15 +159,6 @@ abstract class VNodeChangeListener<T extends DataObject> {
      *              created data.
      */
     abstract void onCreated(VTenantChange ectx, IdentifiedData<?> data);
-
-    /**
-     * Invoked when a virtual node has been updated.
-     *
-     * @param ectx  A {@link VTenantChange} instance.
-     * @param data  A {@link ChangedData} instance which contains the
-     *              changed data.
-     */
-    abstract void onUpdated(VTenantChange ectx, ChangedData<?> data);
 
     /**
      * Invoked when a virtual node has been removed.

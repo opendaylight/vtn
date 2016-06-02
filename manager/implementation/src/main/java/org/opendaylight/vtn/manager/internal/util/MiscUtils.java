@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -32,6 +33,8 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
+
+import org.opendaylight.yangtools.yang.binding.Identifiable;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
@@ -270,27 +273,6 @@ public final class MiscUtils {
     }
 
     /**
-     * Cast an object type to the specified type.
-     *
-     * @param type  A class that indicates the target type.
-     * @param obj   An object to be casted.
-     * @param <T>   The target type.
-     * @return  A casted object if the given object can be casted to the
-     *          specified type.
-     * @throws DataTypeMismatchException
-     *    The type of {@code obj} does not match the type specified by
-     *    {@code type}.
-     */
-    public static <T> T checkedCast(Class<T> type, Object obj)
-        throws DataTypeMismatchException {
-        if (type.isInstance(obj)) {
-            return type.cast(obj);
-        }
-
-        throw new DataTypeMismatchException(type, obj);
-    }
-
-    /**
      * Convert all of the characters in the given string to lower case.
      *
      * @param str  A string to be converted.
@@ -463,6 +445,46 @@ public final class MiscUtils {
         }
 
         return set1.isEmpty();
+    }
+
+    /**
+     * Determine whether the given two keyed data object lists are identical
+     * or not.
+     *
+     * <p>
+     *   This method compares the given collections as map keyed by the key
+     *   defined by {@link Identifiable}. Duplicate elements in the given
+     *   collections are ignored.
+     * </p>
+     *
+     * @param c1   The first collections to be compared.
+     *             {@code null} is treated as an empty collection.
+     *             Note that the collection must not contain {@code null}.
+     * @param c2   The second collections to be compared.
+     *             {@code null} is treated as an empty collection.
+     *             Note that the collection must not contain {@code null}.
+     * @param <T>  The type of elements in the given collections.
+     * @return  {@code true} only if {@code c1} and {@code c2} are identical.
+     */
+    public static <T extends Identifiable<?>> boolean equalsAsMap(
+        Collection<T> c1, Collection<T> c2) {
+        Map<Object, T> map = new HashMap<>();
+        if (c1 != null) {
+            for (T o: c1) {
+                map.put(o.getKey(), o);
+            }
+        }
+
+        if (c2 != null) {
+            for (T o: c2) {
+                T removed = map.remove(o.getKey());
+                if (!o.equals(removed)) {
+                    return false;
+                }
+            }
+        }
+
+        return map.isEmpty();
     }
 
     /**

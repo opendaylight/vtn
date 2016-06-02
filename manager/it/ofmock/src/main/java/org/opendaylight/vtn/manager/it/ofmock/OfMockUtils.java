@@ -9,9 +9,13 @@
 package org.opendaylight.vtn.manager.it.ofmock;
 
 import java.math.BigInteger;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
+import org.opendaylight.yangtools.yang.binding.Identifiable;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnOpenflowVersion;
@@ -345,6 +349,46 @@ public final class OfMockUtils {
                 ", actual=" + value;
             throw new IllegalArgumentException(emsg);
         }
+    }
+
+    /**
+     * Determine whether the given two keyed data object lists are identical
+     * or not.
+     *
+     * <p>
+     *   This method compares the given collections as map keyed by the key
+     *   defined by {@link Identifiable}. Duplicate elements in the given
+     *   collections are ignored.
+     * </p>
+     *
+     * @param c1   The first collections to be compared.
+     *             {@code null} is treated as an empty collection.
+     *             Note that the collection must not contain {@code null}.
+     * @param c2   The second collections to be compared.
+     *             {@code null} is treated as an empty collection.
+     *             Note that the collection must not contain {@code null}.
+     * @param <T>  The type of elements in the given collections.
+     * @return  {@code true} only if {@code c1} and {@code c2} are identical.
+     */
+    public static <T extends Identifiable<?>> boolean equalsAsMap(
+        Collection<T> c1, Collection<T> c2) {
+        Map<Object, T> map = new HashMap<>();
+        if (c1 != null) {
+            for (T o: c1) {
+                map.put(o.getKey(), o);
+            }
+        }
+
+        if (c2 != null) {
+            for (T o: c2) {
+                T removed = map.remove(o.getKey());
+                if (!o.equals(removed)) {
+                    return false;
+                }
+            }
+        }
+
+        return map.isEmpty();
     }
 
     /**

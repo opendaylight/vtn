@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
 
+import javax.annotation.Nonnull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,12 +42,9 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcUtils;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 
-import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 
@@ -238,8 +237,7 @@ public final class PathMapManager
         super(VtnPathMap.class);
         vtnProvider = provider;
         registerListener(provider.getDataBroker(),
-                         LogicalDatastoreType.OPERATIONAL,
-                         DataChangeScope.SUBTREE, true);
+                         LogicalDatastoreType.OPERATIONAL, true);
     }
 
     /**
@@ -279,8 +277,7 @@ public final class PathMapManager
      * {@inheritDoc}
      */
     @Override
-    protected GlobalPathMapChange enterEvent(
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
+    protected GlobalPathMapChange enterEvent() {
         return new GlobalPathMapChange();
     }
 
@@ -329,6 +326,15 @@ public final class PathMapManager
             ectx.addRemoved(index);
             PathMapUtils.log(LOG, data, VtnUpdateType.REMOVED);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected boolean isUpdated(@Nonnull VtnPathMap before,
+                                @Nonnull VtnPathMap after) {
+        return PathMapUtils.isUpdated(before, after);
     }
 
     /**

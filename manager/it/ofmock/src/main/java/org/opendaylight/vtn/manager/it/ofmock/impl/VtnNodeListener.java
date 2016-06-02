@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -11,21 +11,19 @@ package org.opendaylight.vtn.manager.it.ofmock.impl;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.annotation.Nonnull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
-import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnNodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNodeKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
  * {@code VtnNodeListener} maintains physical switch information detected by
@@ -92,8 +90,7 @@ public final class VtnNodeListener extends DataStoreListener<VtnNode, Void> {
      */
     public VtnNodeListener(DataBroker broker) {
         super(VtnNode.class);
-        registerListener(broker, LogicalDatastoreType.OPERATIONAL,
-                         DataChangeScope.ONE);
+        registerListener(broker, LogicalDatastoreType.OPERATIONAL);
     }
 
     /**
@@ -198,13 +195,13 @@ public final class VtnNodeListener extends DataStoreListener<VtnNode, Void> {
     private synchronized void update(InstanceIdentifier<?> path,
                                      VtnNode vnode) {
         String nid = getIdentifier(path);
-        if (vnode == null) {
-            switches.remove(nid);
-        } else {
-            switches.add(nid);
-        }
+        boolean changed = (vnode == null)
+            ? switches.remove(nid)
+            : switches.add(nid);
 
-        notifyAll();
+        if (changed) {
+            notifyAll();
+        }
     }
 
     // DataStoreListener
@@ -213,8 +210,7 @@ public final class VtnNodeListener extends DataStoreListener<VtnNode, Void> {
      * {@inheritDoc}
      */
     @Override
-    protected Void enterEvent(
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
+    protected Void enterEvent() {
         return null;
     }
 
@@ -273,7 +269,9 @@ public final class VtnNodeListener extends DataStoreListener<VtnNode, Void> {
      * {@inheritDoc}
      */
     @Override
-    protected Set<VtnUpdateType> getRequiredEvents() {
-        return null;
+    protected boolean isUpdated(@Nonnull VtnNode before,
+                                @Nonnull VtnNode after) {
+        // Return true so that onUpdated() is called.
+        return true;
     }
 }

@@ -17,6 +17,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import static org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtilsTest.PATH_POLICY_MAX;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,7 +42,6 @@ import org.opendaylight.vtn.manager.internal.util.vnode.VTenantIdentifier;
 import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.vtn.manager.internal.TestVnodeName;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
-import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtilsTest;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -126,8 +127,7 @@ public class PathMapUtilsTest extends TestBase {
         };
         List<Integer> policies = new ArrayList<>();
         policies.add(null);
-        for (int policy = 0; policy <= PathPolicyUtilsTest.PATH_POLICY_MAX;
-             policy++) {
+        for (int policy = 0; policy <= PATH_POLICY_MAX; policy++) {
             policies.add(Integer.valueOf(policy));
         }
 
@@ -255,8 +255,7 @@ public class PathMapUtilsTest extends TestBase {
         // Invalid path policy ID.
         Integer[] invalidPolicies = {
             Integer.MIN_VALUE, -9999999, -333333, -2, -1,
-            PathPolicyUtilsTest.PATH_POLICY_MAX + 1,
-            PathPolicyUtilsTest.PATH_POLICY_MAX + 2,
+            PATH_POLICY_MAX + 1, PATH_POLICY_MAX + 2,
             10000000, 222222222, Integer.MAX_VALUE,
         };
         vcondition = new VnodeName(condition);
@@ -705,8 +704,7 @@ public class PathMapUtilsTest extends TestBase {
                 // Not present.
                 vpm = null;
             } else {
-                int policy =
-                    random.nextInt(PathPolicyUtilsTest.PATH_POLICY_MAX + 1);
+                int policy = random.nextInt(PATH_POLICY_MAX + 1);
                 VnodeName vcond = new VnodeName("fcond" + index);
                 vpm = new VtnPathMapBuilder().
                     setIndex(idx).setCondition(vcond).setPolicy(policy).
@@ -890,8 +888,7 @@ public class PathMapUtilsTest extends TestBase {
                 notPresent.add(idx);
                 vpm = null;
             } else {
-                int policy =
-                    random.nextInt(PathPolicyUtilsTest.PATH_POLICY_MAX + 1);
+                int policy = random.nextInt(PATH_POLICY_MAX + 1);
                 VnodeName vcond = new VnodeName("fcond" + index);
                 vpm = new VtnPathMapBuilder().
                     setIndex(idx).setCondition(vcond).setPolicy(policy).
@@ -939,6 +936,52 @@ public class PathMapUtilsTest extends TestBase {
             read(oper, vtnPath1);
         verify(rtx, times(maps.size())).
             read(oper, vtnPath2);
+    }
+
+    /**
+     * Test case for {@link PathMapUtils#isUpdated(VtnPathMap, VtnPathMap)}.
+     */
+    @Test
+    public void testIsUpdated() {
+        VtnPathMapBuilder builder = new VtnPathMapBuilder();
+        VtnPathMap old = builder.build();
+        VtnPathMap vpm = builder.build();
+        assertFalse(PathMapUtils.isUpdated(old, vpm));
+
+        // Change flow condition name.
+        String[] conditions = {"cond", "cond_1", "cond_2"};
+        for (String cond: conditions) {
+            vpm = builder.setCondition(new VnodeName(cond)).build();
+            assertTrue(PathMapUtils.isUpdated(old, vpm));
+            old = builder.build();
+            assertFalse(PathMapUtils.isUpdated(old, vpm));
+        }
+
+        // Change path policy ID.
+        for (int policy = 0; policy <= PATH_POLICY_MAX; policy++) {
+            vpm = builder.setPolicy(policy).build();
+            assertTrue(PathMapUtils.isUpdated(old, vpm));
+            old = builder.build();
+            assertFalse(PathMapUtils.isUpdated(old, vpm));
+        }
+
+        // Change idle-timeout.
+        int[] idles = {1, 300, 4567, 60000};
+        for (int idle: idles) {
+            vpm = builder.setIdleTimeout(idle).build();
+            assertTrue(PathMapUtils.isUpdated(old, vpm));
+            old = builder.build();
+            assertFalse(PathMapUtils.isUpdated(old, vpm));
+        }
+
+        // Change hard-timeout.
+        int[] hards = {2, 123, 6789, 65535};
+        for (int hard: hards) {
+            vpm = builder.setHardTimeout(hard).build();
+            assertTrue(PathMapUtils.isUpdated(old, vpm));
+            old = builder.build();
+            assertFalse(PathMapUtils.isUpdated(old, vpm));
+        }
     }
 
     /**
@@ -1495,8 +1538,7 @@ public class PathMapUtilsTest extends TestBase {
             int index = random.nextInt(maxIndex);
             if (index != 0) {
                 Integer idx = Integer.valueOf(index);
-                int policy =
-                    random.nextInt(PathPolicyUtilsTest.PATH_POLICY_MAX + 1);
+                int policy = random.nextInt(PATH_POLICY_MAX + 1);
                 VnodeName vcond = new VnodeName("fcond" + index);
                 VtnPathMap vpm = new VtnPathMapBuilder().
                     setIndex(idx).setCondition(vcond).setPolicy(policy).

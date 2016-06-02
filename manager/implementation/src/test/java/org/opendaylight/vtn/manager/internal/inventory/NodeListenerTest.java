@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -9,6 +9,7 @@
 package org.opendaylight.vtn.manager.internal.inventory;
 
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
@@ -17,6 +18,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -37,13 +39,11 @@ import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
-import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
@@ -74,7 +74,7 @@ public class NodeListenerTest extends TestBase {
      * Mock-up of {@link ListenerRegistration}.
      */
     @Mock
-    private ListenerRegistration<DataChangeListener>  registration;
+    private ListenerRegistration<DataTreeChangeListener<FlowCapableNode>>  registration;
 
     /**
      * A {@link NodeListener} instance for test.
@@ -88,9 +88,11 @@ public class NodeListenerTest extends TestBase {
     public void setUp() {
         initMocks(this);
 
-        when(dataBroker.registerDataChangeListener(
-                 any(LogicalDatastoreType.class), any(InstanceIdentifier.class),
-                 any(NodeListener.class), any(DataChangeScope.class))).
+        Class<DataTreeIdentifier> idtype = DataTreeIdentifier.class;
+        Class<DataTreeChangeListener> ltype = DataTreeChangeListener.class;
+        when(dataBroker.registerDataTreeChangeListener(
+                 (DataTreeIdentifier<FlowCapableNode>)any(idtype),
+                 (DataTreeChangeListener<FlowCapableNode>)isA(ltype))).
             thenReturn(registration);
         nodeListener = new NodeListener(txQueue, dataBroker);
     }
@@ -101,10 +103,9 @@ public class NodeListenerTest extends TestBase {
     @Test
     public void testConstructor() {
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
-        DataChangeScope scope = DataChangeScope.SUBTREE;
-        InstanceIdentifier<FlowCapableNode> path = getPath();
-        verify(dataBroker).
-            registerDataChangeListener(oper, path, nodeListener, scope);
+        DataTreeIdentifier<FlowCapableNode> ident =
+            new DataTreeIdentifier<>(oper, getPath());
+        verify(dataBroker).registerDataTreeChangeListener(ident, nodeListener);
         verifyZeroInteractions(registration);
         verify(txQueue).postFirst(any(TxTask.class));
         verifyNoMoreInteractions(txQueue);
@@ -112,14 +113,13 @@ public class NodeListenerTest extends TestBase {
     }
 
     /**
-     * Test case for {@link NodeListener#enterEvent(AsyncDataChangeEvent)}.
+     * Test case for {@link NodeListener#enterEvent()}.
      */
     @Test
     public void testEnterEvent() {
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev = null;
-        NodeUpdateTask task = nodeListener.enterEvent(ev);
+        NodeUpdateTask task = nodeListener.enterEvent();
         assertTrue(task instanceof NodeUpdateTask);
-        NodeUpdateTask task1 = nodeListener.enterEvent(ev);
+        NodeUpdateTask task1 = nodeListener.enterEvent();
         assertTrue(task1 instanceof NodeUpdateTask);
         assertNotSame(task, task1);
     }
@@ -281,14 +281,29 @@ public class NodeListenerTest extends TestBase {
     }
 
     /**
-     * Test case for {@link NodeListener#getRequiredEvents()}.
+     * Test case for {@link NodeListener#isRequiredEvent(VtnUpdateType)}.
      */
     @Test
-    public void testGetRequiredEvents() {
-        Set<VtnUpdateType> events = nodeListener.getRequiredEvents();
-        assertEquals(2, events.size());
-        assertEquals(true, events.contains(VtnUpdateType.CREATED));
-        assertEquals(true, events.contains(VtnUpdateType.REMOVED));
+    public void testIsRequiredEvent() {
+        Set<VtnUpdateType> required = EnumSet.of(
+            VtnUpdateType.CREATED, VtnUpdateType.REMOVED);
+        for (VtnUpdateType type: VtnUpdateType.values()) {
+            assertEquals(required.contains(type),
+                         nodeListener.isRequiredEvent(type));
+        }
+    }
+
+    /**
+     * Test case for
+     * {@link NodeListener#isUpdated(FlowCapableNode,FlowCapableNode)}.
+     */
+    @Test
+    public void testIsUpdated() {
+        // isUpdated() must return false unconditionally.
+        FlowCapableNode fcn1 = mock(FlowCapableNode.class);
+        FlowCapableNode fcn2 = mock(FlowCapableNode.class);
+        assertEquals(false, nodeListener.isUpdated(fcn1, fcn2));
+        verifyZeroInteractions(fcn1, fcn2);
     }
 
     /**

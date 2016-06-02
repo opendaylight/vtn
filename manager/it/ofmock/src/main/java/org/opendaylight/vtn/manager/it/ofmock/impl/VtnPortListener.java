@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,26 +8,26 @@
 
 package org.opendaylight.vtn.manager.it.ofmock.impl;
 
+import static org.opendaylight.vtn.manager.it.ofmock.OfMockUtils.equalsAsMap;
+
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
-import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnNodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPortKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
  * {@code VtnPortListener} maintains physical switch port information detected
@@ -126,8 +126,7 @@ public final class VtnPortListener extends DataStoreListener<VtnPort, Void> {
      */
     public VtnPortListener(DataBroker broker) {
         super(VtnPort.class);
-        registerListener(broker, LogicalDatastoreType.OPERATIONAL,
-                         DataChangeScope.SUBTREE);
+        registerListener(broker, LogicalDatastoreType.OPERATIONAL);
     }
 
     /**
@@ -267,8 +266,7 @@ public final class VtnPortListener extends DataStoreListener<VtnPort, Void> {
      * {@inheritDoc}
      */
     @Override
-    protected Void enterEvent(
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
+    protected Void enterEvent() {
         return null;
     }
 
@@ -327,7 +325,19 @@ public final class VtnPortListener extends DataStoreListener<VtnPort, Void> {
      * {@inheritDoc}
      */
     @Override
-    protected Set<VtnUpdateType> getRequiredEvents() {
-        return null;
+    protected boolean isUpdated(@Nonnull VtnPort before,
+                                @Nonnull VtnPort after) {
+        // Check to see if scalar fields are changed.
+        boolean changed = !(Objects.equals(before.getName(),
+                                           after.getName()) &&
+                            Objects.equals(before.isEnabled(),
+                                           after.isEnabled()) &&
+                            Objects.equals(before.getCost(), after.getCost()));
+        if (!changed) {
+            // Check to see if port-link list is changed.
+            changed = !equalsAsMap(before.getPortLink(), after.getPortLink());
+        }
+
+        return changed;
     }
 }

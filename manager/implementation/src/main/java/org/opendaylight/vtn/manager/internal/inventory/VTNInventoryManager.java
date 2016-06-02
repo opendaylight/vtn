@@ -9,9 +9,12 @@
 package org.opendaylight.vtn.manager.internal.inventory;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +22,6 @@ import org.slf4j.LoggerFactory;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
-import org.opendaylight.vtn.manager.internal.util.IdentifierTargetComparator;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.MultiDataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
@@ -27,11 +29,8 @@ import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.tx.TxQueueImpl;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
-import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnNodes;
@@ -50,17 +49,6 @@ public final class VTNInventoryManager
      */
     private static final Logger  LOG =
         LoggerFactory.getLogger(VTNInventoryManager.class);
-
-    /**
-     * Comparator for the target type of instance identifier that specifies
-     * the order of data change event processing.
-     *
-     * <p>
-     *   This comparator associates {@link VtnPort} class with the order
-     *   smaller than {@link VtnNode}.
-     * </p>
-     */
-    private static final IdentifierTargetComparator  PATH_COMPARATOR;
 
     /**
      * VTN Manager provider service.
@@ -91,15 +79,6 @@ public final class VTNInventoryManager
         new ConcurrentHashMap<>();
 
     /**
-     * Initialize static fields.
-     */
-    static {
-        PATH_COMPARATOR = new IdentifierTargetComparator().
-            setOrder(VtnNode.class, 1).
-            setOrder(VtnPort.class, 2);
-    }
-
-    /**
      * Construct a new instance.
      *
      * @param provider  A VTN Manager provider service.
@@ -119,8 +98,7 @@ public final class VTNInventoryManager
             addCloseable(new TopologyListener(queue, broker));
 
             // Register VTN inventory listener.
-            registerListener(broker, LogicalDatastoreType.OPERATIONAL,
-                             DataChangeScope.SUBTREE, true);
+            registerListener(broker, LogicalDatastoreType.OPERATIONAL, true);
         } catch (Exception e) {
             String msg = "Failed to initialize inventory service.";
             LOG.error(msg, e);
@@ -359,15 +337,7 @@ public final class VTNInventoryManager
      * {@inheritDoc}
      */
     @Override
-    protected IdentifierTargetComparator getComparator() {
-        return PATH_COMPARATOR;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected boolean getOrder(VtnUpdateType type) {
+    protected boolean isDepth(@Nonnull VtnUpdateType type) {
         // Removal events should be processed from inner to outer.
         // Other events should be processed from outer to inner.
         return (type != VtnUpdateType.REMOVED);
@@ -377,8 +347,71 @@ public final class VTNInventoryManager
      * {@inheritDoc}
      */
     @Override
-    protected InventoryEvents enterEvent(
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
+    protected boolean isRequiredType(@Nonnull Class<?> type) {
+        return (VtnNode.class.equals(type) || VtnPort.class.equals(type));
+    }
+
+    /**
+     * Determine whether the specified type of the tree node should be
+     * treated as a leaf node.
+     *
+     * <p>
+     *   This method returns {@code true} only if the specified type is
+     *   {@link VtnPort}.
+     * </p>
+     *
+     * @param type  A class that specifies the type of the tree node.
+     * @return  {@code true} if the specified type of the tree node should
+     *          be treated as a leaf node. {@code false} otherwise.
+     */
+    @Override
+    protected boolean isLeafNode(@Nonnull Class<?> type) {
+        return VtnPort.class.equals(type);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected boolean isUpdated(InventoryEvents ectx, ChangedData<?> data) {
+        boolean changed;
+        ChangedData<VtnNode> nodeData = data.checkType(VtnNode.class);
+        if (nodeData != null) {
+            // Check to see if openflow-version is changed.
+            VtnNode old = nodeData.getOldValue();
+            VtnNode vnode = nodeData.getValue();
+            changed = (old.getOpenflowVersion() != vnode.getOpenflowVersion());
+        } else {
+            ChangedData<VtnPort> portData = data.checkType(VtnPort.class);
+            if (portData != null) {
+                VtnPort old = portData.getOldValue();
+                VtnPort vport = portData.getValue();
+
+                // Check to see if scalar fields are changed.
+                changed = !(Objects.equals(old.getName(), vport.getName()) &&
+                            Objects.equals(old.isEnabled(),
+                                           vport.isEnabled()) &&
+                            Objects.equals(old.getCost(), vport.getCost()));
+                if (!changed) {
+                    // Check to see if port-link list is changed.
+                    changed = !MiscUtils.equalsAsMap(
+                        old.getPortLink(), vport.getPortLink());
+                }
+            } else {
+                // This should never happen.
+                data.unexpected(LOG, VtnUpdateType.CHANGED);
+                changed = false;
+            }
+        }
+
+        return changed;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected InventoryEvents enterEvent() {
         return new InventoryEvents();
     }
 

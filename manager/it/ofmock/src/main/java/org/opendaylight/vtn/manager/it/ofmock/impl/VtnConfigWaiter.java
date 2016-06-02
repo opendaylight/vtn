@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,7 +8,7 @@
 
 package org.opendaylight.vtn.manager.it.ofmock.impl;
 
-import java.util.Set;
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,15 +19,11 @@ import org.opendaylight.vtn.manager.it.ofmock.DataStoreUtils;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
-import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfig;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
  * {@code VtnConfigWaiter} observes the vtn-config container, and wait for
@@ -61,7 +57,7 @@ public final class VtnConfigWaiter extends DataStoreListener<VtnConfig, Void> {
 
         DataBroker broker = ofmock.getDataBroker();
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
-        registerListener(broker, oper, DataChangeScope.SUBTREE);
+        registerListener(broker, oper);
 
         // Read the current value.
         try (ReadOnlyTransaction rtx = broker.newReadOnlyTransaction()) {
@@ -121,8 +117,7 @@ public final class VtnConfigWaiter extends DataStoreListener<VtnConfig, Void> {
      * {@inheritDoc}
      */
     @Override
-    protected Void enterEvent(
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
+    protected Void enterEvent() {
         return null;
     }
 
@@ -182,7 +177,8 @@ public final class VtnConfigWaiter extends DataStoreListener<VtnConfig, Void> {
      * {@inheritDoc}
      */
     @Override
-    protected Set<VtnUpdateType> getRequiredEvents() {
-        return null;
+    protected boolean isUpdated(@Nonnull VtnConfig before,
+                                @Nonnull VtnConfig after) {
+        return !before.equals(after);
     }
 }

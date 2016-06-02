@@ -11,8 +11,11 @@ package org.opendaylight.vtn.manager.internal.flow.cond;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Future;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +30,6 @@ import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
-import org.opendaylight.vtn.manager.internal.util.IdentifierTargetComparator;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.MultiDataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
@@ -42,12 +44,9 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcUtils;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 
-import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 
@@ -80,24 +79,9 @@ public final class FlowCondManager
         LoggerFactory.getLogger(FlowCondManager.class);
 
     /**
-     * Comparator for the target type of instance identifier that specifies
-     * the order of data change event processing.
-     */
-    private static final IdentifierTargetComparator  PATH_COMPARATOR;
-
-    /**
      * VTN Manager provider service.
      */
     private final VTNManagerProvider  vtnProvider;
-
-    /**
-     * Initialize static fields.
-     */
-    static {
-        PATH_COMPARATOR = new IdentifierTargetComparator().
-            setOrder(VtnFlowMatch.class, 1).
-            setOrder(VtnFlowCondition.class, 2);
-    }
 
     /**
      * MD-SAL transaction task to load flow condition configurations.
@@ -267,8 +251,7 @@ public final class FlowCondManager
         super(VtnFlowCondition.class);
         vtnProvider = provider;
         registerListener(provider.getDataBroker(),
-                         LogicalDatastoreType.OPERATIONAL,
-                         DataChangeScope.SUBTREE, true);
+                         LogicalDatastoreType.OPERATIONAL, true);
     }
 
     /**
@@ -305,20 +288,27 @@ public final class FlowCondManager
     /**
      * Handle creation or removal event for a flow match.
      *
+     * @param ectx  A {@link FlowCondChange} instance which keeps changes to
+     *              the configuration.
      * @param data  An {@link IdentifiedData} instance that contains a flow
      *              match.
      * @param type  {@link VtnUpdateType#CREATED} on added,
      *              {@link VtnUpdateType#REMOVED} on removed.
      */
-    private void onMatchChanged(IdentifiedData<?> data, VtnUpdateType type) {
+    private void onMatchChanged(FlowCondChange ectx, IdentifiedData<?> data,
+                                VtnUpdateType type) {
         IdentifiedData<VtnFlowMatch> mdata =
             data.checkType(VtnFlowMatch.class);
         if (mdata != null) {
             InstanceIdentifier<VtnFlowMatch> path = mdata.getIdentifier();
+            String name = FlowCondUtils.getName(path);
             VtnFlowMatch vfm = mdata.getValue();
             LOG.info("{}.{}: Flow condition match has been {}: {{}}",
-                     FlowCondUtils.getName(path), vfm.getIndex(),
-                     MiscUtils.toLowerCase(type), toString(vfm));
+                     name, vfm.getIndex(), MiscUtils.toLowerCase(type),
+                     toString(vfm));
+
+            // Mark the flow condition as changed.
+            ectx.setChanged(name);
         } else {
             // This should never happen.
             data.unexpected(LOG, type);
@@ -328,17 +318,23 @@ public final class FlowCondManager
     /**
      * Handle update event for a flow match.
      *
+     * @param ectx  A {@link FlowCondChange} instance which keeps changes to
+     *              the configuration.
      * @param data  An {@link ChangedData} instance that contains a flow match.
      */
-    private void onMatchChanged(ChangedData<?> data) {
+    private void onMatchChanged(FlowCondChange ectx, ChangedData<?> data) {
         ChangedData<VtnFlowMatch> mdata = data.checkType(VtnFlowMatch.class);
         if (mdata != null) {
             InstanceIdentifier<VtnFlowMatch> path = mdata.getIdentifier();
+            String name = FlowCondUtils.getName(path);
             VtnFlowMatch old = mdata.getOldValue();
             VtnFlowMatch vfm = mdata.getValue();
             LOG.info("{}.{}: Flow condition match has been changed: " +
-                     "{{}} -> {{}}", FlowCondUtils.getName(path),
-                     vfm.getIndex(), toString(old), toString(vfm));
+                     "{{}} -> {{}}", name, vfm.getIndex(),
+                     toString(old), toString(vfm));
+
+            // Mark the flow condition as changed.
+            ectx.setChanged(name);
         } else {
             // This should never happen.
             data.unexpected(LOG, VtnUpdateType.CHANGED);
@@ -351,18 +347,68 @@ public final class FlowCondManager
      * {@inheritDoc}
      */
     @Override
-    protected IdentifierTargetComparator getComparator() {
-        return PATH_COMPARATOR;
+    protected boolean isDepth(VtnUpdateType type) {
+        // Creation events should be processed from outer to inner.
+        // Other events should be processed from inner to outer.
+        return (type == VtnUpdateType.CREATED);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected boolean getOrder(VtnUpdateType type) {
-        // Creation events should be processed from outer to inner.
-        // Other events should be processed from inner to outer.
-        return (type != VtnUpdateType.CREATED);
+    protected boolean isRequiredType(@Nonnull Class<?> type) {
+        return (VtnFlowCondition.class.equals(type) ||
+                VtnFlowMatch.class.equals(type));
+    }
+
+    /**
+     * Determine whether the specified type of the tree node should be
+     * treated as a leaf node.
+     *
+     * <p>
+     *   This method returns {@code true} only if the specified type is
+     *   {@link VtnFlowMatch}.
+     * </p>
+     *
+     * @param type  A class that specifies the type of the tree node.
+     * @return  {@code true} if the specified type of the tree node should
+     *          be treated as a leaf node. {@code false} otherwise.
+     */
+    @Override
+    protected boolean isLeafNode(@Nonnull Class<?> type) {
+        return VtnFlowMatch.class.equals(type);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected boolean isUpdated(FlowCondChange ectx, ChangedData<?> data) {
+        boolean changed;
+        ChangedData<VtnFlowCondition> cdata =
+            data.checkType(VtnFlowCondition.class);
+        if (cdata != null) {
+            // Return true if vtn-flow-match list is updated.
+            VtnFlowCondition vfc = cdata.getValue();
+            String name = MiscUtils.getValue(vfc.getName());
+            changed = ectx.isChanged(name);
+        } else {
+            ChangedData<VtnFlowMatch> mdata =
+                data.checkType(VtnFlowMatch.class);
+            if (mdata != null) {
+                // Return true if vtn-flow-match is updated.
+                VtnFlowMatch old = mdata.getOldValue();
+                VtnFlowMatch vfm = mdata.getValue();
+                changed = !Objects.equals(old, vfm);
+            } else {
+                // This should never happen.
+                data.unexpected(LOG, VtnUpdateType.CHANGED);
+                changed = false;
+            }
+        }
+
+        return changed;
     }
 
     /**
@@ -378,7 +424,7 @@ public final class FlowCondManager
                 LOG.info("Flow condition has been created: name={}", name);
             }
         } else {
-            onMatchChanged(data, VtnUpdateType.CREATED);
+            onMatchChanged(ectx, data, VtnUpdateType.CREATED);
         }
     }
 
@@ -392,7 +438,7 @@ public final class FlowCondManager
         if (cdata != null) {
             onUpdated(ectx, cdata, false);
         } else {
-            onMatchChanged(data);
+            onMatchChanged(ectx, data);
         }
     }
 
@@ -414,7 +460,7 @@ public final class FlowCondManager
                 LOG.info("Flow condition has been removed: name={}", name);
             }
         } else {
-            onMatchChanged(data, VtnUpdateType.REMOVED);
+            onMatchChanged(ectx, data, VtnUpdateType.REMOVED);
         }
     }
 
@@ -424,8 +470,7 @@ public final class FlowCondManager
      * {@inheritDoc}
      */
     @Override
-    protected FlowCondChange enterEvent(
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
+    protected FlowCondChange enterEvent() {
         return new FlowCondChange();
     }
 

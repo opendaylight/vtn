@@ -12,22 +12,19 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.isA;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
+
+import javax.annotation.Nonnull;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -36,159 +33,33 @@ import org.mockito.ArgumentCaptor;
 
 import org.slf4j.Logger;
 
+import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
-import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.md.sal.binding.api.ClusteredDataChangeListener;
-import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
+import org.opendaylight.controller.md.sal.binding.api.ClusteredDataTreeChangeListener;
+import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.ModificationType;
+import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeService;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
-import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnNodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPortBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNodeBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.VtnPathPolicies;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicy;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
  * JUnit test for {@link DataStoreListener}.
  */
 public class DataStoreListenerTest extends TestBase {
-    /**
-     * A class used to keep notified objects.
-     */
-    private static class NotifiedEvent {
-        /**
-         * Path to the data object.
-         */
-        private final InstanceIdentifier<?>  path;
-
-        /**
-         * A new object.
-         */
-        private final DataObject  newObject;
-
-        /**
-         * An old object.
-         */
-        private final DataObject  oldObject;
-
-        /**
-         * Construct a new instance.
-         *
-         * @param p       Path to the data object.
-         * @param newObj  A new object.
-         * @param oldObj  An old object.
-         */
-        private NotifiedEvent(InstanceIdentifier<?> p, DataObject newObj,
-                              DataObject oldObj) {
-            path = p;
-            newObject = newObj;
-            oldObject = oldObj;
-        }
-
-        /**
-         * Construct a new instance.
-         *
-         * @param data  An {@link IdentifiedData} object.
-         */
-        private NotifiedEvent(IdentifiedData<?> data) {
-            this(data.getIdentifier(), data.getValue(), null);
-        }
-
-        /**
-         * Construct a new instance.
-         *
-         * @param data  A {@link ChangedData} object.
-         */
-        private NotifiedEvent(ChangedData<?> data) {
-            this(data.getIdentifier(), data.getValue(), data.getOldValue());
-        }
-
-        /**
-         * Return the path to the data object.
-         *
-         * @return  Path to the data object.
-         */
-        private InstanceIdentifier<?> getPath() {
-            return path;
-        }
-
-        /**
-         * Return a new object.
-         *
-         * @return  A new object.
-         */
-        private DataObject getNewObject() {
-            return newObject;
-        }
-
-        /**
-         * Return an old object.
-         *
-         * @return  An old object.
-         */
-        private DataObject getOldObject() {
-            return oldObject;
-        }
-
-        /**
-         * Determine whether the given object is identical to this object.
-         *
-         * @param o  An object to be compared.
-         * @return   {@code true} if identical. Otherwise {@code false}.
-         */
-        @Override
-        public boolean equals(Object o) {
-            if (o == this) {
-                return true;
-            }
-            if (o == null || !getClass().equals(o.getClass())) {
-                return false;
-            }
-
-            NotifiedEvent nev = (NotifiedEvent)o;
-            return (Objects.equals(path, nev.path) &&
-                    Objects.equals(newObject, nev.newObject) &&
-                    Objects.equals(oldObject, nev.oldObject));
-        }
-
-        /**
-         * Return the hash code of this object.
-         *
-         * @return  The hash code.
-         */
-        @Override
-        public int hashCode() {
-            return Objects.hash(path, newObject, oldObject);
-        }
-
-        /**
-         * Return a string representation of this instance.
-         *
-         * @return  A string representation of this instance.
-         */
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder("NotifiedEvent[path=").
-                append(path).append(", new=").append(newObject).
-                append(", old=").append(oldObject).append(']');
-            return builder.toString();
-        }
-    }
-
     /**
      * Stub data change listener for test.
      */
@@ -214,17 +85,20 @@ public class DataStoreListenerTest extends TestBase {
         /**
          * A list of data creation events.
          */
-        private final List<NotifiedEvent>  creationEvents = new ArrayList<>();
+        private final List<NotifiedEvent<VtnPort>>  creationEvents =
+            new ArrayList<>();
 
         /**
          * A list of data update events.
          */
-        private final List<NotifiedEvent>  updateEvents = new ArrayList<>();
+        private final List<NotifiedEvent<VtnPort>>  updateEvents =
+            new ArrayList<>();
 
         /**
          * A list of data removal events.
          */
-        private final List<NotifiedEvent>  removalEvents = new ArrayList<>();
+        private final List<NotifiedEvent<VtnPort>>  removalEvents =
+            new ArrayList<>();
 
         /**
          * Current event context.
@@ -232,9 +106,9 @@ public class DataStoreListenerTest extends TestBase {
         private Object  context;
 
         /**
-         * Data change event currently handled.
+         * Data tree change event currently handled.
          */
-        private AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> current;
+        private Collection<DataTreeModification<VtnPort>>  current;
 
         /**
          * Construct a new instance.
@@ -256,22 +130,21 @@ public class DataStoreListenerTest extends TestBase {
         /**
          * Set the current data change event.
          *
-         * @param ev   The current data change event.
-         * @param ctx  The event context.
+         * @param changes  The current data change events.
+         * @param ctx      The event context.
          */
         private void setDataChangeEvent(
-            AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev,
-            Object ctx) {
-            current = ev;
+            Collection<DataTreeModification<VtnPort>> changes, Object ctx) {
+            current = changes;
             context = ctx;
         }
 
         /**
-         * Return a data change event currently processing.
+         * Return a data tree change events currently processing.
          *
-         * @return  A {@link AsyncDataChangeEvent} or {@code null}.
+         * @return  A collection of data tree modification or {@code null}.
          */
-        private AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> getEvent() {
+        private Collection<DataTreeModification<VtnPort>> getEvent() {
             return current;
         }
 
@@ -289,7 +162,7 @@ public class DataStoreListenerTest extends TestBase {
          *
          * @return  A list of creation events.
          */
-        private List<NotifiedEvent> getCreationEvents() {
+        private List<NotifiedEvent<VtnPort>> getCreationEvents() {
             return creationEvents;
         }
 
@@ -298,7 +171,7 @@ public class DataStoreListenerTest extends TestBase {
          *
          * @return  A list of update events.
          */
-        private List<NotifiedEvent> getUpdateEvents() {
+        private List<NotifiedEvent<VtnPort>> getUpdateEvents() {
             return updateEvents;
         }
 
@@ -307,7 +180,7 @@ public class DataStoreListenerTest extends TestBase {
          *
          * @return  A list of removal events.
          */
-        private List<NotifiedEvent> getRemovalEvents() {
+        private List<NotifiedEvent<VtnPort>> getRemovalEvents() {
             return removalEvents;
         }
 
@@ -317,9 +190,7 @@ public class DataStoreListenerTest extends TestBase {
          * {@inheritDoc}
          */
         @Override
-        protected  Object enterEvent(
-            AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
-            Assert.assertEquals(current, ev);
+        protected  Object enterEvent() {
             return context;
         }
 
@@ -337,8 +208,18 @@ public class DataStoreListenerTest extends TestBase {
          * {@inheritDoc}
          */
         @Override
+        protected boolean isUpdated(@Nonnull VtnPort before,
+                                    @Nonnull VtnPort after) {
+            return !before.equals(after);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
         protected void onCreated(Object ectx, IdentifiedData<VtnPort> data) {
-            NotifiedEvent nev = new NotifiedEvent(data);
+            NotifiedEvent<VtnPort> nev =
+                new NotifiedEvent<>(data, VtnUpdateType.CREATED);
             creationEvents.add(nev);
         }
 
@@ -347,7 +228,7 @@ public class DataStoreListenerTest extends TestBase {
          */
         @Override
         protected void onUpdated(Object ectx, ChangedData<VtnPort> data) {
-            NotifiedEvent nev = new NotifiedEvent(data);
+            NotifiedEvent<VtnPort> nev = new NotifiedEvent<>(data);
             updateEvents.add(nev);
         }
 
@@ -356,7 +237,8 @@ public class DataStoreListenerTest extends TestBase {
          */
         @Override
         protected void onRemoved(Object ectx, IdentifiedData<VtnPort> data) {
-            NotifiedEvent nev = new NotifiedEvent(data);
+            NotifiedEvent<VtnPort> nev =
+                new NotifiedEvent<>(data, VtnUpdateType.REMOVED);
             removalEvents.add(nev);
         }
 
@@ -385,8 +267,8 @@ public class DataStoreListenerTest extends TestBase {
          * {@inheritDoc}
          */
         @Override
-        protected Set<VtnUpdateType> getRequiredEvents() {
-            return requiredEvents;
+        protected boolean isRequiredEvent(@Nonnull VtnUpdateType type) {
+            return (requiredEvents == null || requiredEvents.contains(type));
         }
     }
 
@@ -398,8 +280,8 @@ public class DataStoreListenerTest extends TestBase {
      * </p>
      *
      * <ul>
-     *   <li>{@link AbstractDataChangeListener#registerListener(DataBroker, LogicalDatastoreType, AsyncDataBroker.DataChangeScope, boolean)}</li>
-     *   <li>{@link AbstractDataChangeListener#close()}</li>
+     *   <li>{@link DataStoreListener#registerListener(DataTreeChangeService, LogicalDatastoreType, boolean)}</li>
+     *   <li>{@link DataStoreListener#close()}</li>
      * </ul>
      */
     @Test
@@ -408,18 +290,18 @@ public class DataStoreListenerTest extends TestBase {
         Logger logger = listener.getLogger();
         InstanceIdentifier<VtnPort> path = listener.getWildcardPath();
         LogicalDatastoreType store = LogicalDatastoreType.OPERATIONAL;
-        DataChangeScope scope = DataChangeScope.SUBTREE;
-        DataBroker broker = mock(DataBroker.class);
+        DataTreeIdentifier<VtnPort> ident =
+            new DataTreeIdentifier<>(store, path);
+        DataTreeChangeService service = mock(DataTreeChangeService.class);
         @SuppressWarnings("unchecked")
-        ListenerRegistration<DataChangeListener> reg =
+        ListenerRegistration<TestChangeListener> reg =
             mock(ListenerRegistration.class);
-        when(broker.registerDataChangeListener(store, path, listener, scope)).
+        when(service.registerDataTreeChangeListener(ident, listener)).
             thenReturn(reg);
-        listener.registerListener(broker, store, scope, false);
-        verify(broker).
-            registerDataChangeListener(store, path, listener, scope);
-        verify(reg, never()).close();
-        verifyZeroInteractions(logger);
+        listener.registerListener(service, store, false);
+        verify(service).registerDataTreeChangeListener(ident, listener);
+        verifyNoMoreInteractions(service);
+        verifyZeroInteractions(reg, logger);
 
         // Unregister a listener.
         // Registration should be closed only one time.
@@ -428,7 +310,7 @@ public class DataStoreListenerTest extends TestBase {
             if (i == 0) {
                 verify(reg).close();
             }
-            verifyNoMoreInteractions(broker, logger, reg);
+            verifyNoMoreInteractions(service, logger, reg);
         }
     }
 
@@ -440,8 +322,8 @@ public class DataStoreListenerTest extends TestBase {
      * </p>
      *
      * <ul>
-     *   <li>{@link AbstractDataChangeListener#registerListener(DataBroker, LogicalDatastoreType, AsyncDataBroker.DataChangeScope, boolean)}</li>
-     *   <li>{@link AbstractDataChangeListener#close()}</li>
+     *   <li>{@link DataStoreListener#registerListener(DataTreeChangeService, LogicalDatastoreType, boolean)}</li>
+     *   <li>{@link DataStoreListener#close()}</li>
      * </ul>
      *
      * @throws Exception  An error occurred.
@@ -453,46 +335,43 @@ public class DataStoreListenerTest extends TestBase {
         Logger logger = listener.getLogger();
         InstanceIdentifier<VtnPort> path = listener.getWildcardPath();
         LogicalDatastoreType store = LogicalDatastoreType.OPERATIONAL;
-        DataChangeScope scope = DataChangeScope.SUBTREE;
-        DataBroker broker = mock(DataBroker.class);
+        DataTreeIdentifier<VtnPort> ident =
+            new DataTreeIdentifier<>(store, path);
+        DataTreeChangeService service = mock(DataTreeChangeService.class);
         @SuppressWarnings("unchecked")
-        ListenerRegistration<DataChangeListener> reg =
+        ListenerRegistration<ClusteredDataTreeChangeListener> reg =
             mock(ListenerRegistration.class);
-        when(broker.registerDataChangeListener(
-                 eq(store), eq(path), isA(ClusteredDataChangeListener.class),
-                 eq(scope))).
+        when(service.registerDataTreeChangeListener(
+                 eq(ident), isA(ClusteredDataTreeChangeListener.class))).
             thenReturn(reg);
-        listener.registerListener(broker, store, scope, true);
+        listener.registerListener(service, store, true);
 
-        ArgumentCaptor<ClusteredDataChangeListener> captor =
-            ArgumentCaptor.forClass(ClusteredDataChangeListener.class);
-        verify(broker).
-            registerDataChangeListener(eq(store), eq(path), captor.capture(),
-                                       eq(scope));
-        List<ClusteredDataChangeListener> wrappers = captor.getAllValues();
+        ArgumentCaptor<ClusteredDataTreeChangeListener> captor =
+            ArgumentCaptor.forClass(ClusteredDataTreeChangeListener.class);
+        verify(service).
+            registerDataTreeChangeListener(eq(ident), captor.capture());
+        List<ClusteredDataTreeChangeListener> wrappers = captor.getAllValues();
         assertEquals(1, wrappers.size());
-        ClusteredDataChangeListener cdcl = wrappers.get(0);
+        ClusteredDataTreeChangeListener cdcl = wrappers.get(0);
         assertEquals(listener,
-                     getFieldValue(cdcl, DataChangeListener.class,
+                     getFieldValue(cdcl, DataTreeChangeListener.class,
                                    "theListener"));
-
-        verify(reg, never()).close();
-        verifyZeroInteractions(logger);
+        verifyZeroInteractions(reg, logger);
 
         // ClusteredListener should toss received events to the actual
         // listener.
         Object ctx = new Object();
-        List<NotifiedEvent> created =
+        List<NotifiedEvent<VtnPort>> created =
             Collections.singletonList(newCreationEvent(1L, 1L));
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev =
-            createEvent(created, null, null);
-        listener.setDataChangeEvent(ev, ctx);
-        assertSame(ev, listener.getEvent());
+        Collection<DataTreeModification<VtnPort>> changes =
+            createEvent(store, created);
+        listener.setDataChangeEvent(changes, ctx);
+        assertSame(changes, listener.getEvent());
         assertSame(ctx, listener.getContext());
-        assertEquals(Collections.<NotifiedEvent>emptyList(),
+        assertEquals(Collections.<NotifiedEvent<VtnPort>>emptyList(),
                      listener.getCreationEvents());
 
-        cdcl.onDataChanged(ev);
+        cdcl.onDataTreeChanged(changes);
         assertSame(null, listener.getEvent());
         assertSame(null, listener.getContext());
         assertEquals(created, listener.getCreationEvents());
@@ -504,15 +383,16 @@ public class DataStoreListenerTest extends TestBase {
             if (i == 0) {
                 verify(reg).close();
             }
-            verifyNoMoreInteractions(broker, logger, reg);
+            verifyNoMoreInteractions(service, logger, reg);
         }
     }
+
 
     /**
      * Test case for registration failure.
      *
      * <ul>
-     *   <li>{@link AbstractDataChangeListener#registerListener(DataBroker, LogicalDatastoreType, AsyncDataBroker.DataChangeScope, boolean)}</li>
+     *   <li>{@link DataStoreListener#registerListener(DataTreeChangeService, LogicalDatastoreType, boolean)}</li>
      * </ul>
      */
     @Test
@@ -521,35 +401,33 @@ public class DataStoreListenerTest extends TestBase {
         Logger logger = listener.getLogger();
         InstanceIdentifier<VtnPort> path = listener.getWildcardPath();
         LogicalDatastoreType store = LogicalDatastoreType.OPERATIONAL;
-        DataChangeScope scope = DataChangeScope.SUBTREE;
-        DataBroker broker = mock(DataBroker.class);
+        DataTreeIdentifier<VtnPort> ident =
+            new DataTreeIdentifier<>(store, path);
+        DataTreeChangeService service = mock(DataTreeChangeService.class);
         IllegalArgumentException iae =
             new IllegalArgumentException("Bad argument");
-        when(broker.registerDataChangeListener(store, path, listener, scope)).
+        when(service.registerDataTreeChangeListener(ident, listener)).
             thenThrow(iae);
 
         String msg = null;
         try {
-            listener.registerListener(broker, store, scope, false);
+            listener.registerListener(service, store, false);
             unexpected();
         } catch (IllegalStateException e) {
-            msg = "Failed to register data change listener: " +
-                VtnPort.class.getName();
+            msg = "Failed to register data tree change listener: type=" +
+                VtnPort.class.getName() + ", path=" + path;
             assertEquals(iae, e.getCause());
             assertEquals(msg, e.getMessage());
         }
 
-        verify(broker).
-            registerDataChangeListener(store, path, listener, scope);
+        verify(service).registerDataTreeChangeListener(ident, listener);
         verify(logger).error(msg, iae);
-        verifyNoMoreInteractions(logger);
+        verifyNoMoreInteractions(service, logger);
 
         // close() should do nothing.
         for (int i = 0; i < 10; i++) {
             listener.close();
-            verify(broker).
-                registerDataChangeListener(store, path, listener, scope);
-            verifyNoMoreInteractions(logger);
+            verifyNoMoreInteractions(service, logger);
         }
     }
 
@@ -557,7 +435,7 @@ public class DataStoreListenerTest extends TestBase {
      * Test case for close error.
      *
      * <ul>
-     *   <li>{@link AbstractDataChangeListener#close()}</li>
+     *   <li>{@link DataStoreListener#close()}</li>
      * </ul>
      */
     @Test
@@ -566,18 +444,18 @@ public class DataStoreListenerTest extends TestBase {
         Logger logger = listener.getLogger();
         InstanceIdentifier<VtnPort> path = listener.getWildcardPath();
         LogicalDatastoreType store = LogicalDatastoreType.OPERATIONAL;
-        DataChangeScope scope = DataChangeScope.SUBTREE;
-        DataBroker broker = mock(DataBroker.class);
+        DataTreeIdentifier<VtnPort> ident =
+            new DataTreeIdentifier<>(store, path);
+        DataTreeChangeService service = mock(DataTreeChangeService.class);
         @SuppressWarnings("unchecked")
-        ListenerRegistration<DataChangeListener> reg =
+        ListenerRegistration<TestChangeListener> reg =
             mock(ListenerRegistration.class);
-        when(broker.registerDataChangeListener(store, path, listener, scope)).
+        when(service.registerDataTreeChangeListener(ident, listener)).
             thenReturn(reg);
-        listener.registerListener(broker, store, scope, false);
-        verify(broker).
-            registerDataChangeListener(store, path, listener, scope);
-        verify(reg, never()).close();
-        verifyZeroInteractions(logger);
+        listener.registerListener(service, store, false);
+        verify(service).
+            registerDataTreeChangeListener(ident, listener);
+        verifyZeroInteractions(reg, logger);
 
         // Unregister a listener.
         String msg = "Failed to close instance: " + reg;
@@ -587,37 +465,17 @@ public class DataStoreListenerTest extends TestBase {
 
         for (int i = 0; i < 10; i++) {
             listener.close();
-            verify(broker).
-                registerDataChangeListener(store, path, listener, scope);
             verify(reg).close();
             verify(logger).error(msg, iae);
-            verifyNoMoreInteractions(logger);
+            verifyNoMoreInteractions(service, reg, logger);
         }
-    }
-
-    /**
-     * Test case for null event.
-     *
-     * <ul>
-     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
-     * </ul>
-     */
-    @Test
-    public void testNullEvent() {
-        TestChangeListener listener = new TestChangeListener();
-        Logger logger = listener.getLogger();
-        listener.onDataChanged(null);
-        verify(logger).warn("Null data change event.");
-        assertTrue(listener.getCreationEvents().isEmpty());
-        assertTrue(listener.getUpdateEvents().isEmpty());
-        assertTrue(listener.getRemovalEvents().isEmpty());
     }
 
     /**
      * Test case for unexpected exception.
      *
      * <ul>
-     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link DataStoreListener#onDataTreeChanged(Collection)}</li>
      * </ul>
      */
     @Test
@@ -627,194 +485,142 @@ public class DataStoreListenerTest extends TestBase {
         IllegalStateException ise =
             new IllegalStateException("Unexpected state");
         @SuppressWarnings("unchecked")
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev =
-            mock(AsyncDataChangeEvent.class);
-        when(ev.getCreatedData()).thenThrow(ise);
+        DataTreeModification<VtnPort> change =
+            mock(DataTreeModification.class);
+        Collection<DataTreeModification<VtnPort>> changes =
+            Collections.singletonList(change);
+        when(change.getRootPath()).thenThrow(ise);
         Object ctx = new Object();
-        listener.setDataChangeEvent(ev, ctx);
-        assertSame(ev, listener.getEvent());
+        listener.setDataChangeEvent(changes, ctx);
+        assertSame(changes, listener.getEvent());
         assertSame(ctx, listener.getContext());
 
-        listener.onDataChanged(ev);
+        listener.onDataTreeChanged(changes);
         assertSame(null, listener.getEvent());
         assertSame(null, listener.getContext());
-        verify(logger).
-            error("Unexpected exception in data change event listener.", ise);
-        assertTrue(listener.getCreationEvents().isEmpty());
-        assertTrue(listener.getUpdateEvents().isEmpty());
-        assertTrue(listener.getRemovalEvents().isEmpty());
+        verify(logger).error(
+            "Unexpected exception in data tree change event listener.", ise);
+        List<NotifiedEvent<VtnPort>> empty =
+            Collections.<NotifiedEvent<VtnPort>>emptyList();
+        assertEquals(empty, listener.getCreationEvents());
+        assertEquals(empty, listener.getUpdateEvents());
+        assertEquals(empty, listener.getRemovalEvents());
     }
 
     /**
      * Test case for an empty event.
      *
      * <ul>
-     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link DataStoreListener#onDataTreeChanged(Collection)}</li>
      * </ul>
      */
     @Test
     public void testEmpty() {
         TestChangeListener listener = new TestChangeListener();
         Logger logger = listener.getLogger();
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev =
-            createEvent(null, null, null);
+        Collection<DataTreeModification<VtnPort>> changes =
+            new ArrayList<>();
         Object ctx = new Object();
-        listener.setDataChangeEvent(ev, ctx);
-        assertSame(ev, listener.getEvent());
+        listener.setDataChangeEvent(changes, ctx);
+        assertSame(changes, listener.getEvent());
         assertSame(ctx, listener.getContext());
 
-        listener.onDataChanged(ev);
+        listener.onDataTreeChanged(changes);
         assertSame(null, listener.getEvent());
         assertSame(null, listener.getContext());
         verifyZeroInteractions(logger);
-        assertTrue(listener.getCreationEvents().isEmpty());
-        assertTrue(listener.getUpdateEvents().isEmpty());
-        assertTrue(listener.getRemovalEvents().isEmpty());
+        List<NotifiedEvent<VtnPort>> empty =
+            Collections.<NotifiedEvent<VtnPort>>emptyList();
+        assertEquals(empty, listener.getCreationEvents());
+        assertEquals(empty, listener.getUpdateEvents());
+        assertEquals(empty, listener.getRemovalEvents());
     }
 
     /**
      * Ensure that broken objects are ignored.
      *
      * <ul>
-     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
-     *   <li>{@link DataStoreListener#onCreated(Object,Map)}</li>
-     *   <li>{@link DataStoreListener#onUpdated(Object,Map,Map)}</li>
-     *   <li>{@link DataStoreListener#onRemoved(Object,Set,Map)}</li>
+     *   <li>{@link DataStoreListener#onDataTreeChanged(Collection)}</li>
+     *   <li>{@link DataStoreListener#handleTree(TreeChangeContext,Object,DataTreeModification)}</li>
      * </ul>
      */
     @Test
     public void testBroken() {
         VtnPort dummy = new VtnPortBuilder().build();
-        List<NotifiedEvent> createdArg = new ArrayList<>();
-        List<NotifiedEvent> removedArg = new ArrayList<>();
-        List<NotifiedEvent> updatedArg = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> args = new ArrayList<>();
 
         // Wildcard path should be ignored.
-        InstanceIdentifier<?> wild1 = InstanceIdentifier.
-            builder(VtnNodes.class).child(VtnNode.class).build();
-        InstanceIdentifier<?> wild2 = InstanceIdentifier.
+        InstanceIdentifier<VtnPort> wild1 = InstanceIdentifier.
             builder(VtnNodes.class).child(VtnNode.class).child(VtnPort.class).
             build();
-        InstanceIdentifier<?> wild3 = InstanceIdentifier.
-            builder(VtnPathPolicies.class).child(VtnPathPolicy.class).
+        SalNode snode = new SalNode(1L);
+        InstanceIdentifier<VtnPort> wild2 = InstanceIdentifier.
+            builder(VtnNodes.class).
+            child(VtnNode.class, snode.getVtnNodeKey()).child(VtnPort.class).
             build();
-        NotifiedEvent nev = new NotifiedEvent(wild1, dummy, null);
-        createdArg.add(nev);
-        nev = new NotifiedEvent(wild2, dummy, dummy);
-        updatedArg.add(nev);
-        nev = new NotifiedEvent(wild3, dummy, null);
-        removedArg.add(nev);
-
-        // Null identifier should be ignored.
-        nev = new NotifiedEvent(null, dummy, dummy);
-        createdArg.add(nev);
-        updatedArg.add(nev);
-        removedArg.add(nev);
-
-        // Invalid type of path should be ignored.
-        InstanceIdentifier<?> pp1 = PathPolicyUtils.getIdentifier(1);
-        InstanceIdentifier<?> pp2 = PathPolicyUtils.getIdentifier(2);
-        InstanceIdentifier<?> pp3 = PathPolicyUtils.
-            getIdentifier(3, new VtnPortDesc("openflow:1,,"));
-        nev = new NotifiedEvent(pp1, dummy, null);
-        createdArg.add(nev);
-        nev = new NotifiedEvent(pp2, dummy, dummy);
-        updatedArg.add(nev);
-        nev = new NotifiedEvent(pp3, dummy, null);
-        removedArg.add(nev);
-
-        // Invalid type of object should be ignored.
-        long dpid = 1L;
-        long port = 1L;
-        SalPort sport = new SalPort(dpid, port);
-        dpid++;
-        InstanceIdentifier<?> badPath1 = sport.getVtnPortIdentifier();
-        VtnNode bad1 = new VtnNodeBuilder().setId(sport.getNodeId()).build();
-        nev = new NotifiedEvent(badPath1, bad1, null);
-        createdArg.add(nev);
-
-        sport = new SalPort(dpid, port);
-        dpid++;
-        InstanceIdentifier<?> badPath2 = sport.getVtnPortIdentifier();
-        VtnNode bad2 = new VtnNodeBuilder().setId(sport.getNodeId()).build();
-        nev = new NotifiedEvent(badPath2, bad2, dummy);
-        updatedArg.add(nev);
-
-        sport = new SalPort(dpid, port);
-        dpid++;
-        InstanceIdentifier<?> badPath3 = sport.getVtnPortIdentifier();
-        VtnNode bad3 = new VtnNodeBuilder().setId(sport.getNodeId()).build();
-        nev = new NotifiedEvent(badPath3, dummy, bad3);
-        updatedArg.add(nev);
-
-        sport = new SalPort(dpid, port);
-        dpid++;
-        InstanceIdentifier<?> badPath4 = sport.getVtnPortIdentifier();
-        VtnNode bad4 = new VtnNodeBuilder().setId(sport.getNodeId()).build();
-        nev = new NotifiedEvent(badPath4, bad4, null);
-        removedArg.add(nev);
+        SalPort sport = new SalPort(1L, 2L);
+        InstanceIdentifier<VtnPort> wild3 = InstanceIdentifier.
+            builder(VtnNodes.class).
+            child(VtnNode.class).
+            child(VtnPort.class, sport.getVtnPortKey()).
+            build();
+        Collections.addAll(
+            args,
+            new NotifiedEvent<>(wild1, dummy, null, VtnUpdateType.CREATED),
+            new NotifiedEvent<>(wild2, dummy, dummy, VtnUpdateType.CHANGED),
+            new NotifiedEvent<>(wild3, dummy, null, VtnUpdateType.REMOVED));
 
         // Null object should be ignored.
+        long dpid = 1L;
+        long port = 10L;
         sport = new SalPort(dpid, port);
         dpid++;
-        InstanceIdentifier<?> null1 = sport.getVtnPortIdentifier();
-        nev = new NotifiedEvent(null1, null, null);
-        createdArg.add(nev);
+        InstanceIdentifier<VtnPort> null1 = sport.getVtnPortIdentifier();
+        args.add(
+            new NotifiedEvent<>(null1, null, null, VtnUpdateType.CREATED));
 
         sport = new SalPort(dpid, port);
         dpid++;
-        InstanceIdentifier<?> null2 = sport.getVtnPortIdentifier();
-        nev = new NotifiedEvent(null2, null, dummy);
-        updatedArg.add(nev);
+        InstanceIdentifier<VtnPort> null2 = sport.getVtnPortIdentifier();
+        args.add(
+            new NotifiedEvent<>(null2, null, dummy, VtnUpdateType.CHANGED));
 
         sport = new SalPort(dpid, port);
         dpid++;
-        InstanceIdentifier<?> null3 = sport.getVtnPortIdentifier();
-        nev = new NotifiedEvent(null3, dummy, null);
-        updatedArg.add(nev);
+        InstanceIdentifier<VtnPort> null3 = sport.getVtnPortIdentifier();
+        args.add(
+            new NotifiedEvent<>(null3, null, null, VtnUpdateType.REMOVED));
 
-        sport = new SalPort(dpid, port);
-        dpid++;
-        InstanceIdentifier<?> null4 = sport.getVtnPortIdentifier();
-        nev = new NotifiedEvent(null4, null, null);
-        removedArg.add(nev);
-
-        List<NotifiedEvent> created = new ArrayList<>();
-        nev = newCreationEvent(dpid, port);
+        List<NotifiedEvent<VtnPort>> created = new ArrayList<>();
         port++;
-        createdArg.add(nev);
+        NotifiedEvent<VtnPort> nev = newCreationEvent(dpid, port);
+        args.add(nev);
         created.add(nev);
 
-        List<NotifiedEvent> updated = new ArrayList<>();
-        nev = newUpdateEvent(dpid, port);
+        List<NotifiedEvent<VtnPort>> updated = new ArrayList<>();
         port++;
-        updatedArg.add(nev);
+        nev = newUpdateEvent(dpid, port);
+        args.add(nev);
         updated.add(nev);
 
-        List<NotifiedEvent> removed = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> removed = new ArrayList<>();
         nev = newRemovalEvent(dpid, port);
-        removedArg.add(nev);
+        args.add(nev);
         removed.add(nev);
 
         TestChangeListener listener = new TestChangeListener();
         Logger logger = listener.getLogger();
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev =
-            createEvent(createdArg, updatedArg, removedArg);
+        LogicalDatastoreType store = LogicalDatastoreType.OPERATIONAL;
+        Collection<DataTreeModification<VtnPort>> changes =
+            createEvent(store, args);
         Object ctx = new Object();
-        listener.setDataChangeEvent(ev, ctx);
-        assertSame(ev, listener.getEvent());
+        listener.setDataChangeEvent(changes, ctx);
+        assertSame(changes, listener.getEvent());
         assertSame(ctx, listener.getContext());
 
-        listener.onDataChanged(ev);
+        listener.onDataTreeChanged(changes);
         assertSame(null, listener.getEvent());
         assertSame(null, listener.getContext());
-
-        verify(ev).getCreatedData();
-        verify(ev).getOriginalData();
-        verify(ev).getUpdatedData();
-        verify(ev).getRemovedPaths();
-        verify(ev, never()).getOriginalSubtree();
-        verify(ev, never()).getUpdatedSubtree();
 
         // Ensure that broken events were ignored.
         assertEquals(created, listener.getCreationEvents());
@@ -822,32 +628,16 @@ public class DataStoreListenerTest extends TestBase {
         assertEquals(removed, listener.getRemovalEvents());
 
         // Verify that broken events were logged.
-        // Wildcard paths and unwanted type of instance identifiers cannot be
-        // detected because they are logged by verbose logger.
-        String nullMsg = "{}: Null instance identifier.";
-        verify(logger).warn(nullMsg, VtnUpdateType.CREATED);
-        verify(logger).warn(nullMsg, VtnUpdateType.CHANGED);
-        verify(logger).warn(nullMsg, VtnUpdateType.REMOVED);
+        String wildMsg = "{}: Ignore wildcard path: {}";
+        verify(logger).warn(wildMsg, VtnUpdateType.CREATED, wild1);
+        verify(logger).warn(wildMsg, VtnUpdateType.CHANGED, wild2);
+        verify(logger).warn(wildMsg, VtnUpdateType.REMOVED, wild3);
 
-        String dataTypeMsg =
-            "{}: Unexpected data is associated: path={}, value={}";
-        verify(logger).
-            warn(dataTypeMsg, VtnUpdateType.CREATED, badPath1, bad1);
-        verify(logger).
-            warn(dataTypeMsg, VtnUpdateType.CHANGED, badPath2, bad2);
-        verify(logger).
-            warn(dataTypeMsg, VtnUpdateType.CHANGED, badPath3, bad3);
-        verify(logger).
-            warn(dataTypeMsg, VtnUpdateType.REMOVED, badPath4, bad4);
+        String nullValueMsg = "{}: Null value is notified: path={}";
+        verify(logger).warn(nullValueMsg, "handleTree", null1);
+        verify(logger).warn(nullValueMsg, "handleTree", null2);
+        verify(logger).warn(nullValueMsg, VtnUpdateType.REMOVED, null3);
 
-        verify(logger).
-            warn(dataTypeMsg, VtnUpdateType.CREATED, null1, null);
-        verify(logger).
-            warn(dataTypeMsg, VtnUpdateType.CHANGED, null2, null);
-        verify(logger).
-            warn(dataTypeMsg, VtnUpdateType.CHANGED, null3, null);
-        verify(logger).
-            warn(dataTypeMsg, VtnUpdateType.REMOVED, null4, null);
         verifyNoMoreInteractions(logger);
     }
 
@@ -855,115 +645,115 @@ public class DataStoreListenerTest extends TestBase {
      * Ensure that all event types can be listened.
      *
      * <ul>
-     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
-     *   <li>{@link DataStoreListener#onCreated(Object,Map)}</li>
-     *   <li>{@link DataStoreListener#onUpdated(Object,Map,Map)}</li>
-     *   <li>{@link DataStoreListener#onRemoved(Object,Set,Map)}</li>
+     *   <li>{@link DataStoreListener#onDataTreeChanged(Collection)}</li>
+     *   <li>{@link DataStoreListener#handleTree(TreeChangeContext,Object,DataTreeModification)}</li>
      * </ul>
      */
     @Test
     public void testAll() {
         List<Set<VtnUpdateType>> allSets = new ArrayList<>();
-        allSets.add(null);
-        allSets.add(EnumSet.allOf(VtnUpdateType.class));
-        for (Set<VtnUpdateType> all: allSets) {
-            List<NotifiedEvent> created = new ArrayList<>();
-            List<NotifiedEvent> removed = new ArrayList<>();
-            List<NotifiedEvent> updated = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> created = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> removed = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> updated = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> args = new ArrayList<>();
 
-            long dpid = 1L;
-            for (long port = 1L; port <= 10L; port++) {
-                created.add(newCreationEvent(dpid, port));
-            }
-
-            dpid = 10L;
-            for (long port = 1L; port <= 10L; port++) {
-                updated.add(newUpdateEvent(dpid, port));
-            }
-
-            dpid = 100L;
-            for (long port = 1L; port <= 10L; port++) {
-                removed.add(newRemovalEvent(dpid, port));
-            }
-
-            TestChangeListener listener = new TestChangeListener();
-            Logger logger = listener.getLogger();
-            AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev =
-                createEvent(created, updated, removed);
-            Object ctx = new Object();
-            listener.setDataChangeEvent(ev, ctx);
-            assertSame(ev, listener.getEvent());
-            assertSame(ctx, listener.getContext());
-
-            listener.onDataChanged(ev);
-            assertSame(null, listener.getEvent());
-            assertSame(null, listener.getContext());
-
-            verify(ev).getCreatedData();
-            verify(ev).getOriginalData();
-            verify(ev).getUpdatedData();
-            verify(ev).getRemovedPaths();
-            verify(ev, never()).getOriginalSubtree();
-            verify(ev, never()).getUpdatedSubtree();
-
-            assertEquals(created, listener.getCreationEvents());
-            assertEquals(updated, listener.getUpdateEvents());
-            assertEquals(removed, listener.getRemovalEvents());
-            verifyZeroInteractions(logger);
+        long dpid = 1L;
+        for (long port = 1L; port <= 10L; port++) {
+            NotifiedEvent<VtnPort> nev = newCreationEvent(dpid, port);
+            created.add(nev);
+            args.add(nev);
         }
+
+        dpid = 10L;
+        for (long port = 1L; port <= 10L; port++) {
+            NotifiedEvent<VtnPort> nev;
+            if ((port & 1) == 0) {
+                nev = newUpdateEvent(dpid, port);
+                updated.add(nev);
+            } else {
+                // This event must be ignored because value is not changed.
+                nev = newWriteEvent(dpid, port);
+            }
+            args.add(nev);
+        }
+
+        dpid = 100L;
+        for (long port = 1L; port <= 10L; port++) {
+            NotifiedEvent<VtnPort> nev = newRemovalEvent(dpid, port);
+            removed.add(nev);
+            args.add(nev);
+        }
+
+        TestChangeListener listener = new TestChangeListener();
+        Logger logger = listener.getLogger();
+        LogicalDatastoreType store = LogicalDatastoreType.OPERATIONAL;
+        Collection<DataTreeModification<VtnPort>> changes =
+            createEvent(store, args);
+        Object ctx = new Object();
+        listener.setDataChangeEvent(changes, ctx);
+        assertSame(changes, listener.getEvent());
+        assertSame(ctx, listener.getContext());
+
+        listener.onDataTreeChanged(changes);
+        assertSame(null, listener.getEvent());
+        assertSame(null, listener.getContext());
+
+        assertEquals(created, listener.getCreationEvents());
+        assertEquals(updated, listener.getUpdateEvents());
+        assertEquals(removed, listener.getRemovalEvents());
+        verifyZeroInteractions(logger);
     }
 
     /**
      * Ensure that only creation event can be listened.
      *
      * <ul>
-     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
-     *   <li>{@link DataStoreListener#onCreated(Object,Map)}</li>
+     *   <li>{@link DataStoreListener#onDataTreeChanged(Collection)}</li>
+     *   <li>{@link DataStoreListener#handleTree(TreeChangeContext,Object,DataTreeModification)}</li>
      * </ul>
      */
     @Test
     public void testAdded() {
-        List<NotifiedEvent> created = new ArrayList<>();
-        List<NotifiedEvent> removed = new ArrayList<>();
-        List<NotifiedEvent> updated = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> created = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> args = new ArrayList<>();
 
         long dpid = 1L;
         for (long port = 1L; port <= 10L; port++) {
-            created.add(newCreationEvent(dpid, port));
+            NotifiedEvent<VtnPort> nev = newCreationEvent(dpid, port);
+            created.add(nev);
+            args.add(nev);
         }
 
         dpid = 10L;
         for (long port = 1L; port <= 10L; port++) {
-            updated.add(newUpdateEvent(dpid, port));
+            NotifiedEvent<VtnPort> nev = ((port & 1) == 0)
+                ? newUpdateEvent(dpid, port)
+                : newWriteEvent(dpid, port);
+            args.add(nev);
         }
 
         dpid = 100L;
         for (long port = 1L; port <= 10L; port++) {
-            removed.add(newRemovalEvent(dpid, port));
+            args.add(newRemovalEvent(dpid, port));
         }
 
         Set<VtnUpdateType> required = EnumSet.of(VtnUpdateType.CREATED);
         TestChangeListener listener = new TestChangeListener(required);
         Logger logger = listener.getLogger();
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev =
-            createEvent(created, updated, removed);
+        LogicalDatastoreType store = LogicalDatastoreType.OPERATIONAL;
+        Collection<DataTreeModification<VtnPort>> changes =
+            createEvent(store, args);
         Object ctx = new Object();
-        listener.setDataChangeEvent(ev, ctx);
-        assertSame(ev, listener.getEvent());
+        listener.setDataChangeEvent(changes, ctx);
+        assertSame(changes, listener.getEvent());
         assertSame(ctx, listener.getContext());
 
-        listener.onDataChanged(ev);
+        listener.onDataTreeChanged(changes);
         assertSame(null, listener.getEvent());
         assertSame(null, listener.getContext());
 
-        verify(ev).getCreatedData();
-        verify(ev).getOriginalData();
-        verify(ev, never()).getUpdatedData();
-        verify(ev, never()).getRemovedPaths();
-        verify(ev, never()).getOriginalSubtree();
-        verify(ev, never()).getUpdatedSubtree();
-
-        List<NotifiedEvent> empty = Collections.<NotifiedEvent>emptyList();
+        List<NotifiedEvent<VtnPort>> empty =
+            Collections.<NotifiedEvent<VtnPort>>emptyList();
         assertEquals(created, listener.getCreationEvents());
         assertEquals(empty, listener.getUpdateEvents());
         assertEquals(empty, listener.getRemovalEvents());
@@ -974,53 +764,57 @@ public class DataStoreListenerTest extends TestBase {
      * Ensure that only update event can be listened.
      *
      * <ul>
-     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
-     *   <li>{@link DataStoreListener#onUpdated(Object,Map,Map)}</li>
+     *   <li>{@link DataStoreListener#onDataTreeChanged(Collection)}</li>
+     *   <li>{@link DataStoreListener#handleTree(TreeChangeContext,Object,DataTreeModification)}</li>
      * </ul>
      */
     @Test
     public void testUpdated() {
-        List<NotifiedEvent> created = new ArrayList<>();
-        List<NotifiedEvent> removed = new ArrayList<>();
-        List<NotifiedEvent> updated = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> updated = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> args = new ArrayList<>();
 
         long dpid = 1L;
         for (long port = 1L; port <= 10L; port++) {
-            created.add(newCreationEvent(dpid, port));
+            NotifiedEvent<VtnPort> nev = newCreationEvent(dpid, port);
+            args.add(nev);
         }
 
         dpid = 10L;
         for (long port = 1L; port <= 10L; port++) {
-            updated.add(newUpdateEvent(dpid, port));
+            NotifiedEvent<VtnPort> nev;
+            if ((port & 1) == 0) {
+                // This event must be ignored because value is not changed.
+                nev = newWriteEvent(dpid, port);
+            } else {
+                nev = newUpdateEvent(dpid, port);
+                updated.add(nev);
+            }
+            args.add(nev);
         }
 
         dpid = 100L;
         for (long port = 1L; port <= 10L; port++) {
-            removed.add(newRemovalEvent(dpid, port));
+            NotifiedEvent<VtnPort> nev = newRemovalEvent(dpid, port);
+            args.add(nev);
         }
 
         Set<VtnUpdateType> required = EnumSet.of(VtnUpdateType.CHANGED);
         TestChangeListener listener = new TestChangeListener(required);
         Logger logger = listener.getLogger();
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev =
-            createEvent(created, updated, removed);
+        LogicalDatastoreType store = LogicalDatastoreType.OPERATIONAL;
+        Collection<DataTreeModification<VtnPort>> changes =
+            createEvent(store, args);
         Object ctx = new Object();
-        listener.setDataChangeEvent(ev, ctx);
-        assertSame(ev, listener.getEvent());
+        listener.setDataChangeEvent(changes, ctx);
+        assertSame(changes, listener.getEvent());
         assertSame(ctx, listener.getContext());
 
-        listener.onDataChanged(ev);
+        listener.onDataTreeChanged(changes);
         assertSame(null, listener.getEvent());
         assertSame(null, listener.getContext());
 
-        verify(ev, never()).getCreatedData();
-        verify(ev).getOriginalData();
-        verify(ev).getUpdatedData();
-        verify(ev, never()).getRemovedPaths();
-        verify(ev, never()).getOriginalSubtree();
-        verify(ev, never()).getUpdatedSubtree();
-
-        List<NotifiedEvent> empty = Collections.<NotifiedEvent>emptyList();
+        List<NotifiedEvent<VtnPort>> empty =
+            Collections.<NotifiedEvent<VtnPort>>emptyList();
         assertEquals(empty, listener.getCreationEvents());
         assertEquals(updated, listener.getUpdateEvents());
         assertEquals(empty, listener.getRemovalEvents());
@@ -1031,171 +825,179 @@ public class DataStoreListenerTest extends TestBase {
      * Ensure that only removal event can be listened.
      *
      * <ul>
-     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
-     *   <li>{@link DataStoreListener#onRemoved(Object,Set,Map)}</li>
+     *   <li>{@link DataStoreListener#onDataTreeChanged(Collection)}</li>
+     *   <li>{@link DataStoreListener#handleTree(TreeChangeContext,Object,DataTreeModification)}</li>
      * </ul>
      */
     @Test
     public void testRemoved() {
-        List<NotifiedEvent> created = new ArrayList<>();
-        List<NotifiedEvent> removed = new ArrayList<>();
-        List<NotifiedEvent> updated = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> removed = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> args = new ArrayList<>();
 
         long dpid = 1L;
         for (long port = 1L; port <= 10L; port++) {
-            created.add(newCreationEvent(dpid, port));
+            NotifiedEvent<VtnPort> nev = newCreationEvent(dpid, port);
+            args.add(nev);
         }
 
         dpid = 10L;
         for (long port = 1L; port <= 10L; port++) {
-            updated.add(newUpdateEvent(dpid, port));
+            NotifiedEvent<VtnPort> nev = ((port & 1) == 0)
+                ? newUpdateEvent(dpid, port)
+                : newWriteEvent(dpid, port);
+            args.add(nev);
         }
 
         dpid = 100L;
         for (long port = 1L; port <= 10L; port++) {
-            removed.add(newRemovalEvent(dpid, port));
+            NotifiedEvent<VtnPort> nev = newRemovalEvent(dpid, port);
+            removed.add(nev);
+            args.add(nev);
         }
 
         Set<VtnUpdateType> required = EnumSet.of(VtnUpdateType.REMOVED);
         TestChangeListener listener = new TestChangeListener(required);
         Logger logger = listener.getLogger();
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev =
-            createEvent(created, updated, removed);
+        LogicalDatastoreType store = LogicalDatastoreType.OPERATIONAL;
+        Collection<DataTreeModification<VtnPort>> changes =
+            createEvent(store, args);
         Object ctx = new Object();
-        listener.setDataChangeEvent(ev, ctx);
-        assertSame(ev, listener.getEvent());
+        listener.setDataChangeEvent(changes, ctx);
+        assertSame(changes, listener.getEvent());
         assertSame(ctx, listener.getContext());
 
-        listener.onDataChanged(ev);
+        listener.onDataTreeChanged(changes);
         assertSame(null, listener.getEvent());
         assertSame(null, listener.getContext());
 
-        verify(ev, never()).getCreatedData();
-        verify(ev).getOriginalData();
-        verify(ev, never()).getUpdatedData();
-        verify(ev).getRemovedPaths();
-        verify(ev, never()).getOriginalSubtree();
-        verify(ev, never()).getUpdatedSubtree();
-
-        List<NotifiedEvent> empty = Collections.<NotifiedEvent>emptyList();
+        List<NotifiedEvent<VtnPort>> empty =
+            Collections.<NotifiedEvent<VtnPort>>emptyList();
         assertEquals(empty, listener.getCreationEvents());
         assertEquals(empty, listener.getUpdateEvents());
         assertEquals(removed, listener.getRemovalEvents());
         verifyZeroInteractions(logger);
     }
 
+
     /**
      * Ensure that only creation event can be filtered out.
      *
      * <ul>
-     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
-     *   <li>{@link DataStoreListener#onUpdated(Object,Map,Map)}</li>
-     *   <li>{@link DataStoreListener#onRemoved(Object,Set,Map)}</li>
+     *   <li>{@link DataStoreListener#onDataTreeChanged(Collection)}</li>
+     *   <li>{@link DataStoreListener#handleTree(TreeChangeContext,Object,DataTreeModification)}</li>
      * </ul>
      */
     @Test
     public void testIgnoreCreated() {
-        List<NotifiedEvent> created = new ArrayList<>();
-        List<NotifiedEvent> removed = new ArrayList<>();
-        List<NotifiedEvent> updated = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> removed = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> updated = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> args = new ArrayList<>();
 
         long dpid = 1L;
         for (long port = 1L; port <= 10L; port++) {
-            created.add(newCreationEvent(dpid, port));
+            NotifiedEvent<VtnPort> nev = newCreationEvent(dpid, port);
+            args.add(nev);
         }
 
         dpid = 10L;
         for (long port = 1L; port <= 10L; port++) {
-            updated.add(newUpdateEvent(dpid, port));
+            NotifiedEvent<VtnPort> nev;
+            if ((port & 1) == 0) {
+                nev = newUpdateEvent(dpid, port);
+                updated.add(nev);
+            } else {
+                // This event must be ignored because value is not changed.
+                nev = newWriteEvent(dpid, port);
+            }
+            args.add(nev);
         }
 
         dpid = 100L;
         for (long port = 1L; port <= 10L; port++) {
-            removed.add(newRemovalEvent(dpid, port));
+            NotifiedEvent<VtnPort> nev = newRemovalEvent(dpid, port);
+            removed.add(nev);
+            args.add(nev);
         }
 
         Set<VtnUpdateType> required =
             EnumSet.of(VtnUpdateType.CHANGED, VtnUpdateType.REMOVED);
         TestChangeListener listener = new TestChangeListener(required);
         Logger logger = listener.getLogger();
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev =
-            createEvent(created, updated, removed);
+        LogicalDatastoreType store = LogicalDatastoreType.OPERATIONAL;
+        Collection<DataTreeModification<VtnPort>> changes =
+            createEvent(store, args);
         Object ctx = new Object();
-        listener.setDataChangeEvent(ev, ctx);
-        assertSame(ev, listener.getEvent());
+        listener.setDataChangeEvent(changes, ctx);
+        assertSame(changes, listener.getEvent());
         assertSame(ctx, listener.getContext());
 
-        listener.onDataChanged(ev);
+        listener.onDataTreeChanged(changes);
         assertSame(null, listener.getEvent());
         assertSame(null, listener.getContext());
 
-        verify(ev, never()).getCreatedData();
-        verify(ev).getOriginalData();
-        verify(ev).getUpdatedData();
-        verify(ev).getRemovedPaths();
-        verify(ev, never()).getOriginalSubtree();
-        verify(ev, never()).getUpdatedSubtree();
-
-        List<NotifiedEvent> empty = Collections.<NotifiedEvent>emptyList();
+        List<NotifiedEvent<VtnPort>> empty =
+            Collections.<NotifiedEvent<VtnPort>>emptyList();
         assertEquals(empty, listener.getCreationEvents());
         assertEquals(updated, listener.getUpdateEvents());
         assertEquals(removed, listener.getRemovalEvents());
         verifyZeroInteractions(logger);
     }
 
+
     /**
      * Ensure that only update event can be filtered out.
      *
      * <ul>
-     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
-     *   <li>{@link DataStoreListener#onCreated(Object,Map)}</li>
-     *   <li>{@link DataStoreListener#onRemoved(Object,Set,Map)}</li>
+     *   <li>{@link DataStoreListener#onDataTreeChanged(Collection)}</li>
+     *   <li>{@link DataStoreListener#handleTree(TreeChangeContext,Object,DataTreeModification)}</li>
      * </ul>
      */
     @Test
     public void testIgnoreUpdated() {
-        List<NotifiedEvent> created = new ArrayList<>();
-        List<NotifiedEvent> removed = new ArrayList<>();
-        List<NotifiedEvent> updated = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> created = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> removed = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> args = new ArrayList<>();
 
         long dpid = 1L;
         for (long port = 1L; port <= 10L; port++) {
-            created.add(newCreationEvent(dpid, port));
+            NotifiedEvent<VtnPort> nev = newCreationEvent(dpid, port);
+            created.add(nev);
+            args.add(nev);
         }
 
         dpid = 10L;
         for (long port = 1L; port <= 10L; port++) {
-            updated.add(newUpdateEvent(dpid, port));
+            NotifiedEvent<VtnPort> nev = ((port & 1) == 0)
+                ? newUpdateEvent(dpid, port)
+                : newWriteEvent(dpid, port);
+            args.add(nev);
         }
 
         dpid = 100L;
         for (long port = 1L; port <= 10L; port++) {
-            removed.add(newRemovalEvent(dpid, port));
+            NotifiedEvent<VtnPort> nev = newRemovalEvent(dpid, port);
+            removed.add(nev);
+            args.add(nev);
         }
 
         Set<VtnUpdateType> required =
             EnumSet.of(VtnUpdateType.CREATED, VtnUpdateType.REMOVED);
         TestChangeListener listener = new TestChangeListener(required);
         Logger logger = listener.getLogger();
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev =
-            createEvent(created, updated, removed);
+        LogicalDatastoreType store = LogicalDatastoreType.OPERATIONAL;
+        Collection<DataTreeModification<VtnPort>> changes =
+            createEvent(store, args);
         Object ctx = new Object();
-        listener.setDataChangeEvent(ev, ctx);
-        assertSame(ev, listener.getEvent());
+        listener.setDataChangeEvent(changes, ctx);
+        assertSame(changes, listener.getEvent());
         assertSame(ctx, listener.getContext());
 
-        listener.onDataChanged(ev);
+        listener.onDataTreeChanged(changes);
         assertSame(null, listener.getEvent());
         assertSame(null, listener.getContext());
 
-        verify(ev).getCreatedData();
-        verify(ev).getOriginalData();
-        verify(ev, never()).getUpdatedData();
-        verify(ev).getRemovedPaths();
-        verify(ev, never()).getOriginalSubtree();
-        verify(ev, never()).getUpdatedSubtree();
-
-        List<NotifiedEvent> empty = Collections.<NotifiedEvent>emptyList();
+        List<NotifiedEvent<VtnPort>> empty =
+            Collections.<NotifiedEvent<VtnPort>>emptyList();
         assertEquals(created, listener.getCreationEvents());
         assertEquals(empty, listener.getUpdateEvents());
         assertEquals(removed, listener.getRemovalEvents());
@@ -1206,55 +1008,59 @@ public class DataStoreListenerTest extends TestBase {
      * Ensure that only removal event can be filtered out.
      *
      * <ul>
-     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
-     *   <li>{@link DataStoreListener#onCreated(Object,Map)}</li>
-     *   <li>{@link DataStoreListener#onUpdated(Object,Map,Map)}</li>
+     *   <li>{@link DataStoreListener#onDataTreeChanged(Collection)}</li>
+     *   <li>{@link DataStoreListener#handleTree(TreeChangeContext,Object,DataTreeModification)}</li>
      * </ul>
      */
     @Test
     public void testIgnoreRemoved() {
-        List<NotifiedEvent> created = new ArrayList<>();
-        List<NotifiedEvent> removed = new ArrayList<>();
-        List<NotifiedEvent> updated = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> created = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> updated = new ArrayList<>();
+        List<NotifiedEvent<VtnPort>> args = new ArrayList<>();
 
         long dpid = 1L;
         for (long port = 1L; port <= 10L; port++) {
-            created.add(newCreationEvent(dpid, port));
+            NotifiedEvent<VtnPort> nev = newCreationEvent(dpid, port);
+            created.add(nev);
+            args.add(nev);
         }
 
         dpid = 10L;
         for (long port = 1L; port <= 10L; port++) {
-            updated.add(newUpdateEvent(dpid, port));
+            NotifiedEvent<VtnPort> nev;
+            if ((port & 1) == 0) {
+                // This event must be ignored because value is not changed.
+                nev = newWriteEvent(dpid, port);
+            } else {
+                nev = newUpdateEvent(dpid, port);
+                updated.add(nev);
+            }
+            args.add(nev);
         }
 
         dpid = 100L;
         for (long port = 1L; port <= 10L; port++) {
-            removed.add(newRemovalEvent(dpid, port));
+            args.add(newRemovalEvent(dpid, port));
         }
 
         Set<VtnUpdateType> required =
             EnumSet.of(VtnUpdateType.CREATED, VtnUpdateType.CHANGED);
         TestChangeListener listener = new TestChangeListener(required);
         Logger logger = listener.getLogger();
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev =
-            createEvent(created, updated, removed);
+        LogicalDatastoreType store = LogicalDatastoreType.OPERATIONAL;
+        Collection<DataTreeModification<VtnPort>> changes =
+            createEvent(store, args);
         Object ctx = new Object();
-        listener.setDataChangeEvent(ev, ctx);
-        assertSame(ev, listener.getEvent());
+        listener.setDataChangeEvent(changes, ctx);
+        assertSame(changes, listener.getEvent());
         assertSame(ctx, listener.getContext());
 
-        listener.onDataChanged(ev);
+        listener.onDataTreeChanged(changes);
         assertSame(null, listener.getEvent());
         assertSame(null, listener.getContext());
 
-        verify(ev).getCreatedData();
-        verify(ev).getOriginalData();
-        verify(ev).getUpdatedData();
-        verify(ev, never()).getRemovedPaths();
-        verify(ev, never()).getOriginalSubtree();
-        verify(ev, never()).getUpdatedSubtree();
-
-        List<NotifiedEvent> empty = Collections.<NotifiedEvent>emptyList();
+        List<NotifiedEvent<VtnPort>> empty =
+            Collections.<NotifiedEvent<VtnPort>>emptyList();
         assertEquals(created, listener.getCreationEvents());
         assertEquals(updated, listener.getUpdateEvents());
         assertEquals(empty, listener.getRemovalEvents());
@@ -1264,89 +1070,39 @@ public class DataStoreListenerTest extends TestBase {
     /**
      * Create a mock-up of data change event.
      *
-     * @param created  A list of created objects.
-     * @param updated  A list of updated objects.
-     * @param removed  A list of removed objects.
-     * @return  A new async data change event.
+     * @param store  The type of the datastore.
+     * @param args   A list of objects to be notified.
+     * @return  A list of new data tree change events.
      */
-    private AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> createEvent(
-        List<NotifiedEvent> created, List<NotifiedEvent> updated,
-        List<NotifiedEvent> removed) {
-        Map<InstanceIdentifier<?>, DataObject> createdMap;
-        if (created == null) {
-            createdMap = null;
-        } else {
-            createdMap =
-                new LinkedHashMap<InstanceIdentifier<?>, DataObject>();
-            for (NotifiedEvent nev: created) {
-                createdMap.put(nev.getPath(), nev.getNewObject());
-            }
-        }
-
-        Map<InstanceIdentifier<?>, DataObject> original = null;
-        Map<InstanceIdentifier<?>, DataObject> updatedMap;
-        if (updated == null) {
-            updatedMap = null;
-        } else {
-            updatedMap =
-                new LinkedHashMap<InstanceIdentifier<?>, DataObject>();
-            for (NotifiedEvent nev: updated) {
-                InstanceIdentifier<?> path = nev.getPath();
-                updatedMap.put(path, nev.getNewObject());
-                DataObject old = nev.getOldObject();
-                if (old != null) {
-                    original = putData(original, path, old);
+    private Collection<DataTreeModification<VtnPort>> createEvent(
+        LogicalDatastoreType store, List<NotifiedEvent<VtnPort>> args) {
+        List<DataTreeModification<VtnPort>> changes = new ArrayList<>();
+        if (args != null) {
+            for (NotifiedEvent<VtnPort> nev: args) {
+                InstanceIdentifier<VtnPort> path = nev.getPath();
+                VtnUpdateType utype = nev.getUpdateType();
+                DataObjectModification<VtnPort> mod;
+                if (utype == VtnUpdateType.CREATED) {
+                    mod = newDataModification(
+                        VtnPort.class, ModificationType.WRITE,
+                        getLastPathArgument(path), null, nev.getNewObject(),
+                        null);
+                } else if (utype == VtnUpdateType.CHANGED) {
+                    mod = newDataModification(
+                        VtnPort.class, ModificationType.WRITE,
+                        getLastPathArgument(path), nev.getOldObject(),
+                        nev.getNewObject(), null);
+                } else {
+                    mod = newDataModification(
+                        VtnPort.class, ModificationType.DELETE,
+                        getLastPathArgument(path), nev.getNewObject(),
+                        null, null);
                 }
+                changes.add(newTreeModification(path, store, mod));
             }
         }
 
-        Set<InstanceIdentifier<?>> removedSet;
-        if (removed == null) {
-            removedSet = null;
-        } else {
-            removedSet = new LinkedHashSet<InstanceIdentifier<?>>();
-            for (NotifiedEvent nev: removed) {
-                InstanceIdentifier<?> path = nev.getPath();
-                removedSet.add(path);
-                DataObject old = nev.getNewObject();
-                if (old != null) {
-                    original = putData(original, path, old);
-                }
-            }
-        }
-
-        @SuppressWarnings("unchecked")
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev =
-            mock(AsyncDataChangeEvent.class);
-        when(ev.getCreatedData()).thenReturn(createdMap);
-        when(ev.getUpdatedData()).thenReturn(updatedMap);
-        when(ev.getRemovedPaths()).thenReturn(removedSet);
-        when(ev.getOriginalData()).thenReturn(original);
-
-        return ev;
-    }
-
-    /**
-     * Put the given object into the given path.
-     *
-     * @param map   A map to add the object.
-     *              A new map is created if {@code null} is passed.
-     * @param path  A path to the data object.
-     * @param obj   A data object.
-     * @return  {@code map} or a newly created map.
-     */
-    private Map<InstanceIdentifier<?>, DataObject> putData(
-        Map<InstanceIdentifier<?>, DataObject> map, InstanceIdentifier<?> path,
-        DataObject obj) {
-        Map<InstanceIdentifier<?>, DataObject> ret;
-        if (map == null) {
-            ret = new HashMap<InstanceIdentifier<?>, DataObject>();
-        } else {
-            ret = map;
-        }
-        ret.put(path, obj);
-
-        return ret;
+        return changes;
     }
 
     /**
@@ -1357,11 +1113,12 @@ public class DataStoreListenerTest extends TestBase {
      * @param port  The number of the physical port number.
      * @return  A {@link NotifiedEvent} instance.
      */
-    private NotifiedEvent newCreationEvent(long dpid, long port) {
+    private NotifiedEvent<VtnPort> newCreationEvent(long dpid, long port) {
         SalPort sport = new SalPort(dpid, port);
         VtnPort vport = createVtnPortBuilder(sport).build();
         InstanceIdentifier<VtnPort> path = sport.getVtnPortIdentifier();
-        return new NotifiedEvent(path, vport, null);
+        return new NotifiedEvent<VtnPort>(path, vport, null,
+                                          VtnUpdateType.CREATED);
     }
 
     /**
@@ -1372,13 +1129,33 @@ public class DataStoreListenerTest extends TestBase {
      * @param port  The number of the physical port number.
      * @return  A {@link NotifiedEvent} instance.
      */
-    private NotifiedEvent newUpdateEvent(long dpid, long port) {
+    private NotifiedEvent<VtnPort> newUpdateEvent(long dpid, long port) {
         SalPort sport = new SalPort(dpid, port);
         VtnPort newPort = createVtnPortBuilder(sport).build();
         VtnPort oldPort = createVtnPortBuilder(sport, Boolean.FALSE, false).
             build();
         InstanceIdentifier<VtnPort> path = sport.getVtnPortIdentifier();
-        return new NotifiedEvent(path, newPort, oldPort);
+        return new NotifiedEvent<VtnPort>(path, newPort, oldPort,
+                                          VtnUpdateType.CHANGED);
+    }
+
+    /**
+     * Create a {@link NotifiedEvent} instance which indicates the specified
+     * {@link VtnPort} is not modified.
+     *
+     * @param dpid  A datapath ID of the node.
+     * @param port  The number of the physical port number.
+     * @return  A {@link NotifiedEvent} instance.
+     */
+    private NotifiedEvent<VtnPort> newWriteEvent(long dpid, long port) {
+        SalPort sport = new SalPort(dpid, port);
+        VtnPort newPort = createVtnPortBuilder(sport, Boolean.TRUE, true).
+            build();
+        VtnPort oldPort = createVtnPortBuilder(sport, Boolean.TRUE, true).
+            build();
+        InstanceIdentifier<VtnPort> path = sport.getVtnPortIdentifier();
+        return new NotifiedEvent<VtnPort>(path, newPort, oldPort,
+                                          VtnUpdateType.CHANGED);
     }
 
     /**
@@ -1389,10 +1166,11 @@ public class DataStoreListenerTest extends TestBase {
      * @param port  The number of the physical port number.
      * @return  A {@link NotifiedEvent} instance.
      */
-    private NotifiedEvent newRemovalEvent(long dpid, long port) {
+    private NotifiedEvent<VtnPort> newRemovalEvent(long dpid, long port) {
         SalPort sport = new SalPort(dpid, port);
         VtnPort vport = createVtnPortBuilder(sport).build();
         InstanceIdentifier<VtnPort> path = sport.getVtnPortIdentifier();
-        return new NotifiedEvent(path, vport, null);
+        return new NotifiedEvent<VtnPort>(path, vport, null,
+                                          VtnUpdateType.REMOVED);
     }
 }

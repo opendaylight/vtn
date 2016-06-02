@@ -59,23 +59,6 @@ abstract class VNodeLogListener<T extends DataObject>
     }
 
     /**
-     * Determine whether the specified value is actually changed or not.
-     *
-     * <p>
-     *   By default this method always {@code true}.
-     *   Subclass can override this method to change the default behavior.
-     * </p>
-     *
-     * @param old    The value before modification.
-     * @param value  The value after modification.
-     * @return  {@code true} if the value is actually changed.
-     *          {@code false} otherwise.
-     */
-    protected boolean isChanged(T old, T value) {
-        return true;
-    }
-
-    /**
      * Return a brief description about the data model.
      *
      * @param path  Path to the data model.
@@ -111,11 +94,9 @@ abstract class VNodeLogListener<T extends DataObject>
             InstanceIdentifier<T> path = cdata.getIdentifier();
             T value = cdata.getValue();
             T old = cdata.getOldValue();
-            if (isChanged(old, value)) {
-                LOG.info("{}: {} has been changed: old={{}}, new={{}}",
-                         getVNodeIdentifier(path), getDescription(path),
-                         toString(old), toString(value));
-            }
+            LOG.info("{}: {} has been changed: old={{}}, new={{}}",
+                     getVNodeIdentifier(path), getDescription(path),
+                     toString(old), toString(value));
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,6 +8,9 @@
 
 package org.opendaylight.vtn.manager.internal.inventory;
 
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,10 +23,7 @@ import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 
-import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
@@ -53,8 +53,7 @@ public final class NodeConnectorListener
      * @param broker  A {@link DataBroker} service instance.
      */
     public NodeConnectorListener(TxQueue queue, DataBroker broker) {
-        super(queue, broker, FlowCapableNodeConnector.class,
-              DataChangeScope.SUBTREE);
+        super(queue, broker, FlowCapableNodeConnector.class);
     }
 
     /**
@@ -91,8 +90,7 @@ public final class NodeConnectorListener
      * {@inheritDoc}
      */
     @Override
-    protected PortUpdateTask enterEvent(
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
+    protected PortUpdateTask enterEvent() {
         return new PortUpdateTask(LOG);
     }
 
@@ -131,6 +129,32 @@ public final class NodeConnectorListener
     protected void onRemoved(PortUpdateTask ectx,
                              IdentifiedData<FlowCapableNodeConnector> data) {
         addUpdated(ectx, data, VtnUpdateType.REMOVED);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected boolean isUpdated(@Nonnull FlowCapableNodeConnector before,
+                                @Nonnull FlowCapableNodeConnector after) {
+        // Compare name, configuration, and state.
+        boolean changed = !(Objects.equals(before.getName(),
+                                           after.getName()) &&
+                            Objects.equals(before.getConfiguration(),
+                                           after.getConfiguration()) &&
+                            Objects.equals(before.getState(),
+                                           after.getState()));
+        if (!changed) {
+            // Compare current-feature and current-speed.
+            changed = !(Objects.equals(before.getCurrentFeature(),
+                                       after.getCurrentFeature()) &&
+                        Objects.equals(before.getCurrentSpeed(),
+                                       after.getCurrentSpeed()));
+
+            // This listener has no interest in other fields.
+        }
+
+        return changed;
     }
 
     /**

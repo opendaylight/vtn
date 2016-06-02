@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -36,15 +36,13 @@ import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.md.sal.binding.api.ClusteredDataChangeListener;
+import org.opendaylight.controller.md.sal.binding.api.ClusteredDataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
-import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfig;
@@ -65,7 +63,7 @@ public class OperationalListenerTest extends TestBase {
      * Registration to be associated with {@link OperationalListener}.
      */
     @Mock
-    private ListenerRegistration<DataChangeListener>  listenerReg;
+    private ListenerRegistration<DataTreeChangeListener<VtnConfig>>  listenerReg;
 
     /**
      * Reference to current configuration.
@@ -85,10 +83,12 @@ public class OperationalListenerTest extends TestBase {
     public void setUp() {
         initMocks(this);
 
-        when(dataBroker.registerDataChangeListener(
-                 any(LogicalDatastoreType.class), any(InstanceIdentifier.class),
-                 isA(ClusteredDataChangeListener.class),
-                 any(DataChangeScope.class))).
+        Class<DataTreeIdentifier> idtype = DataTreeIdentifier.class;
+        Class<ClusteredDataTreeChangeListener> cltype =
+            ClusteredDataTreeChangeListener.class;
+        when(dataBroker.registerDataTreeChangeListener(
+                 (DataTreeIdentifier<VtnConfig>)any(idtype),
+                 (DataTreeChangeListener<VtnConfig>)isA(cltype))).
             thenReturn(listenerReg);
         operListener = new OperationalListener(dataBroker, currentConfig);
     }
@@ -101,20 +101,21 @@ public class OperationalListenerTest extends TestBase {
      */
     @Test
     public void testConstructor() throws Exception {
-        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
-        DataChangeScope scope = DataChangeScope.SUBTREE;
+        DataTreeIdentifier<VtnConfig> ident = new DataTreeIdentifier<>(
+            LogicalDatastoreType.OPERATIONAL, getPath());
 
         // Ensure that OperationalListener has been registered as data change
         // listener.
-        ArgumentCaptor<ClusteredDataChangeListener> captor =
-            ArgumentCaptor.forClass(ClusteredDataChangeListener.class);
-        verify(dataBroker).registerDataChangeListener(
-            eq(oper), eq(getPath()), captor.capture(), eq(scope));
-        List<ClusteredDataChangeListener> wrappers = captor.getAllValues();
+        ArgumentCaptor<DataTreeChangeListener> captor =
+            ArgumentCaptor.forClass(DataTreeChangeListener.class);
+        verify(dataBroker).registerDataTreeChangeListener(
+            eq(ident), (DataTreeChangeListener<VtnConfig>)captor.capture());
+        List<DataTreeChangeListener> wrappers = captor.getAllValues();
         assertEquals(1, wrappers.size());
-        ClusteredDataChangeListener cdcl = wrappers.get(0);
+        DataTreeChangeListener<?> cdcl = wrappers.get(0);
+        assertTrue(cdcl instanceof ClusteredDataTreeChangeListener);
         assertEquals(operListener,
-                     getFieldValue(cdcl, DataChangeListener.class,
+                     getFieldValue(cdcl, DataTreeChangeListener.class,
                                    "theListener"));
 
         verifyZeroInteractions(listenerReg);
@@ -205,12 +206,11 @@ public class OperationalListenerTest extends TestBase {
 
     /**
      * Test case for
-     * {@link OperationalListener#enterEvent(AsyncDataChangeEvent)}.
+     * {@link OperationalListener#enterEvent()}.
      */
     @Test
     public void testEnterEvent() {
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev = null;
-        assertEquals(null, operListener.enterEvent(ev));
+        assertEquals(null, operListener.enterEvent());
     }
 
     /**
@@ -315,6 +315,94 @@ public class OperationalListenerTest extends TestBase {
             getFieldValue(operListener, SettableVTNFuture.class, "initFuture");
         assertNotNull(future);
         assertEquals(new VTNConfigImpl(), currentConfig.get());
+    }
+
+    /**
+     * Test case for {@link OperationalListener#isUpdated(VtnConfig,VtnConfig)}.
+     */
+    @Test
+    public void testIsUpdated() {
+        VtnConfigBuilder builder = new VtnConfigBuilder();
+        VtnConfig old = builder.build();
+        VtnConfig vcfg = builder.build();
+        assertEquals(false, operListener.isUpdated(old, vcfg));
+
+        // Change topology-wait.
+        Integer[] topoWaits = {1, 34, 567, 999};
+        for (Integer value: topoWaits) {
+            vcfg = builder.setTopologyWait(value).build();
+            assertEquals(true, operListener.isUpdated(old, vcfg));
+            old = builder.build();
+            assertEquals(false, operListener.isUpdated(old, vcfg));
+        }
+
+        // Change l2-flow-priority.
+        Integer[] priorities = {1, 55, 678, 999};
+        for (Integer value: priorities) {
+            vcfg = builder.setL2FlowPriority(value).build();
+            assertEquals(true, operListener.isUpdated(old, vcfg));
+            old = builder.build();
+            assertEquals(false, operListener.isUpdated(old, vcfg));
+        }
+
+        // Change flow-mod-timeout.
+        Integer[] flowModTimeouts = {100, 345, 19384, 34913, 60000};
+        for (Integer value: flowModTimeouts) {
+            vcfg = builder.setFlowModTimeout(value).build();
+            assertEquals(true, operListener.isUpdated(old, vcfg));
+            old = builder.build();
+            assertEquals(false, operListener.isUpdated(old, vcfg));
+        }
+
+        // Change bulk-flow-mod-timeout.
+        Integer[] bulkFlowModTimeouts = {3000, 10000, 56789, 123456, 600000};
+        for (Integer value: bulkFlowModTimeouts) {
+            vcfg = builder.setBulkFlowModTimeout(value).build();
+            assertEquals(true, operListener.isUpdated(old, vcfg));
+            old = builder.build();
+            assertEquals(false, operListener.isUpdated(old, vcfg));
+        }
+
+        // Change init-timeout.
+        Integer[] initTimeouts = {100, 3456, 78901, 600000};
+        for (Integer value: initTimeouts) {
+            vcfg = builder.setInitTimeout(value).build();
+            assertEquals(true, operListener.isUpdated(old, vcfg));
+            old = builder.build();
+            assertEquals(false, operListener.isUpdated(old, vcfg));
+        }
+
+        // Change max-redirections.
+        Integer[] maxRedirections = {10, 222, 34567, 100000};
+        for (Integer value: maxRedirections) {
+            vcfg = builder.setMaxRedirections(value).build();
+            assertEquals(true, operListener.isUpdated(old, vcfg));
+            old = builder.build();
+            assertEquals(false, operListener.isUpdated(old, vcfg));
+        }
+
+        // Change controller-mac-address.
+        EtherAddress[] macAddrs = {
+            new EtherAddress(0x001122334455L),
+            new EtherAddress(0xa0b0c0d0e0f0L),
+            new EtherAddress(0x0c123abcdef9L),
+        };
+        for (EtherAddress eaddr: macAddrs) {
+            vcfg = builder.setControllerMacAddress(eaddr.getMacAddress()).
+                build();
+            assertEquals(true, operListener.isUpdated(old, vcfg));
+            old = builder.build();
+            assertEquals(false, operListener.isUpdated(old, vcfg));
+        }
+
+        // Change host-tracking.
+        Boolean[] bools = {Boolean.TRUE, Boolean.FALSE};
+        for (Boolean value: bools) {
+            vcfg = builder.setHostTracking(value).build();
+            assertEquals(true, operListener.isUpdated(old, vcfg));
+            old = builder.build();
+            assertEquals(false, operListener.isUpdated(old, vcfg));
+        }
     }
 
     /**

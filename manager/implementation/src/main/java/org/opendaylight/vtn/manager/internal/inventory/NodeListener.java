@@ -9,12 +9,11 @@
 package org.opendaylight.vtn.manager.internal.inventory;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
+
+import javax.annotation.Nonnull;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,11 +33,8 @@ import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
-import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnNodes;
@@ -61,20 +57,6 @@ public final class NodeListener
      */
     private static final Logger  LOG =
         LoggerFactory.getLogger(NodeListener.class);
-
-    /**
-     * Required event types.
-     */
-    private static final Set<VtnUpdateType>  REQUIRED_EVENTS;
-
-    /**
-     * Initialize static fields.
-     */
-    static {
-        Set<VtnUpdateType> set = EnumSet.of(
-            VtnUpdateType.CREATED, VtnUpdateType.REMOVED);
-        REQUIRED_EVENTS = ImmutableSet.copyOf(set);
-    }
 
     /**
      * MD-SAL transaction task that initializes the VTN node tree.
@@ -160,7 +142,7 @@ public final class NodeListener
      * @param broker  A {@link DataBroker} service instance.
      */
     public NodeListener(TxQueue queue, DataBroker broker) {
-        super(queue, broker, FlowCapableNode.class, DataChangeScope.SUBTREE);
+        super(queue, broker, FlowCapableNode.class);
         submitInitial(new NodesInitTask());
     }
 
@@ -191,8 +173,7 @@ public final class NodeListener
      * {@inheritDoc}
      */
     @Override
-    protected NodeUpdateTask enterEvent(
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
+    protected NodeUpdateTask enterEvent() {
         return new NodeUpdateTask(LOG);
     }
 
@@ -243,14 +224,37 @@ public final class NodeListener
     }
 
     /**
-     * Return a set of {@link VtnUpdateType} instances that specifies
-     * event types to be listened.
+     * Always returns {@code false} because this listener has no interest in
+     * the change of flow-capable-node.
      *
-     * @return  A set of {@link VtnUpdateType} instances.
+     * @param before  The target data object before modification.
+     * @param after   The target data object after modification.
+     * @return  {@code false}.
      */
     @Override
-    protected Set<VtnUpdateType> getRequiredEvents() {
-        return REQUIRED_EVENTS;
+    protected boolean isUpdated(
+        @Nonnull FlowCapableNode before, @Nonnull FlowCapableNode after) {
+        return false;
+    }
+
+    // AbstractDataChangeListener
+
+    /**
+     * Determine whether the specified event type should be handled or not.
+     *
+     * <p>
+     *   This method returns {@code true} only if the given type is not
+     *   {@link VtnUpdateType#CHANGED}.
+     * </p>
+     *
+     * @param type  A {@link VtnUpdateType} instance which indicates the event
+     *              type.
+     * @return  {@code true} if the given event type should be handled.
+     *          {@code false} otherwise.
+     */
+    @Override
+    protected boolean isRequiredEvent(@Nonnull VtnUpdateType type) {
+        return (type != VtnUpdateType.CHANGED);
     }
 
     // CloseableContainer

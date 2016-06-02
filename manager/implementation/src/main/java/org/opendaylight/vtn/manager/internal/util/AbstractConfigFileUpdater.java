@@ -30,12 +30,17 @@ public abstract class AbstractConfigFileUpdater<K, V> {
     /**
      * A map that keeps updated data.
      */
-    private final Map<K, V> updatedData = new HashMap<>();
+    private final Map<K, V>  updatedData = new HashMap<>();
 
     /**
      * A set of identifiers for removed data.
      */
-    private final Set<K> removedData = new HashSet<>();
+    private final Set<K>  removedData = new HashSet<>();
+
+    /**
+     * A set of identifiers associated with changed data.
+     */
+    private final Set<K>  changedData = new HashSet<>();
 
     /**
      * The type of the XML configuration file.
@@ -97,6 +102,26 @@ public abstract class AbstractConfigFileUpdater<K, V> {
      */
     public boolean isRemoved(K key) {
         return removedData.contains(key);
+    }
+
+    /**
+     * Mark the specified data as changed.
+     *
+     * @param key  The identifier of the changed data.
+     */
+    public void setChanged(K key) {
+        changedData.add(key);
+    }
+
+    /**
+     * Determine whether the contents of the specified data is changed or not.
+     *
+     * @param key  The identifier of the data.
+     * @return  {@code true} only if the contents of the specified data is
+     *          changed.
+     */
+    public boolean isChanged(K key) {
+        return changedData.contains(key);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -17,25 +17,18 @@ import org.slf4j.LoggerFactory;
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.util.ChangedData;
-import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-
-import org.opendaylight.yangtools.yang.binding.DataObject;
-import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfig;
 
 /**
  * VTN configuration listener for operational view.
  */
-public final class OperationalListener
-    extends DataStoreListener<VtnConfig, Void> {
+public final class OperationalListener extends VtnConfigListener {
     /**
      * Logger instance.
      */
@@ -62,10 +55,8 @@ public final class OperationalListener
      */
     public OperationalListener(DataBroker broker,
                                AtomicReference<VTNConfigImpl> cfg) {
-        super(VtnConfig.class);
         current = cfg;
-        registerListener(broker, LogicalDatastoreType.OPERATIONAL,
-                         DataChangeScope.SUBTREE, true);
+        registerListener(broker, LogicalDatastoreType.OPERATIONAL, true);
     }
 
     /**
@@ -121,22 +112,6 @@ public final class OperationalListener
      * {@inheritDoc}
      */
     @Override
-    protected Void enterEvent(
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
-        return null;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void exitEvent(Void ectx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     protected void onCreated(Void ectx, IdentifiedData<VtnConfig> data) {
         updateConfig(data);
     }
@@ -155,14 +130,6 @@ public final class OperationalListener
     @Override
     protected void onRemoved(Void ectx, IdentifiedData<VtnConfig> data) {
         LOG.warn("Global configuration has been removed unexpectedly.");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected InstanceIdentifier<VtnConfig> getWildcardPath() {
-        return VTNConfigManager.CONFIG_IDENT;
     }
 
     // CloseableContainer

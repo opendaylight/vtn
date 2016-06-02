@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -10,8 +10,11 @@ package org.opendaylight.vtn.manager.internal.routing;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,12 +36,9 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcFuture;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcUtils;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 
-import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 
@@ -117,8 +117,7 @@ public final class VTNRoutingManager
 
         try {
             registerListener(provider.getDataBroker(),
-                             LogicalDatastoreType.OPERATIONAL,
-                             DataChangeScope.SUBTREE, true);
+                             LogicalDatastoreType.OPERATIONAL, true);
             pathPolicyListener = new PathPolicyListener(provider, topology);
             addCloseable(pathPolicyListener);
         } catch (RuntimeException e) {
@@ -204,8 +203,7 @@ public final class VTNRoutingManager
      * {@inheritDoc}
      */
     @Override
-    protected TopologyEventContext enterEvent(
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
+    protected TopologyEventContext enterEvent() {
         return new TopologyEventContext();
     }
 
@@ -274,6 +272,18 @@ public final class VTNRoutingManager
         LOG.info("Inter-switch link has been removed: {}",
                  InventoryUtils.toString(vlink));
         ectx.addRemoved(vlink);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected boolean isUpdated(@Nonnull VtnLink before,
+                                @Nonnull VtnLink after) {
+        return !(Objects.equals(before.getSource(), after.getSource()) &&
+                 Objects.equals(before.getDestination(),
+                                after.getDestination()) &&
+                 Objects.equals(before.isStaticLink(), after.isStaticLink()));
     }
 
     /**
