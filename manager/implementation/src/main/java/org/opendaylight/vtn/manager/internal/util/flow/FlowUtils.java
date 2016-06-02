@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation
+ * Copyright (c) 2015-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -90,6 +90,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.Remo
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.GenericFlowAttributes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
@@ -1095,5 +1096,19 @@ public final class FlowUtils {
         BigInteger flowId = fc.getDataFlow().getFlowId().getValue();
         logger.debug("VTN data flow has been removed: remover={}, id={}",
                      desc, flowId);
+    }
+
+    /**
+     * Return the table ID configured in the given MD-SAL flow.
+     *
+     * @param flow  The MD-SAL flow.
+     * @return  The table ID in the given MD-SAL flow.
+     *          Note that this method returns zero if no table ID is present
+     *          in the given MD-SAL flow. This is because OF 1.0 flow does not
+     *          have table ID.
+     */
+    public static short getTableId(@Nonnull GenericFlowAttributes flow) {
+        Short id = flow.getTableId();
+        return (id == null) ? (short)0 : id.shortValue();
     }
 }

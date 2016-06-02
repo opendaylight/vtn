@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation
+ * Copyright (c) 2015-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -179,6 +179,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalF
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowModFlags;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.GenericFlowAttributes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Instructions;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
@@ -2687,6 +2688,22 @@ public class FlowUtilsTest extends TestBase {
         SalNode snode = SalNode.create(nid);
         NodeRoute nr = new NodeRoute(snode.getAdNode(), inSw, outSw);
         nroutes.add(nr);
+    }
+
+    /**
+     * Test case for {@link FlowUtils#getTableId(GenericFlowAttributes)}.
+     */
+    @Test
+    public void testGetTableId() {
+        // Table ID should be zero if it is not present in flow.
+        GenericFlowAttributes flow = new FlowBuilder().build();
+        assertEquals((short)0, FlowUtils.getTableId(flow));
+
+        short[] tableIds = {0, 1, 34, 67, 145, 255};
+        for (short table: tableIds) {
+            flow = new FlowBuilder().setTableId(table).build();
+            assertEquals(table, FlowUtils.getTableId(flow));
+        }
     }
 
     /**

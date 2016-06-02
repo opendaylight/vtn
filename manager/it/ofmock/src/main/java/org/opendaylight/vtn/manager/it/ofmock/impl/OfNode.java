@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation
+ * Copyright (c) 2015-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -960,11 +960,14 @@ public final class OfNode
             setDurationSec(Long.valueOf(DURATION_SEC)).
             setDurationNsec(Long.valueOf(DURATION_NANOSEC)).
             setPriority(Integer.valueOf(ofent.getPriority())).
-            setTableId(Short.valueOf((short)ofent.getTableId())).
             setIdleTimeout(Integer.valueOf(ofent.getIdleTimeout())).
             setHardTimeout(Integer.valueOf(ofent.getHardTimeout())).
             setRemovedReason(reason).setMatch(match).
             setNode(new NodeRef(nodePath));
+        if (ofVersion != VtnOpenflowVersion.OF10) {
+            // OF 1.0 has no table ID.
+            builder.setTableId(Short.valueOf((short)ofent.getTableId()));
+        }
 
         BigInteger cookie = ofent.getCookie();
         if (cookie != null) {
