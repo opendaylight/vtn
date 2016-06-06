@@ -47,6 +47,10 @@ import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.vtn.manager.internal.TestMacAddress;
 import org.opendaylight.vtn.manager.internal.TestVlanId;
 
+import org.opendaylight.yangtools.yang.binding.Identifiable;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.vtn.path.map.list.VtnPathMap;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.vtn.path.map.list.VtnPathMapBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
@@ -272,19 +276,15 @@ public class MiscUtilsTest extends TestBase {
     }
 
     /**
-     * Test case for {@link MiscUtils#cast(Class,Object)} and
-     * {@link MiscUtils#checkedCast(Class,Object)}.
-     *
-     * @throws Exception  An error occurred.
+     * Test case for {@link MiscUtils#cast(Class,Object)}.
      */
     @Test
-    public void testCast() throws Exception {
+    public void testCast() {
         Object num = Integer.valueOf(0);
         List<Class<?>> good = new ArrayList<>();
         Collections.addAll(good, Integer.class, Number.class);
         for (Class<?> cls: good) {
             assertEquals(num, MiscUtils.cast(cls, num));
-            assertEquals(num, MiscUtils.checkedCast(cls, num));
         }
 
         List<Class<?>> bad = new ArrayList<>();
@@ -292,13 +292,6 @@ public class MiscUtilsTest extends TestBase {
                            Float.class, Double.class, MiscUtils.class);
         for (Class<?> cls: bad) {
             assertEquals(null, MiscUtils.cast(cls, num));
-            try {
-                MiscUtils.checkedCast(cls, num);
-                unexpected();
-            } catch (DataTypeMismatchException e) {
-                assertEquals(cls, e.getTargetType());
-                assertSame(num, e.getObject());
-            }
         }
     }
 
@@ -486,6 +479,65 @@ public class MiscUtilsTest extends TestBase {
         list1 = ImmutableList.of(5, 3, 1, 0, 2, 4, 1, 2, 3, 4, 5);
         assertTrue(MiscUtils.equalsAsSet(list1, list2));
         assertTrue(MiscUtils.equalsAsSet(list2, list1));
+    }
+
+    /**
+     * Test case for {@link MiscUtils#equalsAsMap(Collection, Collection)}.
+     */
+    @Test
+    public void testEqualsAsMap() {
+        // Null collection should be treated as an empty collection.
+        List<VtnPathMap> list1 = null;
+        List<VtnPathMap> list2 = null;
+        checkEqualsAsMap(true, list1, list2);
+
+        list1 = new ArrayList<>();
+        checkEqualsAsMap(true, list1, list2);
+        list2 = Collections.<VtnPathMap>emptyList();
+        checkEqualsAsMap(true, list1, list2);
+
+        list1.add(newPathMap(1, null, 1, 12345, 30000));
+        checkEqualsAsMap(false, list1, list2);
+        list2 = Collections.singletonList(newPathMap(2, null, 1, 12345, 30000));
+        checkEqualsAsMap(false, list1, list2);
+        list2 = Collections.singletonList(
+            newPathMap(1, "condition", 1, 12345, 30000));
+        checkEqualsAsMap(false, list1, list2);
+        list2 = Collections.singletonList(newPathMap(1, null, 2, 12345, 30000));
+        checkEqualsAsMap(false, list1, list2);
+        list2 = Collections.singletonList(newPathMap(1, null, 1, 0, 30000));
+        checkEqualsAsMap(false, list1, list2);
+        list2 = Collections.singletonList(newPathMap(1, null, 1, 12345, 65535));
+        checkEqualsAsMap(false, list1, list2);
+        list2 = Collections.singletonList(newPathMap(1, null, 1, 12345, 30000));
+        checkEqualsAsMap(true, list1, list2);
+
+        VtnPathMap[] pathMaps = {
+            newPathMap(2, "cond_2", 0, null, null),
+            newPathMap(3, "cond_3", null, 10, null),
+            newPathMap(4, "cond_4", null, null, 40000),
+            newPathMap(5, "cond", 3, 1000, 2000),
+            newPathMap(6, "cond", 3, 1000, 2000),
+        };
+        list2 = new ArrayList<>(list1);
+        Collections.reverse(list2);
+        for (VtnPathMap vpm: pathMaps) {
+            list1.add(vpm);
+            checkEqualsAsMap(false, list1, list2);
+        }
+        for (int i = 0; i < pathMaps.length; i++) {
+            boolean expected = (i == pathMaps.length - 1);
+            list2.add(pathMaps[i]);
+            checkEqualsAsMap(expected, list1, list2);
+        }
+
+        list1.add(newPathMap(1000, "cond_1000", 2, 888, 9999));
+        list2.add(newPathMap(1000, "cond_1001", 2, 888, 9999));
+        checkEqualsAsMap(false, list1, list2);
+
+        list2 = new ArrayList<>(list1);
+        Collections.reverse(list2);
+        checkEqualsAsMap(true, list1, list2);
     }
 
     /**
@@ -862,5 +914,41 @@ public class MiscUtilsTest extends TestBase {
     private void checkException(VTNException e, String desc, VtnErrorTag vtag) {
         assertEquals(desc, e.getMessage());
         assertEquals(vtag, e.getVtnErrorTag());
+    }
+
+    /**
+     * Create a new vtn-path-map instance.
+     *
+     * @param index   The index of the path map.
+     * @param cond    The name of the flow condition.
+     * @param policy  The path policy ID.
+     * @param idle    The idle-timeout value.
+     * @param hard    The hard-timeout value.
+     * @return  A {@link VtnPathMap} instance.
+     */
+    private VtnPathMap newPathMap(Integer index, String cond, Integer policy,
+                                  Integer idle, Integer hard) {
+        VnodeName vcond = (cond == null) ? null : new VnodeName(cond);
+        return new VtnPathMapBuilder().
+            setIndex(index).
+            setCondition(vcond).
+            setPolicy(policy).
+            setIdleTimeout(idle).
+            setHardTimeout(hard).
+            build();
+    }
+
+    /**
+     * Check the result of
+     * {@link MiscUtils#equalsAsMap(Collection, Collection)}.
+     *
+     * @param expected  The expected result.
+     * @param c1        The first collection to be compared.
+     * @param c2        The second collection to be compared.
+     */
+    private <T extends Identifiable<?>> void checkEqualsAsMap(
+        boolean expected, Collection<T> c1, Collection<T> c2) {
+        assertEquals(expected, MiscUtils.equalsAsMap(c1, c2));
+        assertEquals(expected, MiscUtils.equalsAsMap(c2, c1));
     }
 }

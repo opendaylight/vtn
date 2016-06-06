@@ -12,7 +12,10 @@ import static org.opendaylight.vtn.manager.internal.util.MiscUtils.LOG_SEPARATOR
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+
+import javax.annotation.Nonnull;
 
 import com.google.common.base.Optional;
 
@@ -333,6 +336,33 @@ public final class PathMapUtils {
         }
 
         return vpm;
+    }
+
+    /**
+     * Determine whether the specified path map was actually updated or not.
+     *
+     * <p>
+     *   Note that this method expects that both {@code before} and
+     *   {@code after} have the same index.
+     * </p>
+     *
+     * @param old  The path map before modification.
+     * @param vpm  The path map after modification.
+     * @return  {@code true} if the specified path map was actually updated.
+     *          {@code false} otherwise.
+     */
+    public static boolean isUpdated(@Nonnull VtnPathMap old,
+                                    @Nonnull VtnPathMap vpm) {
+        // Compare flow condition name and policy ID.
+        boolean changed = !(Objects.equals(old.getCondition(),
+                                           vpm.getCondition()) &&
+                            Objects.equals(old.getPolicy(), vpm.getPolicy()));
+        if (!changed) {
+            // Compare timeouts.
+            changed = !FlowUtils.equalsFlowTimeoutConfig(old, vpm);
+        }
+
+        return changed;
     }
 
     /**

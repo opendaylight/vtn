@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,8 +8,13 @@
 
 package org.opendaylight.vtn.manager.internal.util;
 
-import java.util.Map;
-import java.util.Set;
+import static org.opendaylight.vtn.manager.internal.util.MiscUtils.VERBOSE_LOG;
+
+import javax.annotation.Nonnull;
+
+import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.ModificationType;
+import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
@@ -34,68 +39,90 @@ public abstract class DataStoreListener<T extends DataObject, C>
     }
 
     /**
-     * Create an {@link IdentifiedData} that represents a data object notified
-     * by a data change event.
+     * Notify the created tree node.
      *
-     * @param path   An instance identifier that specifies data.
-     * @param value  An object associated with {@code path}.
-     * @param label  A label only for logging.
-     * @return  An {@link IdentifiedData} on success.
-     *          Otherwise {@code null}.
+     * @param ctx    Runtime information of the notification.
+     * @param ectx   An event context created by this instance.
+     * @param value  The created tree node.
      */
-    private IdentifiedData<T> createIdentifiedData(
-        InstanceIdentifier<?> path, DataObject value, Object label) {
-        if (checkPath(path, label)) {
-            Class<T> target = getTargetType();
-            try {
-                IdentifiedData<T> data =
-                    IdentifiedData.create(target, path, value);
-                if (data == null) {
-                    unwantedIdentifier(path, label);
-                }
-                return data;
-            } catch (DataTypeMismatchException e) {
-                unexpectedData(path, e.getObject(), label);
+    private void notifyCreated(TreeChangeContext<T> ctx, C ectx,
+                               @Nonnull T value) {
+        VtnUpdateType utype = VtnUpdateType.CREATED;
+        if (isRequiredEvent(utype)) {
+            InstanceIdentifier<T> path = ctx.getRootPath();
+            if (checkPath(path, utype)) {
+                IdentifiedData<T> data = new IdentifiedData<>(path, value);
+                onCreated(ectx, data);
             }
         }
-
-        return null;
     }
 
     /**
-     * Create an {@link ChangedData} that represents a change of a data object
-     * notified by a data change event.
+     * Notify the updated tree node.
      *
-     * @param path   An instance identifier that specifies data.
-     * @param value  An object associated with {@code path}.
-     * @param old    An object prior to the change.
-     * @return  An {@link ChangedData} on success.
-     *          Otherwise {@code null}.
+     * @param ctx     Runtime information of the notification.
+     * @param ectx    An event context created by this instance.
+     * @param before  The target tree node before modification.
+     * @param after   The target tree node after modification.
      */
-    private ChangedData<T> createChangedData(
-        InstanceIdentifier<?> path, DataObject value, DataObject old) {
-        VtnUpdateType type = VtnUpdateType.CHANGED;
-        if (checkPath(path, type)) {
-            Class<T> target = getTargetType();
-            try {
-                ChangedData<T> data =
-                    ChangedData.create(target, path, value, old);
-                if (data == null) {
-                    unwantedIdentifier(path, type);
+    private void notifyUpdated(TreeChangeContext<T> ctx, C ectx,
+                               @Nonnull T before, @Nonnull T after) {
+        VtnUpdateType utype = VtnUpdateType.CHANGED;
+        if (isRequiredEvent(utype)) {
+            InstanceIdentifier<T> path = ctx.getRootPath();
+            if (checkPath(path, utype)) {
+                if (isUpdated(before, after)) {
+                    ChangedData<T> data =
+                        new ChangedData<>(path, after, before);
+                    onUpdated(ectx, data);
+                } else if (VERBOSE_LOG.isTraceEnabled()) {
+                    VERBOSE_LOG.trace(
+                        "{}: Tree node is not changed: path={}, value={}",
+                        getClass().getSimpleName(), ctx.getRootPath(), after);
                 }
-                return data;
-            } catch (DataTypeMismatchException e) {
-                unexpectedData(path, e.getObject(), type);
             }
         }
-
-        return null;
     }
+
+    /**
+     * Notify the removed tree node.
+     *
+     * @param ctx    Runtime information of the notification.
+     * @param ectx   An event context created by this instance.
+     * @param value  The removed tree node.
+     */
+    private void notifyRemoved(TreeChangeContext<T> ctx, C ectx, T value) {
+        VtnUpdateType utype = VtnUpdateType.REMOVED;
+        if (isRequiredEvent(utype)) {
+            InstanceIdentifier<T> path = ctx.getRootPath();
+            if (value == null) {
+                nullValue(path, utype);
+            } else if (checkPath(path, utype)) {
+                IdentifiedData<T> data = new IdentifiedData<>(path, value);
+                onRemoved(ectx, data);
+            }
+        }
+    }
+
+    /**
+     * Determine whether the specified data was updated or not.
+     *
+     * <p>
+     *   {@link #onUpdated(Object, ChangedData)} is called only if this method
+     *   returns {@code true}.
+     * </p>
+     *
+     * @param before  The target data object before modification.
+     * @param after   The target data object after modification.
+     * @return  {@code true} if the target data was updated.
+     *          {@code false} otherwise.
+     */
+    protected abstract boolean isUpdated(@Nonnull T before, @Nonnull T after);
 
     /**
      * Invoked when a new data has been created in the datastore.
      *
-     * @param ectx  An event context created by this class.
+     * @param ectx  An event context created by this instance.
      * @param data  An {@link IdentifiedData} instance which contains the
      *              created data.
      */
@@ -104,7 +131,7 @@ public abstract class DataStoreListener<T extends DataObject, C>
     /**
      * Invoked when a data in the datastore has been updated.
      *
-     * @param ectx  An event context created by this class.
+     * @param ectx  An event context created by this instance.
      * @param data  A {@link ChangedData} instance which contains the
      *              changed data.
      */
@@ -113,7 +140,7 @@ public abstract class DataStoreListener<T extends DataObject, C>
     /**
      * Invoked when a data has been removed from the datastore.
      *
-     * @param ectx  An event context created by this class.
+     * @param ectx  An event context created by this instance.
      * @param data  An {@link IdentifiedData} instance which contains the
      *              removed data.
      */
@@ -125,64 +152,25 @@ public abstract class DataStoreListener<T extends DataObject, C>
      * {@inheritDoc}
      */
     @Override
-    protected final void onCreated(
-        C ectx, Map<InstanceIdentifier<?>, DataObject> created) {
-        if (created == null) {
-            return;
-        }
-
-        for (Map.Entry<InstanceIdentifier<?>, DataObject> entry:
-                 created.entrySet()) {
-            InstanceIdentifier<?> key = entry.getKey();
-            DataObject value = entry.getValue();
-            IdentifiedData<T> data =
-                createIdentifiedData(key, value, VtnUpdateType.CREATED);
-            if (data != null) {
-                onCreated(ectx, data);
-            }
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected final void onUpdated(
-        C ectx, Map<InstanceIdentifier<?>, DataObject> updated,
-        Map<InstanceIdentifier<?>, DataObject> original) {
-        if (updated == null) {
-            return;
-        }
-
-        for (Map.Entry<InstanceIdentifier<?>, DataObject> entry:
-                 updated.entrySet()) {
-            InstanceIdentifier<?> key = entry.getKey();
-            DataObject value = entry.getValue();
-            DataObject org = original.get(key);
-            ChangedData<T> data = createChangedData(key, value, org);
-            if (data != null) {
-                onUpdated(ectx, data);
-            }
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected final void onRemoved(
-        C ectx, Set<InstanceIdentifier<?>> removed,
-        Map<InstanceIdentifier<?>, DataObject> original) {
-        if (removed == null) {
-            return;
-        }
-
-        for (InstanceIdentifier<?> key: removed) {
-            DataObject value = original.get(key);
-            IdentifiedData<T> data =
-                createIdentifiedData(key, value, VtnUpdateType.REMOVED);
-            if (data != null) {
-                onRemoved(ectx, data);
+    protected final void handleTree(TreeChangeContext<T> ctx, C ectx,
+                                    DataTreeModification<T> change) {
+        DataObjectModification<T> mod = change.getRootNode();
+        ModificationType modType = mod.getModificationType();
+        T before = mod.getDataBefore();
+        if (modType == ModificationType.DELETE) {
+            // The target data has been removed.
+            notifyRemoved(ctx, ectx, before);
+        } else {
+            T after = mod.getDataAfter();
+            if (after == null) {
+                // This should never happen.
+                nullValue(ctx.getRootPath(), "handleTree");
+            } else if (before == null) {
+                // The target data has been created.
+                notifyCreated(ctx, ectx, after);
+            } else {
+                // The target data has been updated.
+                notifyUpdated(ctx, ectx, before, after);
             }
         }
     }

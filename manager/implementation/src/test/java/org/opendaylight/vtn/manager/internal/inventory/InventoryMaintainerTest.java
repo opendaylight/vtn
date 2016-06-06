@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -9,6 +9,7 @@
 package org.opendaylight.vtn.manager.internal.inventory;
 
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.isA;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -27,12 +28,12 @@ import org.opendaylight.vtn.manager.internal.TxTask;
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
 
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
-import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeConnector;
 
 /**
  * JUnit test for {@link InventoryMaintainer}
@@ -54,7 +55,7 @@ public class InventoryMaintainerTest extends TestBase {
      * Mock-up of {@link ListenerRegistration}.
      */
     @Mock
-    private ListenerRegistration<DataChangeListener>  registration;
+    private ListenerRegistration<DataTreeChangeListener<FlowCapableNodeConnector>>  registration;
 
     /**
      * Mock-up of {@link Logger}.
@@ -74,9 +75,11 @@ public class InventoryMaintainerTest extends TestBase {
     public void setUp() {
         initMocks(this);
 
-        when(dataBroker.registerDataChangeListener(
-                 any(LogicalDatastoreType.class), any(InstanceIdentifier.class),
-                 any(NodeConnectorListener.class), any(DataChangeScope.class))).
+        Class<DataTreeIdentifier> idtype = DataTreeIdentifier.class;
+        Class<DataTreeChangeListener> ltype = DataTreeChangeListener.class;
+        when(dataBroker.registerDataTreeChangeListener(
+                 (DataTreeIdentifier<FlowCapableNodeConnector>)any(idtype),
+                 (DataTreeChangeListener<FlowCapableNodeConnector>)isA(ltype))).
             thenReturn(registration);
         ncListener = new NodeConnectorListener(txQueue, dataBroker);
     }

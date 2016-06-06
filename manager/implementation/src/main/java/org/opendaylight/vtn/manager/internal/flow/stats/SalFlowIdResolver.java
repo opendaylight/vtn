@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,8 +8,7 @@
 
 package org.opendaylight.vtn.manager.internal.flow.stats;
 
-import java.util.Collections;
-import java.util.Set;
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,11 +21,8 @@ import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
 
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
-import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
@@ -60,12 +56,6 @@ public final class SalFlowIdResolver
         LoggerFactory.getLogger(SalFlowIdResolver.class);
 
     /**
-     * Required event types.
-     */
-    private static final Set<VtnUpdateType>  REQUIRED_EVENTS =
-        Collections.singleton(VtnUpdateType.CREATED);
-
-    /**
      * The MD-SAL datastore transaction queue for updating VTN flow
      * information.
      */
@@ -83,8 +73,7 @@ public final class SalFlowIdResolver
         txQueue = txq;
 
         registerListener(provider.getDataBroker(),
-                         LogicalDatastoreType.OPERATIONAL,
-                         DataChangeScope.BASE, false);
+                         LogicalDatastoreType.OPERATIONAL, false);
     }
 
     // DataStoreListener
@@ -93,8 +82,7 @@ public final class SalFlowIdResolver
      * {@inheritDoc}
      */
     @Override
-    protected AddedFlowStats enterEvent(
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
+    protected AddedFlowStats enterEvent() {
         return new AddedFlowStats(LOG);
     }
 
@@ -131,6 +119,19 @@ public final class SalFlowIdResolver
     }
 
     /**
+     * Always returns {@code false} because this listener has no interest in
+     * the change of MD-SAL flow.
+     *
+     * @param before  The target data object before modification.
+     * @param after   The target data object after modification.
+     * @return  {@code false}.
+     */
+    @Override
+    protected boolean isUpdated(@Nonnull Flow before, @Nonnull Flow after) {
+        return false;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -146,14 +147,21 @@ public final class SalFlowIdResolver
     // AbstractDataChangeListener
 
     /**
-     * Return a set of {@link VtnUpdateType} instances that specifies
-     * event types to be listened.
+     * Determine whether the specified event type should be handled or not.
      *
-     * @return  A set of {@link VtnUpdateType} instances.
+     * <p>
+     *   This method returns {@code true} only if the given type is
+     *   {@link VtnUpdateType#CREATED}.
+     * </p>
+     *
+     * @param type  A {@link VtnUpdateType} instance which indicates the event
+     *              type.
+     * @return  {@code true} if the given event type should be handled.
+     *          {@code false} otherwise.
      */
     @Override
-    protected Set<VtnUpdateType> getRequiredEvents() {
-        return REQUIRED_EVENTS;
+    protected boolean isRequiredEvent(@Nonnull VtnUpdateType type) {
+        return (type == VtnUpdateType.CREATED);
     }
 
     // CloseableContainer

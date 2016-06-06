@@ -44,16 +44,16 @@ import org.opendaylight.vtn.manager.internal.util.tx.TxQueueImpl;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.md.sal.binding.api.ClusteredDataChangeListener;
+import org.opendaylight.controller.md.sal.binding.api.ClusteredDataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.clustering.Entity;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipChange;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListener;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListenerRegistration;
 import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipState;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.TransactionCommitFailedException;
 
@@ -120,13 +120,13 @@ public class VTNConfigManagerTest extends TestBase {
      * Registration to be associated with {@link ConfigListener}.
      */
     @Mock
-    private ListenerRegistration<DataChangeListener>  cfgListenerReg;
+    private ListenerRegistration<DataTreeChangeListener<VtnConfig>>  cfgListenerReg;
 
     /**
      * Registration to be associated with {@link OperationalListener}.
      */
     @Mock
-    private ListenerRegistration<DataChangeListener>  operListenerReg;
+    private ListenerRegistration<DataTreeChangeListener<VtnConfig>>  operListenerReg;
 
     /**
      * Registration to be associated with {@link EntityOwnershipListener}.
@@ -177,22 +177,24 @@ public class VTNConfigManagerTest extends TestBase {
         initMocks(this);
 
         InstanceIdentifier<VtnConfig> path = getPath();
+        DataTreeIdentifier<VtnConfig> ident = new DataTreeIdentifier<>(
+            LogicalDatastoreType.CONFIGURATION, path);
+        Class<ClusteredDataTreeChangeListener> cltype =
+            ClusteredDataTreeChangeListener.class;
         when(vtnProvider.getDataBroker()).thenReturn(dataBroker);
-        when(dataBroker.registerDataChangeListener(
-                 eq(LogicalDatastoreType.CONFIGURATION), eq(path),
-                 isA(ClusteredDataChangeListener.class),
-                 any(DataChangeScope.class))).
+        when(dataBroker.registerDataTreeChangeListener(
+                 eq(ident), (DataTreeChangeListener<VtnConfig>)isA(cltype))).
             thenReturn(cfgListenerReg);
 
         Answer ans = new Answer() {
             @Override
             public Object answer(InvocationOnMock inv) {
                 Object[] args = inv.getArguments();
-                Object cdcl = args[2];
-                assertTrue(cdcl instanceof ClusteredDataChangeListener);
+                Object cdcl = args[1];
+                assertTrue(cdcl instanceof ClusteredDataTreeChangeListener);
                 try {
-                    DataChangeListener dcl = getFieldValue(
-                        cdcl, DataChangeListener.class, "theListener");
+                    DataTreeChangeListener dcl = getFieldValue(
+                        cdcl, DataTreeChangeListener.class, "theListener");
                     assertTrue(dcl instanceof OperationalListener);
                     setOperationalListener((OperationalListener)dcl);
                     return operListenerReg;
@@ -202,10 +204,10 @@ public class VTNConfigManagerTest extends TestBase {
                 return null;
             }
         };
-        when(dataBroker.registerDataChangeListener(
-                 eq(LogicalDatastoreType.OPERATIONAL), eq(path),
-                 isA(ClusteredDataChangeListener.class),
-                 any(DataChangeScope.class))).
+        ident = new DataTreeIdentifier<>(
+            LogicalDatastoreType.OPERATIONAL, path);
+        when(dataBroker.registerDataTreeChangeListener(
+                 eq(ident), (DataTreeChangeListener<VtnConfig>)isA(cltype))).
             thenAnswer(ans);
 
         Answer ownerAns = new Answer() {

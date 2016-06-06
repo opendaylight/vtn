@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -60,19 +60,19 @@ import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.md.sal.binding.api.ClusteredDataChangeListener;
+import org.opendaylight.controller.md.sal.binding.api.ClusteredDataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
+import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.binding.api.BindingAwareBroker.RpcRegistration;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
-import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 
@@ -113,6 +113,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPort
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateOperationType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
+
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.LinkId;
 
 /**
@@ -142,13 +144,13 @@ public class VTNRoutingManagerTest extends TestBase {
      * Registration to be associated with {@link PathPolicyListener}.
      */
     @Mock
-    private ListenerRegistration<DataChangeListener>  ppListenerReg;
+    private ListenerRegistration<DataTreeChangeListener<VtnPathPolicy>>  ppListenerReg;
 
     /**
      * Registration to be associated with {@link VTNRoutingManager}.
      */
     @Mock
-    private ListenerRegistration<DataChangeListener>  routingListenerReg;
+    private ListenerRegistration<DataTreeChangeListener<VtnLink>>  routingListenerReg;
 
     /**
      * A {@link VtnTopology} instance which contains the initial network
@@ -177,24 +179,23 @@ public class VTNRoutingManagerTest extends TestBase {
         when(roTransaction.read(oper, topoPath)).
             thenReturn(getReadResult(initialTopology));
 
-        InstanceIdentifier<VtnPathPolicy> policyPath = InstanceIdentifier.
+        InstanceIdentifier<VtnPathPolicy> ppath = InstanceIdentifier.
             builder(VtnPathPolicies.class).
             child(VtnPathPolicy.class).
             build();
-        when(dataBroker.registerDataChangeListener(
-                 eq(LogicalDatastoreType.OPERATIONAL), eq(policyPath),
-                 isA(ClusteredDataChangeListener.class),
-                 any(DataChangeScope.class))).
+        DataTreeIdentifier<VtnPathPolicy> pident =
+            new DataTreeIdentifier<>(oper, ppath);
+        Class<ClusteredDataTreeChangeListener> cltype =
+            ClusteredDataTreeChangeListener.class;
+        when(dataBroker.registerDataTreeChangeListener(
+                 eq(pident),
+                 (DataTreeChangeListener<VtnPathPolicy>)isA(cltype))).
             thenReturn(ppListenerReg);
 
-        InstanceIdentifier<VtnLink> linkPath = InstanceIdentifier.
-            builder(VtnTopology.class).
-            child(VtnLink.class).
-            build();
-        when(dataBroker.registerDataChangeListener(
-                 eq(LogicalDatastoreType.OPERATIONAL), eq(linkPath),
-                 isA(ClusteredDataChangeListener.class),
-                 any(DataChangeScope.class))).
+        DataTreeIdentifier<VtnLink> lident =
+            new DataTreeIdentifier<>(oper, getPath());
+        when(dataBroker.registerDataTreeChangeListener(
+                 eq(lident), (DataTreeChangeListener<VtnLink>)isA(cltype))).
             thenReturn(routingListenerReg);
 
         routingManager = new VTNRoutingManager(vtnProvider);
@@ -369,12 +370,11 @@ public class VTNRoutingManagerTest extends TestBase {
 
     /**
      * Test case for
-     * {@link VTNRoutingManager#enterEvent(AsyncDataChangeEvent)}.
+     * {@link VTNRoutingManager#enterEvent()}.
      */
     @Test
     public void testEnterEvent() {
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev = null;
-        TopologyEventContext ectx = routingManager.enterEvent(ev);
+        TopologyEventContext ectx = routingManager.enterEvent();
         assertNotNull(ectx);
         assertEquals(0, ectx.getCreated().size());
         assertEquals(0, ectx.getRemoved().size());
@@ -518,7 +518,7 @@ public class VTNRoutingManagerTest extends TestBase {
      *
      * <ul>
      *   <li>
-     *     {@link VTNRoutingManager#onDataChanged(AsyncDataChangeEvent)}
+     *     {@link VTNRoutingManager#onDataTreeChanged(Collection)}
      *   </li>
      *   <li>
      *     {@link VTNRoutingManager#onCreated(TopologyEventContext,IdentifiedData)}
@@ -545,7 +545,7 @@ public class VTNRoutingManagerTest extends TestBase {
      *
      * <ul>
      *   <li>
-     *     {@link VTNRoutingManager#onDataChanged(AsyncDataChangeEvent)}
+     *     {@link VTNRoutingManager#onDataTreeChanged(Collection)}
      *   </li>
      *   <li>
      *     {@link VTNRoutingManager#onCreated(TopologyEventContext,IdentifiedData)}
@@ -569,6 +569,54 @@ public class VTNRoutingManagerTest extends TestBase {
     @Test
     public void testGetWildcardPath() {
         assertEquals(getPath(), routingManager.getWildcardPath());
+    }
+
+    /**
+     * Test case for {@link VTNRoutingManager#isUpdated(VtnLink, VtnLink)}.
+     */
+    @Test
+    public void testIsUpdated() {
+        VtnLinkBuilder builder = new VtnLinkBuilder();
+        VtnLink old = builder.build();
+        VtnLink vlink = builder.build();
+        assertEquals(false, routingManager.isUpdated(old, vlink));
+
+        // Change source.
+        NodeConnectorId[] srcs = {
+            new NodeConnectorId("openflow:1:1"),
+            new NodeConnectorId("openflow:1:2"),
+            new NodeConnectorId("openflow:2:2"),
+            new NodeConnectorId("openflow:2:2000"),
+        };
+        for (NodeConnectorId src: srcs) {
+            vlink = builder.setSource(src).build();
+            assertEquals(true, routingManager.isUpdated(old, vlink));
+            old = builder.build();
+            assertEquals(false, routingManager.isUpdated(old, vlink));
+        }
+
+        // Change destination.
+        NodeConnectorId[] dsts = {
+            new NodeConnectorId("openflow:3:1"),
+            new NodeConnectorId("openflow:3:2"),
+            new NodeConnectorId("openflow:4:3"),
+            new NodeConnectorId("openflow:4:3333"),
+        };
+        for (NodeConnectorId dst: dsts) {
+            vlink = builder.setDestination(dst).build();
+            assertEquals(true, routingManager.isUpdated(old, vlink));
+            old = builder.build();
+            assertEquals(false, routingManager.isUpdated(old, vlink));
+        }
+
+        // Change static-link.
+        Boolean[] bools = {Boolean.TRUE, Boolean.FALSE};
+        for (Boolean st: bools) {
+            vlink = builder.setStaticLink(st).build();
+            assertEquals(true, routingManager.isUpdated(old, vlink));
+            old = builder.build();
+            assertEquals(false, routingManager.isUpdated(old, vlink));
+        }
     }
 
     /**
@@ -1031,7 +1079,6 @@ public class VTNRoutingManagerTest extends TestBase {
      */
     private void verifyRoutingManager() throws Exception {
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
-        DataChangeScope scope = DataChangeScope.SUBTREE;
 
         // Ensure that PathPolicyListener is registered as clustered data
         // change listener.
@@ -1039,27 +1086,37 @@ public class VTNRoutingManagerTest extends TestBase {
             builder(VtnPathPolicies.class).
             child(VtnPathPolicy.class).
             build();
-        ArgumentCaptor<ClusteredDataChangeListener> captor =
-            ArgumentCaptor.forClass(ClusteredDataChangeListener.class);
-        verify(dataBroker).registerDataChangeListener(
-            eq(oper), eq(ppath), captor.capture(), eq(scope));
-        List<ClusteredDataChangeListener> wrappers = captor.getAllValues();
+        DataTreeIdentifier<VtnPathPolicy> pident =
+            new DataTreeIdentifier<>(oper, ppath);
+        ArgumentCaptor<DataTreeChangeListener> captor =
+            ArgumentCaptor.forClass(DataTreeChangeListener.class);
+        verify(dataBroker).registerDataTreeChangeListener(
+            eq(pident),
+            (DataTreeChangeListener<VtnPathPolicy>)captor.capture());
+        List<DataTreeChangeListener> wrappers = captor.getAllValues();
         assertEquals(1, wrappers.size());
-        ClusteredDataChangeListener cdcl = wrappers.get(0);
-        DataChangeListener dcl =
-            getFieldValue(cdcl, DataChangeListener.class, "theListener");
-        assertEquals(PathPolicyListener.class, dcl.getClass());
+        DataTreeChangeListener<?> dcl = wrappers.get(0);
+        assertTrue(dcl instanceof ClusteredDataTreeChangeListener);
+        PathPolicyListener ppl = getFieldValue(
+            routingManager, PathPolicyListener.class, "pathPolicyListener");
+        assertEquals(ppl,
+                     getFieldValue(dcl, DataTreeChangeListener.class,
+                                   "theListener"));
 
         // Ensure that VTNRoutingManager is registered as clustered data
         // change listener.
-        captor = ArgumentCaptor.forClass(ClusteredDataChangeListener.class);
-        verify(dataBroker).registerDataChangeListener(
-            eq(oper), eq(getPath()), captor.capture(), eq(scope));
+        DataTreeIdentifier<VtnLink> lident =
+            new DataTreeIdentifier<>(oper, getPath());
+        captor = ArgumentCaptor.forClass(DataTreeChangeListener.class);
+        verify(dataBroker).registerDataTreeChangeListener(
+            eq(lident), (DataTreeChangeListener<VtnLink>)captor.capture());
+
         wrappers = captor.getAllValues();
         assertEquals(1, wrappers.size());
-        cdcl = wrappers.get(0);
+        dcl = wrappers.get(0);
+        assertTrue(dcl instanceof ClusteredDataTreeChangeListener);
         assertEquals(routingManager,
-                     getFieldValue(cdcl, DataChangeListener.class,
+                     getFieldValue(dcl, DataTreeChangeListener.class,
                                    "theListener"));
 
         verifyZeroInteractions(ppListenerReg);
@@ -1346,28 +1403,21 @@ public class VTNRoutingManagerTest extends TestBase {
         checkRoute(snode4, snode1, sport41, sport32, sport31, sport12);
 
         // Create links between openflow:5 and openflow:2.
-        Map<InstanceIdentifier<?>, DataObject> created = new HashMap<>();
+        List<DataTreeModification<VtnLink>> changes = new ArrayList<>();
         List<VtnLink> added = new ArrayList<>();
         Set<AddedLink> addedSet = new HashSet<>();
         SalNode snode5 = new SalNode(5L);
         createVtnLink(added, snode2, 2L, snode5, 1L);
         for (VtnLink vlink: added) {
-            InstanceIdentifier<VtnLink> path =
-                InventoryUtils.toVtnLinkIdentifier(vlink.getLinkId());
-            assertEquals(null, created.put(path, vlink));
+            changes.add(newLinkModification(null, vlink));
             AddedLink al = new AddedLinkBuilder(vlink).build();
             assertEquals(true, addedSet.add(al));
         }
 
         // Remove links between openflow:1 and openflow:3.
-        Map<InstanceIdentifier<?>, DataObject> original = new HashMap<>();
-        Set<InstanceIdentifier<?>> removed = new HashSet<>();
         Set<RemovedLink> removedSet = new HashSet<>();
         for (VtnLink vlink: deleted) {
-            InstanceIdentifier<VtnLink> path =
-                InventoryUtils.toVtnLinkIdentifier(vlink.getLinkId());
-            assertEquals(true, removed.add(path));
-            assertEquals(null, original.put(path, vlink));
+            changes.add(newLinkModification(vlink, null));
             RemovedLink rl = new RemovedLinkBuilder(vlink).build();
             assertEquals(true, removedSet.add(rl));
         }
@@ -1375,47 +1425,26 @@ public class VTNRoutingManagerTest extends TestBase {
         // Remove link from openflow:3:2 to openflow:4:1.
         VtnLink vlink1 = changed.get(0);
         assertEquals("openflow:3:2", vlink1.getLinkId().getValue());
-        InstanceIdentifier<VtnLink> path1 =
-            InventoryUtils.toVtnLinkIdentifier(vlink1.getLinkId());
-        assertEquals(true, removed.add(path1));
-        assertEquals(null, original.put(path1, vlink1));
+        changes.add(newLinkModification(vlink1, null));
         assertTrue(removedSet.add(new RemovedLinkBuilder(vlink1).build()));
 
         // Create a link from openflow:2:3 to openflow:4:1.
         vlink1 = createVtnLink(snode2, 3L, snode4, 1L);
-        path1 = InventoryUtils.toVtnLinkIdentifier(vlink1.getLinkId());
-        assertEquals(null, created.put(path1, vlink1));
+        changes.add(newLinkModification(null, vlink1));
         assertTrue(addedSet.add(new AddedLinkBuilder(vlink1).build()));
 
         // Change link openflow:4:1 to openflow:3:2 as from openflow:4:1
         // to openflow:2:3.
-        Map<InstanceIdentifier<?>, DataObject> updated = new HashMap<>();
         vlink1 = changed.get(1);
         assertEquals("openflow:4:1", vlink1.getLinkId().getValue());
         VtnLink newLink = createVtnLink(snode4, 1L, snode2, 3L);
-        path1 = InventoryUtils.toVtnLinkIdentifier(vlink1.getLinkId());
-        assertEquals(null, original.put(path1, vlink1));
-        assertEquals(null, updated.put(path1, newLink));
+        changes.add(newLinkModification(vlink1, newLink));
         assertTrue(removedSet.add(new RemovedLinkBuilder(vlink1).build()));
         assertTrue(addedSet.add(new AddedLinkBuilder(newLink).build()));
 
-        // Construct an AsyncDataChangeEvent.
-        @SuppressWarnings("unchecked")
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> event =
-            (AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject>)mock(
-                AsyncDataChangeEvent.class);
-        when(event.getCreatedData()).
-            thenReturn(Collections.unmodifiableMap(created));
-        when(event.getUpdatedData()).
-            thenReturn(Collections.unmodifiableMap(updated));
-        when(event.getRemovedPaths()).
-            thenReturn(Collections.unmodifiableSet(removed));
-        when(event.getOriginalData()).
-            thenReturn(Collections.unmodifiableMap(original));
-
-        // Notify data change event.
+        // Notify data tree change event.
         when(vtnProvider.isOwner(VTNEntityType.INVENTORY)).thenReturn(owner);
-        routingManager.onDataChanged(event);
+        routingManager.onDataTreeChanged(changes);
 
         if (owner) {
             // Verify MD-SAL notification.
@@ -1482,5 +1511,23 @@ public class VTNRoutingManagerTest extends TestBase {
         SalPort sport23 = new SalPort(2L, 3L);
         checkRoute(snode1, snode4, sport11, sport21, sport23, sport41);
         checkRoute(snode4, snode1, sport41, sport23, sport21, sport11);
+    }
+
+    /**
+     * Create a new data tree modification for a vtn-link.
+     *
+     * @param before  The vtn-link value before modification.
+     * @param after   The vtn-link value after modification.
+     * @return  A data tree modification that indicates the omdification.
+     */
+    private DataTreeModification<VtnLink> newLinkModification(
+        VtnLink before, VtnLink after) {
+        VtnLink vlink = (before == null) ? after : before;
+        InstanceIdentifier<VtnLink> path =
+            InventoryUtils.toVtnLinkIdentifier(vlink.getLinkId());
+        DataObjectModification<VtnLink> mod =
+            newKeyedModification(before, after, null);
+        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        return newTreeModification(path, oper, mod);
     }
 }

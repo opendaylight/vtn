@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,12 +8,13 @@
 
 package org.opendaylight.vtn.manager.internal.util;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import static org.opendaylight.vtn.manager.internal.util.MiscUtils.VERBOSE_LOG;
+
+import javax.annotation.Nonnull;
+
+import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.ModificationType;
+import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 
 import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
@@ -24,7 +25,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpda
  * Abstract base class for MD-SAL datastore change listener that listens
  * multiple data objects in the same data model tree.
  *
- * @param <T>  The type of data object for the top level data model to listen.
+ * @param <T>  The type of the root node to listen.
  * @param <C>  The type of event context.
  */
 public abstract class MultiDataStoreListener<T extends DataObject, C>
@@ -39,46 +40,33 @@ public abstract class MultiDataStoreListener<T extends DataObject, C>
     }
 
     /**
-     * Sort instance identifiers notified by a data change event.
+     * Determine whether the specified type of the tree node should be
+     * treated as a leaf node.
      *
      * <p>
-     *   This method is used to determine order of data change event
-     *   processing.
+     *   If this method returns {@code true}, modifications for children of
+     *   the specified data type are simply ignored.
+     * </p>
+     * <p>
+     *   By default this method always returns {@code false}.
+     *   The subclass may want to override this behavior.
      * </p>
      *
-     * @param set    A set of {@link InstanceIdentifier} instances.
-     * @param type   A {@link VtnUpdateType} instance which specifies the type
-     *               of event.
-     * @return  A sorted list of {@link InstanceIdentifier} instances.
+     * @param type  A class that specifies the type of the tree node.
+     *              Note that this value may not be the target data type
+     *              specified by {@link #isRequiredType(Class)}.
+     * @return  {@code true} if the specified type of the tree node should
+     *          be treated as a leaf node. {@code false} otherwise.
      */
-    private List<InstanceIdentifier<?>> sortPath(
-        Set<InstanceIdentifier<?>> set, VtnUpdateType type) {
-        List<InstanceIdentifier<?>> list = new ArrayList<>(set.size());
-        IdentifierTargetComparator idcomp = getComparator();
-        boolean asc = getOrder(type);
-        Comparator<InstanceIdentifier<?>> comp = (asc)
-            ? idcomp : Collections.reverseOrder(idcomp);
-
-        // Eliminate unwanted paths.
-        for (InstanceIdentifier<?> path: set) {
-            if (checkPath(path, type)) {
-                Class<?> target = path.getTargetType();
-                if (idcomp.getOrder(target) == null) {
-                    unwantedIdentifier(path, type);
-                } else {
-                    list.add(path);
-                }
-            }
-        }
-        Collections.sort(list, comp);
-
-        return list;
+    protected boolean isLeafNode(@Nonnull Class<?> type) {
+        return false;
     }
 
     /**
      * Create an {@link IdentifiedData} that represents a data object notified
      * by a data change event.
      *
+     * @param type   The type of the data object.
      * @param path   An instance identifier that specifies data.
      * @param value  An object associated with {@code path}.
      * @param label  A label only for logging.
@@ -87,20 +75,26 @@ public abstract class MultiDataStoreListener<T extends DataObject, C>
      *          Otherwise {@code null}.
      */
     private <D extends DataObject> IdentifiedData<D> createIdentifiedData(
-        InstanceIdentifier<D> path, DataObject value, Object label) {
-        try {
-            return IdentifiedData.create(path, value);
-        } catch (DataTypeMismatchException e) {
-            unexpectedData(path, e.getObject(), label);
+        Class<D> type, InstanceIdentifier<?> path, D value, Object label) {
+        IdentifiedData<D> data;
+        InstanceIdentifier<D> dpath = cast(type, path, label);
+        if (dpath == null) {
+            data = null;
+        } else if (value == null) {
+            nullValue(path, label);
+            data = null;
+        } else {
+            data = new IdentifiedData<>(dpath, value);
         }
 
-        return null;
+        return data;
     }
 
     /**
      * Create an {@link ChangedData} that represents a change of a data object
      * notified by a data change event.
      *
+     * @param type   The type of the data object.
      * @param path   An instance identifier that specifies data.
      * @param value  An object associated with {@code path}.
      * @param old    An object prior to the change.
@@ -109,35 +103,276 @@ public abstract class MultiDataStoreListener<T extends DataObject, C>
      *          Otherwise {@code null}.
      */
     private <D extends DataObject> ChangedData<D> createChangedData(
-        InstanceIdentifier<D> path, DataObject value, DataObject old) {
-        try {
-            return ChangedData.create(path, value, old);
-        } catch (DataTypeMismatchException e) {
-            unexpectedData(path, e.getObject(), VtnUpdateType.CHANGED);
+        Class<D> type, InstanceIdentifier<?> path, D value, D old) {
+        VtnUpdateType utype = VtnUpdateType.CHANGED;
+        ChangedData<D> data;
+        InstanceIdentifier<D> dpath = cast(type, path, utype);
+        if (dpath == null) {
+            data = null;
+        } else if (value == null || old == null) {
+            nullValue(path, utype);
+            data = null;
+        } else {
+            data = new ChangedData<>(dpath, value, old);
         }
 
-        return null;
+        return data;
     }
 
     /**
-     * Return an {@link IdentifierTargetComparator} instance that determines
-     * the order of event processing.
+     * Notify the created tree node.
      *
-     * @return  An {@link IdentifierTargetComparator} instance.
+     * @param ctx    Runtime information of the notification.
+     * @param ectx   An event context created by this instance.
+     * @param mod    The data object modification associated with the tree
+     *               node.
+     * @param value  The created tree node.
+     * @param <D>    The type of the tree node.
      */
-    protected abstract IdentifierTargetComparator getComparator();
+    private <D extends DataObject> void notifyCreated(
+        TreeChangeContext<T> ctx, C ectx, DataObjectModification<D> mod,
+        @Nonnull D value) {
+        VtnUpdateType utype = VtnUpdateType.CREATED;
+        Class<D> dtype = mod.getDataType();
+        boolean children = handleChildrenFirst(ctx, ectx, mod, dtype, utype);
+
+        if (isRequiredEvent(utype) && isRequiredType(dtype)) {
+            IdentifiedData<D> data = createIdentifiedData(
+                dtype, ctx.getPath(), value, utype);
+            if (data != null) {
+                onCreated(ectx, data);
+            }
+        }
+
+        if (children) {
+            // Children need to be handled after the current node.
+            handleChildren(ctx, ectx, mod);
+        }
+    }
 
     /**
-     * Return a boolean value which specifies the order of event processing.
+     * Notify the updated tree node.
+     *
+     * @param ctx     Runtime information of the notification.
+     * @param ectx    An event context created by this instance.
+     * @param mod     The data object modification associated with the tree
+     *                node.
+     * @param before  The target tree node before modification.
+     * @param after   The target tree node after modification.
+     * @param <D>    The type of the tree node.
+     */
+    private <D extends DataObject> void notifyUpdated(
+        TreeChangeContext<T> ctx, C ectx, DataObjectModification<D> mod,
+        @Nonnull D before, @Nonnull D after) {
+        VtnUpdateType utype = VtnUpdateType.CHANGED;
+        Class<D> dtype = mod.getDataType();
+        boolean children = handleChildrenFirst(ctx, ectx, mod, dtype, utype);
+
+        if (isRequiredEvent(utype) && isRequiredType(dtype)) {
+            ChangedData<D> data = createChangedData(
+                dtype, ctx.getPath(), after, before);
+            if (data != null) {
+                if (isUpdated(ectx, data)) {
+                    onUpdated(ectx, data);
+                } else if (VERBOSE_LOG.isTraceEnabled()) {
+                    VERBOSE_LOG.trace(
+                        "{}: Tree node is not changed: path={}, value={}",
+                        getClass().getSimpleName(), ctx.getPath(), after);
+                }
+            }
+        }
+
+        if (children) {
+            // Children need to be handled after the current node.
+            handleChildren(ctx, ectx, mod);
+        }
+    }
+
+    /**
+     * Notify the removed tree node.
+     *
+     * @param ctx    Runtime information of the notification.
+     * @param ectx   An event context created by this instance.
+     * @param mod    The data object modification associated with the removed
+     *               tree nod.
+     * @param value  The removed tree node.
+     * @param <D>    The type of the tree node.
+     */
+    private <D extends DataObject> void notifyRemoved(
+        TreeChangeContext<T> ctx, C ectx, DataObjectModification<D> mod,
+        D value) {
+        VtnUpdateType utype = VtnUpdateType.REMOVED;
+        Class<D> dtype = mod.getDataType();
+        boolean children = handleChildrenFirst(ctx, ectx, mod, dtype, utype);
+
+        if (isRequiredEvent(utype) && isRequiredType(dtype)) {
+            IdentifiedData<D> data = createIdentifiedData(
+                dtype, ctx.getPath(), value, utype);
+            if (data != null) {
+                onRemoved(ectx, data);
+            }
+        }
+
+        if (children) {
+            // Children need to be handled after the current node.
+            handleChildren(ctx, ectx, mod);
+        }
+    }
+
+    /**
+     * Handle modification event for the current tree node and its direct and
+     * indirect children.
+     *
+     * @param ctx   Runtime information of the notification.
+     * @param ectx  An event context created by this instance.
+     * @param mod   The data object modification associated with the current
+     *              tree node.
+     * @param <D>   The type of the current tree node.
+     */
+    private <D extends DataObject> void handleTreeNode(
+        TreeChangeContext<T> ctx, C ectx, DataObjectModification<D> mod) {
+        ModificationType modType = mod.getModificationType();
+        D before = mod.getDataBefore();
+        if (modType == ModificationType.DELETE) {
+            // The target data has been removed.
+            notifyRemoved(ctx, ectx, mod, before);
+        } else {
+            D after = mod.getDataAfter();
+            if (after == null) {
+                // This should never happen.
+                nullValue(ctx.getPath(), "handleTreeNode");
+            } else if (before == null) {
+                // The target data has been created.
+                notifyCreated(ctx, ectx, mod, after);
+            } else {
+                // The target data has been updated.
+                notifyUpdated(ctx, ectx, mod, before, after);
+            }
+        }
+    }
+
+    /**
+     * Handle modification events for direct children of the current tree node
+     * before the current node.
+     *
+     * <p>
+     *   This method must be called before the modification of the current
+     *   tree node is notified.
+     * </p>
+     *
+     * @param ctx     Runtime information of the notification.
+     * @param ectx    An event context created by this instance.
+     * @param mod     The data object modification associated with the current
+     *                tree node.
+     * @param dtype   A class that specifies the type of the current tree node.
+     * @param utype   A {@link VtnUpdateType} instance that specifies the type
+     *                of notification.
+     * @param <D>     The type of the current tree node.
+     * @return  {@code true} if modifications of children need to be notified
+     *          after notification of the current tree node.
+     *          {@code false} if modifications of children need to be ignored.
+     */
+    private <D extends DataObject> boolean handleChildrenFirst(
+        TreeChangeContext<T> ctx, C ectx, DataObjectModification<D> mod,
+        Class<D> dtype, VtnUpdateType utype) {
+        boolean depth;
+        if (isLeafNode(dtype)) {
+            // Modifications for children should be ignored completely
+            // if the current tree node is a leaf node.
+            depth = false;
+        } else {
+            depth = isDepth(utype);
+            if (!depth) {
+                // Children need to be handled before the current tree node.
+                handleChildren(ctx, ectx, mod);
+            }
+        }
+
+        return depth;
+    }
+
+    /**
+     * Handle modification events for direct children of the current tree node.
+     *
+     * @param ctx     Runtime information of the notification.
+     * @param ectx    An event context created by this instance.
+     * @param mod     The data object modification associated with the current
+     *                tree node.
+     */
+    private void handleChildren(TreeChangeContext<T> ctx, C ectx,
+                                DataObjectModification<?> mod) {
+        for (DataObjectModification<?> child: mod.getModifiedChildren()) {
+            ctx.push(child);
+            handleTreeNode(ctx, ectx, child);
+            ctx.pop();
+        }
+    }
+
+    /**
+     * Cast the given instance identifier for the given target type.
+     *
+     * @param type   A class which indicates the target type.
+     * @param path   An instance identifier that specifies data.
+     * @param label  A label only for logging.
+     * @param <D>    The expected type of the target object.
+     * @return  An {@link InstanceIdentifier} instance on sucecss.
+     *          {@code null} on failure.
+     */
+    private <D extends DataObject> InstanceIdentifier<D> cast(
+        Class<D> type, @Nonnull InstanceIdentifier<?> path, Object label) {
+        InstanceIdentifier<D> ret;
+        if (checkPath(path, label)) {
+            ret = DataStoreUtils.cast(type, path);
+            if (ret == null) {
+                getLogger().warn("{}: Unexpected instance identifier type: " +
+                                 "path={}, expected={}", label, path, type);
+            }
+        } else {
+            ret = null;
+        }
+
+        return ret;
+    }
+
+    /**
+     * Return a boolean value which specifies the order of tree traversal.
      *
      * @param type  A {@link VtnUpdateType} instance which specifies the type
      *              of event.
-     * @return  {@code true} means that data change events should be processed
-     *          in ascending order.
-     *          {@code false} means that data change events should be processed
-     *          in descending order.
+     * @return  {@code true} means that each tree node's children need to be
+     *          processed after the tree node itself (from outer to innter).
+     *          {@code false} means that each tree node's children need to be
+     *          processed before the tree node itself (from inner to outer).
      */
-    protected abstract boolean getOrder(VtnUpdateType type);
+    protected abstract boolean isDepth(@Nonnull VtnUpdateType type);
+
+    /**
+     * Determine whether the specified type of the tree node is required
+     * to be notified or not.
+     *
+     * @param type  A class that specifies the type of the tree node.
+     * @return  {@code true} if the specified type of the tree node needs
+     *          to be notified. {@code false} otherwise.
+     */
+    protected abstract boolean isRequiredType(@Nonnull Class<?> type);
+
+    /**
+     * Determine whether the specified data was updated or not.
+     *
+     * <p>
+     *   {@link #onUpdated(Object, ChangedData)} is called only if this method
+     *   returns {@code true}.
+     *   This method is called only if {@link #isRequiredType(Class)} with
+     *   specifying {@code type} returns {@code true}.
+     * </p>
+     *
+     * @param ectx  An event context created by this instance.
+     * @param data  A {@link ChangedData} instance which contains the
+     *              changed data.
+     * @return  {@code true} if the target data was updated.
+     *          {@code false} otherwise.
+     */
+    protected abstract boolean isUpdated(C ectx, ChangedData<?> data);
 
     /**
      * Invoked when a new data has been created in the datastore.
@@ -172,74 +407,8 @@ public abstract class MultiDataStoreListener<T extends DataObject, C>
      * {@inheritDoc}
      */
     @Override
-    protected final void onCreated(
-        C ectx, Map<InstanceIdentifier<?>, DataObject> created) {
-        if (created == null) {
-            return;
-        }
-
-        VtnUpdateType type = VtnUpdateType.CREATED;
-        for (InstanceIdentifier<?> path: sortPath(created.keySet(), type)) {
-            DataObject value = created.get(path);
-            IdentifiedData<?> data = createIdentifiedData(path, value, type);
-            if (data != null) {
-                onCreated(ectx, data);
-            }
-        }
-    }
-
-    /**
-     * Handle data update events.
-     *
-     * @param ectx      An event context created by this instance.
-     * @param updated   A map that contains information about updated data
-     *                  objects.
-     * @param original  A map that contains information about data objects
-     *                  before update.
-     */
-    @Override
-    protected final void onUpdated(
-        C ectx, Map<InstanceIdentifier<?>, DataObject> updated,
-        Map<InstanceIdentifier<?>, DataObject> original) {
-        if (updated == null) {
-            return;
-        }
-
-        VtnUpdateType type = VtnUpdateType.CHANGED;
-        for (InstanceIdentifier<?> path: sortPath(updated.keySet(), type)) {
-            DataObject value = updated.get(path);
-            DataObject org = original.get(path);
-            ChangedData<?> data = createChangedData(path, value, org);
-            if (data != null) {
-                onUpdated(ectx, data);
-            }
-        }
-    }
-
-    /**
-     * Handle data update events.
-     *
-     * @param ectx      An event context created by this instance.
-     * @param removed   A set of paths for removed data objects.
-     *                  objects.
-     * @param original  A map that contains information about data objects
-     *                  before removal.
-     */
-    @Override
-    protected final void onRemoved(
-        C ectx, Set<InstanceIdentifier<?>> removed,
-        Map<InstanceIdentifier<?>, DataObject> original) {
-        if (removed == null) {
-            return;
-        }
-
-        VtnUpdateType type = VtnUpdateType.REMOVED;
-        for (InstanceIdentifier<?> path: sortPath(removed, type)) {
-            DataObject value = original.get(path);
-            IdentifiedData<?> data = createIdentifiedData(path, value, type);
-            if (data != null) {
-                onRemoved(ectx, data);
-            }
-        }
+    protected final void handleTree(TreeChangeContext<T> ctx, C ectx,
+                                    DataTreeModification<T> change) {
+        handleTreeNode(ctx, ectx, change.getRootNode());
     }
 }

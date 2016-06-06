@@ -18,7 +18,6 @@ import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxQueue;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.ChangedData;
-import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
@@ -26,19 +25,14 @@ import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-
-import org.opendaylight.yangtools.yang.binding.DataObject;
-import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfig;
 
 /**
  * VTN configuration listener for configuration view.
  */
-public final class ConfigListener extends DataStoreListener<VtnConfig, Void> {
+public final class ConfigListener extends VtnConfigListener {
     /**
      * Logger instance.
      */
@@ -169,30 +163,12 @@ public final class ConfigListener extends DataStoreListener<VtnConfig, Void> {
      * @param mac     MAC address of the local node.
      */
     public ConfigListener(TxQueue queue, DataBroker broker, EtherAddress mac) {
-        super(VtnConfig.class);
         txQueue = queue;
         localMacAddress = mac;
-        registerListener(broker, LogicalDatastoreType.CONFIGURATION,
-                         DataChangeScope.SUBTREE, true);
+        registerListener(broker, LogicalDatastoreType.CONFIGURATION, true);
     }
 
     // DataStoreListener
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected Void enterEvent(
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
-        return null;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void exitEvent(Void ectx) {
-    }
 
     /**
      * {@inheritDoc}
@@ -219,14 +195,6 @@ public final class ConfigListener extends DataStoreListener<VtnConfig, Void> {
     protected void onRemoved(Void ectx, IdentifiedData<VtnConfig> data) {
         ConfigRemoveTask task = new ConfigRemoveTask(localMacAddress);
         txQueue.post(task);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected InstanceIdentifier<VtnConfig> getWildcardPath() {
-        return VTNConfigManager.CONFIG_IDENT;
     }
 
     // CloseableContainer

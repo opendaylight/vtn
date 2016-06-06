@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,10 @@
  */
 
 package org.opendaylight.vtn.manager.internal.inventory;
+
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +28,6 @@ import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
-import org.opendaylight.vtn.manager.internal.util.IdentifierTargetComparator;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.MultiDataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
@@ -34,12 +37,9 @@ import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 
-import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.VtnStaticTopology;
@@ -64,26 +64,11 @@ public final class StaticTopologyManager
         LoggerFactory.getLogger(StaticTopologyManager.class);
 
     /**
-     * Comparator for the target type of instance identifier that specifies
-     * the order of data change event processing.
-     */
-    private static final IdentifierTargetComparator  PATH_COMPARATOR;
-
-    /**
      * Instance identifier of the root container for the static network
      * topology configuration.
      */
     static final InstanceIdentifier<VtnStaticTopology> IDENT_TOPOLOGY =
         InstanceIdentifier.create(VtnStaticTopology.class);
-
-    /**
-     * Initialize static fields.
-     */
-    static {
-        PATH_COMPARATOR = new IdentifierTargetComparator().
-            setOrder(StaticEdgePort.class, 1).
-            setOrder(StaticSwitchLink.class, 2);
-    }
 
     /**
      * VTN Manager provider service.
@@ -204,8 +189,7 @@ public final class StaticTopologyManager
         // Register listener for static network topology configuration.
         DataBroker broker = provider.getDataBroker();
         try {
-            registerListener(broker, LogicalDatastoreType.CONFIGURATION,
-                             DataChangeScope.SUBTREE, true);
+            registerListener(broker, LogicalDatastoreType.CONFIGURATION, true);
         } catch (RuntimeException e) {
             String msg = "Failed to register static network topology listener.";
             LOG.error(msg, e);
@@ -253,15 +237,7 @@ public final class StaticTopologyManager
      * {@inheritDoc}
      */
     @Override
-    protected IdentifierTargetComparator getComparator() {
-        return PATH_COMPARATOR;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected boolean getOrder(VtnUpdateType type) {
+    protected boolean isDepth(VtnUpdateType type) {
         // This class does not depend on the order of data change events.
         return true;
     }
@@ -270,8 +246,40 @@ public final class StaticTopologyManager
      * {@inheritDoc}
      */
     @Override
-    protected StaticLinkUpdateTask enterEvent(
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
+    protected boolean isRequiredType(@Nonnull Class<?> type) {
+        return (StaticEdgePort.class.equals(type) ||
+                StaticSwitchLink.class.equals(type));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected boolean isUpdated(StaticLinkUpdateTask ectx,
+                                ChangedData<?> data) {
+        boolean changed;
+        ChangedData<StaticSwitchLink> sdata =
+            data.checkType(StaticSwitchLink.class);
+        if (sdata != null) {
+            StaticSwitchLink old = sdata.getOldValue();
+            StaticSwitchLink swlink = sdata.getValue();
+            changed = !Objects.equals(
+                old.getDestination(), swlink.getDestination());
+        } else {
+            // StaticEdgePort has only one field and it is used as a key.
+            // So it should not be changed.
+            data.unexpected(LOG, VtnUpdateType.CHANGED);
+            changed = false;
+        }
+
+        return changed;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected StaticLinkUpdateTask enterEvent() {
         return new StaticLinkUpdateTask(LOG);
     }
 

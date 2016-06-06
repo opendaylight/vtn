@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -47,7 +47,6 @@ import org.opendaylight.vtn.manager.internal.inventory.xml.XmlStaticSwitchLinks;
 import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
-import org.opendaylight.vtn.manager.internal.util.IdentifierTargetComparator;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
 import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
@@ -57,18 +56,16 @@ import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.vtn.manager.internal.inventory.xml.XmlStaticEdgePortsTest;
 import org.opendaylight.vtn.manager.internal.inventory.xml.XmlStaticSwitchLinksTest;
 
-import org.opendaylight.controller.md.sal.binding.api.ClusteredDataChangeListener;
+import org.opendaylight.controller.md.sal.binding.api.ClusteredDataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
-import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.VtnStaticTopology;
@@ -79,8 +76,10 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology.StaticSwitchLinksBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static._switch.links.StaticSwitchLink;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static._switch.links.StaticSwitchLinkBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static._switch.links.StaticSwitchLinkKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePortBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.topology._static.rev150801.vtn._static.topology._static.edge.ports.StaticEdgePortKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
@@ -111,7 +110,7 @@ public class StaticTopologyManagerTest extends TestBase {
      * Mock-up of {@link ListenerRegistration}.
      */
     @Mock
-    private ListenerRegistration<DataChangeListener>  registration;
+    private ListenerRegistration<DataTreeChangeListener<VtnStaticTopology>>  registration;
 
     /**
      * A {@link StaticTopologyManager} instance for test.
@@ -125,11 +124,13 @@ public class StaticTopologyManagerTest extends TestBase {
     public void setUp() {
         initMocks(this);
 
+        Class<DataTreeIdentifier> idtype = DataTreeIdentifier.class;
+        Class<ClusteredDataTreeChangeListener> cltype =
+            ClusteredDataTreeChangeListener.class;
         when(vtnProvider.getDataBroker()).thenReturn(dataBroker);
-        when(dataBroker.registerDataChangeListener(
-                 eq(LogicalDatastoreType.CONFIGURATION), eq(getPath()),
-                 isA(ClusteredDataChangeListener.class),
-                 any(DataChangeScope.class))).
+        when(dataBroker.registerDataTreeChangeListener(
+                 (DataTreeIdentifier<VtnStaticTopology>)any(idtype),
+                 (DataTreeChangeListener<VtnStaticTopology>)isA(cltype))).
             thenReturn(registration);
         testInstance = new StaticTopologyManager(vtnProvider, txQueue);
     }
@@ -141,53 +142,171 @@ public class StaticTopologyManagerTest extends TestBase {
      */
     @Test
     public void testConstructor() throws Exception {
-        LogicalDatastoreType config = LogicalDatastoreType.CONFIGURATION;
-        DataChangeScope scope = DataChangeScope.SUBTREE;
-        InstanceIdentifier<VtnStaticTopology> path = getPath();
-        ArgumentCaptor<ClusteredDataChangeListener> captor =
-            ArgumentCaptor.forClass(ClusteredDataChangeListener.class);
-        verify(dataBroker).registerDataChangeListener(
-            eq(config), eq(path), captor.capture(), eq(scope));
-        List<ClusteredDataChangeListener> wrappers = captor.getAllValues();
+        DataTreeIdentifier<VtnStaticTopology> ident = new DataTreeIdentifier<>(
+            LogicalDatastoreType.CONFIGURATION, getPath());
+        ArgumentCaptor<DataTreeChangeListener> captor =
+            ArgumentCaptor.forClass(DataTreeChangeListener.class);
+        verify(dataBroker).registerDataTreeChangeListener(
+            eq(ident),
+            (DataTreeChangeListener<VtnStaticTopology>)captor.capture());
+        List<DataTreeChangeListener> wrappers = captor.getAllValues();
         assertEquals(1, wrappers.size());
-        ClusteredDataChangeListener cdcl = wrappers.get(0);
+        DataTreeChangeListener<?> cdcl = wrappers.get(0);
+        assertTrue(cdcl instanceof ClusteredDataTreeChangeListener);
         assertEquals(testInstance,
-                     getFieldValue(cdcl, DataChangeListener.class,
+                     getFieldValue(cdcl, DataTreeChangeListener.class,
                                    "theListener"));
         verifyZeroInteractions(txQueue, registration);
         assertEquals(VtnStaticTopology.class, testInstance.getTargetType());
     }
 
     /**
-     * Test case for {@link StaticTopologyManager#getComparator()}.
+     * Test case for {@link StaticTopologyManager#isDepth(VtnUpdateType)}.
      */
     @Test
-    public void testGetComparator() {
-        IdentifierTargetComparator comp = testInstance.getComparator();
-        assertTrue(comp.getOrder(StaticEdgePort.class).intValue() <
-                   comp.getOrder(StaticSwitchLink.class).intValue());
+    public void testIsDepth() {
+        for (VtnUpdateType type: VtnUpdateType.values()) {
+            assertEquals(true, testInstance.isDepth(type));
+        }
     }
 
     /**
-     * Test case for {@link StaticTopologyManager#getOrder(VtnUpdateType)}.
+     * Test case for {@link StaticTopologyManager#isRequiredType(Class)}.
      */
     @Test
-    public void testGetOrder() {
-        for (VtnUpdateType type: VtnUpdateType.values()) {
-            assertEquals(true, testInstance.getOrder(type));
+    public void testIsRequiredType() {
+        List<Class<?>> classes = new ArrayList<>();
+        Collections.addAll(
+            classes,
+            VtnStaticTopology.class,
+            StaticEdgePorts.class,
+            StaticSwitchLinks.class);
+        for (Class<?> type: classes) {
+            assertEquals(false, testInstance.isRequiredType(type));
+        }
+
+        classes.clear();
+        Collections.addAll(
+            classes,
+            StaticEdgePort.class,
+            StaticSwitchLink.class);
+        for (Class<?> type: classes) {
+            assertEquals(true, testInstance.isRequiredType(type));
         }
     }
 
     /**
      * Test case for
-     * {@link StaticTopologyManager#enterEvent(AsyncDataChangeEvent)}.
+     * {@link StaticTopologyManager#isUpdated(StaticLinkUpdateTask,ChangedData)}.
+     */
+    @Test
+    public void testIsUpdated() {
+        NodeConnectorId[] srcs = {
+            new NodeConnectorId("openflow:1:1"),
+            new NodeConnectorId("openflow:1:2"),
+            new NodeConnectorId("openflow:9:1"),
+            new NodeConnectorId("openflow:9:10"),
+        };
+        NodeConnectorId[] dsts = {
+            new NodeConnectorId("openflow:2:1"),
+            new NodeConnectorId("openflow:2:2"),
+            new NodeConnectorId("openflow:333:444"),
+            new NodeConnectorId("openflow:12345:6789"),
+        };
+
+        // Tests for static-switch-link.
+        for (NodeConnectorId src: srcs) {
+            StaticSwitchLinkKey key = new StaticSwitchLinkKey(src);
+            InstanceIdentifier<StaticSwitchLink> path = InstanceIdentifier.
+                builder(VtnStaticTopology.class).
+                child(StaticSwitchLinks.class).
+                child(StaticSwitchLink.class, key).
+                build();
+            for (NodeConnectorId odst: dsts) {
+                StaticSwitchLink old = new StaticSwitchLinkBuilder().
+                    setSource(src).
+                    setDestination(odst).
+                    build();
+                for (NodeConnectorId dst: dsts) {
+                    StaticSwitchLink swlink = new StaticSwitchLinkBuilder().
+                        setSource(src).
+                        setDestination(dst).
+                        build();
+                    ChangedData<StaticSwitchLink> data = new ChangedData<>(
+                        path, swlink, old);
+                    assertEquals(!dst.equals(odst),
+                                 testInstance.isUpdated(null, data));
+                }
+            }
+        }
+
+        // Tests for other types.
+        NodeConnectorId edge1 = new NodeConnectorId(srcs[0]);
+        NodeConnectorId edge2 = new NodeConnectorId(srcs[1]);
+        InstanceIdentifier<StaticEdgePort> epath = InstanceIdentifier.
+            builder(VtnStaticTopology.class).
+            child(StaticEdgePorts.class).
+            child(StaticEdgePort.class, new StaticEdgePortKey(edge1)).
+            build();
+        StaticEdgePort sedge1 = new StaticEdgePortBuilder().
+            setPort(edge1).build();
+        StaticEdgePort sedge2 = new StaticEdgePortBuilder().
+            setPort(edge2).build();
+        ChangedData<StaticEdgePort> data1 =
+            new ChangedData<>(epath, sedge1, sedge2);
+
+        InstanceIdentifier<StaticEdgePorts> eppath = InstanceIdentifier.
+            builder(VtnStaticTopology.class).
+            child(StaticEdgePorts.class).
+            build();
+        StaticEdgePorts eports1 = new StaticEdgePortsBuilder().build();
+        StaticEdgePorts eports2 = new StaticEdgePortsBuilder().
+            setStaticEdgePort(Collections.singletonList(sedge1)).
+            build();
+        ChangedData<StaticEdgePorts> data2 =
+            new ChangedData<>(eppath, eports1, eports2);
+
+        StaticSwitchLink swlink = new StaticSwitchLinkBuilder().
+            setSource(srcs[1]).
+            setDestination(dsts[1]).
+            build();
+        InstanceIdentifier<StaticSwitchLinks> slpath = InstanceIdentifier.
+            builder(VtnStaticTopology.class).
+            child(StaticSwitchLinks.class).
+            build();
+        StaticSwitchLinks swlinks1 = new StaticSwitchLinksBuilder().build();
+        StaticSwitchLinks swlinks2 = new StaticSwitchLinksBuilder().
+            setStaticSwitchLink(Collections.singletonList(swlink)).
+            build();
+        ChangedData<StaticSwitchLinks> data3 =
+            new ChangedData<>(slpath, swlinks1, swlinks2);
+
+        InstanceIdentifier<VtnStaticTopology> tpath = InstanceIdentifier.
+            create(VtnStaticTopology.class);
+        VtnStaticTopology vstopo1 = new VtnStaticTopologyBuilder().build();
+        VtnStaticTopology vstopo2 = new VtnStaticTopologyBuilder().
+            setStaticSwitchLinks(swlinks2).
+            setStaticEdgePorts(eports2).
+            build();
+        ChangedData<VtnStaticTopology> data4 =
+            new ChangedData<>(tpath, vstopo1, vstopo2);
+
+        List<ChangedData<?>> list = new ArrayList<>();
+        Collections.addAll(list, data1, data2, data3, data4);
+        for (ChangedData<?> data: list) {
+            assertEquals(false, testInstance.isUpdated(null, data));
+        }
+    }
+
+    /**
+     * Test case for
+     * {@link StaticTopologyManager#enterEvent()}.
      */
     @Test
     public void testEnterEvent() {
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev = null;
-        StaticLinkUpdateTask task = testInstance.enterEvent(ev);
+        StaticLinkUpdateTask task = testInstance.enterEvent();
         assertTrue(task instanceof StaticLinkUpdateTask);
-        StaticLinkUpdateTask task1 = testInstance.enterEvent(ev);
+        StaticLinkUpdateTask task1 = testInstance.enterEvent();
         assertTrue(task1 instanceof StaticLinkUpdateTask);
         assertNotSame(task, task1);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,17 +8,19 @@
 
 package org.opendaylight.vtn.manager.it.ofmock.impl;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 
-import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
+import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.ModificationType;
+import org.opendaylight.controller.md.sal.binding.api.DataObjectModification;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeService;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
@@ -34,22 +36,22 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpda
  * @param <C>  Type of event context.
  */
 public abstract class DataStoreListener<T extends DataObject, C>
-    implements AutoCloseable, DataChangeListener {
+    implements AutoCloseable, DataTreeChangeListener<T> {
     /**
      * The target type.
      */
     private final Class<T>  targetType;
 
     /**
-     * Registration of the data change listener.
+     * Registration of the data tree change listener.
      */
-    private final AtomicReference<ListenerRegistration<DataChangeListener>> registration =
+    private final AtomicReference<ListenerRegistration<?>> registration =
         new AtomicReference<>();
 
     /**
      * Construct a new instance.
      *
-     * @param clz     A {@link Class} instance that represents the target type.
+     * @param clz  A {@link Class} instance that represents the target type.
      */
     protected DataStoreListener(Class<T> clz) {
         targetType = clz;
@@ -58,24 +60,24 @@ public abstract class DataStoreListener<T extends DataObject, C>
     /**
      * Register this instance as a data change listener.
      *
-     * @param broker  A {@link DataBroker} service instance.
-     * @param store   A {@link LogicalDatastoreType} instance used to determine
-     *                datastore.
-     * @param scope   A {@link DataChangeScope} instance used to register
-     *                data change listener.
+     * @param service  A {@link DataTreeChangeService} instance.
+     * @param store    A {@link LogicalDatastoreType} instance used to
+     *                 determine the target datastore.
      */
-    protected final void registerListener(DataBroker broker,
-                                          LogicalDatastoreType store,
-                                          DataChangeScope scope) {
-        InstanceIdentifier<?> path = getWildcardPath();
+    protected final void registerListener(DataTreeChangeService service,
+                                          LogicalDatastoreType store) {
+        InstanceIdentifier<T> path = getWildcardPath();
+        DataTreeIdentifier<T> ident = new DataTreeIdentifier<>(store, path);
         try {
-            ListenerRegistration<DataChangeListener> reg =
-                broker.registerDataChangeListener(store, path, this, scope);
+            ListenerRegistration<DataTreeChangeListener<T>> reg = service.
+                registerDataTreeChangeListener(ident, this);
             registration.set(reg);
         } catch (Exception e) {
-            String msg =
-                "Failed to register data change listener for " +
-                targetType.getName();
+            String msg = new StringBuilder(
+                "Failed to register data tree change listener: type=").
+                append(targetType.getName()).
+                append(", path=").append(path).
+                toString();
             getLogger().error(msg, e);
             throw new IllegalStateException(msg, e);
         }
@@ -91,201 +93,84 @@ public abstract class DataStoreListener<T extends DataObject, C>
     }
 
     /**
-     * Verify data objects notified by a data change event.
-     *
-     * @param label   A label for logging.
-     * @param key     An instance identifier that specifies data.
-     * @param values  An array of data objects associated with {@code key}.
-     * @return  {@code key} if both the given key and value are valid.
-     *          Otherwise {@code null}.
-     */
-    private InstanceIdentifier<T> checkEvent(String label,
-                                             InstanceIdentifier<?> key,
-                                             DataObject ... values) {
-        if (key == null) {
-            getLogger().warn("{}: Null instance identifier.", label);
-            return null;
-        }
-        if (key.isWildcarded()) {
-            getLogger().trace("{}: Ignore wildcard path: {}", label, key);
-            return null;
-        }
-
-        if (!targetType.equals(key.getTargetType())) {
-            getLogger().
-                trace("{}: Unwanted target type in instance identifier: {}",
-                      label, key);
-            return null;
-        }
-
-        for (DataObject value: values) {
-            if (!targetType.isInstance(value)) {
-                getLogger().warn("{}: Unexpected data is associated: " +
-                                 "key={}, value={}", label, key, value);
-                return null;
-            }
-        }
-
-        @SuppressWarnings("unchecked")
-        InstanceIdentifier<T> path = (InstanceIdentifier<T>)key;
-        return path;
-    }
-
-    /**
      * Determine whether the specified event type should be handled or not.
      *
-     * @param required  A set of {@link VtnUpdateType} instances returned
-     *                  by {@link #getRequiredEvents()}.
-     * @param type      A {@link VtnUpdateType} instance which indicates the
-     *                  event type.
-     * @return  {@code true} only if the given event type should be handled.
-     */
-    private boolean isRequiredEvent(Set<VtnUpdateType> required,
-                                    VtnUpdateType type) {
-        return (required == null || required.contains(type));
-    }
-
-    /**
-     * Handle data creation events.
+     * <p>
+     *   Note that this method of this class always returns {@code true},
+     *   which means all event types should be listened. Subclass can override
+     *   this method to filter out events.
+     * </p>
      *
-     * @param ectx     An event context created by
-     *                 {@link #enterEvent(AsyncDataChangeEvent)}.
-     * @param created  A map that contains information about newly created
-     *                 data objects.
+     * @param type  A {@link VtnUpdateType} instance which indicates the event
+     *              type.
+     * @return  {@code true} if the given event type should be handled.
+     *          {@code false} otherwise.
      */
-    private void onCreated(C ectx,
-                           Map<InstanceIdentifier<?>, DataObject> created) {
-        if (created == null) {
-            return;
-        }
-
-        for (Map.Entry<InstanceIdentifier<?>, DataObject> entry:
-                 created.entrySet()) {
-            InstanceIdentifier<?> key = entry.getKey();
-            DataObject value = entry.getValue();
-            InstanceIdentifier<T> path =
-                checkEvent("onCreated", key, value);
-            if (path != null) {
-                @SuppressWarnings("unchecked")
-                T v = (T)value;
-                onCreated(ectx, path, v);
-            }
-        }
+    protected boolean isRequiredEvent(@Nonnull VtnUpdateType type) {
+        return true;
     }
 
     /**
-     * Handle data update events.
-     *
-     * @param ectx      An event context created by
-     *                  {@link #enterEvent(AsyncDataChangeEvent)}.
-     * @param updated   A map that contains information about updated data
-     *                  objects.
-     * @param original  A map that contains information about data objects
-     *                  before update.
-     */
-    private void onUpdated(C ectx,
-                           Map<InstanceIdentifier<?>, DataObject> updated,
-                           Map<InstanceIdentifier<?>, DataObject> original) {
-        if (updated == null) {
-            return;
-        }
-
-        for (Map.Entry<InstanceIdentifier<?>, DataObject> entry:
-                 updated.entrySet()) {
-            InstanceIdentifier<?> key = entry.getKey();
-            DataObject value = entry.getValue();
-            DataObject org = original.get(key);
-            InstanceIdentifier<T> path =
-                checkEvent("onUpdated", key, org, value);
-            if (path != null) {
-                @SuppressWarnings("unchecked")
-                T o = (T)org;
-                @SuppressWarnings("unchecked")
-                T v = (T)value;
-                onUpdated(ectx, path, o, v);
-            }
-        }
-    }
-
-    /**
-     * Handle data update events.
-     *
-     * @param ectx      An event context created by
-     *                  {@link #enterEvent(AsyncDataChangeEvent)}.
-     * @param removed   A set of paths for removed data objects.
-     *                  objects.
-     * @param original  A map that contains information about data objects
-     *                  before removal.
-     */
-    private void onRemoved(C ectx, Set<InstanceIdentifier<?>> removed,
-                           Map<InstanceIdentifier<?>, DataObject> original) {
-        if (removed == null) {
-            return;
-        }
-
-        for (InstanceIdentifier<?> key: removed) {
-            DataObject value = original.get(key);
-            InstanceIdentifier<T> path = checkEvent("onRemoved", key, value);
-            if (path != null) {
-                @SuppressWarnings("unchecked")
-                T v = (T)value;
-                onRemoved(ectx, path, v);
-            }
-        }
-    }
-
-    /**
-     * Invoked when {@link #onDataChanged(AsyncDataChangeEvent)} has just been
+     * Invoked when {@link #onDataTreeChanged(Collection)} has just been
      * called.
      *
-     * @param ev  An {@link AsyncDataChangeEvent} instance.
      * @return  A new event context.
      */
-    protected abstract C enterEvent(
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev);
+    protected abstract C enterEvent();
 
     /**
-     * Invoked when {@link #onDataChanged(AsyncDataChangeEvent)} is going to
-     * leave.
+     * Invoked when {@link #onDataTreeChanged(Collection)} is going to leave.
      *
-     * @param ectx  An event context created by
-     *              {@link #enterEvent(AsyncDataChangeEvent)}.
+     * <p>
+     *   Note that this method may be called even if no modified data was
+     *   notified.
+     * </p>
+     *
+     * @param ectx  An event context created by {@link #enterEvent()}.
      */
     protected abstract void exitEvent(C ectx);
 
     /**
      * Invoked when a new data has been created in the datastore.
      *
-     * @param ectx  An event context created by
-     *              {@link #enterEvent(AsyncDataChangeEvent)}.
+     * @param ectx  An event context created by {@link #enterEvent()}.
      * @param path  An instance identifier that specifies data.
      * @param data  A created data object.
      */
-    protected abstract void onCreated(C ectx, InstanceIdentifier<T> path,
-                                      T data);
+    protected abstract void onCreated(
+        C ectx, @Nonnull InstanceIdentifier<T> path, @Nonnull T data);
 
     /**
      * Invoked when a data in the datastore has been updated.
      *
-     * @param ectx  An event context created by
-     *              {@link #enterEvent(AsyncDataChangeEvent)}.
+     * @param ectx     An event context created by {@link #enterEvent()}.
      * @param path     An instance identifier that specifies data.
      * @param oldData  An old data object.
      * @param newData  An updated data object.
      */
-    protected abstract void onUpdated(C ectx, InstanceIdentifier<T> path,
-                                      T oldData, T newData);
+    protected abstract void onUpdated(
+        C ectx, @Nonnull InstanceIdentifier<T> path, @Nonnull T oldData,
+        @Nonnull T newData);
 
     /**
      * Invoked when a data has been removed from the datastore.
      *
-     * @param ectx  An event context created by
-     *              {@link #enterEvent(AsyncDataChangeEvent)}.
+     * @param ectx  An event context created by {@link #enterEvent()}.
      * @param path  An instance identifier that specifies data.
      * @param data  A removed data object.
      */
-    protected abstract void onRemoved(C ectx, InstanceIdentifier<T> path,
-                                      T data);
+    protected abstract void onRemoved(
+        C ectx, @Nonnull InstanceIdentifier<T> path, @Nonnull T data);
+
+    /**
+     * Determine whether the specified data was updated or not.
+     *
+     * @param before  The target data object before modification.
+     * @param after   The target data object after modification.
+     * @return  {@code true} if the target data was updated.
+     *          {@code false} otherwise.
+     */
+    protected abstract boolean isUpdated(@Nonnull T before, @Nonnull T after);
 
     /**
      * Return a wildcard instance identifier that specifies data objects
@@ -303,16 +188,117 @@ public abstract class DataStoreListener<T extends DataObject, C>
     protected abstract Logger getLogger();
 
     /**
-     * Return a set of {@link VtnUpdateType} instances that represents
-     * required event types.
+     * Verify an instance identifier notified by a data tree change event.
      *
-     * <p>
-     *   All events will be listened if {@code null} is returned.
-     * </p>
-     *
-     * @return  A set of {@link VtnUpdateType} instances or {@code null}.
+     * @param path   An instance identifier that specifies data.
+     * @param label  A label only for logging.
+     * @return  {@code true} only if a given instance identifier  is valid.
      */
-    protected abstract Set<VtnUpdateType> getRequiredEvents();
+    private boolean checkPath(@Nonnull InstanceIdentifier<?> path,
+                              Object label) {
+        boolean wild = path.isWildcarded();
+        if (wild) {
+            getLogger().warn("{}: Ignore wildcard path: {}", label, path);
+        }
+
+        return !wild;
+    }
+
+    /**
+     * Record a log that indicates a {@code null} is notified as the value of
+     * the tree node.
+     *
+     * @param path   An {@link InstanceIdentifier} instance.
+     * @param label  A label only for logging.
+     */
+    private void nullValue(InstanceIdentifier<?> path, Object label) {
+        getLogger().warn("{}: Null value is notified: path={}", label, path);
+    }
+
+    /**
+     * Notify the created tree node.
+     *
+     * @param ectx   An event context created by this instance.
+     * @param path   The path to the target tree node.
+     * @param value  The created tree node.
+     */
+    private void notifyCreated(C ectx, @Nonnull InstanceIdentifier<T> path,
+                               @Nonnull T value) {
+        VtnUpdateType utype = VtnUpdateType.CREATED;
+        if (isRequiredEvent(utype)) {
+            if (checkPath(path, utype)) {
+                onCreated(ectx, path, value);
+            }
+        }
+    }
+
+    /**
+     * Notify the updated tree node.
+     *
+     * @param ectx    An event context created by this instance.
+     * @param path    The path to the target tree node.
+     * @param before  The target tree node before modification.
+     * @param after   The target tree node after modification.
+     */
+    private void notifyUpdated(C ectx, @Nonnull InstanceIdentifier<T> path,
+                               @Nonnull T before, @Nonnull T after) {
+        VtnUpdateType utype = VtnUpdateType.CHANGED;
+        if (isRequiredEvent(utype)) {
+            if (checkPath(path, utype)) {
+                if (isUpdated(before, after)) {
+                    onUpdated(ectx, path, before, after);
+                }
+            }
+        }
+    }
+
+    /**
+     * Notify the removed tree node.
+     *
+     * @param ectx   An event context created by this instance.
+     * @param path   The path to the target tree node.
+     * @param value  The removed tree node.
+     */
+    private void notifyRemoved(C ectx, @Nonnull InstanceIdentifier<T> path,
+                               T value) {
+        VtnUpdateType utype = VtnUpdateType.REMOVED;
+        if (isRequiredEvent(utype)) {
+            if (value == null) {
+                nullValue(path, utype);
+            } else if (checkPath(path, utype)) {
+                onRemoved(ectx, path, value);
+            }
+        }
+    }
+
+    /**
+     * Handle the given data tree modification.
+     *
+     * @param ectx    An event context created by {@link #enterEvent()}.
+     * @param change  A {@link DataTreeModification} instance.
+     */
+    private void handleTree(C ectx, @Nonnull DataTreeModification<T> change) {
+        InstanceIdentifier<T> path = change.getRootPath().getRootIdentifier();
+        DataObjectModification<T> mod = change.getRootNode();
+        ModificationType modType = mod.getModificationType();
+        T before = mod.getDataBefore();
+        if (modType == ModificationType.DELETE) {
+            // The target data has been removed.
+            notifyRemoved(ectx, path, before);
+        } else {
+            T after = mod.getDataAfter();
+            if (after == null) {
+                // This should never happen.
+                nullValue(path, "handleTree");
+            } else if (before == null) {
+                // The target data has been created.
+                notifyCreated(ectx, path, after);
+            } else {
+                // The target data has been updated.
+                notifyUpdated(ectx, path, before, after);
+            }
+        }
+    }
 
     // AutoCloseable
 
@@ -321,8 +307,7 @@ public abstract class DataStoreListener<T extends DataObject, C>
      */
     @Override
     public void close() {
-        ListenerRegistration<DataChangeListener> reg =
-            registration.getAndSet(null);
+        ListenerRegistration<?> reg = registration.getAndSet(null);
         if (reg != null) {
             try {
                 reg.close();
@@ -334,49 +319,24 @@ public abstract class DataStoreListener<T extends DataObject, C>
         }
     }
 
-    // DataChangeListener
+    // DataTreeChangeListener
 
     /**
-     * Invoked when at least an entry in the datastore has been changed.
+     * Invoked when the specified data tree has been modified.
      *
-     * @param ev  An {@link AsyncDataChangeEvent} instance.
+     * @param changes  A collection of data tree modifications.
      */
     @Override
-    public final void onDataChanged(
-        AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
-        if (ev == null) {
-            getLogger().warn("Null data change event.");
-            return;
-        }
-
-        C ectx = enterEvent(ev);
-        Set<VtnUpdateType> required = getRequiredEvents();
-
+    public final void onDataTreeChanged(
+        @Nonnull Collection<DataTreeModification<T>> changes) {
+        C ectx = enterEvent();
         try {
-            if (isRequiredEvent(required, VtnUpdateType.CREATED)) {
-                // Process creation events.
-                onCreated(ectx, ev.getCreatedData());
+            for (DataTreeModification<T> change: changes) {
+                handleTree(ectx, change);
             }
-
-            Map<InstanceIdentifier<?>, DataObject> original =
-                ev.getOriginalData();
-            if (original == null) {
-                original = Collections.
-                    <InstanceIdentifier<?>, DataObject>emptyMap();
-            }
-
-            if (isRequiredEvent(required, VtnUpdateType.CHANGED)) {
-                // Process change events.
-                onUpdated(ectx, ev.getUpdatedData(), original);
-            }
-
-            if (isRequiredEvent(required, VtnUpdateType.REMOVED)) {
-                // Process removal events.
-                onRemoved(ectx, ev.getRemovedPaths(), original);
-            }
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             getLogger().error(
-                "Unexpected exception in data change event listener.", e);
+                "Unexpected exception in data tree change event listener.", e);
         } finally {
             exitEvent(ectx);
         }

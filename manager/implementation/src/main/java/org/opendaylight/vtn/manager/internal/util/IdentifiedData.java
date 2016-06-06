@@ -39,52 +39,6 @@ public class IdentifiedData<T extends DataObject> {
     private final T  value;
 
     /**
-     * Create a new {@link IdentifiedData} instance.
-     *
-     * @param type  A class which indicates the target data type.
-     * @param path  An instance identifier that specifies the data location in
-     *              the MD-SAL datastore.
-     * @param data  A data object.
-     * @param <D>   The type of the target data.
-     * @return  An {@link IdentifiedData} instance on success.
-     *          {@code null} if the target data type of {@code path} does not
-     *          match the type specified by {@code type}.
-     * @throws DataTypeMismatchException
-     *    The type of {@code data} does not match the expected target type.
-     */
-    public static final <D extends DataObject> IdentifiedData<D> create(
-        Class<D> type, InstanceIdentifier<?> path, DataObject data)
-        throws DataTypeMismatchException {
-        InstanceIdentifier<D> id = DataStoreUtils.cast(type, path);
-        return (id == null) ? null : create(id, data);
-    }
-
-    /**
-     * Create a new {@link IdentifiedData} instance.
-     *
-     * @param path  An instance identifier that specifies the data location in
-     *              the MD-SAL datastore.
-     * @param data  A data object.
-     * @param <D>   The type of the target data.
-     * @return  An {@link IdentifiedData} instance.
-     * @throws DataTypeMismatchException
-     *    The type of {@code data} does not match the expected target type.
-     * @throws IllegalArgumentException
-     *    {@code path} is {@code null}.
-     */
-    public static final <D extends DataObject> IdentifiedData<D> create(
-        InstanceIdentifier<D> path, DataObject data)
-        throws DataTypeMismatchException {
-        if (path == null) {
-            throw new IllegalArgumentException(
-                "Instance identifier cannot be null.");
-        }
-
-        D v = MiscUtils.checkedCast(path.getTargetType(), data);
-        return new IdentifiedData<D>(path, v);
-    }
-
-    /**
      * Construct a new instance.
      *
      * @param id    An instance identifier that specifies the data location in
