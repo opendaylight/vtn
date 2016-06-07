@@ -220,7 +220,7 @@ final class VbridgeListener extends VNodeChangeListener<Vbridge> {
             BridgeStatus value = cdata.getValue();
             BridgeStatus old = cdata.getOldValue();
             if (changed || old.getState() != value.getState() ||
-                old.getPathFaults() != value.getPathFaults()) {
+                !Objects.equals(old.getPathFaults(), value.getPathFaults())) {
                 LOG.info("{}: {} status has been changed: old={{}}, new={{}}",
                          ident, type.toString(), toString(old),
                          toString(value));
