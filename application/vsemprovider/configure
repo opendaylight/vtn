@@ -117,7 +117,6 @@ write_zip_path_to_def () {
 fetch_scvmm_sdk_and_copy_assemblies () {
   rm -rf SCVMM_MONO_REFERENCE_ASSEMBLIES.1.0.0
   mozroots --import --sync
-  nuget install SCVMM_MONO_REFERENCE_ASSEMBLIES
   if [[ $? -ne 0 ]]; then
     echo "nuget install failed"
     echo "Please run mozroots --import --sync and retry"

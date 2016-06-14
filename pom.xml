@@ -60,7 +60,9 @@
         </property>
       </activation>
       <modules>
+        <!--
         <module>application</module>
+        -->
       </modules>
     </profile>
 
