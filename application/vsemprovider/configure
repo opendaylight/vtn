@@ -31,6 +31,7 @@ CONFIG_STATUS=$OUTDIR/config.done
 ref_assemblies=( System.Xml.dll System.Web.Extensions.dll System.Management.dll  System.Net.dll System.Core.dll System.dll System.Xml.Linq.dll System.Runtime.dll System.Linq.dll System.Runtime.Serialization.dll System.Security.dll System.Data.dll System.Data.DataSetExtensions.dll )
 
 check_mono_version () {
+  sudo yum -y update mono-complete
   which mcs >/dev/null 2>&1
   if [[ $? -ne 0 ]]; then
     echo "Mono Compiler is not identifiable"
@@ -69,6 +70,7 @@ check_zip_version () {
 }
 
 check_nuget_command () {
+  sudo yum -y update nuget
   which nuget > /dev/null 2>&1
   if [[ $? -ne 0 ]] ; then
     echo "nuget does not exist, Please install nuget or check PATH varaible"
@@ -116,7 +118,7 @@ write_zip_path_to_def () {
 
 fetch_scvmm_sdk_and_copy_assemblies () {
   rm -rf SCVMM_MONO_REFERENCE_ASSEMBLIES.1.0.0
-  mozroots --import --sync
+  #mozroots --import --sync
   nuget install SCVMM_MONO_REFERENCE_ASSEMBLIES
   if [[ $? -ne 0 ]]; then
     echo "nuget install failed"
