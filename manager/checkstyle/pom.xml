@@ -32,6 +32,8 @@
   <properties>
     <nexusproxy>https://nexus.opendaylight.org/content</nexusproxy>
     <sitedeploy>dav:https://nexus.opendaylight.org/content/sites/site</sitedeploy>
+    <maven.site.deploy.skip>true</maven.site.deploy.skip>
+    <maven.site.skip>true</maven.site.skip>
   </properties>
 
   <distributionManagement>
