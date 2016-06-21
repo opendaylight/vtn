@@ -46,7 +46,6 @@
     <bundle>mvn:org.opendaylight.vtn/manager.implementation/${project.version}</bundle>
     <bundle>mvn:org.opendaylight.controller.thirdparty/net.sf.jung2/${odl.thirdparty.jung2.version}</bundle>
 
-    <!-- Use special configuration for IT -->
-    <configfile finalname="etc/opendaylight/karaf/80-vtn.xml">mvn:org.opendaylight.vtn/manager.it.ofmock/${project.version}/xml/vtnconfig</configfile>
+    <configfile finalname="etc/opendaylight/karaf/80-vtn.xml">mvn:org.opendaylight.vtn/manager.implementation/${project.version}/xml/config</configfile>
   </feature>
 </features>
