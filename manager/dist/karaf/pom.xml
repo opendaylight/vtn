@@ -25,6 +25,11 @@
   <version>0.4.4-SNAPSHOT</version>
   <packaging>pom</packaging>
 
+  <properties>
+    <maven.site.deploy.skip>true</maven.site.deploy.skip>
+    <maven.site.skip>true</maven.site.skip>
+  </properties>
+
   <scm>
     <connection>scm:git:https://git.opendaylight.org/gerrit/p/vtn.git</connection>
     <developerConnection>scm:git:ssh://git.opendaylight.org:29418/vtn.git</developerConnection>
@@ -78,4 +83,11 @@
       </plugin>
     </plugins>
   </build>
+ <url>${odl.site.url}/${project.groupId}/${stream}/${project.artifactId}/</url>
+  <distributionManagement>
+    <site>
+      <id>opendaylight-site</id>
+      <url>${nexus.site.url}/${project.artifactId}/</url>
+    </site>
+  </distributionManagement>
 </project>
