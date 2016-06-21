@@ -62,6 +62,17 @@
           <value>true</value>
         </property>
       </activation>
+
+      <!--
+          This profile is to ensure we only build javadocs reports
+          when we plan to deploy Maven site for our project.
+      -->
+      <id>maven-site</id>
+      <activation>
+        <file>
+          <exists>${user.dir}/deploy-site.xml</exists>
+        </file>
+      </activation>
       <modules>
         <!-- Run integration tests if integrationtests profile is active. -->
         <module>it</module>
@@ -109,4 +120,22 @@
       </build>
     </profile>
   </profiles>
+
+ <!--
+      Maven Site Configuration
+
+      The following configuration is necessary for maven-site-plugin to
+      correctly identify the correct deployment path for OpenDaylight Maven
+      sites.
+  -->
+  <url>${odl.site.url}/${project.groupId}/${stream}/</url>
+
+  <distributionManagement>
+    <site>
+      <id>opendaylight-site</id>
+      <url>${nexus.site.url}/</url>
+    </site>
+  </distributionManagement>
+</project>
+
 </project>
