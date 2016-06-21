@@ -62,17 +62,6 @@
   </configuration>
 
   <required-capabilities>
-    <!-- openflowplugin applications -->
-    <capability>
-      urn:opendaylight:params:xml:ns:yang:inventory-manager:impl?module=inventory-manager-impl&amp;revision=2015-05-30
-    </capability>
-    <capability>
-      urn:opendaylight:params:xml:ns:yang:topology-manager:impl?module=topology-manager-impl&amp;revision=2015-05-30
-    </capability>
-    <capability>
-      urn:opendaylight:params:xml:ns:yang:openflowplugin:app:statistics-manager?module=statistics-manager&amp;revision=2014-09-25
-    </capability>
-
     <!-- Required YANG models: openflowplugin -->
     <capability>
       urn:opendaylight:flow:service?module=sal-flow&amp;revision=2013-08-19
