@@ -126,13 +126,6 @@
       <type>xml</type>
     </dependency>
 
-    <dependency>
-      <groupId>org.opendaylight.vtn</groupId>
-      <artifactId>manager.it.ofmock</artifactId>
-      <classifier>vtnconfig</classifier>
-      <type>xml</type>
-    </dependency>
-
     <!-- OpenDaylight controller -->
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
