@@ -12,7 +12,7 @@ import java.lang.reflect.Method;
 
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 
 /**
  * A symbol which indicates the type of parameters defined by

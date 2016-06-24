@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation
+ * Copyright (c) 2015-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -15,7 +15,7 @@ module vtn-config {
     /* OpenDaylight MD-SAL */
     import ietf-yang-types {
         prefix yang;
-        revision-date 2010-09-24;
+        revision-date 2013-07-15;
     }
 
     description
