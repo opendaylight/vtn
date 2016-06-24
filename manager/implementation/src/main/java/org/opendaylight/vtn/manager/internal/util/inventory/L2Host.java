@@ -8,7 +8,7 @@
 
 package org.opendaylight.vtn.manager.internal.util.inventory;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 
 /**
  * An instance of {@code L2Host} class specifies the location of layer 2 host.

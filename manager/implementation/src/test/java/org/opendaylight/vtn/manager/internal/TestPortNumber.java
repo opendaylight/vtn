@@ -10,7 +10,7 @@ package org.opendaylight.vtn.manager.internal;
 
 import java.util.Objects;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.PortNumber;
 
 /**
  * An implementation of {@link PortNumber} that bypasses value check.

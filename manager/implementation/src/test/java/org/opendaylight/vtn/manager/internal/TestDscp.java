@@ -10,7 +10,7 @@ package org.opendaylight.vtn.manager.internal;
 
 import java.util.Objects;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Dscp;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Dscp;
 
 /**
  * An implementation of {@link Dscp} that bypasses value check.

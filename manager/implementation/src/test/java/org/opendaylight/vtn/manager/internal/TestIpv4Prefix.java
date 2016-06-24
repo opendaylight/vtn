@@ -10,7 +10,7 @@ package org.opendaylight.vtn.manager.internal;
 
 import java.util.Objects;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Prefix;
 
 /**
  * An implementation of {@link Ipv4Prefix} that bypasses value check.

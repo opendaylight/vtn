@@ -70,7 +70,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.v
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 
 /**
  * Abstract base class for classes that implement integration test method.
