@@ -268,7 +268,7 @@ public final class VTNManagerProviderImpl
         VTenantManager tnm;
         VTNRoutingManager rtm;
         try {
-            vfm = new VTNFlowManager(this);
+            vfm = new VTNFlowManager(this, nsv);
             subSystems.add(vfm).
                 add(vim.newStaticTopologyManager());
             tnm = new VTenantManager(this);

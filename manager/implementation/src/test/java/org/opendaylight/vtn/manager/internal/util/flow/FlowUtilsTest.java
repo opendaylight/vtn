@@ -119,6 +119,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowModFlags;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowRef;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.GenericFlowAttributes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.OutputPortValues;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Instructions;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.InstructionsBuilder;
@@ -1125,34 +1126,6 @@ public class FlowUtilsTest extends TestBase {
         for (SalNode snode: nodes) {
             String expected = "vtn:table-miss:" + snode;
             assertEquals(expected, FlowUtils.createTableMissFlowId(snode));
-        }
-    }
-
-    /**
-     * Test case for {@link FlowUtils#isTableMissFlowId(SalNode, FlowId)}.
-     */
-    @Test
-    public void testIsTableMissFlowId() {
-        SalNode[] nodes = {
-            new SalNode(1L),
-            new SalNode(12345L),
-            new SalNode(999999999999L),
-            new SalNode(-1L),
-        };
-        for (SalNode snode: nodes) {
-            FlowId missId = new FlowId(FlowUtils.createTableMissFlowId(snode));
-            assertEquals(true, FlowUtils.isTableMissFlowId(snode, missId));
-
-            FlowId[] badIds = {
-                null,
-                new FlowId("flow-1"),
-                new FlowId("table-miss:" + snode),
-                new FlowId("unknown-flow"),
-                new FlowId("vtn:table-miss:openflow:7777"),
-            };
-            for (FlowId fid: badIds) {
-                assertEquals(false, FlowUtils.isTableMissFlowId(snode, fid));
-            }
         }
     }
 
@@ -2425,6 +2398,22 @@ public class FlowUtilsTest extends TestBase {
                 FlowUtils.removedLog(logger, desc, fc);
                 verify(logger).debug(format, desc, flowId);
             }
+        }
+    }
+
+    /**
+     * Test case for {@link FlowUtils#getTableId(GenericFlowAttributes)}.
+     */
+    @Test
+    public void testGetTableId() {
+        // Table ID should be zero if it is not present in flow.
+        GenericFlowAttributes flow = new FlowBuilder().build();
+        assertEquals((short)0, FlowUtils.getTableId(flow));
+
+        short[] tableIds = {0, 1, 34, 67, 145, 255};
+        for (short table: tableIds) {
+            flow = new FlowBuilder().setTableId(table).build();
+            assertEquals(table, FlowUtils.getTableId(flow));
         }
     }
 

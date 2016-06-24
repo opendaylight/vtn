@@ -12,12 +12,7 @@ import static org.opendaylight.vtn.manager.it.ofmock.OfMockUtils.isOpenflow13;
 import static org.opendaylight.vtn.manager.it.ofmock.OfMockUtils.isOutput;
 import static org.opendaylight.vtn.manager.it.ofmock.OfMockUtils.verify;
 import static org.opendaylight.vtn.manager.it.ofmock.impl.FlowMatcher.EMPTY_MATCH;
-import static org.opendaylight.vtn.manager.it.ofmock.impl.OfNode.BYTE_COUNT;
-import static org.opendaylight.vtn.manager.it.ofmock.impl.OfNode.DURATION_NANOSEC;
-import static org.opendaylight.vtn.manager.it.ofmock.impl.OfNode.DURATION_SEC;
-import static org.opendaylight.vtn.manager.it.ofmock.impl.OfNode.PACKET_COUNT;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,14 +30,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.ta
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SwitchFlowRemovedBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowRemovedBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowModFlags;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.OutputPortValues;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.RemovedReasonFlags;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Instructions;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.mod.removed.Match;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.mod.removed.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 
@@ -69,13 +61,6 @@ public final class FlowTable {
      * A flow priority to be configured in a table miss flow entry.
      */
     private static final Integer  MISS_PRIORITY = 0;
-
-    /**
-     * A removed-reason-flags value that indicates a flow entry was removed by
-     * a FLOW_MOD.
-     */
-    private static final RemovedReasonFlags  REMOVED_REASON_DELETE =
-        new RemovedReasonFlags(true, false, false, false);
 
     /**
      * The ofmock provider service.
@@ -705,15 +690,8 @@ public final class FlowTable {
     private void publishFlowRemoved(NodeRef nref, OfMockFlowEntry ofent) {
         FlowModFlags flags = ofent.getFlowModFlags();
         if (flags != null && Boolean.TRUE.equals(flags.isSENDFLOWREM())) {
-            Match match = new MatchBuilder(ofent.getMatch()).build();
-            SwitchFlowRemovedBuilder builder =
-                new SwitchFlowRemovedBuilder(ofent.getFlowEntry()).
-                setPacketCount(BigInteger.valueOf(PACKET_COUNT)).
-                setByteCount(BigInteger.valueOf(BYTE_COUNT)).
-                setDurationSec(Long.valueOf(DURATION_SEC)).
-                setDurationNsec(Long.valueOf(DURATION_NANOSEC)).
-                setRemovedReason(REMOVED_REASON_DELETE).
-                setMatch(match).
+            FlowRemovedBuilder builder =
+                new FlowRemovedBuilder(ofent.getFlowEntry()).
                 setNode(nref);
             if (ofVersion == VtnOpenflowVersion.OF10) {
                 // OF 1.0 has no table ID.

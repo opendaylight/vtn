@@ -8,14 +8,13 @@
 
 package org.opendaylight.vtn.manager.internal.flow.stats;
 
+import static org.opendaylight.vtn.manager.internal.flow.stats.SalFlowIdResolver.LOG;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Map;
 import java.util.Objects;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.VTNException;
 
@@ -59,12 +58,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.model.statistics.types.rev1
  * MD-SAL statistics manager.
  */
 public final class AddedFlowStats extends AbstractTxTask<Void> {
-    /**
-     * Logger instance.
-     */
-    private static final Logger  LOG =
-        LoggerFactory.getLogger(AddedFlowStats.class);
-
     /**
      * A map that keeps newly added flow information.
      */
