@@ -1,0 +1,119 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "ba51214e_cd76583e",
+        "filename": "deploy-site.xml",
+        "patchSetId": 7
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2016-06-24T02:27:38Z",
+      "side": 1,
+      "message": "Can we set parent POM here? If we can, we should set odlparent-lite as parent POM.\n\n  \u003cparent\u003e\n    \u003cgroupId\u003eorg.opendaylight.odlparent\u003c/groupId\u003e\n    \u003cartifactId\u003eodlparent-lite\u003c/artifactId\u003e\n    \u003cversion\u003e1.7.0-SNAPSHOT\u003c/version\u003e\n    \u003crelativePath /\u003e\n  \u003c/parent\u003e",
+      "range": {
+        "startLine": 12,
+        "startChar": 0,
+        "endLine": 12,
+        "endChar": 0
+      },
+      "revId": "2f70e3f16218d9e719ccfb97abd518b895105bef",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba51214e_0d905042",
+        "filename": "deploy-site.xml",
+        "patchSetId": 7
+      },
+      "lineNbr": 19,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2016-06-24T02:27:38Z",
+      "side": 1,
+      "message": "If we can use odlparent-lite as parent, we can remove \u003cstream\u003e property because it will be inherited from odlparent-lite.",
+      "range": {
+        "startLine": 19,
+        "startChar": 26,
+        "endLine": 19,
+        "endChar": 27
+      },
+      "revId": "2f70e3f16218d9e719ccfb97abd518b895105bef",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba51214e_ed94fc38",
+        "filename": "deploy-site.xml",
+        "patchSetId": 7
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2016-06-24T02:27:38Z",
+      "side": 1,
+      "message": "If we can use odlparent-lite as parent, we can define nexus.site.url as follows:\n\n  \u003cnexus.site.url\u003edav:${odl.site.url}${project.groupId}/${stream}/\u003c/nexus.site.url\u003e",
+      "range": {
+        "startLine": 20,
+        "startChar": 0,
+        "endLine": 20,
+        "endChar": 120
+      },
+      "revId": "2f70e3f16218d9e719ccfb97abd518b895105bef",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba51214e_4d9a4864",
+        "filename": "deploy-site.xml",
+        "patchSetId": 7
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2016-06-24T02:27:38Z",
+      "side": 1,
+      "message": "Bad indentation.",
+      "range": {
+        "startLine": 27,
+        "startChar": 0,
+        "endLine": 28,
+        "endChar": 31
+      },
+      "revId": "2f70e3f16218d9e719ccfb97abd518b895105bef",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba51214e_2d9f1454",
+        "filename": "src/site/site.xml",
+        "patchSetId": 7
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2016-06-24T02:27:38Z",
+      "side": 1,
+      "message": "We should use (c) instead of ©.",
+      "range": {
+        "startLine": 3,
+        "startChar": 11,
+        "endLine": 3,
+        "endChar": 12
+      },
+      "revId": "2f70e3f16218d9e719ccfb97abd518b895105bef",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
