@@ -36,7 +36,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.v
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.vtn.mac.map.status.MappedHost;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 
 /**
  * {@code VTNMacMapStatus} descrbies the status of the MAC mapping.

@@ -24,7 +24,7 @@ import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.mac.rev150907.VtnMacEntry;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 
 /**
  * {@code MacEntry} describes a MAC address information in the MAC address

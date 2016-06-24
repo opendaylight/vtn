@@ -36,7 +36,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalF
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.FlowAndStatisticsMap;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 
 /**
  * {@code ClearNodeFlowsTask} describes a task which uninstalls VTN flow

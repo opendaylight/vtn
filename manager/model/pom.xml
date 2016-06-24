@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2015 NEC Corporation
+# Copyright (c) 2015-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -62,7 +62,7 @@
     <!-- OpenDaylight MD-SAL -->
     <dependency>
       <groupId>org.opendaylight.mdsal.model</groupId>
-      <artifactId>ietf-yang-types</artifactId>
+      <artifactId>ietf-yang-types-20130715</artifactId>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.mdsal.model</groupId>
@@ -70,7 +70,7 @@
     </dependency>
     <dependency>
       <groupId>org.opendaylight.mdsal.model</groupId>
-      <artifactId>ietf-inet-types</artifactId>
+      <artifactId>ietf-inet-types-2013-07-15</artifactId>
     </dependency>
 
     <!-- OpenDaylight openflowplugin -->
