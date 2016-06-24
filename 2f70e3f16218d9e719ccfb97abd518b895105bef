@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "ba51214e_06066dce",
+        "filename": "deploy-site.xml",
+        "patchSetId": 7
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 2759
+      },
+      "writtenOn": "2016-06-24T22:19:44Z",
+      "side": 1,
+      "message": "No, there is no parent and this is purely a metadata file and is not deployed anywhere. The only time it is ever used and touched is by Jenkins to push the staged site to Nexus.",
+      "parentUuid": "ba51214e_cd76583e",
+      "range": {
+        "startLine": 12,
+        "startChar": 0,
+        "endLine": 12,
+        "endChar": 0
+      },
+      "revId": "2f70e3f16218d9e719ccfb97abd518b895105bef",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "ba51214e_0d905042",
         "filename": "deploy-site.xml",
         "patchSetId": 7
