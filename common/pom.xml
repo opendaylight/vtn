@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2013-2015 NEC Corporation
+# Copyright (c) 2013-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -37,7 +37,6 @@
   </scm>
 
   <properties>
-    <sitedeploy>dav:https://nexus.opendaylight.org/content/sites/site</sitedeploy>
     <buildnumber.version>1.2</buildnumber.version>
     <maven-dependency.version>2.8</maven-dependency.version>
     <buildhelper.version>1.8</buildhelper.version>
@@ -45,26 +44,6 @@
 
     <odl.odlparent.version>1.5.5-SNAPSHOT</odl.odlparent.version>
   </properties>
-
-  <distributionManagement>
-    <!-- OpenDayLight Released artifact -->
-    <repository>
-      <id>opendaylight-release</id>
-      <url>${nexusproxy}/repositories/opendaylight.release/</url>
-    </repository>
-
-    <!-- OpenDayLight Snapshot artifact -->
-    <snapshotRepository>
-      <id>opendaylight-snapshot</id>
-      <url>${nexusproxy}/repositories/opendaylight.snapshot/</url>
-    </snapshotRepository>
-
-    <!-- Site deployment -->
-    <site>
-      <id>website</id>
-      <url>${sitedeploy}</url>
-    </site>
-  </distributionManagement>
 
   <build>
     <pluginManagement>
