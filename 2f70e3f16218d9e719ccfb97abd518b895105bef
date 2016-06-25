@@ -118,6 +118,30 @@
     },
     {
       "key": {
+        "uuid": "ba51214e_86ca7d4d",
+        "filename": "deploy-site.xml",
+        "patchSetId": 7
+      },
+      "lineNbr": 28,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2016-06-25T01:16:03Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "ba51214e_4d9a4864",
+      "range": {
+        "startLine": 27,
+        "startChar": 0,
+        "endLine": 28,
+        "endChar": 31
+      },
+      "revId": "2f70e3f16218d9e719ccfb97abd518b895105bef",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "ba51214e_2d9f1454",
         "filename": "src/site/site.xml",
         "patchSetId": 7
@@ -129,6 +153,30 @@
       "writtenOn": "2016-06-24T02:27:38Z",
       "side": 1,
       "message": "We should use (c) instead of ©.",
+      "range": {
+        "startLine": 3,
+        "startChar": 11,
+        "endLine": 3,
+        "endChar": 12
+      },
+      "revId": "2f70e3f16218d9e719ccfb97abd518b895105bef",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba51214e_26b611da",
+        "filename": "src/site/site.xml",
+        "patchSetId": 7
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2016-06-25T01:16:03Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "ba51214e_2d9f1454",
       "range": {
         "startLine": 3,
         "startChar": 11,
