@@ -651,7 +651,8 @@ public final class VTNFlowManager extends SalNotificationListener
             @Override
             public AddMdFlowTask newTask(SalFlowService sfs) {
                 AddMdFlowTask task = new AddMdFlowTask(
-                    vtnProvider, sfs, FlowUtils.createTableMissInput(snode));
+                    vtnProvider, sfs, FlowUtils.createTableMissInput(snode),
+                    false);
                 cb.setTask(task);
                 return task;
             }
@@ -888,6 +889,7 @@ public final class VTNFlowManager extends SalNotificationListener
         } else {
             SendBarrierRpc rpc =
                 SendBarrierRpc.create(vtnProvider, fcts, nref);
+            rpc.start();
             vtnProvider.setCallback(rpc.getFuture(), rpc);
         }
     }

@@ -8,8 +8,12 @@
 
 package org.opendaylight.vtn.manager.internal.util.inventory;
 
+import static java.util.regex.Pattern.CASE_INSENSITIVE;
+
+import java.util.Collection;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nonnull;
 
@@ -19,7 +23,10 @@ import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcInvocation;
 
+import org.opendaylight.controller.md.sal.dom.api.DOMRpcImplementationNotAvailableException;
+
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+import org.opendaylight.yangtools.yang.common.RpcError;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
@@ -34,6 +41,14 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.N
  * @param <O>  The type of the RPC output.
  */
 public abstract class NodeRpcInvocation<I, O> extends RpcInvocation<I, O> {
+    /**
+     * Regular expression that matches error messages that indicate
+     * disconnection of OpenFlow secure channel.
+     */
+    private static final Pattern  REGEXP_DISCONNECT =
+        Pattern.compile("disconnected|wasn't able to reserve XID",
+                        CASE_INSENSITIVE);
+
     /**
      * The RPC watcher.
      */
@@ -50,7 +65,23 @@ public abstract class NodeRpcInvocation<I, O> extends RpcInvocation<I, O> {
     private boolean  nodeRemoved;
 
     /**
+     * Determine whether the secure channel for the target node was
+     * disconnected or not.
+     */
+    private boolean  disconnected;
+
+    /**
+     * Determine whether an error caused by disconnection of OpenFlow secure
+     * channel should be logged or not.
+     */
+    private final boolean  disconnectionLog;
+
+    /**
      * Construct a new instance.
+     *
+     * <p>
+     *   An error caused by secure channel disconnection will be logged.
+     * </p>
      *
      * @param w     The node RPC watcher.
      * @param in    The RPC input.
@@ -60,12 +91,29 @@ public abstract class NodeRpcInvocation<I, O> extends RpcInvocation<I, O> {
      */
     public NodeRpcInvocation(NodeRpcWatcher w, I in, NodeRef nref,
                              Future<RpcResult<O>> f) {
+        this(w, in, nref, f, true);
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param w       The node RPC watcher.
+     * @param in      The RPC input.
+     * @param nref    Reference to the target node.
+     * @param f       The future associated with the RPC execution with
+     *                {@code in}.
+     * @param discon  Determine whether an error caused by disconnection of
+     *                OpenFlow secure channel should be logged or not.
+     */
+    public NodeRpcInvocation(NodeRpcWatcher w, I in, NodeRef nref,
+                             Future<RpcResult<O>> f, boolean discon) {
         super(in, f);
         rpcWatcher = w;
 
         InstanceIdentifier<?> path = nref.getValue();
         NodeKey key = path.firstKeyOf(Node.class);
         nodeId = key.getId().getValue();
+        disconnectionLog = discon;
     }
 
     /**
@@ -108,16 +156,27 @@ public abstract class NodeRpcInvocation<I, O> extends RpcInvocation<I, O> {
     }
 
     /**
+     * Determine whether the secure channel for the target node was
+     * disconnected or not.
+     *
+     * @return  {@code true} if the secure channel for the target node was
+     *          disconnected. {@code false} otherwise.
+     */
+    public final boolean isDisconnected() {
+        return disconnected;
+    }
+
+    /**
      * Start the observation of the RPC invocation.
      */
-    final void start() {
+    public final void start() {
         rpcWatcher.registerRpc(this);
     }
 
     /**
      * Complete the observation of the RPC invocation.
      */
-    final void complete() {
+    public final void complete() {
         rpcWatcher.unregisterRpc(this);
     }
 
@@ -148,19 +207,37 @@ public abstract class NodeRpcInvocation<I, O> extends RpcInvocation<I, O> {
     }
 
     /**
-     * Determine whether the RPC failure should be logged or not.
-     *
-     * <p>
-     *   This method returns {@code false} only if the RPC was canceled
-     *   due to removal of the target node.
-     * </p>
-     *
-     * @param cause  An throwable thrown by the RPC implementation.
-     * @return  {@code true} if the RPC failure should be logged.
-     *          {@code false} otherwise.
+     * {@inheritDoc}
      */
     @Override
-    public boolean needErrorLog(@Nonnull Throwable cause) {
-        return !nodeRemoved;
+    public final boolean needErrorLog(@Nonnull Throwable cause) {
+        Throwable t = cause;
+        do {
+            if (t instanceof DOMRpcImplementationNotAvailableException) {
+                disconnected = true;
+                break;
+            }
+            t = t.getCause();
+        } while (t != null);
+
+        return (nodeRemoved) ? false : (disconnectionLog || !disconnected);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean needErrorLog(@Nonnull Collection<RpcError> errors) {
+        // Check to see if the given throwable indicates the disconnection
+        // of the secure channel.
+        for (RpcError re: errors) {
+            String msg = re.getMessage();
+            if (msg != null && REGEXP_DISCONNECT.matcher(msg).find()) {
+                disconnected = true;
+                break;
+            }
+        }
+
+        return (disconnectionLog || !disconnected);
     }
 }

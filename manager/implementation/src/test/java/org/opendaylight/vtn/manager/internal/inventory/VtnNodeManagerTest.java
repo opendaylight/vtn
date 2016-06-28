@@ -132,7 +132,7 @@ public class VtnNodeManagerTest extends TestBase {
                 SettableFuture<RpcResult<AddFlowOutput>> afuture =
                     SettableFuture.<RpcResult<AddFlowOutput>>create();
                 when(sfs.addFlow(ainput)).thenReturn(afuture);
-                AddFlowRpc af = new AddFlowRpc(mgr, sfs, ainput);
+                AddFlowRpc af = new AddFlowRpc(mgr, sfs, ainput, true);
                 mgr.registerRpc(af);
                 assertEquals(true, rpcs.add(af));
                 assertEquals(expected, mgr.getNodeMap());
@@ -159,7 +159,7 @@ public class VtnNodeManagerTest extends TestBase {
             Future<RpcResult<AddFlowOutput>> afuture =
                 Futures.<RpcResult<AddFlowOutput>>immediateCancelledFuture();
             when(sfs.addFlow(ainput)).thenReturn(afuture);
-            AddFlowRpc af = new AddFlowRpc(mgr, sfs, ainput);
+            AddFlowRpc af = new AddFlowRpc(mgr, sfs, ainput, true);
             mgr.registerRpc(af);
             assertEquals(true, rpcs.add(af));
             assertEquals(expected, mgr.getNodeMap());
@@ -180,7 +180,7 @@ public class VtnNodeManagerTest extends TestBase {
             Future<RpcResult<AddFlowOutput>> afuture =
                 SettableFuture.<RpcResult<AddFlowOutput>>create();
             when(sfs.addFlow(ainput)).thenReturn(afuture);
-            AddFlowRpc af = new AddFlowRpc(mgr, sfs, ainput);
+            AddFlowRpc af = new AddFlowRpc(mgr, sfs, ainput, true);
             mgr.registerRpc(af);
             assertEquals(expected, mgr.getNodeMap());
             assertEquals(true, afuture.isCancelled());

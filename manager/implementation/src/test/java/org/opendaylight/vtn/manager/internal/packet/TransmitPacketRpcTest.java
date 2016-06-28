@@ -142,31 +142,24 @@ public class TransmitPacketRpcTest extends TestBase {
 
     /**
      * Test case for {@link TransmitPacketRpc#needErrorLog(Throwable)}.
+     *
+     * <ul>
+     *   <li>The target node is not removed.</li>
+     * </ul>
      */
     @Test
     public void testNeedErrorLog1() {
-        SalPort egress = new SalPort(1L, 2L);
-        TransmitPacketInput input = mock(TransmitPacketInput.class);
-        when(input.getNode()).thenReturn(egress.getNodeRef());
-        when(input.getEgress()).thenReturn(egress.getNodeConnectorRef());
-        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        PacketProcessingService pps = mock(PacketProcessingService.class);
-        Future<RpcResult<Void>> future =
-            SettableFuture.<RpcResult<Void>>create();
-        when(pps.transmitPacket(input)).thenReturn(future);
-        TransmitPacketRpc rpc = new TransmitPacketRpc(watcher, pps, input);
-
         Map<Throwable, Boolean> cases = new HashMap<>();
-        assertNull(cases.put(new Throwable(), true));
-        assertNull(cases.put(new Exception(), true));
-        assertNull(cases.put(new IllegalArgumentException(), true));
-        assertNull(cases.put(new IllegalStateException(), true));
+        assertNull(cases.put(new Throwable(), false));
+        assertNull(cases.put(new Exception(), false));
+        assertNull(cases.put(new IllegalArgumentException(), false));
+        assertNull(cases.put(new IllegalStateException(), false));
 
         Exception e = new NumberFormatException();
         for (int i = 0; i < 5; i++) {
             e = new ExecutionException(e);
         }
-        assertNull(cases.put(e, true));
+        assertNull(cases.put(e, false));
 
         e = new DOMRpcImplementationNotAvailableException("error 1");
         assertNull(cases.put(e, true));
@@ -177,19 +170,87 @@ public class TransmitPacketRpcTest extends TestBase {
         }
         assertNull(cases.put(e, true));
 
+        SalPort egress = new SalPort(1L, 2L);
         for (Entry<Throwable, Boolean> entry: cases.entrySet()) {
             Throwable cause = entry.getKey();
-            boolean expected = entry.getValue().booleanValue();
-            assertEquals(expected, rpc.needErrorLog(cause));
-            assertEquals(false, rpc.isNodeRemoved());
-        }
+            boolean disconnected = entry.getValue().booleanValue();
 
-        // Cancel the RPC.
-        assertEquals(true, rpc.onNodeRemoved());
-        assertEquals(true, future.isCancelled());
-        for (Throwable cause: cases.keySet()) {
-            assertEquals(false, rpc.needErrorLog(cause));
+            TransmitPacketInput input = mock(TransmitPacketInput.class);
+            when(input.getNode()).thenReturn(egress.getNodeRef());
+            when(input.getEgress()).thenReturn(egress.getNodeConnectorRef());
+            NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+            PacketProcessingService pps = mock(PacketProcessingService.class);
+            Future<RpcResult<Void>> future =
+                SettableFuture.<RpcResult<Void>>create();
+            when(pps.transmitPacket(input)).thenReturn(future);
+            TransmitPacketRpc rpc = new TransmitPacketRpc(watcher, pps, input);
+            assertEquals(false, rpc.isDisconnected());
+
+            assertEquals(true, rpc.needErrorLog(cause));
+            assertEquals(disconnected, rpc.isDisconnected());
+            assertEquals(false, rpc.isNodeRemoved());
+            assertEquals(false, future.isCancelled());
+        }
+    }
+
+    /**
+     * Test case for {@link TransmitPacketRpc#needErrorLog(Throwable)}.
+     *
+     * <ul>
+     *   <li>The target node is removed.</li>
+     * </ul>
+     */
+    @Test
+    public void testNeedErrorLog2() {
+        Map<Throwable, Boolean> cases = new HashMap<>();
+        assertNull(cases.put(new Throwable(), false));
+        assertNull(cases.put(new Exception(), false));
+        assertNull(cases.put(new IllegalArgumentException(), false));
+        assertNull(cases.put(new IllegalStateException(), false));
+
+        Exception e = new NumberFormatException();
+        for (int i = 0; i < 5; i++) {
+            e = new ExecutionException(e);
+        }
+        assertNull(cases.put(e, false));
+
+        e = new DOMRpcImplementationNotAvailableException("error 1");
+        assertNull(cases.put(e, true));
+
+        e = new DOMRpcImplementationNotAvailableException("error 2");
+        for (int i = 0; i < 5; i++) {
+            e = new ExecutionException(e);
+        }
+        assertNull(cases.put(e, true));
+
+        SalPort egress = new SalPort(1L, 2L);
+        for (Entry<Throwable, Boolean> entry: cases.entrySet()) {
+            Throwable cause = entry.getKey();
+            boolean disconnected = entry.getValue().booleanValue();
+
+            TransmitPacketInput input = mock(TransmitPacketInput.class);
+            when(input.getNode()).thenReturn(egress.getNodeRef());
+            when(input.getEgress()).thenReturn(egress.getNodeConnectorRef());
+            NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+            PacketProcessingService pps = mock(PacketProcessingService.class);
+            Future<RpcResult<Void>> future =
+                SettableFuture.<RpcResult<Void>>create();
+            when(pps.transmitPacket(input)).thenReturn(future);
+            TransmitPacketRpc rpc = new TransmitPacketRpc(watcher, pps, input);
+            assertEquals(false, rpc.isDisconnected());
+            assertEquals(false, future.isCancelled());
+            assertEquals(true, rpc.onNodeRemoved());
             assertEquals(true, rpc.isNodeRemoved());
+            assertEquals(true, future.isCancelled());
+
+            assertEquals(false, rpc.needErrorLog(cause));
+            assertEquals(disconnected, rpc.isDisconnected());
+
+            for (int i = 0; i < 5; i++) {
+                assertEquals(false, rpc.onNodeRemoved());
+                assertEquals(true, rpc.isNodeRemoved());
+                assertEquals(true, future.isCancelled());
+            }
         }
     }
 
@@ -197,35 +258,40 @@ public class TransmitPacketRpcTest extends TestBase {
      * Test case for {@link TransmitPacketRpc#needErrorLog(Collection)}.
      */
     @Test
-    public void testNeedErrorLog2() {
-        SalPort egress = new SalPort(1L, 2L);
-        TransmitPacketInput input = mock(TransmitPacketInput.class);
-        when(input.getNode()).thenReturn(egress.getNodeRef());
-        when(input.getEgress()).thenReturn(egress.getNodeConnectorRef());
-        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        PacketProcessingService pps = mock(PacketProcessingService.class);
-        Future<RpcResult<Void>> future =
-            SettableFuture.<RpcResult<Void>>create();
-        when(pps.transmitPacket(input)).thenReturn(future);
-        TransmitPacketRpc rpc = new TransmitPacketRpc(watcher, pps, input);
-
+    public void testNeedErrorLog3() {
         Map<String, Boolean> cases = new HashMap<>();
-        assertNull(cases.put(null, true));
-        assertNull(cases.put("Unknown error", true));
-        assertNull(cases.put("Operation timed out", true));
-        assertNull(cases.put("Invalid input", true));
+        assertNull(cases.put(null, false));
+        assertNull(cases.put("Unknown error", false));
+        assertNull(cases.put("Operation timed out", false));
+        assertNull(cases.put("Invalid input", false));
         assertNull(cases.put("Device disconnected", true));
         assertNull(cases.put("Outbound queue wasn't able to reserve XID.",
                              true));
 
+        SalPort egress = new SalPort(1L, 2L);
         for (Entry<String, Boolean> entry: cases.entrySet()) {
             String msg = entry.getKey();
-            boolean expected = entry.getValue().booleanValue();
+            boolean disconnected = entry.getValue().booleanValue();
+
+            TransmitPacketInput input = mock(TransmitPacketInput.class);
+            when(input.getNode()).thenReturn(egress.getNodeRef());
+            when(input.getEgress()).thenReturn(egress.getNodeConnectorRef());
+            NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+            PacketProcessingService pps = mock(PacketProcessingService.class);
+            Future<RpcResult<Void>> future =
+                SettableFuture.<RpcResult<Void>>create();
+            when(pps.transmitPacket(input)).thenReturn(future);
+            TransmitPacketRpc rpc = new TransmitPacketRpc(watcher, pps, input);
+            assertEquals(false, rpc.isDisconnected());
+
             RpcError err = mock(RpcError.class);
             when(err.getMessage()).thenReturn(msg);
             Collection<RpcError> errors = Arrays.asList(
                 mock(RpcError.class), mock(RpcError.class), err);
-            assertEquals(expected, rpc.needErrorLog(errors));
+            assertEquals(true, rpc.needErrorLog(errors));
+            assertEquals(disconnected, rpc.isDisconnected());
+            assertEquals(false, rpc.isNodeRemoved());
+            assertEquals(false, future.isCancelled());
         }
     }
 
@@ -268,6 +334,8 @@ public class TransmitPacketRpcTest extends TestBase {
         t.start();
 
         assertSame(null, rpc.getResult(10L, TimeUnit.SECONDS, logger));
+        assertEquals(false, rpc.isNodeRemoved());
+        assertEquals(false, rpc.isDisconnected());
 
         verify(watcher).registerRpc(rpc);
         verify(watcher).unregisterRpc(rpc);
@@ -306,6 +374,9 @@ public class TransmitPacketRpcTest extends TestBase {
             cause = e.getCause();
             assertThat(cause, instanceOf(TimeoutException.class));
         }
+
+        assertEquals(false, rpc.isNodeRemoved());
+        assertEquals(false, rpc.isDisconnected());
 
         String msg = RPC_NAME + ": Caught an exception: canceled=true, " +
             "input={egress=" + egress + "}";
@@ -362,6 +433,9 @@ public class TransmitPacketRpcTest extends TestBase {
             assertThat(cause, instanceOf(CancellationException.class));
         }
 
+        assertEquals(true, rpc.isNodeRemoved());
+        assertEquals(false, rpc.isDisconnected());
+
         // No error should be logged.
         verify(watcher).registerRpc(rpc);
         verify(watcher).unregisterRpc(rpc);
@@ -416,6 +490,9 @@ public class TransmitPacketRpcTest extends TestBase {
             assertEquals(cause, e.getCause());
         }
 
+        assertEquals(false, rpc.isNodeRemoved());
+        assertEquals(true, rpc.isDisconnected());
+
         String msg = RPC_NAME + ": Caught an exception: canceled=false, " +
             "input={egress=" + egress + "}";
         ArgumentCaptor<Throwable> captor =
@@ -444,17 +521,20 @@ public class TransmitPacketRpcTest extends TestBase {
      */
     @Test
     public void testGetResultLog1() throws Exception {
-        String[] msgs = {
-            null,
-            "Unknown error.",
-            "Invalid input.",
-            "Device disconnected",
-            "Outbound queue wasn't able to reserve XID.",
-        };
-
+        Map<String, Boolean> cases = new HashMap<>();
+        assertNull(cases.put(null, false));
+        assertNull(cases.put("Unknown error", false));
+        assertNull(cases.put("Operation timed out", false));
+        assertNull(cases.put("Invalid input", false));
+        assertNull(cases.put("Device disconnected", true));
+        assertNull(cases.put("Outbound queue wasn't able to reserve XID.",
+                             true));
         SalPort egress = new SalPort(1L, 2L);
         String egressStr = "{egress=" + egress + "}";
-        for (String emsg: msgs) {
+        for (Entry<String, Boolean> entry: cases.entrySet()) {
+            String emsg = entry.getKey();
+            boolean disconnected = entry.getValue().booleanValue();
+
             TransmitPacketInput input = mock(TransmitPacketInput.class);
             when(input.getNode()).thenReturn(egress.getNodeRef());
             when(input.getEgress()).thenReturn(egress.getNodeConnectorRef());
@@ -489,12 +569,17 @@ public class TransmitPacketRpcTest extends TestBase {
                 assertEquals(null, e.getCause());
             }
 
+            assertEquals(false, rpc.isNodeRemoved());
+            assertEquals(disconnected, rpc.isDisconnected());
+
             verify(logger).
                 error("{}: {}: input={}, errors={}", RPC_NAME, msg, egressStr,
                       result.getErrors());
             verify(watcher).registerRpc(rpc);
             verify(watcher).unregisterRpc(rpc);
             verifyNoMoreInteractions(watcher, logger);
+
+            assertEquals(false, future.isCancelled());
         }
     }
 
@@ -511,18 +596,22 @@ public class TransmitPacketRpcTest extends TestBase {
      */
     @Test
     public void testGetResultLog2() throws Exception {
-        String[] msgs = {
-            null,
-            "Unknown error.",
-            "Invalid input.",
-            "Device disconnected",
-            "Outbound queue wasn't able to reserve XID.",
-        };
-        IllegalStateException ise = new IllegalStateException();
+        Map<String, Boolean> cases = new HashMap<>();
+        assertNull(cases.put(null, false));
+        assertNull(cases.put("Unknown error", false));
+        assertNull(cases.put("Operation timed out", false));
+        assertNull(cases.put("Invalid input", false));
+        assertNull(cases.put("Device disconnected", true));
+        assertNull(cases.put("Outbound queue wasn't able to reserve XID.",
+                             true));
 
+        IllegalStateException ise = new IllegalStateException();
         SalPort egress = new SalPort(1L, 2L);
         String egressStr = "{egress=" + egress + "}";
-        for (String emsg: msgs) {
+        for (Entry<String, Boolean> entry: cases.entrySet()) {
+            String emsg = entry.getKey();
+            boolean disconnected = entry.getValue().booleanValue();
+
             TransmitPacketInput input = mock(TransmitPacketInput.class);
             when(input.getNode()).thenReturn(egress.getNodeRef());
             when(input.getEgress()).thenReturn(egress.getNodeConnectorRef());
@@ -556,12 +645,17 @@ public class TransmitPacketRpcTest extends TestBase {
                 assertEquals(null, e.getCause());
             }
 
+            assertEquals(false, rpc.isNodeRemoved());
+            assertEquals(disconnected, rpc.isDisconnected());
+
             String lmsg = RPC_NAME + ": RPC returned error: input=" +
                 egressStr + ", errors=" + result.getErrors();
             verify(logger).error(lmsg, ise);
             verify(watcher).registerRpc(rpc);
             verify(watcher).unregisterRpc(rpc);
             verifyNoMoreInteractions(watcher, logger);
+
+            assertEquals(false, future.isCancelled());
         }
     }
 }

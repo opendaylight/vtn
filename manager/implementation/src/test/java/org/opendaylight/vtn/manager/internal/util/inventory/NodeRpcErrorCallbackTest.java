@@ -48,7 +48,7 @@ public class NodeRpcErrorCallbackTest extends TestBase {
             SettableFuture.<RpcResult<AddFlowOutput>>create();
         SalFlowService sfs = mock(SalFlowService.class);
         when(sfs.addFlow(input)).thenReturn(future);
-        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
+        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input, true);
         verify(sfs).addFlow(input);
         verify(input).getNode();
         verifyNoMoreInteractions(input, sfs);
@@ -89,7 +89,7 @@ public class NodeRpcErrorCallbackTest extends TestBase {
             SettableFuture.<RpcResult<AddFlowOutput>>create();
         SalFlowService sfs = mock(SalFlowService.class);
         when(sfs.addFlow(input)).thenReturn(future);
-        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
+        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input, true);
         verify(sfs).addFlow(input);
         verify(input).getNode();
         verifyNoMoreInteractions(input, sfs);
@@ -129,7 +129,7 @@ public class NodeRpcErrorCallbackTest extends TestBase {
             SettableFuture.<RpcResult<AddFlowOutput>>create();
         SalFlowService sfs = mock(SalFlowService.class);
         when(sfs.addFlow(input)).thenReturn(future);
-        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input);
+        AddFlowRpc rpc = new AddFlowRpc(watcher, sfs, input, true);
         verify(sfs).addFlow(input);
         verify(input).getNode();
         verifyNoMoreInteractions(input, sfs);
