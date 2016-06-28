@@ -115,52 +115,112 @@ public class RemoveFlowRpcTest extends TestBase {
 
     /**
      * Test case for {@link RemoveFlowRpc#needErrorLog(Throwable)}.
+     *
+     * <ul>
+     *   <li>The target node is not removed.</li>
+     * </ul>
      */
     @Test
     public void testNeedErrorLog1() {
-        SalNode snode = new SalNode(1L);
-        RemoveFlowInput input = mock(RemoveFlowInput.class);
-        when(input.getNode()).thenReturn(snode.getNodeRef());
-        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        SalFlowService sfs = mock(SalFlowService.class);
-        Future<RpcResult<RemoveFlowOutput>> future =
-            SettableFuture.<RpcResult<RemoveFlowOutput>>create();
-        when(sfs.removeFlow(input)).thenReturn(future);
-        RemoveFlowRpc rpc = new RemoveFlowRpc(watcher, sfs, input);
-
         Map<Throwable, Boolean> cases = new HashMap<>();
-        assertNull(cases.put(new Throwable(), true));
-        assertNull(cases.put(new Exception(), true));
-        assertNull(cases.put(new IllegalArgumentException(), true));
-        assertNull(cases.put(new IllegalStateException(), true));
+        assertNull(cases.put(new Throwable(), false));
+        assertNull(cases.put(new Exception(), false));
+        assertNull(cases.put(new IllegalArgumentException(), false));
+        assertNull(cases.put(new IllegalStateException(), false));
 
         Exception e = new NumberFormatException();
         for (int i = 0; i < 5; i++) {
             e = new ExecutionException(e);
         }
-        assertNull(cases.put(e, true));
+        assertNull(cases.put(e, false));
 
         e = new DOMRpcImplementationNotAvailableException("error 1");
-        assertNull(cases.put(e, false));
+        assertNull(cases.put(e, true));
 
         e = new DOMRpcImplementationNotAvailableException("error 2");
         for (int i = 0; i < 5; i++) {
             e = new ExecutionException(e);
         }
-        assertNull(cases.put(e, false));
+        assertNull(cases.put(e, true));
 
+        SalNode snode = new SalNode(1L);
         for (Entry<Throwable, Boolean> entry: cases.entrySet()) {
             Throwable cause = entry.getKey();
-            boolean expected = entry.getValue().booleanValue();
-            assertEquals(expected, rpc.needErrorLog(cause));
-            assertEquals(false, rpc.isNodeRemoved());
-        }
+            boolean disconnected = entry.getValue().booleanValue();
 
-        // Cancel the RPC.
-        assertEquals(true, rpc.onNodeRemoved());
-        for (Throwable cause: cases.keySet()) {
-            assertEquals(false, rpc.needErrorLog(cause));
+            RemoveFlowInput input = mock(RemoveFlowInput.class);
+            when(input.getNode()).thenReturn(snode.getNodeRef());
+            NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+            SalFlowService sfs = mock(SalFlowService.class);
+            Future<RpcResult<RemoveFlowOutput>> future =
+                SettableFuture.<RpcResult<RemoveFlowOutput>>create();
+            when(sfs.removeFlow(input)).thenReturn(future);
+            RemoveFlowRpc rpc = new RemoveFlowRpc(watcher, sfs, input);
+
+            assertEquals(!disconnected, rpc.needErrorLog(cause));
+            assertEquals(disconnected, rpc.isDisconnected());
+            assertEquals(false, rpc.isNodeRemoved());
+            assertEquals(false, future.isCancelled());
+        }
+    }
+
+    /**
+     * Test case for {@link RemoveFlowRpc#needErrorLog(Throwable)}.
+     *
+     * <ul>
+     *   <li>The target node is removed.</li>
+     * </ul>
+     */
+    @Test
+    public void testNeedErrorLog2() {
+        Map<Throwable, Boolean> cases = new HashMap<>();
+        assertNull(cases.put(new Throwable(), false));
+        assertNull(cases.put(new Exception(), false));
+        assertNull(cases.put(new IllegalArgumentException(), false));
+        assertNull(cases.put(new IllegalStateException(), false));
+
+        Exception e = new NumberFormatException();
+        for (int i = 0; i < 5; i++) {
+            e = new ExecutionException(e);
+        }
+        assertNull(cases.put(e, false));
+
+        e = new DOMRpcImplementationNotAvailableException("error 1");
+        assertNull(cases.put(e, true));
+
+        e = new DOMRpcImplementationNotAvailableException("error 2");
+        for (int i = 0; i < 5; i++) {
+            e = new ExecutionException(e);
+        }
+        assertNull(cases.put(e, true));
+
+        SalNode snode = new SalNode(1L);
+        for (Entry<Throwable, Boolean> entry: cases.entrySet()) {
+            Throwable cause = entry.getKey();
+            boolean disconnected = entry.getValue().booleanValue();
+
+            RemoveFlowInput input = mock(RemoveFlowInput.class);
+            when(input.getNode()).thenReturn(snode.getNodeRef());
+            NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+            SalFlowService sfs = mock(SalFlowService.class);
+            Future<RpcResult<RemoveFlowOutput>> future =
+                SettableFuture.<RpcResult<RemoveFlowOutput>>create();
+            when(sfs.removeFlow(input)).thenReturn(future);
+            RemoveFlowRpc rpc = new RemoveFlowRpc(watcher, sfs, input);
+            assertEquals(false, rpc.isDisconnected());
+            assertEquals(false, future.isCancelled());
+            assertEquals(true, rpc.onNodeRemoved());
             assertEquals(true, rpc.isNodeRemoved());
+            assertEquals(true, future.isCancelled());
+
+            assertEquals(false, rpc.needErrorLog(cause));
+            assertEquals(disconnected, rpc.isDisconnected());
+
+            for (int i = 0; i < 5; i++) {
+                assertEquals(false, rpc.onNodeRemoved());
+                assertEquals(true, rpc.isNodeRemoved());
+                assertEquals(true, future.isCancelled());
+            }
         }
     }
 
@@ -168,34 +228,38 @@ public class RemoveFlowRpcTest extends TestBase {
      * Test case for {@link RemoveFlowRpc#needErrorLog(Collection)}.
      */
     @Test
-    public void testNeedErrorLog2() {
-        SalNode snode = new SalNode(1L);
-        RemoveFlowInput input = mock(RemoveFlowInput.class);
-        when(input.getNode()).thenReturn(snode.getNodeRef());
-        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        SalFlowService sfs = mock(SalFlowService.class);
-        Future<RpcResult<RemoveFlowOutput>> future =
-            SettableFuture.<RpcResult<RemoveFlowOutput>>create();
-        when(sfs.removeFlow(input)).thenReturn(future);
-        RemoveFlowRpc rpc = new RemoveFlowRpc(watcher, sfs, input);
-
+    public void testNeedErrorLog3() {
         Map<String, Boolean> cases = new HashMap<>();
-        assertNull(cases.put(null, true));
-        assertNull(cases.put("Unknown error", true));
-        assertNull(cases.put("Operation timed out", true));
-        assertNull(cases.put("Invalid input", true));
-        assertNull(cases.put("Device disconnected", false));
+        assertNull(cases.put(null, false));
+        assertNull(cases.put("Unknown error", false));
+        assertNull(cases.put("Operation timed out", false));
+        assertNull(cases.put("Invalid input", false));
+        assertNull(cases.put("Device disconnected", true));
         assertNull(cases.put("Outbound queue wasn't able to reserve XID.",
-                             false));
+                             true));
 
+        SalNode snode = new SalNode(1L);
         for (Entry<String, Boolean> entry: cases.entrySet()) {
             String msg = entry.getKey();
-            boolean expected = entry.getValue().booleanValue();
+            boolean disconnected = entry.getValue().booleanValue();
+
+            RemoveFlowInput input = mock(RemoveFlowInput.class);
+            when(input.getNode()).thenReturn(snode.getNodeRef());
+            NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+            SalFlowService sfs = mock(SalFlowService.class);
+            Future<RpcResult<RemoveFlowOutput>> future =
+                SettableFuture.<RpcResult<RemoveFlowOutput>>create();
+            when(sfs.removeFlow(input)).thenReturn(future);
+            RemoveFlowRpc rpc = new RemoveFlowRpc(watcher, sfs, input);
+
             RpcError err = mock(RpcError.class);
             when(err.getMessage()).thenReturn(msg);
             Collection<RpcError> errors = Arrays.asList(
                 mock(RpcError.class), mock(RpcError.class), err);
-            assertEquals(expected, rpc.needErrorLog(errors));
+            assertEquals(!disconnected, rpc.needErrorLog(errors));
+            assertEquals(disconnected, rpc.isDisconnected());
+            assertEquals(false, rpc.isNodeRemoved());
+            assertEquals(false, future.isCancelled());
         }
     }
 
@@ -238,6 +302,8 @@ public class RemoveFlowRpcTest extends TestBase {
         t.start();
 
         assertSame(output, rpc.getResult(10L, TimeUnit.SECONDS, logger));
+        assertEquals(false, rpc.isNodeRemoved());
+        assertEquals(false, rpc.isDisconnected());
 
         verify(watcher).registerRpc(rpc);
         verify(watcher).unregisterRpc(rpc);
@@ -275,6 +341,9 @@ public class RemoveFlowRpcTest extends TestBase {
             cause = e.getCause();
             assertThat(cause, instanceOf(TimeoutException.class));
         }
+
+        assertEquals(false, rpc.isNodeRemoved());
+        assertEquals(false, rpc.isDisconnected());
 
         String msg = RPC_NAME + ": Caught an exception: canceled=true, " +
             "input=" + input;
@@ -329,6 +398,9 @@ public class RemoveFlowRpcTest extends TestBase {
             assertThat(cause, instanceOf(CancellationException.class));
         }
 
+        assertEquals(true, rpc.isNodeRemoved());
+        assertEquals(false, rpc.isDisconnected());
+
         // No error should be logged.
         verify(watcher).registerRpc(rpc);
         verify(watcher).unregisterRpc(rpc);
@@ -381,6 +453,9 @@ public class RemoveFlowRpcTest extends TestBase {
             assertEquals(cause.getMessage(), e.getMessage());
             assertEquals(cause, e.getCause());
         }
+
+        assertEquals(false, rpc.isNodeRemoved());
+        assertEquals(true, rpc.isDisconnected());
 
         // No error message should be logged.
         verify(watcher).registerRpc(rpc);
@@ -441,6 +516,9 @@ public class RemoveFlowRpcTest extends TestBase {
                 assertEquals(msg, e.getMessage());
                 assertEquals(null, e.getCause());
             }
+
+            assertEquals(false, rpc.isNodeRemoved());
+            assertEquals(false, rpc.isDisconnected());
 
             verify(logger).
                 error("{}: {}: input={}, errors={}", RPC_NAME, msg, input,
@@ -505,6 +583,9 @@ public class RemoveFlowRpcTest extends TestBase {
                 assertEquals(msg, e.getMessage());
                 assertEquals(null, e.getCause());
             }
+
+            assertEquals(false, rpc.isNodeRemoved());
+            assertEquals(false, rpc.isDisconnected());
 
             String lmsg = RPC_NAME + ": RPC returned error: input=" + input +
                 ", errors=" + result.getErrors();
@@ -572,6 +653,9 @@ public class RemoveFlowRpcTest extends TestBase {
                     assertEquals(msg, e.getMessage());
                     assertEquals(null, e.getCause());
                 }
+
+                assertEquals(false, rpc.isNodeRemoved());
+                assertEquals(true, rpc.isDisconnected());
 
                 // No error message should be logged.
                 verify(watcher).registerRpc(rpc);

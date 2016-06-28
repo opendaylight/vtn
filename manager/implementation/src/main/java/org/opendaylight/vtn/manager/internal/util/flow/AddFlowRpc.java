@@ -24,10 +24,15 @@ public final class AddFlowRpc
     /**
      * Issue an add-flow RPC request.
      *
-     * <p>
-     *   A barrier request will be sent in background after issueing add-flow
-     *   RPC request.
-     * </p>
+     * <ul>
+     *   <li>
+     *     A barrier request will be sent in background after issueing add-flow
+     *     RPC request.
+     *   </li>
+     *   <li>
+     *     An error caused by secure channel disconnection will be logged.
+     *   </li>
+     * </ul>
      *
      * @param w    The flow RPC watcher.
      * @param sfs  MD-SAL flow service.
@@ -37,7 +42,28 @@ public final class AddFlowRpc
      */
     public static AddFlowRpc create(FlowRpcWatcher w, SalFlowService sfs,
                                     AddFlowInput in) {
-        AddFlowRpc rpc = new AddFlowRpc(w, sfs, in);
+        return create(w, sfs, in, true);
+    }
+
+    /**
+     * Issue an add-flow RPC request.
+     *
+     * <p>
+     *   A barrier request will be sent in background after issueing add-flow
+     *   RPC request.
+     * </p>
+     *
+     * @param w       The flow RPC watcher.
+     * @param sfs     MD-SAL flow service.
+     * @param in      The RPC input.
+     * @param discon  Determine whether an error caused by disconnection of
+     *                OpenFlow secure channel should be logged or not.
+     * @return  An {@link AddFlowRpc} instance associated with an add-flow
+     *          RPC invocation.
+     */
+    public static AddFlowRpc create(FlowRpcWatcher w, SalFlowService sfs,
+                                    AddFlowInput in, boolean discon) {
+        AddFlowRpc rpc = new AddFlowRpc(w, sfs, in, discon);
         w.asyncBarrier(in.getNode());
         return rpc;
     }
@@ -45,12 +71,15 @@ public final class AddFlowRpc
     /**
      * Issue an add-flow RPC request.
      *
-     * @param w    The node RPC watcher.
-     * @param sfs  MD-SAL flow service.
-     * @param in   The RPC input.
+     * @param w       The node RPC watcher.
+     * @param sfs     MD-SAL flow service.
+     * @param in      The RPC input.
+     * @param discon  Determine whether an error caused by disconnection of
+     *                OpenFlow secure channel should be logged or not.
      */
-    public AddFlowRpc(NodeRpcWatcher w, SalFlowService sfs, AddFlowInput in) {
-        super(w, in, in.getNode(), sfs.addFlow(in));
+    public AddFlowRpc(NodeRpcWatcher w, SalFlowService sfs, AddFlowInput in,
+                      boolean discon) {
+        super(w, in, in.getNode(), sfs.addFlow(in), discon);
     }
 
     // RpcRequest

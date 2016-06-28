@@ -15,6 +15,9 @@ import static org.mockito.Mockito.when;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 
+import static org.opendaylight.yangtools.yang.common.RpcError.ErrorType.APPLICATION;
+import static org.opendaylight.yangtools.yang.common.RpcError.ErrorType.PROTOCOL;
+
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -56,16 +59,18 @@ public class NodeRpcInvocationTest extends TestBase {
         /**
          * Construct a new instance.
          *
-         * @param w   The node RPC watcher.
-         * @param in  The RPC input.
-         * @param f   The future associated with the RPC execution with
-         *            {@code in}.
+         * @param w       The node RPC watcher.
+         * @param in      The RPC input.
+         * @param f       The future associated with the RPC execution with
+         *                {@code in}.
+         * @param discon  Determine whether an error caused by disconnection of
+         *                OpenFlow secure channel should be logged or not.
          */
         private TestNodeRpc(NodeRpcWatcher w, UpdatePortInput in,
-                            Future<RpcResult<UpdatePortOutput>> f) {
-            super(w, in, in.getNode(), f);
+                            Future<RpcResult<UpdatePortOutput>> f,
+                            boolean discon) {
+            super(w, in, in.getNode(), f, discon);
         }
-
 
         /**
          * Return the name of the RPC.
@@ -83,19 +88,22 @@ public class NodeRpcInvocationTest extends TestBase {
      */
     @Test
     public void testConstructor() {
-        String nid = "openflow:1234567";
-        SalNode snode = SalNode.create(nid);
-        NodeRef nref = snode.getNodeRef();
-        UpdatePortInput input = mock(UpdatePortInput.class);
-        when(input.getNode()).thenReturn(nref);
-        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        Future<RpcResult<UpdatePortOutput>> future =
-            SettableFuture.<RpcResult<UpdatePortOutput>>create();
-        TestNodeRpc rpc = new TestNodeRpc(watcher, input, future);
-        assertSame(input, rpc.getInput());
-        assertSame(future, rpc.getFuture());
-        assertSame(watcher, rpc.getNodeRpcWatcher());
-        assertEquals(nid, rpc.getNode());
+        boolean[] bools = {true, false};
+        for (boolean discon: bools) {
+            String nid = "openflow:1234567";
+            SalNode snode = SalNode.create(nid);
+            NodeRef nref = snode.getNodeRef();
+            UpdatePortInput input = mock(UpdatePortInput.class);
+            when(input.getNode()).thenReturn(nref);
+            NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+            Future<RpcResult<UpdatePortOutput>> future =
+                SettableFuture.<RpcResult<UpdatePortOutput>>create();
+            TestNodeRpc rpc = new TestNodeRpc(watcher, input, future, discon);
+            assertSame(input, rpc.getInput());
+            assertSame(future, rpc.getFuture());
+            assertSame(watcher, rpc.getNodeRpcWatcher());
+            assertEquals(nid, rpc.getNode());
+        }
     }
 
     /**
@@ -104,58 +112,55 @@ public class NodeRpcInvocationTest extends TestBase {
      */
     @Test
     public void testObservation() {
-        SalNode snode = new SalNode(999L);
-        NodeRef nref = snode.getNodeRef();
-        UpdatePortInput input = mock(UpdatePortInput.class);
-        when(input.getNode()).thenReturn(nref);
-        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        Future<RpcResult<UpdatePortOutput>> future =
-            SettableFuture.<RpcResult<UpdatePortOutput>>create();
-        TestNodeRpc rpc = new TestNodeRpc(watcher, input, future);
-        verifyNoMoreInteractions(watcher);
+        boolean[] bools = {true, false};
+        for (boolean discon: bools) {
+            SalNode snode = new SalNode(999L);
+            NodeRef nref = snode.getNodeRef();
+            UpdatePortInput input = mock(UpdatePortInput.class);
+            when(input.getNode()).thenReturn(nref);
+            NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+            Future<RpcResult<UpdatePortOutput>> future =
+                SettableFuture.<RpcResult<UpdatePortOutput>>create();
+            TestNodeRpc rpc = new TestNodeRpc(watcher, input, future, discon);
+            verifyNoMoreInteractions(watcher);
 
-        rpc.start();
-        verify(watcher).registerRpc(rpc);
-        verifyNoMoreInteractions(watcher);
+            rpc.start();
+            verify(watcher).registerRpc(rpc);
+            verifyNoMoreInteractions(watcher);
 
-        rpc.complete();
-        verify(watcher).unregisterRpc(rpc);
-        verifyNoMoreInteractions(watcher);
+            rpc.complete();
+            verify(watcher).unregisterRpc(rpc);
+            verifyNoMoreInteractions(watcher);
+        }
     }
 
     /**
-     * Test case for the following methods.
-     *
-     * <ul>
-     *   <li>{@link NodeRpcInvocation#onNodeRemoved()}</li>
-     *   <li>{@link NodeRpcInvocation#isNodeRemoved()}</li>
-     *   <li>{@link NodeRpcInvocation#needErrorLog(Throwable)}</li>
-     * </ul>
+     * Test case for {@link NodeRpcInvocation#onNodeRemoved()} and
+     * {@link NodeRpcInvocation#isNodeRemoved()}.
      */
     @Test
     public void testOnNodeRemoved() {
-        SalNode snode = new SalNode(999L);
-        NodeRef nref = snode.getNodeRef();
-        UpdatePortInput input = mock(UpdatePortInput.class);
-        when(input.getNode()).thenReturn(nref);
-        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        Future<RpcResult<UpdatePortOutput>> future =
-            SettableFuture.<RpcResult<UpdatePortOutput>>create();
-        TestNodeRpc rpc = new TestNodeRpc(watcher, input, future);
-        CancellationException ce = new CancellationException();
-        assertEquals(true, rpc.needErrorLog(ce));
-        assertEquals(false, rpc.isNodeRemoved());
-        assertEquals(false, future.isCancelled());
+        boolean[] bools = {true, false};
+        for (boolean discon: bools) {
+            SalNode snode = new SalNode(999L);
+            NodeRef nref = snode.getNodeRef();
+            UpdatePortInput input = mock(UpdatePortInput.class);
+            when(input.getNode()).thenReturn(nref);
+            NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+            Future<RpcResult<UpdatePortOutput>> future =
+                SettableFuture.<RpcResult<UpdatePortOutput>>create();
+            TestNodeRpc rpc = new TestNodeRpc(watcher, input, future, discon);
+            assertEquals(false, rpc.isNodeRemoved());
+            assertEquals(false, future.isCancelled());
 
-        assertEquals(true, rpc.onNodeRemoved());
-        assertEquals(false, rpc.needErrorLog(ce));
-        assertEquals(true, rpc.isNodeRemoved());
-        assertEquals(true, future.isCancelled());
+            assertEquals(true, rpc.onNodeRemoved());
+            assertEquals(true, rpc.isNodeRemoved());
+            assertEquals(true, future.isCancelled());
 
-        assertEquals(false, rpc.onNodeRemoved());
-        assertEquals(false, rpc.needErrorLog(ce));
-        assertEquals(true, rpc.isNodeRemoved());
-        assertEquals(true, future.isCancelled());
+            assertEquals(false, rpc.onNodeRemoved());
+            assertEquals(true, rpc.isNodeRemoved());
+            assertEquals(true, future.isCancelled());
+        }
     }
 
     /**
@@ -169,38 +174,43 @@ public class NodeRpcInvocationTest extends TestBase {
      */
     @Test
     public void testGetResult() throws Exception {
-        SalNode snode = new SalNode(112233L);
-        NodeRef nref = snode.getNodeRef();
-        UpdatePortInput input = mock(UpdatePortInput.class);
-        when(input.getNode()).thenReturn(nref);
+        boolean[] bools = {true, false};
+        for (boolean discon: bools) {
+            SalNode snode = new SalNode(112233L);
+            NodeRef nref = snode.getNodeRef();
+            UpdatePortInput input = mock(UpdatePortInput.class);
+            when(input.getNode()).thenReturn(nref);
 
-        UpdatePortOutput output = mock(UpdatePortOutput.class);
-        final RpcResult<UpdatePortOutput> result = RpcResultBuilder.
-            success(output).build();
-        final SettableFuture<RpcResult<UpdatePortOutput>> future =
-            SettableFuture.<RpcResult<UpdatePortOutput>>create();
+            UpdatePortOutput output = mock(UpdatePortOutput.class);
+            final RpcResult<UpdatePortOutput> result = RpcResultBuilder.
+                success(output).build();
+            final SettableFuture<RpcResult<UpdatePortOutput>> future =
+                SettableFuture.<RpcResult<UpdatePortOutput>>create();
 
-        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        TestNodeRpc rpc = new TestNodeRpc(watcher, input, future);
-        Logger logger = mock(Logger.class);
+            NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+            TestNodeRpc rpc = new TestNodeRpc(watcher, input, future, discon);
+            Logger logger = mock(Logger.class);
 
-        Thread t = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException e) {
+            Thread t = new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        Thread.sleep(50);
+                    } catch (InterruptedException e) {
+                    }
+                    future.set(result);
                 }
-                future.set(result);
-            }
-        };
-        t.start();
+            };
+            t.start();
 
-        assertSame(output, rpc.getResult(10L, TimeUnit.SECONDS, logger));
+            assertSame(output, rpc.getResult(10L, TimeUnit.SECONDS, logger));
+            assertEquals(false, rpc.isNodeRemoved());
+            assertEquals(false, rpc.isDisconnected());
 
-        verify(watcher).registerRpc(rpc);
-        verify(watcher).unregisterRpc(rpc);
-        verifyNoMoreInteractions(logger, watcher);
+            verify(watcher).registerRpc(rpc);
+            verify(watcher).unregisterRpc(rpc);
+            verifyNoMoreInteractions(logger, watcher);
+        }
     }
 
     /**
@@ -214,34 +224,41 @@ public class NodeRpcInvocationTest extends TestBase {
      */
     @Test
     public void testGetResultTimeout() throws Exception {
-        SettableFuture<RpcResult<UpdatePortOutput>> future =
-            SettableFuture.<RpcResult<UpdatePortOutput>>create();
+        boolean[] bools = {true, false};
+        for (boolean discon: bools) {
+            SettableFuture<RpcResult<UpdatePortOutput>> future =
+                SettableFuture.<RpcResult<UpdatePortOutput>>create();
 
-        SalNode snode = new SalNode(112233L);
-        NodeRef nref = snode.getNodeRef();
-        UpdatePortInput input = mock(UpdatePortInput.class);
-        when(input.getNode()).thenReturn(nref);
+            SalNode snode = new SalNode(112233L);
+            NodeRef nref = snode.getNodeRef();
+            UpdatePortInput input = mock(UpdatePortInput.class);
+            when(input.getNode()).thenReturn(nref);
 
-        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        TestNodeRpc rpc = new TestNodeRpc(watcher, input, future);
-        Logger logger = mock(Logger.class);
+            NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+            TestNodeRpc rpc = new TestNodeRpc(watcher, input, future, discon);
+            Logger logger = mock(Logger.class);
 
-        Throwable cause = null;
-        try {
-            rpc.getResult(1L, TimeUnit.MILLISECONDS, logger);
-            unexpected();
-        } catch (VTNException e) {
-            assertEquals(VtnErrorTag.TIMEOUT, e.getVtnErrorTag());
-            cause = e.getCause();
-            assertThat(cause, instanceOf(TimeoutException.class));
+            Throwable cause = null;
+            try {
+                rpc.getResult(1L, TimeUnit.MILLISECONDS, logger);
+                unexpected();
+            } catch (VTNException e) {
+                assertEquals(VtnErrorTag.TIMEOUT, e.getVtnErrorTag());
+                cause = e.getCause();
+                assertThat(cause, instanceOf(TimeoutException.class));
+            }
+
+            assertEquals(false, rpc.isNodeRemoved());
+            assertEquals(false, rpc.isDisconnected());
+
+            String msg = TEST_RPC_NAME +
+                ": Caught an exception: canceled=true, input=" + input;
+            verify(logger).error(msg, cause);
+
+            verify(watcher).registerRpc(rpc);
+            verify(watcher).unregisterRpc(rpc);
+            verifyNoMoreInteractions(logger, watcher);
         }
-        String msg = TEST_RPC_NAME + ": Caught an exception: canceled=true, " +
-            "input=" + input;
-        verify(logger).error(msg, cause);
-
-        verify(watcher).registerRpc(rpc);
-        verify(watcher).unregisterRpc(rpc);
-        verifyNoMoreInteractions(logger, watcher);
     }
 
     /**
@@ -255,45 +272,122 @@ public class NodeRpcInvocationTest extends TestBase {
      */
     @Test
     public void testGetResultCancel() throws Exception {
-        SettableFuture<RpcResult<UpdatePortOutput>> future =
-            SettableFuture.<RpcResult<UpdatePortOutput>>create();
+        boolean[] bools = {true, false};
+        for (boolean discon: bools) {
+            SettableFuture<RpcResult<UpdatePortOutput>> future =
+                SettableFuture.<RpcResult<UpdatePortOutput>>create();
 
-        SalNode snode = new SalNode(777L);
-        NodeRef nref = snode.getNodeRef();
-        UpdatePortInput input = mock(UpdatePortInput.class);
-        when(input.getNode()).thenReturn(nref);
+            SalNode snode = new SalNode(777L);
+            NodeRef nref = snode.getNodeRef();
+            UpdatePortInput input = mock(UpdatePortInput.class);
+            when(input.getNode()).thenReturn(nref);
 
-        NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
-        final TestNodeRpc rpc = new TestNodeRpc(watcher, input, future);
-        Logger logger = mock(Logger.class);
+            NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+            final TestNodeRpc rpc =
+                new TestNodeRpc(watcher, input, future, discon);
+            Logger logger = mock(Logger.class);
 
-        Thread t = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException e) {
+            Thread t = new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        Thread.sleep(50);
+                    } catch (InterruptedException e) {
+                    }
+                    rpc.onNodeRemoved();
                 }
-                rpc.onNodeRemoved();
+            };
+            t.start();
+
+            Throwable cause = null;
+            try {
+                rpc.getResult(10L, TimeUnit.SECONDS, logger);
+                unexpected();
+            } catch (VTNException e) {
+                assertEquals(VtnErrorTag.INTERNALERROR, e.getVtnErrorTag());
+                cause = e.getCause();
+                assertThat(cause, instanceOf(CancellationException.class));
             }
-        };
-        t.start();
 
-        Throwable cause = null;
-        try {
-            rpc.getResult(10L, TimeUnit.SECONDS, logger);
-            unexpected();
-        } catch (VTNException e) {
-            assertEquals(VtnErrorTag.INTERNALERROR, e.getVtnErrorTag());
-            cause = e.getCause();
-            assertThat(cause, instanceOf(CancellationException.class));
+            assertEquals(true, rpc.isNodeRemoved());
+            assertEquals(false, rpc.isDisconnected());
+
+            // No error should be logged.
+            verify(watcher).registerRpc(rpc);
+            verify(watcher).unregisterRpc(rpc);
+            verifyNoMoreInteractions(logger, watcher);
+
+            assertEquals(true, future.isCancelled());
         }
+    }
 
-        // No error should be logged.
-        verify(watcher).registerRpc(rpc);
-        verify(watcher).unregisterRpc(rpc);
-        verifyNoMoreInteractions(logger, watcher);
+    /**
+     * Test case for {@link NodeRpcInvocation#getResult(long,TimeUnit,Logger)}.
+     *
+     * <ul>
+     *   <li>The target node is disconnected.</li>
+     * </ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testGetResultDisconnected() throws Exception {
+        boolean[] bools = {true, false};
+        for (boolean discon: bools) {
+            final SettableFuture<RpcResult<UpdatePortOutput>> future =
+                SettableFuture.<RpcResult<UpdatePortOutput>>create();
 
-        assertEquals(true, future.isCancelled());
+            SalNode snode = new SalNode(777L);
+            NodeRef nref = snode.getNodeRef();
+            UpdatePortInput input = mock(UpdatePortInput.class);
+            when(input.getNode()).thenReturn(nref);
+
+            NodeRpcWatcher watcher = mock(NodeRpcWatcher.class);
+            final TestNodeRpc rpc =
+                new TestNodeRpc(watcher, input, future, discon);
+            Logger logger = mock(Logger.class);
+
+            final RpcResult<UpdatePortOutput> result =
+                RpcResultBuilder.<UpdatePortOutput>failed().
+                withError(PROTOCOL, "Protocol error").
+                withError(APPLICATION, "Device disconnected").
+                build();
+
+            Thread t = new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        Thread.sleep(50);
+                    } catch (InterruptedException e) {
+                    }
+                    future.set(result);
+                }
+            };
+            t.start();
+
+            String msg = "RPC returned error";
+            try {
+                rpc.getResult(10L, TimeUnit.SECONDS, logger);
+                unexpected();
+            } catch (VTNException e) {
+                assertEquals(VtnErrorTag.INTERNALERROR, e.getVtnErrorTag());
+                assertEquals(msg, e.getMessage());
+                assertEquals(null, e.getCause());
+            }
+
+            assertEquals(false, rpc.isNodeRemoved());
+            assertEquals(true, rpc.isDisconnected());
+
+            if (discon) {
+                verify(logger).
+                    error("{}: {}: input={}, errors={}", TEST_RPC_NAME, msg,
+                          input, result.getErrors());
+            }
+            verify(watcher).registerRpc(rpc);
+            verify(watcher).unregisterRpc(rpc);
+            verifyNoMoreInteractions(logger, watcher);
+
+            assertEquals(false, future.isCancelled());
+        }
     }
 }

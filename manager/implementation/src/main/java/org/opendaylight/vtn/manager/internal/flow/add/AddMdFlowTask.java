@@ -58,18 +58,27 @@ public final class AddMdFlowTask extends RunnableVTNFuture<Void> {
         new AtomicReference<>();
 
     /**
+     * Determine whether an error caused by disconnection of OpenFlow secure
+     * channel should be logged or not.
+     */
+    private final boolean  disconnectionLog;
+
+    /**
      * Construct a new instance.
      *
      * @param provider  VTN Manager provider service.
      * @param sfs       A {@link SalFlowService} instance.
      * @param flow      An {@link AddFlowInput} instance that specifies the
      *                  flow entry.
+     * @param discon    Determine whether an error caused by disconnection of
+     *                  OpenFlow secure channel should be logged or not.
      */
     public AddMdFlowTask(VTNManagerProvider provider, SalFlowService sfs,
-                         AddFlowInput flow) {
+                         AddFlowInput flow, boolean discon) {
         vtnProvider = provider;
         flowService = sfs;
         input = flow;
+        disconnectionLog = discon;
     }
 
     /**
@@ -81,7 +90,7 @@ public final class AddMdFlowTask extends RunnableVTNFuture<Void> {
      */
     public boolean isNodeRemoved() {
         AddFlowRpc rpc = rpcInvocation.get();
-        return (rpc != null && rpc.isNodeRemoved());
+        return (rpc != null && (rpc.isNodeRemoved() || rpc.isDisconnected()));
     }
 
     // Runnable
@@ -94,7 +103,8 @@ public final class AddMdFlowTask extends RunnableVTNFuture<Void> {
         try {
             VTNConfig vcfg = vtnProvider.getVTNConfig();
             long timeout = (long)vcfg.getFlowModTimeout();
-            AddFlowRpc rpc = AddFlowRpc.create(vtnProvider, flowService, input);
+            AddFlowRpc rpc = AddFlowRpc.create(
+                vtnProvider, flowService, input, disconnectionLog);
             rpcInvocation.set(rpc);
             rpc.getResult(timeout, TimeUnit.MILLISECONDS, LOG);
             set(null);

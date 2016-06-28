@@ -66,7 +66,7 @@ public final class SendBarrierRpc
     public SendBarrierRpc(
         NodeRpcWatcher w, FlowCapableTransactionService fcts,
         SendBarrierInput in) {
-        super(w, in, in.getNode(), fcts.sendBarrier(in));
+        super(w, in, in.getNode(), fcts.sendBarrier(in), false);
     }
 
     // RpcRequest
@@ -81,6 +81,22 @@ public final class SendBarrierRpc
         return "send-barrier";
     }
 
+    /**
+     * Record a log message that indicates an failure of send-barrier RPC.
+     *
+     * @param msg    An error message.
+     * @param cause  A throwable that indicates the cause of failure.
+     */
+    private void logError(String msg, Throwable cause) {
+        // Don't record error log if the send-barrier RPC was canceled.
+        if (isNodeRemoved() || isDisconnected()) {
+            LOG.trace("send-barrier RPC has been canceled: node={}",
+                      getNode());
+        } else {
+            LOG.error(msg + ": node=" + getNode(), cause);
+        }
+    }
+
     // FutureCallback
 
     /**
@@ -90,11 +106,12 @@ public final class SendBarrierRpc
      */
     @Override
     public void onSuccess(RpcResult<Void> result) {
+        complete();
         try {
             RpcUtils.checkResult(this, result, LOG);
             LOG.trace("send-barrier RPC has completed: node={}", getNode());
         } catch (VTNException e) {
-            LOG.error("send-barrier RPC has failed: node=" + getNode(), e);
+            logError("send-barrier RPC has failed", e);
         }
     }
 
@@ -105,7 +122,8 @@ public final class SendBarrierRpc
      */
     @Override
     public void onFailure(Throwable t) {
-        Throwable cause = AbstractVTNFuture.getCause(t);
-        LOG.error("send-barrier RPC has failed: node=" + getNode(), cause);
+        complete();
+        logError("send-barrier RPC has thrown an exception",
+                 AbstractVTNFuture.getCause(t));
     }
 }
