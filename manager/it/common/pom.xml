@@ -58,13 +58,6 @@
         <classifier>config</classifier>
         <type>xml</type>
       </dependency>
-      <dependency>
-        <groupId>org.opendaylight.vtn</groupId>
-        <artifactId>manager.it.ofmock</artifactId>
-        <version>${project.version}</version>
-        <classifier>vtnconfig</classifier>
-        <type>xml</type>
-      </dependency>
 
       <dependency>
         <groupId>org.opendaylight.vtn</groupId>
