@@ -156,9 +156,9 @@ public final class PutFlowTxTask extends AbstractTxTask<VtnDataFlow> {
                 id = MIN_FLOW_ID;
             }
 
+            VtnFlowId nextId = new VtnFlowId(BigInteger.valueOf(id));
             if (!fopt.isPresent()) {
                 // Update the next-flow-id for the next allocation.
-                VtnFlowId nextId = new VtnFlowId(BigInteger.valueOf(id));
                 NextFlowId nfid = new NextFlowIdBuilder().
                     setNextId(nextId).build();
                 tx.put(oper, NEXT_FLOW_ID_PATH, nfid, true);
@@ -166,6 +166,7 @@ public final class PutFlowTxTask extends AbstractTxTask<VtnDataFlow> {
                 return flowId;
             }
 
+            flowId = nextId;
         } while (id != start);
 
         flowPath = null;
