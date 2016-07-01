@@ -269,6 +269,31 @@ public class FlowUtilsTest extends TestBase {
     }
 
     /**
+     * Test case for public constants.
+     *
+     * <ul>
+     *   <li>{@link FlowUtils#TABLE_ID}</li>
+     *   <li>{@link FlowUtils#COOKIE_VTN}</li>
+     *   <li>{@link FlowUtils#COOKIE_MASK_ALL}</li>
+     *   <li>{@link FlowUtils#COOKIE_MASK_VTN}</li>
+     *   <li>{@link FlowUtils#MIN_FLOW_ID}</li>
+     *   <li>{@link FlowUtils#MAX_FLOW_ID}</li>
+     * </ul>
+     */
+    @Test
+    public void testConstants() {
+        assertEquals((short)0, FlowUtils.TABLE_ID);
+        long vtnBits = FlowUtils.COOKIE_VTN.getValue().longValue();
+        assertEquals(VTN_FLOW_COOKIE, vtnBits);
+        assertEquals(0xffffffffffffffffL,
+                     FlowUtils.COOKIE_MASK_ALL.getValue().longValue());
+        assertEquals(0xffff000000000000L,
+                     FlowUtils.COOKIE_MASK_VTN.getValue().longValue());
+        assertEquals(1L, FlowUtils.MIN_FLOW_ID);
+        assertEquals(0xffffffffffffL, FlowUtils.MAX_FLOW_ID);
+    }
+
+    /**
      * Test case for the following methods.
      *
      * <ul>

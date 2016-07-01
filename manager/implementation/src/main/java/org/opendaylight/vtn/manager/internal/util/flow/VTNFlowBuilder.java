@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation
+ * Copyright (c) 2015-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -312,24 +312,26 @@ public final class VTNFlowBuilder implements VTNDataFlow {
      */
     public VtnDataFlow createVtnDataFlow(VtnFlowId fid) {
         if (dataFlow == null) {
-            // Configure flow entries.
-            int order = MiscUtils.ORDER_MIN;
-            FlowCookie cookie = FlowUtils.createCookie(fid);
-            List<VtnFlowEntry> entries = new ArrayList<>(flowEntries.size());
-            for (VtnFlowEntryBuilder flow: flowEntries) {
-                entries.add(flow.setCookie(cookie).setOrder(order).build());
-                order++;
-            }
-
-            // Configure VTN data flow.
-            flowBuilder.setFlowId(fid).
-                setVirtualRoute(FlowUtils.toVirtualRouteList(virtualRoute)).
-                setVtnFlowEntry(entries);
+            // Configure virtual node hop.
+            flowBuilder.setVirtualRoute(
+                FlowUtils.toVirtualRouteList(virtualRoute));
         }
 
-        // Update the creation time.
+        // Configure flow entries.
+        int order = MiscUtils.ORDER_MIN;
+        FlowCookie cookie = FlowUtils.createCookie(fid);
+        List<VtnFlowEntry> entries = new ArrayList<>(flowEntries.size());
+        for (VtnFlowEntryBuilder flow: flowEntries) {
+            entries.add(flow.setCookie(cookie).setOrder(order).build());
+            order++;
+        }
+
+        // Configure VTN data flow.
         Long created = Long.valueOf(System.currentTimeMillis());
-        dataFlow = flowBuilder.setCreationTime(created).build();
+        dataFlow = flowBuilder.setFlowId(fid).
+            setVtnFlowEntry(entries).
+            setCreationTime(created).
+            build();
 
         return dataFlow;
     }

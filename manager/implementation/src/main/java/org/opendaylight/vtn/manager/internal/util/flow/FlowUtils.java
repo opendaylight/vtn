@@ -120,6 +120,16 @@ public final class FlowUtils {
     private static final long  VTN_FLOW_COOKIE_MASK = 0xffff000000000000L;
 
     /**
+     * The minimum value of the VTN flow ID.
+     */
+    public static final long  MIN_FLOW_ID = 1L;
+
+    /**
+     * The maximum value of the VTN flow ID.
+     */
+    public static final long  MAX_FLOW_ID = ~VTN_FLOW_COOKIE_MASK;
+
+    /**
      * A flow cookie which contains the {@link #VTN_FLOW_COOKIE} bits.
      */
     public static final FlowCookie  COOKIE_VTN =
