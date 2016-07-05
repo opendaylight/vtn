@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2013-2015 NEC Corporation
+# Copyright (c) 2013-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -63,6 +63,7 @@
     <vtn.build.prefix>/usr/local/vtn</vtn.build.prefix>
     <vtn.build.debug>false</vtn.build.debug>
     <vtn.build.java.home />
+    <vtn.build.ant.home />
 
     <!-- The number of GNU make jobs -->
     <vtn.build.jobs>1</vtn.build.jobs>
@@ -149,6 +150,7 @@
                 <argument>VTN_DESTDIR=${vtn.build.destdir}</argument>
                 <argument>VTN_PREFIX=${vtn.build.prefix}</argument>
                 <argument>VTN_JAVA_HOME=${vtn.build.java.home}</argument>
+                <argument>VTN_ANT_HOME=${vtn.build.ant.home}</argument>
                 <argument>VTN_DEBUG=${vtn.build.debug}</argument>
               </arguments>
             </configuration>

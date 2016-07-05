@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2013-2016 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -48,6 +48,15 @@ endif	# empty(VTN_JAVA_HOME)
 ifneq	($(STRIP_VTN_JAVA_HOME),)
 CONFIGURE_ARGS	+= --with-java-home="$(STRIP_VTN_JAVA_HOME)"
 endif	# !empty(VTN_JAVA_HOME)
+
+# Determine ANT_HOME.
+STRIP_VTN_ANT_HOME	:= $(strip $(VTN_ANT_HOME))
+ifeq	($(STRIP_VTN_ANT_HOME),)
+STRIP_VTN_ANT_HOME	:= $(strip $(ANT_HOME))
+endif	# empty(VTN_ANT_HOME)
+ifneq	($(STRIP_VTN_ANT_HOME),)
+CONFIGURE_ARGS	+= --with-ant-home="$(STRIP_VTN_ANT_HOME)"
+endif	# !empty(VTN_ANT_HOME)
 
 ifneq	($(strip $(VTN_DEBUG)),true)
 CONFIGURE_ARGS	+= --disable-debug
