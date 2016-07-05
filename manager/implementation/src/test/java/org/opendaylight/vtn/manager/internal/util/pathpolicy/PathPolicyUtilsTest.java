@@ -69,8 +69,8 @@ public class PathPolicyUtilsTest extends TestBase {
      * Test case for utility methods that return an exception.
      *
      * <ul>
-     *   <li>{@link PathPolicyUtils#getNotFoundException(int)}</li>
-     *   <li>{@link PathPolicyUtils#getNotFoundException(int, Throwable)}</li>
+     *   <li>{@link PathPolicyUtils#getNotFoundException(Integer)}</li>
+     *   <li>{@link PathPolicyUtils#getNotFoundException(Integer, Throwable)}</li>
      *   <li>{@link PathPolicyUtils#getInvalidPolicyIdException(Integer, Throwable)}</li>
      *   <li>{@link PathPolicyUtils#getInvalidDefaultCostException(Long, Throwable)}</li>
      *   <li>{@link PathPolicyUtils#getInvalidCostException(Long, Throwable)}</li>
@@ -83,23 +83,24 @@ public class PathPolicyUtilsTest extends TestBase {
     public void testGetException() {
         IllegalArgumentException cause = new IllegalArgumentException();
         for (int i = PATH_POLICY_MIN; i <= PATH_POLICY_MAX; i++) {
-            // getNotFoundException(int)
-            RpcException e = PathPolicyUtils.getNotFoundException(i);
+            // getNotFoundException(Integer)
+            Integer id = Integer.valueOf(i);
+            RpcException e = PathPolicyUtils.getNotFoundException(id);
             assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
             assertEquals(null, e.getCause());
-            String msg = i + ": Path policy does not exist.";
+            String msg = id + ": Path policy does not exist.";
             assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
             assertEquals(msg, e.getMessage());
 
-            // getNotFoundException(int, Throwable)
-            e = PathPolicyUtils.getNotFoundException(i, cause);
+            // getNotFoundException(Integer, Throwable)
+            e = PathPolicyUtils.getNotFoundException(id, cause);
             assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
             assertSame(cause, e.getCause());
             assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
             assertEquals(msg, e.getMessage());
         }
 
-        // getInvalidPolicyIdException(int, Throwable)
+        // getInvalidPolicyIdException(Integer, Throwable)
         for (int i = PATH_POLICY_MAX + 1; i < PATH_POLICY_MAX + 10; i++) {
             RpcException e =
                 PathPolicyUtils.getInvalidPolicyIdException(i, cause);
@@ -797,7 +798,7 @@ public class PathPolicyUtilsTest extends TestBase {
 
     /**
      * Test case for
-     * {@link PathPolicyUtils#readVtnPathPolicy(ReadTransaction, int)}.
+     * {@link PathPolicyUtils#readVtnPathPolicy(ReadTransaction, Integer)}.
      *
      * @throws Exception  An error occurred.
      */

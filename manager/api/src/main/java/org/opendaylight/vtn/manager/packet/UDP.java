@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2015 Cisco Systems, Inc. and others. All rights reserved.
+ * Copyright (c) 2013, 2016 Cisco Systems, Inc. and others. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -22,21 +22,11 @@ import java.util.Map;
  *
  * @since  Beryllium
  */
-public final class UDP extends Packet {
+public final class UDP extends PortPacket<UDP> {
     /**
      * The number of bits in the UDP header.
      */
     private static final int  HEADER_SIZE = 64;
-
-    /**
-     * The field name that indicates the source port number.
-     */
-    private static final String  SRCPORT = "SourcePort";
-
-    /**
-     * The field name that indicates the destination port number.
-     */
-    private static final String  DESTPORT = "DestinationPort";
 
     /**
      * The field name that indicates the packet length.
@@ -66,24 +56,6 @@ public final class UDP extends Packet {
     }
 
     /**
-     * Get the stored source port.
-     *
-     * @return  The source port number.
-     */
-    public short getSourcePort() {
-        return getShort(SRCPORT);
-    }
-
-    /**
-     * Get the stored destination port.
-     *
-     * @return  The destination port number.
-     */
-    public short getDestinationPort() {
-        return getShort(DESTPORT);
-    }
-
-    /**
      * Gets the stored length of UDP packet.
      *
      * @return  The number of bytes in the UDP datagram.
@@ -99,28 +71,6 @@ public final class UDP extends Packet {
      */
     public short getChecksum() {
         return getShort(CHECKSUM);
-    }
-
-    /**
-     * Sets the sourcePort value for the current UDP object instance.
-     *
-     * @param port  The source port number.
-     * @return  This instance.
-     */
-    public UDP setSourcePort(short port) {
-        getHeaderFieldMap().put(SRCPORT, toBytes(port));
-        return this;
-    }
-
-    /**
-     * Sets the destinationPort value for the current UDP object instance.
-     *
-     * @param port  The destination port number.
-     * @return  This instance.
-     */
-    public UDP setDestinationPort(short port) {
-        getHeaderFieldMap().put(DESTPORT, toBytes(port));
-        return this;
     }
 
     /**
@@ -163,15 +113,5 @@ public final class UDP extends Packet {
     @Override
     protected Map<String, HeaderField> getHeaderFormat() {
         return HEADER_FORMAT;
-    }
-
-    // Object
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public UDP clone() {
-        return (UDP)super.clone();
     }
 }

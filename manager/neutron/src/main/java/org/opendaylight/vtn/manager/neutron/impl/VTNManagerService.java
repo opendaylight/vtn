@@ -55,6 +55,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.VtnKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeUpdateMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnRpcResult;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateOperationType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.RemoveVbridgeInput;
@@ -381,26 +382,7 @@ public final class VTNManagerService {
             build();
         VTNRpcResult<UpdateVtnOutput> result =
             getRpcResult(vtnService.updateVtn(input));
-        int code = result.getStatusCode();
-        if (code != HTTP_OK) {
-            LOG.error("Failed to update VTN: input={}, err={}",
-                      input, result.getErrorMessage());
-        } else if (LOG.isDebugEnabled()) {
-            VtnUpdateType utype = result.getOutput().getStatus();
-            String msg;
-            if (utype == VtnUpdateType.CREATED) {
-                msg = "A VTN has been created";
-            } else if (utype == VtnUpdateType.CHANGED) {
-                msg = "A VTN has been changed";
-            } else {
-                assert utype == null;
-                msg = "A VTN is present and not changed";
-            }
-
-            LOG.debug("{}: name={}", msg, name);
-        }
-
-        return code;
+        return getResult(input, result, "VTN");
     }
 
     /**
@@ -473,26 +455,7 @@ public final class VTNManagerService {
             build();
         VTNRpcResult<UpdateVbridgeOutput> result =
             getRpcResult(vbridgeService.updateVbridge(input));
-        int code = result.getStatusCode();
-        if (code != HTTP_OK) {
-            LOG.error("Failed to update vBridge: input={}, err={}",
-                      input, result.getErrorMessage());
-        } else if (LOG.isDebugEnabled()) {
-            VtnUpdateType utype = result.getOutput().getStatus();
-            String msg;
-            if (utype == VtnUpdateType.CREATED) {
-                msg = "A vBridge has been created";
-            } else if (utype == VtnUpdateType.CHANGED) {
-                msg = "A vBridge has been changed";
-            } else {
-                assert utype == null;
-                msg = "A vBridge is present and not changed";
-            }
-
-            LOG.debug("{}: path={}/{}, desc={}", msg, tname, bname, desc);
-        }
-
-        return code;
+        return getResult(input, result, "vBridge");
     }
 
     /**
@@ -546,26 +509,7 @@ public final class VTNManagerService {
     public int updateInterface(UpdateVinterfaceInput input) {
         VTNRpcResult<UpdateVinterfaceOutput> result =
             getRpcResult(vinterfaceService.updateVinterface(input));
-        int code = result.getStatusCode();
-        if (code != HTTP_OK) {
-            LOG.error("Failed to update virtual interface: input={}, err={}",
-                      input, result.getErrorMessage());
-        } else if (LOG.isDebugEnabled()) {
-            VtnUpdateType utype = result.getOutput().getStatus();
-            String msg;
-            if (utype == VtnUpdateType.CREATED) {
-                msg = "A virtual interface has been created";
-            } else if (utype == VtnUpdateType.CHANGED) {
-                msg = "A virtual interface has been changed";
-            } else {
-                assert utype == null;
-                msg = "A virtual interface is present and not changed";
-            }
-
-            logInput(msg, input);
-        }
-
-        return code;
+        return getResult(input, result, "vInterface");
     }
 
     /**
@@ -603,26 +547,7 @@ public final class VTNManagerService {
     public int setPortMap(SetPortMapInput input) {
         VTNRpcResult<SetPortMapOutput> result =
             getRpcResult(portMapService.setPortMap(input));
-        int code = result.getStatusCode();
-        if (code != HTTP_OK) {
-            LOG.error("Failed to set port mapping: input={}, err={}",
-                      input, result.getErrorMessage());
-        } else if (LOG.isDebugEnabled()) {
-            VtnUpdateType utype = result.getOutput().getStatus();
-            String msg;
-            if (utype == VtnUpdateType.CREATED) {
-                msg = "Port mapping has been created";
-            } else if (utype == VtnUpdateType.CHANGED) {
-                msg = "Port mapping has been changed";
-            } else {
-                assert utype == null;
-                msg = "Port mapping is already configured";
-            }
-
-            logInput(msg, input);
-        }
-
-        return code;
+        return getResult(input, result, "PortMap");
     }
 
     /**
@@ -656,19 +581,43 @@ public final class VTNManagerService {
                 msg = "Port mapping is not configured";
             }
 
-            logInput(msg, input);
+            LOG.debug("{}: input={}", msg, input);
         }
 
         return code;
     }
 
     /**
-     * Record the given RPC input as a debug log.
+     * Return the result code that indicates the result of RPC execution.
      *
-     * @param msg    A debug log message.
-     * @param input  An input of the RPC.
+     * @param input   An RPC input.
+     * @param result  A {@link VTNRpcResult} instance.
+     * @param desc    A brief description about the target virtual node.
+     * @param <I>     The type of the RPC input.
+     * @param <O>     The type of the RPC output.
+     * @return  The result code that indicates the result of RPC execution.
      */
-    private void logInput(String msg, Object input) {
-        LOG.debug("{}: input={}", msg, input);
+    private <I, O extends VtnRpcResult> int getResult(
+        I input, VTNRpcResult<O> result, String desc) {
+        int code = result.getStatusCode();
+        if (code != HTTP_OK) {
+            LOG.error("{}: Failed to update: input={}, err={}",
+                      desc, input, result.getErrorMessage());
+        } else if (LOG.isDebugEnabled()) {
+            VtnUpdateType utype = result.getOutput().getStatus();
+            String msg;
+            if (utype == VtnUpdateType.CREATED) {
+                msg = "has been created";
+            } else if (utype == VtnUpdateType.CHANGED) {
+                msg = "has been changed";
+            } else {
+                assert utype == null;
+                msg = "is present and not changed";
+            }
+
+            LOG.debug("{} {}: input={}", desc, msg, input);
+        }
+
+        return code;
     }
 }

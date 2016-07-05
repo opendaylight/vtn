@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -14,18 +14,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.opendaylight.vtn.manager.VTNException;
-
-import org.opendaylight.vtn.manager.internal.FlowRemover;
-import org.opendaylight.vtn.manager.internal.TxContext;
-import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
-import org.opendaylight.vtn.manager.internal.flow.remove.AllFlowRemover;
-import org.opendaylight.vtn.manager.internal.flow.remove.TenantFlowRemover;
 import org.opendaylight.vtn.manager.internal.util.pathmap.PathMapUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-import org.opendaylight.vtn.manager.internal.util.rpc.RpcOutputGenerator;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcUtils;
-import org.opendaylight.vtn.manager.internal.util.tx.CompositeTxTask;
 import org.opendaylight.vtn.manager.internal.util.vnode.VTenantIdentifier;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
@@ -46,17 +37,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpda
  * @see #create(RemovePathMapInput)
  */
 public final class RemovePathMapTask
-    extends CompositeTxTask<VtnUpdateType, RemoveMapTask>
-    implements RpcOutputGenerator<List<VtnUpdateType>, RemovePathMapOutput> {
-    /**
-     * The identifier for the target VTN.
-     *
-     * <p>
-     *   {@code null} means that the global path map is targeted.
-     * </p>
-     */
-    private final VTenantIdentifier  identifier;
-
+    extends PathMapTask<RemoveMapTask, RemovePathMapOutput> {
     /**
      * Construct a new task that removes all the given path map configurations
      * from the global or VTN path map.
@@ -106,41 +87,7 @@ public final class RemovePathMapTask
      */
     private RemovePathMapTask(VTenantIdentifier ident,
                               List<RemoveMapTask> tasks) {
-        super(tasks);
-        identifier = ident;
-    }
-
-    // CompositeTxTask
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void onStarted(TxContext ctx) throws VTNException {
-        if (identifier != null) {
-            // Ensure that the target VTN is present.
-            identifier.fetch(ctx.getReadWriteTransaction());
-        }
-    }
-
-    // TxTask
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void onSuccess(VTNManagerProvider provider,
-                          List<VtnUpdateType> result) {
-        for (VtnUpdateType status: result) {
-            if (status != null) {
-                // REVISIT: Select flow entries affected by the change.
-                FlowRemover remover = (identifier == null)
-                    ? new AllFlowRemover()
-                    : new TenantFlowRemover(identifier);
-                addBackgroundTask(provider.removeFlows(remover));
-                break;
-            }
-        }
+        super(ident, tasks);
     }
 
     // RpcOutputGenerator

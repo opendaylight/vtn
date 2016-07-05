@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -14,17 +14,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.opendaylight.vtn.manager.VTNException;
-
-import org.opendaylight.vtn.manager.internal.TxContext;
-import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-import org.opendaylight.vtn.manager.internal.util.rpc.RpcOutputGenerator;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcUtils;
-import org.opendaylight.vtn.manager.internal.util.tx.CompositeTxTask;
-
-import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.SetPathCostInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.SetPathCostOutput;
@@ -43,13 +35,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpda
  * @see #create(TopologyGraph, SetPathCostInput)
  */
 public final class SetPathCostTask
-    extends CompositeTxTask<VtnUpdateType, SetCostTask>
-    implements RpcOutputGenerator<List<VtnUpdateType>, SetPathCostOutput> {
-    /**
-     * Runtime context for updating the path policy.
-     */
-    private final PathPolicyRpcContext  context;
-
+    extends PathCostTask<SetCostTask, SetPathCostOutput> {
     /**
      * Construct a new task that set all the given link cost configurations
      * into the given path policy.
@@ -115,43 +101,7 @@ public final class SetPathCostTask
      */
     private SetPathCostTask(TopologyGraph topo, Integer id,
                             List<SetCostTask> tasks) {
-        super(tasks);
-        context = new PathPolicyRpcContext(topo, id);
-    }
-
-    // CompositeTxTask
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void onStarted(TxContext ctx) throws VTNException {
-        // Ensure that the target path policy is present.
-        Integer pid = context.getPolicyId();
-        ReadWriteTransaction tx = ctx.getReadWriteTransaction();
-        PathPolicyUtils.readVtnPathPolicy(tx, pid.intValue());
-
-        context.onStarted();
-    }
-
-    // TxTask
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void onSuccess(VTNManagerProvider provider,
-                          List<VtnUpdateType> result) {
-        for (VtnUpdateType status: result) {
-            if (status != null) {
-                // Remove all flow entries affected by the target path policy.
-                addBackgroundTask(
-                    provider.removeFlows(context.getFlowRemover()));
-
-                context.onUpdated();
-                break;
-            }
-        }
+        super(topo, id, tasks);
     }
 
     // RpcOutputGenerator

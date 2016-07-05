@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -47,6 +47,7 @@ public class FlowCondUtilsTest extends TestBase {
      * Test case for the following methods.
      *
      * <ul>
+     *   <li>{@link FlowCondUtils#getNotFoundException(InstanceIdentifier)}</li>
      *   <li>{@link FlowCondUtils#getNotFoundException(String)}</li>
      *   <li>{@link FlowCondUtils#getNotFoundException(String, Throwable)}</li>
      *   <li>{@link FlowCondUtils#getMatchIndexMissingException()}</li>
@@ -71,6 +72,17 @@ public class FlowCondUtilsTest extends TestBase {
 
             e = FlowCondUtils.getNotFoundException(name, cause);
             assertSame(cause, e.getCause());
+            assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
+            assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
+            assertEquals(msg, e.getMessage());
+
+            VnodeName vname = new VnodeName(name);
+            VtnFlowConditionKey key = new VtnFlowConditionKey(vname);
+            InstanceIdentifier<VtnFlowCondition> path = InstanceIdentifier.
+                builder(VtnFlowConditions.class).
+                child(VtnFlowCondition.class, key).build();
+            e = FlowCondUtils.getNotFoundException(path);
+            assertEquals(null, e.getCause());
             assertEquals(RpcErrorTag.DATA_MISSING, e.getErrorTag());
             assertEquals(VtnErrorTag.NOTFOUND, e.getVtnErrorTag());
             assertEquals(msg, e.getMessage());
