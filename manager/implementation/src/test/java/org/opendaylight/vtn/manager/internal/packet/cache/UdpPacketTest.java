@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2014, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -397,6 +397,37 @@ public class UdpPacketTest extends TestBase {
         verifyChecksumDisabled(udp, inet4, empty, even, odd, large);
 
         verifyZeroInteractions(ctx);
+    }
+
+    /**
+     * Test case for {@link UdpPacket#setDescription(StringBuilder)}.
+     */
+    @Test
+    public void testSetDescription() {
+        int[] srcPorts = {0, 100, 4567, 32767, 32768, 40000, 65534, 65535};
+        int[] dstPorts = {1, 333, 12345, 32767, 32768, 55443, 65534, 65535};
+
+        for (int src: srcPorts) {
+            for (int dst: dstPorts) {
+                UDP pkt = new UDP().
+                    setSourcePort((short)src).
+                    setDestinationPort((short)dst);
+                UdpPacket udp = new UdpPacket(pkt);
+                String expected = "UDP[src=" + src + ", dst=" + dst + "]";
+                StringBuilder builder = new StringBuilder();
+                udp.setDescription(builder);
+                assertEquals(expected, builder.toString());
+
+                int src1 = (src + 11) & 0xffff;
+                int dst1 = (dst + 47) & 0xffff;
+                udp.setSourcePort(src1);
+                udp.setDestinationPort(dst1);
+                expected = expected +
+                    "UDP[src=" + src1 + ", dst=" + dst1 + "]";
+                udp.setDescription(builder);
+                assertEquals(expected, builder.toString());
+            }
+        }
     }
 
     /**

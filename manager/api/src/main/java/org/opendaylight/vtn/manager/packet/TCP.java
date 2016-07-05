@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2015 Cisco Systems, Inc. and others. All rights reserved.
+ * Copyright (c) 2013, 2016 Cisco Systems, Inc. and others. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -26,21 +26,11 @@ import java.util.Map;
  *
  * @since  Beryllium
  */
-public final class TCP extends Packet {
+public final class TCP extends PortPacket<TCP> {
     /**
      * The number of bits in the TCP header, excluding options.
      */
     private static final int  HEADER_SIZE = 160;
-
-    /**
-     * The field name that indicates the source port number.
-     */
-    private static final String  SRCPORT = "SourcePort";
-
-    /**
-     * The field name that indicates the destination port number.
-     */
-    private static final String  DESTPORT = "DestinationPort";
 
     /**
      * The field name that indicates the TCP sequence number.
@@ -118,28 +108,6 @@ public final class TCP extends Packet {
             addNumber(CHECKSUM, Short.SIZE).
             addNumber(URGENTPOINTER, Short.SIZE).
             build();
-    }
-
-    /**
-     * Sets the TCP source port for the current TCP object instance.
-     *
-     * @param port  The source port number.
-     * @return  This instance.
-     */
-    public TCP setSourcePort(short port) {
-        getHeaderFieldMap().put(SRCPORT, toBytes(port));
-        return this;
-    }
-
-    /**
-     * Sets the TCP destination port for the current TCP object instance.
-     *
-     * @param port  The destination port number.
-     * @return  This instance.
-     */
-    public TCP setDestinationPort(short port) {
-        getHeaderFieldMap().put(DESTPORT, toBytes(port));
-        return this;
     }
 
     /**
@@ -228,24 +196,6 @@ public final class TCP extends Packet {
     public TCP setUrgentPointer(short urg) {
         getHeaderFieldMap().put(URGENTPOINTER, toBytes(urg));
         return this;
-    }
-
-    /**
-     * Gets the stored source port value of TCP header.
-     *
-     * @return  The source port number.
-     */
-    public short getSourcePort() {
-        return getShort(SRCPORT);
-    }
-
-    /**
-     * Gets the stored destination port value of TCP header.
-     *
-     * @return  The destination port number.
-     */
-    public short getDestinationPort() {
-        return getShort(DESTPORT);
     }
 
     /**
@@ -338,15 +288,5 @@ public final class TCP extends Packet {
     @Override
     protected Map<String, HeaderField> getHeaderFormat() {
         return HEADER_FORMAT;
-    }
-
-    // Object
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public TCP clone() {
-        return (TCP)super.clone();
     }
 }

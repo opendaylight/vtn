@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2014, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -15,7 +15,7 @@ import static org.opendaylight.vtn.manager.util.NumberUtils.MASK_SHORT;
 import java.util.Set;
 
 import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.packet.Packet;
+import org.opendaylight.vtn.manager.packet.PortPacket;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetPortDstAction;
@@ -32,7 +32,7 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
  *
  * @param <T>  Type of packet.
  */
-public abstract class PortProtoPacket<T extends Packet>
+public abstract class PortProtoPacket<T extends PortPacket<T>>
     implements L4Packet, Layer4PortHeader {
     /**
      * A pseudo port number which indicates the port number is not specified.
@@ -50,14 +50,19 @@ public abstract class PortProtoPacket<T extends Packet>
     private static final int  MASK_CLEAR_LSB = ~1;
 
     /**
+     * A raw packet associated with this instance.
+     */
+    private T  rawPacket;
+
+    /**
      * Cached values in a protocol header.
      */
-    private Values  values = new Values();
+    private Values<T>  values = new Values<>();
 
     /**
      * Protocol header values to be set.
      */
-    private Values  modifiedValues;
+    private Values<T>  modifiedValues;
 
     /**
      * Set {@code true} if this instance is created by {@link #clone()}.
@@ -66,8 +71,11 @@ public abstract class PortProtoPacket<T extends Packet>
 
     /**
      * This class describes modifiable fields in a protocol hedaer.
+     *
+     * @param <T>  Type of packet.
      */
-    private static final class Values implements Cloneable {
+    private static final class Values<T extends PortPacket<T>>
+        implements Cloneable {
         /**
          * The source port number.
          */
@@ -156,7 +164,7 @@ public abstract class PortProtoPacket<T extends Packet>
          *
          * @param packet  A {@link PortProtoPacket} instance.
          */
-        private void fill(PortProtoPacket packet) {
+        private void fill(PortProtoPacket<T> packet) {
             if (sourcePort == PORT_NONE) {
                 setSourcePort(packet.getRawSourcePort());
             }
@@ -171,9 +179,11 @@ public abstract class PortProtoPacket<T extends Packet>
          * @return  A shallow copy of this instance.
          */
         @Override
-        public Values clone() {
+        public Values<T> clone() {
             try {
-                return (Values)super.clone();
+                @SuppressWarnings("unchecked")
+                Values<T> v = (Values<T>)super.clone();
+                return v;
             } catch (CloneNotSupportedException e) {
                 // This should never happen.
                 throw new IllegalStateException("clone() failed", e);
@@ -222,14 +232,14 @@ public abstract class PortProtoPacket<T extends Packet>
      *
      * @param ipv4    An {@link Inet4Packet} instance that contains the given
      *                packet.
-     * @param packet  A {@link Packet} instance.
+     * @param packet  A {@link PortPacket} instance.
      * @param sumOff  Offset in bytes to the checksum field.
      * @return  A computed checksum.
      * @throws VTNException
      *    An error occurred.
      */
-    protected static final short computeChecksum(Inet4Packet ipv4,
-                                                 Packet packet, int sumOff)
+    protected static final short computeChecksum(
+        Inet4Packet ipv4, PortPacket<?> packet, int sumOff)
         throws VTNException {
         // Serialize the given packet.
         byte[] data;
@@ -252,13 +262,13 @@ public abstract class PortProtoPacket<T extends Packet>
      *
      * @param ipv4    An {@link Inet4Packet} instance that contains the given
      *                packet.
-     * @param packet  A {@link Packet} to be verified.
+     * @param packet  A {@link PortPacket} to be verified.
      * @return  {@code true} is returned only if the verification succeeded.
      * @throws VTNException
      *    An error occurred.
      */
     protected static final boolean verifyChecksum(Inet4Packet ipv4,
-                                                  Packet packet)
+                                                  PortPacket<?> packet)
         throws VTNException {
         // Serialize the given packet.
         byte[] data;
@@ -276,67 +286,30 @@ public abstract class PortProtoPacket<T extends Packet>
 
     /**
      * Construct a new instance.
+     *
+     * @param pkt  A raw packet instance.
      */
-    protected PortProtoPacket() {
+    protected PortProtoPacket(T pkt) {
+        rawPacket = pkt;
     }
 
     /**
-     * Return a {@link Packet} instance to set modified values.
+     * Return a {@link PortPacket} instance to set modified values.
      *
-     * @return  A {@link Packet} instance.
+     * @return  A {@link PortPacket} instance.
      */
     protected final T getPacketForWrite() {
-        T pkt = getPacketForWrite(cloned);
-        cloned = false;
+        T pkt;
+        if (cloned) {
+            pkt = rawPacket.clone();
+            rawPacket = pkt;
+            cloned = false;
+        } else {
+            pkt = rawPacket;
+        }
+
         return pkt;
     }
-
-    /**
-     * Derive the source port number from the packet.
-     *
-     * @return  A short integer value which represents the source port number.
-     */
-    protected abstract short getRawSourcePort();
-
-    /**
-     * Derive the destination port number from the packet.
-     *
-     * @return  A short integer value which represents the destination port
-     *          number.
-     */
-    protected abstract short getRawDestinationPort();
-
-    /**
-     * Set the source port number to the given packet.
-     *
-     * @param pkt   A {@link Packet} instance.
-     * @param port  A short integer value which indicates the source port.
-     */
-    protected abstract void setRawSourcePort(T pkt, short port);
-
-    /**
-     * Set the destination port number to the given packet.
-     *
-     * @param pkt   A {@link Packet} instance.
-     * @param port  A short integer value which indicates the destination port.
-     */
-    protected abstract void setRawDestinationPort(T pkt, short port);
-
-    /**
-     * Return a {@link Packet} instance to set modified values.
-     *
-     * @param doCopy {@code true} is passed if the packet configured in this
-     *               instance needs to be copied.
-     * @return  A {@link Packet} instance.
-     */
-    protected abstract T getPacketForWrite(boolean doCopy);
-
-    /**
-     * Return the name of the protocol.
-     *
-     * @return  The protocol name.
-     */
-    protected abstract String getProtocolName();
 
     /**
      * Construct flow match fields.
@@ -367,12 +340,31 @@ public abstract class PortProtoPacket<T extends Packet>
     public abstract FlowMatchType getDestinationMatchType();
 
     /**
+     * Derive the source port number from the packet.
+     *
+     * @return  A short integer value which represents the source port number.
+     */
+    private short getRawSourcePort() {
+        return rawPacket.getSourcePort();
+    }
+
+    /**
+     * Derive the destination port number from the packet.
+     *
+     * @return  A short integer value which represents the destination port
+     *          number.
+     */
+    private short getRawDestinationPort() {
+        return rawPacket.getDestinationPort();
+    }
+
+    /**
      * Return a {@link Values} instance that keeps current values for
      * protocol header fields.
      *
      * @return  A {@link Values} instance.
      */
-    private Values getValues() {
+    private Values<T> getValues() {
         return (modifiedValues == null) ? values : modifiedValues;
     }
 
@@ -382,7 +374,7 @@ public abstract class PortProtoPacket<T extends Packet>
      *
      * @return  A {@link Values} instance.
      */
-    private Values getModifiedValues() {
+    private Values<T> getModifiedValues() {
         if (modifiedValues == null) {
             values.fill(this);
             modifiedValues = values.clone();
@@ -392,6 +384,14 @@ public abstract class PortProtoPacket<T extends Packet>
     }
 
     // CachedPacket
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public final T getPacket() {
+        return rawPacket;
+    }
 
     /**
      * {@inheritDoc}
@@ -410,7 +410,7 @@ public abstract class PortProtoPacket<T extends Packet>
             if (values.getSourcePort() != src) {
                 // Source port was modified.
                 pkt = getPacketForWrite();
-                setRawSourcePort(pkt, (short)src);
+                pkt.setSourcePort((short)src);
                 mod = true;
             } else if (pctx.hasMatchField(getSourceMatchType())) {
                 // Source port in the original packet is unchanged and it will
@@ -425,7 +425,7 @@ public abstract class PortProtoPacket<T extends Packet>
                 if (pkt == null) {
                     pkt = getPacketForWrite();
                 }
-                setRawDestinationPort(pkt, (short)dst);
+                pkt.setDestinationPort((short)dst);
                 mod = true;
             } else if (pctx.hasMatchField(getDestinationMatchType())) {
                 // Destination port in the original packet is unchanged and
@@ -442,10 +442,11 @@ public abstract class PortProtoPacket<T extends Packet>
      * {@inheritDoc}
      */
     @Override
-    public final PortProtoPacket clone() {
+    public final PortProtoPacket<T> clone() {
         try {
-            PortProtoPacket p = (PortProtoPacket)super.clone();
-            Values v = p.values;
+            @SuppressWarnings("unchecked")
+            PortProtoPacket<T> p = (PortProtoPacket<T>)super.clone();
+            Values<T> v = p.values;
             p.values = v.clone();
 
             v = p.modifiedValues;
@@ -469,7 +470,7 @@ public abstract class PortProtoPacket<T extends Packet>
     @Override
     public final VTNLayer4PortMatch createMatch(Set<FlowMatchType> fields)
         throws RpcException {
-        Values v = values;
+        Values<T> v = values;
         v.fill(this);
 
         VTNPortRange src = (fields.contains(getSourceMatchType()))
@@ -489,10 +490,10 @@ public abstract class PortProtoPacket<T extends Packet>
      */
     @Override
     public final int getSourcePort() {
-        Values v = getValues();
+        Values<T> v = getValues();
         int port = v.getSourcePort();
         if (port == PORT_NONE) {
-            short p = getRawSourcePort();
+            short p = rawPacket.getSourcePort();
             port = v.setSourcePort(p);
         }
 
@@ -504,7 +505,7 @@ public abstract class PortProtoPacket<T extends Packet>
      */
     @Override
     public final void setSourcePort(int port) {
-        Values v = getModifiedValues();
+        Values<T> v = getModifiedValues();
         v.setSourcePort(port);
     }
 
@@ -513,7 +514,7 @@ public abstract class PortProtoPacket<T extends Packet>
      */
     @Override
     public final int getDestinationPort() {
-        Values v = getValues();
+        Values<T> v = getValues();
         int port = v.getDestinationPort();
         if (port == PORT_NONE) {
             short p = getRawDestinationPort();
@@ -528,7 +529,7 @@ public abstract class PortProtoPacket<T extends Packet>
      */
     @Override
     public final void setDestinationPort(int port) {
-        Values v = getModifiedValues();
+        Values<T> v = getModifiedValues();
         v.setDestinationPort(port);
     }
 
@@ -541,8 +542,9 @@ public abstract class PortProtoPacket<T extends Packet>
     public void setDescription(StringBuilder builder) {
         int src = getSourcePort();
         int dst = getDestinationPort();
-        builder.append(getProtocolName()).
+        String proto = rawPacket.getClass().getSimpleName();
+        builder.append(proto).
             append("[src=").append(src).
-            append(",dst=").append(dst).append(']');
+            append(", dst=").append(dst).append(']');
     }
 }

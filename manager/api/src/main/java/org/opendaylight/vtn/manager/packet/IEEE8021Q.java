@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2015 Cisco Systems, Inc. and others. All rights reserved.
+ * Copyright (c) 2013, 2016 Cisco Systems, Inc. and others. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,10 +8,8 @@
 
 package org.opendaylight.vtn.manager.packet;
 
-import static org.opendaylight.vtn.manager.packet.Ethernet.ETHT;
-import static org.opendaylight.vtn.manager.packet.Ethernet.getPayloadClass;
+import static org.opendaylight.vtn.manager.packet.EtherTypePacket.ETHT;
 import static org.opendaylight.vtn.manager.util.NumberUtils.toBytes;
-import static org.opendaylight.vtn.manager.util.NumberUtils.toShort;
 
 import java.util.Map;
 
@@ -25,7 +23,7 @@ import java.util.Map;
  *
  * @since  Beryllium
  */
-public final class IEEE8021Q extends Packet {
+public final class IEEE8021Q extends EtherTypePacket<IEEE8021Q> {
     /**
      * The number of bits in the VLAN tag.
      */
@@ -106,15 +104,6 @@ public final class IEEE8021Q extends Packet {
     }
 
     /**
-     * Gets the Ethernet type stored.
-     *
-     * @return  The Ethernet type.
-     */
-    public short getEtherType() {
-        return getShort(ETHT);
-    }
-
-    /**
      * Sets the priority code point(PCP) for the current IEEE 802.1Q object
      * instance.
      *
@@ -149,17 +138,6 @@ public final class IEEE8021Q extends Packet {
         return this;
     }
 
-    /**
-     * Sets the etherType for the current IEEE 802.1Q object instance.
-     *
-     * @param type  The Ethernet type.
-     * @return  This instance.
-     */
-    public IEEE8021Q setEtherType(short type) {
-        getHeaderFieldMap().put(ETHT, toBytes(type));
-        return this;
-    }
-
     // Packet
 
     /**
@@ -178,32 +156,5 @@ public final class IEEE8021Q extends Packet {
     @Override
     protected Map<String, HeaderField> getHeaderFormat() {
         return HEADER_FORMAT;
-    }
-
-    /**
-     * Stores the value of fields read from data stream.
-     *
-     * @param name   The name of the header field.
-     * @param value  The value to be associated with the specified header
-     *               field. {@code null} cannot be specified.
-     */
-    @Override
-    protected void setHeaderField(String name, byte[] value) {
-        if (name.equals(ETHT)) {
-            short etype = toShort(value);
-            setPayloadClass(getPayloadClass(etype));
-        }
-
-        super.setHeaderField(name, value);
-    }
-
-    // Object
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public IEEE8021Q clone() {
-        return (IEEE8021Q)super.clone();
     }
 }

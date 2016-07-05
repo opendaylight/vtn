@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2014, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -32,90 +32,12 @@ public final class UdpPacket extends PortProtoPacket<UDP>
     private static final short  UDP_CKSUM_DISABLED = 0;
 
     /**
-     * A {@link UDP} packet.
-     */
-    private UDP  packet;
-
-    /**
      * Construct a new instance.
      *
      * @param udp  A {@link UDP} instance.
      */
     public UdpPacket(UDP udp) {
-        packet = udp;
-    }
-
-    /**
-     * Derive the source port number from the packet.
-     *
-     * @return  A short integer value which represents the source port number.
-     */
-    @Override
-    protected short getRawSourcePort() {
-        return packet.getSourcePort();
-    }
-
-    /**
-     * Derive the destination port number from the packet.
-     *
-     * @return  A short integer value which represents the destination port
-     *          number.
-     */
-    @Override
-    protected short getRawDestinationPort() {
-        return packet.getDestinationPort();
-    }
-
-    /**
-     * Set the source port number to the given packet.
-     *
-     * @param pkt   A {@link UDP} instance.
-     * @param port  A short integer value which indicates the source port.
-     */
-    @Override
-    protected void setRawSourcePort(UDP pkt, short port) {
-        pkt.setSourcePort(port);
-    }
-
-    /**
-     * Set the destination port number to the given packet.
-     *
-     * @param pkt   A {@link UDP} instance.
-     * @param port  A short integer value which indicates the destination port.
-     */
-    @Override
-    protected void setRawDestinationPort(UDP pkt, short port) {
-        pkt.setDestinationPort(port);
-    }
-
-    /**
-     * Return a {@link UDP} instance to set modified values.
-     *
-     * @param doCopy {@code true} is passed if the packet configured in this
-     *               instance needs to be copied.
-     * @return  A {@link UDP} instance.
-     */
-    @Override
-    protected UDP getPacketForWrite(boolean doCopy) {
-        UDP pkt;
-        if (doCopy) {
-            pkt = packet.clone();
-            packet = pkt;
-        } else {
-            pkt = packet;
-        }
-
-        return pkt;
-    }
-
-    /**
-     * Return the name of the protocol.
-     *
-     * @return  {@code "UDP"}.
-     */
-    @Override
-    protected String getProtocolName() {
-        return "UDP";
+        super(udp);
     }
 
     /**
@@ -161,7 +83,7 @@ public final class UdpPacket extends PortProtoPacket<UDP>
     public boolean updateChecksum(Inet4Packet ipv4) throws VTNException {
         // Update checksum only if the UDP packet contains a valid checksum.
         boolean mod = false;
-        short sum = packet.getChecksum();
+        short sum = getPacket().getChecksum();
         if (sum != 0) {
             UDP pkt = getPacketForWrite();
             short newSum = computeChecksum(ipv4, pkt, UDP_OFF_CHECKSUM);
@@ -176,17 +98,5 @@ public final class UdpPacket extends PortProtoPacket<UDP>
         }
 
         return mod;
-    }
-
-    // CachedPacket
-
-    /**
-     * Return a {@link UDP} instance configured in this instance.
-     *
-     * @return  A {@link UDP} instance.
-     */
-    @Override
-    public UDP getPacket() {
-        return packet;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2014, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -442,6 +442,37 @@ public class TcpPacketTest extends TestBase {
         verifyChecksum(list, tcp, inet4);
 
         verifyZeroInteractions(ctx);
+    }
+
+    /**
+     * Test case for {@link TcpPacket#setDescription(StringBuilder)}.
+     */
+    @Test
+    public void testSetDescription() {
+        int[] srcPorts = {0, 100, 4567, 32767, 32768, 40000, 65534, 65535};
+        int[] dstPorts = {1, 333, 12345, 32767, 32768, 55443, 65534, 65535};
+
+        for (int src: srcPorts) {
+            for (int dst: dstPorts) {
+                TCP pkt = new TCP().
+                    setSourcePort((short)src).
+                    setDestinationPort((short)dst);
+                TcpPacket tcp = new TcpPacket(pkt);
+                String expected = "TCP[src=" + src + ", dst=" + dst + "]";
+                StringBuilder builder = new StringBuilder();
+                tcp.setDescription(builder);
+                assertEquals(expected, builder.toString());
+
+                int src1 = (src + 13) & 0xffff;
+                int dst1 = (dst + 53) & 0xffff;
+                tcp.setSourcePort(src1);
+                tcp.setDestinationPort(dst1);
+                expected = expected +
+                    "TCP[src=" + src1 + ", dst=" + dst1 + "]";
+                tcp.setDescription(builder);
+                assertEquals(expected, builder.toString());
+            }
+        }
     }
 
     /**
