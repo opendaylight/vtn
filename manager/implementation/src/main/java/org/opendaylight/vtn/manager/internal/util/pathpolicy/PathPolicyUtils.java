@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -69,7 +69,7 @@ public final class PathPolicyUtils {
      * @param id  The identifier of the path policy.
      * @return  An {@link RpcException}.
      */
-    public static RpcException getNotFoundException(int id) {
+    public static RpcException getNotFoundException(Integer id) {
         return getNotFoundException(id, null);
     }
 
@@ -81,7 +81,8 @@ public final class PathPolicyUtils {
      * @param cause  A {@link Throwable} which indicates the cause of error.
      * @return  An {@link RpcException}.
      */
-    public static RpcException getNotFoundException(int id, Throwable cause) {
+    public static RpcException getNotFoundException(Integer id,
+                                                    Throwable cause) {
         String msg = MiscUtils.joinColon(id, "Path policy does not exist.");
         return RpcException.getNotFoundException(msg, cause);
     }
@@ -395,10 +396,10 @@ public final class PathPolicyUtils {
      * @return  A {@link VtnPathPolicy} instance.
      * @throws VTNException  An error occurred.
      */
-    public static VtnPathPolicy readVtnPathPolicy(ReadTransaction rtx, int id)
+    public static VtnPathPolicy readVtnPathPolicy(ReadTransaction rtx,
+                                                  Integer id)
         throws VTNException {
-        InstanceIdentifier<VtnPathPolicy> path =
-            getIdentifier(Integer.valueOf(id));
+        InstanceIdentifier<VtnPathPolicy> path = getIdentifier(id);
         LogicalDatastoreType store = LogicalDatastoreType.OPERATIONAL;
         VtnPathPolicy vpp = DataStoreUtils.read(rtx, store, path).orNull();
         if (vpp == null) {

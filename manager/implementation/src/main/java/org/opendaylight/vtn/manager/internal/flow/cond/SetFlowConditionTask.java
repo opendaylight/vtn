@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -39,11 +39,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpda
  */
 public final class SetFlowConditionTask extends PutDataTask<VtnFlowCondition>
     implements RpcOutputGenerator<VtnUpdateType, SetFlowConditionOutput> {
-    /**
-     * The name of the target flow condition.
-     */
-    private final String  name;
-
     /**
      * Set {@code true} if the target flow condition is required to be present.
      */
@@ -99,7 +94,6 @@ public final class SetFlowConditionTask extends PutDataTask<VtnFlowCondition>
                                  VtnFlowCondition vfc, boolean repl,
                                  boolean pr) {
         super(LogicalDatastoreType.OPERATIONAL, path, vfc, repl);
-        name = nm;
         present = pr;
     }
 
@@ -128,7 +122,7 @@ public final class SetFlowConditionTask extends PutDataTask<VtnFlowCondition>
         throws VTNException {
         if (current == null && present) {
             // The target flow condition is not present.
-            throw FlowCondUtils.getNotFoundException(name);
+            throw FlowCondUtils.getNotFoundException(getTargetPath());
         }
     }
 
