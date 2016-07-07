@@ -286,16 +286,17 @@ public final class VBridgeManager
             Entity ent = change.getEntity();
             VBridgeEntity vbent = vBridges.get(ent);
             if (vbent != null) {
-                if (change.isOwner()) {
+                boolean jeopardy = change.inJeopardy();
+                if (change.isOwner() && !jeopardy) {
                     vbent.startAging();
 
                     // Ensure that the listener is still valid.
                     if (listener.get() == null) {
                         vBridges.remove(ent);
-                        vbent.stopAging();
+                        vbent.stopAging(false);
                     }
                 } else {
-                    vbent.stopAging();
+                    vbent.stopAging(jeopardy);
                 }
             }
         }

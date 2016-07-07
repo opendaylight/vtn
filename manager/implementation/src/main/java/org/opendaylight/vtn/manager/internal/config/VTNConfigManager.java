@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -315,7 +315,9 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
         public void ownershipChanged(EntityOwnershipChange change) {
             LOG.debug("Received VTN config ownership change: {}", change);
 
-            if (change.hasOwner()) {
+            if (change.inJeopardy()) {
+                LOG.warn("DS cluster is in jeopardy state.");
+            } else if (change.hasOwner()) {
                 startInitTask(change.isOwner());
             }
         }
