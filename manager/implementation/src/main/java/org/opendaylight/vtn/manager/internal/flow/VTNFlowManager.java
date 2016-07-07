@@ -495,7 +495,7 @@ public final class VTNFlowManager extends SalNotificationListener
         }
 
         shutdownFlowService();
-        stopStatsTimer();
+        stopStatsTimer(false);
 
         StatsReaderService srs = statsReader;
         if (srs != null) {
@@ -696,12 +696,16 @@ public final class VTNFlowManager extends SalNotificationListener
 
     /**
      * Terminate the flow statistics updater.
+     *
+     * @param jeopardy  {@code true} indicates the cluster is in jeopardy
+     *                  state.
      */
-    private void stopStatsTimer() {
+    private void stopStatsTimer(boolean jeopardy) {
         StatsTimerTask task = statsTimer.getAndSet(null);
         if (task != null) {
             task.cancel();
-            LOG.info("Flow statistics timer task has been canceled.");
+            LOG.info("Flow statistics timer task has been canceled: " +
+                     "jeopardy={}", jeopardy);
         }
     }
 
@@ -1011,15 +1015,16 @@ public final class VTNFlowManager extends SalNotificationListener
         LOG.debug("Received entity ownerchip change: {}", change);
 
         if (entityListener.get() != null) {
-            if (change.isOwner()) {
+            boolean jeopardy = change.inJeopardy();
+            if (change.isOwner() && !jeopardy) {
                 startStatsTimer();
 
                 // Ensure that the listener is still valid.
                 if (entityListener.get() == null) {
-                    stopStatsTimer();
+                    stopStatsTimer(false);
                 }
             } else {
-                stopStatsTimer();
+                stopStatsTimer(jeopardy);
             }
         }
     }
