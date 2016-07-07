@@ -24,6 +24,9 @@
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>features-vtn-manager</artifactId>
   <packaging>jar</packaging>
+  <description>The VTN Manager has three major features.
+    They provide JAVA API, REST API and also provides integration with Neutron interface</description>
+
 
   <properties>
     <vtn.manager.dir>..</vtn.manager.dir>
