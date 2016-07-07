@@ -22,6 +22,8 @@
 
   <artifactId>manager.it</artifactId>
   <packaging>pom</packaging>
+  <description>In this Integration tests module the bundle dependencies are checked for the proper working of the features implemented</description>
+
 
   <scm>
     <connection>scm:git:https://git.opendaylight.org/gerrit/p/vtn.git</connection>
