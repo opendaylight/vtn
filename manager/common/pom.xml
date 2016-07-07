@@ -20,6 +20,8 @@
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>manager.common</artifactId>
   <packaging>pom</packaging>
+  <description> The VTN project is a project for OpenDaylight Virtual Tenant Network (VTN) which is an application that provides multi-tenant virtual network on an SDN controller.</description>
+
 
   <parent>
     <groupId>org.opendaylight.vtn</groupId>

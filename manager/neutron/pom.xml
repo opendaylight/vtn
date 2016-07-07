@@ -22,6 +22,8 @@
 
   <artifactId>manager.neutron</artifactId>
   <packaging>bundle</packaging>
+  <description> The VTN project is a project for OpenDaylight Virtual Tenant Network (VTN) which is an application that provides multi-tenant virtual network on an SDN controller.</description>
+
 
   <scm>
     <connection>scm:git:https://git.opendaylight.org/gerrit/p/vtn.git</connection>
