@@ -22,6 +22,7 @@
 
   <artifactId>manager.neutron</artifactId>
   <packaging>bundle</packaging>
+  <description>Neutron API implementation Handles the  Network API from OpenStack (Neutron Interface).</description>
 
   <scm>
     <connection>scm:git:https://git.opendaylight.org/gerrit/p/vtn.git</connection>
