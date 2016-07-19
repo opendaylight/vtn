@@ -919,6 +919,7 @@ public class MiscUtilsTest extends TestBase {
      * @param expected  The expected result.
      * @param c1        The first collection to be compared.
      * @param c2        The second collection to be compared.
+     * @param <T>       The type of elements in the given collection.
      */
     private <T extends Identifiable<?>> void checkEqualsAsMap(
         boolean expected, Collection<T> c1, Collection<T> c2) {

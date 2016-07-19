@@ -20,6 +20,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +40,6 @@ import org.opendaylight.vtn.manager.internal.VTNSubSystem;
 import org.opendaylight.vtn.manager.internal.flow.add.AddMdFlowTask;
 import org.opendaylight.vtn.manager.internal.flow.add.FlowAddContext;
 import org.opendaylight.vtn.manager.internal.flow.common.FlowModContext;
-import org.opendaylight.vtn.manager.internal.flow.common.FlowModContextFactory;
 import org.opendaylight.vtn.manager.internal.flow.reader.FlowCountFuture;
 import org.opendaylight.vtn.manager.internal.flow.reader.ReadFlowFuture;
 import org.opendaylight.vtn.manager.internal.flow.remove.ClearNodeFlowsTask;
@@ -187,19 +188,6 @@ public final class VTNFlowManager extends SalNotificationListener
      */
     private final AtomicReference<EntityOwnershipListenerRegistration>  entityListener =
         new AtomicReference<>();
-
-    /**
-     * Describes an interface for a factory class that creates flow task.
-     */
-    private interface FlowTaskFactory {
-        /**
-         * Construct a new flow task.
-         *
-         * @param sfs  A {@link SalFlowService} instance.
-         * @return  A new flow task.
-         */
-        RunnableVTNFuture<Void> newTask(SalFlowService sfs);
-    }
 
     /**
      * MD-SAL transaction task to initialize internal flow containers.
@@ -523,9 +511,10 @@ public final class VTNFlowManager extends SalNotificationListener
      *                 data flow to be installed.
      * @return  A future associated with the task which adds a VTN data flow.
      */
-    public VTNFuture<VtnFlowId> addFlow(VTNFlowBuilder builder) {
+    public VTNFuture<VtnFlowId> addFlow(final VTNFlowBuilder builder) {
         // Start add-flow transaction task.
-        return startTransaction(new FlowAddContext.Factory(builder));
+        return startTransaction((sfs, thread) ->
+                                new FlowAddContext(sfs, thread, builder));
     }
 
     /**
@@ -535,9 +524,10 @@ public final class VTNFlowManager extends SalNotificationListener
      *                 flows to be removed.
      * @return  A future associated with the task which removes VTN data flows.
      */
-    public VTNFuture<Void> removeFlows(FlowRemover remover) {
+    public VTNFuture<Void> removeFlows(final FlowRemover remover) {
         // Start remove-flow transaction task.
-        return startTransaction(new FlowRemoveContext.Factory(remover));
+        return startTransaction((sfs, thread) ->
+                                new FlowRemoveContext(sfs, thread, remover));
     }
 
     /**
@@ -570,17 +560,16 @@ public final class VTNFlowManager extends SalNotificationListener
     /**
      * Start the flow transaction.
      *
-     * @param factory  A factory for flow modification context.
-     * @param <T>     The type of the value to be returned by the flow
-     *                transaction.
-     * @param <D>     The type of the value to be returned by {@code task}.
+     * @param func  A function that instantiates new flow modification context.
+     * @param <T>   The type of the value to be returned by the flow
+     *              transaction.
+     * @param <D>   The type of the value to be returned by {@code task}.
      * @return  A future associated with the flow transaction.
      */
     private synchronized <T, D> VTNFuture<T> startTransaction(
-        FlowModContextFactory<T, D> factory) {
+        BiFunction<SalFlowService, VTNThreadPool, FlowModContext<T, D>> func) {
         // Instantiate a new flow modification context with holding the lock.
-        FlowModContext<T, D> fctx =
-            factory.newContext(flowService, flowThread);
+        FlowModContext<T, D> fctx = func.apply(flowService, flowThread);
         VTNFuture<T> future = fctx.getContextFuture();
         if (flowService == null) {
             // The flow service is already closed.
@@ -629,13 +618,9 @@ public final class VTNFlowManager extends SalNotificationListener
      */
     private void clearFlowTable(final SalNode snode,
                                 final VtnOpenflowVersion ofver) {
-        FlowTaskFactory factory = new FlowTaskFactory() {
-            @Override
-            public ClearNodeFlowsTask newTask(SalFlowService sfs) {
-                return new ClearNodeFlowsTask(
-                    vtnProvider, sfs, statsReader, snode, ofver);
-            }
-        };
+        Function<SalFlowService, RunnableVTNFuture<Void>> factory =
+            sfs -> new ClearNodeFlowsTask(
+                vtnProvider, sfs, statsReader, snode, ofver);
         runFlowTask(factory, new TxCounterCallback<Void>(this));
     }
 
@@ -647,15 +632,12 @@ public final class VTNFlowManager extends SalNotificationListener
      */
     private void addTableMissFlow(final SalNode snode) {
         final TableMissCallback cb = new TableMissCallback(this, snode);
-        FlowTaskFactory factory = new FlowTaskFactory() {
-            @Override
-            public AddMdFlowTask newTask(SalFlowService sfs) {
-                AddMdFlowTask task = new AddMdFlowTask(
-                    vtnProvider, sfs, FlowUtils.createTableMissInput(snode),
-                    false);
-                cb.setTask(task);
-                return task;
-            }
+        Function<SalFlowService, RunnableVTNFuture<Void>> factory = sfs -> {
+            AddMdFlowTask task = new AddMdFlowTask(
+                vtnProvider, sfs, FlowUtils.createTableMissInput(snode),
+                false);
+            cb.setTask(task);
+            return task;
         };
         runFlowTask(factory, cb);
     }
@@ -663,11 +645,12 @@ public final class VTNFlowManager extends SalNotificationListener
     /**
      * Run a task on the flow task thread.
      *
-     * @param factory   A factory class that instantiates a new task.
+     * @param factory   A function that instantiates a new task.
      * @param callback  A callback to be invoked when a task completes.
      */
-    private synchronized void runFlowTask(FlowTaskFactory factory,
-                                          TxCounterCallback<Void> callback) {
+    private synchronized void runFlowTask(
+        Function<SalFlowService, RunnableVTNFuture<Void>> factory,
+        TxCounterCallback<Void> callback) {
         SalFlowService sfs = flowService;
         if (sfs != null) {
             // Increment the transaction counter.
@@ -675,7 +658,7 @@ public final class VTNFlowManager extends SalNotificationListener
             txCount++;
 
             // Create a new task, and run it on the flow task thread.
-            RunnableVTNFuture<Void> task = factory.newTask(sfs);
+            RunnableVTNFuture<Void> task = factory.apply(sfs);
             if (!flowThread.executeTask(task)) {
                 task.cancel(false);
             }

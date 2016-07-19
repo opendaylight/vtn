@@ -15,7 +15,6 @@ import org.opendaylight.vtn.manager.internal.FlowRemover;
 import org.opendaylight.vtn.manager.internal.RemovedFlows;
 import org.opendaylight.vtn.manager.internal.TxQueue;
 import org.opendaylight.vtn.manager.internal.flow.common.FlowModContext;
-import org.opendaylight.vtn.manager.internal.flow.common.FlowModContextFactory;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNThreadPool;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
@@ -43,51 +42,15 @@ public final class FlowRemoveContext
     private final FlowRemover  flowRemover;
 
     /**
-     * Factory class for instantiating {@link FlowRemoveContext}.
-     */
-    public static final class Factory
-        implements FlowModContextFactory<Void, RemovedFlows> {
-        /**
-         * Flow remover which determines VTN data flows to be removed.
-         */
-        private final FlowRemover  remover;
-
-        /**
-         * Construct a new instance.
-         *
-         * @param r  A {@link FlowRemover} instance.
-         */
-        public Factory(FlowRemover r) {
-            remover = r;
-        }
-
-        // FlowModContextFactory
-
-        /**
-         * Construct a new context for removing VTN data flows.
-         *
-         * @param sfs     The MD-SAL flow service.
-         * @param thread  A thread pool to run tasks that remove flow entries.
-         * @return  A new context for removing VTN data flows.
-         */
-        @Override
-        public FlowRemoveContext newContext(SalFlowService sfs,
-                                            VTNThreadPool thread) {
-            return new FlowRemoveContext(sfs, thread, remover);
-        }
-    }
-
-    /**
      * Construct a new instance.
      *
      * @param sfs      A {@link SalFlowService} instance.
      * @param thread   A {@link VTNThreadPool} instance used to uninstall flow
      *                 entries.
      * @param remover  A {@link FlowRemover} instance.
-     * @see Factory
      */
-    private FlowRemoveContext(SalFlowService sfs, VTNThreadPool thread,
-                              FlowRemover remover) {
+    public FlowRemoveContext(SalFlowService sfs, VTNThreadPool thread,
+                             FlowRemover remover) {
         super(sfs, thread);
         flowRemover = remover;
     }

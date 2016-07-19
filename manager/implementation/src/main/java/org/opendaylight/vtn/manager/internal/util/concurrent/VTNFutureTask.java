@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -11,11 +11,8 @@ package org.opendaylight.vtn.manager.internal.util.concurrent;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
 
 import com.google.common.util.concurrent.ExecutionList;
-
-import org.opendaylight.vtn.manager.VTNException;
 
 /**
  * An implementation of {@link FutureTask} that also implements
@@ -70,32 +67,5 @@ public class VTNFutureTask<T> extends FutureTask<T> implements VTNFuture<T> {
     @Override
     protected final void done() {
         executionList.execute();
-    }
-
-    // VTNFuture
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public final T checkedGet() throws VTNException {
-        try {
-            return get();
-        } catch (Exception e) {
-            throw AbstractVTNFuture.getException(e);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public final T checkedGet(long timeout, TimeUnit unit)
-        throws VTNException {
-        try {
-            return get(timeout, unit);
-        } catch (Exception e) {
-            throw AbstractVTNFuture.getException(e);
-        }
     }
 }

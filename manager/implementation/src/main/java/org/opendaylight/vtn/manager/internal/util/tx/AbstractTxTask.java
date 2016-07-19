@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -89,29 +89,6 @@ public abstract class AbstractTxTask<T> implements TxTask<T> {
         backgroundTasks = null;
 
         return execute(ctx);
-    }
-
-    /**
-     * Determine whether the transaction queue should log the given error
-     * or not.
-     *
-     * @param t  A {@link Throwable} that is going to be thrown.
-     * @return   {@code true} is always returned.
-     */
-    @Override
-    public boolean needErrorLog(Throwable t) {
-        return true;
-    }
-
-    /**
-     * Determine whether this instance is associated with an asynchronous
-     * task or not.
-     *
-     * @return  {@code false} is always returned.
-     */
-    @Override
-    public boolean isAsync() {
-        return false;
     }
 
     /**

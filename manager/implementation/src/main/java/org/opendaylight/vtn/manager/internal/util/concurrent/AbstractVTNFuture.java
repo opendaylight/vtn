@@ -10,7 +10,6 @@ package org.opendaylight.vtn.manager.internal.util.concurrent;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.google.common.util.concurrent.ExecutionList;
@@ -112,32 +111,5 @@ public abstract class AbstractVTNFuture<T> implements VTNFuture<T> {
     @Override
     public final void addListener(Runnable listener, Executor executor) {
         executionList.add(listener, executor);
-    }
-
-    // VTNFuture
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public final T checkedGet() throws VTNException {
-        try {
-            return get();
-        } catch (Exception e) {
-            throw getException(e);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public final T checkedGet(long timeout, TimeUnit unit)
-        throws VTNException {
-        try {
-            return get(timeout, unit);
-        } catch (Exception e) {
-            throw getException(e);
-        }
     }
 }

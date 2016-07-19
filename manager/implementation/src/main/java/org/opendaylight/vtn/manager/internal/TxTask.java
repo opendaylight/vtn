@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -47,20 +47,32 @@ public interface TxTask<T> {
      * Determine whether the transaction queue should log the given error
      * or not.
      *
+     * <p>
+     *   By default, this method returns {@code true}.
+     * </p>
+     *
      * @param t  A {@link Throwable} that is going to be thrown.
      * @return   {@code true} if an error should be logged.
      *           {@code false} if an error log is not required.
      */
-    boolean needErrorLog(Throwable t);
+    default boolean needErrorLog(Throwable t) {
+        return true;
+    }
 
     /**
      * Determine whether this instance is associated with an asynchronous
      * task or not.
      *
+     * <p>
+     *   By default, this method returns {@code false}.
+     * </p>
+     *
      * @return  {@code true} if this instance is associated with an
      *          asynchronous task. {@code false} otherwise.
      */
-    boolean isAsync();
+    default boolean isAsync() {
+        return false;
+    }
 
     /**
      * Invoked when the task has completed successfully.
