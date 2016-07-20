@@ -70,6 +70,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vterminal.rev150907.Vtn
 public abstract class KarafTestBase extends AbstractMdsalTestBase
     implements VTNServices {
     /**
+     * The number of milliseconds to wait for OSGi service.
+     */
+    public static final long  OSGI_TIMEOUT = 600000L;
+
+    /**
      * Group ID for VTN bundles.
      */
     public static final String  VTN = "org.opendaylight.vtn";

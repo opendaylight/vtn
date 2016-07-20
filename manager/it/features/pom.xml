@@ -110,22 +110,6 @@
   </build>
 
   <dependencies>
-    <!-- VTN Manager bundles -->
-    <dependency>
-      <groupId>org.opendaylight.vtn</groupId>
-      <artifactId>manager.implementation</artifactId>
-      <classifier>config</classifier>
-      <type>xml</type>
-    </dependency>
-
-    <!-- VTN Manager bundles only for IT -->
-    <dependency>
-      <groupId>org.opendaylight.vtn</groupId>
-      <artifactId>manager.it.ofmock</artifactId>
-      <classifier>config</classifier>
-      <type>xml</type>
-    </dependency>
-
     <!-- OpenDaylight controller -->
     <dependency>
       <groupId>org.opendaylight.controller</groupId>

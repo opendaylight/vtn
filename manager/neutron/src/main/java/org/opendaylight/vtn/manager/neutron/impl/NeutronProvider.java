@@ -8,33 +8,35 @@
 
 package org.opendaylight.vtn.manager.neutron.impl;
 
-import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
-import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
-import org.opendaylight.controller.sal.binding.api.BindingAwareBroker.ProviderContext;
-import org.opendaylight.controller.sal.binding.api.BindingAwareProvider;
-
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.Topology;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.TopologyBuilder;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.TopologyKey;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopologyBuilder;
-import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TopologyId;
-import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.CheckedFuture;
 
+import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
+import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
+import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
+
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.neutron.config.rev160701.VtnNeutronConfig;
+
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopology;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.NetworkTopologyBuilder;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TopologyId;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.Topology;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.TopologyBuilder;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.TopologyKey;
+
 /**
  * Implementation of vtn-neutron module that associates Neutron network with
  * VTN.
  */
-public class NeutronProvider implements BindingAwareProvider, AutoCloseable {
+public class NeutronProvider implements AutoCloseable {
     /**
      * The logger instance.
      */
@@ -43,7 +45,7 @@ public class NeutronProvider implements BindingAwareProvider, AutoCloseable {
     /**
      * The data broker service.
      */
-    private DataBroker  dataBroker;
+    private final DataBroker  dataBroker;
 
     /**
      * The data change listener that listens OVSDB topology changes.
@@ -68,25 +70,18 @@ public class NeutronProvider implements BindingAwareProvider, AutoCloseable {
     /**
      * Construct a new instance.
      *
-     * @param cfg  The configuration for the manager.neutron bundle.
+     * @param vcfg    The configuration for the manager.neutron bundle.
+     * @param db      Data broker service.
+     * @param rpcReg  RPC provider registry service.
      */
-    public NeutronProvider(NeutronConfig cfg) {
-        bundleConfig = cfg;
-        LOG.info("Bundle configuration: {}", cfg);
-    }
+    public NeutronProvider(VtnNeutronConfig vcfg, DataBroker db,
+                           RpcProviderRegistry rpcReg) {
+        bundleConfig = new NeutronConfig(vcfg);
+        LOG.info("Bundle configuration: {}", bundleConfig);
 
-    /**
-     * Method invoked when the open flow switch is Added.
-     * @param session the session object
-     */
-    @Override
-    public void onSessionInitiated(ProviderContext session) {
-        LOG.trace("Neutron provider Session Initiated");
-        DataBroker db = session.getSALService(DataBroker.class);
         dataBroker = db;
-
         MdsalUtils md = new MdsalUtils(db);
-        VTNManagerService vtn = new VTNManagerService(md, session);
+        VTNManagerService vtn = new VTNManagerService(md, rpcReg);
 
         OVSDBEventHandler ovh = new OVSDBEventHandler(bundleConfig, md, vtn);
         ovsdbDataChangeListener = new OvsdbDataChangeListener(db, ovh);

@@ -40,6 +40,13 @@
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <!-- Need to add org.opendaylight.vtn.manager package to -->
+            <!-- Import-Package explicitly for blueprint XML. -->
+            <Import-Package>*, org.opendaylight.vtn.manager</Import-Package>
+          </instructions>
+        </configuration>
       </plugin>
 
       <plugin>

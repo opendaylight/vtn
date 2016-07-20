@@ -31,6 +31,7 @@ import org.osgi.framework.SynchronousBundleListener;
 import org.osgi.framework.Version;
 
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.VTNManager;
 import org.opendaylight.vtn.manager.packet.Packet;
 
 import org.opendaylight.vtn.manager.internal.FlowRemover;
@@ -96,7 +97,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef
  * MD-SAL service provider of the VTN Manager.
  */
 public final class VTNManagerProviderImpl
-    implements SynchronousBundleListener, VTNManagerProvider,
+    implements SynchronousBundleListener, VTNManager, VTNManagerProvider,
                VtnVersionService {
     /**
      * Logger instance.

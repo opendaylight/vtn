@@ -54,6 +54,5 @@
     <feature version='${odl.neutron.version}'>odl-neutron-service</feature>
     <feature version='${odl.ovsdb.version}'>odl-ovsdb-southbound-impl</feature>
     <bundle>mvn:org.opendaylight.vtn/manager.neutron/${project.version}</bundle>
-    <configfile finalname="etc/opendaylight/karaf/90-vtn-neutron.xml">mvn:org.opendaylight.vtn/manager.neutron/${project.version}/xml/config</configfile>
   </feature>
 </features>

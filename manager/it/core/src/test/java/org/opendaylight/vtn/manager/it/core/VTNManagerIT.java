@@ -16,7 +16,6 @@ import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.maven;
 
 import static org.opendaylight.vtn.manager.it.util.ModelDrivenTestBase.getRpcOutput;
-import static org.opendaylight.vtn.manager.it.util.TestBase.OSGI_TIMEOUT;
 import static org.opendaylight.vtn.manager.it.util.TestBase.getManagerBundle;
 
 import java.math.BigInteger;
@@ -40,6 +39,8 @@ import org.osgi.framework.Version;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.opendaylight.vtn.manager.VTNManager;
 
 import org.opendaylight.vtn.manager.it.base.KarafTestBase;
 import org.opendaylight.vtn.manager.it.ofmock.DataStoreUtils;
@@ -77,15 +78,6 @@ public final class VTNManagerIT extends KarafTestBase {
     static final Logger  LOG = LoggerFactory.getLogger(VTNManagerIT.class);
 
     /**
-     * The name of the VTN Manager provider module.
-     *
-     * <p>
-     *   This is also the name of the VTN Manager instance.
-     * </p>
-     */
-    private static final String  VTN_PROVIDER_NAME = "vtn-provider";
-
-    /**
      * The artifact ID of the feature repository.
      */
     private static final String  VTN_FEATURE_ARTIFACT = "manager.it.features";
@@ -105,6 +97,13 @@ public final class VTNManagerIT extends KarafTestBase {
      */
     @Inject
     private BundleContext  bundleContext;
+
+    /**
+     * VTN Manager service.
+     */
+    @Inject
+    @Filter(timeout = OSGI_TIMEOUT)
+    private VTNManager  vtnManager;
 
     /**
      * openflowplugin mock-up service.
@@ -508,6 +507,7 @@ public final class VTNManagerIT extends KarafTestBase {
 
         assertNotNull(bundleContext);
         assertNotNull(ofMockService);
+        assertNotNull(vtnManager);
 
         // Determine manager.implementation bundle.
         implBundle = getManagerBundle(bundleContext);
@@ -539,26 +539,6 @@ public final class VTNManagerIT extends KarafTestBase {
     }
 
     // AbstractConfigTestBase
-
-    /**
-     * Return the name of the module to be loaded.
-     *
-     * @return  The name of the module.
-     */
-    @Override
-    public String getModuleName() {
-        return VTN_PROVIDER_NAME;
-    }
-
-    /**
-     * Return the name of the instance to be created.
-     *
-     * @return  The name of the instance.
-     */
-    @Override
-    public String getInstanceName() {
-        return VTN_PROVIDER_NAME;
-    }
 
     /**
      * Return the reference to the feature repository.

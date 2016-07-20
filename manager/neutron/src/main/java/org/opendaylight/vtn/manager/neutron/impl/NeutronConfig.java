@@ -12,6 +12,8 @@ import static org.opendaylight.vtn.manager.neutron.impl.VTNNeutronUtils.getNonNu
 
 import javax.annotation.Nonnull;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.neutron.config.rev160701.VtnNeutronConfig;
+
 /**
  * {@code NeutronConfig} describes the configuration for the manager.neutron
  * bundle specified by the config subsystem.
@@ -77,6 +79,16 @@ public final class NeutronConfig {
      */
     public NeutronConfig() {
         this(null, null, null, null);
+    }
+
+    /**
+     * Construct a new instance from the given vtn-neutron-config instance.
+     *
+     * @param vcfg  A vtn-neutron-config instance.
+     */
+    public NeutronConfig(VtnNeutronConfig vcfg) {
+        this(vcfg.getBridgeName(), vcfg.getPortName(), vcfg.getProtocol(),
+             vcfg.getFailMode());
     }
 
     /**

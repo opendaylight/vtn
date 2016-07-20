@@ -168,13 +168,6 @@
       <artifactId>manager.neutron</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.opendaylight.vtn</groupId>
-      <artifactId>manager.neutron</artifactId>
-      <classifier>config</classifier>
-      <type>xml</type>
-    </dependency>
-
     <!-- OpenDaylight controller -->
     <dependency>
       <groupId>org.opendaylight.controller</groupId>

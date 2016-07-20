@@ -40,11 +40,6 @@ import org.opendaylight.vtn.manager.it.util.vnode.mac.MacEntry;
  */
 public abstract class TestBase extends Assert {
     /**
-     * The number of milliseconds to wait for OSGi service.
-     */
-    public static final long  OSGI_TIMEOUT = 600000L;
-
-    /**
      * The number of milliseconds to sleep for short delay.
      */
     public static final long  SHORT_DELAY = 100L;

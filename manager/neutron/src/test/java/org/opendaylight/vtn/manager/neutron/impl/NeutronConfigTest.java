@@ -10,6 +10,9 @@ package org.opendaylight.vtn.manager.neutron.impl;
 
 import org.junit.Test;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.neutron.config.rev160701.VtnNeutronConfig;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.neutron.config.rev160701.VtnNeutronConfigBuilder;
+
 /**
  * JUnit test for {@link NeutronConfig}.
  */
@@ -44,6 +47,43 @@ public final class NeutronConfigTest extends TestBase {
         assertEquals(DEFAULT_PORT_NAME, cfg.getOvsdbPortName());
         assertEquals(DEFAULT_PROTOCOL, cfg.getOvsdbProtocol());
         assertEquals(DEFAULT_FAILMODE, cfg.getOvsdbFailMode());
+    }
+
+    /**
+     * Test case for {@link NeutronConfig#NeutronConfig(VtnNeutronConfig)}.
+     */
+    @Test
+    public void testConstructor2() {
+        String[] bridges = {null, "bridge_1", "bridge_2"};
+        String[] ports = {null, "eth1", "eth2"};
+        String[] protocols = {null, "OpenFlow10", "OpenFlow14"};
+        String[] failmodes = {null, "standalone", "unknown"};
+        VtnNeutronConfigBuilder builder = new VtnNeutronConfigBuilder();
+        for (String bridge: bridges) {
+            builder.setBridgeName(bridge);
+            String bname = (bridge == null) ? DEFAULT_BRIDGE_NAME : bridge;
+            for (String port: ports) {
+                builder.setPortName(port);
+                String pname = (port == null) ? DEFAULT_PORT_NAME : port;
+                for (String protocol: protocols) {
+                    builder.setProtocol(protocol);
+                    String proto = (protocol == null)
+                        ? DEFAULT_PROTOCOL : protocol;
+                    for (String failmode: failmodes) {
+                        builder.setFailMode(failmode);
+                        String mode = (failmode == null)
+                            ? DEFAULT_FAILMODE : failmode;
+
+                        VtnNeutronConfig vcfg = builder.build();
+                        NeutronConfig cfg = new NeutronConfig(vcfg);
+                        assertEquals(bname, cfg.getOvsdbBridgeName());
+                        assertEquals(pname, cfg.getOvsdbPortName());
+                        assertEquals(proto, cfg.getOvsdbProtocol());
+                        assertEquals(mode, cfg.getOvsdbFailMode());
+                    }
+                }
+            }
+        }
     }
 
     /**

@@ -495,13 +495,6 @@
         <artifactId>manager.neutron</artifactId>
         <version>${project.version}</version>
       </dependency>
-      <dependency>
-        <groupId>org.opendaylight.vtn</groupId>
-        <artifactId>manager.neutron</artifactId>
-        <version>${project.version}</version>
-        <classifier>config</classifier>
-        <type>xml</type>
-      </dependency>
 
       <!-- VTN Manager feature -->
       <dependency>
