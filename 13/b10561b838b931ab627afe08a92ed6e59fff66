@@ -1,0 +1,7 @@
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+2: Venkatrangan Govindarajan <venkatrangang@hcl.com>
+Submitted-by: Venkatrangan Govindarajan <venkatrangang@hcl.com>
+Submitted-at: Fri, 22 Jul 2016 23:14:30 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/42346
+Project: vtn
+Branch: refs/heads/stable/beryllium
