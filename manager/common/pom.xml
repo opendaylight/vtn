@@ -67,7 +67,7 @@
     <karaf.resources.version>1.7.0-SNAPSHOT</karaf.resources.version>
 
     <!-- ODL Branding -->
-    <branding.version>1.3.0-SNAPSHOT</branding.version>
+    <branding.version>1.7.0-SNAPSHOT</branding.version>
 
     <!-- Exclude internal package from javadoc -->
     <javadoc.exclude>*.internal,*.impl,*.it</javadoc.exclude>
@@ -662,12 +662,12 @@
       </dependency>
 
       <dependency>
-        <groupId>org.opendaylight.controller</groupId>
+        <groupId>org.opendaylight.odlparent</groupId>
         <artifactId>karaf.branding</artifactId>
         <version>${branding.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.opendaylight.controller</groupId>
+        <groupId>org.opendaylight.odlparent</groupId>
         <artifactId>opendaylight-karaf-resources</artifactId>
         <version>${karaf.resources.version}</version>
       </dependency>
