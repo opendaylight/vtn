@@ -88,8 +88,6 @@
   </build>
 
   <modules>
-    <!--
     <module>vsemprovider</module>
-    -->
   </modules>
 </project>
