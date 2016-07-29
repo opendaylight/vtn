@@ -566,7 +566,7 @@ public class Ip4NetworkTest extends TestBase {
 
         badAddr = new String[]{
             "Bad IP address",
-            "123.456.789.abc",
+            "abc.123.456.789",
             "abc::ddee::123",
         };
         for (String bad: badAddr) {
