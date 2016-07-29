@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -116,8 +116,8 @@ public abstract class XmlDataType {
         String[] forIp4 = {
             "Bad IP address",
             "Bad IP address/3",
-            "123.456.789.abc",
-            "123.456.789.abc/12",
+            "abc.123.456.789",
+            "abc.123.456.789/12",
             "abc::ddee::123",
             "abc::ddee::123/45",
             "::1",
