@@ -20,8 +20,7 @@
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>manager.common</artifactId>
   <packaging>pom</packaging>
-  <description>This module builds the sub-modules in the manager and resolves the dependencies</description>
-
+  <description>Common configuration required by POM files of VTN Manager.</description>
 
   <parent>
     <groupId>org.opendaylight.vtn</groupId>

@@ -22,9 +22,7 @@
 
   <artifactId>manager</artifactId>
   <packaging>bundle</packaging>
-  <description>VTN provides Web APIs that are implemented by REST architecture.
-    They also provide access to resources within VTN which are identified by URI.</description>
-
+  <description>VTN Manager's API bundle.</description>
 
   <scm>
     <connection>scm:git:https://git.opendaylight.org/gerrit/p/vtn.git</connection>

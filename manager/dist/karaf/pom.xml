@@ -24,9 +24,7 @@
   <artifactId>distribution.vtn-manager.karaf</artifactId>
   <version>0.5.0-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <description> This module contains a set of files and scripts.
-    They are used to deploy the bundles into the ODL controller.</description>
-
+  <description>Karaf distribution for running VTN Manager.</description>
 
   <scm>
     <connection>scm:git:https://git.opendaylight.org/gerrit/p/vtn.git</connection>
