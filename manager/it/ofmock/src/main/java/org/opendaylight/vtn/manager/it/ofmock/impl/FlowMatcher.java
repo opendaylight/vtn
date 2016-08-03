@@ -108,7 +108,7 @@ public final class FlowMatcher {
                       flowMatch.getIcmpv4Match() == null &&
                       flowMatch.getIcmpv6Match() == null &&
                       flowMatch.getProtocolMatchFields() == null &&
-                      flowMatch.getTcpFlagMatch() == null);
+                      flowMatch.getTcpFlagsMatch() == null);
         }
 
         return result;
