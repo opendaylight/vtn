@@ -33,8 +33,11 @@
   <properties>
     <nexusproxy>https://nexus.opendaylight.org/content</nexusproxy>
     <sitedeploy>dav:https://nexus.opendaylight.org/content/sites/site</sitedeploy>
+    <maven.site.deploy.skip>true</maven.site.deploy.skip>
+    <maven.site.skip>true</maven.site.skip>
   </properties>
 
+  <url>${odl.site.url}/${project.groupId}/${stream}/${project.artifactId}/</url>
   <distributionManagement>
     <!-- OpenDayLight Released artifact -->
     <repository>
@@ -50,8 +53,8 @@
 
     <!-- Site deployment -->
     <site>
-      <id>website</id>
-      <url>${sitedeploy}</url>
+      <id>opendaylight-site</id>
+      <url>${nexus.site.url}/${project.artifactId}/</url>
     </site>
   </distributionManagement>
 </project>
