@@ -1,0 +1,8 @@
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+1: Shigeru Yasuda <s-yasuda@da.jp.nec.com>
+Code-Review+2: Sarath Babu Gurujala <sarathbg@hcl.com>
+Submitted-by: Sarath Babu Gurujala <sarathbg@hcl.com>
+Submitted-at: Mon, 08 Aug 2016 07:38:14 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/42471
+Project: vtn
+Branch: refs/heads/master
