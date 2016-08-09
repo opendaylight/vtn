@@ -77,7 +77,8 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
   </dependencies>
-    <url>${odl.site.url}/${project.groupId}/${stream}/${project.artifactId}/</url>
+
+  <url>${odl.site.url}/${project.groupId}/${stream}/${project.artifactId}/</url>
   <distributionManagement>
     <site>
       <id>opendaylight-site</id>
