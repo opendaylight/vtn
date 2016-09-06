@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -1004,7 +1004,7 @@ DalBindColumnInfo::CopyUsingDalDataType(void **dest, const void **src,
         }
       } else if (app_data_type == kDalUint16) {
         if (array_size != 2) {
-          UPLL_LOG_DEBUG("Wrong Array Size(%"PFC_PFMT_u64") for"
+          UPLL_LOG_DEBUG("Wrong Array Size(%" PFC_PFMT_u64 ") for"
                          " App Data type(%d) and DAL datatype(%d)",
                         (uint64_t)array_size, app_data_type, dal_data_type);
           return false;
@@ -1018,7 +1018,7 @@ DalBindColumnInfo::CopyUsingDalDataType(void **dest, const void **src,
         }
       } else if (app_data_type == kDalUint32) {
         if (array_size != 4) {
-          UPLL_LOG_DEBUG("Wrong Array Size(%"PFC_PFMT_u64") for"
+          UPLL_LOG_DEBUG("Wrong Array Size(%" PFC_PFMT_u64 ") for"
                          " App Data type(%d) and DAL datatype(%d)",
                         (uint64_t)array_size, app_data_type, dal_data_type);
           return false;
@@ -1036,7 +1036,7 @@ DalBindColumnInfo::CopyUsingDalDataType(void **dest, const void **src,
 #endif
       } else if (app_data_type == kDalUint64) {
         if (array_size != 8) {
-          UPLL_LOG_DEBUG("Wrong Array Size(%"PFC_PFMT_u64") for"
+          UPLL_LOG_DEBUG("Wrong Array Size(%" PFC_PFMT_u64 ") for"
                          " App Data type(%d) and DAL datatype(%d)",
                         (uint64_t)array_size, app_data_type, dal_data_type);
           return false;

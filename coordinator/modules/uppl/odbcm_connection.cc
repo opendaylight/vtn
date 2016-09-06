@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -827,7 +827,7 @@ ODBCM_RC_STATUS ODBCManager::FreeingConnections(bool IsAllOrUnused) {
   pfc_log_trace("Freeing used Connections ... ");
   std::map<uint64_t, OdbcmConnectionHandler*>::iterator cpoolinuse_iter;
   if (!conpool_inuse_map_.empty()) {
-    pfc_log_debug("used %"PFC_PFMT_SIZE_T
+    pfc_log_debug("used %" PFC_PFMT_SIZE_T
                   " RO Connection is present and about to free",
                   conpool_inuse_map_.size());
     cpoolinuse_iter = conpool_inuse_map_.begin();

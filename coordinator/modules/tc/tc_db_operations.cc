@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -290,7 +290,7 @@ TcOperStatus TcDbOperations::Execute() {
       pfc_log_warn("Retrieving save_version data from recovery table failed");
     } else {
       ++save_version_;
-      pfc_log_info("%s Setting save version %"PFC_PFMT_u64, __FUNCTION__,
+      pfc_log_info("%s Setting save version %" PFC_PFMT_u64, __FUNCTION__,
                    save_version_);
     }
   }
@@ -321,7 +321,7 @@ TcOperStatus TcDbOperations::Execute() {
     }
 
     if (tc_oper_ == TC_OP_RUNNING_SAVE) {
-      pfc_log_info("Save config: Setting save version: %"PFC_PFMT_u64,
+      pfc_log_info("Save config: Setting save version: %" PFC_PFMT_u64,
                    save_version_);
       if (db_hdlr_->UpdateRecoveryTableSaveVersion(save_version_) !=
                                                 TCOPER_RET_SUCCESS) {

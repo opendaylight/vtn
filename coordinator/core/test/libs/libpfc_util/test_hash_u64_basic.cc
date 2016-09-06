@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2016 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -628,8 +628,8 @@ test_get_set_capacity (int nbuckets, int nentries, ssize_t *new_caps)
             char buf[1024] = { 0 };
             strerror_r(set_cap_err, buf, sizeof(buf));
             fprintf(stderr,
-                    "cur_cap = %"PFC_PFMT_SIZE_T", "
-                    "*next_cap = %"PFC_PFMT_SIZE_T", "
+                    "cur_cap = %" PFC_PFMT_SIZE_T ", "
+                    "*next_cap = %" PFC_PFMT_SIZE_T ", "
                     "err = %d (%s)\n",
                     cur_cap, *next_cap, set_cap_err, buf);
         }
@@ -1161,11 +1161,11 @@ test_data_alloc (int nentries, int val_nsets)
                 PFC_ASSERT(val[n][i] != NULL);
                 if (n == 0) {
                     snprintf(val[n][i], maxlen,
-                             "value to put with key = %"PFC_PFMT_u64,
+                             "value to put with key = %" PFC_PFMT_u64,
                              key[i]);
                 } else {
                     snprintf(val[n][i], maxlen,
-                             "value to update/%d with key = %"PFC_PFMT_u64,
+                             "value to update/%d with key = %" PFC_PFMT_u64,
                              n, key[i]);
                 }
             }

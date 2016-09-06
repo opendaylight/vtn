@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation
+ * Copyright (c) 2015-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -80,7 +80,7 @@ class UNWSpineDomainMoMgr : public MoMgrImpl {
                 valid[UPLL_IDX_SPINE_ALARAM_RAISED_UNWS];
             break;
           default:
-            UPLL_LOG_DEBUG("DEFAULT CASE indx  %"PFC_PFMT_u64"", indx);
+            UPLL_LOG_DEBUG("DEFAULT CASE indx  %" PFC_PFMT_u64 "", indx);
             return UPLL_RC_ERR_GENERIC;
         }
       }

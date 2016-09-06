@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -1121,7 +1121,7 @@ UncRespCode Kt_LogicalPort::GetOperStatusFromOperDownCriteria(
     pfc_log_info("Logicalport OperStatusFromOperDownCriteria read error");
     return return_code;
   }
-  pfc_log_debug("vectOperStatus size is %"PFC_PFMT_SIZE_T,
+  pfc_log_debug("vectOperStatus size is %" PFC_PFMT_SIZE_T,
                  vectOperStatus.size());
   // Check for vectOperStatus.size,
   // if it is empty, make logical port operstatus as down

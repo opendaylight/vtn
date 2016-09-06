@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2010-2014 NEC Corporation
+# Copyright (c) 2010-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -186,7 +186,7 @@ CFLAGS		= $(CC_DEBUG) $(CC_OPT) $(CC_WARN) $(CC_MODE) $(EXTRA_CFLAGS)
 
 # C++ compiler options.
 CXXFLAGS	= $(CXX_DEBUG) $(CXX_OPT) $(CXX_WARN) $(CXX_MODE)	\
-		  $(EXTRA_CXXFLAGS)
+		  $(CXX_STD) $(EXTRA_CXXFLAGS)
 
 # CPPFLAGS used to compile assembly language source.
 AS_CPPFLAGS	= $(CPPFLAGS) -D_PFC_ASM

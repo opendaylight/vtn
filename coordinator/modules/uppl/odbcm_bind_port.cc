@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -761,7 +761,7 @@ ODBCM_RC_STATUS DBVarbind::fill_port_table(
           ODBCM_MEMSET(&p_port_table->sport_number, 0, sizeof(SQLBIGINT));
           p_port_table->sport_number = pn_value.value;
           odbcm_debug_info(
-              "ODBCM::DBVarbind::fill:PORT_TABLE:sport_number=%"PFC_PFMT_d64,
+              "ODBCM::DBVarbind::fill:PORT_TABLE:sport_number=%" PFC_PFMT_d64,
                            p_port_table->sport_number);
         }
         break;
@@ -891,7 +891,7 @@ ODBCM_RC_STATUS DBVarbind::fill_port_table(
               sizeof(p_port_table->sspeed));
           p_port_table->sspeed = speed_value.value;
           odbcm_debug_info("ODBCM::DBVarbind::fill:PORT_TABLE:"
-              "sspeed = %"PFC_PFMT_d64, p_port_table->sspeed);
+              "sspeed = %" PFC_PFMT_d64, p_port_table->sspeed);
         }
         break;
       case PORT_ALARM_STATUS:

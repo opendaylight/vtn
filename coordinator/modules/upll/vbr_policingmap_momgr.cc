@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -3204,7 +3204,7 @@ upll_rc_t VbrPolicingMapMoMgr::OnPolicerFullAlarm(
   }
 
   UPLL_LOG_INFO("Policer Full alarm : status - %s controller - %s, domain - %s,"
-                "vtn - %s, vnode - %s, port - %s, dpid - %"PFC_PFMT_u64,
+                "vtn - %s, vnode - %s, port - %s, dpid - %" PFC_PFMT_u64,
                 alarm_status, ctrlr_name.c_str(), domain_id.c_str(),
                 vtn_name, vbr_name, reinterpret_cast<char*>
                 (const_cast<uint8_t*>(alarm_data.port_name)),
@@ -3332,7 +3332,7 @@ upll_rc_t VbrPolicingMapMoMgr::OnPolicerFailAlarm(
   }
 
   UPLL_LOG_INFO("Policer Fail alarm : status - %s controller - %s, domain - %s,"
-                "vtn - %s, vnode - %s, port - %s, dpid - %"PFC_PFMT_u64,
+                "vtn - %s, vnode - %s, port - %s, dpid - %" PFC_PFMT_u64,
                 alarm_status, ctrlr_name.c_str(), domain_id.c_str(),
                 vtn_name, vbr_name, reinterpret_cast<char*>
                 (const_cast<uint8_t*>(alarm_data.port_name)),
