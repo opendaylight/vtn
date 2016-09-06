@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation
+ * Copyright (c) 2015-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -143,7 +143,8 @@ TEST(FlowlistMoMgr, DupConfigKeyVal_reqnull) {
   ConfigKeyVal *okey = NULL;
   ConfigKeyVal *req = NULL;
   EXPECT_EQ(UPLL_RC_ERR_GENERIC,obj.DupConfigKeyVal(okey, req,MAINTBL));
-   if (okey) delete okey; if(req) delete req;
+  if (okey) delete okey;
+  if(req) delete req;
 
 }
 
@@ -544,7 +545,8 @@ bool no_rename;
 uint8_t ctrlr[32] = "pfc1";
 EXPECT_EQ(UPLL_RC_ERR_BAD_REQUEST, obj.SwapKeyVal(ikey, okey, dmi, ctrlr, no_rename));
 delete ikey; 
-if(okey)delete okey; delete dmi;
+if(okey) delete okey;
+delete dmi;
 }
 TEST(FlowlistMoMgr, SwapKeyVal_Configval_NULL) {
 FlowListMoMgr obj;

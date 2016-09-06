@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -2911,10 +2911,10 @@ upll_rc_t VtnPolicingMapMoMgr::GetRenamedControllerKey(
       UPLL_LOG_DEBUG("mgr NULL");
       return UPLL_RC_ERR_GENERIC;
     }
-  /* Read controller name from running rename table,
-   * since there is no rename table for audit case */
-  if (dt_type == UPLL_DT_AUDIT)
-    dt_type = UPLL_DT_RUNNING;
+    /* Read controller name from running rename table,
+     * since there is no rename table for audit case */
+    if (dt_type == UPLL_DT_AUDIT)
+      dt_type = UPLL_DT_RUNNING;
 
     result_code = vtn_mgr->GetChildConfigKey(okey, NULL);
     if (result_code != UPLL_RC_SUCCESS) {

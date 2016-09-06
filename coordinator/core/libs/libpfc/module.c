@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2014 NEC Corporation
+ * Copyright (c) 2010-2016 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -279,26 +279,6 @@ static const pmod_action_t	module_state_actions[] = {
 	{PMOD_STATE_LOADED, pmodule_load},
 	{PMOD_STATE_RUNNING, pmodule_start},
 	{PMOD_STATE_UNLOADED, pmodule_unload},
-};
-
-/*
- * String representation of module state.
- */
-typedef struct {
-	pmod_state_t	mss_state;		/* module state */
-	const char	*mss_name;		/* name of state */
-} pmod_state_str_t;
-
-#define	PMOD_STATE_STR_DECL(state)	{ (state), #state + 11 }
-
-static const pmod_state_str_t	module_state_label[] = {
-	PMOD_STATE_STR_DECL(PMOD_STATE_UNLOADED),
-	PMOD_STATE_STR_DECL(PMOD_STATE_INACTIVE),
-	PMOD_STATE_STR_DECL(PMOD_STATE_DEAD),
-	PMOD_STATE_STR_DECL(PMOD_STATE_LOADED),
-	PMOD_STATE_STR_DECL(PMOD_STATE_RUNNING),
-	PMOD_STATE_STR_DECL(PMOD_STATE_IN_INIT),
-	PMOD_STATE_STR_DECL(PMOD_STATE_IN_FINI),
 };
 
 static const char	str_unavailable[] = " (unavailable)";

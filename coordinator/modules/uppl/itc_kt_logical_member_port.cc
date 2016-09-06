@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -855,7 +855,7 @@ void Kt_LogicalMemberPort::FillLogicalMemberPortValueStructure(
       }
     }
     logical_mem_port.push_back(obj_key_logical_mem_port);
-    pfc_log_debug("Vector size %"PFC_PFMT_SIZE_T, logical_mem_port.size());
+    pfc_log_debug("Vector size %" PFC_PFMT_SIZE_T, logical_mem_port.size());
   }
   return;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -1108,7 +1108,7 @@ upll_rc_t UpllConfigMgr::OnSaveRunningConfig(uint32_t session_id,
     }
     uint64_t upll_version = strtoull(reinterpret_cast<char*>(upll_ver_buf),
                                     NULL, 0);
-    UPLL_LOG_INFO("TC Version: %"PFC_PFMT_u64 " UPLL Version: %"PFC_PFMT_u64,
+    UPLL_LOG_INFO("TC Version: %" PFC_PFMT_u64 " UPLL Version: %" PFC_PFMT_u64,
                   version_no, upll_version);
     if (upll_version > version_no) {
       *prv_op_failed = false;
@@ -1151,7 +1151,7 @@ upll_rc_t UpllConfigMgr::OnSaveRunningConfig(uint32_t session_id,
   if (urc == UPLL_RC_SUCCESS) {
     char version_no_str[32];
     memset(version_no_str, 0, 32);
-    snprintf(version_no_str, sizeof(version_no_str), "%"PFC_PFMT_u64,
+    snprintf(version_no_str, sizeof(version_no_str), "%" PFC_PFMT_u64,
              version_no);
 
     urc = UpdateSystemProperty(SYS_PROP_SAVE_OP, version_no_str, dbinst);
@@ -1228,7 +1228,7 @@ upll_rc_t UpllConfigMgr::OnAbortCandidateConfig(uint32_t session_id,
     }
     uint64_t upll_version = strtoull(
         reinterpret_cast<char*>(upll_ver_buf), NULL, 0);
-    UPLL_LOG_INFO("TC Version :%"PFC_PFMT_u64 "UPLL Version %"PFC_PFMT_u64,
+    UPLL_LOG_INFO("TC Version :%" PFC_PFMT_u64 "UPLL Version %" PFC_PFMT_u64,
                   version_no, upll_version);
     if (upll_version == version_no) {
       UPLL_LOG_INFO("Previous abort operation failed."
@@ -1270,7 +1270,7 @@ upll_rc_t UpllConfigMgr::OnAbortCandidateConfig(uint32_t session_id,
   if (urc == UPLL_RC_SUCCESS) {
     char version_no_str[32];
     memset(version_no_str, 0, 32);
-    snprintf(version_no_str, sizeof(version_no_str), "%"PFC_PFMT_u64,
+    snprintf(version_no_str, sizeof(version_no_str), "%" PFC_PFMT_u64,
              version_no);
     urc = UpdateSystemProperty(SYS_PROP_ABORT_OP, version_no_str, dbinst);
     if (urc != UPLL_RC_SUCCESS) {

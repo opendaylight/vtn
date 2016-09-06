@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015 NEC Corporation
+ * Copyright (c) 2014-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -91,7 +91,7 @@ UncRespCode Kt_DataflowV2::PerformSyntaxValidation(
     }
     VALIDATE_INT_FIELD(CTR_DATAFLOW_FLOWID_STR, val_flowid, ret_code);
     if (ret_code != UNC_RC_SUCCESS) {
-      pfc_log_debug("Error in flow_id attribute :%"PFC_PFMT_u64, val_flowid);
+      pfc_log_debug("Error in flow_id attribute :%" PFC_PFMT_u64, val_flowid);
       return UNC_UPPL_RC_ERR_CFG_SYNTAX;
     }
   } else {
