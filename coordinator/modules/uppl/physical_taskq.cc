@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015 NEC Corporation
+ * Copyright (c) 2014-2016 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -178,7 +178,7 @@ int PhyEventTaskqUtil::DispatchNotificationEvent(
   if (ret != 0) {
     pfc_log_info("failed to dispatch() for invoke event process");
   } else {
-  pfc_log_info("TASKQ ADD cname:%s kt:%d evid:%"PFC_PFMT_u64,
+  pfc_log_info("TASKQ ADD cname:%s kt:%d evid:%" PFC_PFMT_u64,
       event_detail.controller_name.c_str(), event_detail.key_type,
       event_detail.eventid);
   }

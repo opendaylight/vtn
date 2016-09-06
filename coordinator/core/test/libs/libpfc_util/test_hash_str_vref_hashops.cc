@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2016 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -1002,8 +1002,8 @@ test_get_set_capacity (int nbuckets, int nents, ssize_t *new_caps)
             char buf[1024] = { 0 };
             strerror_r(set_cap_err, buf, sizeof(buf));
             fprintf(stderr,
-                    "cur_cap = %"PFC_PFMT_SIZE_T", "
-                    "*next_cap = %"PFC_PFMT_SIZE_T", "
+                    "cur_cap = %" PFC_PFMT_SIZE_T ", "
+                    "*next_cap = %" PFC_PFMT_SIZE_T ", "
                     "err = %d (%s)\n",
                     cur_cap, *next_cap, set_cap_err, buf);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -1070,7 +1070,7 @@ TcCommonRet TcLibIntfImpl::HandleAuditConfig(unc_keytype_datatype_t db_target,
   // enabled and Save failure & Clear failure if auto-save is disabled.
   if (!ucm_->UpdateDirtyCache()) {
     UPLL_LOG_INFO("UpdateDirtyCache failed. dt:%d, fail_op:%d, cfg_mode:%d, "
-                  "vtn_name:%s, version_no:%"PFC_PFMT_u64, db_target, fail_oper,
+                  "vtn_name:%s, version_no:%" PFC_PFMT_u64, db_target, fail_oper,
                   config_mode, vtn_name.c_str(), version_no);
     return unc::tclib::TC_FAILURE;
   }

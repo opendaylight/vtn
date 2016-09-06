@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -921,7 +921,7 @@ upll_rc_t MoMgrImpl::BindAttr(DalBindInfo *db_info,
       UPLL_LOG_TRACE(" key struct %d tkey %p p %p", attr_type, tkey, p);
       switch (op) {
         case UNC_OP_CREATE:
-          UPLL_LOG_TRACE(" Bind input Key %"PFC_PFMT_u64" p %p", indx, p);
+          UPLL_LOG_TRACE(" Bind input Key %" PFC_PFMT_u64 " p %p", indx, p);
           db_info->BindInput(indx, binfo[i].app_data_type, binfo[i].array_size,
                              p);
           break;
@@ -1417,7 +1417,7 @@ upll_rc_t MoMgrImpl::UpdateRenameKey(ConfigKeyVal *&ikey,
             return UPLL_RC_ERR_GENERIC;
           }
 #endif
-          UPLL_LOG_TRACE(" Bind input Key %"PFC_PFMT_u64" p %p", indx,
+          UPLL_LOG_TRACE(" Bind input Key %" PFC_PFMT_u64 " p %p", indx,
                        reinterpret_cast<char*>(p));
           db_info->BindInput(indx, binfo[i].app_data_type, binfo[i].array_size,
                            p);
@@ -3410,7 +3410,7 @@ upll_rc_t MoMgrImpl::BindKeyAndValForMerge(DalBindInfo *db_info,
         if (indx == uudst::vbridge::kDbiVbrDesc ||
             indx ==  uudst::vbridge::kDbiValidVbrDesc) {
           UPLL_LOG_TRACE(
-              "Skipping vbridge description index %"PFC_PFMT_u64"", indx);
+              "Skipping vbridge description index %" PFC_PFMT_u64 "", indx);
           index_flag++;
           continue;
         }

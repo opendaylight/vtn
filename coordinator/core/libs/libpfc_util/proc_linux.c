@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2014 NEC Corporation
+ * Copyright (c) 2010-2016 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -50,10 +50,6 @@ typedef struct {
 	 */
 	size_t		pb_lastrparen;
 } proc_buf_t;
-
-static const char	maps_fname_heap[] = "[heap]";
-
-#define	MAPS_FNAME_HEAP_LEN	(sizeof(maps_fname_heap) - 1)
 
 /*
  * Determine whether the map is anonymous mapping.

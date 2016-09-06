@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015 NEC Corporation
+ * Copyright (c) 2013-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -1353,7 +1353,7 @@ UncRespCode Kt_Dataflow::checkBoundaryAndTraverse(
                (const char*)curr->df_segment->df_common->out_domain) == 0)) {
               pfc_log_debug("PBP cname %s and dname %s"
                 "matching curr->next.size=%"
-                PFC_PFMT_SIZE_T",st->next.size=%"PFC_PFMT_SIZE_T,
+                PFC_PFMT_SIZE_T ",st->next.size=%" PFC_PFMT_SIZE_T,
                 (const char*)st->df_segment->df_common->controller_name,
                 (const char*)curr->df_segment->df_common->out_domain,
                 curr->next.size(), st->next.size());
@@ -1382,7 +1382,7 @@ UncRespCode Kt_Dataflow::checkBoundaryAndTraverse(
             break;
         }
       } while (restart_1stloop);
-      pfc_log_debug("PBP AFTER flows size=%"PFC_PFMT_SIZE_T,
+      pfc_log_debug("PBP AFTER flows size=%" PFC_PFMT_SIZE_T,
                      source_node->next.size());
     }
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -935,7 +935,7 @@ ODBCM_RC_STATUS DBVarbind::fill_controller_table(
               sizeof(p_ctr_table->scommit_number));
           p_ctr_table->scommit_number = commit_number_value.value;
           odbcm_debug_info("ODBCM::DBVarbind::fill:CTR_TABLE:"
-              "scommit_number = %"PFC_PFMT_d64, p_ctr_table->scommit_number);
+              "scommit_number = %" PFC_PFMT_d64, p_ctr_table->scommit_number);
         }
         break;
       case CTR_COMMIT_DATE:
@@ -950,7 +950,7 @@ ODBCM_RC_STATUS DBVarbind::fill_controller_table(
               sizeof(p_ctr_table->scommit_date));
           p_ctr_table->scommit_date = commit_date_value.value;
           odbcm_debug_info("ODBCM::DBVarbind::fill:CTR_TABLE:"
-              "scommit_date = %"PFC_PFMT_d64, p_ctr_table->scommit_date);
+              "scommit_date = %" PFC_PFMT_d64, p_ctr_table->scommit_date);
         }
         break;
       case CTR_COMMIT_APPLICATION:

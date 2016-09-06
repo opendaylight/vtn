@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -127,13 +127,31 @@ static haddr_cattr_t	hostaddr_types[] = {
 	HOSTADDR_INET_DECL(AF_INET6, "INET6", sockaddr_in6_t, sin6_addr),
 };
 
+/*
+ * static inline pfc_bool_t haddr_cattr_t PFC_FATTR_ALWAYS_INLINE
+ * hostaddr_attr_is_aligned(haddr_cattr_t *attr)
+ *	Determine whether the given pointer to haddr_cattr_t is aligned
+ *	properly.
+ *
+ *	On gcc 6.1.1, &hostaddr_types[attr - hostaddr_types] is not aligned
+ *	to sizeof(haddr_cattr_t) if attr is not aligned. So we need to ensure
+ *	that (attr - hostaddr_types) is aligned to sizeof(haddr_cattr_t).
+ */
+static inline pfc_bool_t PFC_FATTR_ALWAYS_INLINE
+hostaddr_attr_is_aligned(haddr_cattr_t *attr)
+{
+	uintptr_t	addr = (uintptr_t)attr;
+	uintptr_t	base = (uintptr_t)hostaddr_types;
+	uintptr_t	diff = addr - base;
+
+	return ((diff % sizeof(*attr)) == 0);
+}
+
 #define	HOSTADDR_TYPE2ATTR(type)	(&hostaddr_types[(uint32_t)(type)])
-#define	HOSTADDR_ATTR_IS_ALIGNED(attr)					\
-	PFC_EXPECT_TRUE(&hostaddr_types[((attr) - hostaddr_types)] == (attr))
 #define	HOSTADDR_ATTR_IS_VALID(attr)					\
 	PFC_EXPECT_TRUE((attr) >= hostaddr_types &&			\
 			(attr) < PFC_ARRAY_LIMIT(hostaddr_types) &&	\
-			HOSTADDR_ATTR_IS_ALIGNED(attr))
+			hostaddr_attr_is_aligned(attr))
 
 /*
  * static inline haddr_cattr_t *

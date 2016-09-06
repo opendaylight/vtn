@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -745,7 +745,7 @@ SQLQUERY* QueryFactory::operation_copydatabase(
   /** Frame the query for clearing all the rows in given db*/
   for (loop1 = 0, iter_dstvector = dst_vector.begin();
     iter_dstvector != dst_vector.end(); iter_dstvector++, loop1++ ) {
-    if ((*iter_dstvector).compare("r_"UPPL_CTR_DOMAIN_TABLE) == 0) {
+    if ((*iter_dstvector).compare("r_" UPPL_CTR_DOMAIN_TABLE) == 0) {
       copy_query << "DELETE FROM " << (*iter_dstvector) <<
           " WHERE " << CTR_NAME_STR << " IN (SELECT " << CTR_NAME_STR <<
           " FROM r_" << UPPL_CTR_TABLE << " WHERE " << CTR_TYPE_STR <<
@@ -785,8 +785,8 @@ SQLQUERY* QueryFactory::operation_copydatabase(
     /** Compare the tables */
     if (strcmp(p_src_table, p_dst_table) == 0) {
       /** Copy all the entries from src table to dst table */
-      if (strcmp(p_src_table, "_"UPPL_CTR_DOMAIN_TABLE) == 0 &&
-          strcmp(p_dst_table, "_"UPPL_CTR_DOMAIN_TABLE) == 0) {
+      if (strcmp(p_src_table, "_" UPPL_CTR_DOMAIN_TABLE) == 0 &&
+          strcmp(p_dst_table, "_" UPPL_CTR_DOMAIN_TABLE) == 0) {
         copy_query << "INSERT INTO " << (*iter_dstvector) <<
           " SELECT * FROM " << (*iter_srcvector) <<
           " WHERE " << CTR_NAME_STR << " IN (SELECT " << CTR_NAME_STR <<
@@ -876,7 +876,7 @@ SQLQUERY* QueryFactory::operation_cleardatabase
   }
 
   if (db_name == UNC_DT_STATE) {
-    clear_query << "DELETE FROM " << "r_"UPPL_CTR_DOMAIN_TABLE <<
+    clear_query << "DELETE FROM " << "r_" UPPL_CTR_DOMAIN_TABLE <<
         " WHERE " << CTR_NAME_STR << " IN (SELECT " << CTR_NAME_STR <<
         " FROM r_" << UPPL_CTR_TABLE << " WHERE " << CTR_TYPE_STR <<
         "!=" << UNC_CT_UNKNOWN << ");";
@@ -967,7 +967,7 @@ SQLQUERY* QueryFactory::operation_clearoneinstance(
     query.str("");
   }
   if (db_name == UNC_DT_STATE) {
-    query << "DELETE FROM " << "r_"UPPL_CTR_DOMAIN_TABLE << " WHERE ";
+    query << "DELETE FROM " << "r_" UPPL_CTR_DOMAIN_TABLE << " WHERE ";
     if (loop1 < table_count) {
       query << "controller_name ='" << controller_name.c_str() << "';";
       p_clear_inst_query[loop1] = query.str();
@@ -1656,25 +1656,25 @@ SQLQUERY* QueryFactory::operation_commit_all_config(
       loop = 0;
       /**copy the actual_version, oper_status STATE details into 
       * candidate controller_table*/
-      commit_query << "UPDATE " <<  "c_"UPPL_CTR_TABLE <<
+      commit_query << "UPDATE " <<  "c_" UPPL_CTR_TABLE <<
       " SET "
-      << CTR_ACTUAL_VERSION_STR << " = " << "r_"UPPL_CTR_TABLE << "."
+      << CTR_ACTUAL_VERSION_STR << " = " << "r_" UPPL_CTR_TABLE << "."
                                          << CTR_ACTUAL_VERSION_STR << ", "
-      << CTR_OPER_STATUS_STR << " = " << "r_"UPPL_CTR_TABLE << "."
+      << CTR_OPER_STATUS_STR << " = " << "r_" UPPL_CTR_TABLE << "."
                                       << CTR_OPER_STATUS_STR << ", "
-      << CTR_ACTUAL_CONTROLLERID_STR << " = " << "r_"UPPL_CTR_TABLE << "."
+      << CTR_ACTUAL_CONTROLLERID_STR << " = " << "r_" UPPL_CTR_TABLE << "."
                                      << CTR_ACTUAL_CONTROLLERID_STR<< ", "
-      << CTR_VALID_ACTUAL_CONTROLLERID_STR << " = " << "r_"UPPL_CTR_TABLE
+      << CTR_VALID_ACTUAL_CONTROLLERID_STR << " = " << "r_" UPPL_CTR_TABLE
                           << "." << CTR_VALID_ACTUAL_CONTROLLERID_STR<< ", "
-      << CTR_COMMIT_NUMBER_STR << " = " << "r_"UPPL_CTR_TABLE << "."
+      << CTR_COMMIT_NUMBER_STR << " = " << "r_" UPPL_CTR_TABLE << "."
                                << CTR_COMMIT_NUMBER_STR << ", "
-      << CTR_COMMIT_DATE_STR << " = " << "r_"UPPL_CTR_TABLE << "."
+      << CTR_COMMIT_DATE_STR << " = " << "r_" UPPL_CTR_TABLE << "."
                              << CTR_COMMIT_DATE_STR << ", "
-      << CTR_COMMIT_APPLICATION_STR << " = " << "r_"UPPL_CTR_TABLE << "."
+      << CTR_COMMIT_APPLICATION_STR << " = " << "r_" UPPL_CTR_TABLE << "."
                              << CTR_COMMIT_APPLICATION_STR
       << " from " <<
-      "r_"UPPL_CTR_TABLE << " where " << "c_"UPPL_CTR_TABLE <<
-      "." << CTR_NAME_STR << " = " << "r_"UPPL_CTR_TABLE << "." <<
+      "r_" UPPL_CTR_TABLE << " where " << "c_" UPPL_CTR_TABLE <<
+      "." << CTR_NAME_STR << " = " << "r_" UPPL_CTR_TABLE << "." <<
       CTR_NAME_STR << ";";
       p_commit_db[loop] = commit_query.str();
       pfc_log_debug("ODBCM::QueryFactory::CommitAllConfiguration: "
@@ -1683,11 +1683,11 @@ SQLQUERY* QueryFactory::operation_commit_all_config(
       commit_query.str("");
       loop++;
       /**copy oper_status STATE details into candidate ctr_domain_table*/
-      commit_query << "UPDATE " <<  "c_"UPPL_CTR_DOMAIN_TABLE <<
+      commit_query << "UPDATE " <<  "c_" UPPL_CTR_DOMAIN_TABLE <<
       " SET " << CTR_OPER_STATUS_STR << " = " <<
-      "r_"UPPL_CTR_DOMAIN_TABLE << "." << CTR_OPER_STATUS_STR << " from " <<
-      "r_"UPPL_CTR_DOMAIN_TABLE << " where " << "c_"UPPL_CTR_DOMAIN_TABLE <<
-      "." << CTR_NAME_STR << " = " << "r_"UPPL_CTR_DOMAIN_TABLE << "." <<
+      "r_" UPPL_CTR_DOMAIN_TABLE << "." << CTR_OPER_STATUS_STR << " from " <<
+      "r_" UPPL_CTR_DOMAIN_TABLE << " where " << "c_" UPPL_CTR_DOMAIN_TABLE <<
+      "." << CTR_NAME_STR << " = " << "r_" UPPL_CTR_DOMAIN_TABLE << "." <<
       CTR_NAME_STR << ";";
       p_commit_db[loop] = commit_query.str();
       pfc_log_debug("ODBCM::QueryFactory::CommitAllConfiguration: "
@@ -1696,11 +1696,11 @@ SQLQUERY* QueryFactory::operation_commit_all_config(
       commit_query.str("");
       loop++;
       /**copy oper_status STATE details into candidate boundary_table*/
-      commit_query << "UPDATE " <<  "c_"UPPL_BOUNDARY_TABLE <<
+      commit_query << "UPDATE " <<  "c_" UPPL_BOUNDARY_TABLE <<
       " SET " << CTR_OPER_STATUS_STR << " = " <<
-      "r_"UPPL_BOUNDARY_TABLE << "." << CTR_OPER_STATUS_STR << " from " <<
-      "r_"UPPL_BOUNDARY_TABLE << " where " << "c_"UPPL_BOUNDARY_TABLE <<
-      "." << BDRY_ID_STR << " = " << "r_"UPPL_BOUNDARY_TABLE<< "." <<
+      "r_" UPPL_BOUNDARY_TABLE << "." << CTR_OPER_STATUS_STR << " from " <<
+      "r_" UPPL_BOUNDARY_TABLE << " where " << "c_" UPPL_BOUNDARY_TABLE <<
+      "." << BDRY_ID_STR << " = " << "r_" UPPL_BOUNDARY_TABLE<< "." <<
       BDRY_ID_STR << ";";
       p_commit_db[loop] = commit_query.str();
       pfc_log_debug("ODBCM::QueryFactory::CommitAllConfiguration: "
@@ -1713,14 +1713,14 @@ SQLQUERY* QueryFactory::operation_commit_all_config(
       for (loop = 0, index = 0, iter_dstvector = dst_vector.begin();
           iter_dstvector != dst_vector.end(); iter_dstvector++, loop++) {
         char *p_table = const_cast <char*>((*iter_dstvector).c_str());
-          if (strcmp(p_table, "r_"UPPL_CTR_DOMAIN_TABLE) == 0) {
+          if (strcmp(p_table, "r_" UPPL_CTR_DOMAIN_TABLE) == 0) {
             commit_query << "DELETE FROM " << (*iter_dstvector) <<
                 " WHERE " << CTR_NAME_STR << " IN (SELECT " << CTR_NAME_STR <<
                 " FROM r_" << UPPL_CTR_TABLE <<" WHERE " << CTR_TYPE_STR <<
                 "=" << UNC_CT_UNKNOWN << ");";
         }
-        if ((strcmp(p_table, "r_"UPPL_CTR_TABLE) == 0) ||
-            (strcmp(p_table, "r_"UPPL_BOUNDARY_TABLE) == 0)) {
+        if ((strcmp(p_table, "r_" UPPL_CTR_TABLE) == 0) ||
+            (strcmp(p_table, "r_" UPPL_BOUNDARY_TABLE) == 0)) {
             commit_query << "DELETE FROM " << (*iter_dstvector) << ";";
           }
           if (index >= ODBCM_MAX_UPPL_TABLES) {

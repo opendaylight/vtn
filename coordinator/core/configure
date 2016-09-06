@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #
-# Copyright (c) 2010-2015 NEC Corporation
+# Copyright (c) 2010-2016 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -24,7 +24,7 @@ use vars qw(%COMMAND_SPEC %OSTYPE %OS_CONF %GCC_OSTYPE %ARCH %GCC_ARCH @PATH
 	    $PFC_PRODUCT_NAME %MAKEVAR_RESV @LINUX_DIST $PFC_SCM_REVISION
 	    @OPENSSL_TESTS @CONFIG_TESTS @CFLAGS_TESTS %REQUIRED_CFLAGS
 	    @UNLINK_ON_ERROR $YEAR_RANGE @JAVA_LIBRARY_PATH %MAKEVAR_OP
-	    @CC_INCDIRS_FIRST @LD_LIBDIRS_FIRST
+	    @CC_INCDIRS_FIRST @LD_LIBDIRS_FIRST $CXX_STD
 	    %INCDIRS_FIRST_MAP %LIBDIRS_FIRST_MAP);
 
 use Cwd qw(abs_path);
@@ -2287,6 +2287,10 @@ $C_OPT = '-O3';
 $CXX_OPT = '-O3';
 $C_DEBUG = '-g';
 $CXX_DEBUG = '-g';
+
+# Use C++98 with GNU extensions.
+$CXX_STD = '-std=gnu++98';
+
 $DEBUG_BUILD = 1;
 $SHELL_PATH = '/bin/sh';
 $PATH_SCRIPT = '/bin:/usr/bin';
@@ -4062,6 +4066,9 @@ MAIN:
 
 	check_cc_search_path($conf);
 
+	undef $CXX_STD unless (check_gcc_option($gxx, $CXX_STD,
+						$CXX_MODE, undef, []));
+
 	# Determine compiler options for strict source check.
 	my $errwarn = ($conf->get('errwarn')) ? '-Werror' : undef;
 	foreach my $opts (GCC_WARN_OPTS, $errwarn) {
@@ -4142,6 +4149,8 @@ MAIN:
 		      OSTYPE		=> $os,
 		      ARCH		=> $arch,
 		      MULTIARCH		=> $multiarch);
+
+	$vars{CXX_STD} = $CXX_STD if (defined($CXX_STD));
 
 	$vars{CC_INCDIRS_FIRST} = join(' ', @CC_INCDIRS_FIRST)
 		if (@CC_INCDIRS_FIRST);

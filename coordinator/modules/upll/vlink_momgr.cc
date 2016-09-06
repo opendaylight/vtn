@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -3197,8 +3197,8 @@ upll_rc_t VlinkMoMgr::SwapKeyVal(ConfigKeyVal *ikey, ConfigKeyVal *&okey,
     uuu::upll_strncpy(key_vlink->vtn_key.vtn_name,
             reinterpret_cast<key_vtn_t *>(pkey->get_key())->vtn_name,
             (kMaxLenVtnName+1));
-    delete pkey;
-    pkey = NULL;
+  delete pkey;
+  pkey = NULL;
   okey = new ConfigKeyVal(UNC_KT_VLINK, IpctSt::kIpcStKeyVlink, key_vlink,
                           NULL);
   if (NULL == okey) {

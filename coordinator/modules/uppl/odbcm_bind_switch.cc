@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -748,7 +748,7 @@ ODBCM_RC_STATUS DBVarbind::fill_switch_table(
                        sizeof(p_switch_table->salarms_status));
           p_switch_table->salarms_status = alarms_status.value;
           odbcm_debug_info("ODBCM::DBVarbind::fill:SWITCH_TABLE: "
-              "salarms_status = %"PFC_PFMT_d64, p_switch_table->salarms_status);
+              "salarms_status = %" PFC_PFMT_d64, p_switch_table->salarms_status);
         }
         break;
       case SWITCH_VALID:
