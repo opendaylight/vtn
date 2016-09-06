@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -218,7 +218,7 @@ TcOperRet TcMsgAutoSave::Execute() {
       return ReturnUtilResp(util_resp);
     }
 
-    pfc_log_info("notify %s with sessid(%d) save_ver(%"PFC_PFMT_u64 
+    pfc_log_info("notify %s with sessid(%d) save_ver(%" PFC_PFMT_u64 
                  "),srv_id %d",
                  channel_name.c_str(), session_id_, save_version_, service_id);
 
@@ -945,14 +945,14 @@ TcOperRet TcMsgAuditDB::Execute() {
 
     util_resp = TcClientSessionUtils::set_uint64(sess_, version_);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
-      pfc_log_error("%s Error setting abort/save version [%"PFC_PFMT_u64
+      pfc_log_error("%s Error setting abort/save version [%" PFC_PFMT_u64
                     "] in session", __FUNCTION__, version_);
       return ReturnUtilResp(util_resp);
     }
 
     pfc_log_info("notify %s - session[%u] target_db_:%d, fail_oper_:%d, "
                  "config_mode:%d, vtn_name:%s, "
-                 "version_:%"PFC_PFMT_u64,
+                 "version_:%" PFC_PFMT_u64,
                  channel_name.c_str(), session_id_, target_db_, fail_oper_,
                  config_mode_, vtn_name_.c_str(),
                  version_);

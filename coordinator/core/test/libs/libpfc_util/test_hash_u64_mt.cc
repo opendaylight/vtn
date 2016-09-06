@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2016 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -430,7 +430,7 @@ test_data_alloc (int nbuckets,
                 val[n][i] = (char *)calloc(maxlen, sizeof(char));
                 PFC_ASSERT(val[n][i] != NULL);
                 snprintf((char *)(val[n][i]), maxlen,
-                         "value/%d with key/%d = %"PFC_PFMT_u64,
+                         "value/%d with key/%d = %" PFC_PFMT_u64,
                          n, i, key[i]);
             }
         }

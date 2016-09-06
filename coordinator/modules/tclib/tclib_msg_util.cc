@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -854,7 +854,7 @@ TcCommonRet TcLibMsgUtil::GetAuditConfigMsg(
   }
   audit_config_msg.version = version;
 
-  pfc_log_info("%s db_type %d service_type %d version %"PFC_PFMT_u64
+  pfc_log_info("%s db_type %d service_type %d version %" PFC_PFMT_u64
                "conf_mode %d vtn-name %s", __FUNCTION__,
                audit_config_msg.db_type, audit_config_msg.service_type,
                audit_config_msg.version,

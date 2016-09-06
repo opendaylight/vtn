@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -558,10 +558,10 @@ TcOperRet TcDbHandler::SetDefaultRecoveryTable() {
   set_query.append(vtn_name);
   set_query.append("'");
   set_query.append(",");
-  snprintf(inttostr, sizeof(inttostr), "%"PFC_PFMT_u64, abort_version);
+  snprintf(inttostr, sizeof(inttostr), "%" PFC_PFMT_u64, abort_version);
   set_query.append(inttostr);
   set_query.append(",");
-  snprintf(inttostr, sizeof(inttostr), "%"PFC_PFMT_u64, save_version);
+  snprintf(inttostr, sizeof(inttostr), "%" PFC_PFMT_u64, save_version);
   set_query.append(inttostr);
   set_query.append(",");
   set_query.append("false");
@@ -681,7 +681,7 @@ TcOperRet TcDbHandler::UpdateRecoveryTableAbortVersion(uint64_t abort_version) {
 
   /* create query */
   upd_query.append("UPDATE TC_RECOVERY_TABLE SET abort_version=");
-  snprintf(inttostr, sizeof(inttostr), "%"PFC_PFMT_u64, abort_version);
+  snprintf(inttostr, sizeof(inttostr), "%" PFC_PFMT_u64, abort_version);
   upd_query.append(inttostr);
   upd_query.append(",date_time=CURRENT_TIMESTAMP WHERE database >= 0;");
 
@@ -700,7 +700,7 @@ TcOperRet TcDbHandler::UpdateRecoveryTableAbortVersion(uint64_t abort_version) {
     return TCOPER_RET_FAILURE;
   }
   /* clear all variables */
-  pfc_log_info("updated abort_version %"PFC_PFMT_u64 " in DB", abort_version);
+  pfc_log_info("updated abort_version %" PFC_PFMT_u64 " in DB", abort_version);
   SQLFreeHandle(SQL_HANDLE_STMT, hstmt_upd);
   upd_query.clear();
   return TCOPER_RET_SUCCESS;
@@ -724,7 +724,7 @@ TcOperRet TcDbHandler::UpdateRecoveryTableSaveVersion(uint64_t save_version) {
 
   /* create query */
   upd_query.append("UPDATE TC_RECOVERY_TABLE SET save_version=");
-  snprintf(inttostr, sizeof(inttostr), "%"PFC_PFMT_u64, save_version);
+  snprintf(inttostr, sizeof(inttostr), "%" PFC_PFMT_u64, save_version);
   upd_query.append(inttostr);
   upd_query.append(",date_time=CURRENT_TIMESTAMP WHERE database >= 0;");
 
@@ -743,7 +743,7 @@ TcOperRet TcDbHandler::UpdateRecoveryTableSaveVersion(uint64_t save_version) {
     return TCOPER_RET_FAILURE;
   }
   /* clear all variables */
-  pfc_log_info("updated save_version %"PFC_PFMT_u64 " in DB", save_version);
+  pfc_log_info("updated save_version %" PFC_PFMT_u64 " in DB", save_version);
   SQLFreeHandle(SQL_HANDLE_STMT, hstmt_upd);
   upd_query.clear();
   return TCOPER_RET_SUCCESS;
@@ -944,7 +944,7 @@ TcOperRet TcDbHandler::GetRecoveryTableAbortVersion(uint64_t & abort_version) {
       ? 0 : abort_ver;
   }
 
-  pfc_log_info("abort_version = %"PFC_PFMT_u64, abort_version);
+  pfc_log_info("abort_version = %" PFC_PFMT_u64, abort_version);
 
   /* clear all variables */
   SQLFreeHandle(SQL_HANDLE_STMT, hstmt_get);
@@ -1000,7 +1000,7 @@ TcOperRet TcDbHandler::GetRecoveryTableSaveVersion(uint64_t & save_version) {
       ? 0 : save_ver;
   }
 
-  pfc_log_info("save_version = %"PFC_PFMT_u64, save_version);
+  pfc_log_info("save_version = %" PFC_PFMT_u64, save_version);
 
   /* clear all variables */
   SQLFreeHandle(SQL_HANDLE_STMT, hstmt_get);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -542,7 +542,7 @@ string PhyUtil::uint32tostr(const uint32_t& c) {
  * */
 string PhyUtil::uint64tostr(const uint64_t& c) {
   char str[20];
-  snprintf(str, sizeof(str), "%"PFC_PFMT_u64, c);
+  snprintf(str, sizeof(str), "%" PFC_PFMT_u64, c);
   string str1 = str;
   return str1;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -373,7 +373,7 @@ DalErrorHandler::ProcessOdbcErrors(const SQLSMALLINT handle_type,
           rc = SQLGetDiagRec(handle_type, handle, rec_no, sql_state, &err_code,
                              err_msg, sizeof(err_msg), &err_msg_len);
 // #ifdef UNC_LP64
-          UPLL_LOG_DEBUG("DB Error details[%d] - %s:%"UNC_PFMT_SQLINTEGER":%s",
+          UPLL_LOG_DEBUG("DB Error details[%d] - %s:%" UNC_PFMT_SQLINTEGER ":%s",
                          rec_no, sql_state, err_code, err_msg);
 // #endif
           rec_no++;

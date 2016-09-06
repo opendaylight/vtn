@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -210,7 +210,7 @@ TcOperStatus
                           != TCOPER_RET_SUCCESS) {
           pfc_log_warn("AuditDB: Getting abort version from db failed");
         } else {
-          pfc_log_info("AuditDB: Retrieved abort version:%"PFC_PFMT_u64,
+          pfc_log_info("AuditDB: Retrieved abort version:%" PFC_PFMT_u64,
                        version_);
         }
       } else if (fail_oper_ == TC_OP_RUNNING_SAVE) {
@@ -218,7 +218,7 @@ TcOperStatus
                           != TCOPER_RET_SUCCESS) {
           pfc_log_warn("AuditDB: Getting save version from db failed");
         } else {
-          pfc_log_info("AuditDB: Retrieved save version:%"PFC_PFMT_u64,
+          pfc_log_info("AuditDB: Retrieved save version:%" PFC_PFMT_u64,
                        version_);
         }
       }
@@ -269,7 +269,7 @@ TcOperStatus
                             != TCOPER_RET_SUCCESS) {
             pfc_log_warn("AuditDB: Setting abort version to db failed");
           } else {
-            pfc_log_info("AuditDB: Set abort version:%"PFC_PFMT_u64,
+            pfc_log_info("AuditDB: Set abort version:%" PFC_PFMT_u64,
                          version_);
           }
         } else if (fail_oper_ == TC_OP_RUNNING_SAVE) {
@@ -277,7 +277,7 @@ TcOperStatus
                             != TCOPER_RET_SUCCESS) {
             pfc_log_warn("AuditDB: Setting save version from db failed");
           } else {
-            pfc_log_info("AuditDB: Set save version:%"PFC_PFMT_u64,
+            pfc_log_info("AuditDB: Set save version:%" PFC_PFMT_u64,
                          version_);
           }
         }

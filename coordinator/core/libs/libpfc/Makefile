@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2010-2013 NEC Corporation
+# Copyright (c) 2010-2016 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -52,3 +52,6 @@ $(OBJDIR)/module.o:	EXTRA_INCDIRS = ../libpfc_cmd $(IPC_INCDIRS)
 
 # libpfc.c requires libpfc_util and IPC library internal header.
 $(OBJDIR)/libpfc.o:	EXTRA_INCDIRS = ../libpfc_util $(IPC_INCDIRS)
+
+# Workaround for gcc 6.1.1 bug.
+$(OBJDIR)/tpool.o:	EXTRA_CFLAGS += -Wno-array-bounds

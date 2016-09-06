@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation
+ * Copyright (c) 2015-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -160,7 +160,7 @@ bool UNWLabelRangeMoMgr::IsValidKey(void *key,
       ret_val = UPLL_RC_ERR_GENERIC;
   }
   if (ret_val != UPLL_RC_SUCCESS) {
-    UPLL_LOG_TRACE("index %"PFC_PFMT_u64" is not valid(%d)", index, ret_val);
+    UPLL_LOG_TRACE("index %" PFC_PFMT_u64 " is not valid(%d)", index, ret_val);
     return false;
   }
   return true;

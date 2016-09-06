@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -360,7 +360,7 @@ TcOperStatus TcCandidateOperations::Execute() {
     pfc_log_warn("Retrieving abort_version data from recovery table failed");
   } else {
     ++abort_version_;
-    pfc_log_info("Sending abort version: %"PFC_PFMT_u64, abort_version_);
+    pfc_log_info("Sending abort version: %" PFC_PFMT_u64, abort_version_);
   }
 
   std::list<TcMsgOperType>::iterator MsgIter = TcOperMessageList.begin();
@@ -381,7 +381,7 @@ TcOperStatus TcCandidateOperations::Execute() {
     if (MsgRet != TCOPER_RET_SUCCESS) {
       user_response_ = HandleMsgRet(MsgRet);
     } else  {
-      pfc_log_debug("Candidate abort:Setting abort version:%"PFC_PFMT_u64,
+      pfc_log_debug("Candidate abort:Setting abort version:%" PFC_PFMT_u64,
                    abort_version_);
       if (db_hdlr_->UpdateRecoveryTableAbortVersion(abort_version_)
                                           != TCOPER_RET_SUCCESS) {

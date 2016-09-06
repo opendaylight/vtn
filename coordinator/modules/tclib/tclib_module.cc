@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -1653,7 +1653,7 @@ TcCommonRet TcLibModule::CommitVoteGlobal(TcMsgOperType oper_type,
     }
   }
 
-  pfc_log_debug("%s %d Driver info filled driver_count %"PFC_PFMT_SIZE_T
+  pfc_log_debug("%s %d Driver info filled driver_count %" PFC_PFMT_SIZE_T
                " ctrl_count %d", __FUNCTION__, __LINE__,
                driver_info.size(), ctrl_count);
   return ret;
@@ -2141,7 +2141,7 @@ TcCommonRet TcLibModule::AuditVoteGlobal(TcMsgOperType oper_type,
     }
   }
 
-  pfc_log_info("%s %d Driver info filled driver_count %"PFC_PFMT_SIZE_T
+  pfc_log_info("%s %d Driver info filled driver_count %" PFC_PFMT_SIZE_T
                " ctrl_count %d", __FUNCTION__, __LINE__,
                driver_info.size(), ctrl_count);
   return ret;
