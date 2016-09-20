@@ -26,10 +26,6 @@
   <packaging>pom</packaging>
   <description>Karaf distribution for running VTN Manager.</description>
 
-  <properties>
-    <maven.site.deploy.skip>true</maven.site.deploy.skip>
-    <maven.site.skip>true</maven.site.skip>
-  </properties>
 
   <scm>
     <connection>scm:git:https://git.opendaylight.org/gerrit/p/vtn.git</connection>
@@ -79,7 +75,7 @@
       <plugin>
         <artifactId>maven-site-plugin</artifactId>
         <configuration>
-          <skip>true</skip>
+          <skip>false</skip>
         </configuration>
       </plugin>
     </plugins>
