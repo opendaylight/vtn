@@ -114,7 +114,7 @@
   <distributionManagement>
     <site>
       <id>opendaylight-site</id>
-      <url>${nexus.site.url}/</url>
+      <url>${nexus.site.url}/${project.artifactId}/</url>
     </site>
   </distributionManagement>
 </project>
