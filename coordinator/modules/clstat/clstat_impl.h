@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -74,11 +74,10 @@ typedef struct {
  * Flags for cic_flags.
  */
 #define	CLIPCF_UP	PFC_CONST_U(0x1)	/* channel is up */
-#define	CLIPCF_DOWN	PFC_CONST_U(0x2)	/* channel is down */
-#define	CLIPCF_FATAL	PFC_CONST_U(0x4)	/* fatal error */
-#define	CLIPCF_STOP	PFC_CONST_U(0x8)	/* channel listener stopped */
+#define	CLIPCF_FATAL	PFC_CONST_U(0x2)	/* fatal error */
+#define	CLIPCF_STOP	PFC_CONST_U(0x4)	/* channel listener stopped */
 
-#define	CLIPCF_CANCELED		(CLIPCF_DOWN | CLIPCF_FATAL | CLIPCF_STOP)
+#define	CLIPCF_CANCELED		(CLIPCF_FATAL | CLIPCF_STOP)
 
 #define	CLST_IPC_SETFLAG(ctx, flag)			\
 	do {						\

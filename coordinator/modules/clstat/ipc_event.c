@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2016 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -49,6 +49,9 @@ static void	clst_ipc_sys_stop(pfc_ipcevent_t *event, pfc_ptr_t arg);
 static void	clst_ipc_clevent_ack(clst_ipcctx_t *ctx, pfc_bool_t result);
 static void	*clst_ipc_clevent_thread(void *arg);
 static void	*clst_ipc_fini_timer(void *arg);
+static void	clst_ipc_fatal(clst_ipcctx_t *UNC_RESTRICT ctx,
+			       const char *UNC_RESTRICT fmt, ...)
+	PFC_FATTR_PRINTFLIKE(2, 3);
 
 /*
  * int PFC_ATTR_HIDDEN
@@ -350,10 +353,8 @@ clst_ipc_chstate(pfc_ipcevent_t *event, pfc_ptr_t arg)
 		err = pfc_ipcclnt_getres_uint32(sess, 0, &state);
 		if (PFC_EXPECT_FALSE(err != 0)) {
 			/* This should never happen. */
-			pfc_log_fatal("Failed to get channel state from "
-				      "CHSTATE event: %s", strerror(err));
-			CLST_IPC_SETFLAG(ctx, FATAL);
-			
+			clst_ipc_fatal(ctx, "Failed to get channel state from "
+				       "CHSTATE event: %s", strerror(err));
 			goto out;
 		}
 
@@ -370,9 +371,8 @@ clst_ipc_chstate(pfc_ipcevent_t *event, pfc_ptr_t arg)
 		 * Parent process has died.
 		 * This is fatal error.
 		 */
-		pfc_log_fatal("IPC event listener session has been destroyed: "
-			      "parent=%u", uncd_pid);
-		CLST_IPC_SETFLAG(ctx, DOWN);
+		clst_ipc_fatal(ctx, "IPC event listener session has been "
+			       "destroyed: parent=%u", uncd_pid);
 		goto out;
 	}
 	else {
@@ -505,9 +505,6 @@ clst_ipc_sys_stop(pfc_ipcevent_t *event, pfc_ptr_t arg)
 		pfc_log_info("SYS_STOP IPC event has been received: "
 			     "status=%s", (status) ? "normal" : "fatal");
 	}
-
-	/* Stop IPC event listener session monitoring. */
-	clst_ipc_stop_listener(ctx);
 
 	CLST_IPC_LOCK(ctx);
 
@@ -672,4 +669,25 @@ clst_ipc_fini_timer(void *arg)
 	pfc_log_verbose("SYS_STOP timer thread has been terminated.");
 
 	return NULL;
+}
+
+/*
+ * static void
+ * clst_ipc_fatal(clst_ipcctx_t *UNC_RESTRICT ctx,
+ *		  const char *UNC_RESTRICT fmt, ...)
+ *	Record a fatal error message.
+ *
+ * Remarks:
+ *	This function must be called with holding the IPC event lock.
+ */
+static void
+clst_ipc_fatal(clst_ipcctx_t *UNC_RESTRICT ctx, const char *UNC_RESTRICT fmt,
+	       ...)
+{
+	va_list	ap;
+
+	CLST_IPC_SETFLAG(ctx, FATAL);
+	va_start(ap, fmt);
+	pfc_log_fatal_v(fmt, ap);
+	va_end(ap);
 }
