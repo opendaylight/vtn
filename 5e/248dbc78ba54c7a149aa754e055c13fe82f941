@@ -1,0 +1,7 @@
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+2: Shigeru Yasuda <s-yasuda@da.jp.nec.com>
+Submitted-by: Shigeru Yasuda <s-yasuda@da.jp.nec.com>
+Submitted-at: Thu, 13 Oct 2016 23:59:50 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/46859
+Project: vtn
+Branch: refs/heads/stable/boron
