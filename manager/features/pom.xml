@@ -15,20 +15,26 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.opendaylight.vtn</groupId>
-    <artifactId>manager.common</artifactId>
-    <version>0.6.0-SNAPSHOT</version>
-    <relativePath>../common</relativePath>
+    <groupId>org.opendaylight.odlparent</groupId>
+    <artifactId>features-parent</artifactId>
+    <version>1.8.0-SNAPSHOT</version>
+    <relativePath />
   </parent>
 
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>features-vtn-manager</artifactId>
+  <version>0.6.0-SNAPSHOT</version>
   <packaging>jar</packaging>
   <description>VTN Manager's Karaf features.</description>
 
   <properties>
-    <vtn.manager.dir>..</vtn.manager.dir>
-    <features.file>features.xml</features.file>
+    <!-- OpenDaylight artifacts -->
+    <odl.controller.mdsal.version>1.5.0-SNAPSHOT</odl.controller.mdsal.version>
+    <odl.mdsal.model.version>0.10.0-SNAPSHOT</odl.mdsal.model.version>
+    <odl.netconf.version>1.5.0-SNAPSHOT</odl.netconf.version>
+    <odl.openflowplugin.version>0.4.0-SNAPSHOT</odl.openflowplugin.version>
+    <odl.neutron.version>0.8.0-SNAPSHOT</odl.neutron.version>
+    <odl.ovsdb.version>1.4.0-SNAPSHOT</odl.ovsdb.version>
   </properties>
 
   <profiles>
@@ -56,110 +62,61 @@
     <tag>HEAD</tag>
   </scm>
 
-  <build>
-    <resources>
-      <resource>
-        <filtering>true</filtering>
-        <directory>src/main/resources</directory>
-      </resource>
-    </resources>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.karaf.tooling</groupId>
-        <artifactId>karaf-maven-plugin</artifactId>
-        <extensions>true</extensions>
-        <executions>
-          <execution>
-            <id>features-create-kar</id>
-            <goals>
-              <goal>features-create-kar</goal>
-            </goals>
-            <configuration>
-              <featuresFile>${project.build.directory}/classes/${features.file}</featuresFile>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
+  <dependencyManagement>
+    <dependencies>
+      <!-- OpenDaylight controller -->
+      <dependency>
+        <groupId>org.opendaylight.controller</groupId>
+        <artifactId>mdsal-artifacts</artifactId>
+        <version>${odl.controller.mdsal.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
 
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-resources-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>filter</id>
-            <goals>
-              <goal>resources</goal>
-            </goals>
-            <phase>generate-resources</phase>
-          </execution>
-        </executions>
-      </plugin>
+      <!-- OpenDaylight MD-SAL -->
+      <dependency>
+        <groupId>org.opendaylight.mdsal.model</groupId>
+        <artifactId>mdsal-model-artifacts</artifactId>
+        <version>${odl.mdsal.model.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
 
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <systemPropertyVariables>
-            <karaf.distro.groupId>org.opendaylight.controller</karaf.distro.groupId>
-            <karaf.distro.artifactId>opendaylight-karaf-empty</karaf.distro.artifactId>
-            <karaf.distro.version>${karaf.empty.version}</karaf.distro.version>
-          </systemPropertyVariables>
-          <dependenciesToScan>
-            <dependency>org.opendaylight.odlparent:features-test</dependency>
-          </dependenciesToScan>
-        </configuration>
-       </plugin>
-
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>attach-artifacts</id>
-            <goals>
-              <goal>attach-artifact</goal>
-            </goals>
-            <phase>package</phase>
-            <configuration>
-              <artifacts>
-                <artifact>
-                  <file>${project.build.directory}/classes/${features.file}</file>
-                  <type>xml</type>
-                  <classifier>features</classifier>
-                </artifact>
-                <artifact>
-                  <file>${project.build.directory}/${project.artifactId}-${project.version}.kar</file>
-                  <type>kar</type>
-                  <classifier>features</classifier>
-                </artifact>
-              </artifacts>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
+      <!-- OpenDaylight openflowplugin -->
+      <dependency>
+        <groupId>org.opendaylight.openflowplugin</groupId>
+        <artifactId>openflowplugin-artifacts</artifactId>
+        <version>${odl.openflowplugin.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <!-- bundle dependencies -->
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
       <artifactId>manager</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
       <artifactId>manager.model</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
       <artifactId>manager.implementation</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
       <artifactId>manager.implementation</artifactId>
+      <version>${project.version}</version>
       <classifier>config</classifier>
       <type>xml</type>
     </dependency>
@@ -167,6 +124,7 @@
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
       <artifactId>manager.neutron</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <!-- OpenDaylight controller -->
@@ -189,6 +147,7 @@
     <dependency>
       <groupId>org.opendaylight.netconf</groupId>
       <artifactId>features-restconf</artifactId>
+      <version>${odl.netconf.version}</version>
       <classifier>features</classifier>
       <type>xml</type>
     </dependency>
@@ -205,6 +164,7 @@
     <dependency>
       <groupId>org.opendaylight.neutron</groupId>
       <artifactId>features-neutron</artifactId>
+      <version>${odl.neutron.version}</version>
       <classifier>features</classifier>
       <type>xml</type>
     </dependency>
@@ -213,26 +173,13 @@
      <dependency>
       <groupId>org.opendaylight.ovsdb</groupId>
       <artifactId>southbound-features</artifactId>
+      <version>${odl.ovsdb.version}</version>
       <classifier>features</classifier>
       <type>xml</type>
     </dependency>
-
-    <!-- test to validate features.xml -->
-    <dependency>
-      <groupId>org.opendaylight.odlparent</groupId>
-      <artifactId>features-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- dependency for opendaylight-karaf-empty for use by testing -->
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>opendaylight-karaf-empty</artifactId>
-      <type>zip</type>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
-    <url>${odl.site.url}/${project.groupId}/${stream}/${project.artifactId}/</url>
+
+  <url>${odl.site.url}/${project.groupId}/${stream}/${project.artifactId}/</url>
   <distributionManagement>
     <site>
       <id>opendaylight-site</id>

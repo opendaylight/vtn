@@ -63,13 +63,6 @@
     <apiviz.version>1.3.2.GA</apiviz.version>
     <java-formatter.version>0.3.1</java-formatter.version>
 
-    <!-- Karaf properties -->
-    <karaf.empty.version>1.8.0-SNAPSHOT</karaf.empty.version>
-    <karaf.resources.version>1.8.0-SNAPSHOT</karaf.resources.version>
-
-    <!-- ODL Branding -->
-    <branding.version>1.8.0-SNAPSHOT</branding.version>
-
     <!-- Exclude internal package from javadoc -->
     <javadoc.exclude>*.internal,*.impl,*.it</javadoc.exclude>
 
@@ -80,11 +73,11 @@
     <odl.mdsal.version>2.2.0-SNAPSHOT</odl.mdsal.version>
     <odl.mdsal.model.version>0.10.0-SNAPSHOT</odl.mdsal.model.version>
     <odl.mdsal.apigen.version>0.10.0-SNAPSHOT</odl.mdsal.apigen.version>
-    <odl.netconf.version>1.5.0-SNAPSHOT</odl.netconf.version>
     <odl.openflowplugin.version>0.4.0-SNAPSHOT</odl.openflowplugin.version>
     <odl.neutron.version>0.8.0-SNAPSHOT</odl.neutron.version>
     <odl.ovsdb.version>1.4.0-SNAPSHOT</odl.ovsdb.version>
     <odl.thirdparty.jung2.version>2.0.1</odl.thirdparty.jung2.version>
+
     <maven.site.skip>false</maven.site.skip>
     <maven.site.deploy.skip>false</maven.site.deploy.skip>
   </properties>
@@ -499,15 +492,6 @@
         <version>${project.version}</version>
       </dependency>
 
-      <!-- VTN Manager feature -->
-      <dependency>
-        <groupId>org.opendaylight.vtn</groupId>
-        <artifactId>features-vtn-manager</artifactId>
-        <version>${project.version}</version>
-        <classifier>features</classifier>
-        <type>xml</type>
-      </dependency>
-
       <!-- OpenDaylight third party -->
       <dependency>
         <groupId>org.opendaylight.controller.thirdparty</groupId>
@@ -565,23 +549,6 @@
         <scope>import</scope>
       </dependency>
 
-      <dependency>
-        <groupId>org.opendaylight.mdsal.model</groupId>
-        <artifactId>features-mdsal-model</artifactId>
-        <version>${odl.mdsal.model.version}</version>
-        <classifier>features</classifier>
-        <type>xml</type>
-      </dependency>
-
-      <!-- OpenDaylight netconf -->
-      <dependency>
-        <groupId>org.opendaylight.netconf</groupId>
-        <artifactId>features-restconf</artifactId>
-        <version>${odl.netconf.version}</version>
-        <classifier>features</classifier>
-        <type>xml</type>
-      </dependency>
-
       <!-- OpenDaylight openflowplugin -->
       <dependency>
         <groupId>org.opendaylight.openflowplugin</groupId>
@@ -596,14 +563,6 @@
         <groupId>org.opendaylight.neutron</groupId>
         <artifactId>model</artifactId>
         <version>${odl.neutron.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.neutron</groupId>
-        <artifactId>features-neutron</artifactId>
-        <version>${odl.neutron.version}</version>
-        <classifier>features</classifier>
-        <type>xml</type>
       </dependency>
 
       <!-- OpenDaylight OVSDB project -->
@@ -631,55 +590,6 @@
         <groupId>org.opendaylight.ovsdb</groupId>
         <artifactId>southbound-impl</artifactId>
         <version>${odl.ovsdb.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.ovsdb</groupId>
-        <artifactId>southbound-features</artifactId>
-        <version>${odl.ovsdb.version}</version>
-        <classifier>features</classifier>
-        <type>xml</type>
-      </dependency>
-
-      <!-- Karaf features -->
-      <dependency>
-        <groupId>org.apache.karaf.features</groupId>
-        <artifactId>framework</artifactId>
-        <version>${karaf.version}</version>
-        <type>kar</type>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.karaf.features</groupId>
-        <artifactId>standard</artifactId>
-        <version>${karaf.version}</version>
-        <classifier>features</classifier>
-        <type>xml</type>
-        <scope>runtime</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.odlparent</groupId>
-        <artifactId>features-test</artifactId>
-        <version>${odl.odlparent.version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.odlparent</groupId>
-        <artifactId>karaf.branding</artifactId>
-        <version>${branding.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.odlparent</groupId>
-        <artifactId>opendaylight-karaf-resources</artifactId>
-        <version>${karaf.resources.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>opendaylight-karaf-empty</artifactId>
-        <version>${karaf.empty.version}</version>
-        <type>zip</type>
-        <scope>test</scope>
       </dependency>
 
       <!-- JaCoCo -->
