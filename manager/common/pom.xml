@@ -24,7 +24,7 @@
   <parent>
     <groupId>org.opendaylight.vtn</groupId>
     <artifactId>common</artifactId>
-    <version>0.4.4-SNAPSHOT</version>
+    <version>0.4.5-SNAPSHOT</version>
     <relativePath>../../common</relativePath>
   </parent>
 
@@ -66,26 +66,26 @@
     <checkstyle.engine.version>6.5</checkstyle.engine.version>
 
     <!-- Karaf properties -->
-    <karaf.empty.version>1.6.4-SNAPSHOT</karaf.empty.version>
-    <karaf.resources.version>1.6.4-SNAPSHOT</karaf.resources.version>
+    <karaf.empty.version>1.6.5-SNAPSHOT</karaf.empty.version>
+    <karaf.resources.version>1.6.5-SNAPSHOT</karaf.resources.version>
 
     <!-- ODL Branding -->
-    <branding.version>1.2.4-SNAPSHOT</branding.version>
+    <branding.version>1.2.5-SNAPSHOT</branding.version>
 
     <!-- Exclude internal package from javadoc -->
     <javadoc.exclude>*.internal,*.impl,*.it</javadoc.exclude>
 
     <!-- OpenDaylight artifacts -->
-    <odl.controller.mdsal.version>1.3.4-SNAPSHOT</odl.controller.mdsal.version>
-    <odl.config.version>0.4.4-SNAPSHOT</odl.config.version>
-    <odl.yangtools.version>0.8.4-SNAPSHOT</odl.yangtools.version>
-    <odl.mdsal.version>2.0.4-SNAPSHOT</odl.mdsal.version>
-    <odl.mdsal.model.version>0.8.4-SNAPSHOT</odl.mdsal.model.version>
-    <odl.mdsal.apigen.version>0.8.4-SNAPSHOT</odl.mdsal.apigen.version>
-    <odl.netconf.version>1.3.4-SNAPSHOT</odl.netconf.version>
-    <odl.openflowplugin.version>0.2.4-SNAPSHOT</odl.openflowplugin.version>
-    <odl.neutron.version>0.6.4-SNAPSHOT</odl.neutron.version>
-    <odl.ovsdb.version>1.2.5-SNAPSHOT</odl.ovsdb.version>
+    <odl.controller.mdsal.version>1.3.5-SNAPSHOT</odl.controller.mdsal.version>
+    <odl.config.version>0.4.5-SNAPSHOT</odl.config.version>
+    <odl.yangtools.version>0.8.5-SNAPSHOT</odl.yangtools.version>
+    <odl.mdsal.version>2.0.5-SNAPSHOT</odl.mdsal.version>
+    <odl.mdsal.model.version>0.8.5-SNAPSHOT</odl.mdsal.model.version>
+    <odl.mdsal.apigen.version>0.8.5-SNAPSHOT</odl.mdsal.apigen.version>
+    <odl.netconf.version>1.3.5-SNAPSHOT</odl.netconf.version>
+    <odl.openflowplugin.version>0.2.5-SNAPSHOT</odl.openflowplugin.version>
+    <odl.neutron.version>0.6.5-SNAPSHOT</odl.neutron.version>
+    <odl.ovsdb.version>1.2.6-SNAPSHOT</odl.ovsdb.version>
     <odl.thirdparty.jung2.version>2.0.1</odl.thirdparty.jung2.version>
     <maven.site.skip>false</maven.site.skip>
     <maven.site.deploy.skip>false</maven.site.deploy.skip>
