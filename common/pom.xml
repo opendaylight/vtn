@@ -19,13 +19,13 @@
 
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>common</artifactId>
-  <version>0.4.4-SNAPSHOT</version>
+  <version>0.4.4-Beryllium-SR4</version>
   <packaging>pom</packaging>
 
   <parent>
     <groupId>org.opendaylight.odlparent</groupId>
     <artifactId>odlparent</artifactId>
-    <version>1.6.4-SNAPSHOT</version>
+    <version>1.6.4-Beryllium-SR4</version>
     <relativePath/>
   </parent>
 
@@ -40,10 +40,10 @@
     <buildnumber.version>1.2</buildnumber.version>
     <execplugin.version>1.2.1</execplugin.version>
 
-    <odl.odlparent.version>1.6.4-SNAPSHOT</odl.odlparent.version>
+    <odl.odlparent.version>1.6.4-Beryllium-SR4</odl.odlparent.version>
 
     <!-- VTN Manager version -->
-    <vtn.manager.version>0.4.4-SNAPSHOT</vtn.manager.version>
+    <vtn.manager.version>0.4.4-Beryllium-SR4</vtn.manager.version>
   </properties>
 
   <build>
