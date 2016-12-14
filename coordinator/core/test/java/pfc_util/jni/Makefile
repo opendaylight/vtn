@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2013 NEC Corporation
+# Copyright (c) 2012-2016 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -29,3 +29,6 @@ JNI_JAVAH_CLASSES	= org.opendaylight.vtn.core.CoreSystemTest
 JNI_JAVAH_CLASSES	+= $(JAVAH_CLASSNAMES:%=org.opendaylight.vtn.core.util.%)
 
 include ../../jni-rules.mk
+
+# readdir_r() is deprecated as of glibc-2.24.
+$(OBJDIR)/misc.o:	EXTRA_CFLAGS += -Wno-deprecated-declarations
