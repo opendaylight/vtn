@@ -13,11 +13,13 @@ target
 /coordinator/core/tools/src/cfdef/src/Makefile
 /coordinator/core/tools/src/cfdef/src/blib/
 /coordinator/core/tools/src/cfdef/src/pm_to_blib
+/coordinator/core/tools/src/cfdef/src/*.json
 /coordinator/core/tools/src/cfdef/src/*.yml
 /coordinator/core/tools/src/cfdef/src/bin/cfdefc
 /coordinator/core/tools/src/ipctool/src/Makefile
 /coordinator/core/tools/src/ipctool/src/blib/
 /coordinator/core/tools/src/ipctool/src/pm_to_blib
+/coordinator/core/tools/src/ipctool/src/*.json
 /coordinator/core/tools/src/ipctool/src/*.yml
 /coordinator/core/tools/src/ipctool/src/bin/ipcsdump
 /coordinator/core/tools/src/ipctool/src/bin/ipctc
