@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2010-2013 NEC Corporation
+# Copyright (c) 2010-2016 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -75,3 +75,7 @@ EXTRA_CPPFLAGS	= -D_PFC_LIBPFC_UTIL_BUILD
 CFDEF_FILES	= pfcd.cfdef
 
 include ../rules.mk
+
+# readdir_r() is deprecated as of glibc-2.24.
+$(OBJDIR)/rmpath.o:		EXTRA_CFLAGS += -Wno-deprecated-declarations
+$(OBJDIR)/closefrom_linux.o:	EXTRA_CFLAGS += -Wno-deprecated-declarations

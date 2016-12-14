@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2013 NEC Corporation
+# Copyright (c) 2012-2016 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -55,3 +55,6 @@ $(UT_STRUCT_BIN):	$(UT_STRUCT_IPCT)
 	@$(IPCTC) -h $(UT_STRUCT_H) -i $@ $(UT_STRUCT_IPCT)
 
 $(OBJ_OBJECTS):	$(UT_STRUCT_H)
+
+# readdir_r() is deprecated as of glibc-2.24.
+$(OBJDIR)/misc.o:	EXTRA_CFLAGS += -Wno-deprecated-declarations
