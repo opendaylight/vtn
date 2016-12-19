@@ -42,7 +42,8 @@
   <!-- parameters (default values are in square brackets):                  -->
   <!--                                                                      -->
   <!--   debug               Debugging detail level for messages logged     -->
-  <!--                       by this servlet.  [0]                          -->
+  <!--                       by this servlet. Useful values are 0, 1, and   -->
+  <!--                       11 where higher values mean more detail. [0]   -->
   <!--                                                                      -->
   <!--   fileEncoding        Encoding to be used to read static resources   -->
   <!--                       [platform default]                             -->
@@ -162,6 +163,8 @@
   <!--   engineOptionsClass  Allows specifying the Options class used to    -->
   <!--                       configure Jasper. If not present, the default  -->
   <!--                       EmbeddedServletOptions will be used.           -->
+  <!--                       This option is ignored when running under a    -->
+  <!--                       SecurityManager.                               -->
   <!--                                                                      -->
   <!--   errorOnUseBeanInvalidClassAttribute                                -->
   <!--                       Should Jasper issue an error when the value of -->
@@ -223,6 +226,8 @@
   <!--   scratchdir          What scratch directory should we use when      -->
   <!--                       compiling JSP pages?  [default work directory  -->
   <!--                       for the current web application]               -->
+  <!--                       This option is ignored when running under a    -->
+  <!--                       SecurityManager.                               -->
   <!--                                                                      -->
   <!--   suppressSmap        Should the generation of SMAP info for JSR45   -->
   <!--                       debugging be suppressed?  [false]              -->
@@ -232,6 +237,11 @@
   <!--                                                                      -->
   <!--   xpoweredBy          Determines whether X-Powered-By response       -->
   <!--                       header is added by generated servlet.  [false] -->
+  <!--                                                                      -->
+  <!--   quoteAttributeEL    When EL is used in an attribute value on a     -->
+  <!--                       JSP page should the rules for quoting of       -->
+  <!--                       attributes described in JSP.1.6 be applied to  -->
+  <!--                       the expression? [true]                         -->
 
     <servlet>
         <servlet-name>jsp</servlet-name>
@@ -320,11 +330,17 @@
   <!--                        If not set, then webAppRootDir is used.       -->
   <!--                        Recommended value: WEB-INF/cgi                -->
   <!--                                                                      -->
-  <!--   debug                Debugging detail level for messages logged    -->
-  <!--                        by this servlet.  [0]                         -->
-  <!--                                                                      -->
   <!--   executable           Name of the executable used to run the        -->
   <!--                        script. [perl]                                -->
+  <!--                                                                      -->
+  <!--   envHttpHeaders       A regular expression used to select the HTTP  -->
+  <!--                        headers passed to the CGI process as          -->
+  <!--                        environment variables. Note that headers are  -->
+  <!--                        converted to upper case before matching and   -->
+  <!--                        that the entire header name must match the    -->
+  <!--                        pattern.                                      -->
+  <!--                        [ACCEPT[-0-9A-Z]*|CACHE-CONTROL|COOKIE|HOST|  -->
+  <!--                         IF-[-0-9A-Z]*|REFERER|USER-AGENT]            -->
   <!--                                                                      -->
   <!--   parameterEncoding    Name of parameter encoding to be used with    -->
   <!--                        CGI servlet.                                  -->
@@ -342,14 +358,10 @@
         <servlet-name>cgi</servlet-name>
         <servlet-class>org.apache.catalina.servlets.CGIServlet</servlet-class>
         <init-param>
-          <param-name>debug</param-name>
-          <param-value>0</param-value>
-        </init-param>
-        <init-param>
           <param-name>cgiPathPrefix</param-name>
           <param-value>WEB-INF/cgi</param-value>
         </init-param>
-         <load-on-startup>5</load-on-startup>
+        <load-on-startup>5</load-on-startup>
     </servlet>
 -->
 
