@@ -644,7 +644,7 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- Use Mockito in unit tests. Do not pull in mockito-all because -->
+    <!-- Use Mockito in unit tests. Do not pull in mockito-core because -->
     <!-- it contains old version of hamcrest-core.                     -->
     <dependency>
       <groupId>org.mockito</groupId>
