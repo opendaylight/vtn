@@ -20,6 +20,9 @@
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>manager.common</artifactId>
   <packaging>pom</packaging>
+  <!-- <name> formatting is used by autorelease to parse and notify projects on
+       build failure. Please do not modify this unless you have a good reason. -->
+  <name>ODL :: vtn :: ${project.artifactId}</name>
   <description>Common configuration required by POM files of VTN Manager.</description>
 
   <parent>
