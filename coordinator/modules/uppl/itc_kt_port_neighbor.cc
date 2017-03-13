@@ -431,7 +431,9 @@ UncRespCode Kt_Port_Neighbor::ReadPortNeighbor(OdbcmConnectionHandler *db_conn,
   PhyUtil::FillDbSchema(unc::uppl::PORT_ID, port_id,
                         port_id.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
-  vect_prim_keys.push_back(PORT_ID_STR);
+  if (!port_id.empty()) {
+    vect_prim_keys.push_back(PORT_ID_STR);
+  }
 
   pfc_log_info("ctr name:%s,switch id:%s,port id:%s",
                  controller_name.c_str(),
