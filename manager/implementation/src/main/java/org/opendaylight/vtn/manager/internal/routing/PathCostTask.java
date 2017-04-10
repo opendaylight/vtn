@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2016, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -61,7 +61,7 @@ public abstract class PathCostTask<T extends AbstractTxTask<VtnUpdateType>, O>
         // Ensure that the target path policy is present.
         Integer pid = context.getPolicyId();
         ReadWriteTransaction tx = ctx.getReadWriteTransaction();
-        PathPolicyUtils.readVtnPathPolicy(tx, pid.intValue());
+        PathPolicyUtils.readVtnPathPolicy(tx, pid);
 
         context.onStarted();
     }
