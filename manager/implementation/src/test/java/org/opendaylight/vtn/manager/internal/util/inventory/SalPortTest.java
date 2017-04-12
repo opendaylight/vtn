@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -22,6 +22,7 @@ import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
+import org.opendaylight.vtn.manager.internal.TestNodeConnectorId;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
@@ -229,6 +230,105 @@ public class SalPortTest extends TestBase {
                 assertNotNull(sport);
                 assertEquals(nid, sport.getNodeNumber());
                 assertEquals(p, sport.getPortNumber());
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link SalPort#create(SalNode, NodeConnectorId)}.
+     */
+    @Test
+    public void testCreateNodeConnectorId() {
+        BigInteger[] nodeIds = {
+            BigInteger.ONE,
+            BigInteger.valueOf(2L),
+            BigInteger.valueOf(345678L),
+            BigInteger.valueOf(0x12345678L),
+            new BigInteger("18446744073709551615"),
+        };
+        long[] portIds = {
+            1L, 2L, 3456789L, 0xabcdefL, 0xffffff00L,
+        };
+
+        String[] bad = {
+            // Invalid node type.
+            "",
+            "proto1:1:3",
+            "of:2:1",
+            "openflow1:1:4",
+
+            // Too large DPID.
+            "openflow:18446744073709551616:3",
+            "openflow:18446744073709551617:2",
+            "openflow:99999999999999999999999:2",
+            "openflow:999999999999999999999999:LOCAL",
+
+            // Negative DPID.
+            "openflow:-1:1",
+            "openflow:-12345678:2",
+            "openflow:-3333333333333333333333333:2",
+
+            // Invalid DPID.
+            "openflow:0x12345678:1",
+            "openflow:1234abcd:1",
+            "openflow:Bad DPID:1",
+
+            // Invalid port number.
+            "4294967041",
+            "4294967042",
+            "4294967295",
+            "9999999999999999999999999999",
+            "-1",
+            "-2",
+            "-1000000",
+            "abcde",
+            "bad port ID",
+        };
+
+        SalNode nullNode = null;
+        NodeConnectorId nullNcId = null;
+        NodeConnectorId emptyNcId = new TestNodeConnectorId();
+
+        // Should return false if both SalNode and node-connector-id are null.
+        assertNull(SalPort.create(nullNode, nullNcId));
+
+        for (BigInteger nodeId: nodeIds) {
+            SalNode snode = new SalNode(nodeId.longValue());
+
+            // Should return false if node-connector-id is null.
+            assertNull(SalPort.create(snode, nullNcId));
+
+            // Should return false if node-connector-id is empty.
+            assertNull(SalPort.create(snode, emptyNcId));
+
+            for (long portId: portIds) {
+                // SalNode should be ignored if node-connector-id is
+                // fully-qualified.
+                NodeConnectorId ncId = new NodeConnectorId(
+                    String.format("openflow:%s:%d", nodeId, portId));
+                SalNode[] snodes = {nullNode, snode};
+                for (SalNode sn: snodes) {
+                    SalPort sport = SalPort.create(sn, ncId);
+                    assertNotNull(sport);
+                    assertEquals(nodeId.longValue(), sport.getNodeNumber());
+                    assertEquals(portId, sport.getPortNumber());
+                }
+
+                // In case where node-connector-id contains port number only.
+                ncId = new NodeConnectorId(Long.toString(portId));
+                SalPort sport = SalPort.create(snode, ncId);
+                assertNotNull(sport);
+                assertEquals(nodeId.longValue(), sport.getNodeNumber());
+                assertEquals(portId, sport.getPortNumber());
+
+                // Should return false if SalNode is null.
+                assertNull(SalPort.create(nullNode, ncId));
+            }
+
+            // Should return false if node-connector-id is invalid.
+            for (String id: bad) {
+                NodeConnectorId ncId = new NodeConnectorId(id);
+                assertNull(SalPort.create(snode, ncId));
             }
         }
     }

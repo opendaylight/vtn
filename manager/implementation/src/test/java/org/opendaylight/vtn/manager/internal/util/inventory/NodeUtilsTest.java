@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2014, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,18 +8,25 @@
 
 package org.opendaylight.vtn.manager.internal.util.inventory;
 
+import static org.opendaylight.vtn.manager.internal.util.inventory.NodeUtils.equalsNodeConnectorId;
+
+import java.math.BigInteger;
+
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
+import org.opendaylight.vtn.manager.internal.TestNodeConnectorId;
 import org.opendaylight.vtn.manager.internal.TestVtnPortDesc;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPortBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 
 /**
  * JUnit test for {@link NodeUtils}.
@@ -298,6 +305,137 @@ public class NodeUtilsTest extends TestBase {
                         assertEquals(desc, vdesc.getValue());
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Test case for
+     * {@link NodeUtils#equalsNodeConnectorId(SalNode, NodeConnectorId, NodeConnectorId)}.
+     */
+    @Test
+    public void testEqualsNodeConnectorId() {
+        BigInteger[] nodeIds = {
+            BigInteger.ONE,
+            BigInteger.valueOf(2L),
+            BigInteger.valueOf(7777777L),
+            BigInteger.valueOf(0x123456789L),
+            new BigInteger("18446744073709551615"),
+        };
+        SalNode anotherNode = new SalNode(999L);
+
+        long[] portIds = {
+            1L, 2L, 345L, 6789L, 0xabcdefL, 0xffffff00L,
+        };
+
+        SalNode nullNode = null;
+        NodeConnectorId nullNcId = null;
+        NodeConnectorId empty1 = new TestNodeConnectorId();
+        NodeConnectorId empty2 = new TestNodeConnectorId();
+
+        NodeConnectorId[] badIds = {
+            null, empty1,
+
+            // Invalid node type.
+            new NodeConnectorId(""),
+            new NodeConnectorId("proto1:1:3"),
+            new NodeConnectorId("of:2:1"),
+            new NodeConnectorId("openflow1:1:4"),
+
+            // Too large DPID.
+            new NodeConnectorId("openflow:18446744073709551616:3"),
+            new NodeConnectorId("openflow:18446744073709551617:2"),
+            new NodeConnectorId("openflow:99999999999999999999999:2"),
+            new NodeConnectorId("openflow:999999999999999999999999:LOCAL"),
+
+            // Negative DPID.
+            new NodeConnectorId("openflow:-1:1"),
+            new NodeConnectorId("openflow:-12345678:2"),
+            new NodeConnectorId("openflow:-3333333333333333333333333:2"),
+
+            // Invalid DPID.
+            new NodeConnectorId("openflow:0x12345678:1"),
+            new NodeConnectorId("openflow:1234abcd:1"),
+            new NodeConnectorId("openflow:Bad DPID:1"),
+
+            // Invalid port number.
+            new NodeConnectorId("4294967041"),
+            new NodeConnectorId("4294967042"),
+            new NodeConnectorId("4294967295"),
+            new NodeConnectorId("9999999999999999999999999999"),
+            new NodeConnectorId("-1"),
+            new NodeConnectorId("-2"),
+            new NodeConnectorId("-1000000"),
+            new NodeConnectorId("abcde"),
+            new NodeConnectorId("bad port ID"),
+        };
+
+        for (BigInteger nodeId: nodeIds) {
+            SalNode snode = new SalNode(nodeId.longValue());
+            SalNode[] snodes = {nullNode, snode, anotherNode};
+            for (long portId1: portIds) {
+                for (long portId2: portIds) {
+                    // In case where both node-connector-ids are
+                    // fully-qualified.
+                    String str1 = String.format("openflow:%s:%d",
+                                                nodeId, portId1);
+                    String str2 = String.format("openflow:%s:%d",
+                                                nodeId, portId2);
+                    NodeConnectorId id1 = new NodeConnectorId(str1);
+                    NodeConnectorId id2 = new NodeConnectorId(str2);
+                    boolean match = (portId1 == portId2);
+                    for (SalNode sn: snodes) {
+                        assertEquals(match,
+                                     equalsNodeConnectorId(sn, id1, id2));
+                    }
+
+                    // In case where only one node-connector-id is
+                    // fully-qualified.
+                    str2 = Long.toString(portId2);
+                    id2 = new NodeConnectorId(str2);
+                    for (SalNode sn: snodes) {
+                        boolean expected = (match && snode.equals(sn));
+                        assertEquals(expected,
+                                     equalsNodeConnectorId(sn, id1, id2));
+                        assertEquals(expected,
+                                     equalsNodeConnectorId(sn, id2, id1));
+                    }
+
+                    // Should return if one node-connector-id is invalid.
+                    NodeConnectorId[] ids = {id1, id2};
+                    for (SalNode sn: snodes) {
+                        for (NodeConnectorId id: ids) {
+                            for (NodeConnectorId bad: badIds) {
+                                assertFalse(equalsNodeConnectorId(sn, id, bad));
+                                assertFalse(equalsNodeConnectorId(sn, bad, id));
+                            }
+                        }
+                    }
+
+                    // In case where both node-connector-ids are specified by
+                    // port number.
+                    str1 = Long.toString(portId1);
+                    id1 = new NodeConnectorId(str1);
+                    if (match) {
+                        assertEquals(id2, id1);
+                    } else {
+                        assertNotEquals(id2, id1);
+                    }
+                    for (SalNode sn: snodes) {
+                        assertEquals(match,
+                                     equalsNodeConnectorId(sn, id1, id2));
+                    }
+                }
+            }
+
+            for (SalNode sn: snodes) {
+                // Should return true if both node-connector-ids are null.
+                assertTrue(equalsNodeConnectorId(sn, nullNcId, nullNcId));
+                assertFalse(equalsNodeConnectorId(sn, empty1, nullNcId));
+                assertFalse(equalsNodeConnectorId(sn, nullNcId, empty1));
+
+                // Should return true if both node-connector-ids are empty.
+                assertTrue(equalsNodeConnectorId(sn, empty1, empty2));
             }
         }
     }
