@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2013, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,8 @@
  */
 
 package org.opendaylight.vtn.manager.internal.util.inventory;
+
+import static org.opendaylight.vtn.manager.internal.util.MiscUtils.DEFAULT_VLAN_ID;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,7 +32,9 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
+import org.opendaylight.vtn.manager.internal.TestMacAddress;
 import org.opendaylight.vtn.manager.internal.TestVlanHostDesc;
+import org.opendaylight.vtn.manager.internal.TestVlanId;
 import org.opendaylight.vtn.manager.internal.XmlDataType;
 import org.opendaylight.vtn.manager.internal.XmlNode;
 import org.opendaylight.vtn.manager.internal.XmlValueType;
@@ -38,6 +42,7 @@ import org.opendaylight.vtn.manager.internal.XmlValueType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.input.DataFlowSource;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.input.DataFlowSourceBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.SourceHostFlowsKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VlanHost;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VlanHostDesc;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.vlan.host.desc.set.VlanHostDescList;
@@ -214,9 +219,51 @@ public class MacVlanTest extends TestBase {
         assertEquals(MASK_MAC, mvlan.getAddress());
         assertEquals(MASK_VLAN_ID, mvlan.getVlanId());
         assertEquals(MASK_ENCODED, mvlan.getEncodedValue());
+    }
 
+    /**
+     * Test case for {@link MacVlan#MacVlan(VlanHost)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testConstructVlan() throws Exception {
+        VlanId[] vlanIds = {
+            null, new TestVlanId(),
+            new VlanId(0), new VlanId(1), new VlanId(10), new VlanId(1000),
+            new VlanId(4095),
+        };
+        List<EtherAddress> etherAddrs = createEtherAddresses();
+        for (EtherAddress eaddr: etherAddrs) {
+            for (VlanId vlanId: vlanIds) {
+                long addr;
+                MacAddress maddr;
+                if (eaddr == null) {
+                    maddr = null;
+                    addr = MacVlan.UNDEFINED;
+                } else {
+                    maddr = eaddr.getMacAddress();
+                    addr = eaddr.getAddress();
+                }
+                VlanHost vh = new DataFlowSourceBuilder().
+                    setMacAddress(maddr).setVlanId(vlanId).build();
+                MacVlan mv = new MacVlan(vh);
+                assertEquals(addr, mv.getAddress());
+                int vid = DEFAULT_VLAN_ID;
+                if (vlanId != null) {
+                    Integer v = vlanId.getValue();
+                    if (v != null) {
+                        vid = v.intValue();
+                    }
+                }
+                assertEquals(vid, mv.getVlanId());
+            }
+        }
+
+        // Null argument.
         try {
-            new MacVlan((DataFlowSource)null);
+            VlanHost vh = null;
+            new MacVlan(vh);
             unexpected();
         } catch (RpcException e) {
             assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
@@ -224,16 +271,49 @@ public class MacVlanTest extends TestBase {
             assertEquals("vlan-host cannot be null", e.getMessage());
         }
 
+        // Invalid MAC address.
+        String[] badAddrs = {
+            "00:aa:bb:cc:dd:eg",
+            "00:xa:bb:cc:dd:ee",
+            "BAD MAC ADDRESS",
+            "00:aa:bb:cc:dd:ee:ff",
+            "00:aa:bb:cc:dd:",
+            "00:aa:bb:cc:dd:ee:",
+            "",
+        };
+        VlanId vlanId = new VlanId(0);
+        for (String bad: badAddrs) {
+            MacAddress maddr = new TestMacAddress(bad);
+            VlanHost vh = new DataFlowSourceBuilder().
+                setMacAddress(maddr).setVlanId(vlanId).build();
+            try {
+                new MacVlan(vh);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                assertEquals("Invalid MAC address: " + maddr, e.getMessage());
+            }
+        }
+
+        // Invalid VLAN ID.
+        int[] badVids = {
+            4096, 4097, 10000, 30000, 12345678, Integer.MAX_VALUE,
+            -1, -2, -1000, -12345678, Integer.MIN_VALUE,
+        };
         MacAddress maddr = new MacAddress("00:11:22:33:44:55");
-        DataFlowSource src = new DataFlowSourceBuilder().
-            setMacAddress(maddr).build();
-        try {
-            new MacVlan(src);
-            unexpected();
-        } catch (RpcException e) {
-            assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
-            assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
-            assertEquals("VLAN ID cannot be null", e.getMessage());
+        for (int vid: badVids) {
+            vlanId = new TestVlanId(vid);
+            VlanHost vh = new DataFlowSourceBuilder().
+                setMacAddress(maddr).setVlanId(vlanId).build();
+            try {
+                new MacVlan(vh);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                assertEquals(VtnErrorTag.BADREQUEST, e.getVtnErrorTag());
+                assertEquals("Invalid VLAN ID: " + vid, e.getMessage());
+            }
         }
     }
 
