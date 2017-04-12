@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2013, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -130,14 +130,20 @@ public final class MacVlan implements Comparable<MacVlan> {
             throw RpcException.getNullArgumentException("vlan-host");
         }
 
+        // Treat null vlan-id as if zero is specified.
         Integer vid = ProtocolUtils.getVlanId(vh.getVlanId());
-        if (vid == null) {
-            throw RpcException.getNullArgumentException("VLAN ID");
+        int vlan = (vid == null) ? MiscUtils.DEFAULT_VLAN_ID : vid.intValue();
+
+        EtherAddress eaddr;
+        try {
+            eaddr = EtherAddress.create(vh.getMacAddress());
+        } catch (IllegalArgumentException e) {
+            throw RpcException.getBadArgumentException(
+                "Invalid MAC address: " + vh.getMacAddress(), e);
         }
 
-        EtherAddress eaddr = EtherAddress.create(vh.getMacAddress());
         long addr = (eaddr == null) ? UNDEFINED : eaddr.getAddress();
-        encodedValue = encode(addr, vid.intValue());
+        encodedValue = encode(addr, vlan);
     }
 
     /**
