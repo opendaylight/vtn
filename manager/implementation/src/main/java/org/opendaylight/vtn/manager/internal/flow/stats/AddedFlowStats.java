@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -22,12 +22,12 @@ import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxQueue;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowFinder;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowStatsUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchUtils;
+import org.opendaylight.vtn.manager.internal.util.inventory.NodeUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.log.VTNLogLevel;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
@@ -147,7 +147,7 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
                         vdf.getFlowId().getValue());
             } else {
                 // Verify the ingress flow entry.
-                flow = verifyIngressFlow(ctx, vdf, vfent, flow);
+                flow = verifyIngressFlow(ctx, ingressNode, vdf, vfent, flow);
             }
         }
 
@@ -158,21 +158,24 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
      * Verify the ingress flow entry of the VTN data flow.
      *
      * @param ctx    MD-SAL datastore transaction context.
+     * @param snode  A {@link SalNode} instance that specifies the ingress
+     *               node.
      * @param vdf    The VTN data flow.
      * @param vfent  The ingress flow entry of the VTN data flow.
      * @param flow   The MD-SAL flow entry associated with the ingress flow
      *               entry.
      * @return  {@code flow} on success. {@code null} on failure.
      */
-    private Flow verifyIngressFlow(TxContext ctx, VtnDataFlow vdf,
-                                   VtnFlowEntry vfent, Flow flow) {
-        // One VTN data flow should never installs more than one flow
-        // entry into the same node.
+    private Flow verifyIngressFlow(TxContext ctx, SalNode snode,
+                                   VtnDataFlow vdf, VtnFlowEntry vfent,
+                                   Flow flow) {
+        // One VTN data flow should never install more than one flow entry
+        // into the same node.
         NodeConnectorId vport =
             FlowMatchUtils.getIngressPort(vfent.getMatch());
         NodeConnectorId port = FlowMatchUtils.getIngressPort(flow.getMatch());
         Flow result = null;
-        if (MiscUtils.equalsUri(vport, port)) {
+        if (NodeUtils.equalsNodeConnectorId(snode, vport, port)) {
             // Verify flow priority.
             Integer vpri = vfent.getPriority();
             Integer pri = flow.getPriority();

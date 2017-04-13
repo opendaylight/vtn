@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -80,6 +80,26 @@ public final class SalPort extends SalNode {
         }
 
         return create(id.getValue());
+    }
+
+    /**
+     * Convert a MD-SAL node connector ID into a {@code SalPort} instance.
+     *
+     * @param snode  A {@link SalNode} instance that specifies the node.
+     *               This parameter is used only if {@code id} does not contain
+     *               node ID.
+     * @param id     A {@link NodeConnectorId} instance.
+     * @return  A {@code SalPort} instance on success.
+     *          {@code null} on failure.
+     */
+    public static SalPort create(SalNode snode, NodeConnectorId id) {
+        SalPort sport = create(id);
+        if (sport == null && snode != null && id != null) {
+            // node-connector-id may contain only a port ID.
+            sport = create(snode.getNodeNumber(), id.getValue());
+        }
+
+        return sport;
     }
 
     /**
