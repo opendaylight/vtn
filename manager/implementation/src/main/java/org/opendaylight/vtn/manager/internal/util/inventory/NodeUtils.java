@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2014, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -8,10 +8,13 @@
 
 package org.opendaylight.vtn.manager.internal.util.inventory;
 
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 
 /**
  * {@code NodeUtils} class is a collection of utility class methods related to
@@ -160,6 +163,31 @@ public final class NodeUtils {
         }
 
         return new VtnPortDesc(builder.toString());
+    }
+
+    /**
+     * Determine whether the given two URIs are identical or not.
+     *
+     * @param snode  A {@link SalNode} instance that specifies the node.
+     *               This is used to parse node-connector-id that contains
+     *               port number only.
+     * @param id1    The first node-connector-id to be compared.
+     * @param id2    The second node-connector-id to be compared.
+     * @return  {@code true} only if {@code id1} and {@code id2} are identical.
+     */
+    public static boolean equalsNodeConnectorId(
+        SalNode snode, NodeConnectorId id1, NodeConnectorId id2) {
+        // At first try to compare as Uri string.
+        boolean ret = MiscUtils.equalsUri(id1, id2);
+        if (!ret) {
+            // Try to compare as SalPort.
+            SalPort sport1 = SalPort.create(snode, id1);
+            if (sport1 != null) {
+                ret = sport1.equals(SalPort.create(snode, id2));
+            }
+        }
+
+        return ret;
     }
 
     /**
