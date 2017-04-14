@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -109,7 +109,12 @@ public final class StatsTimerTask extends TimerTask {
                             String tname, VtnDataFlow vdf) throws VTNException {
             VtnDataFlowKey key = vdf.getKey();
             BigInteger id = key.getFlowId().getValue();
-            FlowId fid = FlowUtils.createMdFlowId(id);
+            FlowId fid = vdf.getSalFlowId();
+            if (fid == null) {
+                ctx.log(LOG, VTNLogLevel.TRACE,
+                        "Use MD-SAL flow ID derived from VTN flow ID: {}", id);
+                fid = FlowUtils.createMdFlowId(id);
+            }
 
             // Read flow statistics collected by the MD-SAL statistics manager.
             FlowCache fc = new FlowCache(vdf);
