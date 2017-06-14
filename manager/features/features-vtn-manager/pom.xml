@@ -177,22 +177,6 @@
       <classifier>features</classifier>
       <type>xml</type>
     </dependency>
-
-    <!-- Tentative dependencies for odlparent 1.9.0 migration -->
-    <dependency>
-      <groupId>org.opendaylight.odlparent</groupId>
-      <artifactId>features-odlparent</artifactId>
-      <classifier>features</classifier>
-      <type>xml</type>
-      <version>1.9.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.opendaylight.odlparent</groupId>
-      <artifactId>features-akka</artifactId>
-      <version>1.9.0</version>
-      <classifier>features</classifier>
-      <type>xml</type>
-    </dependency>
   </dependencies>
 
   <url>${odl.site.url}/${project.groupId}/${stream}/${project.artifactId}/</url>
