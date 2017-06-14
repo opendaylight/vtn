@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2016, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -69,7 +69,7 @@ public final class VTNMacMapStatus implements Cloneable {
      * @param hosts  Host information to be added.
      * @return  This instance.
      */
-    public VTNMacMapStatus add(MacEntry ... hosts) {
+    public VTNMacMapStatus add(MacEntry... hosts) {
         for (MacEntry ment: hosts) {
             mappedHosts.put(ment.getMacAddress(), ment);
         }
@@ -82,7 +82,7 @@ public final class VTNMacMapStatus implements Cloneable {
      * @param eaddrs  MAC addresses to be removed.
      * @return  This instance.
      */
-    public VTNMacMapStatus remove(EtherAddress ... eaddrs) {
+    public VTNMacMapStatus remove(EtherAddress... eaddrs) {
         for (EtherAddress mac: eaddrs) {
             mappedHosts.remove(mac);
         }

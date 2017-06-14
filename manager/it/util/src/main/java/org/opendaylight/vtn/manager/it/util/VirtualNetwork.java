@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -141,7 +141,7 @@ public final class VirtualNetwork {
      * @param ids  An array of vBridge identifiers.
      * @return  This instance.
      */
-    public VirtualNetwork addBridge(VBridgeIdentifier ... ids) {
+    public VirtualNetwork addBridge(VBridgeIdentifier... ids) {
         for (VBridgeIdentifier ident: ids) {
             String tname = ident.getTenantNameString();
             String bname = ident.getBridgeNameString();
@@ -169,7 +169,7 @@ public final class VirtualNetwork {
      * @param ids  An array of vBridge identifiers.
      * @return  This instance.
      */
-    public VirtualNetwork removeBridge(VBridgeIdentifier ... ids) {
+    public VirtualNetwork removeBridge(VBridgeIdentifier... ids) {
         for (VBridgeIdentifier ident: ids) {
             String tname = ident.getTenantNameString();
             VTenantConfig tconf = vTenants.get(tname);
@@ -204,7 +204,7 @@ public final class VirtualNetwork {
      * @param ids  An array of vTerminal identifiers.
      * @return  This instance.
      */
-    public VirtualNetwork addTerminal(VTerminalIdentifier ... ids) {
+    public VirtualNetwork addTerminal(VTerminalIdentifier... ids) {
         for (VTerminalIdentifier ident: ids) {
             String tname = ident.getTenantNameString();
             String bname = ident.getBridgeNameString();
@@ -232,7 +232,7 @@ public final class VirtualNetwork {
      * @param ids  An array of vTerminal identifiers.
      * @return  This instance.
      */
-    public VirtualNetwork removeTerminal(VTerminalIdentifier ... ids) {
+    public VirtualNetwork removeTerminal(VTerminalIdentifier... ids) {
         for (VTerminalIdentifier ident: ids) {
             String tname = ident.getTenantNameString();
             VTenantConfig tconf = vTenants.get(tname);
@@ -267,7 +267,7 @@ public final class VirtualNetwork {
      * @param ids  An array of virtual interface identifiers.
      * @return  This instance.
      */
-    public VirtualNetwork addInterface(VInterfaceIdentifier<?> ... ids) {
+    public VirtualNetwork addInterface(VInterfaceIdentifier<?>... ids) {
         for (VInterfaceIdentifier<?> ident: ids) {
             BridgeConfig<?, ?> vbconf = prepareVirtualBridge(ident);
             String iname = ident.getInterfaceNameString();
@@ -287,7 +287,7 @@ public final class VirtualNetwork {
      * @param ids  An array of virtual interface identifiers.
      * @return  This instance.
      */
-    public VirtualNetwork removeInterface(VInterfaceIdentifier<?> ... ids) {
+    public VirtualNetwork removeInterface(VInterfaceIdentifier<?>... ids) {
         for (VInterfaceIdentifier<?> ident: ids) {
             BridgeConfig<?, ?> vbconf = getVirtualBridge(ident);
             if (vbconf != null) {

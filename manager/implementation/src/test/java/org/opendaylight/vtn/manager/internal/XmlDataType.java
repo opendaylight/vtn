@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -197,7 +197,7 @@ public abstract class XmlDataType {
      * @param path  The node path.
      * @return  A new node path.
      */
-    public static final String[] addPath(String name, String ... path) {
+    public static final String[] addPath(String name, String... path) {
         String[] newPath = new String[path.length + 1];
         System.arraycopy(path, 0, newPath, 0, path.length);
         newPath[path.length] = name;
@@ -221,7 +221,7 @@ public abstract class XmlDataType {
      * @param nodes  An array of XML node names.
      * @return  This instance.
      */
-    public final XmlDataType add(String ... nodes) {
+    public final XmlDataType add(String... nodes) {
         Collections.addAll(parentPath, nodes);
         return this;
     }
@@ -232,7 +232,7 @@ public abstract class XmlDataType {
      * @param nodes  An array of XML node names.
      * @return  This instance.
      */
-    public final XmlDataType prepend(String ... nodes) {
+    public final XmlDataType prepend(String... nodes) {
         for (int i = nodes.length - 1; i >= 0; i--) {
             parentPath.addFirst(nodes[i]);
         }

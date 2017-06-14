@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation.  All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -61,7 +61,7 @@ public final class LogRecord {
      * @param format  A format string used to construct log message.
      * @param args    An object array used to construct log message.
      */
-    public LogRecord(FixedLogger log, String format, Object ... args) {
+    public LogRecord(FixedLogger log, String format, Object... args) {
         logger = log;
         logFormat = format;
         logArguments = (args == null) ? null : args.clone();
@@ -98,7 +98,7 @@ public final class LogRecord {
      * @param args    An object array used to construct log message.
      */
     public LogRecord(FixedLogger log, Throwable t, String format,
-                     Object ... args) {
+                     Object... args) {
         logger = log;
         logFormat = format;
         logArguments = (args == null) ? null : args.clone();

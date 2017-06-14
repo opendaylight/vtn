@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -67,7 +67,7 @@ public final class PathPolicySet {
      * @param pps  An array of path policies to be added.
      * @return  This instance.
      */
-    public PathPolicySet add(PathPolicy ... pps) {
+    public PathPolicySet add(PathPolicy... pps) {
         for (PathPolicy pp: pps) {
             Integer id = pp.getId();
             pathPolicies.put(id, pp);
@@ -82,7 +82,7 @@ public final class PathPolicySet {
      * @param ids  An array of path policy IDs to be removed.
      * @return  This instance.
      */
-    public PathPolicySet remove(Integer ... ids) {
+    public PathPolicySet remove(Integer... ids) {
         for (Integer id: ids) {
             pathPolicies.remove(id);
         }

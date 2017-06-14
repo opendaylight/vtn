@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -59,7 +59,7 @@ public abstract class VTNFlowAction {
      * @param args  Objects to be embedded in an error message.
      * @return  An error message.
      */
-    protected final String getErrorMessage(Object ... args) {
+    protected final String getErrorMessage(Object... args) {
         List<Object> list = new ArrayList<>();
         list.add(getClass().getSimpleName());
         Collections.addAll(list, args);

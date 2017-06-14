@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -82,7 +82,7 @@ public final class MacTableServiceTest extends TestMethodBase {
      * @return  A {@link RemoveMacEntryInput} instance.
      */
     private RemoveMacEntryInput newRemoveMacEntryInput(
-        VBridgeIdentifier vbrId, EtherAddress ... eaddrs) {
+        VBridgeIdentifier vbrId, EtherAddress... eaddrs) {
         List<MacAddress> addrs;
         if (eaddrs == null) {
             addrs = null;
@@ -110,7 +110,7 @@ public final class MacTableServiceTest extends TestMethodBase {
      */
     private Map<MacAddress, VtnUpdateType> removeMacEntry(
         VtnMacTableService macSrv, VBridgeIdentifier vbrId,
-        EtherAddress ... eaddrs) {
+        EtherAddress... eaddrs) {
         RemoveMacEntryInput input = newRemoveMacEntryInput(vbrId, eaddrs);
         return removeMacEntry(macSrv, input);
     }
