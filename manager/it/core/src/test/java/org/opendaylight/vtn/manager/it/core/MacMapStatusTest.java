@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2016, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -480,7 +480,7 @@ public final class MacMapStatusTest extends TestMethodBase {
      * @param pids  An array of MD-SAL port identifiers.
      * @return  A map that keeps removed host information.
      */
-    private Map<Integer, List<MacEntry>> removeByPort(String ... pids) {
+    private Map<Integer, List<MacEntry>> removeByPort(String... pids) {
         VirtualNetwork vnet = getVirtualNetwork();
         Map<Integer, List<MacEntry>> removedMap = new HashMap<>();
         for (int i = 0; i < vbridgeIds.size(); i++) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -63,7 +63,7 @@ public final class FlowCondition {
      * @return  A {@link SetFlowConditionMatchInput} instance.
      */
     public static SetFlowConditionMatchInput newSetMatchInput(
-        String name, FlowMatch ... matches) {
+        String name, FlowMatch... matches) {
         List<FlowMatch> list = (matches == null)
             ? null : Arrays.asList(matches);
         return newSetMatchInput(name, list);
@@ -144,7 +144,7 @@ public final class FlowCondition {
      * @param fms  An array of {@link FlowMatch} instances.
      * @return  This instance.
      */
-    public FlowCondition add(FlowMatch ... fms) {
+    public FlowCondition add(FlowMatch... fms) {
         for (FlowMatch fm: fms) {
             Integer idx = fm.getIndex();
             flowMatches.put(idx, fm);
@@ -158,7 +158,7 @@ public final class FlowCondition {
      * @param fms  An array of {@link FlowMatch} instances.
      * @return  This instance.
      */
-    public FlowCondition remove(FlowMatch ... fms) {
+    public FlowCondition remove(FlowMatch... fms) {
         for (FlowMatch fm: fms) {
             flowMatches.remove(fm.getIndex());
         }
@@ -171,7 +171,7 @@ public final class FlowCondition {
      * @param indices  Indices that specifies flow matches to be removed.
      * @return  This instance.
      */
-    public FlowCondition remove(Integer ... indices) {
+    public FlowCondition remove(Integer... indices) {
         for (Integer idx: indices) {
             flowMatches.remove(idx);
         }
@@ -205,7 +205,7 @@ public final class FlowCondition {
      * @param matches  An array of flow matches.
      * @return  A {@link SetFlowConditionMatchInput} instance.
      */
-    public SetFlowConditionMatchInput newSetMatchInput(FlowMatch ... matches) {
+    public SetFlowConditionMatchInput newSetMatchInput(FlowMatch... matches) {
         return newSetMatchInput(name, matches);
     }
 
@@ -291,7 +291,7 @@ public final class FlowCondition {
      * @return  A map that contains the RPC result.
      */
     public Map<Integer, VtnUpdateType> addMatches(
-        VtnFlowConditionService service, FlowMatch ... matches) {
+        VtnFlowConditionService service, FlowMatch... matches) {
         List<FlowMatch> list = (matches == null)
             ? null : Arrays.asList(matches);
         return addMatches(service, list);
@@ -364,7 +364,7 @@ public final class FlowCondition {
      * @return  A map that contains the RPC result.
      */
     public Map<Integer, VtnUpdateType> removeMatches(
-        VtnFlowConditionService service, FlowMatch ... matches) {
+        VtnFlowConditionService service, FlowMatch... matches) {
         List<Integer> list;
         if (matches == null) {
             list = null;
@@ -412,7 +412,7 @@ public final class FlowCondition {
      * @return  A map that contains the RPC result.
      */
     public Map<Integer, VtnUpdateType> removeMatches(
-        VtnFlowConditionService service, Integer ... indices) {
+        VtnFlowConditionService service, Integer... indices) {
         List<Integer> list = (indices == null) ? null : Arrays.asList(indices);
         return removeMatches(service, list);
     }

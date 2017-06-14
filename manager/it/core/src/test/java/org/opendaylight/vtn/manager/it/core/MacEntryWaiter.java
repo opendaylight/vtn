@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -124,7 +124,7 @@ public final class MacEntryWaiter {
      *               present in the MAC address table.
      * @return  This instance.
      */
-    public MacEntryWaiter add(MacEntry ... ments) {
+    public MacEntryWaiter add(MacEntry... ments) {
         Map<EtherAddress, MacEntry> map = macEntries;
         if (map == null) {
             map = new HashMap<>();
@@ -146,7 +146,7 @@ public final class MacEntryWaiter {
      *                not be present in the MAC address table.
      * @return  This instance.
      */
-    public MacEntryWaiter remove(EtherAddress ... eaddrs) {
+    public MacEntryWaiter remove(EtherAddress... eaddrs) {
         Map<EtherAddress, MacEntry> map = macEntries;
         if (map != null) {
             for (EtherAddress eaddr: eaddrs) {

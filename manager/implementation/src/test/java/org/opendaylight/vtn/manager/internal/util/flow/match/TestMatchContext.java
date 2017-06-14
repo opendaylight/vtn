@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation.  All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -85,7 +85,7 @@ public final class TestMatchContext extends TestBase
      *               configured.
      * @return  This instance.
      */
-    public TestMatchContext checkMatchFields(FlowMatchType ... types) {
+    public TestMatchContext checkMatchFields(FlowMatchType... types) {
         assertEquals(types.length, matchFields.size());
         for (FlowMatchType type: types) {
             assertEquals(true, matchFields.contains(type));

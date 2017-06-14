@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2016, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -132,7 +132,7 @@ public final class XmlMacMapConfig {
      * @param hosts  An array of L2 hosts to be added to the allowed host set.
      * @return  This instance.
      */
-    public XmlMacMapConfig addAllowedHosts(MacVlan ... hosts) {
+    public XmlMacMapConfig addAllowedHosts(MacVlan... hosts) {
         for (MacVlan mv: hosts) {
             allowedHosts.add(mv);
         }
@@ -154,7 +154,7 @@ public final class XmlMacMapConfig {
      * @param hosts  An array of L2 hosts to be added to the denied host set.
      * @return  This instance.
      */
-    public XmlMacMapConfig addDeniedHosts(MacVlan ... hosts) {
+    public XmlMacMapConfig addDeniedHosts(MacVlan... hosts) {
         for (MacVlan mv: hosts) {
             deniedHosts.add(mv);
         }

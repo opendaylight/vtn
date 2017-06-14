@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation.  All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation.  All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -78,7 +78,7 @@ public final class FixedLogger {
      * @param format  A format string used to construct log message.
      * @param args    An object array used to construct log message.
      */
-    public void log(String format, Object ... args) {
+    public void log(String format, Object... args) {
         logLevel.log(logger, format, args);
     }
 
@@ -105,7 +105,7 @@ public final class FixedLogger {
      * @param format  A format string used to construct log message.
      * @param args    An object array used to construct log message.
      */
-    public void log(Throwable t, String format, Object ... args) {
+    public void log(Throwable t, String format, Object... args) {
         logLevel.log(logger, t, format, args);
     }
 }

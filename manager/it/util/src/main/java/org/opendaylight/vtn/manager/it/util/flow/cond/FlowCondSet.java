@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -66,7 +66,7 @@ public final class FlowCondSet implements Cloneable {
      * @param fcs  An array of flow conditions to be added.
      * @return  This instance.
      */
-    public FlowCondSet add(FlowCondition ... fcs) {
+    public FlowCondSet add(FlowCondition... fcs) {
         for (FlowCondition fc: fcs) {
             String name = fc.getName();
             flowConditions.put(name, fc);
@@ -81,7 +81,7 @@ public final class FlowCondSet implements Cloneable {
      * @param names  An array of flow conditions  to be removed.
      * @return  This instance.
      */
-    public FlowCondSet remove(String ... names) {
+    public FlowCondSet remove(String... names) {
         for (String name: names) {
             flowConditions.remove(name);
         }

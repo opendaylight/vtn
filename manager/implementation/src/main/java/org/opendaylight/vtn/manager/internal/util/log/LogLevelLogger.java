@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -42,7 +42,7 @@ interface LogLevelLogger {
      * @param format  A format string used to construct log message.
      * @param args    An object array used to construct log message.
      */
-    void log(Logger logger, String format, Object ... args);
+    void log(Logger logger, String format, Object... args);
 
     /**
      * Log the specified message and exception.
@@ -67,5 +67,5 @@ interface LogLevelLogger {
      * @param format  A format string used to construct log message.
      * @param args    An object array used to construct log message.
      */
-    void log(Logger logger, Throwable t, String format, Object ... args);
+    void log(Logger logger, Throwable t, String format, Object... args);
 }

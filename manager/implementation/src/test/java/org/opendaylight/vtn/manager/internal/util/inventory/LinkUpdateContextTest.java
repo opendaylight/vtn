@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -99,7 +99,7 @@ public class LinkUpdateContextTest extends TestBase {
      *          configuration.
      */
     public static StaticSwitchLinks newStaticSwitchLinks(
-        StaticSwitchLink ... swl) {
+        StaticSwitchLink... swl) {
         List<StaticSwitchLink> swlinks = new ArrayList<>();
         Collections.addAll(swlinks, swl);
 
@@ -115,7 +115,7 @@ public class LinkUpdateContextTest extends TestBase {
      * @return  A {@link StaticEdgePorts} instance which contains the given
      *          configuration.
      */
-    public static StaticEdgePorts newStaticEdgePorts(SalPort ... edges) {
+    public static StaticEdgePorts newStaticEdgePorts(SalPort... edges) {
         List<StaticEdgePort> eplist = new ArrayList<>();
         for (SalPort sport: edges) {
             StaticEdgePort ep = new StaticEdgePortBuilder().

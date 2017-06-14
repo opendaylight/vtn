@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2014, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -528,7 +528,7 @@ public class UdpPacketTest extends TestBase {
      * @throws Exception  An error occurred.
      */
     private void verifyChecksumDisabled(UdpPacket udp, Inet4Packet inet4,
-                                        byte[] ... payloads) throws Exception {
+                                        byte[]... payloads) throws Exception {
         UDP pkt = udp.getPacket();
         short zero = 0;
         pkt.setChecksum(zero);

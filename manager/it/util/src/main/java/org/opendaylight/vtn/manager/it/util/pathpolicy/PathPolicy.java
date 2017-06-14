@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -73,7 +73,7 @@ public final class PathPolicy {
      * @return  A {@link SetPathCostInput} instance.
      */
     public static SetPathCostInput newSetCostInput(
-        Integer policy, PathCost ... costs) {
+        Integer policy, PathCost... costs) {
         List<PathCostList> pclist = (costs == null)
             ? null : PathCost.toPathCostList(costs);
         return new SetPathCostInputBuilder().
@@ -107,7 +107,7 @@ public final class PathPolicy {
      * @return  A {@link RemovePathCostInput} instance.
      */
     public static RemovePathCostInput newRemoveCostInput(
-        Integer policy, VtnPortDesc ... pdescs) {
+        Integer policy, VtnPortDesc... pdescs) {
         List<VtnPortDesc> pdlist = (pdescs == null)
             ? null : Arrays.asList(pdescs);
         return newRemoveCostInput(policy, pdlist);
@@ -209,7 +209,7 @@ public final class PathPolicy {
      * @param costs  An array of path costs to be added.
      * @return  This instance.
      */
-    public PathPolicy add(PathCost ... costs) {
+    public PathPolicy add(PathCost... costs) {
         for (PathCost pc: costs) {
             VtnPortDesc pdesc = (pc == null) ? null : pc.getPortDesc();
             pathCosts.put(pdesc, pc);
@@ -224,7 +224,7 @@ public final class PathPolicy {
      * @param costs  An array of path costs to be removed.
      * @return  This instance.
      */
-    public PathPolicy remove(PathCost ... costs) {
+    public PathPolicy remove(PathCost... costs) {
         for (PathCost pc: costs) {
             VtnPortDesc pdesc = (pc == null) ? null : pc.getPortDesc();
             pathCosts.remove(pdesc);
@@ -239,7 +239,7 @@ public final class PathPolicy {
      * @param pdescs  An array of port descriptors.
      * @return  This instance.
      */
-    public PathPolicy remove(VtnPortDesc ... pdescs) {
+    public PathPolicy remove(VtnPortDesc... pdescs) {
         for (VtnPortDesc pdesc: pdescs) {
             pathCosts.remove(pdesc);
         }
@@ -337,7 +337,7 @@ public final class PathPolicy {
      * @return  A map that contains the RPC result.
      */
     public Map<VtnPortDesc, VtnUpdateType> addCosts(
-        VtnPathPolicyService service, PathCost ... costs) {
+        VtnPathPolicyService service, PathCost... costs) {
         List<PathCost> pclist = (costs == null) ? null : Arrays.asList(costs);
         return addCosts(service, pclist);
     }
@@ -403,7 +403,7 @@ public final class PathPolicy {
      * @return  A map that contains the RPC result.
      */
     public Map<VtnPortDesc, VtnUpdateType> removeCosts(
-        VtnPathPolicyService service, VtnPortDesc ... pdescs) {
+        VtnPathPolicyService service, VtnPortDesc... pdescs) {
         List<VtnPortDesc> pdlist = (pdescs == null)
             ? null : Arrays.asList(pdescs);
         return removeCosts(service, pdlist);

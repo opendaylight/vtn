@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -154,7 +154,7 @@ public interface TxContext extends AutoCloseable {
      * @param format  A format string used to construct log message.
      * @param args    An object array used to construct log message.
      */
-    void log(Logger logger, VTNLogLevel level, String format, Object ... args);
+    void log(Logger logger, VTNLogLevel level, String format, Object... args);
 
     /**
      * Log the specified message and exception.
@@ -197,7 +197,7 @@ public interface TxContext extends AutoCloseable {
      * @param args    An object array used to construct log message.
      */
     void log(Logger logger, VTNLogLevel level, Throwable t, String format,
-             Object ... args);
+             Object... args);
 
     // AutoCloseable
 

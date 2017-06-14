@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2013, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -683,7 +683,7 @@ public abstract class TestBase extends Assert {
      * @param <T>  The type of the object to be deserialized.
      */
     protected static <T> void jaxbErrorTest(Class<T> type,
-                                            XmlDataType ... dtypes) {
+                                            XmlDataType... dtypes) {
         jaxbErrorTest(createUnmarshaller(type), type, dtypes);
     }
 
@@ -710,7 +710,7 @@ public abstract class TestBase extends Assert {
      * @param <T>  The type of the object to be deserialized.
      */
     protected static <T> void jaxbErrorTest(Unmarshaller um, Class<T> type,
-                                            XmlDataType ... dtypes) {
+                                            XmlDataType... dtypes) {
         for (XmlDataType dtype: dtypes) {
             jaxbErrorTest(um, type, dtype);
         }

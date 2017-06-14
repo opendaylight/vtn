@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -148,7 +148,7 @@ public final class VTNMacMapConfig implements Cloneable {
      * @param hosts  Hosts to be added to the allowed host set.
      * @return  This instance.
      */
-    public VTNMacMapConfig addAllowed(MacVlan ... hosts) {
+    public VTNMacMapConfig addAllowed(MacVlan... hosts) {
         for (MacVlan host: hosts) {
             allowedHosts.add(host);
         }
@@ -161,7 +161,7 @@ public final class VTNMacMapConfig implements Cloneable {
      * @param hosts  Hosts to be removed from the allowed host set.
      * @return  This instance.
      */
-    public VTNMacMapConfig removeAllowed(MacVlan ... hosts) {
+    public VTNMacMapConfig removeAllowed(MacVlan... hosts) {
         for (MacVlan host: hosts) {
             allowedHosts.remove(host);
         }
@@ -207,7 +207,7 @@ public final class VTNMacMapConfig implements Cloneable {
      * @param hosts  Hosts to be added to the denied host set.
      * @return  This instance.
      */
-    public VTNMacMapConfig addDenied(MacVlan ... hosts) {
+    public VTNMacMapConfig addDenied(MacVlan... hosts) {
         for (MacVlan host: hosts) {
             deniedHosts.add(host);
         }
@@ -220,7 +220,7 @@ public final class VTNMacMapConfig implements Cloneable {
      * @param hosts  Hosts to be removed from the denied host set.
      * @return  This instance.
      */
-    public VTNMacMapConfig removeDenied(MacVlan ... hosts) {
+    public VTNMacMapConfig removeDenied(MacVlan... hosts) {
         for (MacVlan host: hosts) {
             deniedHosts.remove(host);
         }

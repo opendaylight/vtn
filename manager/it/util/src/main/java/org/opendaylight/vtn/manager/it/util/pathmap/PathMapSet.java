@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -114,7 +114,7 @@ public final class PathMapSet implements Cloneable {
      * @param pmaps  An array of {@link PathMap} instances.
      * @return  A {@link SetPathMapInputBuilder} instance.
      */
-    public static SetPathMapInputBuilder newInputBuilder(PathMap ... pmaps) {
+    public static SetPathMapInputBuilder newInputBuilder(PathMap... pmaps) {
         List<PathMap> list = (pmaps == null) ? null : Arrays.asList(pmaps);
         return newInputBuilder(list);
     }
@@ -187,7 +187,7 @@ public final class PathMapSet implements Cloneable {
      * @param pmaps  An array of {@link PathMap} instances.
      * @return  This instance.
      */
-    public PathMapSet add(PathMap ... pmaps) {
+    public PathMapSet add(PathMap... pmaps) {
         for (PathMap pmap: pmaps) {
             pathMaps.put(pmap.getIndex(), pmap);
         }
@@ -213,7 +213,7 @@ public final class PathMapSet implements Cloneable {
      * @param pmaps  An array of {@link PathMap} instances.
      * @return  This instance.
      */
-    public PathMapSet remove(PathMap ... pmaps) {
+    public PathMapSet remove(PathMap... pmaps) {
         for (PathMap pmap: pmaps) {
             pathMaps.remove(pmap.getIndex());
         }
@@ -226,7 +226,7 @@ public final class PathMapSet implements Cloneable {
      * @param indices  An array of the path map indices to be removed.
      * @return  This instance.
      */
-    public PathMapSet remove(Integer ... indices) {
+    public PathMapSet remove(Integer... indices) {
         for (Integer idx: indices) {
             pathMaps.remove(idx);
         }
@@ -357,7 +357,7 @@ public final class PathMapSet implements Cloneable {
      * @return  A map that contains the RPC result.
      */
     public Map<Integer, VtnUpdateType> addMaps(
-        VtnPathMapService service, String tname, PathMap ... pmaps) {
+        VtnPathMapService service, String tname, PathMap... pmaps) {
         List<PathMap> list = (pmaps == null) ? null : Arrays.asList(pmaps);
         return addMaps(service, tname, list);
     }
@@ -433,7 +433,7 @@ public final class PathMapSet implements Cloneable {
      * @return  A map that contains the RPC result.
      */
     public Map<Integer, VtnUpdateType> removeMaps(
-        VtnPathMapService service, String tname, Integer ... indices) {
+        VtnPathMapService service, String tname, Integer... indices) {
         List<Integer> list = (indices == null) ? null : Arrays.asList(indices);
         return removeMaps(service, tname, list);
     }

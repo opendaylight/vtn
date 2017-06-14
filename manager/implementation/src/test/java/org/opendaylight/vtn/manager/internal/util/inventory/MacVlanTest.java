@@ -100,7 +100,7 @@ public class MacVlanTest extends TestBase {
      * @return  A list of {@link XmlDataType} instances.
      */
     public static List<XmlDataType> getXmlDataTypes(String name,
-                                                    String ... parent) {
+                                                    String... parent) {
         List<XmlDataType> dlist = new ArrayList<>();
         Collections.addAll(
             dlist,

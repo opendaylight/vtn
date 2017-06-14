@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2014, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -192,7 +192,7 @@ public final class MiscUtils {
      * @param objs  Objects to be joined.
      * @return  A joined string.
      */
-    public static String joinColon(Object ... objs) {
+    public static String joinColon(Object... objs) {
         return join(": ", objs);
     }
 
@@ -204,7 +204,7 @@ public final class MiscUtils {
      * @param objs       Objects to be joined.
      * @return  A joined string.
      */
-    public static String join(String separator, Object ... objs) {
+    public static String join(String separator, Object... objs) {
         StringBuilder builder = new StringBuilder();
         String sep = "";
         if (objs != null) {

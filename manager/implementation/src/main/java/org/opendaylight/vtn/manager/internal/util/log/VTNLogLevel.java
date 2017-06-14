@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -30,7 +30,7 @@ public enum VTNLogLevel implements LogLevelLogger {
         }
 
         @Override
-        public void log(Logger logger, String format, Object ... args) {
+        public void log(Logger logger, String format, Object... args) {
             logger.error(format, args);
         }
 
@@ -55,7 +55,7 @@ public enum VTNLogLevel implements LogLevelLogger {
         }
 
         @Override
-        public void log(Logger logger, String format, Object ... args) {
+        public void log(Logger logger, String format, Object... args) {
             logger.warn(format, args);
         }
 
@@ -80,7 +80,7 @@ public enum VTNLogLevel implements LogLevelLogger {
         }
 
         @Override
-        public void log(Logger logger, String format, Object ... args) {
+        public void log(Logger logger, String format, Object... args) {
             logger.info(format, args);
         }
 
@@ -105,7 +105,7 @@ public enum VTNLogLevel implements LogLevelLogger {
         }
 
         @Override
-        public void log(Logger logger, String format, Object ... args) {
+        public void log(Logger logger, String format, Object... args) {
             logger.debug(format, args);
         }
 
@@ -130,7 +130,7 @@ public enum VTNLogLevel implements LogLevelLogger {
         }
 
         @Override
-        public void log(Logger logger, String format, Object ... args) {
+        public void log(Logger logger, String format, Object... args) {
             logger.trace(format, args);
         }
 
@@ -147,7 +147,7 @@ public enum VTNLogLevel implements LogLevelLogger {
      */
     @Override
     public void log(Logger logger, Throwable t, String format,
-                    Object ... args) {
+                    Object... args) {
         if (isEnabled(logger)) {
             String msg = (args == null) ? format : String.format(format, args);
             if (t == null) {
