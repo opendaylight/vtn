@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2014-2016 NEC Corporation
+# Copyright (c) 2014-2017 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -15,8 +15,8 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.opendaylight.odlparent</groupId>
-    <artifactId>karaf-parent</artifactId>
-    <version>1.9.0</version>
+    <artifactId>karaf4-parent</artifactId>
+    <version>2.0.0</version>
     <relativePath />
   </parent>
 
@@ -58,21 +58,6 @@
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.karaf.tooling</groupId>
-        <artifactId>karaf-maven-plugin</artifactId>
-        <extensions>true</extensions>
-        <configuration>
-          <!-- no startupFeatures -->
-          <bootFeatures>
-            <feature>standard</feature>
-            <feature>odl-vtn-manager-rest</feature>
-            <feature>odl-vtn-manager-neutron</feature>
-          </bootFeatures>
-          <!-- no installedFeatures -->
-        </configuration>
-      </plugin>
-
       <!-- Ignore maven-site-plugin goals -->
       <plugin>
         <artifactId>maven-site-plugin</artifactId>

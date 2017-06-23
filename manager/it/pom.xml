@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2014-2016 NEC Corporation
+# Copyright (c) 2014-2017 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -46,7 +46,8 @@
     <module>features</module>
     <module>dist</module>
     <module>base</module>
-    <module>core</module>
+    <!-- Disable IT temporarily. -->
+    <!-- <module>core</module> -->
   </modules>
     <url>${odl.site.url}/${project.groupId}/${stream}/${project.artifactId}/</url>
   <distributionManagement>

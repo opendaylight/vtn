@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2013, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -80,12 +80,12 @@ public final class VTNManagerIT extends KarafTestBase {
     /**
      * The artifact ID of the feature repository.
      */
-    private static final String  VTN_FEATURE_ARTIFACT = "manager.it.features";
+    private static final String  VTN_FEATURE_ARTIFACT = "odl-vtn-manager-it";
 
     /**
      * The name of the Karaf feature to be installed.
      */
-    private static final String  VTN_FEATURE_NAME = "odl-vtn-manager-it";
+    private static final String  VTN_FEATURE_NAME = VTN_FEATURE_ARTIFACT;
 
     /**
      * Set true only if the first run.

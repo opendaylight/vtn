@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2016 NEC Corporation
+# Copyright (c) 2016-2017 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -16,8 +16,8 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.opendaylight.odlparent</groupId>
-    <artifactId>karaf-parent</artifactId>
-    <version>1.9.0</version>
+    <artifactId>karaf4-parent</artifactId>
+    <version>2.0.0</version>
     <relativePath />
   </parent>
 
@@ -45,7 +45,7 @@
     <!-- VTN Manager feature only for IT -->
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
-      <artifactId>manager.it.features</artifactId>
+      <artifactId>odl-vtn-manager-it</artifactId>
       <version>${project.version}</version>
       <classifier>features</classifier>
       <type>xml</type>
