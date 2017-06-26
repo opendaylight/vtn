@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2016, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,6 +7,8 @@
  */
 
 package org.opendaylight.vtn.manager.it.base;
+
+import static org.junit.Assert.fail;
 
 import static org.ops4j.pax.exam.CoreOptions.options;
 import static org.ops4j.pax.exam.karaf.options.KarafDistributionOption.editConfigurationFilePut;
@@ -22,6 +24,8 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Properties;
 
+import javax.inject.Inject;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -34,6 +38,10 @@ import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.options.BootDelegationOption;
 import org.ops4j.pax.exam.options.DefaultCompositeOption;
 import org.ops4j.pax.exam.options.extra.VMOption;
+import org.ops4j.pax.exam.util.Filter;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.it.ofmock.DataStoreUtils;
 import org.opendaylight.vtn.manager.it.util.VTNServices;
@@ -69,6 +77,12 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vterminal.rev150907.Vtn
  */
 public abstract class KarafTestBase extends AbstractMdsalTestBase
     implements VTNServices {
+    /**
+     * Logger instance.
+     */
+    private static final Logger  LOG =
+        LoggerFactory.getLogger(KarafTestBase.class);
+
     /**
      * The number of milliseconds to wait for OSGi service.
      */
@@ -106,6 +120,16 @@ public abstract class KarafTestBase extends AbstractMdsalTestBase
     private static final String  LOG_CFG_ROOT = "root";
 
     /**
+     * The interval, in milliseconds, between VTN configuration pollings.
+     */
+    private static final long  CONFIG_POLL_INTERVAL = 500;
+
+    /**
+     * The upper limit of the number of VTN configuration pollings.
+     */
+    private static final int  CONFIG_POLL_MAX = 60;
+
+    /**
      * JUnit rule to watch tests.
      */
     @Rule
@@ -114,6 +138,8 @@ public abstract class KarafTestBase extends AbstractMdsalTestBase
     /**
      * Data broker service.
      */
+    @Inject
+    @Filter(timeout = OSGI_TIMEOUT)
     private DataBroker  dataBroker;
 
     /**
@@ -325,21 +351,26 @@ public abstract class KarafTestBase extends AbstractMdsalTestBase
 
     /**
      * Initialize the vtn-config container.
+     *
+     * @throws InterruptedException  The calling thread was interrupted.
      */
-    private void initVtnConfig() {
-        ReadWriteTransaction tx = dataBroker.newReadWriteTransaction();
+    private void initVtnConfig() throws InterruptedException {
+        ReadWriteTransaction tx = newReadWriteTransaction();
+        InstanceIdentifier<VtnConfig> path =
+            InstanceIdentifier.create(VtnConfig.class);
         boolean submitted = false;
+        Integer tpwait = Integer.valueOf(0);
+        Boolean ht = Boolean.FALSE;
         try {
             // - Disable topology detection wait.
             // - Disable host tracking.
             VtnConfig vcfg = new VtnConfigBuilder().
-                setTopologyWait(0).
-                setHostTracking(false).
+                setTopologyWait(tpwait).
+                setHostTracking(ht).
                 build();
 
-            InstanceIdentifier<VtnConfig> path = InstanceIdentifier.
-                create(VtnConfig.class);
             tx.merge(LogicalDatastoreType.CONFIGURATION, path, vcfg, true);
+            LOG.debug("Submitting vtn-config.");
             DataStoreUtils.submit(tx);
             submitted = true;
         } finally {
@@ -347,6 +378,38 @@ public abstract class KarafTestBase extends AbstractMdsalTestBase
                 tx.cancel();
             }
         }
+
+        verifyVtnConfig(path, tpwait, ht);
+    }
+
+    /**
+     * Wait for the VTN configuration to be applied to the operational DS.
+     *
+     * @param path    Path to the vtn-config container.
+     * @param tpwait  Expected value of vtn-config.topology-wait.
+     * @param ht      Expected value of vtn-config.host-tracking.
+     * @throws InterruptedException  The calling thread was interrupted.
+     */
+    private void verifyVtnConfig(InstanceIdentifier<VtnConfig> path,
+                                 Integer tpwait, Boolean ht)
+        throws InterruptedException {
+
+        // Wait for the configuration to be appied to operational DS.
+        VtnConfig vcfg = null;
+        for (int i = 1; i <= CONFIG_POLL_MAX; i++) {
+            try (ReadOnlyTransaction rtx = newReadOnlyTransaction()) {
+                vcfg = DataStoreUtils.read(rtx, path).orNull();
+                if (vcfg != null && tpwait.equals(vcfg.getTopologyWait()) &&
+                    ht.equals(vcfg.isHostTracking())) {
+                    LOG.debug("vtn-config has been initialized: count={}", i);
+                    return;
+                }
+            }
+
+            Thread.sleep(CONFIG_POLL_INTERVAL);
+        }
+
+        fail("vtn-config was not applied to the operational DS: " + vcfg);
     }
 
     // AbstractConfigTestBase
@@ -384,11 +447,8 @@ public abstract class KarafTestBase extends AbstractMdsalTestBase
     public void setup() throws Exception {
         super.setup();
 
-        // Get data broker service.
-        ProviderContext sess = getSession();
-        dataBroker = sess.getSALService(DataBroker.class);
-
         // Get VTN RPC services.
+        ProviderContext sess = getSession();
         vtnService = sess.getRpcService(VtnService.class);
         vbridgeService = sess.getRpcService(VtnVbridgeService.class);
         vterminalService = sess.getRpcService(VtnVterminalService.class);

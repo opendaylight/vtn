@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2013-2016 NEC Corporation
+# Copyright (c) 2013-2017 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -78,6 +78,12 @@
     <dependency>
       <groupId>org.ops4j.pax.exam</groupId>
       <artifactId>pax-exam-junit4</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.ops4j.pax.exam</groupId>
+      <artifactId>pax-exam-features</artifactId>
+      <type>xml</type>
       <scope>test</scope>
     </dependency>
     <dependency>

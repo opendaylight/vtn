@@ -46,8 +46,7 @@
     <module>features</module>
     <module>dist</module>
     <module>base</module>
-    <!-- Disable IT temporarily. -->
-    <!-- <module>core</module> -->
+    <module>core</module>
   </modules>
     <url>${odl.site.url}/${project.groupId}/${stream}/${project.artifactId}/</url>
   <distributionManagement>
