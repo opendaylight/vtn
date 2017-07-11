@@ -109,14 +109,8 @@ UncRespCode OdcVbrIfCommand::create_request_body_port_map(
   pfc_log_debug("logical_port_id is %s", logical_port_id.c_str());
   std::string switch_port = logical_port_id.substr(3);
   size_t hyphen_occurence = switch_port.find("-");
-  std::string of_switch_id = switch_port.substr(0, hyphen_occurence);
+  switch_id = switch_port.substr(0, hyphen_occurence);
   port_name = switch_port.substr(hyphen_occurence+1);
-  // convert switch id from unsigned decimal to hex string
-  int switch_val = atoi(of_switch_id.substr(9).c_str());
-  std::stringstream stream;
-  stream << std::hex << switch_val;
-  switch_id = stream.str();
-  switch_id = SWITCH_BASE + switch_id ;
   pfc_log_debug("port name : %s", port_name.c_str());
   pfc_log_debug("switch id : %s", switch_id.c_str());
   //ip_vbrif_port_st.input_vbrifport_.vlan = 0;
