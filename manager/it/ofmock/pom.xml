@@ -74,10 +74,6 @@
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>sal-binding-api</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>sal-binding-config</artifactId>
-    </dependency>
 
     <dependency>
       <groupId>org.opendaylight.controller.model</groupId>
@@ -86,12 +82,6 @@
     <dependency>
       <groupId>org.opendaylight.controller.model</groupId>
       <artifactId>model-topology</artifactId>
-    </dependency>
-
-    <!-- OpenDaylight config subsystem -->
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>config-api</artifactId>
     </dependency>
 
     <!-- OpenDaylight YANG Tools -->

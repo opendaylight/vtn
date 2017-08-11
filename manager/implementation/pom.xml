@@ -116,7 +116,7 @@
     <!-- OpenDaylight controller (MD-SAL) -->
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
-      <artifactId>sal-binding-config</artifactId>
+      <artifactId>sal-binding-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
