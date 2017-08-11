@@ -16,6 +16,5 @@
    xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.2.0 http://karaf.apache.org/xmlns/features/v1.2.0">
 
   <feature name="odl-vtn-manager" version="${project.version}">
-    <configfile finalname="etc/opendaylight/karaf/80-vtn.xml">mvn:org.opendaylight.vtn/manager.implementation/${project.version}/xml/config</configfile>
   </feature>
 </features>

@@ -1,5 +1,6 @@
 *~
 target
+target-ide
 **/target
 /coordinator/build/config.mk
 /coordinator/core/build/config.mk

@@ -71,7 +71,6 @@
 
     <!-- OpenDaylight artifacts -->
     <odl.controller.mdsal.version>1.6.0-SNAPSHOT</odl.controller.mdsal.version>
-    <odl.config.version>0.7.0-SNAPSHOT</odl.config.version>
     <odl.yangtools.version>1.2.0-SNAPSHOT</odl.yangtools.version>
     <odl.mdsal.version>2.3.0-SNAPSHOT</odl.mdsal.version>
     <odl.mdsal.model.version>0.11.0-SNAPSHOT</odl.mdsal.model.version>
@@ -515,15 +514,6 @@
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>mdsal-it-base</artifactId>
         <version>${odl.controller.mdsal.version}</version>
-      </dependency>
-
-      <!-- OpenDaylight config subsystem -->
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>config-artifacts</artifactId>
-        <version>${odl.config.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
       </dependency>
 
       <!-- OpenDaylight YANG Tools -->

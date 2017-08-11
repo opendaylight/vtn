@@ -62,14 +62,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.opendaylight.vtn</groupId>
-      <artifactId>manager.implementation</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>xml</type>
-    </dependency>
-
-    <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>manager.model</artifactId>
       <version>${project.version}</version>
