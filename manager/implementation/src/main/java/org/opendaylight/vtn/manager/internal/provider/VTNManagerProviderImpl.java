@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2017 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -366,11 +366,18 @@ public final class VTNManagerProviderImpl
     private GetManagerVersionOutput getManagerVersionOutput() {
         // Determine OSGi bundle version.
         Version ver = implBundle.getVersion();
+
+        // Set null to version qualifier if it is empty.
+        String qualifier = ver.getQualifier();
+        if (qualifier != null && qualifier.isEmpty()) {
+            qualifier = null;
+        }
+
         BundleVersion bv = new BundleVersionBuilder().
             setMajor((long)ver.getMajor()).
             setMinor((long)ver.getMinor()).
             setMicro((long)ver.getMicro()).
-            setQualifier(ver.getQualifier()).
+            setQualifier(qualifier).
             build();
 
         return new GetManagerVersionOutputBuilder().
