@@ -1,0 +1,7 @@
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+2: Hideyuki Tai <h-tai@cd.jp.nec.com>
+Submitted-by: Hideyuki Tai <h-tai@cd.jp.nec.com>
+Submitted-at: Tue, 22 Aug 2017 07:59:13 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/62123
+Project: vtn
+Branch: refs/heads/stable/nitrogen
