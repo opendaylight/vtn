@@ -131,8 +131,8 @@ build_support=yes
 parse_support=no
 
 [dst_port_to]
-type=string
-key="port_to"
+type=int
+key="port-to"
 is_child=yes
 struct_name=tcp_dest_range
 mandatory=no
@@ -140,8 +140,8 @@ build_support=yes
 parse_support=no
 
 [dst_port_from]
-type=string
-key="port_from"
+type=int
+key="port-from"
 is_child=yes
 struct_name=tcp_dest_range
 mandatory=no
@@ -170,7 +170,7 @@ build_support=yes
 parse_support=no
 
 [src_port_to]
-type=string
+type=int
 key="port-to"
 is_child=yes
 struct_name=tcp_src_range
@@ -180,7 +180,7 @@ parse_support=no
 
 
 [src_port_from]
-type=string
+type=int
 key="port-from"
 is_child=yes
 struct_name=tcp_src_range
