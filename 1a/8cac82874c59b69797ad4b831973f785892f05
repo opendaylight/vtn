@@ -1,0 +1,7 @@
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+2: Shigeru Yasuda <s-yasuda@da.jp.nec.com>
+Submitted-by: Shigeru Yasuda <s-yasuda@da.jp.nec.com>
+Submitted-at: Fri, 06 Oct 2017 05:05:27 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/64008
+Project: vtn
+Branch: refs/heads/stable/carbon
