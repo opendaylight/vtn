@@ -17,24 +17,24 @@
   <parent>
     <groupId>org.opendaylight.odlparent</groupId>
     <artifactId>features-parent</artifactId>
-    <version>1.8.2-SNAPSHOT</version>
+    <version>1.8.2-Carbon</version>
     <relativePath />
   </parent>
 
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>features-vtn-manager</artifactId>
-  <version>0.6.2-SNAPSHOT</version>
+  <version>0.6.2-Carbon</version>
   <packaging>jar</packaging>
   <description>VTN Manager's Karaf features.</description>
 
   <properties>
     <!-- OpenDaylight artifacts -->
-    <odl.controller.mdsal.version>1.5.2-SNAPSHOT</odl.controller.mdsal.version>
-    <odl.mdsal.model.version>0.10.2-SNAPSHOT</odl.mdsal.model.version>
-    <odl.netconf.version>1.5.2-SNAPSHOT</odl.netconf.version>
-    <odl.openflowplugin.version>0.4.2-SNAPSHOT</odl.openflowplugin.version>
-    <odl.neutron.version>0.8.2-SNAPSHOT</odl.neutron.version>
-    <odl.ovsdb.version>1.4.2-SNAPSHOT</odl.ovsdb.version>
+    <odl.controller.mdsal.version>1.5.2-Carbon</odl.controller.mdsal.version>
+    <odl.mdsal.model.version>0.10.2-Carbon</odl.mdsal.model.version>
+    <odl.netconf.version>1.5.2-Carbon</odl.netconf.version>
+    <odl.openflowplugin.version>0.4.2-Carbon</odl.openflowplugin.version>
+    <odl.neutron.version>0.8.2-Carbon</odl.neutron.version>
+    <odl.ovsdb.version>1.4.2-Carbon</odl.ovsdb.version>
   </properties>
 
   <profiles>
