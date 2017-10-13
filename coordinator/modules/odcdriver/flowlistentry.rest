@@ -75,8 +75,8 @@ type=url_string
 get_abstract=yes
 
 [udp_dst_port_to]
-type=string
-key="port_to"
+type=int
+key="port-to"
 is_child=yes
 struct_name=udp_destination_range
 mandatory=no
@@ -84,8 +84,8 @@ build_support=yes
 parse_support=no
 
 [udp_dst_port_from]
-type=string
-key="port_from"
+type=int
+key="port-from"
 is_child=yes
 struct_name=udp_destination_range
 mandatory=no
@@ -103,8 +103,8 @@ build_support=yes
 parse_support=no
 
 [udp_src_port_to]
-type=string
-key="port_to"
+type=int
+key="port-to"
 is_child=yes
 struct_name=udp_source_range
 mandatory=no
@@ -112,8 +112,8 @@ build_support=yes
 parse_support=no
 
 [udp_src_port_from]
-type=string
-key="port_from"
+type=int
+key="port-from"
 is_child=yes
 struct_name=udp_source_range
 mandatory=no
@@ -122,7 +122,7 @@ parse_support=no
 
 [udp_source_range]
 type=struct
-key="tcp-source-range"
+key="udp-source-range"
 is_child=yes
 struct_name=match
 members=udp_src_port_from,udp_src_port_to,valid

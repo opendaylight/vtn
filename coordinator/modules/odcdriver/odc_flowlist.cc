@@ -438,24 +438,56 @@ OdcFlowListEntryCommand::copy(ip_flowlistentry&  ip_flowlistentry_st,
       if ( val.valid[UPLL_IDX_ICMP_CODE_FLE] == UNC_VF_VALID )
         match_.icmp_code =val.icmp_code;
 
-      pfc_log_info("Filling L4 tcp Match Details");
+    pfc_log_info("Filling L4 tcp, udp Match Details");
 
-      if ( val.valid[UPLL_IDX_L4_DST_PORT_FLE] == UNC_VF_VALID) {
-          match_.tcp_dest_range_.valid = true;
-          match_.tcp_dest_range_.dst_port_from = val.l4_dst_port;
+      if ( val.valid[UPLL_IDX_L4_DST_PORT_FLE] == UNC_VF_VALID ) {
+          if( val.ip_proto == TCP_PROTO ) {
+              match_.tcp_dest_range_.valid = true ;
+              match_.tcp_dest_range_.dst_port_from = val.l4_dst_port;
+          }
+          else if( val.ip_proto == UDP_PROTO ){
+              match_.udp_destination_range_.valid = true;
+              match_.udp_destination_range_.udp_dst_port_from = val.l4_dst_port;
+          }
       }
-      if (val.valid[UPLL_IDX_L4_DST_PORT_ENDPT_FLE] == UNC_VF_VALID) {
-          match_.tcp_dest_range_.valid = true;
-          match_.tcp_dest_range_.dst_port_to = val.l4_dst_port_endpt;
+
+      if ( val.valid[UPLL_IDX_L4_DST_PORT_ENDPT_FLE] == UNC_VF_VALID ) {
+          if ( val.ip_proto == TCP_PROTO ) {
+               match_.tcp_dest_range_.valid = true;
+               match_.tcp_dest_range_.dst_port_to = val.l4_dst_port_endpt;
+          }
+          else if( val.ip_proto == UDP_PROTO ){
+               match_.udp_destination_range_.valid = true;
+               match_.udp_destination_range_.udp_dst_port_to = val.l4_dst_port_endpt;
+          }
       }
-      if ( val.valid[UPLL_IDX_L4_SRC_PORT_FLE] == UNC_VF_VALID) {
-          match_.tcp_src_range_.valid = true;
-          match_.tcp_src_range_.src_port_from= val.l4_src_port;
+
+      if ( val.valid[UPLL_IDX_L4_SRC_PORT_FLE] == UNC_VF_VALID ) {
+          if ( val.ip_proto == TCP_PROTO ) {
+               match_.tcp_src_range_.valid = true;
+               match_.tcp_src_range_.src_port_from= val.l4_src_port;
+          }
+          else if( val.ip_proto == UDP_PROTO ) {
+               match_.udp_source_range_.valid = true;
+               match_.udp_source_range_.udp_src_port_from = val.l4_src_port;
+          }
       }
-      if ( val.valid[UPLL_IDX_L4_SRC_PORT_ENDPT_FLE] == UNC_VF_VALID) {
-          match_.tcp_src_range_.valid = true;
-          match_.tcp_src_range_.src_port_to = val.l4_src_port_endpt;
+
+      if ( val.valid[UPLL_IDX_L4_SRC_PORT_ENDPT_FLE] == UNC_VF_VALID ) {
+          if ( val.ip_proto == TCP_PROTO ) {
+              match_.tcp_src_range_.valid = true;
+              match_.tcp_src_range_.src_port_to = val.l4_src_port_endpt;
+          }
+          else if( val.ip_proto == UDP_PROTO ) {
+              match_.udp_source_range_.valid = true;
+              match_.udp_source_range_.udp_src_port_to = val.l4_src_port_endpt;
+          }
       }
+
+      if( val.ip_proto!= TCP_PROTO && val.ip_proto != UDP_PROTO && val.ip_proto!= ICMP_PROTO) {
+         pfc_log_error("protocol: %d expected protocol tcp: %d udp: %d icmp: %d",val.ip_proto,TCP_PROTO,UDP_PROTO,ICMP_PROTO);
+      }
+
     }
   ip_flowlistentry_st.in_flowcond_.match_.push_back(match_);
 }
