@@ -170,6 +170,12 @@ typedef enum {
       /* Other changes      */
 } ctrl_info_update_type_t;
 
+typedef enum{
+  ICMP_PROTO = 1,
+  TCP_PROTO = 6,
+  UDP_PROTO = 17
+} protocol_values;
+
 }  //  namespace odcdriver
 }  //  namespace unc
 #endif  // ODCDRIVER_COMMON_DEFS_H_
