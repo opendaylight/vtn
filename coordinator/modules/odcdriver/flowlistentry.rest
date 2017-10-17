@@ -240,7 +240,7 @@ type=string
 key="destination-network"
 is_child=yes
 struct_name=inet_match
-mandatory=yes
+mandatory=no
 build_support=yes
 parse_support=no
 
