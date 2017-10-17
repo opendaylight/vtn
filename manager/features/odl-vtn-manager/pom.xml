@@ -16,13 +16,13 @@
   <parent>
     <groupId>org.opendaylight.odlparent</groupId>
     <artifactId>single-feature-parent</artifactId>
-    <version>1.8.2-SNAPSHOT</version>
+    <version>1.8.3-SNAPSHOT</version>
     <relativePath />
   </parent>
 
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>odl-vtn-manager</artifactId>
-  <version>0.6.2-SNAPSHOT</version>
+  <version>0.6.3-SNAPSHOT</version>
   <packaging>feature</packaging>
 
   <name>OpenDaylight :: VTN Manager :: Java API</name>
@@ -32,7 +32,7 @@
       <dependency>
         <groupId>org.opendaylight.mdsal.model</groupId>
         <artifactId>mdsal-model-artifacts</artifactId>
-        <version>0.10.2-SNAPSHOT</version>
+        <version>0.10.3-SNAPSHOT</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -40,7 +40,7 @@
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>mdsal-artifacts</artifactId>
-        <version>1.5.2-SNAPSHOT</version>
+        <version>1.5.3-SNAPSHOT</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -102,7 +102,7 @@
     <dependency>
       <groupId>org.opendaylight.openflowplugin</groupId>
       <artifactId>odl-openflowplugin-flow-services</artifactId>
-      <version>0.4.2-SNAPSHOT</version>
+      <version>0.4.3-SNAPSHOT</version>
       <type>xml</type>
       <classifier>features</classifier>
     </dependency>
@@ -110,7 +110,7 @@
     <dependency>
       <groupId>org.opendaylight.openflowplugin</groupId>
       <artifactId>odl-openflowplugin-nsf-model</artifactId>
-      <version>0.4.2-SNAPSHOT</version>
+      <version>0.4.3-SNAPSHOT</version>
       <type>xml</type>
       <classifier>features</classifier>
     </dependency>
