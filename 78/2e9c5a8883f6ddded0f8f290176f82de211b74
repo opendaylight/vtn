@@ -1,0 +1,7 @@
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+2: Venkatrangan Govindarajan <venkatrangang@hcl.com>
+Submitted-by: Venkatrangan Govindarajan <venkatrangang@hcl.com>
+Submitted-at: Thu, 19 Oct 2017 05:22:41 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/64377
+Project: vtn
+Branch: refs/heads/stable/carbon
