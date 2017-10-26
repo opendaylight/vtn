@@ -8,32 +8,29 @@
 
 package org.opendaylight.vtn.manager.internal.provider;
 
+import com.google.common.base.Optional;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Optional;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-
 import org.apache.commons.lang3.tuple.Pair;
-
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleEvent;
-import org.osgi.framework.SynchronousBundleListener;
-import org.osgi.framework.Version;
-
+import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.binding.api.NotificationPublishService;
+import org.opendaylight.controller.md.sal.binding.api.NotificationService;
+import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
+import org.opendaylight.mdsal.eos.binding.api.Entity;
+import org.opendaylight.mdsal.eos.binding.api.EntityOwnershipCandidateRegistration;
+import org.opendaylight.mdsal.eos.binding.api.EntityOwnershipListener;
+import org.opendaylight.mdsal.eos.binding.api.EntityOwnershipListenerRegistration;
+import org.opendaylight.mdsal.eos.binding.api.EntityOwnershipService;
+import org.opendaylight.mdsal.eos.common.api.CandidateAlreadyRegisteredException;
+import org.opendaylight.mdsal.eos.common.api.EntityOwnershipState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTNManager;
-import org.opendaylight.vtn.manager.packet.Packet;
-
 import org.opendaylight.vtn.manager.internal.FlowRemover;
 import org.opendaylight.vtn.manager.internal.RouteResolver;
 import org.opendaylight.vtn.manager.internal.TxContext;
@@ -65,24 +62,8 @@ import org.opendaylight.vtn.manager.internal.util.tx.ReadTxContext;
 import org.opendaylight.vtn.manager.internal.util.tx.TxQueueImpl;
 import org.opendaylight.vtn.manager.internal.util.tx.TxSyncFuture;
 import org.opendaylight.vtn.manager.internal.vnode.VTenantManager;
-
-import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.NotificationPublishService;
-import org.opendaylight.controller.md.sal.binding.api.NotificationService;
-import org.opendaylight.controller.md.sal.common.api.clustering.CandidateAlreadyRegisteredException;
-import org.opendaylight.controller.md.sal.common.api.clustering.Entity;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipCandidateRegistration;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListener;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListenerRegistration;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipService;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipState;
-import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
-
-import org.opendaylight.yangtools.yang.binding.Notification;
-import org.opendaylight.yangtools.yang.binding.RpcService;
-import org.opendaylight.yangtools.yang.common.RpcResult;
-import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
-
+import org.opendaylight.vtn.manager.packet.Packet;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnFlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.GetManagerVersionOutput;
@@ -90,8 +71,17 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.GetMa
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.VtnVersionService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.get.manager.version.output.BundleVersion;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.version.rev150901.get.manager.version.output.BundleVersionBuilder;
-
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
+import org.opendaylight.yangtools.yang.binding.Notification;
+import org.opendaylight.yangtools.yang.binding.RpcService;
+import org.opendaylight.yangtools.yang.common.RpcResult;
+import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
+import org.osgi.framework.SynchronousBundleListener;
+import org.osgi.framework.Version;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * MD-SAL service provider of the VTN Manager.
@@ -339,7 +329,7 @@ public final class VTNManagerProviderImpl
      * @return  {@code true} only if this instance can be reused.
      */
     public boolean canReuse() {
-        return (managerState.get() == STATE_ACTIVE);
+        return managerState.get() == STATE_ACTIVE;
     }
 
     /**
@@ -467,7 +457,7 @@ public final class VTNManagerProviderImpl
     @Override
     public VTNConfig getVTNConfig() {
         VTNConfigManager cfm = configManager.get();
-        return (cfm == null) ? new VTNConfigImpl() : cfm;
+        return cfm == null ? new VTNConfigImpl() : cfm;
     }
 
     /**
@@ -508,7 +498,7 @@ public final class VTNManagerProviderImpl
             // Wait for the future using global thread pool.
             LOG.warn("Use FutureCallbackTask: future={}, cb={}", future, cb);
             FutureCallbackTask<T> task =
-                new FutureCallbackTask<T>(future, cb, globalTimer);
+                new FutureCallbackTask<>(future, cb, globalTimer);
             globalExecutor.executeTask(task);
         }
     }
@@ -557,7 +547,7 @@ public final class VTNManagerProviderImpl
     @Override
     public RouteResolver getRouteResolver(Integer id) {
         VTNRoutingManager rtm = subSystems.get(VTNRoutingManager.class);
-        return (rtm == null) ? null : rtm.getRouteResolver(id);
+        return rtm == null ? null : rtm.getRouteResolver(id);
     }
 
     /**
@@ -566,8 +556,8 @@ public final class VTNManagerProviderImpl
     @Override
     public VTNFuture<VtnFlowId> addFlow(VTNFlowBuilder builder) {
         VTNFlowManager vfm = subSystems.get(VTNFlowManager.class);
-        return (vfm == null)
-            ? new CanceledFuture<VtnFlowId>()
+        return vfm == null
+            ? new CanceledFuture<>()
             : vfm.addFlow(builder);
     }
 
@@ -577,8 +567,8 @@ public final class VTNManagerProviderImpl
     @Override
     public VTNFuture<Void> removeFlows(FlowRemover remover) {
         VTNFlowManager vfm = subSystems.get(VTNFlowManager.class);
-        return (vfm == null)
-            ? new CanceledFuture<Void>()
+        return vfm == null
+            ? new CanceledFuture<>()
             : vfm.removeFlows(remover);
     }
 
@@ -616,7 +606,7 @@ public final class VTNManagerProviderImpl
         Entity ent = VTNEntityType.getGlobalEntity(etype);
         Optional<EntityOwnershipState> opt =
             entityOwnerService.getOwnershipState(ent);
-        return (opt.isPresent() && opt.get().isOwner());
+        return opt.isPresent() && opt.get() == EntityOwnershipState.IS_OWNER;
     }
 
     /**
@@ -681,7 +671,7 @@ public final class VTNManagerProviderImpl
         if (globalTimer.isAvailable()) {
             // Schedule a timer task that cancels the wait for the background
             // tasks.
-            TxSyncFuture<T> bgf = new TxSyncFuture<T>(task, f);
+            TxSyncFuture<T> bgf = new TxSyncFuture<>(task, f);
             FutureCanceller.set(globalTimer, TX_BGTASK_TIMEOUT, bgf);
             return bgf;
         }
@@ -786,7 +776,7 @@ public final class VTNManagerProviderImpl
     @Override
     public <T> VTNFuture<T> post(TxTask<T> task) {
         TxQueueImpl txq = globalQueue.get();
-        return (txq == null) ? new CanceledFuture<T>() : txq.post(task);
+        return txq == null ? new CanceledFuture<>() : txq.post(task);
     }
 
     /**
@@ -795,7 +785,7 @@ public final class VTNManagerProviderImpl
     @Override
     public <T> VTNFuture<T> postFirst(TxTask<T> task) {
         TxQueueImpl txq = globalQueue.get();
-        return (txq == null) ? new CanceledFuture<T>() : txq.postFirst(task);
+        return txq == null ? new CanceledFuture<>() : txq.postFirst(task);
     }
 
     // VtnVersionService

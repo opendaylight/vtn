@@ -11,11 +11,8 @@ package org.opendaylight.vtn.manager.internal.util;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.junit.Test;
-
-import org.opendaylight.controller.md.sal.common.api.clustering.Entity;
-
+import org.opendaylight.mdsal.eos.binding.api.Entity;
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 /**

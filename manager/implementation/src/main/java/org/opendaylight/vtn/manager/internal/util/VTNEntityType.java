@@ -8,13 +8,11 @@
 
 package org.opendaylight.vtn.manager.internal.util;
 
+import com.google.common.collect.ImmutableMap;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.Map;
-
-import com.google.common.collect.ImmutableMap;
-
-import org.opendaylight.controller.md.sal.common.api.clustering.Entity;
+import org.opendaylight.mdsal.eos.binding.api.Entity;
 
 /**
  * {@code VTNEntityType} describes entities shared by VTN Managers in a
