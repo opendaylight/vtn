@@ -14,10 +14,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
+import org.opendaylight.mdsal.eos.binding.api.Entity;
+import org.opendaylight.mdsal.eos.binding.api.EntityOwnershipChange;
+import org.opendaylight.mdsal.eos.binding.api.EntityOwnershipListener;
+import org.opendaylight.mdsal.eos.binding.api.EntityOwnershipListenerRegistration;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
@@ -28,15 +29,7 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcFuture;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcUtils;
 import org.opendaylight.vtn.manager.internal.util.vnode.VBridgeIdentifier;
-
-import org.opendaylight.controller.md.sal.common.api.clustering.Entity;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipChange;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListener;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListenerRegistration;
-import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
-
-import org.opendaylight.yangtools.yang.common.RpcResult;
-
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.GetMacMappedHostInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.GetMacMappedHostOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.SetMacMapAclInput;
@@ -44,7 +37,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.S
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.SetMacMapInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.SetMacMapOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.VtnMacMapService;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.mac.rev150907.get.mac.mapped.host.output.MacMappedHost;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.AddVlanMapInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.AddVlanMapOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.mapping.vlan.rev150907.GetVlanMapInput;
@@ -64,8 +56,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.Updat
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.UpdateVbridgeOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.VtnVbridgeService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.vbridge.rev150907.vtn.vbridge.info.VbridgeConfig;
-
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
+import org.opendaylight.yangtools.yang.common.RpcResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * {@code VBridgeManager} provides services related to vBridge.
@@ -223,13 +216,13 @@ public final class VBridgeManager
             ClearMacEntryTask task = new ClearMacEntryTask(ident);
             VTNFuture<List<RemoveMacEntryResult>> f =
                 vtnProvider.postSync(task);
-            ret = new RpcFuture<List<RemoveMacEntryResult>, RemoveMacEntryOutput>(
+            ret = new RpcFuture<>(
                 f, task);
         } else {
             // Remove only the specified MAC addresses.
             RemoveMacEntryTask task = RemoveMacEntryTask.create(ident, addrs);
             VTNFuture<List<VtnUpdateType>> f = vtnProvider.postSync(task);
-            ret = new RpcFuture<List<VtnUpdateType>, RemoveMacEntryOutput>(
+            ret = new RpcFuture<>(
                 f, task);
         }
 
@@ -258,13 +251,13 @@ public final class VBridgeManager
             ClearVlanMapTask task = new ClearVlanMapTask(ident);
             VTNFuture<List<RemoveVlanMapResult>> f =
                 vtnProvider.postSync(task);
-            ret = new RpcFuture<List<RemoveVlanMapResult>, RemoveVlanMapOutput>(
+            ret = new RpcFuture<>(
                 f, task);
         } else {
             // Remove only the specified VLAN mappings.
             RemoveVlanMapTask task = RemoveVlanMapTask.create(ident, mapIds);
             VTNFuture<List<VtnUpdateType>> f = vtnProvider.postSync(task);
-            ret = new RpcFuture<List<VtnUpdateType>, RemoveVlanMapOutput>(
+            ret = new RpcFuture<>(
                 f, task);
         }
 
@@ -287,7 +280,7 @@ public final class VBridgeManager
             VBridgeEntity vbent = vBridges.get(ent);
             if (vbent != null) {
                 boolean jeopardy = change.inJeopardy();
-                if (change.isOwner() && !jeopardy) {
+                if (change.getState().isOwner() && !jeopardy) {
                     vbent.startAging();
 
                     // Ensure that the listener is still valid.
@@ -317,7 +310,7 @@ public final class VBridgeManager
             // Create a task that updates the vBridge.
             UpdateVbridgeTask task = UpdateVbridgeTask.create(input);
             VTNFuture<VtnUpdateType> taskFuture = vtnProvider.postSync(task);
-            return new RpcFuture<VtnUpdateType, UpdateVbridgeOutput>(
+            return new RpcFuture<>(
                 taskFuture, task);
         } catch (RpcException | RuntimeException e) {
             return RpcUtils.getErrorBuilder(UpdateVbridgeOutput.class, e).
@@ -337,7 +330,7 @@ public final class VBridgeManager
             // Create a task that removes the specified vBridge.
             RemoveVbridgeTask task = RemoveVbridgeTask.create(input);
             VTNFuture<VtnUpdateType> taskFuture = vtnProvider.postSync(task);
-            return new RpcFuture<VtnUpdateType, Void>(taskFuture, task);
+            return new RpcFuture<>(taskFuture, task);
         } catch (RpcException | RuntimeException e) {
             return RpcUtils.getErrorBuilder(Void.class, e).buildFuture();
         }
@@ -379,7 +372,7 @@ public final class VBridgeManager
             // Create a task that adds a VLAN mapping.
             AddVlanMapTask task = AddVlanMapTask.create(input);
             VTNFuture<VlanMap> taskFuture = vtnProvider.postSync(task);
-            return new RpcFuture<VlanMap, AddVlanMapOutput>(
+            return new RpcFuture<>(
                 taskFuture, task);
         } catch (RpcException | RuntimeException e) {
             return RpcUtils.getErrorBuilder(AddVlanMapOutput.class, e).
@@ -417,7 +410,7 @@ public final class VBridgeManager
         GetVlanMapInput input) {
         try (TxContext ctx = vtnProvider.newTxContext()) {
             GetVlanMapFuture f = new GetVlanMapFuture(ctx, input);
-            return new RpcFuture<VlanMap, GetVlanMapOutput>(f, f);
+            return new RpcFuture<>(f, f);
         } catch (RpcException | RuntimeException e) {
             return RpcUtils.getErrorBuilder(GetVlanMapOutput.class, e).
                 buildFuture();
@@ -438,7 +431,7 @@ public final class VBridgeManager
             // Create a task that configures the MAC mapping.
             SetMacMapTask task = SetMacMapTask.create(input);
             VTNFuture<VtnUpdateType> taskFuture = vtnProvider.postSync(task);
-            return new RpcFuture<VtnUpdateType, SetMacMapOutput>(
+            return new RpcFuture<>(
                 taskFuture, task);
         } catch (RpcException | RuntimeException e) {
             return RpcUtils.getErrorBuilder(SetMacMapOutput.class, e).
@@ -460,7 +453,7 @@ public final class VBridgeManager
             // MAC mapping.
             SetMacMapAclTask task = SetMacMapAclTask.create(input);
             VTNFuture<VtnUpdateType> taskFuture = vtnProvider.postSync(task);
-            return new RpcFuture<VtnUpdateType, SetMacMapAclOutput>(
+            return new RpcFuture<>(
                 taskFuture, task);
         } catch (RpcException | RuntimeException e) {
             return RpcUtils.getErrorBuilder(SetMacMapAclOutput.class, e).
@@ -480,7 +473,7 @@ public final class VBridgeManager
         GetMacMappedHostInput input) {
         try (TxContext ctx = vtnProvider.newTxContext()) {
             GetMacMappedHostFuture f = new GetMacMappedHostFuture(ctx, input);
-            return new RpcFuture<List<MacMappedHost>, GetMacMappedHostOutput>(
+            return new RpcFuture<>(
                 f, f);
         } catch (RpcException | RuntimeException e) {
             return RpcUtils.getErrorBuilder(GetMacMappedHostOutput.class, e).

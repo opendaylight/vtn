@@ -8,6 +8,9 @@
 
 package org.opendaylight.vtn.manager.internal.config;
 
+import com.google.common.base.Optional;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
@@ -15,17 +18,15 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Optional;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-
+import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
+import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.mdsal.eos.binding.api.Entity;
+import org.opendaylight.mdsal.eos.binding.api.EntityOwnershipChange;
+import org.opendaylight.mdsal.eos.binding.api.EntityOwnershipListener;
+import org.opendaylight.mdsal.eos.binding.api.EntityOwnershipListenerRegistration;
+import org.opendaylight.mdsal.eos.common.api.EntityOwnershipState;
 import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.util.EtherAddress;
-
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxQueue;
 import org.opendaylight.vtn.manager.internal.TxTask;
@@ -37,21 +38,13 @@ import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
 import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 import org.opendaylight.vtn.manager.internal.util.tx.TxQueueImpl;
-
-import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
-import org.opendaylight.controller.md.sal.common.api.clustering.Entity;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipChange;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListener;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListenerRegistration;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipState;
-import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-
-import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-
+import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfigBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnErrorTag;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * VTN global configuration manager.
@@ -83,19 +76,19 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
      * A MD-SAL datastore transaction queue for the global configuration.
      */
     private final AtomicReference<TxQueueImpl>  configQueue =
-        new AtomicReference<TxQueueImpl>();
+        new AtomicReference<>();
 
     /**
      * Listener of VTN configuration for configuration view.
      */
     private final AtomicReference<ConfigListener>  confListener =
-        new AtomicReference<ConfigListener>();
+        new AtomicReference<>();
 
     /**
      * Listener of VTN configuration for operational view.
      */
     private final AtomicReference<OperationalListener>  operListener =
-        new AtomicReference<OperationalListener>();
+        new AtomicReference<>();
 
     /**
      * Set true if the local node is configuration provider.
@@ -247,7 +240,7 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
         /**
          * Registration of the VTN configuration entity ownership listener.
          */
-        private final EntityOwnershipListenerRegistration  listener;
+        private final EntityOwnershipListenerRegistration listener;
 
         /**
          * A boolean value that determines whether the VTN configuration is
@@ -279,8 +272,8 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
             if (opt.isPresent()) {
                 EntityOwnershipState estate = opt.get();
                 LOG.debug("Current ownership state: {}", estate);
-                if (estate.hasOwner()) {
-                    startInitTask(estate.isOwner());
+                if (estate != EntityOwnershipState.NO_OWNER) {
+                    startInitTask(estate == EntityOwnershipState.IS_OWNER);
                 }
             }
         }
@@ -294,7 +287,7 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
          */
         private void startInitTask(boolean owner) {
             if (!initialized.getAndSet(true)) {
-                TxTask<Boolean> task = (owner)
+                TxTask<Boolean> task = owner
                     ? new ConfigLoadTask(macAddress)
                     : new ConfigSaveTask();
                 LOG.trace("Start vtn-config init task: owner={}, task={}",
@@ -317,8 +310,8 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
 
             if (change.inJeopardy()) {
                 LOG.warn("DS cluster is in jeopardy state.");
-            } else if (change.hasOwner()) {
-                startInitTask(change.isOwner());
+            } else if (change.getState().hasOwner()) {
+                startInitTask(change.getState().isOwner());
             }
         }
 
@@ -390,7 +383,7 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
             return null;
         }
 
-        EtherAddress ea = (nifs == null) ? null : getMacAddress(nifs);
+        EtherAddress ea = nifs == null ? null : getMacAddress(nifs);
         if (ea == null) {
             LOG.warn("No network interface was found.");
         }
@@ -485,7 +478,7 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
         } else {
             LOG.info("Local MAC address: {}", ea.getText());
         }
-        current = new AtomicReference<VTNConfigImpl>(vconf);
+        current = new AtomicReference<>(vconf);
 
         try {
             initialize(provider, ea);

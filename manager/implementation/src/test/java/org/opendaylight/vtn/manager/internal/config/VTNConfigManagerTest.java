@@ -8,9 +8,9 @@
 
 package org.opendaylight.vtn.manager.internal.config;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.isA;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -19,51 +19,41 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
+import com.google.common.base.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import com.google.common.base.Optional;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
-import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.util.EtherAddress;
-
-import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
-import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
-import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
-import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
-import org.opendaylight.vtn.manager.internal.util.tx.TxQueueImpl;
-
-import org.opendaylight.vtn.manager.internal.TestBase;
-
 import org.opendaylight.controller.md.sal.binding.api.ClusteredDataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
-import org.opendaylight.controller.md.sal.common.api.clustering.Entity;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipChange;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListener;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListenerRegistration;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipState;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.TransactionCommitFailedException;
-
-import org.opendaylight.yangtools.concepts.ListenerRegistration;
-import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-
+import org.opendaylight.mdsal.eos.binding.api.Entity;
+import org.opendaylight.mdsal.eos.binding.api.EntityOwnershipChange;
+import org.opendaylight.mdsal.eos.binding.api.EntityOwnershipListener;
+import org.opendaylight.mdsal.eos.binding.api.EntityOwnershipListenerRegistration;
+import org.opendaylight.mdsal.eos.common.api.EntityOwnershipChangeState;
+import org.opendaylight.mdsal.eos.common.api.EntityOwnershipState;
+import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.internal.TestBase;
+import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
+import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
+import org.opendaylight.vtn.manager.internal.util.VTNEntityType;
+import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
+import org.opendaylight.vtn.manager.internal.util.tx.TxQueueImpl;
+import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfigBuilder;
-
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
+import org.opendaylight.yangtools.concepts.ListenerRegistration;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 /**
  * JUnit test for {@link VTNConfigManager}.
@@ -186,23 +176,20 @@ public class VTNConfigManagerTest extends TestBase {
                  eq(ident), (DataTreeChangeListener<VtnConfig>)isA(cltype))).
             thenReturn(cfgListenerReg);
 
-        Answer ans = new Answer() {
-            @Override
-            public Object answer(InvocationOnMock inv) {
-                Object[] args = inv.getArguments();
-                Object cdcl = args[1];
-                assertTrue(cdcl instanceof ClusteredDataTreeChangeListener);
-                try {
-                    DataTreeChangeListener dcl = getFieldValue(
-                        cdcl, DataTreeChangeListener.class, "theListener");
-                    assertTrue(dcl instanceof OperationalListener);
-                    setOperationalListener((OperationalListener)dcl);
-                    return operListenerReg;
-                } catch (Exception e) {
-                    unexpected(e);
-                }
-                return null;
+        Answer ans = inv -> {
+            Object[] args = inv.getArguments();
+            Object cdcl = args[1];
+            assertTrue(cdcl instanceof ClusteredDataTreeChangeListener);
+            try {
+                DataTreeChangeListener dcl = getFieldValue(
+                    cdcl, DataTreeChangeListener.class, "theListener");
+                assertTrue(dcl instanceof OperationalListener);
+                setOperationalListener((OperationalListener)dcl);
+                return operListenerReg;
+            } catch (Exception e) {
+                unexpected(e);
             }
+            return null;
         };
         ident = new DataTreeIdentifier<>(
             LogicalDatastoreType.OPERATIONAL, path);
@@ -210,21 +197,18 @@ public class VTNConfigManagerTest extends TestBase {
                  eq(ident), (DataTreeChangeListener<VtnConfig>)isA(cltype))).
             thenAnswer(ans);
 
-        Answer ownerAns = new Answer() {
-            @Override
-            public Object answer(InvocationOnMock inv) {
-                Object[] args = inv.getArguments();
-                Object type = args[0];
-                Object eol = args[1];
-                if (VTNEntityType.CONFIG.equals(type) &&
-                    eol instanceof EntityOwnershipListener) {
-                    setOwnerListener((EntityOwnershipListener)eol);
-                    return ownerListenerReg;
-                }
-
-                unexpected();
-                return null;
+        Answer ownerAns = inv -> {
+            Object[] args = inv.getArguments();
+            Object type = args[0];
+            Object eol = args[1];
+            if (VTNEntityType.CONFIG.equals(type) &&
+                eol instanceof EntityOwnershipListener) {
+                setOwnerListener((EntityOwnershipListener)eol);
+                return ownerListenerReg;
             }
+
+            unexpected();
+            return null;
         };
         when(vtnProvider.registerListener(
                  eq(VTNEntityType.CONFIG),
@@ -283,7 +267,7 @@ public class VTNConfigManagerTest extends TestBase {
             setControllerMacAddress(ea.getMacAddress()).
             build();
         VTNConfigImpl vconf = new VTNConfigImpl(vcfg);
-        initProvider(vconf, new EntityOwnershipState(false, false));
+        initProvider(vconf, EntityOwnershipState.from(false, false));
         assertEquals(true, configManager.isConfigProvider());
 
         assertEquals(nodeEdgeWait, configManager.getTopologyWait());
@@ -345,7 +329,7 @@ public class VTNConfigManagerTest extends TestBase {
             setControllerMacAddress(ea.getMacAddress()).
             setMaxRedirections(maxRedirections).
             build();
-        initConsumer(vcfg, true, new EntityOwnershipState(false, false));
+        initConsumer(vcfg, true, EntityOwnershipState.from(false, false));
         assertEquals(false, configManager.isConfigProvider());
 
         assertEquals(DEFAULT_TOPOLOGY_WAIT, configManager.getTopologyWait());
@@ -386,7 +370,7 @@ public class VTNConfigManagerTest extends TestBase {
         when(tx.submit()).thenReturn(getSubmitFuture(cause));
 
         Entity ent = VTNEntityType.getGlobalEntity(VTNEntityType.CONFIG);
-        EntityOwnershipState estate = new EntityOwnershipState(false, false);
+        EntityOwnershipState estate = EntityOwnershipState.from(false, false);
         when(vtnProvider.getOwnershipState(ent)).
             thenReturn(Optional.fromNullable(estate));
 
@@ -484,7 +468,7 @@ public class VTNConfigManagerTest extends TestBase {
             setFlowModTimeout(4000).
             setInitTimeout(100).
             build();
-        initConsumer(vcfg, false, new EntityOwnershipState(false, true));
+        initConsumer(vcfg, false, EntityOwnershipState.from(false, true));
 
         assertEquals(false, configManager.isConfigProvider());
     }
@@ -496,11 +480,10 @@ public class VTNConfigManagerTest extends TestBase {
      */
     @Test
     public void testClose() throws Exception {
-        initProvider(null, new EntityOwnershipState(true, true));
+        initProvider(null, EntityOwnershipState.from(true, true));
 
         @SuppressWarnings("unchecked")
-        AtomicReference<TxQueueImpl> qref = (AtomicReference<TxQueueImpl>)
-            getFieldValue(configManager, AtomicReference.class, "configQueue");
+        AtomicReference<TxQueueImpl> qref = getFieldValue(configManager, AtomicReference.class, "configQueue");
         assertNotNull(qref);
         TxQueueImpl txq = qref.get();
         Thread txThread = getFieldValue(txq, Thread.class, "runnerThread");
@@ -541,12 +524,9 @@ public class VTNConfigManagerTest extends TestBase {
         when(dataBroker.newReadWriteTransaction()).thenReturn(tx);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        Answer ans = new Answer() {
-            @Override
-            public Object answer(InvocationOnMock inv) {
-                latch.countDown();
-                return getSubmitFuture();
-            }
+        Answer ans = inv -> {
+            latch.countDown();
+            return getSubmitFuture();
         };
         when(tx.submit()).thenAnswer(ans);
 
@@ -585,7 +565,7 @@ public class VTNConfigManagerTest extends TestBase {
      */
     @Test
     public void testGetTopologyWait() {
-        initProvider(null, new EntityOwnershipState(false, false));
+        initProvider(null, EntityOwnershipState.from(false, false));
         assertEquals(DEFAULT_TOPOLOGY_WAIT, configManager.getTopologyWait());
 
         getOperationalListener();
@@ -605,7 +585,7 @@ public class VTNConfigManagerTest extends TestBase {
      */
     @Test
     public void testGetL2FlowPriority() {
-        initProvider(null, new EntityOwnershipState(true, true));
+        initProvider(null, EntityOwnershipState.from(true, true));
         assertEquals(DEFAULT_L2_FLOW_PRIORITY,
                      configManager.getL2FlowPriority());
 
@@ -626,7 +606,7 @@ public class VTNConfigManagerTest extends TestBase {
      */
     @Test
     public void testGetFlowModTimeout() {
-        initProvider(null, new EntityOwnershipState(false, false));
+        initProvider(null, EntityOwnershipState.from(false, false));
         assertEquals(DEFAULT_FLOW_MOD_TIMEOUT,
                      configManager.getFlowModTimeout());
 
@@ -668,7 +648,7 @@ public class VTNConfigManagerTest extends TestBase {
      */
     @Test
     public void testGetInitTimeout() {
-        initProvider(null, new EntityOwnershipState(true, true));
+        initProvider(null, EntityOwnershipState.from(true, true));
         assertEquals(DEFAULT_INIT_TIMEOUT, configManager.getInitTimeout());
 
         getOperationalListener();
@@ -688,7 +668,7 @@ public class VTNConfigManagerTest extends TestBase {
      */
     @Test
     public void testGetMaxRedirections() {
-        initProvider(null, new EntityOwnershipState(false, false));
+        initProvider(null, EntityOwnershipState.from(false, false));
         assertEquals(DEFAULT_MAX_REDIRECTIONS,
                      configManager.getMaxRedirections());
 
@@ -764,7 +744,7 @@ public class VTNConfigManagerTest extends TestBase {
                                                  boolean has) {
         Entity configEntity =
             VTNEntityType.getGlobalEntity(VTNEntityType.CONFIG);
-        return new EntityOwnershipChange(configEntity, was, is, has);
+        return new EntityOwnershipChange(configEntity, EntityOwnershipChangeState.from(was, is, has));
     }
 
     /**
@@ -960,12 +940,9 @@ public class VTNConfigManagerTest extends TestBase {
      * @param tx  The mock-up of {@link ReadWriteTransaction}.
      */
     private void setSubmitFuture(ReadWriteTransaction tx) {
-        Answer ans = new Answer() {
-            @Override
-            public Object answer(InvocationOnMock inv) {
-                setConfigSubmitted();
-                return getSubmitFuture();
-            }
+        Answer ans = inv -> {
+            setConfigSubmitted();
+            return getSubmitFuture();
         };
 
         when(tx.submit()).thenAnswer(ans);
@@ -1011,8 +988,7 @@ public class VTNConfigManagerTest extends TestBase {
 
         try {
             @SuppressWarnings("unchecked")
-            AtomicReference<VTNConfigImpl> ref = (AtomicReference<VTNConfigImpl>)
-                getFieldValue(opl, AtomicReference.class, "current");
+            AtomicReference<VTNConfigImpl> ref = getFieldValue(opl, AtomicReference.class, "current");
             assertNotNull(ref);
             currentConfig = ref;
             if (newCurrentConfig != null) {

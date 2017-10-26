@@ -11,6 +11,9 @@ package org.opendaylight.vtn.manager.internal.flow;
 import static org.opendaylight.vtn.manager.internal.util.flow.FlowUtils.COOKIE_MISS;
 import static org.opendaylight.vtn.manager.internal.util.flow.FlowUtils.TABLE_ID;
 
+import com.google.common.base.Optional;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -22,16 +25,15 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Optional;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-
+import org.opendaylight.controller.md.sal.binding.api.NotificationService;
+import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
+import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
+import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
+import org.opendaylight.mdsal.eos.binding.api.EntityOwnershipChange;
+import org.opendaylight.mdsal.eos.binding.api.EntityOwnershipListener;
+import org.opendaylight.mdsal.eos.binding.api.EntityOwnershipListenerRegistration;
 import org.opendaylight.vtn.manager.VTNException;
-
 import org.opendaylight.vtn.manager.internal.FlowRemover;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxTask;
@@ -73,19 +75,17 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcFuture;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcUtils;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 import org.opendaylight.vtn.manager.internal.util.tx.TxQueueImpl;
-
-import org.opendaylight.controller.md.sal.binding.api.NotificationService;
-import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
-import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipChange;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListener;
-import org.opendaylight.controller.md.sal.common.api.clustering.EntityOwnershipListenerRegistration;
-import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
-
-import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.opendaylight.yangtools.yang.common.RpcResult;
-
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowAdded;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowRemoved;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowUpdated;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.NodeErrorNotification;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.NodeExperimenterErrorNotification;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowListener;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SwitchFlowRemoved;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.transaction.rev150304.FlowCapableTransactionService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.GetDataFlowCountInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.GetDataFlowCountOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.GetDataFlowInput;
@@ -99,18 +99,10 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.Vtn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.VtnFlowsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnOpenflowVersion;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
-
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowAdded;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowRemoved;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowUpdated;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.NodeErrorNotification;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.NodeExperimenterErrorNotification;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowListener;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SwitchFlowRemoved;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.transaction.rev150304.FlowCapableTransactionService;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+import org.opendaylight.yangtools.yang.common.RpcResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Flow entry manager.
@@ -148,7 +140,7 @@ public final class VTNFlowManager extends SalNotificationListener
     /**
      * MD-SAL flow capable transaction service.
      */
-    private AtomicReference<FlowCapableTransactionService>  flowTxService =
+    private final AtomicReference<FlowCapableTransactionService>  flowTxService =
         new AtomicReference<>();
 
     /**
@@ -260,7 +252,7 @@ public final class VTNFlowManager extends SalNotificationListener
             LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
             Optional<NextFlowId> opt = DataStoreUtils.read(tx, oper, path);
             boolean created =
-                (!opt.isPresent() || opt.get().getNextId() == null);
+                !opt.isPresent() || opt.get().getNextId() == null;
             if (created) {
                 // Create the next-flow-id container with initial flow ID.
                 NextFlowId root = new NextFlowIdBuilder().
@@ -727,7 +719,7 @@ public final class VTNFlowManager extends SalNotificationListener
             ReadTransaction rtx = ctx.getTransaction();
             VtnOpenflowVersion ver =
                 InventoryUtils.getOpenflowVersion(rtx, snode);
-            return (ver != null && ver != VtnOpenflowVersion.OF10);
+            return ver != null && ver != VtnOpenflowVersion.OF10;
         } catch (VTNException | RuntimeException e) {
             LOG.error("Failed to determine OpenFlow version for " + snode, e);
             return false;
@@ -822,7 +814,7 @@ public final class VTNFlowManager extends SalNotificationListener
     @Override
     public void notifyVtnNode(VtnNodeEvent ev) throws VTNException {
         VtnUpdateType type = ev.getUpdateType();
-        boolean doRemove = (type == VtnUpdateType.REMOVED);
+        boolean doRemove = type == VtnUpdateType.REMOVED;
         if (!doRemove) {
             // Check to see if OpenFlow protocol version has been determined.
             // On CREATED event, the version may not be determined yet.
@@ -831,7 +823,7 @@ public final class VTNFlowManager extends SalNotificationListener
             // CHANGED event before any port CREATED events.
             // So nothing to do here if the version is not yet determined.
             VtnOpenflowVersion ofver = ev.getVtnNode().getOpenflowVersion();
-            doRemove = (ofver != null);
+            doRemove = ofver != null;
             if (doRemove) {
                 // Clear the flow table in the new switch.
                 clearFlowTable(ev.getSalNode(), ofver);
@@ -895,7 +887,7 @@ public final class VTNFlowManager extends SalNotificationListener
         try (TxContext ctx = vtnProvider.newTxContext()) {
             ReadFlowFuture f =
                 ReadFlowFuture.create(ctx, txQueue, statsReader, input);
-            return new RpcFuture<List<DataFlowInfo>, GetDataFlowOutput>(f, f);
+            return new RpcFuture<>(f, f);
         } catch (VTNException | RuntimeException e) {
             return RpcUtils.getErrorBuilder(GetDataFlowOutput.class, e).
                 buildFuture();
@@ -913,7 +905,7 @@ public final class VTNFlowManager extends SalNotificationListener
         GetDataFlowCountInput input) {
         try (TxContext ctx = vtnProvider.newTxContext()) {
             FlowCountFuture f = FlowCountFuture.create(ctx, input);
-            return new RpcFuture<Integer, GetDataFlowCountOutput>(f, f);
+            return new RpcFuture<>(f, f);
         } catch (RpcException | RuntimeException e) {
             return RpcUtils.getErrorBuilder(GetDataFlowCountOutput.class, e).
                 buildFuture();
@@ -1023,7 +1015,7 @@ public final class VTNFlowManager extends SalNotificationListener
 
         if (entityListener.get() != null) {
             boolean jeopardy = change.inJeopardy();
-            if (change.isOwner() && !jeopardy) {
+            if (change.getState().isOwner() && !jeopardy) {
                 startStatsTimer();
 
                 // Ensure that the listener is still valid.
