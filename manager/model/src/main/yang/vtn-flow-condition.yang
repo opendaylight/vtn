@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 NEC Corporation
+ * Copyright (c) 2015-2018 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -109,7 +109,6 @@ module vtn-flow-condition {
               "The minimum value (inclusive) in the range of port numbers
                to match against packets.";
             type inet:port-number;
-            mandatory true;
         }
 
         leaf port-to {

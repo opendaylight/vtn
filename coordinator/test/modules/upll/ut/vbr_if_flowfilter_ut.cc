@@ -460,6 +460,7 @@ TEST_F(vbr_if_test, IsValid_InvalidVbrName ) {
  delete key;
 }
 
+/* TODO: Verify the validdity of these tests in the current code
 TEST_F(vbr_if_test, IsValid_InvalidIfnName ) {
   VbrIfFlowFilterMoMgr obj;
    key_vbr_if_flowfilter_t *key_vbr_if = ZALLOC_TYPE(key_vbr_if_flowfilter_t);
@@ -469,7 +470,6 @@ TEST_F(vbr_if_test, IsValid_InvalidIfnName ) {
   EXPECT_EQ(false,obj.IsValidKey(key, uudst::vbr_if_flowfilter::kDbiVbrIfName));
   delete key;
 }
-/*
  VbrIfFlowFilterMoMgr obj;
  key_vbr_if_flowfilter_t *key_vbr_if = reinterpret_cast<key_vbr_if_flowfilter_t*>
                   (malloc(sizeof(key_vbr_if_flowfilter_t)));
