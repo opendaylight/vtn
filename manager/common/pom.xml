@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2013-2016 NEC Corporation
+# Copyright (c) 2013-2018 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -71,10 +71,6 @@
 
     <!-- OpenDaylight artifacts -->
     <odl.controller.mdsal.version>1.7.0-SNAPSHOT</odl.controller.mdsal.version>
-    <odl.yangtools.version>1.2.0</odl.yangtools.version>
-    <odl.mdsal.version>2.4.0-SNAPSHOT</odl.mdsal.version>
-    <odl.mdsal.model.version>0.12.0-SNAPSHOT</odl.mdsal.model.version>
-    <odl.mdsal.apigen.version>0.12.0-SNAPSHOT</odl.mdsal.apigen.version>
     <odl.openflowplugin.version>0.6.0-SNAPSHOT</odl.openflowplugin.version>
     <odl.neutron.version>0.10.0-SNAPSHOT</odl.neutron.version>
     <odl.ovsdb.version>1.6.0-SNAPSHOT</odl.ovsdb.version>
@@ -452,13 +448,6 @@
             </execution>
           </executions>
         </plugin>
-
-        <!-- OpenDaylight YANG Tools -->
-        <plugin>
-          <groupId>org.opendaylight.yangtools</groupId>
-          <artifactId>yang-maven-plugin</artifactId>
-          <version>${odl.yangtools.version}</version>
-        </plugin>
       </plugins>
     </pluginManagement>
   </build>
@@ -509,38 +498,13 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>mdsal-it-base</artifactId>
         <version>${odl.controller.mdsal.version}</version>
       </dependency>
 
-      <!-- OpenDaylight YANG Tools -->
-      <dependency>
-        <groupId>org.opendaylight.yangtools</groupId>
-        <artifactId>yangtools-artifacts</artifactId>
-        <version>${odl.yangtools.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
       <!-- OpenDaylight MD-SAL -->
-      <dependency>
-        <groupId>org.opendaylight.mdsal</groupId>
-        <artifactId>mdsal-artifacts</artifactId>
-        <version>${odl.mdsal.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.mdsal.model</groupId>
-        <artifactId>mdsal-model-artifacts</artifactId>
-        <version>${odl.mdsal.model.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
 
       <!-- OpenDaylight openflowplugin -->
       <dependency>
@@ -595,7 +559,7 @@
 
       <!-- Sonar -->
       <dependency>
-        <groupId>org.codehaus.sonar-plugins.java</groupId>
+        <groupId>org.sonarsource.java</groupId>
         <artifactId>sonar-jacoco-listeners</artifactId>
         <version>${sonar-jacoco-listeners.version}</version>
       </dependency>
@@ -647,7 +611,7 @@
 
     <!-- Sonar -->
     <dependency>
-      <groupId>org.codehaus.sonar-plugins.java</groupId>
+      <groupId>org.sonarsource.java</groupId>
       <artifactId>sonar-jacoco-listeners</artifactId>
       <scope>test</scope>
     </dependency>

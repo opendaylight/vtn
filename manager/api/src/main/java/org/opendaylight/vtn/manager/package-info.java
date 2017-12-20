@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2014, 2018 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -1423,7 +1423,7 @@
  *           </li>
  *         </ul>
  *
- *       <dt id="flow.filter.redirect.destination" style="font-weight: bold; margin-top: 0.5em;">Direction
+ *       <dt id="flow.filter.redirect.direction" style="font-weight: bold; margin-top: 0.5em;">Direction
  *       <dd style="margin-left: 2em;">
  *         <p>
  *           Every REDIRECT flow filter must choose the direction of the packet
@@ -1442,25 +1442,25 @@
  *               redirected packet. If the flow filter passes the packet,
  *               the packet is forwarded to the virtual node which contains the
  *               destination virtual interface.
- *               <ul>
- *                 <li>
- *                   If the destination virtual interface is attached to the
- *                   <a href="#vBridge">vBridge</a>, then the packet is routed
- *                   according to the vBridge configuration.
- *                   Note that the source MAC address of the redirected packet
- *                   is never learned into the
- *                   <a href="#macTable">MAC address table</a> in the vBridge.
- *                 </li>
- *                 <li>
- *                   If the destination virtual interface is attached to the
- *                   <a href="#vTerminal">vTerminal</a>, then the packet is
- *                   always discarded. In other words, the packet is always
- *                   discarded unless the packet is redirected to another
- *                   interface by the flow filter configured in the destination
- *                   virtual interface.
- *                 </li>
- *               </ul>
  *             </p>
+ *             <ul>
+ *               <li>
+ *                 If the destination virtual interface is attached to the
+ *                 <a href="#vBridge">vBridge</a>, then the packet is routed
+ *                 according to the vBridge configuration.
+ *                 Note that the source MAC address of the redirected packet
+ *                 is never learned into the
+ *                 <a href="#macTable">MAC address table</a> in the vBridge.
+ *               </li>
+ *               <li>
+ *                 If the destination virtual interface is attached to the
+ *                 <a href="#vTerminal">vTerminal</a>, then the packet is
+ *                 always discarded. In other words, the packet is always
+ *                 discarded unless the packet is redirected to another
+ *                 interface by the flow filter configured in the destination
+ *                 virtual interface.
+ *               </li>
+ *             </ul>
  *           </li>
  *           <li>
  *             <p>
