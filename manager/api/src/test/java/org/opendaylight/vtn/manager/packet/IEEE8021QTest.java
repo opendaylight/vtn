@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 NEC Corporation. All rights reserved.
+ * Copyright (c) 2015, 2018 NEC Corporation. All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -45,6 +45,8 @@ public class IEEE8021QTest extends TestBase {
      *   <li>{@link IEEE8021Q#getCfi()}</li>
      *   <li>{@link IEEE8021Q#setCfi(byte)}</li>
      * </ul>
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testGetCfi() throws Exception {
@@ -64,6 +66,8 @@ public class IEEE8021QTest extends TestBase {
      *   <li>{@link IEEE8021Q#getVid()}</li>
      *   <li>{@link IEEE8021Q#setVid(short)}</li>
      * </ul>
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testGetVid() throws Exception {
@@ -87,6 +91,8 @@ public class IEEE8021QTest extends TestBase {
      *   <li>{@link IEEE8021Q#getEtherType()}</li>
      *   <li>{@link IEEE8021Q#setEtherType(short)}</li>
      * </ul>
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testGetEthertype() throws Exception {
