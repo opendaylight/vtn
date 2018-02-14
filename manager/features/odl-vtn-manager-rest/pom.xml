@@ -22,7 +22,7 @@
 
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>odl-vtn-manager-rest</artifactId>
-  <version>0.7.2-SNAPSHOT</version>
+  <version>0.7.2</version>
   <packaging>feature</packaging>
 
   <name>OpenDaylight :: VTN Manager :: REST API</name>
@@ -39,7 +39,7 @@
     <dependency>
       <groupId>org.opendaylight.netconf</groupId>
       <artifactId>odl-restconf</artifactId>
-      <version>1.6.2-SNAPSHOT</version>
+      <version>1.6.2</version>
       <type>xml</type>
       <classifier>features</classifier>
     </dependency>
