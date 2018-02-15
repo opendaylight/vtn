@@ -17,13 +17,13 @@
   <parent>
     <groupId>org.opendaylight.odlparent</groupId>
     <artifactId>features-parent</artifactId>
-    <version>1.8.3-SNAPSHOT</version>
+    <version>1.8.3-Carbon</version>
     <relativePath />
   </parent>
 
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>manager.it.features</artifactId>
-  <version>0.6.3-SNAPSHOT</version>
+  <version>0.6.3-Carbon</version>
   <packaging>jar</packaging>
 
   <scm>
@@ -35,9 +35,9 @@
 
   <properties>
     <!-- OpenDaylight artifacts -->
-    <odl.controller.mdsal.version>1.5.3-SNAPSHOT</odl.controller.mdsal.version>
-    <odl.mdsal.model.version>0.10.3-SNAPSHOT</odl.mdsal.model.version>
-    <odl.openflowplugin.version>0.4.3-SNAPSHOT</odl.openflowplugin.version>
+    <odl.controller.mdsal.version>1.5.3-Carbon</odl.controller.mdsal.version>
+    <odl.mdsal.model.version>0.10.3-Carbon</odl.mdsal.model.version>
+    <odl.openflowplugin.version>0.4.3-Carbon</odl.openflowplugin.version>
 
     <!-- No test is required. -->
     <skipTests>true</skipTests>
