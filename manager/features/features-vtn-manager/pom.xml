@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <!--
 #
 # Copyright (c) 2017 NEC Corporation
@@ -16,8 +15,8 @@
   <parent>
     <groupId>org.opendaylight.odlparent</groupId>
     <artifactId>feature-repo-parent</artifactId>
-    <version>3.0.2</version>
-    <relativePath />
+    <version>3.1.0</version>
+    <relativePath/>
   </parent>
 
   <groupId>org.opendaylight.vtn</groupId>
