@@ -74,7 +74,6 @@
     <odl.openflowplugin.version>0.7.0-SNAPSHOT</odl.openflowplugin.version>
     <odl.neutron.version>0.11.0-SNAPSHOT</odl.neutron.version>
     <odl.ovsdb.version>1.7.0-SNAPSHOT</odl.ovsdb.version>
-    <odl.thirdparty.jung2.version>2.0.1</odl.thirdparty.jung2.version>
 
     <maven.site.skip>false</maven.site.skip>
     <maven.site.deploy.skip>false</maven.site.deploy.skip>
@@ -481,13 +480,6 @@
         <groupId>org.opendaylight.vtn</groupId>
         <artifactId>manager.neutron</artifactId>
         <version>${project.version}</version>
-      </dependency>
-
-      <!-- OpenDaylight third party -->
-      <dependency>
-        <groupId>org.opendaylight.controller.thirdparty</groupId>
-        <artifactId>net.sf.jung2</artifactId>
-        <version>${odl.thirdparty.jung2.version}</version>
       </dependency>
 
       <!-- OpenDaylight controller -->

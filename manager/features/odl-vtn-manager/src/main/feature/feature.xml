@@ -12,9 +12,10 @@
 -->
 
 <features name="vtn-manager-${project.version}" xmlns="http://karaf.apache.org/xmlns/features/v1.2.0"
-   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.2.0 http://karaf.apache.org/xmlns/features/v1.2.0">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.2.0 http://karaf.apache.org/xmlns/features/v1.2.0">
 
-  <feature name="odl-vtn-manager" version="${project.version}">
-  </feature>
+    <feature name="odl-vtn-manager" version="${project.version}">
+        <feature version="[3.0.0,4)">odl-jung-2.1</feature>
+    </feature>
 </features>
