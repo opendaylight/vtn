@@ -15,7 +15,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.commons.collections15.Transformer;
+import com.google.common.base.Function;
 
 import org.opendaylight.vtn.manager.VTNException;
 
@@ -42,14 +42,14 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vt
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
 
 /**
- * An implementation of {@link Transformer} that transforms link edge into
+ * An implementation of {@link Function} that transforms link edge into
  * the cost of the link.
  *
  * <p>
  *   Note that this class is not synchronized.
  * </p>
  */
-final class PathPolicyTransformer implements Transformer<LinkEdge, Long> {
+final class PathPolicyTransformer implements Function<LinkEdge, Long> {
     /**
      * Logger instance.
      */
@@ -239,7 +239,7 @@ final class PathPolicyTransformer implements Transformer<LinkEdge, Long> {
      * @return  A {@link Long} instance which represents the cost.
      */
     @Override
-    public Long transform(LinkEdge le) {
+    public Long apply(LinkEdge le) {
         if (le == null) {
             LOG.warn("{}: Link edge is null.", policyId);
             return Long.valueOf(Long.MAX_VALUE);

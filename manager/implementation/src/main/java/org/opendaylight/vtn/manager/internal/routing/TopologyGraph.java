@@ -24,7 +24,7 @@ import edu.uci.ics.jung.graph.SparseMultigraph;
 import edu.uci.ics.jung.graph.util.EdgeType;
 import edu.uci.ics.jung.graph.util.Pair;
 
-import org.apache.commons.collections15.Transformer;
+import com.google.common.base.Function;
 
 import org.opendaylight.vtn.manager.internal.RouteResolver;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
@@ -110,7 +110,7 @@ final class TopologyGraph extends SparseMultigraph<SalNode, LinkEdge> {
          * @param xf   A {@link Transformer} instance that is responsible for
          *             the weights of edges.
          */
-        protected DijkstraResolver(int idx, Transformer<LinkEdge, Long> xf) {
+        protected DijkstraResolver(int idx, Function<LinkEdge, Long> xf) {
             super(TopologyGraph.this, xf);
             index = idx;
         }

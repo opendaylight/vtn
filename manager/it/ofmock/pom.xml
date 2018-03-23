@@ -119,8 +119,12 @@
 
     <!-- OpenDaylight third party artifacts -->
     <dependency>
-      <groupId>org.opendaylight.controller.thirdparty</groupId>
-      <artifactId>net.sf.jung2</artifactId>
+      <groupId>net.sf.jung</groupId>
+      <artifactId>jung-algorithms</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>net.sf.jung</groupId>
+      <artifactId>jung-graph-impl</artifactId>
     </dependency>
 
     <!-- SLF4J API -->
