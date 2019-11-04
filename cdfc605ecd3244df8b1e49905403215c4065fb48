@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fa82b9bf_5e455415",
+        "filename": "manager/common/pom.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 670,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2014-06-01T23:41:54Z",
+      "side": 1,
+      "message": "XXX-1-SNAPSHOT is a version number to be assigned to artifacts in stable/hydrogen branch.\nIt can not be used in master.",
+      "revId": "cdfc605ecd3244df8b1e49905403215c4065fb48",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
