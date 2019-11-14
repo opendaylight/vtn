@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "5a93c517_1fed878b",
+        "filename": "coordinator/modules/odcdriver/include/odc_flowlist.hh",
+        "patchSetId": 5
+      },
+      "lineNbr": 362,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-04-07T00:22:14Z",
+      "side": 1,
+      "message": "It seems to me that it never reaches this return statement.\nIs the return statement needed?",
+      "range": {
+        "startLine": 362,
+        "startChar": 4,
+        "endLine": 362,
+        "endChar": 25
+      },
+      "revId": "9c3c0624009a7386b3a8cc52124985b3c6b3b280",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
