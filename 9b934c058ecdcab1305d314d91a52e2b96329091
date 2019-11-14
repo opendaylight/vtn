@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7a96c907_b59c766b",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-02-20T10:24:39Z",
+      "side": 1,
+      "message": "Please Change it as \"Fix Interaction Port as 8282 to keep up changes in ODL ADSAL Port\"",
+      "revId": "9b934c058ecdcab1305d314d91a52e2b96329091",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
