@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3a4c51b2_a787c560",
+        "filename": "coordinator/modules/odcdriver/odc_vtn_dataflow.cc",
+        "patchSetId": 1
+      },
+      "lineNbr": 217,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2016-04-09T00:21:46Z",
+      "side": 1,
+      "message": "I assume this block is for local debugging. Can you please remove this. the next line performs the operation on the pointer without any check. If this trace message is printed, then the app will crash, Is this right?",
+      "revId": "d4f8d18ae8ebf94d726c5d5a76beaf2a16920249",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3a4c51b2_47afe1e3",
+        "filename": "coordinator/modules/odcdriver/odc_vtn_dataflow.cc",
+        "patchSetId": 1
+      },
+      "lineNbr": 274,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2016-04-09T00:21:46Z",
+      "side": 1,
+      "message": "Is this debug to check it is NULL? If so please remove else it makes no sense as no action is taken for NULL and the next line copied to the same pointer variable which may result in application termination",
+      "revId": "d4f8d18ae8ebf94d726c5d5a76beaf2a16920249",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
