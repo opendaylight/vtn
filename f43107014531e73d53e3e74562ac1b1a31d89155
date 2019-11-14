@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da33351e_1948b65a",
+        "filename": "coordinator/modules/odcdriver/code_gen.py",
+        "patchSetId": 15
+      },
+      "lineNbr": 310,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2016-01-12T10:52:46Z",
+      "side": 1,
+      "message": "please remove this EOL space",
+      "revId": "f43107014531e73d53e3e74562ac1b1a31d89155",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da33351e_198d567c",
+        "filename": "coordinator/modules/odcdriver/odc_flowlist.cc",
+        "patchSetId": 15
+      },
+      "lineNbr": 89,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2016-01-12T10:52:46Z",
+      "side": 1,
+      "message": "please remove this empty line?",
+      "revId": "f43107014531e73d53e3e74562ac1b1a31d89155",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da33351e_59eebe23",
+        "filename": "coordinator/modules/odcdriver/odc_flowlist.cc",
+        "patchSetId": 15
+      },
+      "lineNbr": 124,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2016-01-12T10:52:46Z",
+      "side": 1,
+      "message": "please remove these empty lines...",
+      "revId": "f43107014531e73d53e3e74562ac1b1a31d89155",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da33351e_9981664d",
+        "filename": "coordinator/modules/restjsonutil/include/json_build_parse.hh",
+        "patchSetId": 15
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2016-01-12T10:52:46Z",
+      "side": 1,
+      "message": "please remove the space",
+      "revId": "f43107014531e73d53e3e74562ac1b1a31d89155",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "da33351e_d992ce9e",
+        "filename": "coordinator/test/modules/stub/restjsonutil/json_build_parse.hh",
+        "patchSetId": 15
+      },
+      "lineNbr": 44,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2016-01-12T10:52:46Z",
+      "side": 1,
+      "message": "please fix indentation errors from line:36",
+      "revId": "f43107014531e73d53e3e74562ac1b1a31d89155",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
