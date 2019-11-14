@@ -36,6 +36,24 @@
     },
     {
       "key": {
+        "uuid": "1aa4ed85_cd2f78f5",
+        "filename": "coordinator/modules/odcdriver/odc_vbr_vlanmap.cc",
+        "patchSetId": 14
+      },
+      "lineNbr": 324,
+      "author": {
+        "id": 4038
+      },
+      "writtenOn": "2016-01-04T05:38:20Z",
+      "side": 1,
+      "message": "Fixed code indentation in line no 324",
+      "parentUuid": "1aa4ed85_ed1a7416",
+      "revId": "df8698b529729c22f6c685bae438fa1be306ba25",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "1aa4ed85_8d80a047",
         "filename": "coordinator/modules/odcdriver/odc_vterminal_if.cc",
         "patchSetId": 14
@@ -47,6 +65,24 @@
       "writtenOn": "2016-01-04T01:17:27Z",
       "side": 1,
       "message": "please fix indentation mistake",
+      "revId": "df8698b529729c22f6c685bae438fa1be306ba25",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_6d368454",
+        "filename": "coordinator/modules/odcdriver/odc_vterminal_if.cc",
+        "patchSetId": 14
+      },
+      "lineNbr": 118,
+      "author": {
+        "id": 4038
+      },
+      "writtenOn": "2016-01-04T05:38:20Z",
+      "side": 1,
+      "message": "Fixed code indentation in line no 118",
+      "parentUuid": "1aa4ed85_8d80a047",
       "revId": "df8698b529729c22f6c685bae438fa1be306ba25",
       "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
       "unresolved": false
