@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "3a4c51b2_6fcab950",
+        "filename": "coordinator/modules/odcdriver/code_gen.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 243,
+      "author": {
+        "id": 8080
+      },
+      "writtenOn": "2019-11-14T21:13:18Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "3a4c51b2_5a4ea0c2",
+      "revId": "f51015c581f3e6176048f811194ac7bcff19d65a",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "3a4c51b2_7acc3c36",
         "filename": "coordinator/modules/odcdriver/code_gen.py",
         "patchSetId": 3
@@ -36,6 +54,24 @@
     },
     {
       "key": {
+        "uuid": "3a4c51b2_4fc7fd45",
+        "filename": "coordinator/modules/odcdriver/code_gen.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 782,
+      "author": {
+        "id": 8080
+      },
+      "writtenOn": "2019-11-14T21:13:18Z",
+      "side": 1,
+      "message": "Check_bool_Set attribute is used in rest file to denote the parent-structure type , In the script based on these Values I have differentiated the parsing index.",
+      "parentUuid": "3a4c51b2_7acc3c36",
+      "revId": "f51015c581f3e6176048f811194ac7bcff19d65a",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "3a4c51b2_9ac78812",
         "filename": "coordinator/modules/odcdriver/code_gen.py",
         "patchSetId": 3
@@ -47,6 +83,24 @@
       "writtenOn": "2016-04-06T22:49:14Z",
       "side": 1,
       "message": "Please remove these or add comments as why commented?",
+      "revId": "f51015c581f3e6176048f811194ac7bcff19d65a",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3a4c51b2_afc4c140",
+        "filename": "coordinator/modules/odcdriver/code_gen.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 871,
+      "author": {
+        "id": 8080
+      },
+      "writtenOn": "2019-11-14T21:13:18Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "3a4c51b2_9ac78812",
       "revId": "f51015c581f3e6176048f811194ac7bcff19d65a",
       "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
       "unresolved": false
