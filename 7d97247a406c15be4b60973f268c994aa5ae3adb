@@ -25,6 +25,30 @@
     },
     {
       "key": {
+        "uuid": "9a561d44_3b9d16bd",
+        "filename": "manager/model/pom.xml",
+        "patchSetId": 6
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 8080
+      },
+      "writtenOn": "2019-11-14T21:13:18Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "9a561d44_05f55556",
+      "range": {
+        "startLine": 25,
+        "startChar": 88,
+        "endLine": 25,
+        "endChar": 89
+      },
+      "revId": "7d97247a406c15be4b60973f268c994aa5ae3adb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "9a561d44_65e6d1b1",
         "filename": "manager/model/pom.xml",
         "patchSetId": 6
@@ -36,6 +60,24 @@
       "writtenOn": "2016-07-29T17:49:48Z",
       "side": 1,
       "message": "seems like there\u0027s a missing verb between \"This\" and \"any call\". e.g. \"This is required for any call or ...\"",
+      "revId": "7d97247a406c15be4b60973f268c994aa5ae3adb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9a561d44_1ba2d2fc",
+        "filename": "manager/model/pom.xml",
+        "patchSetId": 6
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 8080
+      },
+      "writtenOn": "2019-11-14T21:13:18Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "9a561d44_65e6d1b1",
       "revId": "7d97247a406c15be4b60973f268c994aa5ae3adb",
       "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
       "unresolved": false
@@ -59,6 +101,24 @@
     },
     {
       "key": {
+        "uuid": "9a561d44_7ba30e00",
+        "filename": "manager/neutron/pom.xml",
+        "patchSetId": 6
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 8080
+      },
+      "writtenOn": "2019-11-14T21:13:18Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "9a561d44_45ebcd77",
+      "revId": "7d97247a406c15be4b60973f268c994aa5ae3adb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "9a561d44_a503c940",
         "filename": "manager/pom.xml",
         "patchSetId": 6
@@ -70,6 +130,24 @@
       "writtenOn": "2016-07-29T17:49:48Z",
       "side": 1,
       "message": "sp. \"components\"",
+      "revId": "7d97247a406c15be4b60973f268c994aa5ae3adb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9a561d44_5ba8cada",
+        "filename": "manager/pom.xml",
+        "patchSetId": 6
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 8080
+      },
+      "writtenOn": "2019-11-14T21:13:18Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "9a561d44_a503c940",
       "revId": "7d97247a406c15be4b60973f268c994aa5ae3adb",
       "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
       "unresolved": false
