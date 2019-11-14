@@ -1,0 +1,106 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1aa4ed85_2ef40f86",
+        "filename": "coordinator/modules/odcdriver/include/odc_vbr.hh",
+        "patchSetId": 7
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-12-25T07:26:01Z",
+      "side": 1,
+      "message": "the include  path is not generic, please add the include path in Makefile and use just just the generated filename",
+      "revId": "31fbc735782b1398bf1e7f6b7a7719645b207fbc",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_cef21b9a",
+        "filename": "coordinator/modules/odcdriver/include/odc_vbr_vlanmap.hh",
+        "patchSetId": 7
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-12-25T07:26:01Z",
+      "side": 1,
+      "message": "include path is not generic, please add the path in MAkefile as -I\u003cdirectory\u003e and use the filename here",
+      "revId": "31fbc735782b1398bf1e7f6b7a7719645b207fbc",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_8e2c2304",
+        "filename": "coordinator/modules/odcdriver/include/odc_vbrif.hh",
+        "patchSetId": 7
+      },
+      "lineNbr": 22,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-12-25T07:26:01Z",
+      "side": 1,
+      "message": "the include paths looks difffernt, please check the comments in other files",
+      "revId": "31fbc735782b1398bf1e7f6b7a7719645b207fbc",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_ae2f9ff5",
+        "filename": "coordinator/modules/odcdriver/odcdriver.conf",
+        "patchSetId": 7
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-12-25T07:26:01Z",
+      "side": 1,
+      "message": "pls modify the copyright year",
+      "revId": "31fbc735782b1398bf1e7f6b7a7719645b207fbc",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_6e39a740",
+        "filename": "coordinator/modules/vtndrvintf/audit_keytypes.cc",
+        "patchSetId": 7
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-12-25T07:26:01Z",
+      "side": 1,
+      "message": "Pls modify copyright year",
+      "revId": "31fbc735782b1398bf1e7f6b7a7719645b207fbc",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_0e4033a4",
+        "filename": "coordinator/modules/vtndrvintf/include/audit_keytypes.h",
+        "patchSetId": 7
+      },
+      "lineNbr": 3,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-12-25T07:26:01Z",
+      "side": 1,
+      "message": "pls modify the copyright year",
+      "revId": "31fbc735782b1398bf1e7f6b7a7719645b207fbc",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
