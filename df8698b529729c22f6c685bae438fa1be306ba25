@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1aa4ed85_0d16f0f1",
+        "filename": "coordinator/modules/odcdriver/odc_vbr.cc",
+        "patchSetId": 14
+      },
+      "lineNbr": 75,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2016-01-04T01:17:27Z",
+      "side": 1,
+      "message": "Please fix code indentation",
+      "revId": "df8698b529729c22f6c685bae438fa1be306ba25",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_ed1a7416",
+        "filename": "coordinator/modules/odcdriver/odc_vbr_vlanmap.cc",
+        "patchSetId": 14
+      },
+      "lineNbr": 324,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2016-01-04T01:17:27Z",
+      "side": 1,
+      "message": "Please fix code indentation",
+      "revId": "df8698b529729c22f6c685bae438fa1be306ba25",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_8d80a047",
+        "filename": "coordinator/modules/odcdriver/odc_vterminal_if.cc",
+        "patchSetId": 14
+      },
+      "lineNbr": 118,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2016-01-04T01:17:27Z",
+      "side": 1,
+      "message": "please fix indentation mistake",
+      "revId": "df8698b529729c22f6c685bae438fa1be306ba25",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_2d972c92",
+        "filename": "coordinator/modules/odcdriver/odc_vterminal_if.cc",
+        "patchSetId": 14
+      },
+      "lineNbr": 147,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2016-01-04T01:17:27Z",
+      "side": 1,
+      "message": "please fix the indentation here and other places in this file",
+      "revId": "df8698b529729c22f6c685bae438fa1be306ba25",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_6d7d246e",
+        "filename": "coordinator/modules/odcdriver/vtn.rest",
+        "patchSetId": 14
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2016-01-04T01:17:27Z",
+      "side": 1,
+      "message": "please fix the end of line spaces",
+      "revId": "df8698b529729c22f6c685bae438fa1be306ba25",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
