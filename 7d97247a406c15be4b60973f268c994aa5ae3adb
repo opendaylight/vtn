@@ -1,0 +1,78 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "9a561d44_05f55556",
+        "filename": "manager/model/pom.xml",
+        "patchSetId": 6
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 5444
+      },
+      "writtenOn": "2016-07-29T17:49:48Z",
+      "side": 1,
+      "message": "extra space at \"(Remote procedure calls )\"",
+      "range": {
+        "startLine": 25,
+        "startChar": 88,
+        "endLine": 25,
+        "endChar": 89
+      },
+      "revId": "7d97247a406c15be4b60973f268c994aa5ae3adb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9a561d44_65e6d1b1",
+        "filename": "manager/model/pom.xml",
+        "patchSetId": 6
+      },
+      "lineNbr": 26,
+      "author": {
+        "id": 5444
+      },
+      "writtenOn": "2016-07-29T17:49:48Z",
+      "side": 1,
+      "message": "seems like there\u0027s a missing verb between \"This\" and \"any call\". e.g. \"This is required for any call or ...\"",
+      "revId": "7d97247a406c15be4b60973f268c994aa5ae3adb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9a561d44_45ebcd77",
+        "filename": "manager/neutron/pom.xml",
+        "patchSetId": 6
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 5444
+      },
+      "writtenOn": "2016-07-29T17:49:48Z",
+      "side": 1,
+      "message": "\"handles\" and extra space between \"the\" and \"Network API\"",
+      "revId": "7d97247a406c15be4b60973f268c994aa5ae3adb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9a561d44_a503c940",
+        "filename": "manager/pom.xml",
+        "patchSetId": 6
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 5444
+      },
+      "writtenOn": "2016-07-29T17:49:48Z",
+      "side": 1,
+      "message": "sp. \"components\"",
+      "revId": "7d97247a406c15be4b60973f268c994aa5ae3adb",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
