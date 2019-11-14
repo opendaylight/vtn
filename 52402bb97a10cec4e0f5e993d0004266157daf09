@@ -1,0 +1,123 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1aa4ed85_ae548954",
+        "filename": "coordinator/modules/odcdriver/code_gen.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 14,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-12-22T01:46:55Z",
+      "side": 1,
+      "message": "All the code comments have been removed, Please add them back",
+      "revId": "52402bb97a10cec4e0f5e993d0004266157daf09",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_6e4e91c3",
+        "filename": "coordinator/modules/odcdriver/code_gen.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 287,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-12-22T01:46:55Z",
+      "side": 1,
+      "message": "Please remove such debug messages",
+      "revId": "52402bb97a10cec4e0f5e993d0004266157daf09",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_8e4bcdaf",
+        "filename": "coordinator/modules/odcdriver/code_gen.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 329,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-12-22T01:46:55Z",
+      "side": 1,
+      "message": "Please add omments to the new sections for better review",
+      "revId": "52402bb97a10cec4e0f5e993d0004266157daf09",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_aedb29ec",
+        "filename": "coordinator/modules/odcdriver/code_gen.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 958,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-12-22T01:46:55Z",
+      "side": 1,
+      "message": "was pylint run on the file?? I feel some long lines can be shortened",
+      "revId": "52402bb97a10cec4e0f5e993d0004266157daf09",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_ced8e5f1",
+        "filename": "coordinator/modules/odcdriver/code_gen.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 1254,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-12-22T01:46:55Z",
+      "side": 1,
+      "message": "Id this variable name a typo....?valide...?",
+      "revId": "52402bb97a10cec4e0f5e993d0004266157daf09",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_6ee531a7",
+        "filename": "coordinator/modules/odcdriver/code_gen.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 1264,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-12-22T01:46:55Z",
+      "side": 1,
+      "message": "I feel  a wiki page to explain this script for future contributoirs",
+      "revId": "52402bb97a10cec4e0f5e993d0004266157daf09",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1aa4ed85_eee8417e",
+        "filename": "coordinator/modules/odcdriver/odc_vbr.cc",
+        "patchSetId": 4
+      },
+      "lineNbr": 159,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-12-22T01:46:55Z",
+      "side": 1,
+      "message": "vbrcommn_request?? Is this generated or can we have a  more simpler name?",
+      "revId": "52402bb97a10cec4e0f5e993d0004266157daf09",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
