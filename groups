@@ -2,4 +2,3 @@
 #
 5df8b8521089defe9c30f92cd9bc90f70a2e17ac                           	saml/odl-gerrit-vtn-committers
 c9025ab9ddc1e3171919e085449f22c54f8f7b54                           	GitHub Replication
-ldap:cn=odl-gerrit-vtn-committers,ou=Groups,dc=freestandards,dc=org	ldap/odl-gerrit-vtn-committers
