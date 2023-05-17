@@ -19,9 +19,9 @@
     <relativePath/>
   </parent>
 
-  <groupId>org.opendaylight.vtn</groupId>
+  <groupId>org.opendaylight.neovtn</groupId>
   <artifactId>odl-vtn-manager-rest</artifactId>
-  <version>0.9.0-SNAPSHOT</version>
+  <version>0.9.1-SNAPSHOT</version>
   <packaging>feature</packaging>
 
   <name>OpenDaylight :: VTN Manager :: REST API</name>

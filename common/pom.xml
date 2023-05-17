@@ -17,7 +17,7 @@
         <maven>3.0</maven>
     </prerequisites>
 
-    <groupId>org.opendaylight.vtn</groupId>
+    <groupId>org.opendaylight.neovtn</groupId>
     <artifactId>common</artifactId>
     <version>0.9.1-SNAPSHOT</version>
     <packaging>pom</packaging>
@@ -44,7 +44,7 @@
         <execplugin.version>1.2.1</execplugin.version>
 
         <!-- VTN Manager version -->
-        <vtn.manager.version>0.17.0-SNAPSHOT</vtn.manager.version>
+        <vtn.manager.version>0.9.1-SNAPSHOT</vtn.manager.version>
     </properties>
 
     <build>
