@@ -16,7 +16,7 @@
     <parent>
         <groupId>org.opendaylight.vtn</groupId>
         <artifactId>common</artifactId>
-        <version>0.17.0-SNAPSHOT</version>
+        <version>0.9.1-SNAPSHOT</version>
         <relativePath>common</relativePath>
     </parent>
     <description>The VTN project provides a  Network virtualization model </description>
@@ -25,8 +25,8 @@
     <packaging>pom</packaging>
 
     <scm>
-        <connection>scm:git:https://git.opendaylight.org/gerrit/vtn</connection>
-        <developerConnection>scm:git:ssh://git.opendaylight.org:29418/vtn.git</developerConnection>
+        <connection>scm:git:https://github.com/kirazero17/odl_neo_vtn.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:kirazero17/odl_neo_vtn.git</developerConnection>
         <url>https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_%28VTN%29:Main</url>
         <tag>HEAD</tag>
     </scm>
@@ -69,7 +69,7 @@
         <profile>
             <id>jdk8</id>
             <activation>
-                <jdk>[1.8,)</jdk>
+                <jdk>[1.17,)</jdk>
             </activation>
             <properties>
                 <vtn.javadoc.args>-Xdoclint:none</vtn.javadoc.args>
