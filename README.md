@@ -29,9 +29,9 @@ translated as REST CONF to VTN Manager by the ODC Driver component.
 
 
  - How to build and run VTN Manager
-   https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_(VTN):Manager:Hacking
+   [https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_(VTN):Manager:Hacking](https://github.com/kirazero17/odl_neo_vtn/blob/legacy/post-oxygen/hydrogen_install)
  - To trouble shoot any issues while building
-   https://wiki.opendaylight.org/view/VTN:Hacking_Tips
+   (Link is dead ://)
 
 
 ## VTN Coordinator
@@ -48,6 +48,6 @@ It provides REST APIs for northbound VTN applications and supports virtual netwo
 spanning across multiple ODC by coordinating across ODC.
 
  - How to build and run VTN Coordinator
-   https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_(VTN):Installation:VTN_Coordinator
+   [https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_(VTN):Installation:VTN_Coordinator](https://github.com/kirazero17/odl_neo_vtn/blob/legacy/post-oxygen/hydrogen_install)
  - For Coordinator RESTAPI please refer
-   https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_%28VTN%29:VTN_Coordinator:RestApi
+   https://docs.opendaylight.org/en/stable-oxygen/user-guide/virtual-tenant-network-(vtn).html#rest-api
