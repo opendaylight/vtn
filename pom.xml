@@ -12,11 +12,11 @@
 -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+      <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.opendaylight.vtn</groupId>
         <artifactId>common</artifactId>
-        <version>0.9.5-SNAPSHOT</version>
+        <version>0.9.0-SNAPSHOT</version>
         <relativePath>common</relativePath>
     </parent>
     <description>The VTN project provides a  Network virtualization model </description>
@@ -26,7 +26,7 @@
 
     <scm>
         <connection>scm:git:https://git.opendaylight.org/gerrit/vtn</connection>
-        <developerConnection>scm:git:ssh://git.opendaylight.org:29418/vtn</developerConnection>
+        <developerConnection>scm:git:ssh://git.opendaylight.org:29418/vtn.git</developerConnection>
         <url>https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_%28VTN%29:Main</url>
         <tag>HEAD</tag>
     </scm>
