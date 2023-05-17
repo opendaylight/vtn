@@ -17,7 +17,7 @@
         <groupId>org.opendaylight.neovtn</groupId>
         <artifactId>common</artifactId>
         <version>0.9.1-SNAPSHOT</version>
-        <relativePath>common</relativePath>
+        <relativePath>./common</relativePath>
     </parent>
     <description>The VTN project provides a  Network virtualization model </description>
     <artifactId>distribution</artifactId>
