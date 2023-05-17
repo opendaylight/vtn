@@ -8,7 +8,7 @@ OpenDaylight controller. OpenDaylight VTN consists of two parts:
 VTN Coordinator and VTN Manager.
 
 Please check wiki pages of OpenDaylight VTN project for more details:
-https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_(VTN):Main
+ https://docs.opendaylight.org/en/stable-oxygen/user-guide/virtual-tenant-network-(vtn).html
 
 The requirements for installing these two are different. Therefore, we
 recommend that you install VTN Manager and VTN Coordinator in different
