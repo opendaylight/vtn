@@ -12,144 +12,144 @@
 -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>org.opendaylight.vtn</groupId>
-    <artifactId>common</artifactId>
-    <version>0.9.0-SNAPSHOT</version>
-    <relativePath>common</relativePath>
-  </parent>
-  <description>The VTN project provides a  Network virtualization model </description>
-  <artifactId>distribution</artifactId>
-  <name>vtn</name> <!-- Used by Sonar to set project name -->
-  <packaging>pom</packaging>
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.opendaylight.vtn</groupId>
+        <artifactId>common</artifactId>
+        <version>0.9.0-SNAPSHOT</version>
+        <relativePath>common</relativePath>
+    </parent>
+    <description>The VTN project provides a  Network virtualization model </description>
+    <artifactId>distribution</artifactId>
+    <name>vtn</name> <!-- Used by Sonar to set project name -->
+    <packaging>pom</packaging>
 
-  <scm>
-    <connection>scm:git:https://git.opendaylight.org/gerrit/p/vtn.git</connection>
-    <developerConnection>scm:git:ssh://git.opendaylight.org:29418/vtn.git</developerConnection>
-    <url>https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_%28VTN%29:Main</url>
-    <tag>HEAD</tag>
-  </scm>
+    <scm>
+        <connection>scm:git:https://git.opendaylight.org/gerrit/p/vtn.git</connection>
+        <developerConnection>scm:git:ssh://git.opendaylight.org:29418/vtn.git</developerConnection>
+        <url>https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_%28VTN%29:Main</url>
+        <tag>HEAD</tag>
+    </scm>
 
-  <modules>
-    <module>common</module>
-    <module>manager</module>
-  </modules>
+    <modules>
+        <module>common</module>
+        <module>manager</module>
+    </modules>
 
-  <profiles>
-    <!-- Build VTN Coordinator only if vtncoordinator profile is activated -->
-    <profile>
-      <id>vtncoordinator</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>jenkins</name>
-        </property>
-      </activation>
-      <modules>
-        <module>coordinator/dist</module>
-      </modules>
-    </profile>
+    <profiles>
+        <!-- Build VTN Coordinator only if vtncoordinator profile is activated -->
+        <profile>
+            <id>vtncoordinator</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>jenkins</name>
+                </property>
+            </activation>
+            <modules>
+                <module>coordinator/dist</module>
+            </modules>
+        </profile>
 
-    <!-- Build VTN applications only if vtnapps profile is activated -->
-    <profile>
-      <id>vtnapps</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>jenkins</name>
-        </property>
-      </activation>
-      <modules>
-        <module>application</module>
-      </modules>
-    </profile>
+        <!-- Build VTN applications only if vtnapps profile is activated -->
+        <profile>
+            <id>vtnapps</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>jenkins</name>
+                </property>
+            </activation>
+            <modules>
+                <module>application</module>
+            </modules>
+        </profile>
 
-    <!-- Turn off doclint on aggregated API javadoc build. -->
-    <profile>
-      <id>jdk8</id>
-      <activation>
-        <jdk>[1.8,)</jdk>
-      </activation>
-      <properties>
-        <vtn.javadoc.args>-Xdoclint:none</vtn.javadoc.args>
-      </properties>
-    </profile>
+        <!-- Turn off doclint on aggregated API javadoc build. -->
+        <profile>
+            <id>jdk8</id>
+            <activation>
+                <jdk>[1.8,)</jdk>
+            </activation>
+            <properties>
+                <vtn.javadoc.args>-Xdoclint:none</vtn.javadoc.args>
+            </properties>
+        </profile>
 
-    <!-- Generate aggregated VTN Manager API javadoc. -->
-    <!-- Disable temporororily for Oxygen Build 
-    <profile>
-      <id>docs</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
+        <!-- Generate aggregated VTN Manager API javadoc. -->
+        <!-- Disable temporororily for Oxygen Build 
+        <profile>
+          <id>docs</id>
+          <activation>
+            <activeByDefault>false</activeByDefault>
+          </activation>
+    
+          <properties>
+            <doctitle>VTN Manager ${project.version} API</doctitle>
+          </properties>
+          <build>
+            <plugins>
+              <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                  <execution>
+                    <id>aggregate-javadoc</id>
+                    <goals>
+                      <goal>aggregate-jar</goal>
+                    </goals>
+                    <phase>package</phase>
+                    <configuration>
+                      <windowtitle>${doctitle}</windowtitle>
+                      <includeDependencySources>true</includeDependencySources>
+                      <excludePackageNames>
+                        *.internal,*.impl,*.it,*.neutron,*.app
+                      </excludePackageNames>
+    
+                      <sourceFileExcludes>
+                        <sourceFileExclude>**\/$*.java</sourceFileExclude>
+                      </sourceFileExcludes>
+                    </configuration>
+                  </execution>
+                </executions>
+              </plugin>
+            </plugins>
+          </build>
+        </profile>
+        -->
+        <profile>
+            <id>maven-site</id>
+            <activation>
+                <file>
+                    <exists>${user.dir}/deploy-site.xml</exists>
+                </file>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <inherited>false</inherited>
+                        <executions>
+                            <execution>
+                                <id>aggregate</id>
+                                <goals>
+                                    <goal>aggregate</goal>
+                                </goals>
+                                <phase>package</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
-      <properties>
-        <doctitle>VTN Manager ${project.version} API</doctitle>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-javadoc-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>aggregate-javadoc</id>
-                <goals>
-                  <goal>aggregate-jar</goal>
-                </goals>
-                <phase>package</phase>
-                <configuration>
-                  <windowtitle>${doctitle}</windowtitle>
-                  <includeDependencySources>true</includeDependencySources>
-                  <excludePackageNames>
-                    *.internal,*.impl,*.it,*.neutron,*.app
-                  </excludePackageNames>
-
-                  <sourceFileExcludes>
-                    <sourceFileExclude>**\/$*.java</sourceFileExclude>
-                  </sourceFileExcludes>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    -->
-    <profile>
-     <id>maven-site</id>
-     <activation>
-      <file>
-        <exists>${user.dir}/deploy-site.xml</exists>
-      </file>
-     </activation>
-     <build>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-javadoc-plugin</artifactId>
-          <inherited>false</inherited>
-          <executions>
-            <execution>
-              <id>aggregate</id>
-              <goals>
-                <goal>aggregate</goal>
-              </goals>
-              <phase>package</phase>
-          </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    </build>
-   </profile>
-  </profiles>
-
-  <url>${odl.site.url}/${project.groupId}/${stream}/</url>
-  <distributionManagement>
-    <site>
-      <id>opendaylight-site</id>
-      <url>${nexus.site.url}/</url>
-    </site>
-  </distributionManagement>
+    <url>${odl.site.url}/${project.groupId}/${stream}/</url>
+    <distributionManagement>
+        <site>
+            <id>opendaylight-site</id>
+            <url>${nexus.site.url}/</url>
+        </site>
+    </distributionManagement>
 </project>
