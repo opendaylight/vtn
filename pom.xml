@@ -16,7 +16,7 @@
     <parent>
         <groupId>org.opendaylight.vtn</groupId>
         <artifactId>common</artifactId>
-        <version>0.9.0-SNAPSHOT</version>
+        <version>0.9.5-SNAPSHOT</version>
         <relativePath>common</relativePath>
     </parent>
     <description>The VTN project provides a  Network virtualization model </description>
@@ -25,7 +25,7 @@
     <packaging>pom</packaging>
 
     <scm>
-        <connection>scm:git:https://git.opendaylight.org/gerrit/p/vtn.git</connection>
+        <connection>scm:git:https://git.opendaylight.org/gerrit/vtn.git</connection>
         <developerConnection>scm:git:ssh://git.opendaylight.org:29418/vtn.git</developerConnection>
         <url>https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_%28VTN%29:Main</url>
         <tag>HEAD</tag>
